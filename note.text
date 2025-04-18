@@ -1,0 +1,14 @@
+start the phpmyadmin on the port 
+
+sudo systemctl restart apache2   //command
+access the phpmyadmin on the port 
+http://144.172.95.185/phpmyadmin/   //access phpmyadmin
+
+username phpmyadmin:'elitemailboxes'
+password: 'elitemailboxes@remote'
+
+
+start the project on the network 
+php artisan serve --host=0.0.0.0 --port=8000        //run this command 
+
+http://144.172.95.185:8000/      //access the project on the web browser
