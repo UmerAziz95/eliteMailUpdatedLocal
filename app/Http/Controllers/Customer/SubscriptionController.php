@@ -12,7 +12,7 @@ class SubscriptionController extends Controller
     public function index(Request $request)   //active subscriptions
     {
         if ($request->ajax()) {
-            $subscriptions = Subscription::with(['user', 'plan', 'order'])->where('status','active')
+            $subscriptions = Subscription::with(['user', 'plan', 'order'])->where('status','active')->where('user_id', auth()->user()->id)
            ->orderBy('created_at', 'asc');
     
             // Calculate counters

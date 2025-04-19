@@ -12,7 +12,7 @@ class SubscriptionController extends Controller
     public function index(Request $request)   //active subscriptions
     {
         if ($request->ajax()) {
-            $subscriptions = Subscription::with(['user', 'plan', 'order'])->where('status','active')->where('user_id', auth()->user()->id)
+            $subscriptions = Subscription::with(['user', 'plan', 'order'])->where('status','active')
            ->orderBy('created_at', 'asc');
     
             // Calculate counters
@@ -65,7 +65,7 @@ class SubscriptionController extends Controller
                 ->make(true);
         }
     
-        return view("customer/subscriptions/subscriptions", ['plans' => []]);
+        return view("admin/subscriptions/subscriptions", ['plans' => []]);
     }
     
     public function cancelled_subscriptions(Request $request) //inactive subscriptions
