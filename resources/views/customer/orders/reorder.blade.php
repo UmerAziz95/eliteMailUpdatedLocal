@@ -8,9 +8,7 @@
     .form-control,
     textarea,
     .form-select {
-        background-color: #1e1e1e !important;
-    }
-</style>
+        background-color: #1e1e1e !importa</style>
 @endpush
 
 @section('content')
@@ -140,7 +138,7 @@
             <div class="col-md-6">
                 <label>First Name</label>
                 <input type="text" class="form-control" value="Venkat">
-                <p class="note">(First name that you wish to use on the inbox profile)</p>
+         git        <p class="note">(First name that you wish to use on the inbox profile)</p>
             </div>
 
             <div class="col-md-6">
@@ -231,4 +229,19 @@
 
 @push('scripts')
 
+me-text:contains("Total:")').parent().html(totalHtml);
+        
+        // Update form's plan_id if there's a suitable plan
+        if (suitablePlan) {
+            $('input[name="plan_id"]').val(suitablePlan.id);
+        }
+    }
+
+    // Calculate total inboxes whenever domains or inboxes per domain changes
+    $('#domains, #inboxes_per_domain').on('input change', calculateTotalInboxes);
+
+    // Initial calculation
+    calculateTotalInboxes();
+});
+</script>
 @endpush
