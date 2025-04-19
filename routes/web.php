@@ -39,7 +39,7 @@ Route::post('/change-password', [AuthController::class, 'changePassword'])->name
 // Info: Admin Access
 Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     // Add view-only middleware for role 5
-    Route::middleware('view.only')->group(function () {
+       Route::middleware('view.only')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [App\Http\Controllers\Admin\AdminController::class, 'profile'])->name('profile');
         Route::get('/settings', [App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
@@ -54,6 +54,7 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::post('features/store', [\App\Http\Controllers\Admin\FeatureController::class, 'store'])->name('features.store');
         Route::put('features/{feature}', [\App\Http\Controllers\Admin\FeatureController::class, 'update'])->name('features.update');
         Route::delete('features/{feature}', [\App\Http\Controllers\Admin\FeatureController::class, 'destroy'])->name('features.destroy');
+        // Route::get('subscription')
     });
 
     // Routes that don't need view-only middleware
@@ -126,14 +127,6 @@ Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(
         return view('contractor.settings.settings');
     })->name('settings');
 });
-// Route::get('/', function () {
-//     return view('admin/auth/login');
-// });
-
-// Route::get('/signup', function () {
-//     return view('admin/auth/signup');
-// });
-
 
 Route::get('/forget_password', function () {
     return view('admin/auth/forget_password');
@@ -143,9 +136,6 @@ Route::get('/reset_password', function () {
     return view('admin/auth/reset_password');
 });
 
-// Route::get('/dashboard', function () {
-//     return view('admin/dashboard/dashboard');
-// });
 
 Route::get('/admins', function () {
     return view('admin/admins/admins');
