@@ -59,15 +59,17 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
     // Routes that don't need view-only middleware
     // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
 });
-Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
+// Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 
-
+// Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [App\Http\Controllers\Customer\PlanController::class, 'index'])->name('pricing');
     // reorder routes
-    Route::get('/orders/reorder', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
-    Route::get('/order/view', [App\Http\Controllers\Customer\OrderController::class, 'view'])->name('orders.view');
+    Route::get('/orders/new-order/{id}', [App\Http\Controllers\Customer\OrderController::class, 'newOrder'])->name('orders.new.order');
+    Route::get('/orders/reorder/{order_id}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
+    Route::post('/orders/reorder', [App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.reorder.store');
+    Route::get('/orders/{id}/view', [App\Http\Controllers\Customer\OrderController::class, 'view'])->name('orders.view');
     Route::get('/dashboard', function () {
         return view('customer.dashboard');
     })->name('dashboard');
@@ -93,6 +95,9 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     // Subscription handling routes
     Route::get('/subscription/success', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionSuccess'])->name('subscription.success');
     Route::get('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
+
+    // Invoice routes
+    Route::get('/invoices/data', [App\Http\Controllers\Customer\InvoiceController::class, 'getInvoices'])->name('invoices.data');
 });
 
 // Info: Contractor Access

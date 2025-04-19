@@ -30,8 +30,23 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function invoice()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function subscription()
     {
         return $this->hasOne(Subscription::class);
+    }
+
+    public function reorderInfo()
+    {
+        return $this->hasMany(ReorderInfo::class);
+    }
+    // plan
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
     }
 }

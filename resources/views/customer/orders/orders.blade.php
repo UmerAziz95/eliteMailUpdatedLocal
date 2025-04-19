@@ -45,6 +45,7 @@
 
 @section('content')
 <section class="py-3">
+
     <div class="row gy-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card p-2">
@@ -53,10 +54,10 @@
                         <div class="content-left">
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">21,459</h4>
-                                <p class="text-success mb-0">(+29%)</p>
+                                <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
+                                <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
                             </div>
-                            <small class="mb-0">Total Users</small>
+                            <small class="mb-0">Last week vs previous week</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-primary">
@@ -74,10 +75,10 @@
                         <div class="content-left">
                             <h6 class="text-heading">Pending Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">4,567</h4>
-                                <p class="text-success mb-0">(+18%)</p>
+                                <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
+                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
-                            <small class="mb-0">Last week analytics </small>
+                            <small class="mb-0">Awaiting admin review</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-danger">
@@ -95,10 +96,10 @@
                         <div class="content-left">
                             <h6 class="text-heading">Complete Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">19,860</h4>
-                                <p class="text-danger mb-0">(-14%)</p>
+                                <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
+                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
-                            <small class="mb-0">Last week analytics</small>
+                            <small class="mb-0">Fully processed orders</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-success">
@@ -114,12 +115,12 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Active Orders</h6>
+                            <h6 class="text-heading">In-Progress Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">237</h4>
-                                <p class="text-success mb-0">(+42%)</p>
+                                <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
+                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
-                            <small class="mb-0">Last week analytics</small>
+                            <small class="mb-0">Currently processing</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-warning">
@@ -187,9 +188,9 @@
     });
 
     function viewOrder(id) {
-        window.location.href = "{{ route('customer.orders.view') }}?id=" + id;
+        window.location.href = `{{ url('/customer/orders/${id}/view') }}`;
     }
-
+    
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         var tableId = planId ? `#myTable-${planId}` : '#myTable';
@@ -218,11 +219,12 @@
                 autoWidth: false,
                 columnDefs: [
                     { width: '10%', targets: 0 }, // ID
-                    { width: '20%', targets: 1 }, // Date
-                    { width: '25%', targets: 2 }, // Email
-                    { width: '25%', targets: 3 }, // Domain URL
-                    { width: '10%', targets: 4 }, // Status
-                    { width: '10%', targets: 5 }  // Actions
+                    { width: '15%', targets: 1 }, // Date
+                    ...(planId ? [] : [{ width: '15%', targets: 2 }]), // Plan (only for All Orders)
+                    { width: '20%', targets: planId ? 2 : 3 }, // Email
+                    { width: '20%', targets: planId ? 3 : 4 }, // Domain URL
+                    { width: '10%', targets: planId ? 4 : 5 }, // Status
+                    { width: '10%', targets: planId ? 5 : 6 }  // Actions
                 ],
                 ajax: {
                     url: "{{ route('customer.orders.data') }}",
@@ -232,7 +234,6 @@
                         'Accept': 'application/json'
                     },
                     data: function(d) {
-                        // Add DataTables required parameters
                         d.draw = d.draw || 1;
                         d.length = d.length || 10;
                         d.start = d.start || 0;
@@ -274,8 +275,9 @@
                 columns: [
                     { data: 'id', name: 'orders.id' },
                     { data: 'created_at', name: 'orders.created_at' },
-                    { data: 'email', name: 'users.email' },
-                    { data: 'domain_forwarding_url', name: 'users.domain_forwarding_url' },
+                    ...(planId ? [] : [{ data: 'plan_name', name: 'plans.name' }]),
+                    { data: 'email', name: 'email' },
+                    { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
                     { data: 'status', name: 'orders.status' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
