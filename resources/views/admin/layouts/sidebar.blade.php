@@ -23,8 +23,8 @@
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admins') ? 'active' : '' }}"
-                href="{{ url('admins') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin') ? 'active' : '' }}"
+                href="{{ url('admin') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-user fs-5"></i></div>
                     <div class="text">Admins</div>
