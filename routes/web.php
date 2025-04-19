@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Admin\SubscriptionController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\PlanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,37 +38,36 @@ Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 
-// Note: Role-based Dashboard Routes
-// Info: Admin Access
 Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
-    // Add view-only middleware for role 5
        Route::middleware('view.only')->group(function () {
-        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
-        Route::get('/profile', [App\Http\Controllers\Admin\AdminController::class, 'profile'])->name('profile');
-        Route::get('/settings', [App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
-        Route::get('/pricing', [App\Http\Controllers\Admin\PlanController::class, 'index'])->name('pricing');
+        Route::get('/', [AdminController::class, 'index'])->name('index');
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
+        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+        Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
 
         // Plans routes
-        Route::resource('plans', \App\Http\Controllers\Admin\PlanController::class);
-        Route::get('plans-with-features', [\App\Http\Controllers\Admin\PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
-        
+        Route::resource('plans', PlanController::class);
+        Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
+    
         // Features routes
         Route::get('features/list', [\App\Http\Controllers\Admin\FeatureController::class, 'list'])->name('features.list');
         Route::post('features/store', [\App\Http\Controllers\Admin\FeatureController::class, 'store'])->name('features.store');
         Route::put('features/{feature}', [\App\Http\Controllers\Admin\FeatureController::class, 'update'])->name('features.update');
         Route::delete('features/{feature}', [\App\Http\Controllers\Admin\FeatureController::class, 'destroy'])->name('features.destroy');
-        // Route::get('subscription')
-    });
+        //subscription controller
+        Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
+        Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
+        Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
+    }); 
 
-    // Routes that don't need view-only middleware
-    // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
 });
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 
 
 // Info: Customer Access
 Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(function () {
-    Route::get('/pricing', [App\Http\Controllers\Customer\PlanController::class, 'index'])->name('pricing');
+    Route::get('/pricing', [App\Http\Controllers\CustomerPlanController::class, 'index'])->name('pricing');
     // reorder routes
     Route::get('/orders/reorder', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
     Route::get('/order/view', [App\Http\Controllers\Customer\OrderController::class, 'view'])->name('orders.view');
@@ -85,15 +87,15 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     })->name('settings');
 
     // Plans and pricing routes 
-    Route::get('/plans/{id}', [App\Http\Controllers\Customer\PlanController::class, 'show'])->name('plans.show');
-    Route::get('/plans/{id}/details', [App\Http\Controllers\Customer\PlanController::class, 'getPlanDetails'])->name('plans.details');
-    Route::post('/plans/{id}/subscribe', [App\Http\Controllers\Customer\PlanController::class, 'initiateSubscription'])->name('plans.subscribe');
-    Route::post('/plans/{id}/upgrade', [App\Http\Controllers\Customer\PlanController::class, 'upgradePlan'])->name('plans.upgrade');
-    Route::post('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'cancelCurrentSubscription'])->name('subscription.cancel.current');
+    Route::get('/plans/{id}', [App\Http\Controllers\CustomerPlanController::class, 'show'])->name('plans.show');
+    Route::get('/plans/{id}/details', [App\Http\Controllers\CustomerPlanController::class, 'getPlanDetails'])->name('plans.details');
+    Route::post('/plans/{id}/subscribe', [App\Http\Controllers\CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
+    Route::post('/plans/{id}/upgrade', [App\Http\Controllers\CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
+    Route::post('/subscription/cancel', [App\Http\Controllers\CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.cancel.current');
     
     // Subscription handling routes
-    Route::get('/subscription/success', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionSuccess'])->name('subscription.success');
-    Route::get('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
+    Route::get('/subscription/success', [App\Http\Controllers\CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
+    Route::get('/subscription/cancel', [App\Http\Controllers\CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
 });
 
 // Info: Contractor Access
@@ -132,9 +134,9 @@ Route::get('/reset_password', function () {
 });
 
 
-Route::get('/admins', function () {
-    return view('admin/admins/admins');
-});
+// Route::get('/admins', function () {
+//     return view('admin/admins/admins');
+// });
 
 Route::get('/customers', function () {
     return view('admin/customers/customers');

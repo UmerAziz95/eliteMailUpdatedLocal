@@ -30,4 +30,10 @@ class Plan extends Model
             ->withPivot('value')
             ->withTimestamps();
     }
+
+
+
+    public function subscriptions(){
+        return $this->hasMany(Subscription::class);
+    }
 }
