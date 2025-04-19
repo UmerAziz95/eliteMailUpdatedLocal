@@ -1,6 +1,6 @@
 @extends('customer.layouts.app')
 
-@section('title', 'Orders')
+@section('title', 'New Order')
 
 @push('styles')
 <style>
@@ -34,30 +34,18 @@
 @endpush
 
 @section('content')
-<form id="reorderForm">
+<form id="newOrderForm">
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
     <input type="hidden" name="plan_id" value="{{ $plan->id ?? '' }}">
 
-    <!-- Include Header -->
     <section class="py-3 overflow-hidden">
-        @if(isset($order) && $order->reorderInfo && $order->reorderInfo->count() > 0)
-        <div class="card mb-3 p-3">
-            <h5>Credit Card</h5>
-            <span class="opacity-50"><strong>VISA</strong> **** **** **** 4080 – Expires 2/2027</span>
-            <div class="mt-3">
-                <button class="c-btn"><i class="fa-solid fa-credit-card"></i> Change Card</button>
-            </div>
-        </div>
-        @endif
-
         <div class="card p-3">
             <h5 class="mb-4">Domains & hosting platform</h5>
 
             <div class="mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
-                <input type="text" id="forwarding" name="forwarding_url" class="form-control" required
-                    value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}" />
+                <input type="text" id="forwarding" name="forwarding_url" class="form-control" required />
                 <p class="note mb-0">(A link where you'd like to drive the traffic from the domains you
                     send us – could be your main website, blog post, etc.)</p>
             </div>
@@ -66,9 +54,7 @@
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
-                        <option value="{{ $platform->value }}"{{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform === $platform->value) ? ' selected' : '' }}>
-                            {{ $platform->name }}
-                        </option>
+                        <option value="{{ $platform->value }}">{{ $platform->name }}</option>
                     @endforeach
                 </select>
                 <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
@@ -89,7 +75,7 @@
 
             <div class="mb-3">
                 <label for="backup-codes">Domain Hosting Platform – Namecheap – Backup Codes *</label>
-                <textarea id="backup-codes" name="backup_codes" class="form-control" rows="8" required>{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->backup_codes : '' }}</textarea>
+                <textarea id="backup-codes" name="backup_codes" class="form-control" rows="8" required></textarea>
                 <div class="invalid-feedback" id="backup-codes-error"></div>
                 <small class="text-muted">Enter backup codes separated by commas or new lines</small>
             </div>
@@ -97,14 +83,13 @@
             <div class="row">
                 <div class="col-6">
                     <label for="platform_login">Domain Hosting Platform – Login *</label>
-                    <input type="text" id="platform_login" name="platform_login" class="form-control" required
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->platform_login : '' }}" />
+                    <input type="text" id="platform_login" name="platform_login" class="form-control" required />
                 </div>
 
                 <div class="col-6">
                     <label for="platform_password">Domain Hosting Platform – Password *</label>
                     <div class="password-wrapper">
-                        <input type="password" id="platform_password" name="platform_password" class="form-control" required value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->platform_password : '' }}">
+                        <input type="password" id="platform_password" name="platform_password" class="form-control" required>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
                 </div>
@@ -112,7 +97,7 @@
 
             <div class="mb-3">
                 <label for="domains">Domains *</label>
-                <textarea id="domains" name="domains" class="form-control" rows="8" required>{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->domains : '' }}</textarea>
+                <textarea id="domains" name="domains" class="form-control" rows="8" required></textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="text-muted">Enter domains separated by commas or new lines</small>
             </div>
@@ -123,7 +108,7 @@
                 <div class="col-md-12">
                     <label>Sending Platform</label>
                     <select name="sending_platform" class="form-control" required>
-                        <option value="Instantly" {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->sending_platform === 'Instantly') ? 'selected' : '' }}>Instantly</option>
+                        <option value="Instantly">Instantly</option>
                     </select>
                     <p class="note">(We upload and configure the email accounts for you - its a software
                         you use to send emails)</p>
@@ -131,14 +116,13 @@
 
                 <div class="col-md-6">
                     <label>Sequencer Login</label>
-                    <input type="email" name="sequencer_login" class="form-control" required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->sequencer_login : '' }}">
+                    <input type="email" name="sequencer_login" class="form-control" required>
                 </div>
 
                 <div class="col-md-6">
                     <label>Sequencer Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="sequencer_password" name="sequencer_password" class="form-control" required value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->sequencer_password : '' }}">
+                        <input type="password" id="sequencer_password" name="sequencer_password" class="form-control" required>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
                 </div>
@@ -147,76 +131,67 @@
 
                 <div class="col-md-6">
                     <label>Total Inboxes</label>
-                    <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : '' }}">
+                    <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required>
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
 
                 <div class="col-md-6">
                     <label>Inboxes per Domain</label>
-                    <input type="number" name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required 
-                        min="1" value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->inboxes_per_domain : '' }}">
+                    <input type="number" name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required min="1" value="1">
                     <p class="note">(How many email accounts per domain - the maximum is 3)</p>
                 </div>
 
                 <div class="col-md-6">
                     <label>First Name</label>
-                    <input type="text" name="first_name" class="form-control" required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->first_name : '' }}">
+                    <input type="text" name="first_name" class="form-control" required>
                     <p class="note">(First name that you wish to use on the inbox profile)</p>
                 </div>
 
                 <div class="col-md-6">
                     <label>Last Name</label>
-                    <input type="text" name="last_name" class="form-control" required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->last_name : '' }}">
+                    <input type="text" name="last_name" class="form-control" required>
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
                 <div class="col-md-6">
                     <label>Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
+                    <input type="text" name="prefix_variant_1" class="form-control" required>
                 </div>
 
                 <div class="col-md-6">
                     <label>Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
+                    <input type="text" name="prefix_variant_2" class="form-control" required>
                 </div>
 
                 <div class="col-md-6">
                     <label>Persona Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="persona_password" name="persona_password" class="form-control" required value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->persona_password : '' }}">
+                        <input type="password" id="persona_password" name="persona_password" class="form-control" required>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <label>Profile Picture Link</label>
-                    <input type="url" name="profile_picture_link" class="form-control"
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->profile_picture_link : '' }}">
+                    <input type="url" name="profile_picture_link" class="form-control">
                 </div>
 
                 <div class="col-md-6">
                     <label>Email Persona - Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="email_persona_password" name="email_persona_password" class="form-control" required value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->email_persona_password : '' }}">
+                        <input type="password" id="email_persona_password" name="email_persona_password" class="form-control" required>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <label>Email Persona - Profile Picture Link</label>
-                    <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
+                    <input type="url" name="email_persona_picture_link" class="form-control">
                 </div>
 
                 <div class="col-md-6">
                     <label>Centralized master inbox email</label>
-                    <input type="email" name="master_inbox_email" class="form-control" 
-                        value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->master_inbox_email : '' }}">
+                    <input type="email" name="master_inbox_email" class="form-control">
                     <p class="note">(This is optional - if you want to forward all email inboxes to a
                         specific email, enter above)</p>
                 </div>
@@ -226,7 +201,7 @@
 
                     <div class="mb-3">
                         <label for="additional_info">Additional Information / Context *</label>
-                        <textarea id="additional_info" name="additional_info" class="form-control" rows="8">{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->additional_info : '' }}</textarea>
+                        <textarea id="additional_info" name="additional_info" class="form-control" rows="8"></textarea>
                     </div>
                 </div>
 
@@ -234,18 +209,6 @@
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control" value="">
                 </div>
-
-                <!-- <div class="d-flex align-items-center gap-3 ">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
-                            width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>{{ $order->reorderInfo->first()->total_inboxes ?? 0 }} x $3.00 <small>/monthly</small> </span>
-                    </div>
-                </div> -->
 
                 <!-- Price display section -->
                 <div>
@@ -368,8 +331,8 @@ $(document).ready(function() {
         validateField(this, this.id === 'backup-codes' ? 'backup codes' : 'domains');
     });
 
-    // Original form submit handler
-    $('#reorderForm').on('submit', function(e) {
+    // Form submit handler
+    $('#newOrderForm').on('submit', function(e) {
         e.preventDefault();
         
         // Validate both fields before submission
@@ -428,8 +391,9 @@ $(document).ready(function() {
         const domains = domainsText.split(/[\n,]+/)
             .map(domain => domain.trim())
             .filter(domain => domain.length > 0);
-        
-        const uniqueDomains = [...new Set(domains)]; // Remove duplicates
+            
+        // Remove duplicates
+        const uniqueDomains = [...new Set(domains)];
         const totalInboxes = uniqueDomains.length * inboxesPerDomain;
         
         $('#total_inboxes').val(totalInboxes);

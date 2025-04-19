@@ -37,16 +37,14 @@
 
                             <div class="text-center mt-4">
                                 @php
-                                    $userSubscription = auth()->user()->subscription_id;
-                                    $isSubscribed = $userSubscription && auth()->user()->subscription_status === 'active';
+                                    $activeSubscription = auth()->user()->subscription()
+                                        ->where('plan_id', $plan->id)
+                                        ->where('status', 'active')
+                                        ->first();
                                 @endphp
-                                @if($isSubscribed && auth()->user()->plan_id == $plan->id)
+                                @if($activeSubscription)
                                     <button class="btn btn-success" disabled>
-                                        <i class="fas fa-check me-2"></i>Current Plan
-                                    </button>
-                                @elseif($isSubscribed)
-                                    <button class="btn btn-secondary" disabled>
-                                        <i class="fas fa-info-circle me-2"></i>Already Subscribed
+                                        <i class="fas fa-check me-2"></i>Subscribed Plan
                                     </button>
                                 @else
                                     <button class="btn btn-primary subscribe-btn" data-plan-id="{{ $plan->id }}">
@@ -68,25 +66,27 @@
 $(document).ready(function() {
     $('.subscribe-btn').click(function() {
         const planId = $(this).data('plan-id');
-        $.ajax({
-            url: `/customer/plans/${planId}/subscribe`,
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Redirect to Chargebee hosted page
-                    window.location.href = response.hosted_page_url;
-                } else {
-                    // Show error message
-                    alert(response.message || 'Failed to initiate subscription');
-                }
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON?.message || 'Failed to initiate subscription');
-            }
-        });
+        // reload to new order page
+        window.location.href = `/customer/orders/new-order/${planId}`;
+        // $.ajax({
+        //     url: `/customer/plans/${planId}/subscribe`,
+        //     type: 'POST',
+        //     data: {
+        //         _token: '{{ csrf_token() }}'
+        //     },
+        //     success: function(response) {
+        //         if (response.success) {
+        //             // Redirect to Chargebee hosted page
+        //             window.location.href = response.hosted_page_url;
+        //         } else {
+        //             // Show error message
+        //             alert(response.message || 'Failed to initiate subscription');
+        //         }
+        //     },
+        //     error: function(xhr) {
+        //         alert(xhr.responseJSON?.message || 'Failed to initiate subscription');
+        //     }
+        // });
     });
 });
 </script>

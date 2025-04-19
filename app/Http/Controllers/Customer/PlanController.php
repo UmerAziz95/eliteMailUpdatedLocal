@@ -38,12 +38,12 @@ class PlanController extends Controller
         $plan = Plan::findOrFail($planId);
    
         // Validate user can subscribe to this plan
-        if (!auth()->user()->canSubscribeToPlan($plan)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are not eligible for this plan'
-            ], 403);
-        }
+        // if (!auth()->user()->canSubscribeToPlan($plan)) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'You are not eligible for this plan'
+        //     ], 403);
+        // }
 
         try {
             $user = auth()->user();
@@ -86,7 +86,10 @@ class PlanController extends Controller
     {
         try {
             $hostedPageId = $request->input('id');
-
+            // get session order_info
+            
+            // dd($order_info);
+            // dd($hostedPageId);
             if (!$hostedPageId) {
                 return response()->json([
                     'success' => false,
@@ -143,6 +146,60 @@ class PlanController extends Controller
                     'meta' => $meta_json,
                 ]
             );
+            $order_info = $request->session()->get('order_info');
+            // first check if order_info is not null
+            if(!is_null($order_info)){
+                // save data on reorder_info table
+                $order->reorderInfo()->create([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan_id,
+                    'forwarding_url' => $order_info['forwarding_url'],
+                    'hosting_platform' => $order_info['hosting_platform'],
+                    'backup_codes' => $order_info['backup_codes'],
+                    'platform_login' => $order_info['platform_login'],
+                    'platform_password' => $order_info['platform_password'],
+                    'domains' => $order_info['domains'],
+                    'sending_platform' => $order_info['sending_platform'],
+                    'sequencer_login' => $order_info['sequencer_login'],
+                    'sequencer_password' => $order_info['sequencer_password'],
+                    'total_inboxes' => $order_info['total_inboxes'],
+                    'inboxes_per_domain' => $order_info['inboxes_per_domain'],
+                    'first_name' => $order_info['first_name'],
+                    'last_name' => $order_info['last_name'],
+                    'prefix_variant_1' => $order_info['prefix_variant_1'],
+                    'prefix_variant_2' => $order_info['prefix_variant_2'],
+                    'persona_password' => $order_info['persona_password'],
+                    'profile_picture_link' => $order_info['profile_picture_link'] ?? null,
+                    'email_persona_password' => $order_info['email_persona_password'] ?? null,
+                    'email_persona_picture_link' => $order_info['email_persona_picture_link'] ?? null,
+                    'master_inbox_email' => $order_info['master_inbox_email'] ?? null,
+                    'additional_info' => $order_info['additional_info'] ?? null,
+                ]);
+            }
+            // "user_id" => "2"
+            // "plan_id" => "1"
+            // "forwarding_url" => "http://127.0.0.1:8080/customer/orders/reorder/42"
+            // "hosting_platform" => "Namecheap"
+            // "backup_codes" => "dfd434"
+            // "platform_login" => "zlatin@expandacquisition.com"
+            // "platform_password" => "343"
+            // "domains" => "434"
+            // "sending_platform" => "Instantly"
+            // "sequencer_login" => "venkat.viswanathan2000@yahoo.com"
+            // "sequencer_password" => "Joy4Jesus"
+            // "total_inboxes" => "324"
+            // "inboxes_per_domain" => "2"
+            // "first_name" => "Venkat"
+            // "last_name" => "Viswanathan"
+            // "prefix_variant_1" => "venkat"
+            // "prefix_variant_2" => "venkat.viswanathan"
+            // "persona_password" => "Joy4Jesus"
+            // "profile_picture_link" => "https://drive.google.com/file/d/148yvyXqit0XxNS1foFALosulbeEHO-a-G/view?usp=sharing"
+            // "email_persona_password" => "Joy4Jesus"
+            // "email_persona_picture_link" => "https://drive.google.com/file/d/148yvyXqit0XxNS1foFALosulbeEHO-a-G/view?usp=sharing"
+            // "master_inbox_email" => "Viswanathan@e.com"
+            // "additional_info" => "dsd"
+            // "coupon_code" => "Viswanathan"
 
             // Create or update invoice
             $existingInvoice = Invoice::where('chargebee_invoice_id', $invoice->id)->first();
@@ -196,7 +253,13 @@ class PlanController extends Controller
                 'plan_id' => $plan_id,
                 'chargebee_customer_id' => $customer->id,
             ]);
+            // dd("success");
 
+            // destroy session order_info
+            if ($request->session()->has('order_info')) {
+                $request->session()->forget('order_info');
+            }
+            // Redirect to success page with subscription details
             return view('customer.plans.subscription-success', [
                 'subscription_id' => $subscription->id,
                 'order_id' => $order->id,
