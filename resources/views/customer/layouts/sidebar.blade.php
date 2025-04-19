@@ -64,6 +64,15 @@
                 </div>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('customer/subscriptions') ? 'active' : '' }}"
+                href="{{ url('customer/subscriptions') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-currency-dollar fs-5"></i></div>
+                    <div class="text">Subscriptions</div>
+                </div>
+            </a>
+        </li>
 
 
     </ul>

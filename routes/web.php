@@ -67,7 +67,7 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(function () {
-    Route::get('/pricing', [App\Http\Controllers\CustomerPlanController::class, 'index'])->name('pricing');
+    Route::get('/pricing', [App\Http\Controllers\Customer\PlanController::class, 'index'])->name('pricing');
     // reorder routes
     Route::get('/orders/new-order/{id}', [App\Http\Controllers\Customer\OrderController::class, 'newOrder'])->name('orders.new.order');
     Route::get('/orders/reorder/{order_id}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
@@ -89,18 +89,23 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     })->name('settings');
 
     // Plans and pricing routes 
-    Route::get('/plans/{id}', [App\Http\Controllers\CustomerPlanController::class, 'show'])->name('plans.show');
-    Route::get('/plans/{id}/details', [App\Http\Controllers\CustomerPlanController::class, 'getPlanDetails'])->name('plans.details');
-    Route::post('/plans/{id}/subscribe', [App\Http\Controllers\CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
-    Route::post('/plans/{id}/upgrade', [App\Http\Controllers\CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
-    Route::post('/subscription/cancel', [App\Http\Controllers\CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.cancel.current');
+    Route::get('/plans/{id}', [App\Http\Controllers\Customer\PlanController::class, 'show'])->name('plans.show');
+    Route::get('/plans/{id}/details', [App\Http\Controllers\Customer\PlanController::class, 'getPlanDetails'])->name('plans.details');
+    Route::post('/plans/{id}/subscribe', [App\Http\Controllers\Customer\PlanController::class, 'initiateSubscription'])->name('plans.subscribe');
+    Route::post('/plans/{id}/upgrade', [App\Http\Controllers\Customer\PlanController::class, 'upgradePlan'])->name('plans.upgrade');
+    Route::post('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'cancelCurrentSubscription'])->name('subscription.cancel.current');
     
     // Subscription handling routes
-    Route::get('/subscription/success', [App\Http\Controllers\CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
-    Route::get('/subscription/cancel', [App\Http\Controllers\CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
+    Route::get('/subscription/success', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionSuccess'])->name('subscription.success');
+    Route::get('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
     Route::get('/subscription/success', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionSuccess'])->name('subscription.success');
     Route::get('/subscription/cancel', [App\Http\Controllers\Customer\PlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
 
+
+    //subscriptions controller
+    Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
+    Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
+    Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
     // Invoice routes
     Route::get('/invoices/data', [App\Http\Controllers\Customer\InvoiceController::class, 'getInvoices'])->name('invoices.data');
 });
