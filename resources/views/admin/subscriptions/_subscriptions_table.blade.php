@@ -1,5 +1,5 @@
 <div class="table-responsive">
-    <table class="table table-bordered" id="myTable">
+    <table class="table display w-100" id="myTable">
         <thead>
             <tr>
                 <th>Subscription ID</th>

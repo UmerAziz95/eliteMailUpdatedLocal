@@ -75,7 +75,8 @@
         </div>
             <div class="col-sm-6 col-xl-4">
                 <div class="card p-2">
-                    <div class="card-body">
+                    <div class="card-body">  
+                    {{-- //card body --}}
                         <div class="d-flex align-items-start justify-content-between">
                             <div class="content-left">
                                 <h6 class="text-heading">InActive Users</h6>
@@ -99,7 +100,7 @@
         </div>
 
         <div class="card py-3 px-4">
-            {{-- <div class="row gy-3">
+            <div class="row gy-3">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-3">Filters</h5>
                 </div>
@@ -127,7 +128,7 @@
                         <option value="3">Choice Z</option>
                     </select>
                 </div>
-            </div> --}}
+            </div>
             <hr>
            @include('admin.admins._table')
         </div>
@@ -141,7 +142,7 @@
                         class="fa-solid fa-xmark fs-5"></i></button>
             </div>
             <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
-                @include('modules.admins.add_new_form')
+                @include('admin.admins.add_new_form')
             </div>
         </div>
     </section>
@@ -149,7 +150,7 @@
 
 @push('scripts')
 <script>
-    // Debug AJAX calls
+    // Debug AJAX calls  
     $(document).ajaxSend(function(event, jqXHR, settings) {
         console.log('AJAX Request:', {
             url: settings.url,
@@ -173,96 +174,112 @@ function initDataTable(planId = '') {
         return null;
     }
 
-    try {
-        const table = $table.DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            autoWidth: false,
-            ajax: {
-                url: "{{ route('admin.index') }}",
-                type: "GET",
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Accept': 'application/json'
-                },
-                data: function(d) {
-                    d.plan_id = planId;
-                    return d;
-                },
-                dataSrc: function(json) {
-                    console.log('Server response:', json);
-                    return json.data;
-                },
-                error: function(xhr, error, thrown) {
-                    console.error('DataTables error:', error);
-                    console.error('Server response:', xhr.responseText);
-
-                    if (xhr.status === 401) {
-                        window.location.href = "{{ route('login') }}";
-                    } else if (xhr.status === 403) {
-                        toastr.error('You do not have permission to view this data');
-                    } else {
-                        toastr.error('Error loading data: ' + error);
-                    }
-                }
+   try {
+    const table = $table.DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        autoWidth: false,
+        dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+        ajax: {
+            url: "{{ route('admin.index') }}",
+            type: "GET",
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
             },
-            columns: [
-                { data: 'id', name: 'id' },
-                { data: 'name', name: 'name' },
-                { data: 'role', name: 'role', orderable: false, searchable: false },
-                { data: 'email', name: 'email' },
-                { data: 'status', name: 'status', orderable: false, searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ],
-            columnDefs: [
-                { width: '10%', targets: 0 }, // ID
-                { width: '20%', targets: 1 }, // Name
-                { width: '15%', targets: 2 }, // Role
-                { width: '25%', targets: 3 }, // Email
-                { width: '15%', targets: 4 }, // Status
-                { width: '15%', targets: 5 }  // Action
-            ],
-            order: [[1, 'desc']],
-            drawCallback: function(settings) {
-                const counters = settings.json?.counters;
-
-                if (counters) {
-                    $('#total_counter').text(counters.total);
-                    $('#active_counter').text(counters.active);
-                    $('#inactive_counter').text(counters.inactive);
-                }
-
-                $('[data-bs-toggle="tooltip"]').tooltip();
-                this.api().columns.adjust();
-                this.api().responsive?.recalc();
+            data: function(d) {
+                d.plan_id = planId;
+                return d;
             },
-            initComplete: function() {
-                console.log('Table initialization complete');
-                this.api().columns.adjust();
-                this.api().responsive?.recalc();
-            }
-        });
+            dataSrc: function(json) {
+                console.log('Server response:', json);
+                return json.data;
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTables error:', error);
+                console.error('Server response:', xhr.responseText);
 
-        // Optional loading indicator
-        table.on('processing.dt', function(e, settings, processing) {
-            const wrapper = $(tableId + '_wrapper');
-            if (processing) {
-                wrapper.addClass('loading');
-                if (!wrapper.find('.dt-loading').length) {
-                    wrapper.append('<div class="dt-loading">Loading...</div>');
+                if (xhr.status === 401) {
+                    window.location.href = "{{ route('login') }}";
+                } else if (xhr.status === 403) {
+                    toastr.error('You do not have permission to view this data');
+                } else {
+                    toastr.error('Error loading data: ' + error);
                 }
-            } else {
-                wrapper.removeClass('loading');
-                wrapper.find('.dt-loading').remove();
             }
-        });
+        },
+        columns: [
+            { data: 'id', name: 'id' },
+            { data: 'name', name: 'name' },
+            { data: 'role', name: 'role', orderable: false, searchable: false },
+            { data: 'email', name: 'email' },
+            { data: 'status', name: 'status', orderable: false, searchable: false },
+            { data: 'action', name: 'action', orderable: false, searchable: false }
+        ],
+        columnDefs: [
+            { width: '10%', targets: 0 },
+            { width: '20%', targets: 1 },
+            { width: '15%', targets: 2 },
+            { width: '25%', targets: 3 },
+            { width: '15%', targets: 4 },
+            { width: '15%', targets: 5 }
+        ],
+        order: [[1, 'desc']],
+        drawCallback: function(settings) {
+            const counters = settings.json?.counters;
 
-        return table;
-    } catch (error) {
-        console.error('Error initializing DataTable:', error);
-        toastr.error('Error initializing table. Please refresh the page.');
-    }
+            if (counters) {
+                $('#total_counter').text(counters.total);
+                $('#active_counter').text(counters.active);
+                $('#inactive_counter').text(counters.inactive);
+            }
+
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            this.api().columns.adjust();
+            this.api().responsive?.recalc();
+        },
+        initComplete: function() {
+            console.log('Table initialization complete');
+            this.api().columns.adjust();
+            this.api().responsive?.recalc();
+
+            // 🔽 Append your custom button next to the search bar
+            const button = `
+                <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                        style="padding: .4rem 1rem"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#offcanvasAddAdmin"
+                        aria-controls="offcanvasAddAdmin">
+                    + Add New Record
+                </button>
+            `;
+
+            $('.dataTables_filter').append(button);
+        }
+    });
+
+    // Optional loading indicator
+    table.on('processing.dt', function(e, settings, processing) {
+        const wrapper = $(tableId + '_wrapper');
+        if (processing) {
+            wrapper.addClass('loading');
+            if (!wrapper.find('.dt-loading').length) {
+                wrapper.append('<div class="dt-loading">Loading...</div>');
+            }
+        } else {
+            wrapper.removeClass('loading');
+            wrapper.find('.dt-loading').remove();
+        }
+    });
+
+    return table;
+} catch (error) {
+    console.error('Error initializing DataTable:', error);
+    toastr.error('Error initializing table. Please refresh the page.');
+}
+
 }
 
 
@@ -316,4 +333,50 @@ function initDataTable(planId = '') {
         }
     });
 </script>
+
+
+<script>
+    $('#createUserForm').on('submit', function (e) {
+        e.preventDefault();
+
+        // Get the actual form element
+        let form = this;
+
+        // Make sure password matches confirmation
+        const password = $('#password').val();
+        const confirmPassword = $('#confirm_password').val();
+
+        if (password !== confirmPassword) {
+            toastr.error('Passwords do not match!');
+            return;
+        }
+
+        // Create FormData object to automatically capture all fields
+        let formData = new FormData(form);
+
+        $.ajax({
+            url: "{{ route('admin.users.store') }}",
+            method: "POST",
+            data: formData,
+            processData: false,  // prevent jQuery from converting data into a query string
+            contentType: false,  // let the browser set the content-type including boundary
+            success: function (response) {
+                toastr.success('User created successfully!');
+                $('#createUserForm')[0].reset();
+            },
+            error: function (xhr) {
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    let errors = xhr.responseJSON.errors;
+                    let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');
+                    toastr.error(errorMessages);
+                } else {
+                    toastr.error('Something went wrong.');
+                }
+            }
+        });
+    });
+</script>
+
+
+
 @endpush

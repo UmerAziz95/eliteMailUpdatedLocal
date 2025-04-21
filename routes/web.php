@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
+use App\Http\Controllers\AppLogController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +23,11 @@ use App\Http\Controllers\Admin\PlanController;
 |
 */
 // test section
+
+
+
+//logs
+Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs');
 Route::view('/plans', 'plans');
 // test section end
 
@@ -45,6 +55,8 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
+        //create admin 
+        Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
 
         // Plans routes
         Route::resource('plans', PlanController::class);
@@ -59,13 +71,25 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
         Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
         Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
+        //customer
+        Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
+        //orders
+        Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
+        Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
+        Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
+        Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
+
+        //contractors
+        Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
+        
     }); 
 
 });
-// Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 
+// Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
+
 Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [App\Http\Controllers\CustomerPlanController::class, 'index'])->name('pricing');
     // reorder routes
@@ -73,11 +97,11 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     Route::get('/orders/reorder/{order_id}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/reorder', [App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.reorder.store');
     Route::get('/orders/{id}/view', [App\Http\Controllers\Customer\OrderController::class, 'view'])->name('orders.view');
+    Route::get('/orders', [App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders');
+    Route::get('/orders/data', [App\Http\Controllers\Customer\OrderController::class, 'getOrders'])->name('orders.data');
     Route::get('/dashboard', function () {
         return view('customer.dashboard');
     })->name('dashboard');
-    Route::get('/orders', [App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders');
-    Route::get('/orders/data', [App\Http\Controllers\Customer\OrderController::class, 'getOrders'])->name('orders.data');
     Route::get('/support', function () {
         return view('customer.support.support');
     })->name('support');

@@ -34,11 +34,20 @@
 
         <!-- Users -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('customers') ? 'active' : '' }}"
-                href="{{ url('customers') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/customer') ? 'active' : '' }}"
+                href="{{ url('admin/customer') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-headphones fs-5"></i></div>
                     <div class="text">Customers</div>
+                </div>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"
+                href="{{ url('admin/orders') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-box fs-5"></i></div>
+                    <div class="text">Orders</div>
                 </div>
             </a>
         </li>
@@ -54,8 +63,8 @@
 
         <!-- Contractors -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contractor') ? 'active' : '' }}"
-                href="{{ url('contractor') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/contractor') ? 'active' : '' }}"
+                href="{{ url('admin/contractor') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-contract fs-5"></i></div>
                     <div class="text">Contractors</div>

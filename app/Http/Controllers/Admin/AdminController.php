@@ -92,4 +92,28 @@ class AdminController extends Controller
         return view('admin.settings.settings');
     }
 
+
+    public function store(Request $request)
+    {
+        // dd($request->all());
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6|confirmed',
+            'status' => 'required|in:0,1',
+        ]);
+    
+        $user = User::create([
+            'name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status' => $validated['status'],
+        ]);
+    
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => $user
+        ]);
+    }
+    
 }
