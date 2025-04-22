@@ -91,7 +91,7 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
         Route::post('contractor/store', [AdminContractorController::class, 'store'])->name('contractor.store');
         Route::get('contractor/{id}/edit', [AdminContractorController::class, 'edit'])->name('contractor.edit');
-        Route::put('contractor/{id}', [AdminContractorController::class, 'update'])->name('update');   // Update
+        Route::put('contractor/{id}', [AdminContractorController::class, 'update'])->name('contractor.update');   // Update
         Route::delete('contractor/{id}', [AdminContractorController::class, 'destroy'])->name('contractor.destroy');
         
     }); 
