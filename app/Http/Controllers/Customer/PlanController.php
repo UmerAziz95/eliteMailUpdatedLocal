@@ -265,22 +265,22 @@ class PlanController extends Controller
             // Send email notifications
             try {
                 // Send email to user
-                Mail::to($user->email)
-                    ->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        false
-                    ));
+                // Mail::to($user->email)
+                //     ->queue(new OrderCreatedMail(
+                //         $order,
+                //         $user,
+                //         false
+                //     ));
 
                 // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        true
-                    ));
+                // Mail::to(config('mail.admin_address', 'admin@example.com'))
+                //     ->queue(new OrderCreatedMail(
+                //         $order,
+                //         $user,
+                //         true
+                //     ));
             } catch (\Exception $e) {
-                \Log::error('Failed to send order creation emails: ' . $e->getMessage());
+                // \Log::error('Failed to send order creation emails: ' . $e->getMessage());
                 // Continue execution since the order was already created
             }
 
@@ -392,23 +392,23 @@ class PlanController extends Controller
 
                 try {
                     // Send email to user
-                    Mail::to($user->email)
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason
-                        ));
+                    // Mail::to($user->email)
+                    //     ->queue(new SubscriptionCancellationMail(
+                    //         $subscription, 
+                    //         $user, 
+                    //         $request->reason
+                    //     ));
 
                     // Send email to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason,
-                            true
-                        ));
+                    // Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    //     ->queue(new SubscriptionCancellationMail(
+                    //         $subscription, 
+                    //         $user, 
+                    //         $request->reason,
+                    //         true
+                    //     ));
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
+                    // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
                     // Continue execution since the subscription was already cancelled
                 }
 
