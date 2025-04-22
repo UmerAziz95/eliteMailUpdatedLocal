@@ -10,6 +10,16 @@
     .form-select {
         background-color: #1e1e1e !important;
     }
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    .form-control.is-invalid:focus,
+    .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
     .password-wrapper {
         position: relative;
     }
@@ -29,6 +39,13 @@
     }
     .is-invalid {
         border-color: #dc3545 !important;
+    }
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
     }
 </style>
 @endpush
@@ -386,6 +403,7 @@ $(document).ready(function() {
     function calculateTotalInboxes() {
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+        const submitButton = $('button[type="submit"]');
         
         // Split domains by commas or newlines and filter out empty entries
         const domains = domainsText.split(/[\n,]+/)
@@ -398,36 +416,60 @@ $(document).ready(function() {
         
         $('#total_inboxes').val(totalInboxes);
         
-        // Get all plans and current plan details
-        const plans = @json(App\Models\Plan::where('is_active', true)->orderBy('price')->get());
+        // Get current plan details
         const currentPlan = @json($plan);
         
-        // Find suitable plan for the total inboxes
-        const suitablePlan = plans.find(p => 
-            (p.min_inbox <= totalInboxes && (p.max_inbox >= totalInboxes || p.max_inbox === 0))
-        );
-        
-        // Update price display based on suitable plan availability
-        let priceHtml, totalHtml;
-        let planToShow = suitablePlan || currentPlan;
-        
-        if (!suitablePlan && totalInboxes > 0) {
-            // No suitable plan exists
-            priceHtml = `<span class="theme-text">Original Price:</span> <br><small class="text-danger">Please contact support for a custom solution</small>`;
-            totalHtml = `<span class="theme-text">Total:</span> <br><small class="text-danger">Configuration exceeds available limits</small>`;
-        } else {
-            // Show price from suitable plan if available, otherwise current plan
-            priceHtml = `<span class="theme-text">Original Price:</span> $${parseFloat(planToShow.price).toFixed(2)} <small>/${planToShow.duration}</small>`;
-            totalHtml = `<span class="theme-text">Total:</span> $${parseFloat(planToShow.price).toFixed(2)} <small>/${planToShow.duration}</small>`;
+        // Update price display
+        if (currentPlan) {
+            $('.theme-text:contains("Original Price:")').parent().html(
+                `<span class="theme-text">Original Price:</span> $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small>`
+            );
+            $('.theme-text:contains("Total:")').parent().html(
+                `<span class="theme-text">Total:</span> $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small>`
+            );
         }
         
-        // Update displayed price
-        $('.theme-text:contains("Original Price:")').parent().html(priceHtml);
-        $('.theme-text:contains("Total:")').parent().html(totalHtml);
-        
-        // Update form's plan_id if there's a suitable plan
-        if (suitablePlan) {
-            $('input[name="plan_id"]').val(suitablePlan.id);
+        // Check if total inboxes exceeds current plan limit
+        if (currentPlan && totalInboxes > currentPlan.max_inbox && currentPlan.max_inbox !== 0) {
+            // Disable submit button initially
+            submitButton.prop('disabled', true);
+            submitButton.hide();
+            
+            // Show SweetAlert2 confirmation
+            Swal.fire({
+                title: 'Plan Limit Exceeded',
+                html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${currentPlan.max_inbox}).<br>Would you like to upgrade your plan?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Upgrade Plan',
+                cancelButtonText: 'No, Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Enable and show submit button if user confirms
+                    submitButton.prop('disabled', false);
+                    submitButton.show();
+                    // Redirect to plans page
+                    window.location.href = '{{ route("customer.pricing") }}';
+                } else {
+                    // Reset form if user cancels
+                    $('#domains').val('');
+                    $('#inboxes_per_domain').val(1);
+                    $('#total_inboxes').val(0);
+                    submitButton.prop('disabled', true);
+                    submitButton.hide();
+                    console.log('Order cancelled and redrecting to plans page');
+                    
+                }
+            });
+        } else if (totalInboxes > 0) {
+            // Enable and show submit button for valid input within limits
+            submitButton.prop('disabled', false);
+            submitButton.show();
+        } else {
+            // Disable and hide submit button when no inboxes
+            submitButton.prop('disabled', true);
+            submitButton.hide();
         }
     }
 

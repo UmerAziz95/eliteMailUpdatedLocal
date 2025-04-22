@@ -210,7 +210,7 @@
 
                                     <div class="d-flex justify-content-end">
                                         <button data-bs-toggle="modal" data-bs-target="#cancel_subscription"
-                                            class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">Cancel
+                                            class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent cancel-subscription-btn">Cancel
                                             Subscription</button>
                                     </div>
                                 </div>
@@ -330,27 +330,31 @@
                                             feedback.
                                         </p>
 
-                                        <div class="mb-3">
-                                            <label for="backup-codes">Reason *</label>
-                                            <textarea id="backup-codes" class="form-control" rows="8"></textarea>
-                                        </div>
+                                        <form action="{{ route('customer.subscription.cancel') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="chargebee_subscription_id" value="{{ $subscription->chargebee_subscription_id }}">
+                                            <div class="mb-3">
+                                                <label for="cancellation_reason">Reason *</label>
+                                                <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
+                                            </div>
 
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="" id="">
-                                            <label class="form-check-label" for="">
-                                                I would like to have these email accounts removed and the domains
-                                                released immediately. I will not be using these inboxes any longer.
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                                        <button type="button"
-                                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                                            data-bs-dismiss="modal">No, i am not</button>
-                                        <button type="button"
-                                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                                            I'm sure</button>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
+                                                <label class="form-check-label" for="remove_accounts">
+                                                    I would like to have these email accounts removed and the domains
+                                                    released immediately. I will not be using these inboxes any longer.
+                                                </label>
+                                            </div>
+
+                                            <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                                                <button type="button"
+                                                    class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                                                    data-bs-dismiss="modal">No, I changed my mind</button>
+                                                <button type="submit"
+                                                    class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                                                    I'm sure</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -360,5 +364,101 @@
 @endsection
 
 @push('scripts')
+<script>
+function confirmCancellation() {
+    // Get form data and ensure remove_accounts is boolean
+    const form = $('#cancel_subscription form');
+    const formData = new FormData(form[0]);
+    formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+    
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, cancel it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: Object.fromEntries(formData),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                beforeSend: function() {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we cancel your subscription',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function(response) {
+                    // Close the modal
+                    $('#cancel_subscription').modal('hide');
+                    
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Your subscription has been cancelled successfully.',
+                        confirmButtonColor: '#3085d6'
+                    }).then(() => {
+                        // Reload the page to reflect changes
+                        window.location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred while cancelling your subscription.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: errorMessage,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            });
+        }
+    });
+}
 
+// Form submission validation
+$('#cancel_subscription form').on('submit', function(e) {
+    e.preventDefault();
+    
+    // Check if reason is provided
+    const reason = $('#cancellation_reason').val().trim();
+    if (!reason) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'The reason field is required.',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
+    
+    confirmCancellation();
+});
+
+// Attach click handler to cancel button
+$(document).ready(function() {
+    $('.cancel-subscription-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#cancel_subscription').modal('show');
+    });
+});
+</script>
 @endpush

@@ -106,6 +106,44 @@
         </div>
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row gy-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h5 class="mb-2">Filters</h5>
+                            <div>
+                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="subscriptionIdFilter" class="form-label">Subscription ID</label>
+                            <input type="text" id="subscriptionIdFilter" class="form-control" placeholder="Search by ID">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="subscriptionStatusFilter" class="form-label">Status</label>
+                            <select id="subscriptionStatusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card py-3 px-4">
         <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -175,37 +213,56 @@
                 serverSide: true,
                 responsive: true,
                 autoWidth: false,
-                columnDefs: [{
-                        width: '10%',
-                        targets: 0
-                    }, // ID
+                columns: [
                     {
-                        width: '15%',
-                        targets: 1
-                    }, // Date
+                        data: 'id',
+                        name: 'subscriptions.id'
+                    },
                     {
-                        width: '10%',
-                        targets: 2
-                    }, // Amount
+                        data: 'created_at',
+                        name: 'subscriptions.created_at'
+                    },
                     {
-                        width: '10%',
-                        targets: 2
-                    }, // Name
+                        data: 'amount',
+                        name: 'orders.amount',
+                        orderable: false,
+                        searchable: false
+                    },
+                    // {
+                    //     data: 'name',
+                    //     name: 'users.name',
+                    //     orderable: false,
+                    //     searchable: false
+                    // },
+                    // {
+                    //     data: 'email',
+                    //     name: 'users.email',
+                    //     orderable: false,
+                    //     searchable: false
+                    // },
                     {
-                        width: '30%',
-                        targets: 3
-                    }, // Email
+                        data: 'status',
+                        name: 'subscriptions.status',
+                        orderable: false,
+                        searchable: false
+                    },
                     {
-                        width: '15%',
-                        targets: 4
-                    }, // Status
-                    {
-                        width: '20%',
-                        targets: 5
-                    } // Actions
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
                 ],
+                columnDefs: [
+                    { width: '15%', targets: 0 }, // ID
+                    { width: '25%', targets: 1 }, // Date
+                    { width: '20%', targets: 2 }, // Amount
+                    { width: '20%', targets: 3 }, // Status
+                    { width: '20%', targets: 4 }  // Actions
+                ],
+                // ...rest of the configuration
                 ajax: {
-                    url: "{{ route('customer.subs.view') }}",
+                    url: "{{ route('customer.subscriptions.view') }}",
                     type: "GET",
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
@@ -213,81 +270,35 @@
                     },
                     data: function(d) {
                         d.plan_id = planId;
+                        // Add filter parameters
+                        d.filter_id = $('#subscriptionIdFilter').val();
+                        // d.filter_name = $('#subscriptionNameFilter').val();
+                        // d.filter_email = $('#subscriptionEmailFilter').val();
+                        d.filter_status = $('#subscriptionStatusFilter').val();
+                        d.filter_start_date = $('#startDate').val();
+                        d.filter_end_date = $('#endDate').val();
                         return d;
                     },
                     dataSrc: function(json) {
                         console.log('Server response:', json);
                         return json.data;
-                    },
-                    error: function(xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading Subscriptions data: ' + error);
-                        }
                     }
                 },
-                columns: [{
-                        data: 'id',
-                        name: 'subscriptions.id'
-                    }, // Subscription ID
-                    {
-                        data: 'created_at',
-                        name: 'subscriptions.created_at'
-                    }, // Date
-                    {
-                        data: 'amount',
-                        name: 'subscriptions.amount'
-                    }, // Date
-                    {
-                        data: 'name',
-                        name: 'users.name'
-                    }, // Date
-                    {
-                        data: 'email',
-                        name: 'users.email'
-                    }, // From addColumn() in controller
-                    {
-                        data: 'status',
-                        name: 'subscriptions.status'
-                    }, // Subscription status
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    } // Action buttons
-                ],
-                order: [
-                    [1, 'desc']
-                ],
+                order: [[1, 'desc']],
                 drawCallback: function(settings) {
                     const counters = settings.json?.counters;
-
                     if (counters) {
                         $('#total_counter').text(counters.total);
                         $('#active_counter').text(counters.active);
                         $('#inactive_counter').text(counters.inactive);
                         $('#completed_counter').text(counters.completed);
                     }
-
                     $('[data-bs-toggle="tooltip"]').tooltip();
                     this.api().columns.adjust();
-                    this.api().responsive?.recalc(); // avoid error if responsive not loaded
-                },
-                initComplete: function(settings, json) {
-                    console.log('Table initialization complete');
-                    this.api().columns.adjust();
-                    this.api().responsive.recalc();
+                    this.api().responsive?.recalc();
                 }
             });
 
-            // Optional loading indicator
             table.on('processing.dt', function(e, settings, processing) {
                 const wrapper = $(tableId + '_wrapper');
                 if (processing) {
@@ -304,10 +315,7 @@
             console.error('Error initializing DataTable:', error);
             toastr.error('Error initializing table. Please refresh the page.');
         }
-
     }
-
-
 
     //inactive subs listings table
     function initCancelledDataTable() {
@@ -329,33 +337,41 @@
                 columns: [{
                         data: 'id',
                         name: 'subscriptions.id'
-                    }, // Subscription ID
+                    },
                     {
                         data: 'created_at',
                         name: 'subscriptions.created_at'
-                    }, // Date
+                    },
                     {
                         data: 'amount',
-                        name: 'subscriptions.amount'
-                    }, // Date
-                    {
-                        data: 'name',
-                        name: 'users.name'
-                    }, // name
-                    {
-                        data: 'email',
-                        name: 'users.email'
-                    }, // From addColumn() in controller
-                    {
-                        data: 'status',
-                        name: 'subscriptions.status'
-                    }, // Subscription status
-                    {
-                        data: 'action',
-                        name: 'action',
+                        name: 'orders.amount',
                         orderable: false,
                         searchable: false
-                    } // Action buttons
+                    },
+                    // {
+                    //     data: 'name',
+                    //     name: 'users.name',
+                    //     orderable: false,
+                    //     searchable: false
+                    // },
+                    // {
+                    //     data: 'email',
+                    //     name: 'users.email',
+                    //     orderable: false,
+                    //     searchable: false
+                    // },
+                    {
+                        data: 'status',
+                        name: 'subscriptions.status',
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                columnDefs: [
+                    { width: '25%', targets: 0 }, // ID
+                    { width: '25%', targets: 1 }, // Date
+                    { width: '25%', targets: 2 }, // Amount
+                    { width: '25%', targets: 3 }  // Status
                 ],
                 ajax: {
                     url: "{{ route('customer.subs.cancelled-subscriptions') }}",
@@ -365,82 +381,33 @@
                         'Accept': 'application/json'
                     },
                     data: function(d) {
-                        d.search_filter_1 = "search filter test value";
+                        d.filter_id = $('#subscriptionIdFilter').val();
+                        // d.filter_name = $('#subscriptionNameFilter').val();
+                        // d.filter_email = $('#subscriptionEmailFilter').val();
+                        d.filter_status = $('#subscriptionStatusFilter').val();
+                        d.filter_start_date = $('#startDate').val();
+                        d.filter_end_date = $('#endDate').val();
                         return d;
                     },
                     dataSrc: function(json) {
                         console.log('Server response:', json);
                         return json.data;
-                    },
-                    error: function(xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading Subscriptions data: ' + error);
-                        }
                     }
                 },
-                columns: [{
-                        data: 'id',
-                        name: 'subscriptions.id'
-                    }, // Subscription ID
-                    {
-                        data: 'created_at',
-                        name: 'subscriptions.created_at'
-                    }, // Date
-                    {
-                        data: 'amount',
-                        name: 'subscriptions.amount'
-                    }, // Date
-                    {
-                        data: 'name',
-                        name: 'users.name'
-                    }, // name
-                    {
-                        data: 'email',
-                        name: 'users.email'
-                    }, // From addColumn() in controller
-                    {
-                        data: 'status',
-                        name: 'subscriptions.status'
-                    }, // Subscription status
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    } // Action buttons
-                ],
-                order: [
-                    [1, 'desc']
-                ],
                 drawCallback: function(settings) {
                     const counters = settings.json?.counters;
-
                     if (counters) {
                         $('#total_counter').text(counters.total);
                         $('#active_counter').text(counters.active);
                         $('#inactive_counter').text(counters.inactive);
                         $('#completed_counter').text(counters.completed);
                     }
-
                     $('[data-bs-toggle="tooltip"]').tooltip();
                     this.api().columns.adjust();
-                    this.api().responsive?.recalc(); // avoid error if responsive not loaded
-                },
-                initComplete: function(settings, json) {
-                    console.log('Table initialization complete');
-                    this.api().columns.adjust();
-                    this.api().responsive.recalc();
+                    this.api().responsive?.recalc();
                 }
             });
 
-            // Optional loading indicator
             table.on('processing.dt', function(e, settings, processing) {
                 const wrapper = $(tableId + '_wrapper');
                 if (processing) {
@@ -457,18 +424,112 @@
             console.error('Error initializing DataTable:', error);
             toastr.error('Error initializing table. Please refresh the page.');
         }
-
     }
+
+    function CancelSubscription(subscriptionId) {
+        console.log('Cancel Subscription clicked for ID:', subscriptionId);
+        // Get the subscription details
+        const subscription = subscriptionId;
+        
+        // Set the subscription ID in the modal form
+        $('#subscription_id_to_cancel').val(subscription);
+        
+        // Show the modal
+        $('#cancel_subscription').modal('show');
+    }
+
+    // Handle form submission
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
+        console.log('Cancel Subscription form submitted');
+        // Check if reason is provided
+        const reason = $('#cancellation_reason').val().trim();
+        if (!reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+        
+        // Get form data and ensure remove_accounts is boolean
+        const formData = new FormData(this);
+        formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+        
+        // Show confirmation dialog
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait while we cancel your subscription',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        // Close the modal
+                        $('#cancel_subscription').modal('hide');
+                        
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Your subscription has been cancelled successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while cancelling your subscription.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    });
 
     $(document).ready(function() {
         try {
             console.log('Document ready, initializing tables');
 
-            window.orderTables = {};
-
-            // Initialize table for all Subscriptions
-            window.orderTables.all = initDataTable();
-            window.orderTables.all = initCancelledDataTable();
+            window.orderTables = {
+                active: initDataTable(),
+                cancelled: initCancelledDataTable()
+            };
 
             // Handle tab changes
             $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
@@ -477,25 +538,19 @@
 
                 // Force recalculation of column widths for visible tables
                 setTimeout(function() {
-                    Object.values(window.orderTables).forEach(function(table) {
-                        if ($(table.table().node()).is(':visible')) {
-                            table.columns.adjust();
-                            table.responsive.recalc();
-                            console.log('Adjusting columns for table:', table.table().node().id);
+                    if (tabId === 'all-tab') {
+                        if (window.orderTables.active) {
+                            window.orderTables.active.columns.adjust();
+                            window.orderTables.active.responsive.recalc();
                         }
-                    });
+                    } else if (tabId === 'cancel-tab') {
+                        if (window.orderTables.cancelled) {
+                            window.orderTables.cancelled.columns.adjust();
+                            window.orderTables.cancelled.responsive.recalc();
+                        }
+                    }
                 }, 10);
             });
-
-            // Initial column adjustment for the active tab
-            setTimeout(function() {
-                const activeTable = $('.tab-pane.active .table').DataTable();
-                if (activeTable) {
-                    activeTable.columns.adjust();
-                    activeTable.responsive.recalc();
-                    console.log('Initial column adjustment for active table');
-                }
-            }, 10);
 
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {
@@ -510,6 +565,144 @@
             console.error('Error in document ready:', error);
         }
     });
+    // $(document).ready(function() {
+    // Handle form submission
+    $('#cancel_subscription form').on('submit', function(e) {
+        e.preventDefault();
+
+        // Check if reason is provided
+        const reason = $('#cancellation_reason').val().trim();
+        if (!reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // Get form data and ensure remove_accounts is boolean
+        const formData = new FormData(this);
+        formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+
+        // Show confirmation dialog
+        confirmCancellation(formData);
+    });
+
+    function confirmCancellation(formData) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $('#cancel_subscription form').attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait while we cancel your subscription',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        // Close the modal
+                        $('#cancel_subscription').modal('hide');
+
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Your subscription has been cancelled successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while cancelling your subscription.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    }
+    // });
+
+    // Filter functionality
+    $(document).ready(function() {
+        $('#applyFilters').on('click', function() {
+            const filters = {
+                id: $('#subscriptionIdFilter').val(),
+                name: $('#subscriptionNameFilter').val(),
+                email: $('#subscriptionEmailFilter').val(),
+                status: $('#subscriptionStatusFilter').val(),
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val()
+            };
+
+            // Apply filters to both tables
+            Object.values(window.orderTables).forEach(function(table) {
+                table.ajax.reload();
+            });
+        });
+
+        $('#clearFilters').on('click', function() {
+            // Clear all filter inputs
+            $('#subscriptionIdFilter').val('');
+            $('#subscriptionNameFilter').val('');
+            $('#subscriptionEmailFilter').val('');
+            $('#subscriptionStatusFilter').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+
+            // Reload tables with cleared filters
+            Object.values(window.orderTables).forEach(function(table) {
+                table.ajax.reload();
+            });
+        });
+    });
+
+    // Extend DataTables ajax data to include filters
+    const originalAjaxData = window.orderTables?.all?.settings()?.ajax?.data || function(d) { return d; };
+    if (window.orderTables?.all) {
+        window.orderTables.all.settings()[0].ajax.data = function(d) {
+            d = originalAjaxData(d);
+            d.filter_id = $('#subscriptionIdFilter').val();
+            d.filter_name = $('#subscriptionNameFilter').val();
+            d.filter_email = $('#subscriptionEmailFilter').val();
+            d.filter_status = $('#subscriptionStatusFilter').val();
+            d.filter_start_date = $('#startDate').val();
+            d.filter_end_date = $('#endDate').val();
+            return d;
+        };
+    }
 </script>
 
 <style>

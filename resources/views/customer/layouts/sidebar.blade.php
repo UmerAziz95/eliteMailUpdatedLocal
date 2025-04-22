@@ -64,16 +64,26 @@
                 </div>
             </a>
         </li>
+        <!-- Subscriptions -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('customer/subscriptions') ? 'active' : '' }}"
-                href="{{ url('customer/subscriptions') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.subscriptions.view') ? 'active' : '' }}"
+                href="{{ route('customer.subscriptions.view') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-currency-dollar fs-5"></i></div>
+                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
                     <div class="text">Subscriptions</div>
                 </div>
             </a>
         </li>
-
+        <!-- invoices -->
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.invoices.index') ? 'active' : '' }}"
+                href="{{ route('customer.invoices.index') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                    <div class="text">Invoices</div>
+                </div>
+            </a>
+        </li>
 
     </ul>
 </aside>

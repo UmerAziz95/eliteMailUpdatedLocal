@@ -10,6 +10,7 @@ use App\Http\Controllers\Customer\PlanController as CustomerPlanController;
 use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\FeatureController;
+use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,21 +98,24 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     Route::get('/plans/{id}/details', [CustomerPlanController::class, 'getPlanDetails'])->name('plans.details');
     Route::post('/plans/{id}/subscribe', [CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
     Route::post('/plans/{id}/upgrade', [CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
-    Route::post('/subscription/cancel', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.cancel.current');
+    Route::post('/subscription/cancel-current', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.current.cancel');
     
     // Subscription handling routes
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
     Route::get('/subscription/cancel', [CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
+    Route::post('/subscription/cancel-process', [CustomerPlanController::class, 'subscriptionCancelProcess'])->name('subscription.cancel.process');
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
-    Route::get('/subscription/cancel', [CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
 
 
     //subscriptions controller
-    Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
-    Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
-    Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
+    Route::get('subscriptions',[CustomerSubscriptionController::class,'index'])->name('subscriptions.view'); //active subscriptions listings
+    Route::get('cancelled_subscriptions',[CustomerSubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
+    Route::get('subscriptions_detail',[CustomerSubscriptionController::class,'index'])->name('subs.detail.view');
     // Invoice routes
+    Route::get('/invoices', [CustomerInvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/data', [CustomerInvoiceController::class, 'getInvoices'])->name('invoices.data');
+    Route::get('/invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'download'])->name('invoices.download');
+    Route::get('/invoices/{invoiceId}', [CustomerInvoiceController::class, 'show'])->name('invoices.show');
 });
 
 // Info: Contractor Access

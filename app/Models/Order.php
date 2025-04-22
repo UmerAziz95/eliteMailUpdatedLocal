@@ -22,7 +22,8 @@ class Order extends Model
         'currency',
         'paid_at',
         'meta',
-        'plan_id'
+        'plan_id',
+        'status_manage_by_admin',
     ];
 
     public function user()

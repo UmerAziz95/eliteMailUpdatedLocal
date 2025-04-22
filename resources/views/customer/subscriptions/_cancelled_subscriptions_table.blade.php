@@ -1,14 +1,11 @@
 <div class="table-responsive">
-    <table class="display w-100" id="cancelled_subs_table" >
+    <table id="cancelled_subs_table" class="display w-100">
         <thead>
             <tr>
-                <th>Subscription ID</th>
-                <th>Created At</th>
-                <th>Amount</th>  
-                <th>Name</th>  
-                <th>Customer Email</th>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Amount</th>
                 <th>Status</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody></tbody>
