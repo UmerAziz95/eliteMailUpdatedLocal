@@ -5,7 +5,7 @@
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="d-flex align-items-center justify-content-between">
-        <a href="{{ route('customer.orders') }}" class="d-flex align-items-center justify-content-center" 
+        <a href="{{ route('customer.orders') }}" class="d-flex align-items-center justify-content-center"
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
@@ -16,8 +16,8 @@
     </div>
 
     @php
-        $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
-        $defaultProfilePic = 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
+    $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
+    $defaultProfilePic = 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
     @endphp
 
     <div class="d-flex align-items-center justify-content-between mt-3">
@@ -124,42 +124,42 @@
                         </h6>
 
                         @if(optional($order->reorderInfo)->count() > 0)
-                            <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Hosting Platform</span>
-                                <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
-                            </div>
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Hosting Platform</span>
+                            <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
+                        </div>
 
-                            <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Platform Login</span>
-                                <span>{{ $order->reorderInfo->first()->platform_login }}</span>
-                            </div>
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform Login</span>
+                            <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                        </div>
 
-                            <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
-                            </div>
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Domain Forwarding Destination URL</span>
+                            <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
+                        </div>
 
-                            <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending Platform</span>
-                                <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
-                            </div>
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Sending Platform</span>
+                            <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
+                        </div>
 
-                            <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sequencer Login</span>
-                                <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
-                            </div>
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Sequencer Login</span>
+                            <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
+                        </div>
 
-                            <div class="d-flex flex-column">
-                                <span class="opacity-50">Domains</span>
-                                @php
-                                    $domains = explode(',', $order->reorderInfo->first()->domains);
-                                @endphp
-                                @foreach($domains as $domain)
-                                    <span>{{ trim($domain) }}</span>
-                                @endforeach
-                            </div>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Domains</span>
+                            @php
+                            $domains = explode(',', $order->reorderInfo->first()->domains);
+                            @endphp
+                            @foreach($domains as $domain)
+                            <span>{{ trim($domain) }}</span>
+                            @endforeach
+                        </div>
                         @else
-                            <div class="text-muted">No configuration information available</div>
+                        <div class="text-muted">No configuration information available</div>
                         @endif
                     </div>
                 </div>
@@ -189,18 +189,18 @@
                             </thead>
                             <tbody>
                                 @if(isset($order->meta['emails']))
-                                    @foreach($order->meta['emails'] as $email)
-                                    <tr>
-                                        <td>
-                                            <img src="{{ $email['profile_picture'] ?? $defaultProfilePic }}"
-                                                style="border-radius: 50%" height="35" width="35"
-                                                class="object-fit-cover" alt="">
-                                            {{ $email['name'] ?? 'N/A' }}
-                                        </td>
-                                        <td><i class="ti ti-mail text-success"></i> {{ $email['address'] ?? 'N/A' }}</td>
-                                        <td>{{ $email['password'] ?? 'N/A' }}</td>
-                                    </tr>
-                                    @endforeach
+                                @foreach($order->meta['emails'] as $email)
+                                <tr>
+                                    <td>
+                                        <img src="{{ $email['profile_picture'] ?? $defaultProfilePic }}"
+                                            style="border-radius: 50%" height="35" width="35"
+                                            class="object-fit-cover" alt="">
+                                        {{ $email['name'] ?? 'N/A' }}
+                                    </td>
+                                    <td><i class="ti ti-mail text-success"></i> {{ $email['address'] ?? 'N/A' }}</td>
+                                    <td>{{ $email['password'] ?? 'N/A' }}</td>
+                                </tr>
+                                @endforeach
                                 @endif
                             </tbody>
                         </table>
@@ -221,11 +221,12 @@
                         </div>
                         Subscriptions
                     </h6>
-                    <button class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'warning' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'warning' }} bg-transparent">
+                    <button class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
                         {{ ucfirst($order->subscription->status) }}
                     </button>
                 </div>
 
+                @if(isset($nextBillingInfo['next_billing_at']) && $nextBillingInfo['next_billing_at'] !== 'N/A')
                 <span>Next Billing</span>
 
                 <div>
@@ -235,20 +236,34 @@
 
                 <div>
                     <span class="theme-text">Date</span>
-                    <h6>{{ $nextBillingInfo['next_billing_at'] ?? 'N/A'}}</h6>
+                    <h6>{{ $nextBillingInfo['next_billing_at'] }}</h6>
                 </div>
+                @else
+                <span>End Billing Date</span>
+
+                <div>
+                    <span class="theme-text">Price</span>
+                    <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
+                </div>
+
+                <div>
+                    <span class="theme-text">Date</span>
+                    <h6>{{ $nextBillingInfo['current_term_end'] ?? 'N/A' }}</h6>
+                </div>
+                @endif
 
                 @if($order->subscription->status == 'active')
                 <div class="d-flex justify-content-end">
-                    <button data-bs-toggle="modal" data-bs-target="#cancel_subscription"
-                        class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">Cancel
-                        Subscription</button>
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#cancel_subscription"
+                        class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
+                        Cancel Subscription
+                    </button>
                 </div>
                 @endif
             </div>
 
             @if(!empty($nextBillingInfo))
-                <!-- <div class="card mt-4">
+            <!-- <div class="card mt-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Subscription Details</h5>
                     </div>
@@ -267,7 +282,62 @@
                     </div>
                 </div> -->
             @endif
-
+            <div class="card p-3 mt-3">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="row gy-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-2">Filters</h5>
+                                        <div>
+                                            <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="statusFilter" class="form-label">Invoice Status</label>
+                                        <select id="statusFilter" class="form-select">
+                                            <option value="">All Statuses</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="failed">Failed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="orderStatusFilter" class="form-label">Order Status</label>
+                                        <select id="orderStatusFilter" class="form-select">
+                                            <option value="">All Order Statuses</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="expired">Expired</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="startDate" class="form-label">Start Date</label>
+                                        <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="endDate" class="form-label">End Date</label>
+                                        <input type="date" id="endDate" class="form-control" placeholder="End Date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="priceRange" class="form-label">Price Range</label>
+                                        <select id="priceRange" class="form-select">
+                                            <option value="">All Prices</option>
+                                            <option value="0-100">$0 - $100</option>
+                                            <option value="101-500">$101 - $500</option>
+                                            <option value="501-1000">$501 - $1000</option>
+                                            <option value="1001+">$1000+</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="card p-3 mt-3">
                 <h6 class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center justify-content-center"
@@ -287,6 +357,8 @@
                                 <th>Amount</th>
                                 <th>Paid At</th>
                                 <th>Status</th>
+                                <!-- order-status -->
+                                <th>Order Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -296,50 +368,209 @@
 
             @push('scripts')
             <script>
-            $(document).ready(function() {
-                $('#invoicesTable').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    responsive: {
-                        details: {
-                            display: $.fn.dataTable.Responsive.display.modal({
-                                header: function(row) {
-                                    return 'Invoice Details';
-                                }
-                            }),
-                            renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                        }
-                    },
-                    ajax: {
-                        url: "{{ route('customer.invoices.data') }}",
-                        type: "GET",
-                        data: function(d) {
-                            d.order_id = "{{ $order->id }}";
-                            return d;
+                $(document).ready(function() {
+                    let invoicesTable = $('#invoicesTable').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        responsive: {
+                            details: {
+                                display: $.fn.dataTable.Responsive.display.modal({
+                                    header: function(row) {
+                                        return 'Invoice Details';
+                                    }
+                                }),
+                                renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                            }
                         },
-                        error: function(xhr, error, thrown) {
-                            console.error('Error:', error);
-                            toastr.error('Error loading invoice data');
+                        ajax: {
+                            url: "{{ route('customer.invoices.data') }}",
+                            type: "GET",
+                            data: function(d) {
+                                d.order_id = "{{ $order->id }}";
+                                d.status = $('#statusFilter').val();
+                                d.order_status = $('#orderStatusFilter').val();
+                                d.start_date = $('#startDate').val();
+                                d.end_date = $('#endDate').val();
+                                d.price_range = $('#priceRange').val();
+                                return d;
+                            },
+                            error: function(xhr, error, thrown) {
+                                console.error('Error:', error);
+                                toastr.error('Error loading invoice data');
+                            }
+                        },
+                        columns: [{
+                                data: 'chargebee_invoice_id',
+                                name: 'chargebee_invoice_id'
+                            },
+                            {
+                                data: 'created_at',
+                                name: 'created_at'
+                            },
+                            {
+                                data: 'created_at',
+                                name: 'created_at'
+                            },
+                            {
+                                data: 'amount',
+                                name: 'amount'
+                            },
+                            {
+                                data: 'paid_at',
+                                name: 'paid_at'
+                            },
+                            {
+                                data: 'status',
+                                name: 'status'
+                            },
+                            {
+                                data: 'status_manage_by_admin',
+                                name: 'status_manage_by_admin'
+                            },
+                            {
+                                data: 'action',
+                                name: 'action',
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
+                        order: [
+                            [1, 'desc']
+                        ],
+                        drawCallback: function(settings) {
+                            if (settings.json && settings.json.error) {
+                                toastr.error(settings.json.message || 'Error loading data');
+                            }
+                            $('[data-bs-toggle="tooltip"]').tooltip();
                         }
-                    },
-                    columns: [
-                        { data: 'chargebee_invoice_id', name: 'chargebee_invoice_id' },
-                        { data: 'created_at', name: 'created_at' },
-                        { data: 'created_at', name: 'created_at' },
-                        { data: 'amount', name: 'amount' },
-                        { data: 'paid_at', name: 'paid_at' },
-                        { data: 'status', name: 'status' },
-                        { data: 'action', name: 'action', orderable: false, searchable: false }
-                    ],
-                    order: [[1, 'desc']],
-                    drawCallback: function(settings) {
-                        if (settings.json && settings.json.error) {
-                            toastr.error(settings.json.message || 'Error loading data');
+                    });
+
+                    // Apply filters button click handler
+                    $('#applyFilters').on('click', function() {
+                        invoicesTable.draw();
+                    });
+
+                    // Clear filters button click handler
+                    $('#clearFilters').on('click', function() {
+                        $('#statusFilter').val('');
+                        $('#orderStatusFilter').val('');
+                        $('#startDate').val('');
+                        $('#endDate').val('');
+                        $('#priceRange').val('');
+                        invoicesTable.draw();
+                    });
+
+                    // Date range validation
+                    $('#endDate').on('change', function() {
+                        const startDate = $('#startDate').val();
+                        const endDate = $(this).val();
+
+                        if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+                            toastr.error('End date cannot be earlier than start date');
+                            $(this).val('');
                         }
-                        $('[data-bs-toggle="tooltip"]').tooltip();
+                    });
+
+                    $('#startDate').on('change', function() {
+                        const startDate = $(this).val();
+                        const endDate = $('#endDate').val();
+
+                        if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+                            toastr.error('Start date cannot be later than end date');
+                            $(this).val('');
+                        }
+                    });
+                });
+
+                $(document).ready(function() {
+                    // Handle form submission
+                    $('#cancel_subscription form').on('submit', function(e) {
+                        e.preventDefault();
+
+                        // Check if reason is provided
+                        const reason = $('#cancellation_reason').val().trim();
+                        if (!reason) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'The reason field is required.',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            return;
+                        }
+
+                        // Get form data and ensure remove_accounts is boolean
+                        const formData = new FormData(this);
+                        formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+
+                        // Show confirmation dialog
+                        confirmCancellation(formData);
+                    });
+
+                    function confirmCancellation(formData) {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "You won't be able to revert this!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, cancel it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $.ajax({
+                                    url: $('#cancel_subscription form').attr('action'),
+                                    method: 'POST',
+                                    data: Object.fromEntries(formData),
+                                    headers: {
+                                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                    },
+                                    beforeSend: function() {
+                                        // Show loading state
+                                        Swal.fire({
+                                            title: 'Processing...',
+                                            text: 'Please wait while we cancel your subscription',
+                                            allowOutsideClick: false,
+                                            allowEscapeKey: false,
+                                            showConfirmButton: false,
+                                            didOpen: () => {
+                                                Swal.showLoading();
+                                            }
+                                        });
+                                    },
+                                    success: function(response) {
+                                        // Close the modal
+                                        $('#cancel_subscription').modal('hide');
+
+                                        // Show success message
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Success!',
+                                            text: 'Your subscription has been cancelled successfully.',
+                                            confirmButtonColor: '#3085d6'
+                                        }).then(() => {
+                                            // Reload the page to reflect changes
+                                            window.location.reload();
+                                        });
+                                    },
+                                    error: function(xhr) {
+                                        let errorMessage = 'An error occurred while cancelling your subscription.';
+                                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                                            errorMessage = xhr.responseJSON.message;
+                                        }
+
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Oops...',
+                                            text: errorMessage,
+                                            confirmButtonColor: '#3085d6'
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
                 });
-            });
             </script>
             @endpush
             @else
@@ -370,18 +601,18 @@
                         </thead>
                         <tbody>
                             @if(isset($order->meta['tickets']))
-                                @foreach($order->meta['tickets'] as $ticket)
-                                <tr>
-                                    <td>{{ $ticket['tags'] ?? 'N/A' }}</td>
-                                    <td>{{ $ticket['number'] ?? 'N/A' }}</td>
-                                    <td>{{ isset($ticket['created_at']) ? \Carbon\Carbon::parse($ticket['created_at'])->format('d M, Y') : 'N/A' }}</td>
-                                    <td>{{ $ticket['status'] ?? 'N/A' }}</td>
-                                    <td>{{ $ticket['type'] ?? 'N/A' }}</td>
-                                    <td>{{ $ticket['order_id'] ?? 'N/A' }}</td>
-                                    <td>{{ $ticket['subscription_id'] ?? 'N/A' }}</td>
-                                    <td>{{ $ticket['notes'] ?? 'N/A' }}</td>
-                                </tr>
-                                @endforeach
+                            @foreach($order->meta['tickets'] as $ticket)
+                            <tr>
+                                <td>{{ $ticket['tags'] ?? 'N/A' }}</td>
+                                <td>{{ $ticket['number'] ?? 'N/A' }}</td>
+                                <td>{{ isset($ticket['created_at']) ? \Carbon\Carbon::parse($ticket['created_at'])->format('d M, Y') : 'N/A' }}</td>
+                                <td>{{ $ticket['status'] ?? 'N/A' }}</td>
+                                <td>{{ $ticket['type'] ?? 'N/A' }}</td>
+                                <td>{{ $ticket['order_id'] ?? 'N/A' }}</td>
+                                <td>{{ $ticket['subscription_id'] ?? 'N/A' }}</td>
+                                <td>{{ $ticket['notes'] ?? 'N/A' }}</td>
+                            </tr>
+                            @endforeach
                             @endif
                         </tbody>
                     </table>
@@ -414,8 +645,9 @@
                         feedback.
                     </p>
 
-                    <form action="{{ route('customer.subscription.cancel') }}" method="POST">
+                    <form action="{{ route('customer.subscription.cancel.process') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="chargebee_subscription_id" value="{{ $order->chargebee_subscription_id }}">
                         <div class="mb-3">
                             <label for="cancellation_reason">Reason *</label>
                             <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>

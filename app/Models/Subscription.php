@@ -21,7 +21,9 @@ class Subscription extends Model
         'status',
         'start_date',
         'end_date',
-        'meta'
+        'meta',
+        'cancellation_at',
+        'reason',
     ];
     public function user()
     {

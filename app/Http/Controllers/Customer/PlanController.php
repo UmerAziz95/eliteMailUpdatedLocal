@@ -12,6 +12,9 @@ use ChargeBee\ChargeBee\Models\Subscription;
 use App\Models\Order;
 use App\Models\Subscription as UserSubscription;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SubscriptionCancellationMail;
+use App\Mail\OrderCreatedMail;
 
 class PlanController extends Controller
 {
@@ -36,7 +39,7 @@ class PlanController extends Controller
     public function initiateSubscription(Request $request, $planId)
     {
         $plan = Plan::findOrFail($planId);
-   
+
         // Validate user can subscribe to this plan
         // if (!auth()->user()->canSubscribeToPlan($plan)) {
         //     return response()->json([
@@ -47,7 +50,7 @@ class PlanController extends Controller
 
         try {
             $user = auth()->user();
-            
+
             // Create hosted page for subscription
             $result = HostedPage::checkoutNewForItems([
                 "subscription_items" => [
@@ -65,15 +68,14 @@ class PlanController extends Controller
                 "redirect_url" => route('customer.subscription.success'),
                 "cancel_url" => route('customer.subscription.cancel')
             ]);
-            
+
 
             $hostedPage = $result->hostedPage();
-            
+
             return response()->json([
                 'success' => true,
                 'hosted_page_url' => $hostedPage->url
             ]);
-            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -87,7 +89,7 @@ class PlanController extends Controller
         try {
             $hostedPageId = $request->input('id');
             // get session order_info
-            
+
             // dd($order_info);
             // dd($hostedPageId);
             if (!$hostedPageId) {
@@ -100,22 +102,22 @@ class PlanController extends Controller
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
             $hostedPage = $result->hostedPage();
             $content = $hostedPage->content();
-            
+
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
             $plan_id = null;
             $charge_plan_id = null;
-            
+
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
             }
-            
+
             $plan = Plan::where('chargebee_plan_id', $charge_plan_id)->first();
             if ($plan) {
                 $plan_id = $plan->id;
             }
-            
+
             $user = auth()->user();
 
             if (!$subscription || !$customer || !$invoice) {
@@ -124,7 +126,7 @@ class PlanController extends Controller
                     'message' => 'Missing subscription, customer, or invoice data.'
                 ]);
             }
-            
+
             $meta_json = json_encode([
                 'invoice' => $invoice->getValues(),
                 'customer' => $customer->getValues(),
@@ -148,7 +150,7 @@ class PlanController extends Controller
             );
             $order_info = $request->session()->get('order_info');
             // first check if order_info is not null
-            if(!is_null($order_info)){
+            if (!is_null($order_info)) {
                 // save data on reorder_info table
                 $order->reorderInfo()->create([
                     'user_id' => $user->id,
@@ -203,7 +205,7 @@ class PlanController extends Controller
 
             // Create or update invoice
             $existingInvoice = Invoice::where('chargebee_invoice_id', $invoice->id)->first();
-            
+
             if ($existingInvoice) {
                 $existingInvoice->update([
                     'chargebee_customer_id' => $customer->id,
@@ -259,6 +261,29 @@ class PlanController extends Controller
             if ($request->session()->has('order_info')) {
                 $request->session()->forget('order_info');
             }
+
+            // Send email notifications
+            try {
+                // Send email to user
+                Mail::to($user->email)
+                    ->send(new OrderCreatedMail(
+                        $order,
+                        $user,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->send(new OrderCreatedMail(
+                        $order,
+                        $user,
+                        true
+                    ));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send order creation emails: ' . $e->getMessage());
+                // Continue execution since the order was already created
+            }
+
             // Redirect to success page with subscription details
             return view('customer.plans.subscription-success', [
                 'subscription_id' => $subscription->id,
@@ -304,39 +329,99 @@ class PlanController extends Controller
         }
     }
 
-    public function cancelCurrentSubscription(Request $request)
+    public function subscriptionCancelProcess(Request $request)
     {
+        if ($request->remove_accounts == null || $request->remove_accounts == false) {
+            $request->remove_accounts = 0;
+        } else {
+            $request->remove_accounts = true;
+        }
+        $request->validate([
+            'chargebee_subscription_id' => 'required|string',
+            'reason' => 'required|string',
+            'remove_accounts' => 'required',
+        ]);
+
         $user = auth()->user();
-        
-        if (!$user->subscription || $user->subscription_status !== 'active') {
+        $subscription = UserSubscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$subscription || $subscription->status !== 'active') {
             return response()->json([
                 'success' => false,
                 'message' => 'No active subscription found'
-            ], 400);
+            ], 404);
         }
 
         try {
-            // Cancel the subscription in Chargebee 
-            $result = \ChargeBee\ChargeBee\Models\Subscription::cancel($user->subscription_id, [
-                "end_of_term" => false
+            $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
+                "end_of_term" => false,
+                "credit_option" => "none",
+                "unbilled_charges_option" => "delete",
+                "account_receivables_handling" => "no_action"
             ]);
 
-            // Update user and subscription using relationships
-            $user->subscription->update([
-                'status' => 'cancelled',
-                'end_date' => now()
-            ]);
+            $subscriptionData = $result->subscription();
+            $invoiceData = $result->invoice();
+            $customerData = $result->customer();
 
-            $user->update([
-                'subscription_status' => 'cancelled',
-                'subscription_id' => null,
-                'plan_id' => null
-            ]);
+            if ($result->subscription()->status === 'cancelled') {
+                // Update subscription status and end date
+                $subscription->update([
+                    'status' => 'cancelled',
+                    'cancellation_at' => now(),
+                    'reason' => $request->reason,
+                    'end_date' => $this->getEndExpiryDate($subscription->start_date),                    
+                ]);
+
+                // Update user status
+                $user->update([
+                    'subscription_status' => 'cancelled',
+                    'subscription_id' => null,
+                    'plan_id' => null
+                ]);
+
+                // Update order status
+                $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+                if ($order) {
+                    $order->update([
+                        'status_manage_by_admin' => 'expired',
+                    ]);
+                }
+
+                try {
+                    // Send email to user
+                    Mail::to($user->email)
+                        ->send(new SubscriptionCancellationMail(
+                            $subscription, 
+                            $user, 
+                            $request->reason
+                        ));
+
+                    // Send email to admin
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->send(new SubscriptionCancellationMail(
+                            $subscription, 
+                            $user, 
+                            $request->reason,
+                            true
+                        ));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
+                    // Continue execution since the subscription was already cancelled
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Subscription cancelled successfully'
+                ]);
+            }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Subscription cancelled successfully'
-            ]);
+                'success' => false,
+                'message' => 'Failed to cancel subscription in payment gateway'
+            ], 500);
         } catch (\Exception $e) {
             \Log::error('Error cancelling subscription: ' . $e->getMessage());
             return response()->json([
@@ -345,7 +430,24 @@ class PlanController extends Controller
             ], 500);
         }
     }
+    // getEndExpiryDate from start Date
+    public function getEndExpiryDate($startDate)
+    {
+        // $startDate = '2025-04-21 07:02:48'; // Example start date
+        $currentDate = Carbon::now(); // Get current date
+        $startDateCarbon = Carbon::parse($startDate);
 
+        // Calculate the difference in months
+        $monthsToAdd = $currentDate->diffInMonths($startDateCarbon); // Difference in months
+
+        // Calculate the next expiry date
+        $expiryDate = $startDateCarbon
+            ->addMonths(++$monthsToAdd) // Add the dynamic number of months
+            ->subDay()  // Subtract 1 day
+            ->format('Y-m-d H:i:s');
+
+        return $expiryDate; // Outputs the dynamically calculated expiry date
+    }
     public function upgradePlan(Request $request, $planId)
     {
         $user = auth()->user();

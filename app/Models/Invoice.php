@@ -27,4 +27,9 @@ class Invoice extends Model
     {
         return $this->belongsTo(User::class);
     }
+    // order
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 }

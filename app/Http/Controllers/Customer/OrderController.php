@@ -92,30 +92,55 @@ class OrderController extends Controller
         return view('customer.orders.reorder', compact('plan', 'hostingPlatforms', 'order'));
     }
 
-    private function calculateNextBillingDate($currentDate, $billingPeriod, $billingPeriodUnit)
+    private function calculateNextBillingDate($startTimestamp, $billingPeriod, $billingPeriodUnit)
     {
-        $date = Carbon::createFromTimestamp($currentDate);
+        $startDate = Carbon::createFromTimestamp($startTimestamp);
+        $currentDate = Carbon::now();
         
-        switch ($billingPeriodUnit) {
-            case 'month':
-                return $date->addMonths($billingPeriod);
-            case 'year':
-                return $date->addYears($billingPeriod);
-            case 'week':
-                return $date->addWeeks($billingPeriod);
-            case 'day':
-                return $date->addDays($billingPeriod);
-            default:
-                return $date;
-        }
+        // Calculate how many billing periods have passed
+        $diffUnit = match($billingPeriodUnit) {
+            'month' => $startDate->diffInMonths($currentDate),
+            'year' => $startDate->diffInYears($currentDate),
+            'week' => $startDate->diffInWeeks($currentDate),
+            'day' => $startDate->diffInDays($currentDate),
+            default => 0
+        };
+        
+        // Calculate how many complete billing periods have occurred
+        $completePeriods = floor($diffUnit / $billingPeriod);
+        // Add one more period to get the next billing date
+        $totalPeriods = $completePeriods + 1;
+        
+        // Calculate next billing date from start date
+        return match($billingPeriodUnit) {
+            'month' => $startDate->copy()->addMonths($totalPeriods * $billingPeriod),
+            'year' => $startDate->copy()->addYears($totalPeriods * $billingPeriod),
+            'week' => $startDate->copy()->addWeeks($totalPeriods * $billingPeriod),
+            'day' => $startDate->copy()->addDays($totalPeriods * $billingPeriod),
+            default => $startDate
+        };
     }
 
     private function formatTimestampToReadable($timestamp)
     {
         if (!$timestamp) return 'N/A';
-        // Ensure timestamp is an integer
-        $timestamp = is_string($timestamp) ? strtotime($timestamp) : $timestamp;
-        return Carbon::createFromTimestamp($timestamp)->format('F d, Y');
+        
+        // If input is already a Carbon instance
+        if ($timestamp instanceof \Carbon\Carbon) {
+            return $timestamp->format('F d, Y');
+        }
+        
+        // If input is a datetime string
+        if (is_string($timestamp) && strtotime($timestamp) !== false) {
+            return Carbon::parse($timestamp)->format('F d, Y');
+        }
+        
+        // If input is a timestamp
+        if (is_numeric($timestamp)) {
+            return Carbon::createFromTimestamp($timestamp)->format('F d, Y');
+        }
+        
+        return 'N/A';
     }
 
     public function view($id)
@@ -126,25 +151,42 @@ class OrderController extends Controller
         $subscriptionMeta = json_decode($order->subscription->meta, true);
         $nextBillingInfo = [];
         
-        if (isset($subscriptionMeta['subscription'])) {
-            $subscription = $subscriptionMeta['subscription'];
-            $currentTermStart = $subscription['current_term_start'];
+        if ($order->subscription) {
+            $subscription = $subscriptionMeta['subscription'] ?? [];
+            $startDate = $order->subscription->start_date;
+            $endDate = $order->subscription->end_date;
             
-            // Calculate next billing date based on billing period
-            $nextBillingDate = $this->calculateNextBillingDate(
-                $currentTermStart,
-                $subscription['billing_period'],
-                $subscription['billing_period_unit']
-            );
-
+            $periodStart = Carbon::parse($startDate);
+            $periodEnd = $endDate ? Carbon::parse($endDate) : Carbon::now();
+            
+            // Get the billing period and unit from metadata
+            $billingPeriod = $subscription['billing_period'] ?? 1;
+            $billingPeriodUnit = $subscription['billing_period_unit'] ?? 'month';
+            
+            // Calculate period based on billing unit
+            $period = match($billingPeriodUnit) {
+                'month' => $periodStart->diffInMonths($periodEnd),
+                'year' => $periodStart->diffInYears($periodEnd),
+                'week' => $periodStart->diffInWeeks($periodEnd),
+                'day' => $periodStart->diffInDays($periodEnd),
+                default => $periodStart->diffInDays($periodEnd)
+            };
+            
             $nextBillingInfo = [
-                'status' => $subscription['status'] ?? null,
-                'billing_period' => $subscription['billing_period'] ?? null,
-                'billing_period_unit' => $subscription['billing_period_unit'] ?? null,
-                'current_term_start' => $this->formatTimestampToReadable($currentTermStart),
-                'current_term_end' => $this->formatTimestampToReadable($subscription['current_term_end']),
-                'next_billing_at' => $this->formatTimestampToReadable($nextBillingDate->timestamp)
+                'status' => $order->subscription->status,
+                'billing_period' => $billingPeriod,
+                'billing_period_unit' => $billingPeriodUnit,
+                'current_term_start' => $this->formatTimestampToReadable($startDate),
+                'current_term_end' => $this->formatTimestampToReadable($endDate),
+                'period' => $period,
+                'period_unit' => $billingPeriodUnit,
+                'next_billing_at' => $endDate ? null : $this->calculateNextBillingDate(
+                    Carbon::parse($startDate)->timestamp,
+                    $billingPeriod,
+                    $billingPeriodUnit
+                )->format('F d, Y')
             ];
+            // dd($nextBillingInfo);
         }
     
         return view('customer.orders.order-view', compact('order', 'nextBillingInfo'));
@@ -159,43 +201,91 @@ class OrderController extends Controller
 
         try {
             $orders = Order::query()
-                ->with(['user', 'plan'])
+                ->with(['user', 'plan', 'reorderInfo'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->where('orders.user_id', auth()->id());
 
-            if ($request->has('plan_id') && $request->plan_id != '') {
-                $orders->where('orders.plan_id', $request->plan_id);
+            // Apply filters
+            if ($request->has('orderId') && $request->orderId != '') {
+                $orders->where('orders.id', 'like', "%{$request->orderId}%");
             }
 
+            if ($request->has('status') && $request->status != '') {
+                $orders->where('orders.status_manage_by_admin', $request->status);
+            }
+
+            if ($request->has('email') && $request->email != '') {
+                $orders->whereHas('user', function($query) use ($request) {
+                    $query->where('email', 'like', "%{$request->email}%");
+                });
+            }
+
+            if ($request->has('domain') && $request->domain != '') {
+                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                    $query->where('forwarding_url', 'like', "%{$request->domain}%");
+                });
+            }
+
+            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                    $query->where('total_inboxes', $request->totalInboxes);
+                });
+            }
+
+            if ($request->has('startDate') && $request->startDate != '') {
+                $orders->whereDate('orders.created_at', '>=', $request->startDate);
+            }
+
+            if ($request->has('endDate') && $request->endDate != '') {
+                $orders->whereDate('orders.created_at', '<=', $request->endDate);
+            }
+
+            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                    $query->where('total_inboxes', $request->totalInboxes);
+                });
+            }
 
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
-                    return '<a href="' . route('customer.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
+                    return '<div class="dropdown">
+                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
+                                        <i class="fa-solid fa-eye"></i> View</a></li>
+                                </ul>
+                            </div>';
                 })
                 ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : '';
+                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
-                    return ucfirst($order->status_manage_by_admin);
-                })
-                ->addColumn('email', function ($order) {
-                    return $order->user ? $order->user->email : 'N/A';
+                    $statusClass = match ($order->status_manage_by_admin ?? 'N/A') {
+                        'pending' => 'warning',
+                        'completed' => 'success',
+                        'processing' => 'primary',
+                        'expired' => 'danger',
+                        default => 'secondary',
+                    };
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($order->status_manage_by_admin ?? 'N/A') . '</span>';
                 })
                 ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->user ? $order->user->domain_forwarding_url : 'N/A';
+                    return $order->reorderInfo ? $order->reorderInfo->first()->forwarding_url : 'N/A';
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
-                ->filterColumn('email', function($query, $keyword) {
-                    $query->whereHas('user', function($q) use ($keyword) {
-                        $q->where('email', 'like', "%{$keyword}%");
-                    });
+                ->addColumn('total_inboxes', function ($order) {
+                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
                 })
                 ->filterColumn('domain_forwarding_url', function($query, $keyword) {
-                    $query->whereHas('user', function($q) use ($keyword) {
-                        $q->where('domain_forwarding_url', 'like', "%{$keyword}%");
+                    $query->whereHas('reorderInfo', function($q) use ($keyword) {
+                        $q->where('forwarding_url', 'like', "%{$keyword}%");
                     });
                 })
                 ->filterColumn('plan_name', function($query, $keyword) {
@@ -230,7 +320,7 @@ class OrderController extends Controller
                         $direction
                     );
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action','status'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -277,18 +367,20 @@ class OrderController extends Controller
 
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
-            
+            // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes);
             // Verify plan can support the total inboxes
-            $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0) && 
-                        $plan->min_inbox <= $calculatedTotalInboxes;
-
+            // $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0) && 
+            //             $plan->min_inbox <= $calculatedTotalInboxes;
+            $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
+                        
             if (!$canHandle) {
+                // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes);
                 return response()->json([
                     'success' => false,
                     'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
                 ], 422);
             }
-
+            // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes,"pass");
             // Store session data if validation passes
             $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info

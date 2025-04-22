@@ -7,8 +7,8 @@
                 @if(!isset($plan_id))
                 <th>Plan</th>
                 @endif
-                <th>Customer Email</th>
                 <th>Domain URL</th>
+                <th>Total Inboxes</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
