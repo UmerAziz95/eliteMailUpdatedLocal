@@ -57,6 +57,9 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         //create admin 
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
+        Route::get('/{id}/edit', [AdminController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [AdminController::class, 'update'])->name('update');   // Update
+        Route::delete('/{id}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
 
         // Plans routes
         Route::resource('plans', PlanController::class);
@@ -81,6 +84,10 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
 
         //contractors
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
+        Route::post('contractor/store', [AdminContractorController::class, 'store'])->name('contractor.store');
+        Route::get('contractor/{id}/edit', [AdminContractorController::class, 'edit'])->name('edit');
+        Route::put('contractor/{id}', [AdminContractorController::class, 'update'])->name('update');   // Update
+        Route::delete('contractor/{id}', [AdminContractorController::class, 'destroy'])->name('contractor.destroy');
         
     }); 
 
@@ -131,6 +138,7 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
 
 // Info: Contractor Access
 Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(function () {
+  
     // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
     Route::get('/dashboard', function () {
         // return view('contractor.dashboard');

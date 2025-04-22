@@ -339,33 +339,53 @@ function initDataTable(planId = '') {
     $('#createUserForm').on('submit', function (e) {
         e.preventDefault();
 
-        // Get the actual form element
-        let form = this;
-
-        // Make sure password matches confirmation
+        const form = this;
+        const userId = $('#user_id').val();
         const password = $('#password').val();
         const confirmPassword = $('#confirm_password').val();
 
-        if (password !== confirmPassword) {
+        if (password && password !== confirmPassword) {
             toastr.error('Passwords do not match!');
             return;
         }
 
-        // Create FormData object to automatically capture all fields
         let formData = new FormData(form);
+        let url = userId
+            ? "{{ url('admin/') }}/" + userId  // Edit URL
+            : "{{ route('admin.users.store') }}";   // Create URL
+
+        let method = userId ? "POST" : "POST"; // Both will use POST, but we spoof PUT for update
+
+        if (userId) {
+            formData.append('_method', 'PUT'); // Laravel expects PUT for update
+        }
 
         $.ajax({
-            url: "{{ route('admin.users.store') }}",
-            method: "POST",
+            url: url,
+            method: method,
             data: formData,
-            processData: false,  // prevent jQuery from converting data into a query string
-            contentType: false,  // let the browser set the content-type including boundary
+            processData: false,
+            contentType: false,
             success: function (response) {
-                toastr.success('User created successfully!');
+                let action = userId ? 'updated' : 'created';
+                toastr.success(`User ${action} successfully!`);
+
+                // Reset and clear form
                 $('#createUserForm')[0].reset();
+                $('#user_id').val('');
+
+                // Hide the offcanvas
+                let offcanvasElement = document.getElementById('offcanvasAddAdmin');
+                let offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                offcanvasInstance.hide();
+
+                // Reload DataTable
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false);
+                }
             },
             error: function (xhr) {
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                if (xhr.responseJSON?.errors) {
                     let errors = xhr.responseJSON.errors;
                     let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');
                     toastr.error(errorMessages);
@@ -377,6 +397,63 @@ function initDataTable(planId = '') {
     });
 </script>
 
+
+<script>
+    $(document).on('click', '.edit-btn', function (e) {
+        e.preventDefault();
+
+        let userId = $(this).data('id');
+
+        // Fetch user data via AJAX
+        $.ajax({
+            url: "{{ url('admin/') }}/" + userId + "/edit",
+            method: "GET",
+            success: function (data) {
+                console.log(data);
+                // Populate the form fields
+                $('#user_id').val(data.id);
+                $('#full_name').val(data.name);
+                $('#email').val(data.email);
+                $('#status').val(data.status);
+
+                // Do not set password fields for editing
+
+                // Open the offcanvas
+                let offcanvasElement = document.getElementById('offcanvasAddAdmin');
+                let offcanvasInstance = new bootstrap.Offcanvas(offcanvasElement);
+                offcanvasInstance.show();
+            },
+            error: function () {
+                toastr.error('Failed to fetch user details.');
+            }
+        });
+    });
+</script>
+<script>
+$(document).on('click', '.delete-btn', function (e) {
+    e.preventDefault();
+    let userId = $(this).data('id');
+
+    if (confirm("Are you sure you want to delete this user?")) {
+        $.ajax({
+            url: `/admin/${userId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                toastr.success(response.message);
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(); // Refresh table
+                }
+            },
+            error: function (xhr) {
+                toastr.error('Failed to delete user.');
+            }
+        });
+    }
+});
+</script>
 
 
 @endpush

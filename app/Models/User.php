@@ -29,6 +29,7 @@ class User extends Authenticatable
         'role_id', // Add role attribute
         'billing_address', // Add billing address attribute
         'domain_forwarding_url',
+        'status',
     ];
 
     /**

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Carbon\Carbon;
 use DataTables;
-
+use Illuminate\Validation\Rule;
 class AdminController extends Controller
 {
     public function index(Request $request)
@@ -47,7 +47,7 @@ class AdminController extends Controller
                         <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
                             <i class="fa-regular fa-trash-can text-danger"></i>
                         </button>
-                        <button class="bg-transparent p-0 border-0 mx-2 view-btn" data-id="' . $row->id . '">
+                        <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
                             <i class="fa-regular fa-eye"></i>
                         </button>
                         <div class="dropdown">
@@ -102,17 +102,58 @@ class AdminController extends Controller
             'password' => 'required|min:6|confirmed',
             'status' => 'required|in:0,1',
         ]);
-    
+    //    dd($validated['status']);
         $user = User::create([
             'name' => $validated['full_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'status' => $validated['status'],
+            'status' => (int) $validated['status'], 
         ]);
     
         return response()->json([
             'message' => 'User created successfully',
             'user' => $user
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+
+        return response()->json($user); // Used to populate the form
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => 'nullable|min:6|confirmed',
+            'status' => 'required|in:0,1',
+        ]);
+
+        $user->name = $validated['full_name'];
+        $user->email = $validated['email'];
+        $user->status = $validated['status'];
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return response()->json(['message' => 'User updated successfully']);
+    }
+
+        public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully.'
         ]);
     }
     

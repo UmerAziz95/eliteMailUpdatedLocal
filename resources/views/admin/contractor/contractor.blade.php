@@ -142,7 +142,7 @@
                         class="fa-solid fa-xmark fs-5"></i></button>
             </div>
             <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
-                @include('modules.contractor.add_new_form')
+                @include('admin.contractor.add_new_form')
             </div>
         </div> 
     </section>
@@ -239,10 +239,24 @@ function initDataTable(planId = '') {
                 this.api().responsive?.recalc();
             },
             initComplete: function() {
-                console.log('Table initialization complete');
-                this.api().columns.adjust();
-                this.api().responsive?.recalc();
-            }
+            console.log('Table initialization complete');
+            this.api().columns.adjust();
+            this.api().responsive?.recalc();
+
+            // 🔽 Append your custom button next to the search bar
+            const button = `
+                <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                        style="padding: .4rem 1rem"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#offcanvasAddAdmin"
+                        aria-controls="offcanvasAddAdmin">
+                    + Add New Record
+                </button>
+            `;
+
+            $('.dataTables_filter').append(button);
+        }
         });
 
         // Optional loading indicator
@@ -265,9 +279,6 @@ function initDataTable(planId = '') {
         toastr.error('Error initializing table. Please refresh the page.');
     }
 }
-
-
-
 
     $(document).ready(function() {
         try {
@@ -316,5 +327,127 @@ function initDataTable(planId = '') {
             console.error('Error in document ready:', error);
         }
     });
+</script>
+
+
+
+<script>
+    $('#addNewUserForm').on('submit', function (e) { 
+        e.preventDefault();
+
+        const form = this;
+        const userId = $('#user_id').val();
+        const password = $('#password').val();
+        const confirmPassword = $('#confirm_password').val();
+
+        if (password && password !== confirmPassword) {
+            toastr.error('Passwords do not match!');
+            return;
+        }
+
+        let formData = new FormData(form);
+        let url = userId
+            ? "{{ url('admin/contractor/') }}/" + userId  // Edit URL
+            : "{{ route('admin.contractor.store') }}";   // Create URL
+
+        let method = userId ? "POST" : "POST"; // Both will use POST, but we spoof PUT for update
+
+        if (userId) {
+            formData.append('_method', 'PUT'); // Laravel expects PUT for update
+        }
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                let action = userId ? 'updated' : 'created';
+                toastr.success(`User ${action} successfully!`);
+
+                // Reset and clear form
+                $('#addNewUserForm')[0].reset();
+                $('#user_id').val('');
+
+                // Hide the offcanvas
+                let offcanvasElement = document.getElementById('offcanvasAddAdmin');
+                let offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                offcanvasInstance.hide();
+
+                // Reload DataTable
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false);
+                }
+            },
+            error: function (xhr) {
+                if (xhr.responseJSON?.errors) {
+                    let errors = xhr.responseJSON.errors;
+                    let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');
+                    toastr.error(errorMessages);
+                } else {
+                    toastr.error('Something went wrong.');
+                }
+            }
+        });
+    });
+</script>
+
+
+<script>
+    $(document).on('click', '.edit-btn', function (e) {
+        e.preventDefault();
+
+        let userId = $(this).data('id');
+
+        // Fetch user data via AJAX
+        $.ajax({
+            url: "{{ url('admin/contractor/') }}/" + userId + "/edit",
+            method: "GET",
+            success: function (data) {
+                console.log(data);
+                // Populate the form fields
+                $('#user_id').val(data.id);
+                $('#full_name').val(data.name);
+                $('#email').val(data.email);
+                $('#status').val(data.status);
+
+                // Do not set password fields for editing
+
+                // Open the offcanvas
+                let offcanvasElement = document.getElementById('offcanvasAddAdmin');
+                let offcanvasInstance = new bootstrap.Offcanvas(offcanvasElement);
+                offcanvasInstance.show();
+            },
+            error: function () {
+                toastr.error('Failed to fetch user details.');
+            }
+        });
+    });
+</script>
+<script>
+$(document).on('click', '.delete-btn', function (e) {
+    e.preventDefault();
+    let userId = $(this).data('id');
+
+    if (confirm("Are you sure you want to delete this user?")) {
+        $.ajax({
+            url: `/admin/contractor/${userId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                toastr.success(response.message);
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(); // Refresh table
+                }
+            },
+            error: function (xhr) {
+                toastr.error('Failed to delete user.');
+            }
+        });
+    }
+});
 </script>
 @endpush
