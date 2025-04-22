@@ -266,7 +266,7 @@ class PlanController extends Controller
             try {
                 // Send email to user
                 Mail::to($user->email)
-                    ->send(new OrderCreatedMail(
+                    ->queue(new OrderCreatedMail(
                         $order,
                         $user,
                         false
@@ -274,7 +274,7 @@ class PlanController extends Controller
 
                 // Send email to admin
                 Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->send(new OrderCreatedMail(
+                    ->queue(new OrderCreatedMail(
                         $order,
                         $user,
                         true
@@ -393,7 +393,7 @@ class PlanController extends Controller
                 try {
                     // Send email to user
                     Mail::to($user->email)
-                        ->send(new SubscriptionCancellationMail(
+                        ->queue(new SubscriptionCancellationMail(
                             $subscription, 
                             $user, 
                             $request->reason
@@ -401,7 +401,7 @@ class PlanController extends Controller
 
                     // Send email to admin
                     Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->send(new SubscriptionCancellationMail(
+                        ->queue(new SubscriptionCancellationMail(
                             $subscription, 
                             $user, 
                             $request->reason,
