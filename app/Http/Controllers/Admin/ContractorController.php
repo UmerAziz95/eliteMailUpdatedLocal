@@ -139,4 +139,4 @@ class ContractorController extends Controller
            'message' => 'User deleted successfully.'
        ]);
    }
-} 
+}  

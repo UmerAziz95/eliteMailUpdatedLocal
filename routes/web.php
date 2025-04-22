@@ -87,10 +87,10 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
 
-        //contractors
+        //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
         Route::post('contractor/store', [AdminContractorController::class, 'store'])->name('contractor.store');
-        Route::get('contractor/{id}/edit', [AdminContractorController::class, 'edit'])->name('edit');
+        Route::get('contractor/{id}/edit', [AdminContractorController::class, 'edit'])->name('contractor.edit');
         Route::put('contractor/{id}', [AdminContractorController::class, 'update'])->name('update');   // Update
         Route::delete('contractor/{id}', [AdminContractorController::class, 'destroy'])->name('contractor.destroy');
         
