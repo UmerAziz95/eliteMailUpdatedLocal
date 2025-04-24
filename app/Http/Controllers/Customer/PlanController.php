@@ -20,8 +20,9 @@ class PlanController extends Controller
 {
     public function index()
     {
+        $getMostlyUsed = Plan::getMostlyUsed();
         $plans = Plan::with('features')->where('is_active', true)->get();
-        return view('customer.pricing.pricing', compact('plans'));
+        return view('customer.pricing.pricing', compact('plans', 'getMostlyUsed'));
     }
 
     public function show($id)
@@ -157,6 +158,7 @@ class PlanController extends Controller
                     'plan_id' => $plan_id,
                     'forwarding_url' => $order_info['forwarding_url'],
                     'hosting_platform' => $order_info['hosting_platform'],
+                    'other_platform' => $order_info['other_platform'] ?? null,
                     'backup_codes' => $order_info['backup_codes'],
                     'platform_login' => $order_info['platform_login'],
                     'platform_password' => $order_info['platform_password'],

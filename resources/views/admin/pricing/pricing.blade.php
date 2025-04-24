@@ -96,7 +96,7 @@
         <div class="row mt-4" id="plans-container">
             @foreach ($plans as $plan)
                 <div class="col-md-4" id="plan-{{ $plan->id }}">
-                    <div class="pricing-card {{ $plan->name === 'Standard' ? 'popular' : '' }}">
+                    <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                         <h4 class="fw-bold plan-name">{{ $plan->name }}</h4>
                         <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span
                                 class="fs-6">/{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
@@ -119,7 +119,7 @@
                         @if (auth()->user()->role_id != 5)
                             <div class="d-flex gap-2">
                                 <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
-                                    class="m-btn rounded-1 border-0 py-2 px-4 w-100">
+                                    class="{{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'grey-btn' : 'm-btn' }} rounded-1 border-0 py-2 px-4 w-100">
                                     <i class="fa-regular fa-pen-to-square"></i> Edit
                                 </button>
                                 <button type="button" class="btn btn-danger rounded-1 py-2 px-4 w-100 delete-plan-btn"
@@ -819,7 +819,7 @@
                 const card = $(`#plan-${plan.id}`);
                 card.find('.plan-name').text(plan.name);
                 card.find('.plan-price').html(
-                    `$${Number(plan.price).toFixed(2)} <span class="fs-6">/${plan.duration == 'monthly' ? 'mo':plan.duration}</span>`
+                    `$${Number(plan.price).toFixed(2)} <span class="fs-6">/${plan.duration == 'monthly' ? 'mo':plan.duration} per inboxes</span>`
                 );
                 card.find('.plan-description').text(plan.description);
 

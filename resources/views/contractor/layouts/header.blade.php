@@ -89,17 +89,17 @@
                     <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
                     <div>
-                        <h6 class="mb-0">John Doe</h6>
-                        <p class="small mb-0">Admin</p>
+                        <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                        <p class="small mb-0">{{ Auth::user()->email }}</p>
                     </div>
                 </div>
                 <hr>
 
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/contractor/profile"><i class="ti ti-user"></i> My Profile</a></li>
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/contractor/settings"><i class="ti ti-settings"></i> Settings</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-receipt"></i> Billing</a></li>
+                <!-- <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-receipt"></i> Billing</a></li>
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/pricing"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li> -->
 
                 <div class="logout-btn">
                     <a href="{{route('logout')}}" class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i> Logout</a>

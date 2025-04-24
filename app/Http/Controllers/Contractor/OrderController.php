@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Customer;
+namespace App\Http\Controllers\Contractor;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -13,18 +13,19 @@ use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Models\Invoice;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
     private $statuses = [
         "Pending" => "warning",
-        "Approve" => "success",
+        "Approved" => "success",
         "Cancel" => "danger",
         "Expired" => "secondary",
         "In-progress" => "primary",
         "Completed" => "success",
         "Delivered" => "success",
-
     ];
     // payment-status
     private $paymentStatuses = [
@@ -35,57 +36,48 @@ class OrderController extends Controller
     ];
     public function index()
     {
-        $plans = Plan::all();        
-        // Get order statistics for authenticated user
-        $userId = auth()->id();
-        $orders = Order::where('user_id', $userId);
+        $plans = Plan::where('is_active', true)->get();;
+        
+        // Get order statistics
+        $orders = Order::query();
         
         $totalOrders = $orders->count();
         
         // Get orders by admin status
-        $pendingOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Pending')
+        $pendingOrders = Order::where('status_manage_by_admin', 'Pending')
             ->count();
             
-        $completedOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Completed')
+        $completedOrders = Order::where('status_manage_by_admin', 'Completed')
             ->count();
             
-        $inProgressOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'In-Progress')
+        $inProgressOrders = Order::where('status_manage_by_admin', 'In-Progress')
             ->count();
-        $expiredOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Expired')
+        $expiredOrders = Order::where('status_manage_by_admin', 'Expired')
             ->count();
-        $approvedOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Approved')
+        $approvedOrders = Order::where('status_manage_by_admin', 'Approved')
             ->count();
-        
-
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
 
-        $lastWeekOrders = Order::where('user_id', $userId)
-            ->whereBetween('created_at', $lastWeek)
+        $lastWeekOrders = Order::whereBetween('created_at', $lastWeek)
             ->count();
             
-        $previousWeekOrders = Order::where('user_id', $userId)
-            ->whereBetween('created_at', $previousWeek)
+        $previousWeekOrders = Order::whereBetween('created_at', $previousWeek)
             ->count();
 
         $percentageChange = $previousWeekOrders > 0 
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
         $statuses = $this->statuses;
-        return view('customer.orders.orders', compact(
+        return view('contractor.orders.orders', compact(
             'plans', 
             'totalOrders', 
             'pendingOrders', 
             'completedOrders', 
             'inProgressOrders',
             'percentageChange',
-            'statuses',
+            'statuses', // Pass statuses to the view,
             'expiredOrders',
             'approvedOrders'
         ));
@@ -106,7 +98,7 @@ class OrderController extends Controller
         }
         $order = null; // No existing order for new orders
 
-        return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'order'));
+        return view('contractor.orders.new-order', compact('plan', 'hostingPlatforms', 'order'));
     }
     public function reorder(Request $request, $order_id)
     {
@@ -115,7 +107,7 @@ class OrderController extends Controller
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
-        return view('customer.orders.reorder', compact('plan', 'hostingPlatforms', 'order'));
+        return view('contractor.orders.reorder', compact('plan', 'hostingPlatforms', 'order'));
     }
 
     private function calculateNextBillingDate($startTimestamp, $billingPeriod, $billingPeriodUnit)
@@ -171,10 +163,10 @@ class OrderController extends Controller
 
     public function view($id)
     {
-        $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
-        
+        $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo','plan'])->findOrFail($id);
+        // dd($order);
         // Retrieve subscription metadata if available
-        $subscriptionMeta = json_decode($order->subscription->meta, true);
+        $subscriptionMeta = json_decode($order->subscription->meta ?? '[]', true);
         $nextBillingInfo = [];
         
         if ($order->subscription) {
@@ -189,33 +181,19 @@ class OrderController extends Controller
             $billingPeriod = $subscription['billing_period'] ?? 1;
             $billingPeriodUnit = $subscription['billing_period_unit'] ?? 'month';
             
-            // Calculate period based on billing unit
-            $period = match($billingPeriodUnit) {
-                'month' => $periodStart->diffInMonths($periodEnd),
-                'year' => $periodStart->diffInYears($periodEnd),
-                'week' => $periodStart->diffInWeeks($periodEnd),
-                'day' => $periodStart->diffInDays($periodEnd),
-                default => $periodStart->diffInDays($periodEnd)
-            };
-            
             $nextBillingInfo = [
                 'status' => $order->subscription->status,
                 'billing_period' => $billingPeriod,
                 'billing_period_unit' => $billingPeriodUnit,
-                'current_term_start' => $this->formatTimestampToReadable($startDate),
-                'current_term_end' => $this->formatTimestampToReadable($endDate),
-                'period' => $period,
-                'period_unit' => $billingPeriodUnit,
-                'next_billing_at' => $endDate ? null : $this->calculateNextBillingDate(
-                    Carbon::parse($startDate)->timestamp,
-                    $billingPeriod,
-                    $billingPeriodUnit
-                )->format('F d, Y')
+                'current_term_start' => $startDate ? Carbon::parse($startDate)->format('F d, Y') : null,
+                'current_term_end' => $endDate ? Carbon::parse($endDate)->format('F d, Y') : null,
+                'next_billing_at' => $endDate ? null : Carbon::parse($startDate)
+                    ->add($billingPeriod, $billingPeriodUnit)
+                    ->format('F d, Y')
             ];
-            // dd($nextBillingInfo);
         }
     
-        return view('customer.orders.order-view', compact('order', 'nextBillingInfo'));
+        return view('contractor.orders.order-view', compact('order', 'nextBillingInfo'));
     }
 
     public function getOrders(Request $request)
@@ -230,7 +208,12 @@ class OrderController extends Controller
                 ->with(['user', 'plan', 'reorderInfo'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
-                ->where('orders.user_id', auth()->id());
+                ->leftJoin('users', 'orders.user_id', '=', 'users.id');
+
+            // Apply plan filter if provided
+            if ($request->has('plan_id') && $request->plan_id != '') {
+                $orders->where('orders.plan_id', $request->plan_id);
+            }
 
             // Apply filters
             if ($request->has('orderId') && $request->orderId != '') {
@@ -242,9 +225,11 @@ class OrderController extends Controller
             }
 
             if ($request->has('email') && $request->email != '') {
-                $orders->whereHas('user', function($query) use ($request) {
-                    $query->where('email', 'like', "%{$request->email}%");
-                });
+                $orders->where('users.email', 'like', "%{$request->email}%");
+            }
+
+            if ($request->has('name') && $request->name != '') {
+                $orders->where('users.name', 'like', "%{$request->name}%");
             }
 
             if ($request->has('domain') && $request->domain != '') {
@@ -267,22 +252,30 @@ class OrderController extends Controller
                 $orders->whereDate('orders.created_at', '<=', $request->endDate);
             }
 
-            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
-                    $query->where('total_inboxes', $request->totalInboxes);
-                });
-            }
-
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
+                    $statuses = $this->statuses;
+                    $statusOptions = '';
+
+                    foreach ($statuses as $status => $color) {
+                        $statusOptions .= '<li>
+                            <a class="dropdown-item status-change" href="javascript:void(0)" data-order-id="' . $order->id . '" data-status="' . strtolower($status) . '">
+                                <span class="py-1 px-2 text-' . $color . ' border border-' . $color . ' rounded-2 bg-transparent">' . $status . '</span>
+                            </a>
+                        </li>';
+                    }
+
                     return '<div class="dropdown">
                                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
                                     aria-expanded="false">
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
-                                        <i class="fa-solid fa-eye"></i> View</a></li>
+                                    <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
+                                        <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-header">Manage Statuses</li>
+                                    ' . $statusOptions . '
                                 </ul>
                             </div>';
                 })
@@ -294,8 +287,14 @@ class OrderController extends Controller
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                         . ucfirst($order->status_manage_by_admin ?? 'N/A') . '</span>';
                 })
+                ->addColumn('name', function ($order) {
+                    return $order->user ? $order->user->name : 'N/A';
+                })
+                ->addColumn('email', function ($order) {
+                    return $order->user ? $order->user->email : 'N/A';
+                })
                 ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->reorderInfo ? $order->reorderInfo->first()->forwarding_url : 'N/A';
+                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->forwarding_url : 'N/A';
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
@@ -303,44 +302,7 @@ class OrderController extends Controller
                 ->addColumn('total_inboxes', function ($order) {
                     return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
                 })
-                ->filterColumn('domain_forwarding_url', function($query, $keyword) {
-                    $query->whereHas('reorderInfo', function($q) use ($keyword) {
-                        $q->where('forwarding_url', 'like', "%{$keyword}%");
-                    });
-                })
-                ->filterColumn('plan_name', function($query, $keyword) {
-                    $query->whereHas('plan', function($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%");
-                    });
-                })
-                ->orderColumn('email', function($query, $direction) {
-                    $query->orderBy(
-                        User::select('email')
-                            ->whereColumn('users.id', 'orders.user_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->orderColumn('domain_forwarding_url', function($query, $direction) {
-                    $query->orderBy(
-                        User::select('domain_forwarding_url')
-                            ->whereColumn('users.id', 'orders.user_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->orderColumn('plan_name', function($query, $direction) {
-                    $query->orderBy(
-                        Plan::select('name')
-                            ->whereColumn('plans.id', 'orders.plan_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->rawColumns(['action','status'])
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -359,7 +321,7 @@ class OrderController extends Controller
     {
         try {
             // Validate the request data
-            $validator = $request->validate([
+            $request->validate([
                 'user_id' => 'required|exists:users,id',
                 'plan_id' => 'required|exists:plans,id',
                 'forwarding_url' => 'required|url',
@@ -379,8 +341,6 @@ class OrderController extends Controller
                 'persona_password' => 'required',
                 'email_persona_password' => 'required',
             ]);
-
-            // fails then return error
 
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
@@ -418,9 +378,149 @@ class OrderController extends Controller
             \Log::error('Order creation failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create order: ' . $e->getMessage(),
-                'errors' => method_exists($e, 'errors') ? $e->errors() : $e->getTrace()
+                'message' => 'Failed to create order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateStatus(Request $request)
+    {
+        try {
+            $request->validate([
+                'order_id' => 'required|exists:orders,id',
+                'status' => 'required|in:' . implode(',', array_map('strtolower', array_keys($this->statuses)))
+            ]);
+
+            $order = Order::findOrFail($request->order_id);
+            $oldStatus = $order->status_manage_by_admin;
+            $order->status_manage_by_admin = strtolower($request->status);
+            $order->save();
+
+            // Log the status change
+            Log::info('Order status updated', [
+                'order_id' => $order->id,
+                'old_status' => $oldStatus,
+                'new_status' => $order->status_manage_by_admin,
+                'updated_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated successfully'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->errors()
             ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating order status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the order status'
+            ], 500);
+        }
+    }
+    public function getInvoices(Request $request)
+    {
+        try {
+            $invoices = Invoice::with(['user', 'order'])
+                ->select([
+                    'invoices.id',
+                    'invoices.chargebee_invoice_id',
+                    'invoices.order_id',
+                    'invoices.amount',
+                    'invoices.status',
+                    'invoices.paid_at',
+                    'invoices.chargebee_subscription_id',
+                    'invoices.created_at',
+                    'invoices.updated_at',
+                ]);
+
+            // Filter by order_id if provided
+            if ($request->has('order_id') && $request->order_id != '') {
+                $invoices->where('order_id', $request->order_id);
+            }
+
+            // Filter by invoice status
+            if ($request->has('status') && $request->status != '') {
+                $invoices->where('status', $request->status);
+            }
+
+            // Filter by order status
+            if ($request->has('order_status') && $request->order_status != '') {
+                $invoices->whereHas('order', function($q) use ($request) {
+                    $q->where('status_manage_by_admin', $request->order_status);
+                });
+            }
+
+            // Filter by date range
+            if ($request->has('start_date') && $request->start_date != '') {
+                $invoices->whereDate('created_at', '>=', $request->start_date);
+            }
+            if ($request->has('end_date') && $request->end_date != '') {
+                $invoices->whereDate('created_at', '<=', $request->end_date);
+            }
+
+            // Filter by price range
+            if ($request->has('price_range') && $request->price_range != '') {
+                list($min, $max) = explode('-', str_replace('$', '', $request->price_range));
+                if ($max === '1000+') {
+                    $invoices->where('amount', '>=', 1000);
+                } else {
+                    $invoices->whereBetween('amount', [(float)$min, (float)$max]);
+                }
+            }
+            
+            return DataTables::of($invoices)
+                // ->addColumn('action', function($invoice) {
+                //     $viewUrl = route('customer.invoices.show', $invoice->chargebee_invoice_id);
+                //     $downloadUrl = route('customer.invoices.download', $invoice->chargebee_invoice_id);
+                //     return '<div class="dropdown">
+                //         <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                //             <i class="fa-solid fa-ellipsis-vertical"></i>
+                //         </button>
+                //         <ul class="dropdown-menu">
+                //             <li><a class="dropdown-item" href="' . $viewUrl . '">View</a></li>
+                //             <li><a class="dropdown-item" href="' . $downloadUrl . '">Download</a></li>
+                //         </ul>
+                //     </div>';
+                // })
+                ->editColumn('created_at', function($invoice) {
+                    return $invoice->created_at ? $invoice->created_at->format('d F, Y') : '';
+                })
+                ->editColumn('paid_at', function($invoice) {
+                    return $invoice->paid_at ? date('d F, Y', strtotime($invoice->paid_at)) : '';
+                })
+                ->editColumn('amount', function($invoice) {
+                    return '$' . number_format($invoice->amount, 2);
+                })
+                ->editColumn('status', function($invoice) {
+                    $statusKey = ucfirst(strtolower($invoice->status ?? 'N/A'));
+                    return '<span class="py-1 px-2 text-' . ($this->paymentStatuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
+                        . $statusKey . '</span>';
+                })
+                ->editColumn('status_manage_by_admin', function($invoice) {
+                    $statusKey = ucfirst($invoice->order->status_manage_by_admin ?? 'N/A');
+                    return '<span class="py-1 px-2 text-' . ($this->statuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
+                        . $statusKey . '</span>';
+                })
+                ->filterColumn('status_manage_by_admin', function($query, $keyword) {
+                    $query->whereHas('order', function($q) use ($keyword) {
+                        $q->where('status_manage_by_admin', 'like', "%{$keyword}%");
+                    });
+                })
+                ->orderColumn('status_manage_by_admin', function($query, $direction) {
+                    $query->whereHas('order', function($q) use ($direction) {
+                        $q->orderBy('status_manage_by_admin', $direction);
+                    });
+                })
+                ->rawColumns(['action', 'status', 'status_manage_by_admin'])
+                ->make(true);
+        } catch (Exception $e) {
+            Log::error('Error in getInvoices: ' . $e->getMessage());
+            return response()->json(['error' => 'Error loading invoices'], 500);
         }
     }
 }
