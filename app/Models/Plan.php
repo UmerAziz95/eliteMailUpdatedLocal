@@ -36,4 +36,13 @@ class Plan extends Model
     public function subscriptions(){
         return $this->hasMany(Subscription::class);
     }
+
+    // get mostly used plan
+    public static function getMostlyUsed()
+    {
+        return self::where('is_active', true)
+            ->withCount('subscriptions')
+            ->orderBy('subscriptions_count', 'desc')
+            ->first();
+    }
 }

@@ -1,17 +1,13 @@
-@extends('customer.layouts.app')
+@extends('contractor.layouts.app')
 
 @section('title', 'Orders')
 
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="d-flex align-items-center justify-content-between">
-        <a href="{{ route('customer.orders') }}" class="d-flex align-items-center justify-content-center"
+        <a href="{{ route('contractor.orders') }}" class="d-flex align-items-center justify-content-center"
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
-        </a>
-        <a href="{{ route('customer.orders.reorder', ['order_id' => $order->id]) }}" class="c-btn text-decoration-none">
-            <i class="fa-solid fa-cart-plus"></i>
-            Re-order
         </a>
     </div>
 
@@ -98,15 +94,15 @@
 
                         <div class="d-flex align-items-center gap-3">
                             <div>
-                                <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                <!-- <img src="{{ $defaultImage }}" width="30" alt="Product Icon"> -->
                             </div>
                             <div>
-                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                <!-- <span class="opacity-50">Officially Google Workspace Inboxes</span> -->
                                 <br>
                                 @if(isset($order->meta['product_details']))
                                 <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }} <small>/monthly</small></span>
                                 @else
-                                <span>Price details not available</span>
+                                <!-- <span>Price details not available</span> -->
                                 @endif
                             </div>
                         </div>
@@ -179,12 +175,12 @@
                     </h6>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center gap-3" style="display: none;">
-                            <div style="display: none;">
-                                <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div>
+                                <button id="addNewBtn" class="btn btn-primary me-2">
                                     <i class="fa-solid fa-plus me-1"></i> Add Email
                                 </button>
-                                <button id="saveAllBtn" class="btn btn-success" style="display: none;">
+                                <button id="saveAllBtn" class="btn btn-success">
                                     <i class="fa-solid fa-floppy-disk me-1"></i> Save All
                                 </button>
                             </div>
@@ -212,7 +208,7 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Password</th>
-                                    <!-- <th>Action</th> -->
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -292,10 +288,10 @@
                                 dom: 'frtip',
                                 autoWidth: false,
                                 columnDefs: [
-                                    { width: '33%', targets: 0 }, // Name column
-                                    { width: '33%', targets: 1 }, // Email column
-                                    { width: '33%', targets: 2 }, // Password column
-                                    // { width: '10%', targets: 3 }  // Action column
+                                    { width: '30%', targets: 0 }, // Name column
+                                    { width: '30%', targets: 1 }, // Email column
+                                    { width: '30%', targets: 2 }, // Password column
+                                    { width: '10%', targets: 3 }  // Action column
                                 ],
                                 responsive: {
                                     details: {
@@ -308,7 +304,7 @@
                                     }
                                 },
                                 ajax: {
-                                    url: '/customer/orders/{{ $order->id }}/emails',
+                                    url: '/contractor/orders/{{ $order->id }}/emails',
                                     dataSrc: function(json) {
                                         return json.data || [];
                                     }
@@ -317,31 +313,27 @@
                                     { 
                                         data: 'name',
                                         render: function(data, type, row) {
-                                            return data || '';
-                                            // return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
+                                            return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
                                         }
                                     },
                                     { 
                                         data: 'email',
                                         render: function(data, type, row) {
-                                            return data || '';
-                                            // return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
+                                            return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
                                         }
                                     },
                                     { 
                                         data: 'password',
                                         render: function(data, type, row) {
-                                            return data || '';
-                                            // return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
+                                            return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
+                                        }
+                                    },
+                                    {
+                                        data: 'id',
+                                        render: function(data, type, row) {
+                                            return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
                                         }
                                     }
-                                    // ,
-                                    // {
-                                    //     data: 'id',
-                                    //     render: function(data, type, row) {
-                                    //         return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
-                                    //     }
-                                    // }
                                 ],
                                 drawCallback: function(settings) {
                                     updateRowCount(this.api());
@@ -417,7 +409,7 @@
                                 }
 
                                 $.ajax({
-                                    url: '/customer/orders/emails',
+                                    url: '/contractor/orders/emails',
                                     method: 'POST',
                                     headers: {
                                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -479,7 +471,7 @@
                                 if (id) {
                                     // Delete existing record
                                     $.ajax({
-                                        url: `/customer/orders/emails/${id}`,
+                                        url: `/contractor/orders/emails/${id}`,
                                         method: 'DELETE',
                                         headers: {
                                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -556,8 +548,7 @@
 
                 @if($order->subscription->status == 'active')
                 <div class="d-flex justify-content-end">
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#cancel_subscription"
-                        class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
+                    <button type="button" class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
                         Cancel Subscription
                     </button>
                 </div>
@@ -661,7 +652,7 @@
                                 <th>Status</th>
                                 <!-- order-status -->
                                 <th>Order Status</th>
-                                <th>Action</th>
+                                <!-- <th>Action</th> -->
                             </tr>
                         </thead>
                     </table>
@@ -685,7 +676,7 @@
                             }
                         },
                         ajax: {
-                            url: "{{ route('customer.invoices.data') }}",
+                            url: "{{ route('contractor.invoices.data') }}",
                             type: "GET",
                             data: function(d) {
                                 d.order_id = "{{ $order->id }}";
@@ -728,13 +719,13 @@
                             {
                                 data: 'status_manage_by_admin',
                                 name: 'status_manage_by_admin'
-                            },
-                            {
-                                data: 'action',
-                                name: 'action',
-                                orderable: false,
-                                searchable: false
                             }
+                            // {
+                            //     data: 'action',
+                            //     name: 'action',
+                            //     orderable: false,
+                            //     searchable: false
+                            // }
                         ],
                         order: [
                             [1, 'desc']
@@ -947,31 +938,7 @@
                         feedback.
                     </p>
 
-                    <form action="{{ route('customer.subscription.cancel.process') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="chargebee_subscription_id" value="{{ $order->chargebee_subscription_id }}">
-                        <div class="mb-3">
-                            <label for="cancellation_reason">Reason *</label>
-                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
-                            <label class="form-check-label" for="remove_accounts">
-                                I would like to have these email accounts removed and the domains
-                                released immediately. I will not be using these inboxes any longer.
-                            </label>
-                        </div>
-
-                        <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                            <button type="button"
-                                class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                                data-bs-dismiss="modal">No, I changed my mind</button>
-                            <button type="submit"
-                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                                I'm sure</button>
-                        </div>
-                    </form>
+                    
                 </div>
             </div>
         </div>

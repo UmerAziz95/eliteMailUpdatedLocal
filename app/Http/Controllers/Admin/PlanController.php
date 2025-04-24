@@ -12,8 +12,10 @@ class PlanController extends Controller
     public function index()
     {
         $plans = Plan::all();
+        $getMostlyUsed = Plan::getMostlyUsed();
+        // dd($getMostlyUsedPlan);
         $features = Feature::where('is_active', true)->get();
-        return view('admin.pricing.pricing', compact('plans', 'features'));
+        return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed'));
     }
 
     public function store(Request $request)

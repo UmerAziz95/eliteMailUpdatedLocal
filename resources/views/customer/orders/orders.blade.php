@@ -46,7 +46,7 @@
 @section('content')
 <section class="py-3">
 
-    <div class="row gy-4 mb-4">
+<div class="row gy-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card p-2">
                 <div class="card-body">
@@ -61,7 +61,7 @@
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-shopping-cart"></i>
                             </span>
                         </div>
                     </div>
@@ -76,13 +76,12 @@
                             <h6 class="text-heading">Pending Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Awaiting admin review</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-clock"></i>
                             </span>
                         </div>
                     </div>
@@ -97,13 +96,12 @@
                             <h6 class="text-heading">Complete Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Fully processed orders</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-check"></i>
                             </span>
                         </div>
                     </div>
@@ -118,13 +116,52 @@
                             <h6 class="text-heading">In-Progress Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Currently processing</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-loader"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Expired Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Expired orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-secondary">
+                                <i class="ti ti-alert-circle"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Approved Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($approvedOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Approved orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-thumb-up"></i>
                             </span>
                         </div>
                     </div>
@@ -153,14 +190,9 @@
                             <label for="statusFilter" class="form-label">Status</label>
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <!-- expired -->
-                                <option value="expired">Expired</option>
-                                <option value="canceled">Canceled</option>
-                                <!-- in-process -->
-                                <!-- <option value="in_process">In Process</option> -->
+                                @foreach($statuses as $key => $status)
+                                    <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -398,41 +430,55 @@
                 
                 // Clear DataTables events before reapplying
                 Object.values(window.orderTables).forEach(function(table) {
-                    table.off('preXhr.dt');
+                    if (table) {
+                        table.off('preXhr.dt');
+                    }
                 });
 
                 // Force recalculation of column widths for visible tables
                 setTimeout(function() {
                     Object.values(window.orderTables).forEach(function(table) {
-                        if ($(table.table().node()).is(':visible')) {
-                            // Add filter parameters before redraw
-                            table.on('preXhr.dt', function(e, settings, data) {
-                                data.orderId = $('#orderIdFilter').val();
-                                data.status = $('#statusFilter').val();
-                                data.email = $('#emailFilter').val();
-                                data.domain = $('#domainFilter').val();
-                                data.totalInboxes = $('#totalInboxesFilter').val();
-                                data.startDate = $('#startDate').val();
-                                data.endDate = $('#endDate').val();
-                            });
-                            
-                            table.columns.adjust();
-                            table.responsive.recalc();
-                            table.draw();
+                        if (table && $(table.table().node()).is(':visible')) {
+                            try {
+                                // Add filter parameters before redraw
+                                table.on('preXhr.dt', function(e, settings, data) {
+                                    data.orderId = $('#orderIdFilter').val();
+                                    data.status = $('#statusFilter').val();
+                                    data.email = $('#emailFilter').val();
+                                    data.domain = $('#domainFilter').val();
+                                    data.totalInboxes = $('#totalInboxesFilter').val();
+                                    data.startDate = $('#startDate').val();
+                                    data.endDate = $('#endDate').val();
+                                });
+                                
+                                table.columns.adjust();
+                                if (table.responsive && typeof table.responsive.recalc === 'function') {
+                                    table.responsive.recalc();
+                                }
+                                table.draw();
+                            } catch (error) {
+                                console.error('Error adjusting table:', error);
+                            }
                         }
                     });
-                }, 10);
+                }, 100); // Increased timeout to ensure DOM is ready
             });
 
             // Initial column adjustment for the active tab
             setTimeout(function() {
-                const activeTable = $('.tab-pane.active .table').DataTable();
-                if (activeTable) {
-                    activeTable.columns.adjust();
-                    activeTable.responsive.recalc();
-                    console.log('Initial column adjustment for active table');
+                try {
+                    const activeTable = $('.tab-pane.active .table').DataTable();
+                    if (activeTable) {
+                        activeTable.columns.adjust();
+                        if (activeTable.responsive && typeof activeTable.responsive.recalc === 'function') {
+                            activeTable.responsive.recalc();
+                        }
+                        console.log('Initial column adjustment for active table completed');
+                    }
+                } catch (error) {
+                    console.error('Error in initial column adjustment:', error);
                 }
-            }, 10);
+            }, 100);
 
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {

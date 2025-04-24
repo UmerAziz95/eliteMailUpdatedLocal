@@ -76,6 +76,13 @@
                 </select>
                 <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
+                <!-- additional-assets-section-link-other -->
+                <div id="additional-assets-section-link-other" style="display: none;">
+                    <p class="note mb-0">(If you selected "Other" above, please provide the name of the
+                        platform)</p>
+                    <input type="text" name="other_platform" id="other_platform" class="form-control mt-2">
+                    <div class="invalid-feedback" id="other-platform-error"></div>
+                </div>
             </div>
 
             <div class="mb-3" id="tutorial-section" style="display: none;">
@@ -213,7 +220,7 @@
                         specific email, enter above)</p>
                 </div>
 
-                <div id="additional-assets-section" style="display: none;">
+                <div id="additional-assets-section">
                     <h5 class="mb-2 mt-4">Additional Assets</h5>
 
                     <div class="mb-3">
@@ -269,13 +276,15 @@ $(document).ready(function() {
             $('#tutorial-section').hide();
         }
 
-        // Handle additional assets section
+        // Handle additional assets section and other platform validation
         if (platformValue === 'other') {
-            $('#additional-assets-section').show();
-            $('#additional_info').prop('required', true);
+            $('#additional-assets-section-link-other').show();
+            $('#other_platform').prop('required', true);
         } else {
-            $('#additional-assets-section').hide();
-            $('#additional_info').prop('required', false);
+            $('#additional-assets-section-link-other').hide();
+            $('#other_platform').prop('required', false);
+            $('#other_platform').removeClass('is-invalid');
+            $('#other-platform-error').text('');
         }
     }
 
@@ -284,6 +293,19 @@ $(document).ready(function() {
 
     // Handle changes
     $('#hosting').on('change', updateSections);
+
+    // Validate other platform field
+    $('#other_platform').on('input', function() {
+        if ($('#hosting').val() === 'other') {
+            if (!$(this).val().trim()) {
+                $(this).addClass('is-invalid');
+                $('#other-platform-error').text('Please specify the hosting platform');
+            } else {
+                $(this).removeClass('is-invalid');
+                $('#other-platform-error').text('');
+            }
+        }
+    });
 
     // subscribe plan
     function subscribePlan(planId) {
@@ -350,6 +372,13 @@ $(document).ready(function() {
 
     // Form submit handler
     $('#newOrderForm').on('submit', function(e) {
+        if ($('#hosting').val() === 'other' && !$('#other_platform').val().trim()) {
+            e.preventDefault();
+            $('#other_platform').addClass('is-invalid');
+            $('#other-platform-error').text('Please specify the hosting platform');
+            return false;
+        }
+        
         e.preventDefault();
         
         // Validate both fields before submission
@@ -379,6 +408,22 @@ $(document).ready(function() {
                     // Handle validation errors
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
                         toastr.error(xhr.responseJSON.errors[key][0]);
+                        const field = $(`[name="${key}"]`);
+                        if (field.length) {
+                            field.addClass('is-invalid');
+                            // Try to find error div using field name first
+                            let errorDiv = field.siblings('.invalid-feedback');
+                            if (!errorDiv.length && field.attr('id')) {
+                                // Fallback to ID-based error div if it exists
+                                errorDiv = $(`#${field.attr('id')}-error`);
+                            }
+                            // If no error div exists, create one
+                            if (!errorDiv.length) {
+                                errorDiv = $('<div class="invalid-feedback"></div>');
+                                field.after(errorDiv);
+                            }
+                            errorDiv.text(xhr.responseJSON.errors[key][0]);
+                        }
                     });
                 } else {
                     toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');

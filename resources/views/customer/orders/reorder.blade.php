@@ -395,10 +395,34 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
+                // if (xhr.status === 422 && xhr.responseJSON.errors) {
+                //     // Handle validation errors
+                //     Object.keys(xhr.responseJSON.errors).forEach(key => {
+                //         toastr.error(xhr.responseJSON.errors[key][0]);
+                //     });
+                // } else {
+                //     toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');
+                // }
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
                         toastr.error(xhr.responseJSON.errors[key][0]);
+                        const field = $(`[name="${key}"]`);
+                        if (field.length) {
+                            field.addClass('is-invalid');
+                            // Try to find error div using field name first
+                            let errorDiv = field.siblings('.invalid-feedback');
+                            if (!errorDiv.length && field.attr('id')) {
+                                // Fallback to ID-based error div if it exists
+                                errorDiv = $(`#${field.attr('id')}-error`);
+                            }
+                            // If no error div exists, create one
+                            if (!errorDiv.length) {
+                                errorDiv = $('<div class="invalid-feedback"></div>');
+                                field.after(errorDiv);
+                            }
+                            errorDiv.text(xhr.responseJSON.errors[key][0]);
+                        }
                     });
                 } else {
                     toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');

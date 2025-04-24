@@ -11,6 +11,21 @@ use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
+    private $statuses = [
+        "Pending" => "warning",
+        "Approve" => "success",
+        "Cancel" => "danger",
+        "Expired" => "secondary",
+        "In-Progress" => "primary",
+        "Completed" => "success"
+    ];
+    // payment-status
+    private $paymentStatuses = [
+        "Pending" => "warning",
+        "Paid" => "success",
+        "Failed" => "danger",
+        "Refunded" => "secondary"
+    ];
     // index
     public function index(Request $request)
     {
@@ -195,20 +210,14 @@ class InvoiceController extends Controller
                     return '$' . number_format($invoice->amount, 2);
                 })
                 ->editColumn('status', function($invoice) {
-                    $statusClass = $invoice->status == 'paid' ? 'success' : 'warning';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($invoice->status) . '</span>';
+                    $statusKey = ucfirst(strtolower($invoice->status ?? 'N/A'));
+                    return '<span class="py-1 px-2 text-' . ($this->paymentStatuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
+                        . $statusKey . '</span>';
                 })
                 ->editColumn('status_manage_by_admin', function($invoice) {
-                    $statusClass = match ($invoice->order->status_manage_by_admin ?? 'N/A') {
-                        'active' => 'success',
-                        'expired' => 'danger',
-                        'pending' => 'warning',
-                        'completed' => 'primary',
-                        default => 'secondary',
-                    };
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($invoice->order->status_manage_by_admin ?? 'N/A') . '</span>';
+                    $statusKey = ucfirst($invoice->order->status_manage_by_admin ?? 'N/A');
+                    return '<span class="py-1 px-2 text-' . ($this->statuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
+                        . $statusKey . '</span>';
                 })
                 ->filterColumn('status_manage_by_admin', function($query, $keyword) {
                     $query->whereHas('order', function($q) use ($keyword) {

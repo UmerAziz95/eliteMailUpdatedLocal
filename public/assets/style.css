@@ -474,3 +474,9 @@ footer {
     color: var(--white-color);
     border-bottom: 2px solid var(--second-primary);
 }
+a.dropdown-item.status-change {
+    margin-bottom: 5px;
+}
+.is-invalid {
+    border-color: #dc3545 !important;
+}
