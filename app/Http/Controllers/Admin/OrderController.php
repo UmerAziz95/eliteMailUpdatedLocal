@@ -149,7 +149,7 @@ class OrderController extends Controller
                     return $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : '';
                 })
                 ->editColumn('status', function ($order) {
-                    $statuses = ["Pending","Approve", 'Cancel','Expired','In-Progress', 'Completed'];
+                    $statuses = ["Pending","Approved", 'Cancel','Expired','In-Progress', 'Completed'];
                     $dropdown = '<select class="form-select status-dropdown" data-id="'.$order->id.'" name="status" style="border: 0px !important">';
                 
                     foreach ($statuses as $status) {
