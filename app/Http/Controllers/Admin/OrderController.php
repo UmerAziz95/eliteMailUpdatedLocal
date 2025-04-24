@@ -53,6 +53,7 @@ class OrderController extends Controller
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
 
+          
         return view('admin.orders.orders', compact(
             'plans', 
             'totalOrders', 
@@ -92,9 +93,7 @@ class OrderController extends Controller
 
     public function view($id)
     {
-
       
-        
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
         
         // Retrieve subscription metadata if available
@@ -143,7 +142,7 @@ class OrderController extends Controller
 
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
-                    return '<a href="' . route('customer.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
+                    return '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
                 })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : '';
@@ -228,11 +227,6 @@ class OrderController extends Controller
         }
     }
 
-
-
-
-
-
   public function updateOrderStatus(Request $request){
    $request->validate([
         'order_id' => 'required|exists:orders,id',
@@ -245,4 +239,8 @@ class OrderController extends Controller
 
     return response()->json(['success' => true, 'message' => 'Status updated']);
   }
+
+
+
+  
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
 use App\Http\Controllers\AppLogController;
@@ -99,6 +100,12 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('contractor/{id}/edit', [AdminContractorController::class, 'edit'])->name('contractor.edit');
         Route::put('contractor/{id}', [AdminContractorController::class, 'update'])->name('contractor.update');   // Update
         Route::delete('contractor/{id}', [AdminContractorController::class, 'destroy'])->name('contractor.destroy');
+        //invoices
+        Route::get('/invoices/data', [AdminInvoiceController::class, 'getInvoices'])->name('invoices.data');
+        Route::get('/invoices/{invoiceId}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('/invoices/{invoiceId}/download', [AdminInvoiceController::class, 'download'])->name('invoices.download');
+
+
         
     }); 
 
