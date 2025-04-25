@@ -36,19 +36,89 @@ class PlanController extends Controller
         $plan = Plan::with('features')->findOrFail($id);
         return view('customer.pricing.plan-details', compact('plan'));
     }
-
+    // add chargebee card change details
+    public function chargeBeeChangeCardDetails(Request $request) {}
     public function initiateSubscription(Request $request, $planId)
     {
         $plan = Plan::findOrFail($planId);
+        try {
+            $user = auth()->user();
+            $charge_customer_id = null;
+            if ($request->has('order_id')) {
+                $order = Order::findOrFail($request->order_id);
+                $charge_customer_id = $order->chargebee_customer_id ?? null;
+            }
+            if ($charge_customer_id == null) {
 
-        // Validate user can subscribe to this plan
-        // if (!auth()->user()->canSubscribeToPlan($plan)) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'You are not eligible for this plan'
-        //     ], 403);
-        // }
+                // Create hosted page for subscription
+                $result = HostedPage::checkoutNewForItems([
+                    "subscription_items" => [
+                        [
+                            "item_price_id" => $plan->chargebee_plan_id,
+                            "quantity" => 1
+                        ]
+                    ],
+                    "customer" => [
+                        "email" => $user->email,
+                        "first_name" => $user->name,
+                        // "last_name" => "xcxc",
+                        "phone" => $user->phone,
+                    ],
+                    "billing_address" => [
+                        "first_name" => $user->name,
+                        // "last_name" => "xcxc",
+                        // "line1" => "Address Line 1", // Default value
+                        // "city" => "City", // Default value 
+                        // "state" => "State", // Default value
+                        // "zip" => "12345", // Default value
+                        // "country" => "US" // Default value
+                    ],
+                    "redirect_url" => route('customer.subscription.success'),
+                    "cancel_url" => route('customer.subscription.cancel')
+                ]);
+            } else {
+                // payment done with old customer
+                $result = HostedPage::checkoutNewForItems([
+                    "subscription_items" => [
+                        [
+                            "item_price_id" => $plan->chargebee_plan_id,
+                            "quantity" => 1
+                        ]
+                    ],
+                    "customer" => [
+                        "id" => $charge_customer_id,
+                    ],
+                    "billing_address" => [
+                        "first_name" => $user->first_name,
+                        "last_name" => "xcxc",
+                        "line1" => "Address Line 1", // Default value
+                        "city" => "City", // Default value
+                        "state" => "State", // Default value
+                        "zip" => "12345", // Default value
+                        "country" => "US" // Default value
+                    ],
+                    "redirect_url" => route('customer.subscription.success'),
+                    "cancel_url" => route('customer.subscription.cancel')
+                ]);
+            }
 
+
+            $hostedPage = $result->hostedPage();
+
+            return response()->json([
+                'success' => true,
+                'hosted_page_url' => $hostedPage->url
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initiate subscription: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function initiateSubscriptionOld(Request $request, $planId)
+    {
+        $plan = Plan::findOrFail($planId);
         try {
             $user = auth()->user();
 
@@ -374,7 +444,7 @@ class PlanController extends Controller
                     'status' => 'cancelled',
                     'cancellation_at' => now(),
                     'reason' => $request->reason,
-                    'end_date' => $this->getEndExpiryDate($subscription->start_date),                    
+                    'end_date' => $this->getEndExpiryDate($subscription->start_date),
                 ]);
 
                 // Update user status
@@ -538,6 +608,179 @@ class PlanController extends Controller
                 'success' => false,
                 'message' => 'Error processing refund: ' . $e->getMessage(),
             ]);
+        }
+    }
+
+    public function updatePaymentMethod(Request $request)
+    {
+        try {
+            $charge_customer_id = null;
+            if ($request->has('order_id')) {
+                $order = Order::findOrFail($request->order_id);
+                $charge_customer_id = $order->chargebee_customer_id ?? null;
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing order ID in request.'
+                ]);
+            }
+            if (is_null($charge_customer_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing chargebee customer ID in request.'
+                ]);
+            }
+
+            // Create hosted page for payment method update
+            $result = HostedPage::managePaymentSources([
+                "customer" => [
+                    "id" => $charge_customer_id
+                ],
+                "redirect_url" => route('customer.dashboard'),
+                "cancel_url" => route('customer.dashboard')
+            ]);
+
+            $hostedPage = $result->hostedPage();
+
+            return response()->json([
+                'success' => true,
+                'hosted_page_url' => $hostedPage->url
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initiate card update: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCardDetails(Request $request)
+    {
+        try {
+            $charge_customer_id = null;
+            if($request->has('order_id')){
+                $order = Order::findOrFail($request->order_id);
+                $charge_customer_id = $order->chargebee_customer_id ?? null;
+            }else{
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing order ID in request.'
+                ]);
+            }
+            
+            if(is_null($charge_customer_id)){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing chargebee customer ID in request.'
+                ]);
+            }
+
+            // Get customer's payment sources from ChargeBee using the PaymentSource API
+            $result = \ChargeBee\ChargeBee\Models\PaymentSource::all([
+                'customer_id[is]' => $charge_customer_id,
+                'status[is]' => 'valid'
+            ]);
+            // dd($result);
+            $paymentSources = [];
+
+            foreach ($result as $paymentSource) {
+                $source = $paymentSource->paymentSource()->getValues();
+                // dd($source);
+                $paymentSources[] = [
+                    'id' => $source['id'] ?? null,
+                    'type' => $source['type'] ?? null,
+                    'status' => $source['status'] ?? null,
+                    'card' => [
+                        'last4' => $source['card']['last4'] ?? null,
+                        'expiry_month' => $source['card']['expiry_month'] ?? null,
+                        'expiry_year' => $source['card']['expiry_year'] ?? null,
+                        'masked_number' => $source['card']['masked_number'] ?? null,
+                        "iin" => $source['card']['iin'] ?? null,
+                    ],
+                    'created_at' => $source['created_at'] ?? null,
+                    'updated_at' => $source['updated_at'] ?? null
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'payment_sources' => $paymentSources
+            ]);
+           
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve card details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function createChargeBeeItem()
+    {
+        try {
+            // $request->validate([
+            //     'name' => 'required|string',
+            //     'description' => 'nullable|string',
+            //     'price' => 'required|numeric',
+            //     'period' => 'required|string|in:month,year',
+            //     'period_unit' => 'required|integer',
+            //     'currency_code' => 'required|string|size:3'
+            // ]);
+
+            // Create an item in ChargeBee
+            // Using static test values instead of request data
+            $result = \ChargeBee\ChargeBee\Models\Item::create([
+                'id' => 'test_plan_basic',
+                'name' => 'Test Plan Basic',
+                'description' => 'This is a test plan for development purposes',
+                'type' => 'plan',
+                'enabled_in_portal' => true,
+                // Removed included_in_mrr parameter as MRR setting is not enabled
+                'item_family_id' => 'cbdemo_omnisupport-solutions',
+                'status' => 'active'
+            ]);
+            // dd($result);
+            if ($result && $result->item()) {
+                // Create item price for the plan
+                $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::create([
+                    'id' => strtolower(str_replace(' ', '_', $request->name)) . '_price',
+                    'name' => $request->name . ' Price',
+                    'item_id' => $result->item()->id,
+                    'pricing_model' => 'flat_fee',
+                    'price' => $request->price * 100, // Convert to cents
+                    'period' => $request->period,
+                    'period_unit' => $request->period_unit,
+                    'currency_code' => $request->currency_code,
+                    'status' => 'active'
+                ]);
+
+                if ($priceResult && $priceResult->itemPrice()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Plan created successfully in ChargeBee',
+                        'data' => [
+                            'item_id' => $result->item()->id,
+                            'price_id' => $priceResult->itemPrice()->id,
+                            'name' => $result->item()->name,
+                            'price' => $priceResult->itemPrice()->price / 100, // Convert back to main currency unit
+                            'currency' => $priceResult->itemPrice()->currencyCode,
+                            'period' => $priceResult->itemPrice()->period,
+                            'period_unit' => $priceResult->itemPrice()->periodUnit
+                        ]
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create plan in ChargeBee'
+            ], 500);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating plan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

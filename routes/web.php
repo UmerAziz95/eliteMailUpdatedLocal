@@ -62,9 +62,10 @@ Route::post('/change-password', [AuthController::class, 'changePassword'])->name
 
 Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
        Route::middleware('view.only')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        
         Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
@@ -154,6 +155,8 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     Route::post('/plans/{id}/subscribe', [CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
     Route::post('/plans/{id}/upgrade', [CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
     Route::post('/subscription/cancel-current', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.current.cancel');
+    Route::post('/plans/update-payment-method', [CustomerPlanController::class, 'updatePaymentMethod'])->name('plans.update-payment-method');
+    Route::post('/plans/card-details', [CustomerPlanController::class, 'getCardDetails'])->name('plans.card-details');
     
     // Subscription handling routes
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
