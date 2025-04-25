@@ -13,11 +13,22 @@ use Illuminate\Validation\Rule;
 class AdminController extends Controller
 {
     public function index(Request $request)
-{
+     {
     if ($request->ajax()) {
         // Start query builder
         $query = User::query()->whereIn('role_id', [1, 2, 5]);
+            // 🔍 Apply individual column filters
+            if ($request->filled('user_name')) {
+                $query->where('name', 'like', '%' . $request->input('user_name') . '%');
+            }
 
+            if ($request->filled('email')) {
+                $query->where('email', 'like', '%' . $request->input('email') . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
         // Only apply search to the query builder — NOT to a Collection
         if ($request->has('search') && $request->input('search.value') != '') {
             $search = $request->input('search.value');
