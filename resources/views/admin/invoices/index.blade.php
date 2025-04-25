@@ -121,6 +121,7 @@
                             <th>Date</th>
                             <th>Due Date</th>
                             <th>Price</th>
+                            <th>Customer Name</th>
                             <th>Paid At</th>
                             <th>Subscription ID</th>
                             <th>Status</th>
@@ -166,6 +167,7 @@
                 { data: 'created_at', name: 'created_at' },
                 { data: 'created_at', name: 'created_at' },
                 { data: 'amount', name: 'amount' },
+                { data: 'customer_name', name: 'customer_name' },
                 { data: 'paid_at', name: 'paid_at' },
                 { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
                 { data: 'status', name: 'status' },

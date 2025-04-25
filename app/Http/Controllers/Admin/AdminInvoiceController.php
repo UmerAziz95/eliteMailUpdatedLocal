@@ -31,22 +31,21 @@ class AdminInvoiceController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Invoice::with('order');
-
-            // Apply status filter
+            $query = Invoice::with(['order.user']);
+    
+            // Apply filters
             if ($request->status) {
                 $query->where('status', $request->status);
             }
-
-            // Apply date range filter
+    
             if ($request->startDate) {
                 $query->whereDate('created_at', '>=', $request->startDate);
             }
+    
             if ($request->endDate) {
                 $query->whereDate('created_at', '<=', $request->endDate);
             }
-
-            // Apply price range filter
+    
             if ($request->priceRange) {
                 list($min, $max) = explode('-', $request->priceRange);
                 if ($max === '+') {
@@ -55,19 +54,17 @@ class AdminInvoiceController extends Controller
                     $query->whereBetween('amount', [$min, $max]);
                 }
             }
-
-            // Apply order ID filter
+    
             if ($request->orderId) {
                 $query->where('order_id', $request->orderId);
             }
-
-            // Apply order status filter
+    
             if ($request->orderStatus) {
-                $query->whereHas('order', function($q) use ($request) {
+                $query->whereHas('order', function ($q) use ($request) {
                     $q->where('status_manage_by_admin', $request->orderStatus);
                 });
             }
-
+    
             $data = $query->select([
                 'invoices.id',
                 'invoices.chargebee_invoice_id',
@@ -79,26 +76,29 @@ class AdminInvoiceController extends Controller
                 'invoices.created_at',
                 'invoices.updated_at',
             ]);
-
+    
             return DataTables::of($data)
-                ->addColumn('action', function($row) {
+                ->addColumn('customer_name', function ($row) {
+                    return $row->order->user->name ?? 'N/A';
+                })
+                ->addColumn('action', function ($row) {
                     return view('customer.invoices.actions', compact('row'))->render();
                 })
-                ->editColumn('created_at', function($row) {
+                ->editColumn('created_at', function ($row) {
                     return $row->created_at ? $row->created_at->format('d F, Y') : '';
                 })
-                ->editColumn('paid_at', function($row) {
+                ->editColumn('paid_at', function ($row) {
                     return $row->paid_at ? date('d F, Y', strtotime($row->paid_at)) : '';
                 })
-                ->editColumn('amount', function($row) {
+                ->editColumn('amount', function ($row) {
                     return '$' . number_format($row->amount, 2);
                 })
-                ->editColumn('status', function($row) {
+                ->editColumn('status', function ($row) {
                     $statusClass = $row->status == 'paid' ? 'success' : 'warning';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($row->status) . '</span>';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' .
+                        ucfirst($row->status) . '</span>';
                 })
-                ->editColumn('status_manage_by_admin', function($row) {
+                ->editColumn('status_manage_by_admin', function ($row) {
                     $statusClass = match ($row->order->status_manage_by_admin ?? 'N/A') {
                         'active' => 'success',
                         'expired' => 'danger',
@@ -106,16 +106,27 @@ class AdminInvoiceController extends Controller
                         'completed' => 'primary',
                         default => 'secondary',
                     };
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($row->order->status_manage_by_admin ?? 'N/A') . '</span>';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' .
+                        ucfirst($row->order->status_manage_by_admin ?? 'N/A') . '</span>';
                 })
-                ->orderColumn('status_manage_by_admin', function($query, $direction) {
-                    $query->whereHas('order', function($q) use ($direction) {
+                // Add customer name filter and sorting support
+                ->orderColumn('customer_name', function ($query, $direction) {
+                    $query->join('orders', 'orders.id', '=', 'invoices.order_id')
+                          ->join('users', 'users.id', '=', 'orders.user_id')
+                          ->orderBy('users.name', $direction);
+                })
+                ->filterColumn('customer_name', function ($query, $keyword) {
+                    $query->whereHas('order.user', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->orderColumn('status_manage_by_admin', function ($query, $direction) {
+                    $query->whereHas('order', function ($q) use ($direction) {
                         $q->orderBy('status_manage_by_admin', $direction);
                     });
                 })
-                ->filterColumn('status_manage_by_admin', function($query, $keyword) {
-                    $query->whereHas('order', function($q) use ($keyword) {
+                ->filterColumn('status_manage_by_admin', function ($query, $keyword) {
+                    $query->whereHas('order', function ($q) use ($keyword) {
                         $q->where('status_manage_by_admin', 'like', "%{$keyword}%");
                     });
                 })
@@ -131,9 +142,10 @@ class AdminInvoiceController extends Controller
                 ])
                 ->make(true);
         }
-
+    
         return view('admin.invoices.index');
     }
+    
 
     public function getInvoices(Request $request)
     {
