@@ -30,8 +30,8 @@ class UsersTableSeeder extends Seeder
                 'role_id' => 5,
             ],
             [
-                'email' => 'editor@email.com',
-                'name' => 'Editor User',
+                'email' => 'sub-admin@email.com',
+                'name' => 'Sub Admin',
                 'role_id' => 2,
             ],
         ];
