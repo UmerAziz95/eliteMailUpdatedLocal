@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\OrderEmail;
 use Illuminate\Http\Request;
+use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Validator;
 
 class OrderEmailController extends Controller

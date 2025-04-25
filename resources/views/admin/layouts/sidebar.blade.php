@@ -71,6 +71,16 @@
                 </div>
             </a>
         </li>
+      <li class="nav-item">
+    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/invoices') ? 'active' : '' }}"
+        href="{{ url('admin/invoices') }}">
+        <div class="d-flex align-items-center" style="gap: 13px">
+            <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
+            <div class="text">Invoices</div>
+        </div>
+    </a>
+</li>
+
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
         </p>
