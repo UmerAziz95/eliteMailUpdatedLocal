@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('subscriptions', function (Blueprint $table) {
             //
-            $table->timestamp('cancellation_at')->nullable()->after('reason');
+            $table->dropColumn('cancellation_at'); // remove the column if it exists
         });
     }
 };
