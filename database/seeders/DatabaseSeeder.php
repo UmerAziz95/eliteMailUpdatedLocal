@@ -10,6 +10,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             HostingPlatformSeeder::class,
+            RolesTableSeeder::class,
+            UsersTableSeeder::class,
         ]);
     }
 }
