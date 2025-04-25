@@ -9,6 +9,50 @@ use DataTables;
 
 class SubscriptionController extends Controller
 {
+    private function calculateNextBillingDate($startTimestamp, $billingPeriod, $billingPeriodUnit)
+    {
+        $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+        $currentDate = \Carbon\Carbon::now();
+        
+        $diffUnit = match($billingPeriodUnit) {
+            'month' => $startDate->diffInMonths($currentDate),
+            'year' => $startDate->diffInYears($currentDate),
+            'week' => $startDate->diffInWeeks($currentDate),
+            'day' => $startDate->diffInDays($currentDate),
+            default => 0
+        };
+        
+        $completePeriods = floor($diffUnit / $billingPeriod);
+        $totalPeriods = $completePeriods + 1;
+        
+        return match($billingPeriodUnit) {
+            'month' => $startDate->copy()->addMonths($totalPeriods * $billingPeriod),
+            'year' => $startDate->copy()->addYears($totalPeriods * $billingPeriod),
+            'week' => $startDate->copy()->addWeeks($totalPeriods * $billingPeriod),
+            'day' => $startDate->copy()->addDays($totalPeriods * $billingPeriod),
+            default => $startDate
+        };
+    }
+
+    private function formatTimestampToReadable($timestamp)
+    {
+        if (!$timestamp) return 'N/A';
+        
+        if ($timestamp instanceof \Carbon\Carbon) {
+            return $timestamp->format('F d, Y');
+        }
+        
+        if (is_string($timestamp) && strtotime($timestamp) !== false) {
+            return \Carbon\Carbon::parse($timestamp)->format('F d, Y');
+        }
+        
+        if (is_numeric($timestamp)) {
+            return \Carbon\Carbon::createFromTimestamp($timestamp)->format('F d, Y');
+        }
+        
+        return 'N/A';
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -41,7 +85,7 @@ class SubscriptionController extends Controller
     
             return DataTables::of($subscriptions)
                 ->addColumn('created_at', function ($subscription) {
-                    return $subscription->created_at ? $subscription->created_at->format('d F, Y') : 'N/A';
+                    return $this->formatTimestampToReadable($subscription->created_at);
                 })
                 ->addColumn('amount', function ($subscription) {
                     return $subscription->order && $subscription->order->amount
@@ -52,10 +96,56 @@ class SubscriptionController extends Controller
                     return $subscription->chargebee_subscription_id ?? 'N/A';
                 })
                 ->addColumn('last_billing', function ($subscription) {
-                    return $subscription->start_date ? \Carbon\Carbon::parse($subscription->start_date)->format('d F, Y') : 'N/A';
+                    if (!$subscription->start_date) {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $startTimestamp = \Carbon\Carbon::parse($subscription->start_date)->timestamp;
+                    $currentDate = \Carbon\Carbon::now();
+                    $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+                    
+                    $diffUnit = match($billingPeriodUnit) {
+                        'month' => $startDate->diffInMonths($currentDate),
+                        'year' => $startDate->diffInYears($currentDate),
+                        'week' => $startDate->diffInWeeks($currentDate),
+                        'day' => $startDate->diffInDays($currentDate),
+                        default => 0
+                    };
+                    
+                    $completePeriods = floor($diffUnit / $billingPeriod);
+                    
+                    $lastBillingDate = match($billingPeriodUnit) {
+                        'month' => $startDate->copy()->addMonths($completePeriods * $billingPeriod),
+                        'year' => $startDate->copy()->addYears($completePeriods * $billingPeriod),
+                        'week' => $startDate->copy()->addWeeks($completePeriods * $billingPeriod),
+                        'day' => $startDate->copy()->addDays($completePeriods * $billingPeriod),
+                        default => $startDate
+                    };
+
+                    return $this->formatTimestampToReadable($lastBillingDate);
                 })
                 ->addColumn('next_billing', function ($subscription) {
-                    return $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date)->format('d F, Y') : 'N/A';
+                    if (!$subscription->start_date || $subscription->status !== 'active') {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $nextBillingDate = $this->calculateNextBillingDate(
+                        \Carbon\Carbon::parse($subscription->start_date)->timestamp,
+                        $billingPeriod,
+                        $billingPeriodUnit
+                    );
+
+                    return $this->formatTimestampToReadable($nextBillingDate);
                 })
                 ->addColumn('order_id', function ($subscription) {
                     return $subscription->order_id ?? 'N/A';
@@ -125,7 +215,7 @@ class SubscriptionController extends Controller
     
             return DataTables::of($subscriptions)
                 ->addColumn('created_at', function ($subscription) {
-                    return $subscription->created_at ? $subscription->created_at->format('d F, Y') : 'N/A';
+                    return $this->formatTimestampToReadable($subscription->created_at);
                 })
                 ->addColumn('amount', function ($subscription) {
                     return $subscription->order && $subscription->order->amount
@@ -136,7 +226,56 @@ class SubscriptionController extends Controller
                     return $subscription->chargebee_subscription_id ?? 'N/A';
                 })
                 ->addColumn('last_billing', function ($subscription) {
-                    return $subscription->start_date ? \Carbon\Carbon::parse($subscription->start_date)->format('d F, Y') : 'N/A';
+                    if (!$subscription->start_date) {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $startTimestamp = \Carbon\Carbon::parse($subscription->start_date)->timestamp;
+                    $currentDate = \Carbon\Carbon::now();
+                    $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+                    
+                    $diffUnit = match($billingPeriodUnit) {
+                        'month' => $startDate->diffInMonths($currentDate),
+                        'year' => $startDate->diffInYears($currentDate),
+                        'week' => $startDate->diffInWeeks($currentDate),
+                        'day' => $startDate->diffInDays($currentDate),
+                        default => 0
+                    };
+                    
+                    $completePeriods = floor($diffUnit / $billingPeriod);
+                    
+                    $lastBillingDate = match($billingPeriodUnit) {
+                        'month' => $startDate->copy()->addMonths($completePeriods * $billingPeriod),
+                        'year' => $startDate->copy()->addYears($completePeriods * $billingPeriod),
+                        'week' => $startDate->copy()->addWeeks($completePeriods * $billingPeriod),
+                        'day' => $startDate->copy()->addDays($completePeriods * $billingPeriod),
+                        default => $startDate
+                    };
+
+                    return $this->formatTimestampToReadable($lastBillingDate);
+                })
+                ->addColumn('next_billing', function ($subscription) {
+                    if (!$subscription->start_date || $subscription->status !== 'active') {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $nextBillingDate = $this->calculateNextBillingDate(
+                        \Carbon\Carbon::parse($subscription->start_date)->timestamp,
+                        $billingPeriod,
+                        $billingPeriodUnit
+                    );
+
+                    return $this->formatTimestampToReadable($nextBillingDate);
                 })
                 ->addColumn('order_id', function ($subscription) {
                     return $subscription->order_id ?? 'N/A';
