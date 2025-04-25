@@ -22,9 +22,9 @@ class ActivityLogService
         return Log::create([
             'action_type'      => $actionType,                    // Example: 'User Created'
             'description'      => $description,                   // Example: 'New user signed up with email xyz@example.com'
+            'performed_on_id'  => $performedOn?->id,              // ID of the model the action was performed on
             'data'             => $data,                          // Example: ['referral_code' => 'abc123']
             'performed_by'     => Auth::id(),                     // Logged-in user ID (nullable if not logged in)
-            'performed_on_id'  => $performedOn?->id,              // ID of the model the action was performed on
             'performed_on_type'=> $performedOn ? get_class($performedOn) : null, // Model class name (e.g., App\Models\User)
         ]);
     }

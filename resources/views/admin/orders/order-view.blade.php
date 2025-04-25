@@ -1,11 +1,11 @@
-@extends('customer.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
 @section('content')
 <section class="py-3 overflow-hidden">
-    <div class="d-flex align-items-center justify-content-between">
-        <a href="{{ route('customer.orders') }}" class="d-flex align-items-center justify-content-center" 
+    {{-- <div class="d-flex align-items-center justify-content-between">
+        <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center" 
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
@@ -13,7 +13,7 @@
             <i class="fa-solid fa-cart-plus"></i>
             Re-order
         </a>
-    </div>
+    </div> --}}
 
     @php
         $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
@@ -238,13 +238,13 @@
                     <h6>{{ $nextBillingInfo['next_billing_at'] ?? 'N/A'}}</h6>
                 </div>
 
-                @if($order->subscription->status == 'active')
+                {{-- @if($order->subscription->status == 'active')
                 <div class="d-flex justify-content-end">
                     <button data-bs-toggle="modal" data-bs-target="#cancel_subscription"
                         class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">Cancel
                         Subscription</button>
                 </div>
-                @endif
+                @endif --}}
             </div>
 
             @if(!empty($nextBillingInfo))
@@ -311,7 +311,7 @@
                         }
                     },
                     ajax: {
-                        url: "{{ route('customer.invoices.data') }}",
+                        url: "{{ route('admin.invoices.data') }}",
                         type: "GET",
                         data: function(d) {
                             d.order_id = "{{ $order->id }}";
