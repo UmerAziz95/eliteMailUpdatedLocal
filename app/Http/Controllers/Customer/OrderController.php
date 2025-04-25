@@ -18,7 +18,7 @@ class OrderController extends Controller
 {
     private $statuses = [
         "Pending" => "warning",
-        "Approve" => "success",
+        "Approved" => "success",
         "Cancel" => "danger",
         "Expired" => "secondary",
         "In-progress" => "primary",
@@ -172,7 +172,7 @@ class OrderController extends Controller
     public function view($id)
     {
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
-        
+        // dd($order);
         // Retrieve subscription metadata if available
         $subscriptionMeta = json_decode($order->subscription->meta, true);
         $nextBillingInfo = [];

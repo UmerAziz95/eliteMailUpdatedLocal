@@ -44,9 +44,11 @@
         @if(isset($order) && $order->reorderInfo && $order->reorderInfo->count() > 0)
         <div class="card mb-3 p-3">
             <h5>Credit Card</h5>
-            <span class="opacity-50"><strong>VISA</strong> **** **** **** 4080 – Expires 2/2027</span>
+            <div id="card-details">Loading card details...</div>
             <div class="mt-3">
-                <button class="c-btn"><i class="fa-solid fa-credit-card"></i> Change Card</button>
+                <button type="button" class="c-btn" onclick="updatePaymentMethod()">
+                    <i class="fa-solid fa-credit-card"></i> Change Card
+                </button>
             </div>
         </div>
         @endif
@@ -311,7 +313,8 @@ $(document).ready(function() {
             url: `/customer/plans/${planId}/subscribe`,
             type: 'POST',
             data: {
-                _token: '{{ csrf_token() }}'
+                _token: '{{ csrf_token() }}',
+                order_id: '{{ $order->id ?? '' }}'
             },
             success: function(response) {
                 if (response.success) {
@@ -497,5 +500,98 @@ $(document).ready(function() {
     // Initial calculation
     calculateTotalInboxes();
 });
+
+// Load card details when page loads
+$(document).ready(function() {
+    loadCardDetails();
+});
+
+function loadCardDetails() {
+    $.ajax({
+        url: '{{ route("customer.plans.card-details") }}',
+        type: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            order_id: '{{ $order->id ?? '' }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                const card = response.card;
+                if (response.payment_sources && response.payment_sources.length > 0) {
+                    let cardHtml = '';
+                    response.payment_sources.forEach(source => {
+                        if (source.type === 'card' && source.status === 'valid' && source.card) {
+                            cardHtml += `
+                                <div class="mb-2">
+                                    <span class="opacity-50">
+                                        <strong>Card</strong> **** **** **** ${source.card.last4} – Expires ${source.card.expiry_month}/${source.card.expiry_year}
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    if (cardHtml) {
+                        $('#card-details').html(cardHtml);
+                    } else {
+                        $('#card-details').html('<span class="opacity-50">No valid card details available</span>');
+                    }
+                } else {
+                    $('#card-details').html('<span class="opacity-50">No card details available</span>');
+                }
+            } else {
+                $('#card-details').html(
+                    '<span class="opacity-50">No card details available</span>'
+                );
+            }
+        },
+        error: function(xhr) {
+            $('#card-details').html(
+                '<span class="opacity-50">Failed to load card details</span>'
+            );
+        }
+    });
+}
+
+function updatePaymentMethod() {
+    $.ajax({
+        url: '{{ route("customer.plans.update-payment-method") }}',
+        type: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            order_id: '{{ $order->id ?? '' }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Open the payment page in a popup window
+                const popupWidth = 500;
+                const popupHeight = 700;
+                const left = (window.innerWidth - popupWidth) / 2;
+                const top = (window.innerHeight - popupHeight) / 2;
+                
+                const popup = window.open(
+                    response.hosted_page_url,
+                    'payment_method_update',
+                    `width=${popupWidth},height=${popupHeight},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                );
+                
+                // Check when popup is closed
+                const checkPopup = setInterval(function() {
+                    if (popup.closed) {
+                        clearInterval(checkPopup);
+                        // Reload card details without refreshing page
+                        loadCardDetails();
+                        toastr.success('Payment method updated successfully');
+                    }
+                }, 500);
+            } else {
+                alert(response.message || 'Failed to initiate payment method update');
+            }
+        },
+        error: function(xhr) {
+            alert(xhr.responseJSON?.message || 'Failed to initiate payment method update');
+        }
+    });
+}
 </script>
 @endpush

@@ -67,19 +67,28 @@
                             Email configurations
                         </h6>
 
-                        @if(isset($order->meta['email_config']))
+                        @if(optional($order->reorderInfo)->count() > 0)
                         <div class="d-flex align-items-center justify-content-between">
-                            <span>Total Inboxes <br> {{ $order->meta['email_config']['total_inboxes'] ?? '0' }}</span>
-                            <span>Inboxes per domain <br> {{ $order->meta['email_config']['inboxes_per_domain'] ?? '0' }}</span>
+                            <span>Total Inboxes <br> {{ $order->reorderInfo->first()->total_inboxes ?? '0' }}</span>
+                            <span>Inboxes per domain <br> {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex flex-column">
-                            <span class="opacity-50">Prefix Varients</span>
-                            <span>{{ $order->meta['email_config']['prefix_variants'] ?? 'N/A' }}</span>
+                            <span class="opacity-50">Prefix Variants</span>
+                            <span>Variant 1: {{ $order->reorderInfo->first()->prefix_variant_1 ?? 'N/A' }}</span>
+                            <span>Variant 2: {{ $order->reorderInfo->first()->prefix_variant_2 ?? 'N/A' }}</span>
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Profile Picture URL</span>
-                            <span>{{ $order->meta['email_config']['profile_picture_url'] ?? 'N/A' }}</span>
+                            <span>{{ $order->reorderInfo->first()->profile_picture_link ?? 'N/A' }}</span>
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Email Persona Password</span>
+                            <span>{{ $order->reorderInfo->first()->email_persona_password ?? 'N/A' }}</span>
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Master Inbox Email</span>
+                            <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
                         </div>
                         @else
                         <div class="text-muted">No email configuration data available</div>
