@@ -16,7 +16,17 @@ class CustomerController extends Controller
         if ($request->ajax()) {
             // Start query builder
             $query = User::query()->where('role_id',3);
-    
+            if ($request->filled('user_name')) {
+                $query->where('name', 'like', '%' . $request->input('user_name') . '%');
+            }
+
+            if ($request->filled('email')) {
+                $query->where('email', 'like', '%' . $request->input('email') . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
             // Only apply search to the query builder — NOT to a Collection
             if ($request->has('search') && $request->input('search.value') != '') {
                 $search = $request->input('search.value');
