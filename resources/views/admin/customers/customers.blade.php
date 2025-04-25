@@ -102,7 +102,11 @@
         <div class="card py-3 px-4">
             <div class="row gy-3">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-3">Filters</h5>
+                            <h5 class="mb-2">Filters</h5>
+                            <div>
+                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                            </div>
                 </div>
                <div class="col-md-4">
                             <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
@@ -155,7 +159,28 @@
         window.location.href = "{{ route('admin.customerList') }}?id=" + id;
     }
 
-function initDataTable(planId = '') {
+      // Apply Filters
+    $('#applyFilters').click(function() {
+        refreshDataTable();
+    });
+
+    // Clear Filters
+    $('#clearFilters').click(function() {
+        $('#user_name_filter').val('');
+        $('#email_filter').val('');
+        $('#status_filter').val('');
+        refreshDataTable();
+    });
+ 
+ 
+    function refreshDataTable(){
+                 if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false);
+        }
+    }
+
+
+  function initDataTable(planId = '') {
     console.log('Initializing DataTable for planId:', planId);
     const tableId = '#myTable';
     const $table = $(tableId);
@@ -178,10 +203,12 @@ function initDataTable(planId = '') {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     'Accept': 'application/json'
                 },
-                data: function(d) {
-                    d.plan_id = planId;
-                    return d;
-                },
+               data: function(d) {
+                d.plan_id = planId;
+                d.user_name = $('#user_name_filter').val();
+                d.email = $('#email_filter').val();
+                d.status = $('#status_filter').val();
+            },
                 dataSrc: function(json) {
                     console.log('Server response:', json);
                     return json.data;
