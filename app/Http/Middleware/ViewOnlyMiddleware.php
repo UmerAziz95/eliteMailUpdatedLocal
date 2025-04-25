@@ -17,9 +17,10 @@ class ViewOnlyMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role_id === 5) {
+        // dd('ViewOnlyMiddleware', Auth::check(), Auth::user()->role_id);
+        if (Auth::check() && Auth::user()->role_id == 5) {
             // Allow only GET requests for view-only users
-            if (!$request->isMethod('get')) {
+            // if (!$request->isMethod('get')) {
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([
                         'success' => false,
@@ -27,8 +28,9 @@ class ViewOnlyMiddleware
                     ], 403);
                 }
                 // withErrors
-                return back()->with('error', 'You have view-only access. Modifications are not allowed.');
-            }
+                
+            // }
+            return back()->with('error', 'You have view-only access. Modifications are not allowed.');
         }
 
         return $next($request);

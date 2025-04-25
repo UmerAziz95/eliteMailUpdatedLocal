@@ -60,9 +60,10 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 
 Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
        Route::middleware('view.only')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        
         Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
