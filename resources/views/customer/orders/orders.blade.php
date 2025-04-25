@@ -322,13 +322,10 @@
                         'Accept': 'application/json'
                     },
                     data: function(d) {
-                        d.draw = d.draw || 1;
-                        d.length = d.length || 10;
-                        d.start = d.start || 0;
-                        d.search = d.search || { value: '', regex: false };
-                        d.plan_id = planId;
-
-                        // Add filter parameters
+                        // Make sure planId is properly set in the request
+                        d.plan_id = planId || '';
+                        
+                        // Add other parameters
                         d.orderId = $('#orderIdFilter').val();
                         d.status = $('#statusFilter').val();
                         d.email = $('#emailFilter').val();
@@ -339,24 +336,6 @@
 
                         console.log('DataTables request parameters:', d);
                         return d;
-                    },
-                    dataSrc: function(json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
-                    error: function (xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-                        console.error('Status:', xhr.status);
-                        console.error('Full XHR:', xhr);
-                        
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading orders data: ' + error);
-                        }
                     }
                 },
                 columns: [
@@ -368,37 +347,7 @@
                     { data: 'status', name: 'orders.status' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
-                order: [[1, 'desc']],
-                drawCallback: function(settings) {
-                    console.log('Table draw complete. Response:', settings.json);
-                    if (settings.json && settings.json.error) {
-                        toastr.error(settings.json.message || 'Error loading data');
-                    }
-                    $('[data-bs-toggle="tooltip"]').tooltip();
-                    
-                    // Adjust columns after draw
-                    this.api().columns.adjust();
-                    this.api().responsive.recalc();
-                },
-                initComplete: function(settings, json) {
-                    console.log('Table initialization complete');
-                    this.api().columns.adjust();
-                    this.api().responsive.recalc();
-                }
-            });
-
-            // Handle processing state visually
-            table.on('processing.dt', function(e, settings, processing) {
-                const wrapper = $(tableId + '_wrapper');
-                if (processing) {
-                    console.log('DataTable processing started');
-                    wrapper.addClass('loading');
-                    wrapper.append('<div class="dt-loading">Loading...</div>');
-                } else {
-                    console.log('DataTable processing completed');
-                    wrapper.removeClass('loading');
-                    wrapper.find('.dt-loading').remove();
-                }
+                order: [[1, 'desc']]
             });
 
             return table;

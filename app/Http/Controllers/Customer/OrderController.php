@@ -232,7 +232,12 @@ class OrderController extends Controller
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->where('orders.user_id', auth()->id());
 
-            // Apply filters
+            // Apply plan filter if provided
+            if ($request->has('plan_id') && $request->plan_id !== '' && $request->plan_id != null) {   
+                $orders->where('orders.plan_id', $request->plan_id);
+            }
+
+            // Apply other filters
             if ($request->has('orderId') && $request->orderId != '') {
                 $orders->where('orders.id', 'like', "%{$request->orderId}%");
             }
@@ -265,12 +270,6 @@ class OrderController extends Controller
 
             if ($request->has('endDate') && $request->endDate != '') {
                 $orders->whereDate('orders.created_at', '<=', $request->endDate);
-            }
-
-            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
-                    $query->where('total_inboxes', $request->totalInboxes);
-                });
             }
 
             return DataTables::of($orders)
