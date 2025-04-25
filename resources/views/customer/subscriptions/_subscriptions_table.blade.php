@@ -5,6 +5,10 @@
                 <th>ID</th>
                 <th>Date</th>
                 <th>Amount</th>
+                <th>Chargebee ID</th>
+                <th>Last Billing</th>
+                <th>Next Billing</th>
+                <th>Order ID</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
