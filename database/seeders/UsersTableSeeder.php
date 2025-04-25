@@ -1,63 +1,55 @@
 <?php
 
-// database/seeders/UsersTableSeeder.php
-
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class UsersTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('users')->insert([
+        $users = [
             [
-                'name' => 'Super Admin',
                 'email' => 'super.admin@5dsolutions.ae',
-                'password' => Hash::make('Admin123#'), // Use a strong password in production
-                'role_id' => 1, // Admin
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'name' => 'Super Admin',
+                'role_id' => 1,
             ],
             [
-                'name' => 'Customer User',
                 'email' => 'customer@email.com',
-                'password' => Hash::make('Admin123#'),
-                'role_id' => 3, // Customer
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'name' => 'Customer User',
+                'role_id' => 3,
             ],
             [
-                'name' => 'Contractor User',
                 'email' => 'contractor@email',
-                'password' => Hash::make('Admin123#'),
-                'role_id' => 4, // Contractor
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'name' => 'Contractor User',
+                'role_id' => 4,
             ],
             [
-                'name' => 'Moderator',
                 'email' => 'mod@email.com',
-                'password' => Hash::make('Admin123#'),
-                'role_id' => 5, // Mod
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'name' => 'Moderator',
+                'role_id' => 5,
             ],
             [
-                'name' => 'Sub Admin',
-                'email' => 'sub-admin@email.com',
-                'password' => Hash::make('Admin123#'),
-                'role_id' => 2, // Editor
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'email' => 'editor@email.com',
+                'name' => 'Editor User',
+                'role_id' => 2,
             ],
-        ]);
+        ];
+
+        foreach ($users as $user) {
+            DB::table('users')->updateOrInsert(
+                ['email' => $user['email']], // Unique key
+                [
+                    'name' => $user['name'],
+                    'role_id' => $user['role_id'],
+                    'password' => Hash::make('password'), // Always reset password
+                    'status' => 1,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        }
     }
 }
+
 
