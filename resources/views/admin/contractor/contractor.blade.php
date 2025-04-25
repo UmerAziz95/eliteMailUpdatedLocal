@@ -104,28 +104,19 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-3">Filters</h5>
                 </div>
-                <div class="col-md-4">
-                    <select id="select1" class="form-select">
-                        <option value="">Select Role</option>
-                        <option value="1">Option 1</option>
-                        <option value="2">Option 2</option>
-                        <option value="3">Option 3</option>
-                    </select>
+               <div class="col-md-4">
+                            <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
                 </div>
-                <div class="col-md-4">
-                    <select id="select2" class="form-select">
-                        <option value="">Select Plan</option>
-                        <option value="1">Option A</option>
-                        <option value="2">Option B</option>
-                        <option value="3">Option C</option>
-                    </select>
+               <div class="col-md-4">
+                            <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
                 </div>
+               
                 <div class="col-md-4">
-                    <select id="select3" class="form-select">
+                    <select id="status_filter" class="form-select">
                         <option value="">Select Status</option>
-                        <option value="1">Choice X</option>
-                        <option value="2">Choice Y</option>
-                        <option value="3">Choice Z</option>
+                        <option value="1">active</option>
+                        <option value="0">inactive</option>
+                     
                     </select>
                 </div>
             </div>

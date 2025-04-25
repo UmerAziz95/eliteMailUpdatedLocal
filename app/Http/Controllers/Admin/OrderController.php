@@ -95,7 +95,6 @@ class OrderController extends Controller
     {
       
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
-        
         // Retrieve subscription metadata if available
         $subscriptionMeta = json_decode($order->subscription->meta, true);
         $nextBillingInfo = [];

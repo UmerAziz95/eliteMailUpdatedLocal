@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
@@ -95,6 +96,7 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
+        Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
 
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
@@ -106,9 +108,9 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/invoices/data', [AdminInvoiceController::class, 'getInvoices'])->name('invoices.data');
         Route::get('/invoices/{invoiceId}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
         Route::get('/invoices/{invoiceId}/download', [AdminInvoiceController::class, 'download'])->name('invoices.download');
+        Route::get('/invoices', [AdminInvoiceController::class, 'index'])->name('invoices.index');
 
 
-        
     }); 
 
 });

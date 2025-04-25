@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -9,9 +9,8 @@ use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class AdminInvoiceController extends Controller
+class InvoiceController extends Controller
 {
-    //
     private $statuses = [
         "Pending" => "warning",
         "Approve" => "success",
@@ -31,7 +30,7 @@ class AdminInvoiceController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Invoice::with('order');
+            $query = Invoice::with('order')->where('user_id', auth()->id());
 
             // Apply status filter
             if ($request->status) {
@@ -123,22 +122,23 @@ class AdminInvoiceController extends Controller
                 ->addIndexColumn()
                 ->with([
                     'counters' => [
-                        'total' => Invoice::count(),
-                        'paid' => Invoice::where('status', 'paid')->count(),
-                        'pending' => Invoice::where('status', 'pending')->count(),
-                        'failed' => Invoice::where('status', 'failed')->count(),
+                        'total' => Invoice::where('user_id', auth()->id())->count(),
+                        'paid' => Invoice::where('user_id', auth()->id())->where('status', 'paid')->count(),
+                        'pending' => Invoice::where('user_id', auth()->id())->where('status', 'pending')->count(),
+                        'failed' => Invoice::where('user_id', auth()->id())->where('status', 'failed')->count(),
                     ]
                 ])
                 ->make(true);
         }
 
-        return view('admin.invoices.index');
+        return view('customer.invoices.index');
     }
 
     public function getInvoices(Request $request)
     {
         try {
             $invoices = Invoice::with(['user', 'order'])
+                ->where('user_id', auth()->id())
                 ->select([
                     'invoices.id',
                     'invoices.chargebee_invoice_id',
@@ -188,8 +188,8 @@ class AdminInvoiceController extends Controller
             
             return DataTables::of($invoices)
                 ->addColumn('action', function($invoice) {
-                    $viewUrl = route('admin.invoices.show', $invoice->chargebee_invoice_id);
-                    $downloadUrl = route('admin.invoices.download', $invoice->chargebee_invoice_id);
+                    $viewUrl = route('customer.invoices.show', $invoice->chargebee_invoice_id);
+                    $downloadUrl = route('customer.invoices.download', $invoice->chargebee_invoice_id);
                     return '<div class="dropdown">
                         <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -236,10 +236,18 @@ class AdminInvoiceController extends Controller
             return response()->json(['error' => 'Error loading invoices'], 500);
         }
     }
+
+    /**
+     * Show the specified invoice
+     *
+     * @param string $invoiceId
+     * @return \Illuminate\Http\Response
+     */
     public function show($invoiceId)
     {
         try {
             $invoice = Invoice::with(['user', 'order'])
+                ->where('user_id', auth()->id())
                 ->where('chargebee_invoice_id', $invoiceId)
                 ->firstOrFail();
 
@@ -250,7 +258,7 @@ class AdminInvoiceController extends Controller
                 ]);
             }
 
-            return view('admin.invoices.show', compact('invoice'));
+            return view('customer.invoices.show', compact('invoice'));
         } catch (Exception $e) {
             Log::error('Error showing invoice: ' . $e->getMessage());
             
@@ -265,11 +273,18 @@ class AdminInvoiceController extends Controller
         }
     }
 
+    /**
+     * Download the specified invoice
+     *
+     * @param string $invoiceId
+     * @return \Illuminate\Http\Response
+     */
     public function download($invoiceId)
     {
         try {
             // Check if user has access to this invoice
             $invoice = Invoice::with(['user', 'order.plan'])
+                ->where('user_id', auth()->id())
                 ->where('chargebee_invoice_id', $invoiceId)
                 ->firstOrFail();
 
