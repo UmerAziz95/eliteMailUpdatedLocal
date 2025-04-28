@@ -5,9 +5,10 @@
                 <th>Subscription ID</th>
                 <th>Created At</th>
                 <th>Amount</th>  
-                <th>Name</th>  
+                <th>Customer Name</th>  
                 <th>Customer Email</th>
                 <th>Status</th>
+                <th>cancellation_at</th>
                 <th>Actions</th>
             </tr>
         </thead>

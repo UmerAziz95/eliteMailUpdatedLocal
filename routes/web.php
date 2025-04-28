@@ -25,6 +25,8 @@ use App\Http\Controllers\Contractor\OrderEmailController as ContractorOrderEmail
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
+//logs
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -39,10 +41,10 @@ use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailCont
 
 
 
-//logs
-Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs');
+//logs for application
+Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::view('/plans', 'plans');
-// test section end
+
 
 
 // Note: Authentication Routes

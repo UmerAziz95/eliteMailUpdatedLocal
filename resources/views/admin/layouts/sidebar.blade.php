@@ -42,15 +42,7 @@
                 </div>
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"
-                href="{{ url('admin/orders') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-box fs-5"></i></div>
-                    <div class="text">Orders</div>
-                </div>
-            </a>
-        </li>
+       
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/subscriptions') ? 'active' : '' }}"
                 href="{{ url('admin/subscriptions') }}">
@@ -176,12 +168,11 @@
             </a>
         </li>
 
-        <!-- Orders -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('orders') ? 'active' : '' }}"
-                href="{{ url('orders') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"
+                href="{{ url('admin/orders') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-details"></i></div>
+                    <div class="icons"><i class="ti ti-box fs-5"></i></div>
                     <div class="text">Orders</div>
                 </div>
             </a>

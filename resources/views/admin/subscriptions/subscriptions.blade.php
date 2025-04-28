@@ -53,7 +53,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Total Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="total_counter" >0</h4>
+                                <h4 class="mb-0 me-2" id="total_counter">0</h4>
                             </div>
                         </div>
                         <div class="avatar">
@@ -84,7 +84,7 @@
                 </div>
             </div>
         </div>
-      
+
         <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
@@ -92,7 +92,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Cancelled Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="inactive_counter" >0</h4>
+                                <h4 class="mb-0 me-2" id="inactive_counter">0</h4>
                             </div>
                         </div>
                         <div class="avatar">
@@ -106,31 +106,89 @@
         </div>
     </div>
 
-   <div class="card py-3 px-4">
-    <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
-                type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">Active Subscriptions</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="cancel-tab" data-bs-toggle="tab" data-bs-target="#cancel-tab-pane"
-                type="button" role="tab" aria-controls="cancel-tab-pane" aria-selected="false">Cancelled Subscriptions</button>
-        </li>
-    </ul>
+    <div class="card py-3 px-4">
+        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
+                    type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">Active
+                    Subscriptions</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cancel-tab" data-bs-toggle="tab" data-bs-target="#cancel-tab-pane"
+                    type="button" role="tab" aria-controls="cancel-tab-pane" aria-selected="false">Cancelled
+                    Subscriptions</button>
+            </li>
+        </ul>
 
-    <div class="tab-content" id="myTabContent">
-        <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
-            @include('admin.subscriptions._subscriptions_table')
-        </div>
-        <div class="tab-pane fade" id="cancel-tab-pane" role="tabpanel" aria-labelledby="cancel-tab" tabindex="0">
-            @include('admin.subscriptions._cancelled_subscriptions_table')
+        <div class="tab-content" id="myTabContent">
+
+            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
+                tabindex="0">
+                <div class="row gy-3 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-2">Filters</h5>
+                        <div>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 applyFilters">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm clearFilters">Clear</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="user_name_filter" class="form-control" placeholder="Enter name">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="amount_filter" class="form-control" placeholder="Enter amount">
+                    </div>
+
+                    {{-- <div class="col-md-3">
+                        <select id="status_filter" class="form-select">
+                            <option value="">Select Status</option>
+                            <option value="1">active</option>
+                            <option value="0">inactive</option>
+
+                        </select>
+                    </div> --}}
+                </div>
+                @include('admin.subscriptions._subscriptions_table')
+            </div>
+            <div class="tab-pane fade" id="cancel-tab-pane" role="tabpanel" aria-labelledby="cancel-tab" tabindex="0">
+                <div class="row gy-3 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-2">Filters</h5>
+                        <div>
+                            <button id="applyFilters2"  class="btn btn-primary btn-sm me-2 applyFilters">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm clearFilters">Clear</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="user_name_filter2" class="form-control" placeholder="Enter name">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="email_filter2" class="form-control" placeholder="Enter email">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="amount_filter2" class="form-control" placeholder="Enter amount">
+                    </div>
+
+                    {{-- <div class="col-md-3">
+                        <select id="status_filter2" class="form-select">
+                            <option value="">Select Status</option>
+                            <option value="1">active</option>
+                            <option value="0">inactive</option>
+
+                        </select>
+                    </div> --}}
+                </div>
+                @include('admin.subscriptions._cancelled_subscriptions_table')
+            </div>
         </div>
     </div>
-</div>
 
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-        aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+        aria-modal="true" role="dialog">
         <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
             <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">View Detail</h5>
             <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
@@ -192,9 +250,12 @@
                 'Accept': 'application/json'
             },
             data: function(d) {
-                d.plan_id = planId;
-                return d;
+                d.user_name = $('#user_name_filter').val();
+                d.email = $('#email_filter').val();
+                d.amount= $('#amount_filter').val();
+                
             },
+           
             dataSrc: function(json) {
                 console.log('Server response:', json);
                 return json.data;
@@ -214,11 +275,12 @@
         },
         columns: [
             { data: 'id', name: 'subscriptions.id' }, // Subscription ID
-            { data: 'created_at', name: 'subscriptions.created_at' }, // Date
-            { data: 'amount', name: 'subscriptions.amount' }, // Date
+            { data: 'amount', name: 'amount' }, // Date
             { data: 'name', name: 'users.name' }, // Date
             { data: 'email', name: 'users.email' }, // From addColumn() in controller
             { data: 'status', name: 'subscriptions.status' }, // Subscription status
+            { data: 'last_billing_date', name: 'last_billing_date' }, // Subscription status
+            { data: 'next_billing_date', name: 'next_billing_date' }, // Subscription status
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
         order: [[1, 'desc']],
@@ -289,6 +351,7 @@
             { data: 'name', name: 'users.name' }, // name
             { data: 'email', name: 'users.email' }, // From addColumn() in controller
             { data: 'status', name: 'subscriptions.status' }, // Subscription status
+            { data: 'cancellation_at', name: 'cancellation_at' },
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
         ajax: {
@@ -299,13 +362,15 @@
                 'Accept': 'application/json'
             },
             data: function(d) {
-                d.search_filter_1 = "search filter test value";
-                return d;
+                d.search_filter_2 = "search filter test value";
+                d.user_name = $('#user_name_filter2').val();
+                d.email = $('#email_filter2').val();
+                d.amount = $('#amount_filter2').val();
             },
             dataSrc: function(json) {
                 console.log('Server response:', json);
                 return json.data;
-            },
+            }, 
             error: function(xhr, error, thrown) {
                 console.error('DataTables error:', error);
                 console.error('Server response:', xhr.responseText);
@@ -371,14 +436,14 @@
     }
 
     $(document).ready(function() {
-        try {
-            console.log('Document ready, initializing tables');
-            
+        try {   
             window.orderTables = {};
 
-            // Initialize table for all Subscriptions
-            window.orderTables.all = initDataTable();
-            window.orderTables.all = initCancelledDataTable();
+                // Initialize "All Subscriptions" table
+                window.orderTables.allSubs = initDataTable();
+
+                // Initialize "Cancelled Subscriptions" table
+                window.orderTables.cancelledSubs = initCancelledDataTable();
 
             // Handle tab changes
             $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
@@ -420,24 +485,38 @@
             console.error('Error in document ready:', error);
         }
     });
+
+      // Apply Filters
+    $('.applyFilters').click(function() {
+        refreshDataTable();
+    });
+
+    // Clear Filters
+    $('.clearFilters').click(function() {
+        $('#user_name_filter').val('');
+        $('#email_filter').val('');
+        $('#amount_filter').val('');
+        $('#user_name_filter2').val('');
+        $('#email_filter2').val('');
+        $('#amount_filter2').val('');
+        refreshDataTable();
+    });
+
+    function refreshDataTable(){
+        if (window.orderTables) {
+        if (window.orderTables.allSubs) {
+            window.orderTables.allSubs.ajax.reload(null, false);
+        }
+
+        if (window.orderTables.cancelledSubs) {
+            window.orderTables.cancelledSubs.ajax.reload(null, false);
+        }
+      }
+    }
+
+  
+
 </script>
 
-<style>
-    .dt-loading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 1rem;
-        border-radius: 4px;
-    }
-    
-    .loading {
-        position: relative;
-        pointer-events: none;
-        opacity: 0.6;
-    }
-</style>
+
 @endpush
