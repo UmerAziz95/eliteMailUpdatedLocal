@@ -27,7 +27,7 @@ class AdminInvoiceController extends Controller
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
-    // index
+    // index to load table
     public function index(Request $request)
     {
         if ($request->ajax()) {

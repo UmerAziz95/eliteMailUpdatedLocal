@@ -8,6 +8,7 @@
                 <th>Plan</th>
                 @endif
                 <th>Customer Email</th>
+                <th>Customer Name</th> 
                 <th>Domain URL</th>
                 <th>Status</th>
                 <th>Actions</th>
