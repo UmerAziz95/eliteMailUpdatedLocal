@@ -250,31 +250,7 @@ class PlanController extends Controller
                     'additional_info' => $order_info['additional_info'] ?? null,
                 ]);
             }
-            // "user_id" => "2"
-            // "plan_id" => "1"
-            // "forwarding_url" => "http://127.0.0.1:8080/customer/orders/reorder/42"
-            // "hosting_platform" => "Namecheap"
-            // "backup_codes" => "dfd434"
-            // "platform_login" => "zlatin@expandacquisition.com"
-            // "platform_password" => "343"
-            // "domains" => "434"
-            // "sending_platform" => "Instantly"
-            // "sequencer_login" => "venkat.viswanathan2000@yahoo.com"
-            // "sequencer_password" => "Joy4Jesus"
-            // "total_inboxes" => "324"
-            // "inboxes_per_domain" => "2"
-            // "first_name" => "Venkat"
-            // "last_name" => "Viswanathan"
-            // "prefix_variant_1" => "venkat"
-            // "prefix_variant_2" => "venkat.viswanathan"
-            // "persona_password" => "Joy4Jesus"
-            // "profile_picture_link" => "https://drive.google.com/file/d/148yvyXqit0XxNS1foFALosulbeEHO-a-G/view?usp=sharing"
-            // "email_persona_password" => "Joy4Jesus"
-            // "email_persona_picture_link" => "https://drive.google.com/file/d/148yvyXqit0XxNS1foFALosulbeEHO-a-G/view?usp=sharing"
-            // "master_inbox_email" => "Viswanathan@e.com"
-            // "additional_info" => "dsd"
-            // "coupon_code" => "Viswanathan"
-
+        
             // Create or update invoice
             $existingInvoice = Invoice::where('chargebee_invoice_id', $invoice->id)->first();
 
@@ -781,6 +757,113 @@ class PlanController extends Controller
                 'success' => false,
                 'message' => 'Error creating plan: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function handleInvoiceWebhook(Request $request)
+    {
+        try {
+            // Verify webhook authenticity
+            $webhookData = $request->all();
+            // return response()->json($webhookData);
+            // Log::info('Invoice Webhook received', ['data' => $webhookData]);
+            return response()->json($webhookData);
+            // Get the event type and content
+            $eventType = $webhookData['event_type'] ?? null;
+            $content = $webhookData['content'] ?? null;
+            return response()->json($content);
+            if (!$eventType || !$content) {
+                throw new \Exception('Invalid webhook data received');
+            }
+
+            // Process based on event type
+            switch ($eventType) {
+                case 'invoice_generated':
+                case 'invoice_created':
+                case 'invoice_updated':
+                case 'invoice_paid':
+                case 'invoice_payment_failed':
+                case 'invoice_voided':
+                    $invoiceData = $content['invoice'] ?? null;
+                    if (!$invoiceData) {
+                        throw new \Exception('No invoice data in webhook content');
+                    }
+
+                    // Extract customer and subscription data if available
+                    $customerData = $content['customer'] ?? null;
+                    $subscriptionData = $content['subscription'] ?? null;
+
+                    // Calculate amount in dollars (Chargebee sends amount in cents)
+                    $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
+                    
+                    // Get tax information
+                    $tax = isset($invoiceData['tax_total']) ? ($invoiceData['tax_total'] / 100) : 0;
+
+                    // Prepare metadata
+                    $metadata = [
+                        'invoice' => $invoiceData,
+                        'customer' => $customerData,
+                        'subscription' => $subscriptionData,
+                        'tax' => $tax,
+                        'line_items' => $invoiceData['line_items'] ?? [],
+                        'billing_address' => $invoiceData['billing_address'] ?? null,
+                        'currency_code' => $invoiceData['currency_code'] ?? 'USD',
+                    ];
+
+                    // Find or create invoice record
+                    $invoice = Invoice::updateOrCreate(
+                        ['chargebee_invoice_id' => $invoiceData['id']],
+                        [
+                            'chargebee_customer_id' => $invoiceData['customer_id'],
+                            'chargebee_subscription_id' => $invoiceData['subscription_id'],
+                            'user_id' => $this->getUserIdFromCustomerId($invoiceData['customer_id']),
+                            'plan_id' => $this->getPlanIdFromInvoice($invoiceData),
+                            'order_id' => $this->getOrderIdFromInvoice($invoiceData),
+                            'amount' => $amount,
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'], $eventType),
+                            'paid_at' => isset($invoiceData['paid_at']) 
+                                ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                                : null,
+                            'metadata' => $metadata,
+                        ]
+                    );
+
+                    Log::info('Invoice processed successfully', [
+                        'invoice_id' => $invoice->id,
+                        'status' => $invoice->status,
+                        'event_type' => $eventType
+                    ]);
+                    break;
+
+                default:
+                    Log::info('Unhandled invoice event type', ['event_type' => $eventType]);
+                    break;
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Error processing invoice webhook: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing webhook: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function mapInvoiceStatus($chargebeeStatus, $eventType)
+    {
+        // Map Chargebee invoice status to our system status
+        switch ($chargebeeStatus) {
+            case 'paid':
+                return 'paid';
+            case 'payment_due':
+                return 'pending';
+            case 'voided':
+                return 'voided';
+            case 'not_paid':
+                return $eventType === 'invoice_payment_failed' ? 'failed' : 'pending';
+            default:
+                return 'pending';
         }
     }
 }

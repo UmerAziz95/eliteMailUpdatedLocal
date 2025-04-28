@@ -285,3 +285,5 @@ Route::get('/chargebee/webhook', function () {
     Log::info('Chargebee Webhook Triggered');
 });
 
+Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
+

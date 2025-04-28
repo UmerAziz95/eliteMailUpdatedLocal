@@ -294,13 +294,21 @@ class OrderController extends Controller
                         . ucfirst($order->status_manage_by_admin ?? 'N/A') . '</span>';
                 })
                 ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->reorderInfo ? $order->reorderInfo->first()->forwarding_url : 'N/A';
+                    // Since reorderInfo is a hasMany relationship, we need to get the first item from the collection
+                    if (!$order->reorderInfo || $order->reorderInfo->isEmpty()) {
+                        return 'N/A';
+                    }
+                    return $order->reorderInfo->first()->forwarding_url ?? 'N/A';
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
                 ->addColumn('total_inboxes', function ($order) {
-                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
+                    // return $order->reorderInfo ? $order->reorderInfo->total_inboxes : 'N/A';
+                    if(!$order->reorderInfo || $order->reorderInfo->isEmpty()) {
+                        return 'N/A';
+                    }
+                    return $order->reorderInfo->first()->total_inboxes ?? 'N/A';
                 })
                 ->filterColumn('domain_forwarding_url', function($query, $keyword) {
                     $query->whereHas('reorderInfo', function($q) use ($keyword) {
