@@ -9,6 +9,50 @@ use DataTables;
 
 class SubscriptionController extends Controller
 {
+    private function calculateNextBillingDate($startTimestamp, $billingPeriod, $billingPeriodUnit)
+    {
+        $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+        $currentDate = \Carbon\Carbon::now();
+        
+        $diffUnit = match($billingPeriodUnit) {
+            'month' => $startDate->diffInMonths($currentDate),
+            'year' => $startDate->diffInYears($currentDate),
+            'week' => $startDate->diffInWeeks($currentDate),
+            'day' => $startDate->diffInDays($currentDate),
+            default => 0
+        };
+        
+        $completePeriods = floor($diffUnit / $billingPeriod);
+        $totalPeriods = $completePeriods + 1;
+        
+        return match($billingPeriodUnit) {
+            'month' => $startDate->copy()->addMonths($totalPeriods * $billingPeriod),
+            'year' => $startDate->copy()->addYears($totalPeriods * $billingPeriod),
+            'week' => $startDate->copy()->addWeeks($totalPeriods * $billingPeriod),
+            'day' => $startDate->copy()->addDays($totalPeriods * $billingPeriod),
+            default => $startDate
+        };
+    }
+
+    private function formatTimestampToReadable($timestamp)
+    {
+        if (!$timestamp) return 'N/A';
+        
+        if ($timestamp instanceof \Carbon\Carbon) {
+            return $timestamp->format('F d, Y');
+        }
+        
+        if (is_string($timestamp) && strtotime($timestamp) !== false) {
+            return \Carbon\Carbon::parse($timestamp)->format('F d, Y');
+        }
+        
+        if (is_numeric($timestamp)) {
+            return \Carbon\Carbon::createFromTimestamp($timestamp)->format('F d, Y');
+        }
+        
+        return 'N/A';
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -19,18 +63,6 @@ class SubscriptionController extends Controller
             // Apply filters
             if ($request->filter_id) {
                 $subscriptions->where('id', 'like', '%' . $request->filter_id . '%');
-            }
-            
-            if ($request->filter_name) {
-                $subscriptions->whereHas('user', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->filter_name . '%');
-                });
-            }
-            
-            if ($request->filter_email) {
-                $subscriptions->whereHas('user', function($q) use ($request) {
-                    $q->where('email', 'like', '%' . $request->filter_email . '%');
-                });
             }
             
             if ($request->filter_status) {
@@ -52,10 +84,72 @@ class SubscriptionController extends Controller
             $completed = Subscription::where('status', 'completed')->where('user_id', auth()->user()->id)->count();
     
             return DataTables::of($subscriptions)
-                ->addColumn('name', function ($subscription) {
-                    return $subscription->user->name ?? 'N/A';
+                ->addColumn('created_at', function ($subscription) {
+                    return $this->formatTimestampToReadable($subscription->created_at);
                 })
-                // status
+                ->addColumn('amount', function ($subscription) {
+                    return $subscription->order && $subscription->order->amount
+                        ? '$' . number_format($subscription->order->amount, 2)
+                        : 'N/A'; 
+                })
+                ->addColumn('chargebee_subscription_id', function ($subscription) {
+                    return $subscription->chargebee_subscription_id ?? 'N/A';
+                })
+                ->addColumn('last_billing', function ($subscription) {
+                    if (!$subscription->start_date) {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $startTimestamp = \Carbon\Carbon::parse($subscription->start_date)->timestamp;
+                    $currentDate = \Carbon\Carbon::now();
+                    $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+                    
+                    $diffUnit = match($billingPeriodUnit) {
+                        'month' => $startDate->diffInMonths($currentDate),
+                        'year' => $startDate->diffInYears($currentDate),
+                        'week' => $startDate->diffInWeeks($currentDate),
+                        'day' => $startDate->diffInDays($currentDate),
+                        default => 0
+                    };
+                    
+                    $completePeriods = floor($diffUnit / $billingPeriod);
+                    
+                    $lastBillingDate = match($billingPeriodUnit) {
+                        'month' => $startDate->copy()->addMonths($completePeriods * $billingPeriod),
+                        'year' => $startDate->copy()->addYears($completePeriods * $billingPeriod),
+                        'week' => $startDate->copy()->addWeeks($completePeriods * $billingPeriod),
+                        'day' => $startDate->copy()->addDays($completePeriods * $billingPeriod),
+                        default => $startDate
+                    };
+
+                    return $this->formatTimestampToReadable($lastBillingDate);
+                })
+                ->addColumn('next_billing', function ($subscription) {
+                    if (!$subscription->start_date || $subscription->status !== 'active') {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $nextBillingDate = $this->calculateNextBillingDate(
+                        \Carbon\Carbon::parse($subscription->start_date)->timestamp,
+                        $billingPeriod,
+                        $billingPeriodUnit
+                    );
+
+                    return $this->formatTimestampToReadable($nextBillingDate);
+                })
+                ->addColumn('order_id', function ($subscription) {
+                    return $subscription->order_id ?? 'N/A';
+                })
                 ->addColumn('status', function ($subscription) {
                     $status = $subscription->status ?? 'N/A';
                     $statusClass = match ($status) {
@@ -67,17 +161,6 @@ class SubscriptionController extends Controller
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                         . ucfirst($status) . '</span>';
                 })
-                ->addColumn('email', function ($subscription) {
-                    return $subscription->user->email ?? 'N/A';
-                })
-                ->addColumn('created_at', function ($subscription) {
-                    return $subscription->created_at ? $subscription->created_at->format('d F, Y') : 'N/A';
-                })
-                ->addColumn('amount', function ($subscription) {
-                    return $subscription->order && $subscription->order->amount
-                        ? $subscription->order->amount
-                        : 'N/A'; 
-                })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="dropdown">
                                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
@@ -88,34 +171,6 @@ class SubscriptionController extends Controller
                                     <li><a class="dropdown-item" href="#" onclick="CancelSubscription(\'' . $subscription->chargebee_subscription_id . '\')">Cancel Subscription</a></li>
                                 </ul>
                             </div>';
-                })
-                ->orderColumn('name', function($query, $direction) {
-                    $query->whereHas('user', function($q) use ($direction) {
-                        $q->orderBy('name', $direction);
-                    });
-                })
-                ->orderColumn('email', function($query, $direction) {
-                    $query->whereHas('user', function($q) use ($direction) {
-                        $q->orderBy('email', $direction);
-                    });
-                })
-                ->orderColumn('amount', function($query, $direction) {
-                    $query->whereHas('order', function($q) use ($direction) {
-                        $q->orderBy('amount', $direction);
-                    });
-                })
-                ->filter(function ($query) use ($request) {
-                    if ($request->has('search') && $request->input('search.value') != '') {
-                        $search = $request->input('search.value');
-                        $query->where(function ($q) use ($search) {
-                            $q->where('id', 'like', "%{$search}%")
-                              ->orWhere('status', 'like', "%{$search}%")
-                              ->orWhereHas('user', function ($q2) use ($search) {
-                                  $q2->where('email', 'like', "%{$search}%")
-                                    ->orWhere('name', 'like', "%{$search}%");
-                              });
-                        });
-                    }
                 })
                 ->rawColumns(['action', 'status'])
                 ->with([
@@ -129,7 +184,7 @@ class SubscriptionController extends Controller
                 ->make(true);
         }
     
-        return view("customer.subscriptions.subscriptions", ['plans' => []]);
+        return view("customer/subscriptions/subscriptions", ['plans' => []]);
     }
     
     public function cancelled_subscriptions(Request $request)
@@ -144,22 +199,6 @@ class SubscriptionController extends Controller
                 $subscriptions->where('id', 'like', '%' . $request->filter_id . '%');
             }
             
-            if ($request->filter_name) {
-                $subscriptions->whereHas('user', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->filter_name . '%');
-                });
-            }
-            
-            if ($request->filter_email) {
-                $subscriptions->whereHas('user', function($q) use ($request) {
-                    $q->where('email', 'like', '%' . $request->filter_email . '%');
-                });
-            }
-            
-            if ($request->filter_status) {
-                $subscriptions->where('status', $request->filter_status);
-            }
-            
             if ($request->filter_start_date) {
                 $subscriptions->whereDate('created_at', '>=', $request->filter_start_date);
             }
@@ -175,47 +214,72 @@ class SubscriptionController extends Controller
             $completed = Subscription::where('status', 'completed')->where('user_id', auth()->user()->id)->count();
     
             return DataTables::of($subscriptions)
-                ->addColumn('name', function ($subscription) {
-                    return $subscription->user->name ?? 'N/A';
-                })
-                ->addColumn('email', function ($subscription) {
-                    return $subscription->user->email ?? 'N/A';
-                })
                 ->addColumn('created_at', function ($subscription) {
-                    return $subscription->created_at ? $subscription->created_at->format('d F, Y') : 'N/A';
+                    return $this->formatTimestampToReadable($subscription->created_at);
                 })
                 ->addColumn('amount', function ($subscription) {
                     return $subscription->order && $subscription->order->amount
-                        ? $subscription->order->amount
+                        ? '$' . number_format($subscription->order->amount, 2)
                         : 'N/A'; 
                 })
-                ->addColumn('action', function ($subscription) {
-                    return '<div class="dropdown">
-                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="CancelSubscription(\'' . $subscription->chargebee_subscription_id . '\')">Cancel Subscription</a></li>
-                                </ul>
-                            </div>';
+                ->addColumn('chargebee_subscription_id', function ($subscription) {
+                    return $subscription->chargebee_subscription_id ?? 'N/A';
                 })
-                ->orderColumn('name', function($query, $direction) {
-                    $query->whereHas('user', function($q) use ($direction) {
-                        $q->orderBy('name', $direction);
-                    });
+                ->addColumn('last_billing', function ($subscription) {
+                    if (!$subscription->start_date) {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $startTimestamp = \Carbon\Carbon::parse($subscription->start_date)->timestamp;
+                    $currentDate = \Carbon\Carbon::now();
+                    $startDate = \Carbon\Carbon::createFromTimestamp($startTimestamp);
+                    
+                    $diffUnit = match($billingPeriodUnit) {
+                        'month' => $startDate->diffInMonths($currentDate),
+                        'year' => $startDate->diffInYears($currentDate),
+                        'week' => $startDate->diffInWeeks($currentDate),
+                        'day' => $startDate->diffInDays($currentDate),
+                        default => 0
+                    };
+                    
+                    $completePeriods = floor($diffUnit / $billingPeriod);
+                    
+                    $lastBillingDate = match($billingPeriodUnit) {
+                        'month' => $startDate->copy()->addMonths($completePeriods * $billingPeriod),
+                        'year' => $startDate->copy()->addYears($completePeriods * $billingPeriod),
+                        'week' => $startDate->copy()->addWeeks($completePeriods * $billingPeriod),
+                        'day' => $startDate->copy()->addDays($completePeriods * $billingPeriod),
+                        default => $startDate
+                    };
+
+                    return $this->formatTimestampToReadable($lastBillingDate);
                 })
-                ->orderColumn('email', function($query, $direction) {
-                    $query->whereHas('user', function($q) use ($direction) {
-                        $q->orderBy('email', $direction);
-                    });
+                ->addColumn('next_billing', function ($subscription) {
+                    if (!$subscription->start_date || $subscription->status !== 'active') {
+                        return 'N/A';
+                    }
+
+                    $meta = json_decode($subscription->meta, true);
+                    $subscriptionData = $meta['subscription'] ?? [];
+                    $billingPeriod = $subscriptionData['billing_period'] ?? 1;
+                    $billingPeriodUnit = $subscriptionData['billing_period_unit'] ?? 'month';
+
+                    $nextBillingDate = $this->calculateNextBillingDate(
+                        \Carbon\Carbon::parse($subscription->start_date)->timestamp,
+                        $billingPeriod,
+                        $billingPeriodUnit
+                    );
+
+                    return $this->formatTimestampToReadable($nextBillingDate);
                 })
-                ->orderColumn('amount', function($query, $direction) {
-                    $query->whereHas('order', function($q) use ($direction) {
-                        $q->orderBy('amount', $direction);
-                    });
+                ->addColumn('order_id', function ($subscription) {
+                    return $subscription->order_id ?? 'N/A';
                 })
-                // status
                 ->addColumn('status', function ($subscription) {
                     $status = $subscription->status ?? 'N/A';
                     $statusClass = match ($status) {
@@ -227,23 +291,7 @@ class SubscriptionController extends Controller
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                         . ucfirst($status) . '</span>';
                 })
-                ->orderColumn('status', function($query, $direction) {
-                    $query->orderBy('status', $direction);
-                })
-                ->filter(function ($query) use ($request) {
-                    if ($request->has('search') && $request->input('search.value') != '') {
-                        $search = $request->input('search.value');
-                        $query->where(function ($q) use ($search) {
-                            $q->where('id', 'like', "%{$search}%")
-                              ->orWhere('status', 'like', "%{$search}%")
-                              ->orWhereHas('user', function ($q2) use ($search) {
-                                  $q2->where('email', 'like', "%{$search}%")
-                                    ->orWhere('name', 'like', "%{$search}%");
-                              });
-                        });
-                    }
-                })
-                ->rawColumns(['action', 'status'])
+                ->rawColumns(['status'])
                 ->with([
                     'counters' => [
                         'total' => $total,

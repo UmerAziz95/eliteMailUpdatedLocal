@@ -228,18 +228,22 @@
                         orderable: false,
                         searchable: false
                     },
-                    // {
-                    //     data: 'name',
-                    //     name: 'users.name',
-                    //     orderable: false,
-                    //     searchable: false
-                    // },
-                    // {
-                    //     data: 'email',
-                    //     name: 'users.email',
-                    //     orderable: false,
-                    //     searchable: false
-                    // },
+                    {
+                        data: 'chargebee_subscription_id',
+                        name: 'subscriptions.chargebee_subscription_id'
+                    },
+                    {
+                        data: 'last_billing',
+                        name: 'subscriptions.start_date'
+                    },
+                    {
+                        data: 'next_billing',
+                        name: 'subscriptions.end_date'
+                    },
+                    {
+                        data: 'order_id',
+                        name: 'subscriptions.order_id'
+                    },
                     {
                         data: 'status',
                         name: 'subscriptions.status',
@@ -254,11 +258,15 @@
                     }
                 ],
                 columnDefs: [
-                    { width: '15%', targets: 0 }, // ID
-                    { width: '25%', targets: 1 }, // Date
-                    { width: '20%', targets: 2 }, // Amount
-                    { width: '20%', targets: 3 }, // Status
-                    { width: '20%', targets: 4 }  // Actions
+                    { width: '10%', targets: 0 }, // ID
+                    { width: '12%', targets: 1 }, // Date
+                    { width: '10%', targets: 2 }, // Amount
+                    { width: '15%', targets: 3 }, // Chargebee ID
+                    { width: '12%', targets: 4 }, // Last Billing
+                    { width: '12%', targets: 5 }, // Next Billing
+                    { width: '10%', targets: 6 }, // Order ID
+                    { width: '10%', targets: 7 }, // Status
+                    { width: '9%', targets: 8 }  // Actions
                 ],
                 // ...rest of the configuration
                 ajax: {
@@ -348,18 +356,18 @@
                         orderable: false,
                         searchable: false
                     },
-                    // {
-                    //     data: 'name',
-                    //     name: 'users.name',
-                    //     orderable: false,
-                    //     searchable: false
-                    // },
-                    // {
-                    //     data: 'email',
-                    //     name: 'users.email',
-                    //     orderable: false,
-                    //     searchable: false
-                    // },
+                    {
+                        data: 'chargebee_subscription_id',
+                        name: 'subscriptions.chargebee_subscription_id'
+                    },
+                    {
+                        data: 'last_billing',
+                        name: 'subscriptions.start_date'
+                    },
+                    {
+                        data: 'order_id',
+                        name: 'subscriptions.order_id'
+                    },
                     {
                         data: 'status',
                         name: 'subscriptions.status',
@@ -368,10 +376,13 @@
                     }
                 ],
                 columnDefs: [
-                    { width: '25%', targets: 0 }, // ID
-                    { width: '25%', targets: 1 }, // Date
-                    { width: '25%', targets: 2 }, // Amount
-                    { width: '25%', targets: 3 }  // Status
+                    { width: '12%', targets: 0 }, // ID
+                    { width: '15%', targets: 1 }, // Date
+                    { width: '12%', targets: 2 }, // Amount
+                    { width: '20%', targets: 3 }, // Chargebee ID
+                    { width: '15%', targets: 4 }, // Last Billing
+                    { width: '12%', targets: 5 }, // Order ID
+                    { width: '14%', targets: 6 }  // Status
                 ],
                 ajax: {
                     url: "{{ route('customer.subs.cancelled-subscriptions') }}",

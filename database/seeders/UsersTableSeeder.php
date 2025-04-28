@@ -1,4 +1,5 @@
 <?php
+namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,7 @@ class UsersTableSeeder extends Seeder
                 [
                     'name' => $user['name'],
                     'role_id' => $user['role_id'],
-                    'password' => Hash::make('password'), // Always reset password
+                    'password' => Hash::make('Admin123#'), // Always reset password
                     'status' => 1,
                     'updated_at' => now(),
                     'created_at' => now(),
