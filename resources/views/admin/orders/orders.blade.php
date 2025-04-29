@@ -242,6 +242,7 @@
                     { width: '20%', targets: planId ? 2 : 3 }, // Email
                     { width: '15%', targets: planId ? 3 : 4 }, // Domain URL
                     { width: '15%', targets: planId ? 4 : 5 }, // Status
+                    { width: '15%', targets: planId ? 4 : 5 }, // Status
                     { width: '10%', targets: planId ? 5 : 6 }  // Actions
                 ],
                 ajax: {
@@ -295,8 +296,10 @@
                     { data: 'created_at', name: 'orders.created_at' },
                     ...(planId ? [] : [{ data: 'plan_name', name: 'plans.name' }]),
                     { data: 'email', name: 'email' },
+                    { data: 'name', name: 'name' },
                     { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
                     { data: 'status', name: 'orders.status' },
+                    { data: 'total_inboxes', name: 'total_inboxes' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[1, 'desc']],
@@ -399,8 +402,6 @@
     let selectedStatus = $(this).val();
     let orderId = $(this).data('id');
 
-    console.log("Order ID:", orderId);
-    console.log("New Status:", selectedStatus);
 
     $.ajax({
         url: '/admin/update-order-status',
@@ -428,6 +429,101 @@
     });
 });
 
+function CancelSubscription(subscriptionId) {
+        console.log('Cancel Subscription clicked for ID:', subscriptionId);
+        // Get the subscription details
+        const subscription = subscriptionId;
+        
+        // Set the subscription ID in the modal form 
+        $('#subscription_id_to_cancel').val(subscription);
+        
+        // Show the modal
+        $('#cancel_subscription').modal('show');
+    }
+
+    // Handle form submission
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
+        console.log('Cancel Subscription form submitted');
+        // Check if reason is provided
+        const reason = $('#cancellation_reason').val().trim();
+        if (!reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+        
+        // Get form data and ensure remove_accounts is boolean
+        const formData = new FormData(this);
+        formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+        
+        // Show confirmation dialog
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait while we cancel your subscription',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        // Close the modal
+                        $('#cancel_subscription').modal('hide');
+                        
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Your subscription has been cancelled successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while cancelling your subscription.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    });
 
 </script>
 

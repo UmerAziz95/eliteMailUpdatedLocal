@@ -91,6 +91,8 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
         Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
         Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
+        Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
+    Route::post('/subscription/cancel-process', [SubscriptionController::class, 'subscriptionCancelProcess'])->name('subscription.cancel.process');
         //customer
         Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
         //orders

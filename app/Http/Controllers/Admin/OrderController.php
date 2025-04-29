@@ -95,6 +95,7 @@ class OrderController extends Controller
     {
       
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
+       
         // Retrieve subscription metadata if available
         $subscriptionMeta = json_decode($order->subscription->meta, true);
         $nextBillingInfo = [];
@@ -131,7 +132,7 @@ class OrderController extends Controller
         ]);
         try {
             $orders = Order::query()
-                ->with(['user', 'plan'])
+                ->with(['user', 'plan','reorderInfo'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id');
 
@@ -144,16 +145,20 @@ class OrderController extends Controller
                     return '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
                 })
                 ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : '';
+                    return $order->created_at ? $order->created_at->format('d-F-Y') : '';
                 })
+                ->editColumn('total_inboxes', function ($order) {
+                    return $order->reorderInfo->first()?->total_inboxes ?? '';
+                })               
+                
                 ->editColumn('status', function ($order) {
-                    $statuses = ["Pending","Approved", 'Cancel','Expired','In-Progress', 'Completed'];
+                    $statuses = ["Pending","Approved","Reject", 'Cancelled','Expired','In-Progress', 'Completed'];
                     $dropdown = '<select class="form-select status-dropdown" data-id="'.$order->id.'" name="status" style="border: 0px !important">';
                 
                     foreach ($statuses as $status) {
                         $selected = $order->status_manage_by_admin === $status ? 'selected' : '';
                         $dropdown .= "<option value='{$status}' {$selected}>{$status}</option>";
-                    }
+                    } 
                 
                     $dropdown .= '</select>';
                     return $dropdown;
@@ -162,6 +167,9 @@ class OrderController extends Controller
                 
                 ->addColumn('email', function ($order) {
                     return $order->user ? $order->user->email : 'N/A';
+                })
+                ->addColumn('name', function ($order) {
+                    return $order->user ? $order->user->name : 'N/A';
                 })
                 ->addColumn('domain_forwarding_url', function ($order) {
                     return $order->user ? $order->user->domain_forwarding_url : 'N/A';
@@ -182,6 +190,11 @@ class OrderController extends Controller
                 ->filterColumn('plan_name', function($query, $keyword) {
                     $query->whereHas('plan', function($q) use ($keyword) {
                         $q->where('name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->filterColumn('total_inboxes', function($query, $keyword) {
+                    $query->whereHas('reorderInfo', function($q) use ($keyword) {
+                        $q->where('total_inboxes', 'like', "%{$keyword}%");
                     });
                 })
                 ->orderColumn('email', function($query, $direction) {

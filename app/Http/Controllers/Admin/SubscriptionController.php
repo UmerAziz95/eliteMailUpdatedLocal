@@ -73,7 +73,7 @@ class SubscriptionController extends Controller
                 })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary" onclick="viewSubscription(' . $subscription->id . ')">View</button>
+                                <button class="btn btn-sm btn-primary" onclick="viewOrder(' . $subscription->order->id . ')">View</button>
                             </div>';
                 })
                 ->filter(function ($query) use ($request) {
@@ -161,7 +161,7 @@ class SubscriptionController extends Controller
                 })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary" onclick="viewSubscription(' . $subscription->id . ')">View</button>
+                                <button class="btn btn-sm btn-primary" onclick="viewOrder(' . $subscription->order->id . ')">View</button>
                             </div>';
                 })
                 ->filter(function ($query) use ($request) {
@@ -205,5 +205,140 @@ class SubscriptionController extends Controller
     
         return view("admin/subscriptions/subscriptions", ['plans' => []]);
     }
+
+
+     // Cancel Subscription Method
+     public function cancelSubscription(Request $request)
+     {
+         $subscriptionId = $request->get('subscription_id'); // Get subscription ID from request
+ 
+         try {
+             // Cancel subscription
+             $result = Subscription::cancel($subscriptionId, [
+                 'cancel_at_end_of_period' => true, // Cancel immediately or at the end of the billing period
+             ]);
+ 
+             // Check if the subscription was successfully canceled
+             $subscription = $result->subscription();
+             if ($subscription->status === 'cancelled') {
+                 return response()->json([
+                     'success' => true,
+                     'message' => 'Subscription has been canceled successfully.',
+                 ]);
+             }
+ 
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Failed to cancel the subscription.',
+             ]);
+         } catch (\Exception $e) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Error canceling subscription: ' . $e->getMessage(),
+             ]);
+         }
+     }
+ 
+     public function subscriptionCancelProcess(Request $request)
+     {
+         if ($request->remove_accounts == null || $request->remove_accounts == false) {
+             $request->remove_accounts = 0;
+         } else {
+             $request->remove_accounts = true;
+         }
+         $request->validate([
+             'chargebee_subscription_id' => 'required|string',
+             'reason' => 'required|string',
+             'remove_accounts' => 'required',
+         ]);
+ 
+         $user = auth()->user();
+         $subscription = UserSubscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)
+             ->where('user_id', $user->id)
+             ->first();
+ 
+         if (!$subscription || $subscription->status !== 'active') {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'No active subscription found'
+             ], 404);
+         }
+ 
+         try {
+             $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
+                 "end_of_term" => false,
+                 "credit_option" => "none",
+                 "unbilled_charges_option" => "delete",
+                 "account_receivables_handling" => "no_action"
+             ]);
+ 
+             $subscriptionData = $result->subscription();
+             $invoiceData = $result->invoice();
+             $customerData = $result->customer();
+ 
+             if ($result->subscription()->status === 'cancelled') {
+                 // Update subscription status and end date
+                 $subscription->update([
+                     'status' => 'cancelled',
+                     'cancellation_at' => now(),
+                     'reason' => $request->reason,
+                     'end_date' => $this->getEndExpiryDate($subscription->start_date),
+                 ]);
+ 
+                 // Update user status
+                 $user->update([
+                     'subscription_status' => 'cancelled',
+                     'subscription_id' => null,
+                     'plan_id' => null
+                 ]);
+ 
+                 // Update order status
+                 $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+                 if ($order) {
+                     $order->update([
+                         'status_manage_by_admin' => 'expired',
+                     ]);
+                 }
+ 
+                 try {
+                     // Send email to user
+                     // Mail::to($user->email)
+                     //     ->queue(new SubscriptionCancellationMail(
+                     //         $subscription, 
+                     //         $user, 
+                     //         $request->reason
+                     //     ));
+ 
+                     // Send email to admin
+                     // Mail::to(config('mail.admin_address', 'admin@example.com'))
+                     //     ->queue(new SubscriptionCancellationMail(
+                     //         $subscription, 
+                     //         $user, 
+                     //         $request->reason,
+                     //         true
+                     //     ));
+                 } catch (\Exception $e) {
+                     // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
+                     // Continue execution since the subscription was already cancelled
+                 }
+ 
+                 return response()->json([
+                     'success' => true,
+                     'message' => 'Subscription cancelled successfully'
+                 ]);
+             }
+ 
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Failed to cancel subscription in payment gateway'
+             ], 500);
+         } catch (\Exception $e) {
+             \Log::error('Error cancelling subscription: ' . $e->getMessage());
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Failed to cancel subscription: ' . $e->getMessage()
+             ], 500);
+         }
+     }
 }
  
