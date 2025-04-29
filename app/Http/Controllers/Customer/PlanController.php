@@ -48,6 +48,7 @@ class PlanController extends Controller
                 $order = Order::findOrFail($request->order_id);
                 $charge_customer_id = $order->chargebee_customer_id ?? null;
             }
+            // dd($charge_customer_id);
             if ($charge_customer_id == null) {
 
                 // Create hosted page for subscription
@@ -55,7 +56,7 @@ class PlanController extends Controller
                     "subscription_items" => [
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
-                            "quantity" => 1
+                            "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1
                         ]
                     ],
                     "customer" => [
@@ -82,7 +83,7 @@ class PlanController extends Controller
                     "subscription_items" => [
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
-                            "quantity" => 1
+                            "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1
                         ]
                     ],
                     "customer" => [
@@ -227,9 +228,15 @@ class PlanController extends Controller
                     'user_id' => $user->id,
                     'plan_id' => $plan_id,
                     'forwarding_url' => $order_info['forwarding_url'],
+                    // other_platform
+                    'other_platform' => $order_info['other_platform'] ?? null,
+                    // tutorial_section
+                    'tutorial_section' => $order_info['tutorial_section'] ?? null,
                     'hosting_platform' => $order_info['hosting_platform'],
                     'other_platform' => $order_info['other_platform'] ?? null,
-                    'backup_codes' => $order_info['backup_codes'],
+                    'backup_codes' => $order_info['backup_codes'] ?? null,
+                    'bison_url' => $order_info['bison_url'] ?? null,
+                    'bison_workspace' => $order_info['bison_workspace'] ?? null,
                     'platform_login' => $order_info['platform_login'],
                     'platform_password' => $order_info['platform_password'],
                     'domains' => $order_info['domains'],

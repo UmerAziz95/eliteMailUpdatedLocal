@@ -96,6 +96,7 @@ class OrderController extends Controller
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
+        $sendingPlatforms = \App\Models\SendingPlatform::get();
 
         $plan = null; // No plan selected initially, will be determined based on inboxes
         if($id){
@@ -106,7 +107,7 @@ class OrderController extends Controller
         }
         $order = null; // No existing order for new orders
 
-        return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'order'));
+        return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     public function reorder(Request $request, $order_id)
     {
@@ -115,7 +116,9 @@ class OrderController extends Controller
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
-        return view('customer.orders.reorder', compact('plan', 'hostingPlatforms', 'order'));
+        $sendingPlatforms = \App\Models\SendingPlatform::get();
+            
+        return view('customer.orders.reorder', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
 
     private function calculateNextBillingDate($startTimestamp, $billingPeriod, $billingPeriodUnit)
@@ -369,26 +372,55 @@ class OrderController extends Controller
             $validator = $request->validate([
                 'user_id' => 'required|exists:users,id',
                 'plan_id' => 'required|exists:plans,id',
-                'forwarding_url' => 'required|url',
-                'hosting_platform' => 'required',
-                'platform_login' => 'required',
-                'platform_password' => 'required',
-                'domains' => 'required',
-                'sending_platform' => 'required',
-                'sequencer_login' => 'required|email',
-                'sequencer_password' => 'required',
+                'forwarding_url' => 'required|max:255',
+                'hosting_platform' => 'required|string|max:50',
+                'other_platform' => 'nullable|required_if:hosting_platform,other|string|max:50',
+                'platform_login' => 'required|string|max:255',
+                'platform_password' => 'required|string|min:3',
+                'backup_codes' => 'required_if:hosting_platform,namecheap|string',
+                'domains' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        $domains = array_filter(preg_split('/[\r\n,]+/', $value));
+                        if (count($domains) !== count(array_unique($domains))) {
+                            $fail('Duplicate domains are not allowed.');
+                        }
+                        foreach ($domains as $domain) {
+                            if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/', trim($domain))) {
+                                $fail('Invalid domain format: ' . trim($domain));
+                            }
+                        }
+                    }
+                ],
+                'sending_platform' => 'required|string|max:50',
+                'sequencer_login' => 'required|email|max:255',
+                'sequencer_password' => 'required|string|min:3',
                 'total_inboxes' => 'required|integer|min:1',
-                'inboxes_per_domain' => 'required|integer|min:1',
-                'first_name' => 'required',
-                'last_name' => 'required',
-                'prefix_variant_1' => 'required',
-                'prefix_variant_2' => 'required',
-                'persona_password' => 'required',
-                'email_persona_password' => 'required',
+                'inboxes_per_domain' => 'required|integer|min:1|max:3',
+                'first_name' => 'required|string|max:50',
+                'last_name' => 'required|string|max:50',
+                'prefix_variant_1' => 'required|string|max:50',
+                'prefix_variant_2' => 'required|string|max:50',
+                'persona_password' => 'required|string|min:3',
+                'profile_picture_link' => 'nullable|url|max:255',
+                'email_persona_password' => 'required|string|min:3',
+                'email_persona_picture_link' => 'nullable|url|max:255',
+                'master_inbox_email' => 'nullable|email|max:255',
+                'additional_info' => 'nullable|string',
+                'coupon_code' => 'nullable|string|max:50'
+            ], [
+                'forwarding_url.url' => 'Please enter a valid URL for domain forwarding',
+                'other_platform.required_if' => 'Please specify the hosting platform when selecting "Other" option',
+                'backup_codes.required_if' => 'Backup codes are required when using Namecheap',
+                'inboxes_per_domain.max' => 'You can have maximum 3 inboxes per domain',
+                'sequencer_login.email' => 'Sequencer login must be a valid email address',
+                'master_inbox_email.email' => 'Master inbox email must be a valid email address',
+                'profile_picture_link.url' => 'Profile picture link must be a valid URL',
+                'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
 
-            // fails then return error
-
+            // Rest of the existing code...
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
@@ -396,24 +428,22 @@ class OrderController extends Controller
 
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
-            // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes);
+
             // Verify plan can support the total inboxes
-            // $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0) && 
-            //             $plan->min_inbox <= $calculatedTotalInboxes;
             $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
                         
             if (!$canHandle) {
-                // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes);
                 return response()->json([
                     'success' => false,
                     'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
                 ], 422);
             }
-            // dd($domainCount, $request->inboxes_per_domain, $calculatedTotalInboxes,"pass");
+
             // Store session data if validation passes
             $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
             $request->session()->put('order_info.plan_id', $request->plan_id);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
@@ -426,7 +456,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create order: ' . $e->getMessage(),
-                'errors' => method_exists($e, 'errors') ? $e->errors() : $e->getTrace()
+                'errors' => $e->validator->errors() ?? []
             ], 422);
         }
     }

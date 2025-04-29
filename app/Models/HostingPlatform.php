@@ -12,12 +12,14 @@ class HostingPlatform extends Model
         'is_active',
         'requires_tutorial',
         'tutorial_link',
+        'fields',
         'sort_order'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'requires_tutorial' => 'boolean',
-        'sort_order' => 'integer'
+        'sort_order' => 'integer',
+        'fields' => 'json'
     ];
 }

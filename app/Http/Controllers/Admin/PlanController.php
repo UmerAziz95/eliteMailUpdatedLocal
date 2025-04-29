@@ -115,7 +115,7 @@ class PlanController extends Controller
                     'id' => $uniqueId,  // Already includes -monthly suffix
                     'name' => $data['name'] . ' Monthly Price',
                     'item_id' => $result->item()->id,
-                    'pricing_model' => 'flat_fee',
+                    'pricing_model' => 'per_unit',
                     'price' => $data['price'] * 100, // Convert to cents
                     'external_name' => $data['name'] . ' ' . ucfirst($data['period']) . ' Plan',
                     'period_unit' => strtolower($data['period']) === 'monthly' ? 'month' : 'year',
@@ -219,6 +219,7 @@ class PlanController extends Controller
                         "description" => $request->description,
                         'name'=> $request->name,
                         'external_name' => $request->name,
+                        'pricing_model' => 'per_unit',
                     ]);
 
                     if (!$result || !$result->item()) {
