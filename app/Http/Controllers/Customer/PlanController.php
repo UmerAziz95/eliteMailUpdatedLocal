@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionCancellationMail;
 use App\Mail\OrderCreatedMail;
+use Log;
 
 class PlanController extends Controller
 {
@@ -161,9 +162,6 @@ class PlanController extends Controller
         try {
             $hostedPageId = $request->input('id');
             // get session order_info
-
-            // dd($order_info);
-            // dd($hostedPageId);
             if (!$hostedPageId) {
                 return response()->json([
                     'success' => false,
@@ -300,6 +298,9 @@ class PlanController extends Controller
                     'status' => $subscription->status,
                     'start_date' => Carbon::now(),
                     'meta' => $meta_json,
+                    // subscription last_billing_date, next_billing_date
+                    'last_billing_date' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
+                    'next_billing_date' => Carbon::createFromTimestamp($invoice->paidAt)->addMonth()->addDay()->toDateTimeString(),
                 ]
             );
 
@@ -428,6 +429,7 @@ class PlanController extends Controller
                     'cancellation_at' => now(),
                     'reason' => $request->reason,
                     'end_date' => $this->getEndExpiryDate($subscription->start_date),
+                    'next_billing_date' => null,
                 ]);
 
                 // Update user status
@@ -772,71 +774,73 @@ class PlanController extends Controller
         try {
             // Verify webhook authenticity
             $webhookData = $request->all();
-            // return response()->json($webhookData);
-            // Log::info('Invoice Webhook received', ['data' => $webhookData]);
-            return response()->json($webhookData);
             // Get the event type and content
             $eventType = $webhookData['event_type'] ?? null;
             $content = $webhookData['content'] ?? null;
-            return response()->json($content);
             if (!$eventType || !$content) {
                 throw new \Exception('Invalid webhook data received');
             }
 
             // Process based on event type
             switch ($eventType) {
-                case 'invoice_generated':
                 case 'invoice_created':
                 case 'invoice_updated':
                 case 'invoice_paid':
                 case 'invoice_payment_failed':
-                case 'invoice_voided':
+                case 'invoice_generated':
                     $invoiceData = $content['invoice'] ?? null;
+                    
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
                     }
 
-                    // Extract customer and subscription data if available
-                    $customerData = $content['customer'] ?? null;
-                    $subscriptionData = $content['subscription'] ?? null;
+                    // Extract customer and subscription data 
+                    $customerData = $content['customer'] ?? [];
+                    $subscriptionData = $content['subscription'] ?? [];
 
                     // Calculate amount in dollars (Chargebee sends amount in cents)
                     $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
                     
                     // Get tax information
-                    $tax = isset($invoiceData['tax_total']) ? ($invoiceData['tax_total'] / 100) : 0;
+                    $tax = isset($invoiceData['tax']) ? ($invoiceData['tax'] / 100) : 0;
 
                     // Prepare metadata
-                    $metadata = [
+                    $metadata = json_encode([
                         'invoice' => $invoiceData,
-                        'customer' => $customerData,
-                        'subscription' => $subscriptionData,
-                        'tax' => $tax,
-                        'line_items' => $invoiceData['line_items'] ?? [],
-                        'billing_address' => $invoiceData['billing_address'] ?? null,
-                        'currency_code' => $invoiceData['currency_code'] ?? 'USD',
-                    ];
+                    ]);
 
                     // Find or create invoice record
                     $invoice = Invoice::updateOrCreate(
                         ['chargebee_invoice_id' => $invoiceData['id']],
                         [
-                            'chargebee_customer_id' => $invoiceData['customer_id'],
-                            'chargebee_subscription_id' => $invoiceData['subscription_id'],
-                            'user_id' => $this->getUserIdFromCustomerId($invoiceData['customer_id']),
-                            'plan_id' => $this->getPlanIdFromInvoice($invoiceData),
-                            'order_id' => $this->getOrderIdFromInvoice($invoiceData),
+                            'chargebee_customer_id' => $invoiceData['customer_id'] ?? null,
+                            'chargebee_subscription_id' => $invoiceData['subscription_id'] ?? null,
+                            'user_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('user_id') ?? 2,
+                            'plan_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('plan_id') ?? 4,
+                            'order_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('order_id') ?? 5,
                             'amount' => $amount,
-                            'status' => $this->mapInvoiceStatus($invoiceData['status'], $eventType),
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
                                 ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
                                 : null,
                             'metadata' => $metadata,
                         ]
                     );
-
+                    // update subscription last_billing_date, next_billing_date
+                    $subscription = UserSubscription::where('chargebee_subscription_id', $invoiceData['subscription_id'])->first();
+                    if ($subscription) {
+                        $subscription->update([
+                            'last_billing_date' => isset($invoiceData['paid_at']) 
+                                ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                                : null,
+                            'next_billing_date' => isset($invoiceData['paid_at']) 
+                                ? Carbon::createFromTimestamp($invoiceData['paid_at'])->addMonth()->addDay()->toDateTimeString() 
+                                : null
+                        ]);
+                    }
                     Log::info('Invoice processed successfully', [
                         'invoice_id' => $invoice->id,
+                        'chargebee_invoice_id' => $invoiceData['id'],
                         'status' => $invoice->status,
                         'event_type' => $eventType
                     ]);

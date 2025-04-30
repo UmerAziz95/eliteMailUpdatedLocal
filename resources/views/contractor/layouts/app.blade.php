@@ -21,10 +21,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-    <!-- jQuery Latest        -->
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <!-- Toastr JS alert js-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     @stack('styles')
 </head>
@@ -44,7 +41,10 @@
             @include('contractor.layouts.footer') <!-- Include Footer (Optional) -->
         </div>
     </div>
-
+    <!-- jQuery Latest        -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- Toastr JS alert js-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
@@ -56,7 +56,6 @@
      <!-- sweeetalert2 -->
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')
-    
     <script>
         // Global AJAX request handler
         $(document).ajaxStart(function() {

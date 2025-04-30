@@ -25,5 +25,6 @@ class AppServiceProvider extends ServiceProvider
             config('services.chargebee.site'),
             config('services.chargebee.api_key')
         );
+        
     }
 }

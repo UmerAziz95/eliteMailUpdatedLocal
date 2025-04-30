@@ -138,6 +138,8 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
     Route::get('/orders/reorder/{order_id}', [CustomerOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/reorder', [CustomerOrderController::class, 'store'])->name('orders.reorder.store');
     Route::get('/orders/{id}/view', [CustomerOrderController::class, 'view'])->name('orders.view');
+    // customer.order.edit
+    Route::get('/orders/{id}/edit', [CustomerOrderController::class, 'edit'])->name('order.edit');
     Route::get('/dashboard', function () {
         return view('customer.dashboard');
     })->name('dashboard');
@@ -188,6 +190,7 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
 // Info: Contractor Access
 Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(function () {
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
+    
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [ContractorOrderController::class, 'getOrders'])->name('orders.data');
     Route::post('/update-order-status', [ContractorOrderController::class, 'updateStatus'])->name('orders.update.status');

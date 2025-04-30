@@ -22,7 +22,7 @@ class OrderController extends Controller
         "Pending" => "warning",
         "Approved" => "success",
         "Cancel" => "danger",
-        "Expired" => "secondary",
+        "Reject" => "secondary",
         "In-progress" => "primary",
         "Completed" => "success",
         "Delivered" => "success",
@@ -186,10 +186,12 @@ class OrderController extends Controller
                 'billing_period' => $billingPeriod,
                 'billing_period_unit' => $billingPeriodUnit,
                 'current_term_start' => $startDate ? Carbon::parse($startDate)->format('F d, Y') : null,
-                'current_term_end' => $endDate ? Carbon::parse($endDate)->format('F d, Y') : null,
-                'next_billing_at' => $endDate ? null : Carbon::parse($startDate)
-                    ->add($billingPeriod, $billingPeriodUnit)
-                    ->format('F d, Y')
+                // 'current_term_end' => $endDate ? Carbon::parse($endDate)->format('F d, Y') : null,
+                // 'next_billing_at' => $endDate ? null : Carbon::parse($startDate)
+                //     ->add($billingPeriod, $billingPeriodUnit)
+                //     ->format('F d, Y'),
+                'current_term_end' => $order->subscription->last_billing_date ? Carbon::parse($order->subscription->last_billing_date)->format('F d, Y') : ($endDate ? Carbon::parse($endDate)->format('F d, Y') : null),
+                'next_billing_at' => $order->subscription->next_billing_date ? Carbon::parse($order->subscription->next_billing_date)->format('F d, Y') : null
             ];
         }
     

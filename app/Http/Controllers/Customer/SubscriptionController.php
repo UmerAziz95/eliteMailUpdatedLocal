@@ -96,6 +96,10 @@ class SubscriptionController extends Controller
                     return $subscription->chargebee_subscription_id ?? 'N/A';
                 })
                 ->addColumn('last_billing', function ($subscription) {
+                    // First check if the field exists directly in the subscription
+                    if ($subscription->last_billing_date) {
+                        return $this->formatTimestampToReadable($subscription->last_billing_date);
+                    }
                     if (!$subscription->start_date) {
                         return 'N/A';
                     }
@@ -130,6 +134,10 @@ class SubscriptionController extends Controller
                     return $this->formatTimestampToReadable($lastBillingDate);
                 })
                 ->addColumn('next_billing', function ($subscription) {
+                    // First check if the field exists directly in the subscription
+                    if ($subscription->next_billing_date) {
+                        return $this->formatTimestampToReadable($subscription->next_billing_date);
+                    }
                     if (!$subscription->start_date || $subscription->status !== 'active') {
                         return 'N/A';
                     }
@@ -226,6 +234,12 @@ class SubscriptionController extends Controller
                     return $subscription->chargebee_subscription_id ?? 'N/A';
                 })
                 ->addColumn('last_billing', function ($subscription) {
+                    // First check if the field exists directly in the subscription
+                    if ($subscription->last_billing_date) {
+                        return $this->formatTimestampToReadable($subscription->last_billing_date);
+                    }
+                    
+                    // Fall back to calculation if field doesn't exist
                     if (!$subscription->start_date) {
                         return 'N/A';
                     }
@@ -260,6 +274,11 @@ class SubscriptionController extends Controller
                     return $this->formatTimestampToReadable($lastBillingDate);
                 })
                 ->addColumn('next_billing', function ($subscription) {
+                    // First check if the field exists directly in the subscription
+                    if ($subscription->next_billing_date) {
+                        return $this->formatTimestampToReadable($subscription->next_billing_date);
+                    }
+                    
                     if (!$subscription->start_date || $subscription->status !== 'active') {
                         return 'N/A';
                     }

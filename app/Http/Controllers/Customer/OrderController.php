@@ -19,11 +19,11 @@ class OrderController extends Controller
     private $statuses = [
         "Pending" => "warning",
         "Approved" => "success",
-        "Cancel" => "danger",
-        "Expired" => "secondary",
+        "Reject" => "secondary",
         "In-progress" => "primary",
+        "Cancel" => "danger",
         "Completed" => "success",
-        "Delivered" => "success",
+        // "Delivered" => "success",
 
     ];
     // payment-status
@@ -89,6 +89,18 @@ class OrderController extends Controller
             'expiredOrders',
             'approvedOrders'
         ));
+    }
+    // edit
+    public function edit($id)
+    {
+        $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
+        $plan = $order->plan;
+        $hostingPlatforms = HostingPlatform::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+        $sendingPlatforms = \App\Models\SendingPlatform::get();
+        
+        return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     // neworder
     public function newOrder($id = 1)
@@ -206,14 +218,16 @@ class OrderController extends Controller
                 'billing_period' => $billingPeriod,
                 'billing_period_unit' => $billingPeriodUnit,
                 'current_term_start' => $this->formatTimestampToReadable($startDate),
-                'current_term_end' => $this->formatTimestampToReadable($endDate),
+                // 'current_term_end' => $this->formatTimestampToReadable($endDate),
                 'period' => $period,
                 'period_unit' => $billingPeriodUnit,
-                'next_billing_at' => $endDate ? null : $this->calculateNextBillingDate(
-                    Carbon::parse($startDate)->timestamp,
-                    $billingPeriod,
-                    $billingPeriodUnit
-                )->format('F d, Y')
+                // 'next_billing_at' => $endDate ? null : $this->calculateNextBillingDate(
+                //     Carbon::parse($startDate)->timestamp,
+                //     $billingPeriod,
+                //     $billingPeriodUnit
+                // )->format('F d, Y')
+                'current_term_end' => $order->subscription->last_billing_date ? Carbon::parse($order->subscription->last_billing_date)->format('F d, Y') : ($endDate ? Carbon::parse($endDate)->format('F d, Y') : null),
+                'next_billing_at' => $order->subscription->next_billing_date ? Carbon::parse($order->subscription->next_billing_date)->format('F d, Y') : null
             ];
             // dd($nextBillingInfo);
         }
@@ -274,7 +288,8 @@ class OrderController extends Controller
             if ($request->has('endDate') && $request->endDate != '') {
                 $orders->whereDate('orders.created_at', '<=', $request->endDate);
             }
-
+            // ' . ($order->status_manage_by_admin === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                        // <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
                     return '<div class="dropdown">
@@ -285,9 +300,11 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> View</a></li>
+                                    
                                 </ul>
                             </div>';
                 })
+                
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
@@ -364,7 +381,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
     public function store(Request $request)
     {
         try {

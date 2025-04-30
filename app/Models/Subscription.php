@@ -19,6 +19,8 @@ class Subscription extends Model
         'chargebee_invoice_id',
         'plan_id',
         'status',
+        'next_billing_date',
+        'last_billing_date',
         'start_date',
         'end_date',
         'meta',
