@@ -25,8 +25,9 @@ use App\Http\Controllers\Contractor\OrderEmailController as ContractorOrderEmail
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
-//logs
 
+//cron
+use App\Http\Controllers\CronController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -62,6 +63,10 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name(
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
+//cron controller
+Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
+    Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
+});
 
 Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
