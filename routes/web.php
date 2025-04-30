@@ -92,7 +92,6 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
         Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
         Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
-    Route::post('/subscription/cancel-process', [SubscriptionController::class, 'subscriptionCancelProcess'])->name('subscription.cancel.process');
         //customer
         Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
         //orders
@@ -101,6 +100,7 @@ Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
+        Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
 
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');

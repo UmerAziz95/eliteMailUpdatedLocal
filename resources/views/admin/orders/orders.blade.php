@@ -47,12 +47,12 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         padding: 1rem;
         border-radius: 4px;
     }
-    
+
     .loading {
         position: relative;
         pointer-events: none;
@@ -73,7 +73,8 @@
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
-                                <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
+                                <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{
+                                    $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
                             </div>
                             <small class="mb-0">Last week vs previous week</small>
                         </div>
@@ -159,19 +160,20 @@
             </li>
             @foreach($plans as $plan)
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab" 
-                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab" 
+                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab"
+                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab"
                     aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ $plan->name }}</button>
             </li>
             @endforeach
         </ul>
 
         <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
+            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
+                tabindex="0">
                 @include('admin.orders._orders_table')
             </div>
             @foreach($plans as $plan)
-            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel" 
+            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
                 aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
                 @include('admin.orders._orders_table', ['plan_id' => $plan->id])
             </div>
@@ -179,8 +181,8 @@
         </div>
     </div>
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-        aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+        aria-modal="true" role="dialog">
         <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
             <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">View Detail</h5>
             <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
@@ -298,7 +300,6 @@
                     { data: 'email', name: 'email' },
                     { data: 'name', name: 'name' },
                     { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
-                    { data: 'status', name: 'orders.status' },
                     { data: 'total_inboxes', name: 'total_inboxes' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
@@ -398,10 +399,11 @@
         }
     });
 
-    $(document).on('change', '.status-dropdown', function () {
+
+
+$(document).on('change', '.status-dropdown', function () {
     let selectedStatus = $(this).val();
     let orderId = $(this).data('id');
-
 
     $.ajax({
         url: '/admin/update-order-status',
@@ -429,102 +431,147 @@
     });
 });
 
-function CancelSubscription(subscriptionId) {
-        console.log('Cancel Subscription clicked for ID:', subscriptionId);
-        // Get the subscription details
-        const subscription = subscriptionId;
-        
-        // Set the subscription ID in the modal form 
-        $('#subscription_id_to_cancel').val(subscription);
-        
-        // Show the modal
-        $('#cancel_subscription').modal('show');
+
+//open the modal for cancel subscription
+$(document).on('click', '.markStatus', function () {
+    const chargebee_subscription_id = $(this).data('id');
+    const status = $(this).data('status');
+    const reason = $(this).data('reason');
+
+    // Set subscription ID in the hidden input
+    $('#subscription_id_to_cancel').val(chargebee_subscription_id);
+
+    // Uncheck all first to reset previous state
+    $('input[name="marked_status"]').prop('checked', false);
+
+    // Check the radio button that matches the status
+    $('input[name="marked_status"][value="' + status + '"]').prop('checked', true);
+
+    // Show or hide reason field depending on status
+    if (status === 'Reject') {
+        $('#reason_wrapper').removeClass('d-none');
+        $('#cancellation_reason').attr('required', true);
+        $('#cancellation_reason').val(reason);
+    } else { 
+        $('#reason_wrapper').addClass('d-none');
+        $('#cancellation_reason').removeAttr('required');
+        $('#cancellation_reason').val('');
     }
 
-    // Handle form submission
-    $('#cancelSubscriptionForm').on('submit', function(e) {
-        e.preventDefault();
-        console.log('Cancel Subscription form submitted');
-        // Check if reason is provided
-        const reason = $('#cancellation_reason').val().trim();
-        if (!reason) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'The reason field is required.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
+    // Show the modal
+    $('#cancel_subscription').modal('show');
+});
+
+
+//handle the reason field on status change
+$('.marked_status').on('change', function () {
+        const selected = $(this).val();
+        if (selected === 'Reject') {
+            $('#reason_wrapper').removeClass('d-none');
+            $('#cancellation_reason').attr('required', true);
+        } else {
+            $('#reason_wrapper').addClass('d-none');
+            $('#cancellation_reason').val('');
+            $('#cancellation_reason').removeAttr('required');
         }
-        
-        // Get form data and ensure remove_accounts is boolean
-        const formData = new FormData(this);
-        formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
-        
-        // Show confirmation dialog
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, cancel it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: $(this).attr('action'),
-                    method: 'POST',
-                    data: Object.fromEntries(formData),
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    beforeSend: function() {
-                        // Show loading state
-                        Swal.fire({
-                            title: 'Processing...',
-                            text: 'Please wait while we cancel your subscription',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                    },
-                    success: function(response) {
-                        // Close the modal
-                        $('#cancel_subscription').modal('hide');
-                        
-                        // Show success message
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Your subscription has been cancelled successfully.',
-                            confirmButtonColor: '#3085d6'
-                        }).then(() => {
-                            // Reload the page to reflect changes
-                            window.location.reload();
-                        });
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'An error occurred while cancelling your subscription.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: errorMessage,
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                });
-            }
-        });
     });
 
+
+    // Handle form submission
+ $('#cancelSubscriptionForm').on('submit', function(e) {
+    e.preventDefault();
+
+    const selectedStatus = $('input[name="marked_status"]:checked').val();
+    const reason = $('#cancellation_reason').val().trim();
+
+
+    // If status is required
+    if (!selectedStatus) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please select a status.',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
+
+    // If Reject is selected but no reason
+    if (selectedStatus === 'Reject' && !reason) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'The reason field is required for rejection.',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
+
+    // Gather form data manually
+    const formData = new FormData(this);
+    formData.append('marked_status', selectedStatus);
+
+    // Confirm dialog
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: Object.fromEntries(formData),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                beforeSend: function() {
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait a while...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function(response) {
+                    $('#cancel_subscription').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Status has been updated successfully.',
+                        confirmButtonColor: '#3085d6'
+                    }).then(() => {
+                        $('#cancellation_reason').val('');
+                        window.location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred while updating status.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: errorMessage,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            });
+        }
+    });
+});
+
+
 </script>
+
 
 @endpush

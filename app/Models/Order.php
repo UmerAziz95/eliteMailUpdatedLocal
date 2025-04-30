@@ -24,6 +24,7 @@ class Order extends Model
         'meta',
         'plan_id',
         'status_manage_by_admin',
+        'reason'
     ];
 
     public function user()

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Subscription;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
 use DataTables;
@@ -141,28 +142,20 @@ class OrderController extends Controller
             }
 
             return DataTables::of($orders)
-                ->addColumn('action', function ($order) {
-                    return '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
-                })
+            ->addColumn('action', function ($order) {
+                return '
+                    <div style="display: flex; gap: 6px;">
+                        <a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>
+                        <a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" >Mark Status</a>
+                    </div>
+                ';
+            })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d-F-Y') : '';
                 })
                 ->editColumn('total_inboxes', function ($order) {
                     return $order->reorderInfo->first()?->total_inboxes ?? '';
                 })               
-                
-                ->editColumn('status', function ($order) {
-                    $statuses = ["Pending","Approved","Reject", 'Cancelled','Expired','In-Progress', 'Completed'];
-                    $dropdown = '<select class="form-select status-dropdown" data-id="'.$order->id.'" name="status" style="border: 0px !important">';
-                
-                    foreach ($statuses as $status) {
-                        $selected = $order->status_manage_by_admin === $status ? 'selected' : '';
-                        $dropdown .= "<option value='{$status}' {$selected}>{$status}</option>";
-                    } 
-                
-                    $dropdown .= '</select>';
-                    return $dropdown;
-                })
                 ->rawColumns(['status']) // Important to render HTML
                 
                 ->addColumn('email', function ($order) {
@@ -252,7 +245,178 @@ class OrderController extends Controller
     return response()->json(['success' => true, 'message' => 'Status updated']);
   }
 
+  public function subscriptionCancelProcess(Request $request)
+  {
+      $request->validate([
+          'chargebee_subscription_id' => 'required|string',
+          'marked_status' => 'required|string',
+          'reason' => 'nullable|string',
+      ]);
+  
+      $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+  
+      if (!$subscription || $subscription->status !== 'active') {
+          return response()->json([
+              'success' => false,
+              'message' => 'No active subscription found.'
+          ], 404);
+      }
+  
+      try {
+          $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+          if ($order) {
+              $order->update([
+                  'status_manage_by_admin' => $request->marked_status,
+                  'reason' => $request->reason? $request->reason."(Reason given by)"." ".Auth::user()->name: null,
+              ]);
+          }
+  
+          return response()->json([
+              'success' => true,
+              'message' => 'Order Status Updated Successfully.'
+          ]);
+  
+      } catch (\Exception $e) {
+          \Log::error('Error While Updating The Status: ' . $e->getMessage());
+  
+          return response()->json([
+              'success' => false,
+              'message' => 'Failed To Update The Status: ' . $e->getMessage()
+          ], 500);
+      }
+  }
+  
+
+ 
+//   public function subscriptionCancelProcess(Request $request)
+//   {
+     
+//       $request->validate([
+//           'chargebee_subscription_id' => 'required|string',
+//           'reason' => 'nullable|string',
+//           'marked_status'=>'required|string'
+         
+//       ]);
+
+//       $user = auth()->user();
+//       $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)
+//           ->first();
+
+//       if (!$subscription || $subscription->status !== 'active') {
+//           return response()->json([
+//               'success' => false,
+//               'message' => 'No active subscription found'
+//           ], 404);
+//       }
+
+//       try {
+//           if($request->marked_status=="Reject" ||$request->marked_status=="Cancelled" ){
+//           $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
+//               "end_of_term" => false,
+//               "credit_option" => "none",
+//               "unbilled_charges_option" => "delete",
+//               "account_receivables_handling" => "no_action"
+//           ]);
+
+//           $subscriptionData = $result->subscription();
+//           $invoiceData = $result->invoice();
+//           $customerData = $result->customer();
+
+//           if ($result->subscription()->status === 'cancelled') {
+//               // Update subscription status and end date
+//               $subscription->update([
+//                   'status' => 'cancelled',
+//                   'cancellation_at' => now(),
+//                   'reason' => $request->reason,
+//                   'end_date' => $this->getEndExpiryDate($subscription->start_date),
+//               ]);
+
+//               // Update user status
+//               $user->update([
+//                   'subscription_status' => 'cancelled',
+//                   'subscription_id' => null,
+//                   'plan_id' => null
+//               ]);
+
+//               // Update order status
+//               $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+//               if ($order) {
+//                   $order->update([
+//                       'status_manage_by_admin' => 'cancelled',
+//                   ]);
+//               }
+
+//               try {
+//                   // Send email to user
+//                   // Mail::to($user->email)
+//                   //     ->queue(new SubscriptionCancellationMail(
+//                   //         $subscription, 
+//                   //         $user, 
+//                   //         $request->reason
+//                   //     ));
+
+//                   // Send email to admin
+//                   // Mail::to(config('mail.admin_address', 'admin@example.com'))
+//                   //     ->queue(new SubscriptionCancellationMail(
+//                   //         $subscription, 
+//                   //         $user, 
+//                   //         $request->reason,
+//                   //         true
+//                   //     ));
+//               } catch (\Exception $e) {
+//                   // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
+//                   // Continue execution since the subscription was already cancelled
+//               }
+
+//               return response()->json([
+//                   'success' => true,
+//                   'message' => 'Subscription cancelled successfully'
+//               ]);
+//           }
+//         }
+//         else{
+           
+//             // Update order status
+//             $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+//             if ($order) {
+//                 $order->update([
+//                     'status_manage_by_admin' =>$request->marked_status,
+//                 ]);
+//             }
 
 
+//         }
+
+//           return response()->json([
+//               'success' => false,
+//               'message' => 'Failed to cancel subscription in payment gateway'
+//           ], 500);
+//       } catch (\Exception $e) {
+//           \Log::error('Error cancelling subscription: ' . $e->getMessage());
+//           return response()->json([
+//               'success' => false,
+//               'message' => 'Failed to cancel subscription: ' . $e->getMessage()
+//           ], 500);
+//       }
+//   }
+
+
+  public function getEndExpiryDate($startDate)
+  {
+      // $startDate = '2025-04-21 07:02:48'; // Example start date
+      $currentDate = Carbon::now(); // Get current date
+      $startDateCarbon = Carbon::parse($startDate);
+
+      // Calculate the difference in months
+      $monthsToAdd = $currentDate->diffInMonths($startDateCarbon); // Difference in months
+
+      // Calculate the next expiry date
+      $expiryDate = $startDateCarbon
+          ->addMonths(++$monthsToAdd) // Add the dynamic number of months
+          ->subDay()  // Subtract 1 day
+          ->format('Y-m-d H:i:s');
+
+      return $expiryDate; // Outputs the dynamically calculated expiry date
+  }
   
 }

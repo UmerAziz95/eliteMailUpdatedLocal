@@ -8,9 +8,8 @@
                 <th>Plan</th>
                 @endif
                 <th>Customer Email</th>
-                <th>Customer Name</th> 
+                <th>Customer Name</th>
                 <th>Domain URL</th>
-                <th>Status</th>
                 <th>Total Inboxes</th>
                 <th>Actions</th>
             </tr>
@@ -20,7 +19,8 @@
     </table>
 </div>
 <!-- Cancel Subscription Modal -->
-<div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel" aria-hidden="true">
+<div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
@@ -32,34 +32,52 @@
                         style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                         <i class="fa-solid fa-cart-plus"></i>
                     </div>
-                    Cancel Subscription
+                    Mark Status
                 </h6>
 
-                <p class="note">
-                    We are sad to hear you're cancelling. Would you mind sharing the reason
-                    for the cancellation? We strive to always improve and would appreciate your
-                    feedback.
-                </p>
 
-                <form id="cancelSubscriptionForm" action="{{ route('admin.subscription.cancel.process') }}" method="POST">
+
+                <form id="cancelSubscriptionForm" action="{{ route('admin.order.cancel.process') }}"
+                    method="POST">
                     @csrf
                     <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
                     <div class="mb-3">
-                        <label for="cancellation_reason">Reason *</label>
-                        <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
+                        <div class="">
+
+                            <div class="mb-3 d-none" id="reason_wrapper">
+                                <p class="note">
+                                    Would you mind sharing the reason
+                                    for the rejection?
+                                </p>
+                                <label for="cancellation_reason">Reason *</label>
+                                <textarea id="cancellation_reason" name="reason" class="form-control"
+                                    rows="5"></textarea>
+                            </div>
+                        </div>
+                        <label class="form-label">Select Status *</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @php
+                            $statuses = ["Pending", "Approved", "Reject", "Cancelled","In-Progress",
+                            "Completed"];
+                            @endphp
+                            @foreach($statuses as $status)
+                            <div class="form-check me-3">
+                                <input class="form-check-input marked_status" type="radio" name="marked_status"
+                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                <label class="form-check-label" for="status_{{ $loop->index }}">
+                                    {{ $status }}
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
                     </div>
 
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
-                        <label class="form-check-label" for="remove_accounts">
-                            I would like to have these email accounts removed and the domains
-                            released immediately. I will not be using these inboxes any longer.
-                        </label>
-                    </div>
+
 
                     <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                        <button type="button" class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                            data-bs-dismiss="modal">No, I changed my mind</button>
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">No</button>
                         <button type="submit"
                             class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
                             I'm sure</button>
