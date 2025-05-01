@@ -75,3 +75,4 @@ class Kernel extends HttpKernel
         'view.only' => \App\Http\Middleware\ViewOnlyMiddleware::class,
     ];
 }
+//test coomit
