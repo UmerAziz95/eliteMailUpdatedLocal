@@ -63,6 +63,7 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name(
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
+
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
