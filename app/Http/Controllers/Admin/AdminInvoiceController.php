@@ -67,7 +67,7 @@ class AdminInvoiceController extends Controller
     
             $data = $query->select([
                 'invoices.id',
-                'invoices.chargebee_invoice_id',
+                'invoices.id',
                 'invoices.order_id',
                 'invoices.amount',
                 'invoices.status',
@@ -82,7 +82,7 @@ class AdminInvoiceController extends Controller
                     return $row->order->user->name ?? 'N/A';
                 })
                 ->addColumn('action', function ($row) {
-                    return view('customer.invoices.actions', compact('row'))->render();
+                    return view('admin.invoices.actions', ['row'=>$row])->render();
                 })
                 ->editColumn('created_at', function ($row) {
                     return $row->created_at ? $row->created_at->format('d F, Y') : '';
@@ -285,8 +285,8 @@ class AdminInvoiceController extends Controller
                 ->where('chargebee_invoice_id', $invoiceId)
                 ->firstOrFail();
 
-            // Generate PDF using dompdf
-            $pdf = \PDF::loadView('customer.invoices.pdf', compact('invoice'));
+            // Generate PDF using dompdf  
+            $pdf = \PDF::loadView('admin.invoices.pdf', compact('invoice'));
             
             // Generate filename
             $filename = 'invoice_' . $invoiceId . '.pdf';

@@ -214,8 +214,8 @@
     });
 
     function viewOrder(id) {
-        window.location.href = "{{ route('admin.subs.detail.view') }}?id=" + id;
-    }
+     window.location.href = "{{ url('/') }}/admin/orders/" + id + "/view";
+   }
 
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
@@ -274,7 +274,7 @@
             }
         },
         columns: [
-            { data: 'id', name: 'subscriptions.id' }, // Subscription ID
+            { data: 'chargebee_subscription_id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
             { data: 'amount', name: 'amount' }, // Date
             { data: 'name', name: 'users.name' }, // Date
             { data: 'email', name: 'users.email' }, // From addColumn() in controller
@@ -345,7 +345,7 @@
         responsive: true,
         autoWidth: false,
        columns: [
-            { data: 'id', name: 'subscriptions.id' }, // Subscription ID
+            { data: 'id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
             { data: 'created_at', name: 'subscriptions.created_at' }, // Date
             { data: 'amount', name: 'subscriptions.amount' }, // Date
             { data: 'name', name: 'users.name' }, // name
@@ -385,7 +385,7 @@
             }
         },
         columns: [
-            { data: 'id', name: 'subscriptions.id' }, // Subscription ID
+            { data: 'chargebee_subscription_id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
             { data: 'created_at', name: 'subscriptions.created_at' }, // Date
             { data: 'amount', name: 'subscriptions.amount' }, // Date
             { data: 'name', name: 'users.name' }, // name
@@ -515,7 +515,7 @@
     }
 
   
-
+  
 </script>
 
 

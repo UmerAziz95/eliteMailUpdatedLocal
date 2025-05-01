@@ -282,6 +282,7 @@ return [
          * @var array|null
          */
         'allowed_remote_hosts' => null,
+        'remote_enabled' => true,
 
         /**
          * A ratio applied to the fonts height to be more like browsers' line height

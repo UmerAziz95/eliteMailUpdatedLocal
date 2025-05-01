@@ -73,7 +73,7 @@ class SubscriptionController extends Controller
                 })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary" onclick="viewSubscription(' . $subscription->id . ')">View</button>
+                                <button class="btn btn-sm btn-primary" onclick="viewOrder(' . $subscription->order->id . ')">View</button>
                             </div>';
                 })
                 ->filter(function ($query) use ($request) {
@@ -161,7 +161,7 @@ class SubscriptionController extends Controller
                 })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary" onclick="viewSubscription(' . $subscription->id . ')">View</button>
+                                <button class="btn btn-sm btn-primary" onclick="viewOrder(' . $subscription->order->id . ')">View</button>
                             </div>';
                 })
                 ->filter(function ($query) use ($request) {
@@ -205,5 +205,8 @@ class SubscriptionController extends Controller
     
         return view("admin/subscriptions/subscriptions", ['plans' => []]);
     }
+
+
+   
 }
  

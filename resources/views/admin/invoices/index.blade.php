@@ -162,7 +162,7 @@
                 }
             },
             columns: [
-                { data: 'chargebee_invoice_id', name: 'chargebee_invoice_id' },
+                { data: 'id', name: 'id' },
                 { data: 'order_id', name: 'order_id' },
                 { data: 'created_at', name: 'created_at' },
                 { data: 'created_at', name: 'created_at' },
@@ -190,7 +190,7 @@
             table.draw();
         });
 
-        // Clear filters when clicking the Clear button
+        // Clear invoice filters when clicking the Clear button 
         $('#clearFilters').on('click', function() {
             $('#statusFilter').val('');
             $('#startDate').val('');
@@ -203,6 +203,7 @@
     });
 
     function downloadInvoice(invoiceId) {
+        
         window.location.href = `/admin/invoices/${invoiceId}/download`;
     }
 

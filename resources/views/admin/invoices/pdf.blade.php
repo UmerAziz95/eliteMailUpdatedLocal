@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Invoice #{{ $invoice->chargebee_invoice_id }}</title>
@@ -7,6 +8,7 @@
         @page {
             margin: 1cm;
         }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -14,66 +16,73 @@
             font-size: 14px;
             line-height: 1.5;
         }
-        .invoice-header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #ddd;
-        }
-        .invoice-header h1 {
-            color: #333;
-            margin: 0;
-            font-size: 28px;
-        }
-        .invoice-reference {
-            margin: 15px 0;
-            color: #666;
-        }
-        .invoice-info {
-            margin-bottom: 40px;
-        }
-        .invoice-info table {
-            width: 100%;
-        }
-        .invoice-info td {
-            width: 50%;
-            vertical-align: top;
-            padding: 5px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
+
+        flex-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 30px;
         }
-        .items-table th,
-        .items-table td {
+
+        .company-info img {
+            height: 40px;
+            margin-bottom: 10px;
+        }
+
+        .company-info p {
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .invoice-summary {
+            text-align: right;
+            max-width: 45%;
+        }
+
+        .invoice-summary h2 {
+            margin: 0 0 10px;
+        }
+
+        .invoice-summary p {
+            margin: 2px 0;
+        }
+
+        .billing-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
             border: 1px solid #ddd;
             padding: 10px;
-            text-align: left;
         }
-        .items-table th {
+
+        .invoice-table th {
             background-color: #f5f5f5;
-            font-weight: bold;
         }
-        .total-section {
-            float: right;
-            width: 350px;
+
+        .payment-summary {
             margin-top: 20px;
-            margin-left: auto;
-            clear: both;
         }
-        .total-section table {
+
+        .payment-summary table {
             width: 100%;
-            margin-left: auto;
+            font-size: 14px;
         }
-        .total-section td:first-child {
-            text-align: left;
-            padding-right: 20px;
-        }
-        .total-section td:last-child {
+
+        .payment-summary td {
+            padding: 8px;
             text-align: right;
-            width: 120px;
         }
+
         .footer {
             margin-top: 50px;
             width: 100%;
@@ -87,117 +96,109 @@
             border-top: 1px solid #ddd;
             padding-top: 20px;
         }
-        .footer p {
-            margin: 5px 0;
-            text-align: center;
-            width: 100%;
-        }
     </style>
 </head>
+
 <body>
-    <div class="invoice-header">
-        <h1>INVOICE</h1>
-        <div class="invoice-reference">
-            <p>Invoice #{{ $invoice->chargebee_invoice_id }}</p>
-            <p>Order #{{ $invoice->order->id }}</p>
+    <table width="100%" style="margin-bottom: 30px; vertical-align: top;">
+        <tr>
+            <!-- LEFT: Logo and company info -->
+            <td width="50%" style="vertical-align: top;">
+                <div style="display: block;">
+                    <img src="{{ public_path('assets/logo/logo_white_back.png') }}" alt="Logo"
+                         style="height: 80px; width: auto; display: block; margin-bottom: 10px;">
+                    <p style="margin: 0; font-size: 14px; line-height: 1.4;">
+                       <strong>Billing Address</strong>
+                        <br>
+                       {{ $$invoice->user->billing_address ?? "N/A" }}<br>
+                        {{ $$invoice->user->email ?? "N/A" }}
+                    </p>
+                </div>
+            </td>
+    
+            <!-- RIGHT: Invoice summary -->
+            <td width="50%" style="vertical-align: top; text-align: right;">
+                <h2 style="margin: 0 0 10px;">INVOICE</h2>
+                <p style="margin: 4px 0;"><strong>Invoice #</strong> {{ $invoice->chargebee_invoice_id }}</p>
+                <p style="margin: 4px 0;"><strong>Invoice Date</strong> {{ $invoice->created_at->format('M d, Y') }}</p>
+                <p style="margin: 4px 0;"><strong>Invoice Amount</strong> ${{ number_format($invoice->amount, 2) }} (USD)</p>
+                <p style="margin: 4px 0;"><strong>Customer ID</strong> {{ $invoice->user->id }}</p>
+                <p style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold; margin: 4px 0;">
+                    {{ strtoupper($invoice->status) }}
+                </p>
+            </td>
+        </tr>
+    </table>
+    
+    
+    <div class="billing-section">
+        <div>
+            <strong>BILLED TO</strong><br>
+            {{ $invoice->user->name }}<br>
+            {{ $invoice->user->email }}<br>
+            @if($invoice->user->phone)
+            {{ $invoice->user->phone }}
+            @endif
+        </div>
+        <div style="text-align: right;">
+            <strong>SUBSCRIPTION</strong><br>
+            ID {{ $invoice->order->subscription_id ?? 'N/A' }}<br>
+            Billing Period {{ $invoice->order->created_at->format('M d, Y') }} - {{
+            $invoice->order->created_at->addMonth()->format('M d, Y') }}<br>
+            Next Billing Date {{ $invoice->order->created_at->addMonth()->format('M d, Y') }}
         </div>
     </div>
 
-    <div class="invoice-info">
-        <table>
-            <tr>
-                <td>
-                    <strong>From:</strong><br>
-                    Your Company Name<br>
-                    123 Business Street<br>
-                    Business City, 12345<br>
-                    contact@yourcompany.com
-                </td>
-                <td>
-                    <strong>Bill To:</strong><br>
-                    {{ $invoice->user->name }}<br>
-                    {{ $invoice->user->email }}<br>
-                    @if($invoice->user->phone)
-                        {{ $invoice->user->phone }}<br>
-                    @endif
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <strong>Invoice Date:</strong><br>
-                    {{ $invoice->created_at->format('M d, Y') }}
-                </td>
-                <td>
-                    <strong>Payment Status:</strong><br>
-                    <span style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold;">
-                        {{ ucfirst($invoice->status) }}
-                    </span>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <table class="items-table">
+    <table class="invoice-table">
         <thead>
             <tr>
                 <th>Description</th>
-                <th>Plan</th>
-                <th>Period</th>
-                <th>Amount</th>
+                <th>Units</th>
+                <th>Unit Price</th>
+                <th>Amount (USD)</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>
-                    Subscription Service<br>
-                    <small style="color: #666;">Order ID: {{ $invoice->order->id }}</small>
-                </td>
-                <td>{{ optional($invoice->order->plan)->name ?? 'N/A' }}</td>
-                <td>
-                    Monthly<br>
-                    <small style="color: #666;">
-                        {{ $invoice->order->created_at->format('M d, Y') }} - 
-                        {{ $invoice->order->created_at->addMonth()->format('M d, Y') }}
-                    </small>
-                </td>
+                <td>Subscription Service<br><small style="color: #666;">Order ID: {{ $invoice->order->id }}</small></td>
+                <td>1</td>
+                <td>${{ number_format($invoice->amount, 2) }}</td>
                 <td>${{ number_format($invoice->amount, 2) }}</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="total-section">
+    <div class="payment-summary">
         <table>
             <tr>
-                <td>Subtotal:</td>
+                <td><strong>Total</strong></td>
                 <td>${{ number_format($invoice->amount, 2) }}</td>
             </tr>
             @if(isset($invoice->metadata['tax']))
             <tr>
-                <td>Tax:</td>
+                <td>Tax</td>
                 <td>${{ number_format($invoice->metadata['tax'], 2) }}</td>
             </tr>
             @endif
-            <tr class="total-row">
-                <td>Total:</td>
-                <td>${{ number_format($invoice->amount + (isset($invoice->metadata['tax']) ? $invoice->metadata['tax'] : 0), 2) }}</td>
-            </tr>
-            @if($invoice->status === 'paid')
             <tr>
-                <td>Paid on:</td>
-                <td>{{ \Carbon\Carbon::parse($invoice->paid_at)->format('M d, Y') }}</td>
+                <td>Payments</td>
+                <td>(${{ number_format($invoice->amount + ($invoice->metadata['tax'] ?? 0), 2) }})</td>
             </tr>
-            @endif
+            <tr style="font-weight: bold; font-size: 1.1em;">
+                <td>Amount Due (USD)</td>
+                <td>$0.00</td>
+            </tr>
         </table>
     </div>
-
-    <div style="clear: both;"></div>
 
     <div class="footer">
         <p>Thank you for your business!</p>
         @if($invoice->status !== 'paid')
         <p>Please make payment within 30 days of invoice date.</p>
         @endif
-        <p style="font-size: 0.8em; color: #999;">Invoice ID: {{ $invoice->id }} | Generated on {{ now()->format('M d, Y H:i:s') }}</p>
+        <p style="font-size: 0.8em; color: #999;">Invoice ID: {{ $invoice->id }} | Generated on {{ now()->format('M d, Y
+            H:i:s') }}</p>
     </div>
 </body>
+
 </html>
