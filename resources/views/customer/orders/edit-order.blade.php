@@ -82,10 +82,13 @@
 @endpush
 
 @section('content')
-<form id="newOrderForm" novalidate>
+<form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
     <input type="hidden" name="plan_id" value="{{ $plan->id ?? '' }}">
+    <!-- order_id -->
+    <input type="hidden" name="order_id" value="{{ isset($order) ? $order->id : '' }}">
+    <input type="hidden" name="edit_id" value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
 
     <section class="py-3 overflow-hidden">
         <div class="card p-3">
@@ -93,7 +96,8 @@
 
             <div class="mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
-                <input type="text" id="forwarding" name="forwarding_url" class="form-control" value="{{ $order->forwarding_url ?? '' }}" required />
+                <input type="text" id="forwarding" name="forwarding_url" class="form-control" value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}" required />
+                <div class="invalid-feedback" id="forwarding-error"></div>
                 <p class="note mb-0">(A link where you'd like to drive the traffic from the domains you
                     send us – could be your main website, blog post, etc.)</p>
             </div>
@@ -106,11 +110,12 @@
                             data-fields='@json($platform->fields)'
                             data-requires-tutorial="{{ $platform->requires_tutorial }}"
                             data-tutorial-link="{{ $platform->tutorial_link }}"
-                            {{ isset($order) && $order->hosting_platform == $platform->value ? 'selected' : '' }}>
+                            {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform === $platform->value) ? ' selected' : '' }}>
                             {{ $platform->name }}
                         </option>
                     @endforeach
                 </select>
+                <div class="invalid-feedback" id="hosting-error"></div>
                 <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
             </div>
@@ -149,7 +154,8 @@
                     <select id="sending_platform" name="sending_platform" class="form-control" required>
                         @foreach($sendingPlatforms as $platform)
                             <option value="{{ $platform->value }}" 
-                                data-fields='@json($platform->fields)'>
+                                data-fields='@json($platform->fields)'
+                                {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->sending_platform === $platform->value) ? ' selected' : '' }}>
                                 {{ $platform->name }}
                             </option>
                         @endforeach
@@ -159,39 +165,7 @@
                 </div>
 
                 <div id="sending-platform-fields">
-                    @if(isset($order) && $order->reorderInfo && $order->reorderInfo->count() > 0)
-                        @php
-                            $reorderInfo = $order->reorderInfo->first();
-                            $selectedPlatform = $sendingPlatforms->where('value', $reorderInfo->sending_platform)->first();
-                        @endphp
-                        @if($selectedPlatform && $selectedPlatform->fields)
-                            @foreach($selectedPlatform->fields as $name => $field)
-                                <div class="mb-3">
-                                    <label for="{{ $name }}">{{ $field['label'] }}{{ $field['required'] ? ' *' : '' }}</label>
-                                    @if($field['type'] === 'select' && isset($field['options']))
-                                        <select id="{{ $name }}" name="{{ $name }}" class="form-control" {{ $field['required'] ? 'required' : '' }}>
-                                            @foreach($field['options'] as $value => $label)
-                                                <option value="{{ $value }}" {{ $reorderInfo->$name === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    @elseif($field['type'] === 'textarea')
-                                        <textarea id="{{ $name }}" name="{{ $name }}" class="form-control" rows="8" {{ $field['required'] ? 'required' : '' }}>{{ $reorderInfo->$name ?? '' }}</textarea>
-                                    @elseif($field['type'] === 'password')
-                                        <div class="password-wrapper">
-                                            <input type="password" id="{{ $name }}" name="{{ $name }}" class="form-control" value="{{ $reorderInfo->$name ?? '' }}" {{ $field['required'] ? 'required' : '' }}>
-                                            <i class="fa-regular fa-eye password-toggle"></i>
-                                        </div>
-                                    @else
-                                        <input type="{{ $field['type'] }}" id="{{ $name }}" name="{{ $name }}" class="form-control" value="{{ $reorderInfo->$name ?? '' }}" {{ $field['required'] ? 'required' : '' }}>
-                                    @endif
-                                    @if(isset($field['note']))
-                                        <p class="note mb-0">{{ $field['note'] }}</p>
-                                    @endif
-                                    <div class="invalid-feedback" id="{{ $name }}-error"></div>
-                                </div>
-                            @endforeach
-                        @endif
-                    @endif
+                    <!-- Dynamic sending platform fields will be inserted here -->
                 </div>
 
                 <h5 class="mb-2 mt-5">Email Account Information</h5>
@@ -287,7 +261,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->coupon_code : '' }}">
                 </div>
@@ -326,27 +300,153 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Real-time URL validation for forwarding URL
-    $('#forwarding').on('input blur', function() {
-        const field = $(this);
-        const value = field.val().trim();
-        const feedback = field.siblings('.invalid-feedback');
-        
-        field.removeClass('is-invalid');
-        feedback.text('');
-
-        if (value) {
-            try {
-                new URL(value);
-            } catch (_) {
-                field.addClass('is-invalid');
-                feedback.text('Please enter a valid URL (include http:// or https://)');
-            }
-        } else if (field.prop('required')) {
-            field.addClass('is-invalid');
-            feedback.text('Domain forwarding destination URL is required');
+    function generateField(name, field, existingValue = '') {
+        const fieldId = `${name}`;
+        let html = `<div class="mb-3">
+            <label for="${fieldId}">${field.label}${field.required ? ' *' : ''}</label>`;
+            
+        if (field.type === 'select' && field.options) {
+            html += `<select id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''}>`;
+            Object.entries(field.options).forEach(([value, label]) => {
+                const selected = value === existingValue ? ' selected' : '';
+                html += `<option value="${value}"${selected}>${label}</option>`;
+            });
+            html += '</select>';
+        } else if (field.type === 'textarea') {
+            html += `<textarea id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} rows="8">${existingValue}</textarea>`;
+        } else if (field.type === 'password') {
+            html += `
+            <div class="password-wrapper">
+                <input type="password" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">
+                <i class="fa-regular fa-eye password-toggle"></i>
+            </div>`;
+        } else {
+            html += `<input type="${field.type}" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">`;
         }
-    });
+        
+        if (field.note) {
+            html += `<p class="note mb-0">${field.note}</p>`;
+        }
+        
+        html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
+        return html;
+    }
+
+    // function updatePlatformFields() {
+    //     const selectedOption = $('#hosting option:selected');
+    //     const fieldsData = selectedOption.data('fields');
+    //     const requiresTutorial = selectedOption.data('requires-tutorial');
+    //     const tutorialLink = selectedOption.data('tutorial-link');
+    //     const platformValue = selectedOption.val();
+        
+    //     const container = $('#platform-fields-container');
+    //     container.empty();
+        
+    //     if (fieldsData) {
+    //         Object.entries(fieldsData).forEach(([name, field]) => {
+    //             container.append(generateField(name, field));
+    //         });
+            
+    //         // Reinitialize password toggles for new fields
+    //         initializePasswordToggles();
+    //     }
+        
+    //     // Handle tutorial section visibility
+    //     if (requiresTutorial && tutorialLink) {
+    //         $('#tutorial_section').show();
+    //         $('.tutorial-link').attr('href', tutorialLink);
+    //     } else {
+    //         $('#tutorial_section').hide();
+    //     }
+    // }
+    function updatePlatformFields() {
+        const selectedOption = $('#hosting option:selected');
+        const fieldsData = selectedOption.data('fields');
+        const requiresTutorial = selectedOption.data('requires-tutorial');
+        const tutorialLink = selectedOption.data('tutorial-link');
+        const platformValue = selectedOption.val();
+        
+        const container = $('#platform-fields-container');
+        container.empty();
+        
+        if (fieldsData) {
+            // Get existing values from the order if available
+            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            
+            Object.entries(fieldsData).forEach(([name, field]) => {
+                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                container.append(generateField(name, field, existingValue));
+            });
+            
+            // Reinitialize password toggles for new fields
+            initializePasswordToggles();
+        }
+
+        // Handle other platform section
+        if (platformValue === 'other') {
+            $('#other-platform-section').show();
+            $('#other_platform').prop('required', true);
+        } else {
+            $('#other-platform-section').hide();
+            $('#other_platform').prop('required', false);
+            $('#other_platform').removeClass('is-invalid');
+            $('#other-platform-error').text('');
+        }
+
+        // Handle tutorial section visibility
+        if (requiresTutorial && tutorialLink) {
+            $('#tutorial_section').show();
+            $('.tutorial-link').attr('href', tutorialLink);
+        } else {
+            $('#tutorial_section').hide();
+        }
+    }
+
+    function initializePasswordToggles() {
+        $('.password-toggle').off('click').on('click', function() {
+            const input = $(this).closest('.password-wrapper').find('input');
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                $(this).removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                $(this).removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+    }
+
+    // Initial setup
+    updatePlatformFields();
+    initializePasswordToggles();
+
+    // Handle platform changes
+    $('#hosting').on('change', updatePlatformFields);
+
+        // Handle sending platform changes
+        function updateSendingPlatformFields() {
+        const selectedOption = $('#sending_platform option:selected');
+        const fieldsData = selectedOption.data('fields');
+        const container = $('#sending-platform-fields');
+        container.empty();
+        
+        if (fieldsData) {
+            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            
+            Object.entries(fieldsData).forEach(([name, field]) => {
+                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                container.append(generateField(name, field, existingValue));
+            });
+            
+            // Reinitialize password toggles for new fields
+            initializePasswordToggles();
+        }
+    }
+
+    // Initial sending platform setup
+    updateSendingPlatformFields();
+
+    // Handle sending platform changes
+    $('#sending_platform').on('change', updateSendingPlatformFields);
 
     // Calculate total inboxes and check plan limits
     function calculateTotalInboxes() {
@@ -354,8 +454,8 @@ $(document).ready(function() {
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
         const submitButton = $('button[type="submit"]');
         
-        // Split domains by newlines only and filter out empty entries
-        const domains = domainsText.split(/\n/)
+        // Split domains by newlines and filter out empty entries
+        const domains = domainsText.split(/[\n,]+/)
             .map(domain => domain.trim())
             .filter(domain => domain.length > 0);
             
@@ -422,7 +522,7 @@ $(document).ready(function() {
                     const trimmedDomains = domains.slice(0, maxDomainsAllowed);
                     
                     // Update domains field with trimmed list
-                    domainsField.val(trimmedDomains.join('\n'));
+                    $('#domains').val(trimmedDomains.join('\n'));
                     
                     // Recalculate totals
                     calculateTotalInboxes();
@@ -460,7 +560,7 @@ $(document).ready(function() {
     // Domain validation
     $('#domains').on('input', function() {
         const domainsField = $(this);
-        const domains = domainsField.val().trim().split(/\n/).map(d => d.trim()).filter(d => d.length > 0);
+        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
         
         // Reset validation state
         domainsField.removeClass('is-invalid');
@@ -495,7 +595,7 @@ $(document).ready(function() {
             }
         }
         
-        // Update total inboxes calculation and check plan limits
+        // Update total inboxes calculation
         calculateTotalInboxes();
     });
 
@@ -507,6 +607,190 @@ $(document).ready(function() {
     
     // Initial URL validation
     $('#forwarding').trigger('blur');
+
+    // Form validation and submission
+    $('#editOrderForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Reset all validations
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        let isValid = true;
+        let firstErrorField = null;
+        
+        // Validate required fields
+        $(this).find(':input[required]').each(function() {
+            const field = $(this);
+            const value = field.val()?.trim();
+            
+            if (!value) {
+                isValid = false;
+                field.addClass('is-invalid');
+                field.siblings('.invalid-feedback').text('This field is required');
+                
+                if (!firstErrorField) {
+                    firstErrorField = field;
+                }
+            }
+        });
+        
+        // Validate email fields
+        $(this).find('input[type="email"]').each(function() {
+            const field = $(this);
+            const value = field.val()?.trim();
+            
+            if (value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    isValid = false;
+                    field.addClass('is-invalid');
+                    field.siblings('.invalid-feedback').text('Please enter a valid email address');
+                    
+                    if (!firstErrorField) {
+                        firstErrorField = field;
+                    }
+                }
+            }
+        });
+        
+        // Validate URL fields
+        $(this).find('input[type="url"]').each(function() {
+            const field = $(this);
+            const value = field.val()?.trim();
+            
+            if (value) {
+                try {
+                    new URL(value);
+                } catch (_) {
+                    isValid = false;
+                    field.addClass('is-invalid');
+                    field.siblings('.invalid-feedback').text('Please enter a valid URL (include http:// or https://)');
+                    
+                    if (!firstErrorField) {
+                        firstErrorField = field;
+                    }
+                }
+            }
+        });
+        
+        // Validate domains
+        const domainsField = $('#domains');
+        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
+        
+        if (domains.length === 0) {
+            isValid = false;
+            domainsField.addClass('is-invalid');
+            $('#domains-error').text('Please enter at least one domain');
+            
+            if (!firstErrorField) {
+                firstErrorField = domainsField;
+            }
+        } else {
+            // Check for duplicates
+            const seen = new Set();
+            const duplicates = domains.filter(domain => {
+                if (seen.has(domain)) {
+                    return true;
+                }
+                seen.add(domain);
+                return false;
+            });
+
+            if (duplicates.length > 0) {
+                isValid = false;
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
+                
+                if (!firstErrorField) {
+                    firstErrorField = domainsField;
+                }
+            } else {
+                // Validate domain format
+                const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+                
+                if (invalidDomains.length > 0) {
+                    isValid = false;
+                    domainsField.addClass('is-invalid');
+                    $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                    
+                    if (!firstErrorField) {
+                        firstErrorField = domainsField;
+                    }
+                }
+            }
+        }
+        
+        if (!isValid) {
+            // Focus and scroll to the first error field
+            if (firstErrorField) {
+                // Smooth scroll to the error field
+                firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Set focus after scroll animation completes
+                setTimeout(() => {
+                    firstErrorField.focus();
+                }, 500);
+            }
+            return false;
+        }
+
+        // If validation passes, submit via AJAX
+        $.ajax({
+            url: '{{ route("customer.orders.reorder.store") }}',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    toastr.success('Order updated successfully');
+                    // subscribePlan(response.plan_id);
+                } else {
+                    toastr.error(response.message || 'An error occurred. Please try again later.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON.errors) {
+                    // Handle validation errors from server
+                    let firstErrorField = null;
+                    Object.keys(xhr.responseJSON.errors).forEach(key => {
+                        const field = $(`[name="${key}"]`);
+                        if (field.length) {
+                            field.addClass('is-invalid');
+                            if (!firstErrorField) {
+                                firstErrorField = field;
+                            }
+                            
+                            // Find or create feedback element
+                            let feedbackEl = field.siblings('.invalid-feedback');
+                            if (!feedbackEl.length) {
+                                feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
+                            }
+                            if (!feedbackEl.length) {
+                                field.after(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                            } else {
+                                feedbackEl.text(xhr.responseJSON.errors[key][0]);
+                            }
+                        }
+                        toastr.error(xhr.responseJSON.errors[key][0]);
+                    });
+                    
+                    // Focus and scroll to the first error field
+                    if (firstErrorField) {
+                        firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            firstErrorField.focus();
+                        }, 500);
+                    }
+                } else {
+                    toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');
+                }
+            }
+        });
+    });
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
 });
 </script>
 @endpush

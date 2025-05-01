@@ -39,6 +39,70 @@ class PlanController extends Controller
     }
     // add chargebee card change details
     public function chargeBeeChangeCardDetails(Request $request) {}
+    // public function initiateSubscription(Request $request, $planId)
+    // {
+    //     $plan = Plan::findOrFail($planId);
+    //     try {
+    //         $user = auth()->user();
+    //         $charge_customer_id = null;
+    //         if ($request->has('order_id')) {
+    //             $order = Order::findOrFail($request->order_id);
+    //             $charge_customer_id = $order->chargebee_customer_id ?? null;
+    //         }
+
+    //         $hostedPageParams = [
+    //             "subscription_items" => [
+    //                 [
+    //                     "item_price_id" => $plan->chargebee_plan_id,
+    //                     "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1
+    //                 ]
+    //             ],
+    //             "billing_address" => [
+    //                 "first_name" => $user->name,
+    //             ],
+    //             "redirect_url" => route('customer.subscription.success'),
+    //             "cancel_url" => route('customer.subscription.cancel'),
+    //             // Disable plan changes in checkout
+    //             "subscription" => [
+    //                 "force_term_reset" => false
+    //             ],
+    //             // Hide plan selector
+    //             "layout" => [
+    //                 "show_plan_selector" => "false"
+    //             ]
+    //         ];
+
+    //         if ($charge_customer_id == null) {
+    //             // New customer checkout
+    //             $hostedPageParams["customer"] = [
+    //                 "email" => $user->email,
+    //                 "first_name" => $user->name,
+    //                 "phone" => $user->phone,
+    //             ];
+    //         } else {
+    //             // Existing customer checkout
+    //             $hostedPageParams["customer"] = [
+    //                 "id" => $charge_customer_id,
+    //             ];
+    //         }
+
+    //         // Create hosted page for subscription
+    //         $result = HostedPage::checkoutNewForItems($hostedPageParams);
+
+    //         $hostedPage = $result->hostedPage();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'hosted_page_url' => $hostedPage->url
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to initiate subscription: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+    
     public function initiateSubscription(Request $request, $planId)
     {
         $plan = Plan::findOrFail($planId);
@@ -57,7 +121,8 @@ class PlanController extends Controller
                     "subscription_items" => [
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
-                            "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1
+                            "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1,
+                            "quantity_editable" => false
                         ]
                     ],
                     "customer" => [
@@ -103,44 +168,6 @@ class PlanController extends Controller
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);
             }
-
-
-            $hostedPage = $result->hostedPage();
-
-            return response()->json([
-                'success' => true,
-                'hosted_page_url' => $hostedPage->url
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to initiate subscription: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-    public function initiateSubscriptionOld(Request $request, $planId)
-    {
-        $plan = Plan::findOrFail($planId);
-        try {
-            $user = auth()->user();
-
-            // Create hosted page for subscription
-            $result = HostedPage::checkoutNewForItems([
-                "subscription_items" => [
-                    [
-                        "item_price_id" => $plan->chargebee_plan_id,
-                        "quantity" => 1
-                    ]
-                ],
-                "customer" => [
-                    "email" => $user->email,
-                    "first_name" => $user->first_name,
-                    "last_name" => $user->last_name,
-                    "phone" => $user->phone,
-                ],
-                "redirect_url" => route('customer.subscription.success'),
-                "cancel_url" => route('customer.subscription.cancel')
-            ]);
 
 
             $hostedPage = $result->hostedPage();

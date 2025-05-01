@@ -94,6 +94,7 @@
             <div class="mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
                 <input type="text" id="forwarding" name="forwarding_url" class="form-control" required />
+                <div class="invalid-feedback" id="forwarding-error"></div>
                 <p class="note mb-0">(A link where you'd like to drive the traffic from the domains you
                     send us – could be your main website, blog post, etc.)</p>
             </div>
@@ -110,6 +111,7 @@
                         </option>
                     @endforeach
                 </select>
+                <div class="invalid-feedback" id="hosting-error"></div>
                 <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
             </div>
@@ -253,7 +255,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control" value="">
                 </div>

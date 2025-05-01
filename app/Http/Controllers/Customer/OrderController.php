@@ -95,6 +95,7 @@ class OrderController extends Controller
     {
         $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
         $plan = $order->plan;
+        // dd($order);
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
@@ -103,7 +104,7 @@ class OrderController extends Controller
         return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     // neworder
-    public function newOrder($id = 1)
+    public function newOrder(Request $request, $id = 1)
     {
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
@@ -118,7 +119,36 @@ class OrderController extends Controller
             $plan = Plan::first();
         }
         $order = null; // No existing order for new orders
-
+        // Store session data if validation passes
+        // $request->session()->put('order_info', [
+        //     'plan_id' => $plan->id,
+        //     'user_id' => auth()->id(),
+        //     'forwarding_url' => '',
+        //     'hosting_platform' => '',
+        //     'other_platform' => '',
+        //     'platform_login' => '',
+        //     'platform_password' => '',
+        //     'backup_codes' => '',
+        //     'domains' => '',
+        //     'sending_platform' => '',
+        //     'sequencer_login' => '',
+        //     'sequencer_password' => '',
+        //     'total_inboxes' => $plan->max_inbox =="0" ? $plan->min_inbox : $plan->max_inbox,
+        //     'inboxes_per_domain' => 0,
+        //     'first_name' => '',
+        //     'last_name' => '',
+        //     'prefix_variant_1' => '',
+        //     'prefix_variant_2' => '',
+        //     'persona_password' => '',
+        //     'profile_picture_link' => '',
+        //     'email_persona_password' => '',
+        //     'email_persona_picture_link' => '',
+        //     'master_inbox_email' => '',
+        //     'additional_info' => '',
+        //     'coupon_code' => ''
+        // ]);
+        // return view('customer.orders.open-chargebee', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        
         return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     public function reorder(Request $request, $order_id)
@@ -288,8 +318,7 @@ class OrderController extends Controller
             if ($request->has('endDate') && $request->endDate != '') {
                 $orders->whereDate('orders.created_at', '<=', $request->endDate);
             }
-            // ' . ($order->status_manage_by_admin === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
-                                        // <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
+
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
                     return '<div class="dropdown">
@@ -300,11 +329,11 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> View</a></li>
-                                    
+                                    ' . ($order->status_manage_by_admin === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                        <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
                                 </ul>
                             </div>';
                 })
-                
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
@@ -385,14 +414,14 @@ class OrderController extends Controller
     {
         try {
             // Validate the request data
-            $validator = $request->validate([
+            $validated = $request->validate([
                 'user_id' => 'required|exists:users,id',
                 'plan_id' => 'required|exists:plans,id',
                 'forwarding_url' => 'required|max:255',
                 'hosting_platform' => 'required|string|max:50',
                 'other_platform' => 'nullable|required_if:hosting_platform,other|string|max:50',
-                'platform_login' => 'required|string|max:255',
-                'platform_password' => 'required|string|min:3',
+                'platform_login' => 'nullable|string|max:255',
+                'platform_password' => 'nullable|string|min:3',
                 'backup_codes' => 'required_if:hosting_platform,namecheap|string',
                 'domains' => [
                     'required',
@@ -436,7 +465,6 @@ class OrderController extends Controller
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
 
-            // Rest of the existing code...
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
@@ -459,20 +487,71 @@ class OrderController extends Controller
             $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
             $request->session()->put('order_info.plan_id', $request->plan_id);
+            $message = 'Order information saved successfully.';
+            
+            // for edit order
+            if($request->edit_id && $request->order_id){
+                $order = Order::with('reorderInfo')->findOrFail($request->order_id);
+                
+                // Get the current session data
+                $orderInfo = $request->session()->get('order_info', []);
+                
+                // Update session with reorder info data (preserve new form input over old data)
+                if($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
+                    $reorderInfo = $order->reorderInfo->first();
+                    // update data on table ReorderInfo
+                    ReorderInfo::where('id', $reorderInfo->id)->update([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $request->plan_id,
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode(',', array_filter($domains)),
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => $request->first_name,
+                        'last_name' => $request->last_name,
+                        'prefix_variant_1' => $request->prefix_variant_1,
+                        'prefix_variant_2' => $request->prefix_variant_2,
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => $request->email_persona_password,
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                    ]);
+                   $message = 'Order information updated successfully.';
+                }
+            }
             
             return response()->json([
                 'success' => true,
-                'message' => 'Order created successfully',
+                'message' => $message,
                 'plan_id' => $request->plan_id,
                 'user_id' => $request->user_id
             ]);
 
-        } catch (\Exception $e) {
-            \Log::error('Order creation failed: ' . $e->getMessage());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create order: ' . $e->getMessage(),
-                'errors' => $e->validator->errors() ?? []
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Order creation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create order: ' . $e->getMessage()
             ], 422);
         }
     }

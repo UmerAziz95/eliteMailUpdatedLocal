@@ -260,7 +260,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control" value="">
                 </div>
@@ -307,7 +307,6 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
     function generateField(name, field, existingValue = '') {
         const fieldId = `${name}`;
         let html = `<div class="mb-3">
@@ -815,7 +814,7 @@ $(document).ready(function() {
 
     // Initial calculation
     calculateTotalInboxes();
-});
+
 
 // Add real-time domain validation
 $('#domains').on('input', function() {
