@@ -44,7 +44,7 @@
             inline-size: .75rem;
             inset-block-start: 0;
             inset-inline-start: -0.38rem;
-            outline: 3px solid #3a3b64;
+            outline: 3px solid #506295;
             border-radius: 50%;
             opacity: 1
         }
