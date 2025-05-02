@@ -169,7 +169,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
@@ -195,7 +195,7 @@
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 @foreach($statuses as $key => $status)
-                                    <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -233,8 +233,8 @@
             </li>
             @foreach($plans as $plan)
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab" 
-                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab" 
+                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab"
+                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab"
                     aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ $plan->name }}</button>
             </li>
             @endforeach
@@ -245,7 +245,7 @@
                 @include('contractor.orders._orders_table')
             </div>
             @foreach($plans as $plan)
-            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel" 
+            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
                 aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
                 @include('contractor.orders._orders_table', ['plan_id' => $plan->id])
             </div>
@@ -283,7 +283,7 @@
     function viewOrder(id) {
         window.location.href = `{{ url('/contractor/orders/${id}/view') }}`;
     }
-    
+
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         var tableId = planId ? `#myTable-${planId}` : '#myTable';
@@ -294,23 +294,49 @@
             return null;
         }
         console.log('Found table:', $table);
-        
+
         try {
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 autoWidth: false,
-                columnDefs: [
-                    { width: '10%', targets: 0 }, // ID 
-                    { width: '15%', targets: 1 }, // Date
-                    { width: '15%', targets: 2 }, // Name
-                    { width: '15%', targets: 3 }, // Email
-                    ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
-                    { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
-                    { width: '15%', targets: planId ? 5 : 6 }, // Total Inboxes 
-                    { width: '15%', targets: planId ? 6 : 7 }, // Status
-                    { width: '10%', targets: planId ? 7 : 8 }  // Actions
+                columnDefs: [{
+                        width: '10%',
+                        targets: 0
+                    }, // ID 
+                    {
+                        width: '15%',
+                        targets: 1
+                    }, // Date
+                    {
+                        width: '15%',
+                        targets: 2
+                    }, // Name
+                    {
+                        width: '15%',
+                        targets: 3
+                    }, // Email
+                    ...(planId ? [] : [{
+                        width: '15%',
+                        targets: 4
+                    }]), // Plan (only for All Orders) 
+                    {
+                        width: '20%',
+                        targets: planId ? 4 : 5
+                    }, // Domain URL
+                    {
+                        width: '15%',
+                        targets: planId ? 5 : 6
+                    }, // Total Inboxes 
+                    {
+                        width: '15%',
+                        targets: planId ? 6 : 7
+                    }, // Status
+                    {
+                        width: '10%',
+                        targets: planId ? 7 : 8
+                    } // Actions
                 ],
                 ajax: {
                     url: "{{ route('contractor.orders.data') }}",
@@ -323,7 +349,10 @@
                         d.draw = d.draw || 1;
                         d.length = d.length || 10;
                         d.start = d.start || 0;
-                        d.search = d.search || { value: '', regex: false };
+                        d.search = d.search || {
+                            value: '',
+                            regex: false
+                        };
                         d.plan_id = planId;
 
                         // Add filter parameters
@@ -343,12 +372,12 @@
                         console.log('Server response:', json);
                         return json.data;
                     },
-                    error: function (xhr, error, thrown) {
+                    error: function(xhr, error, thrown) {
                         console.error('DataTables error:', error);
                         console.error('Server response:', xhr.responseText);
                         console.error('Status:', xhr.status);
                         console.error('Full XHR:', xhr);
-                        
+
                         if (xhr.status === 401) {
                             window.location.href = "{{ route('login') }}";
                         } else if (xhr.status === 403) {
@@ -358,25 +387,55 @@
                         }
                     }
                 },
-                columns: [
-                    { data: 'id', name: 'orders.id' },
-                    { data: 'created_at', name: 'orders.created_at' },
-                    { data: 'name', name: 'users.name' },
-                    { data: 'email', name: 'users.email' },
-                    ...(planId ? [] : [{ data: 'plan_name', name: 'plans.name' }]),
-                    { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
-                    { data: 'total_inboxes', name: 'total_inboxes' },
-                    { data: 'status', name: 'orders.status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                columns: [{
+                        data: 'id',
+                        name: 'orders.id'
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'orders.created_at'
+                    },
+                    {
+                        data: 'name',
+                        name: 'users.name'
+                    },
+                    {
+                        data: 'email',
+                        name: 'users.email'
+                    },
+                    ...(planId ? [] : [{
+                        data: 'plan_name',
+                        name: 'plans.name'
+                    }]),
+                    {
+                        data: 'domain_forwarding_url',
+                        name: 'domain_forwarding_url'
+                    },
+                    {
+                        data: 'total_inboxes',
+                        name: 'total_inboxes'
+                    },
+                    {
+                        data: 'status',
+                        name: 'orders.status'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
                 ],
-                order: [[1, 'desc']],
+                order: [
+                    [1, 'desc']
+                ],
                 drawCallback: function(settings) {
                     console.log('Table draw complete. Response:', settings.json);
                     if (settings.json && settings.json.error) {
                         toastr.error(settings.json.message || 'Error loading data');
                     }
                     $('[data-bs-toggle="tooltip"]').tooltip();
-                    
+
                     // Only adjust columns
                     this.api().columns.adjust();
                 },
@@ -411,7 +470,7 @@
     $(document).ready(function() {
         try {
             console.log('Document ready, initializing tables');
-            
+
             // Initialize DataTables object to store all table instances
             window.orderTables = {};
 
@@ -424,10 +483,10 @@
             @endforeach
 
             // Handle tab changes
-            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
                 const tabId = $(e.target).attr('id');
                 console.log('Tab changed to:', tabId);
-                
+
                 // Clear DataTables events before reapplying
                 Object.values(window.orderTables).forEach(function(table) {
                     if (table) {
@@ -451,7 +510,7 @@
                                     data.startDate = $('#startDate').val();
                                     data.endDate = $('#endDate').val();
                                 });
-                                
+
                                 table.columns.adjust();
                                 if (table.responsive && typeof table.responsive.recalc === 'function') {
                                     table.responsive.recalc();
@@ -511,7 +570,7 @@
                             data.startDate = $('#startDate').val();
                             data.endDate = $('#endDate').val();
                         });
-                        
+
                         table.draw();
                     }
                 });
@@ -535,7 +594,7 @@
         }
     });
 
-    $(document).on('change', '.status-dropdown', function (e) {
+    $(document).on('change', '.status-dropdown', function(e) {
         e.preventDefault(); // Prevent form submission
         let $dropdown = $(this);
         let selectedStatus = $dropdown.val();
@@ -560,7 +619,7 @@
                         order_id: orderId,
                         status_manage_by_admin: selectedStatus
                     },
-                    success: function (response) {
+                    success: function(response) {
                         Swal.fire(
                             'Updated!',
                             'Order status has been updated.',
@@ -570,7 +629,7 @@
                             window.orderTables.all.ajax.reload(null, false);
                         }
                     },
-                    error: function (xhr) {
+                    error: function(xhr) {
                         Swal.fire(
                             'Error!',
                             'Failed to update status.',
@@ -598,12 +657,12 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         padding: 1rem;
         border-radius: 4px;
     }
-    
+
     .loading {
         position: relative;
         pointer-events: none;
@@ -620,7 +679,7 @@
             e.preventDefault();
             const orderId = $(this).data('order-id');
             const newStatus = $(this).data('status');
-            
+
             // Show confirmation dialog
             Swal.fire({
                 title: 'Are you sure?',
@@ -681,7 +740,7 @@
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     }
-                    
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -690,6 +749,247 @@
                 }
             });
         }
+    });
+    //open the modal for cancel subscription
+    $(document).on('click', '.markStatus', function() {
+        const chargebee_subscription_id = $(this).data('id');
+        const status = $(this).data('status');
+        const reason = $(this).data('reason');
+
+        // Set subscription ID in the hidden input
+        $('#subscription_id_to_cancel').val(chargebee_subscription_id);
+
+        // Uncheck all first to reset previous state
+        $('input[name="marked_status"]').prop('checked', false);
+
+        // Check the radio button that matches the status
+        $('input[name="marked_status"][value="' + status + '"]').prop('checked', true);
+
+        // Show or hide reason field depending on status
+        if (status === 'Reject') {
+            $('#reason_wrapper').removeClass('d-none');
+            $('#cancellation_reason').attr('required', true);
+            $('#cancellation_reason').val(reason);
+        } else {
+            $('#reason_wrapper').addClass('d-none');
+            $('#cancellation_reason').removeAttr('required');
+            $('#cancellation_reason').val('');
+        }
+
+        // Show the modal
+        $('#cancel_subscription').modal('show');
+    });
+    //handle the reason field on status change
+    $('.marked_status').on('change', function() {
+        const selected = $(this).val();
+        if (selected === 'Reject') {
+            $('#reason_wrapper').removeClass('d-none');
+            $('#cancellation_reason').attr('required', true);
+        } else {
+            $('#reason_wrapper').addClass('d-none');
+            $('#cancellation_reason').val('');
+            $('#cancellation_reason').removeAttr('required');
+        }
+    });
+
+
+    // Handle form submission
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const selectedStatus = $('input[name="marked_status"]:checked').val();
+        const reason = $('#cancellation_reason').val().trim();
+
+
+        // If status is required
+        if (!selectedStatus) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a status.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // If Reject is selected but no reason
+        if (selectedStatus === 'Reject' && !reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required for rejection.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // Gather form data manually
+        const formData = new FormData(this);
+        formData.append('marked_status', selectedStatus);
+
+        // Confirm dialog
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait a while...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        $('#cancel_subscription').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Status has been updated successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            $('#cancellation_reason').val('');
+                            // window.location.reload();
+                            if (window.orderTables) {
+                                Object.values(window.orderTables).forEach(function(table) {
+                                    if (table) {
+                                        table.ajax.reload(null, false);
+                                    }
+                                });
+                            }
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while updating status.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    });
+    // Handle form submission
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const selectedStatus = $('input[name="marked_status"]:checked').val();
+        const reason = $('#cancellation_reason').val().trim();
+
+
+        // If status is required
+        if (!selectedStatus) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a status.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // If Reject is selected but no reason
+        if (selectedStatus === 'Reject' && !reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required for rejection.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // Gather form data manually
+        const formData = new FormData(this);
+        formData.append('marked_status', selectedStatus);
+
+        // Confirm dialog
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait a while...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        $('#cancel_subscription').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Status has been updated successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            $('#cancellation_reason').val('');
+                            // Refresh all DataTables instead of reloading page
+                            if (window.orderTables) {
+                                Object.values(window.orderTables).forEach(function(table) {
+                                    if (table) {
+                                        table.ajax.reload(null, false);
+                                    }
+                                });
+                            }
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while updating status.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
     });
 </script>
 @endpush

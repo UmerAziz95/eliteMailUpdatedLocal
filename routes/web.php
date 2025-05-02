@@ -69,7 +69,7 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
 });
 
-Route::middleware(['role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
        Route::middleware('view.only')->group(function () {
@@ -130,7 +130,7 @@ Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileControlle
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 
-Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [CustomerPlanController::class, 'index'])->name('pricing');
     // reorder routes
     // Route::get('/orders/new-order/{id}', [App\Http\Controllers\Customer\OrderController::class, 'newOrder'])->name('orders.new.order');
@@ -196,7 +196,7 @@ Route::middleware(['role:3'])->prefix('customer')->name('customer.')->group(func
 });
 
 // Info: Contractor Access
-Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(function () {
+Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')->group(function () {
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
     
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
@@ -206,6 +206,7 @@ Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(
     Route::get('/invoices/data', [ContractorOrderController::class, 'getInvoices'])->name('invoices.data');
     // contractor.orders.reorder
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
+    Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
     // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
     Route::get('/dashboard', function () {
         // return view('contractor.dashboard');
@@ -234,6 +235,7 @@ Route::middleware(['role:4'])->prefix('contractor')->name('contractor.')->group(
     Route::get('/orders/{orderId}/emails', [ContractorOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [ContractorOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [ContractorOrderEmailController::class, 'delete']);
+    
 });
 
 Route::get('/forget_password', function () {

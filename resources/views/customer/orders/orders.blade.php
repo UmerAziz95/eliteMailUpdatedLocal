@@ -46,7 +46,7 @@
 @section('content')
 <section class="py-3">
 
-<div class="row gy-4 mb-4">
+    <div class="row gy-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card p-2">
                 <div class="card-body">
@@ -169,7 +169,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
@@ -191,7 +191,7 @@
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 @foreach($statuses as $key => $status)
-                                    <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -229,8 +229,8 @@
             </li>
             @foreach($plans as $plan)
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab" 
-                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab" 
+                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab"
+                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab"
                     aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ $plan->name }}</button>
             </li>
             @endforeach
@@ -241,7 +241,7 @@
                 @include('customer.orders._orders_table')
             </div>
             @foreach($plans as $plan)
-            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel" 
+            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
                 aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
                 @include('customer.orders._orders_table', ['plan_id' => $plan->id])
             </div>
@@ -278,7 +278,7 @@
     function viewOrder(id) {
         window.location.href = `{{ url('/customer/orders/${id}/view') }}`;
     }
-    
+
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         var tableId = planId ? `#myTable-${planId}` : '#myTable';
@@ -289,7 +289,7 @@
             return null;
         }
         console.log('Found table:', $table);
-        
+
         try {
             var table = $table.DataTable({
                 processing: true,
@@ -305,14 +305,34 @@
                     }
                 },
                 autoWidth: false,
-                columnDefs: [
-                    { width: '10%', targets: 0 }, // ID 
-                    { width: '15%', targets: 1 }, // Date
-                    ...(planId ? [] : [{ width: '15%', targets: 2 }]), // Plan (only for All Orders) 
-                    { width: '20%', targets: planId ? 2 : 3 }, // Domain URL
-                    { width: '15%', targets: planId ? 3 : 4 }, // Total Inboxes 
-                    { width: '15%', targets: planId ? 4 : 5 }, // Status
-                    { width: '10%', targets: planId ? 5 : 6 }  // Actions
+                columnDefs: [{
+                        width: '10%',
+                        targets: 0
+                    }, // ID 
+                    {
+                        width: '15%',
+                        targets: 1
+                    }, // Date
+                    ...(planId ? [] : [{
+                        width: '15%',
+                        targets: 2
+                    }]), // Plan (only for All Orders) 
+                    {
+                        width: '20%',
+                        targets: planId ? 2 : 3
+                    }, // Domain URL
+                    {
+                        width: '15%',
+                        targets: planId ? 3 : 4
+                    }, // Total Inboxes 
+                    {
+                        width: '15%',
+                        targets: planId ? 4 : 5
+                    }, // Status
+                    {
+                        width: '10%',
+                        targets: planId ? 5 : 6
+                    } // Actions
                 ],
                 ajax: {
                     url: "{{ route('customer.orders.data') }}",
@@ -324,7 +344,7 @@
                     data: function(d) {
                         // Make sure planId is properly set in the request
                         d.plan_id = planId || '';
-                        
+
                         // Add other parameters
                         d.orderId = $('#orderIdFilter').val();
                         d.status = $('#statusFilter').val();
@@ -338,16 +358,40 @@
                         return d;
                     }
                 },
-                columns: [
-                    { data: 'id', name: 'orders.id' },
-                    { data: 'created_at', name: 'orders.created_at' },
-                    ...(planId ? [] : [{ data: 'plan_name', name: 'plans.name' }]),
-                    { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
-                    { data: 'total_inboxes', name: 'total_inboxes' },
-                    { data: 'status', name: 'orders.status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                columns: [{
+                        data: 'id',
+                        name: 'orders.id'
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'orders.created_at'
+                    },
+                    ...(planId ? [] : [{
+                        data: 'plan_name',
+                        name: 'plans.name'
+                    }]),
+                    {
+                        data: 'domain_forwarding_url',
+                        name: 'domain_forwarding_url'
+                    },
+                    {
+                        data: 'total_inboxes',
+                        name: 'total_inboxes'
+                    },
+                    {
+                        data: 'status',
+                        name: 'orders.status'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
                 ],
-                order: [[1, 'desc']]
+                order: [
+                    [1, 'desc']
+                ]
             });
 
             return table;
@@ -360,7 +404,7 @@
     $(document).ready(function() {
         try {
             console.log('Document ready, initializing tables');
-            
+
             // Initialize DataTables object to store all table instances
             window.orderTables = {};
 
@@ -373,10 +417,10 @@
             @endforeach
 
             // Handle tab changes
-            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
                 const tabId = $(e.target).attr('id');
                 console.log('Tab changed to:', tabId);
-                
+
                 // Clear DataTables events before reapplying
                 Object.values(window.orderTables).forEach(function(table) {
                     if (table) {
@@ -399,7 +443,7 @@
                                     data.startDate = $('#startDate').val();
                                     data.endDate = $('#endDate').val();
                                 });
-                                
+
                                 table.columns.adjust();
                                 if (table.responsive && typeof table.responsive.recalc === 'function') {
                                     table.responsive.recalc();
@@ -458,7 +502,7 @@
                             data.startDate = $('#startDate').val();
                             data.endDate = $('#endDate').val();
                         });
-                        
+
                         table.draw();
                     }
                 });
@@ -481,6 +525,8 @@
             console.error('Error in document ready:', error);
         }
     });
+
+
 </script>
 
 <style>
@@ -489,12 +535,12 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         padding: 1rem;
         border-radius: 4px;
     }
-    
+
     .loading {
         position: relative;
         pointer-events: none;

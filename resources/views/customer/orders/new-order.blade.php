@@ -726,29 +726,137 @@ $(document).ready(function() {
         }
     });
 
+    // function calculateTotalInboxes() {
+    //     const domainsText = $('#domains').val();
+    //     const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+    //     const submitButton = $('button[type="submit"]');
+        
+    //     // Split domains by commas or newlines and filter out empty entries
+    //     const domains = domainsText.split(/[\n,]+/)
+    //         .map(domain => domain.trim())
+    //         .filter(domain => domain.length > 0);
+            
+    //     // Remove duplicates
+    //     const uniqueDomains = [...new Set(domains)];
+    //     const totalInboxes = uniqueDomains.length * inboxesPerDomain;
+        
+    //     $('#total_inboxes').val(totalInboxes);
+        
+    //     // Get current plan details
+    //     const currentPlan = @json($plan);
+        
+    //     // Update price display
+    //     if (currentPlan) {
+    //         const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
+    //         let priceHtml = `
+    //             <div class="d-flex align-items-center gap-3 mb-4">
+    //                 <div>
+    //                     <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
+    //                         width="30" alt="">
+    //                 </div>
+    //                 <div>
+    //                     <span class="opacity-50">Officially Google Workspace Inboxes</span>
+    //                     <br>
+    //                     <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
+    //                 </div>
+    //             </div>
+    //             <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
+    //             <h6><span class="theme-text">Discount:</span> 0%</h6>
+    //             <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
+    //         `;
+            
+    //         // Check if total inboxes exceeds current plan limit
+    //         if (currentPlan && totalInboxes > currentPlan.max_inbox && currentPlan.max_inbox !== 0) {
+    //             priceHtml = `
+    //                 <div class="d-flex align-items-center gap-3 mb-4">
+    //                     <div>
+    //                         <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
+    //                             width="30" alt="">
+    //                     </div>
+    //                     <div>
+    //                         <span class="opacity-50">Officially Google Workspace Inboxes</span>
+    //                         <br>
+    //                         <span>Configuration exceeds available limits</span>
+    //                     </div>
+    //                 </div>
+    //                 <h6><span class="theme-text">Original Price:</span> <small class="text-danger">Please contact support for a custom solution</small></h6>
+    //                 <h6><span class="theme-text">Discount:</span> 0%</h6>
+    //                 <h6><span class="theme-text">Total:</span> <small class="text-danger">Configuration exceeds available limits</small></h6>
+    //             `;
+                
+    //             // Disable submit button 
+    //             submitButton.prop('disabled', true);
+    //             submitButton.hide();
+                
+    //             // Show upgrade confirmation
+    //             Swal.fire({
+    //                 title: 'Plan Limit Exceeded',
+    //                 html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${currentPlan.max_inbox}).<br>Would you like to upgrade your plan?`,
+    //                 icon: 'warning',
+    //                 showCancelButton: true,
+    //                 confirmButtonText: 'Upgrade Plan',
+    //                 cancelButtonText: 'Cancel'
+    //             }).then((result) => {
+    //                 if (result.isConfirmed) {
+    //                     window.location.href = "{{ route('customer.pricing') }}";
+    //                 }
+    //             });
+    //         } else {
+    //             // Enable submit button
+    //             submitButton.prop('disabled', false);
+    //             submitButton.show();
+    //         }
+
+    //         $('.price-display-section').html(priceHtml);
+    //     } else {
+    //         $('.price-display-section').html(`
+    //             <div class="d-flex align-items-center gap-3 mb-4">
+    //                 <div>
+    //                     <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
+    //                         width="30" alt="">
+    //                 </div>
+    //                 <div>
+    //                     <span class="opacity-50">Officially Google Workspace Inboxes</span>
+    //                     <br>
+    //                     <span>Please add domains and inboxes to calculate price</span>
+    //                 </div>
+    //             </div>
+    //             <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+    //             <h6><span class="theme-text">Discount:</span> 0%</h6>
+    //             <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+    //         `);
+    //     }
+    // }
     function calculateTotalInboxes() {
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-        const submitButton = $('button[type="submit"]');
         
         // Split domains by commas or newlines and filter out empty entries
         const domains = domainsText.split(/[\n,]+/)
             .map(domain => domain.trim())
             .filter(domain => domain.length > 0);
-            
-        // Remove duplicates
-        const uniqueDomains = [...new Set(domains)];
+        
+        const uniqueDomains = [...new Set(domains)]; // Remove duplicates
         const totalInboxes = uniqueDomains.length * inboxesPerDomain;
         
         $('#total_inboxes').val(totalInboxes);
         
-        // Get current plan details
+        // Get all plans and current plan details
+        const plans = @json(App\Models\Plan::where('is_active', true)->orderBy('price')->get());
         const currentPlan = @json($plan);
         
-        // Update price display
-        if (currentPlan) {
-            const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
-            let priceHtml = `
+        // Find suitable plan for the total inboxes
+        const suitablePlan = plans.find(p => 
+            (p.min_inbox <= totalInboxes && (p.max_inbox >= totalInboxes || p.max_inbox === 0))
+        );
+        
+        // Update price display based on suitable plan availability
+        let priceHtml = '';
+        let planToShow = suitablePlan || currentPlan;
+        
+        if (!suitablePlan && totalInboxes > 0) {
+            // No suitable plan exists
+            priceHtml = `
                 <div class="d-flex align-items-center gap-3 mb-4">
                     <div>
                         <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
@@ -757,59 +865,34 @@ $(document).ready(function() {
                     <div>
                         <span class="opacity-50">Officially Google Workspace Inboxes</span>
                         <br>
-                        <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
+                        <span>Configuration exceeds available limits</span>
+                    </div>
+                </div>
+                <h6><span class="theme-text">Original Price:</span> <small class="text-danger">Please contact support for a custom solution</small></h6>
+                <h6><span class="theme-text">Discount:</span> 0%</h6>
+                <h6><span class="theme-text">Total:</span> <small class="text-danger">Configuration exceeds available limits</small></h6>
+            `;
+        } else if (planToShow && totalInboxes > 0) {
+            // Show price from suitable plan if available, otherwise current plan
+            const originalPrice = parseFloat(planToShow.price * totalInboxes).toFixed(2);
+            priceHtml = `
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div>
+                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
+                            width="30" alt="">
+                    </div>
+                    <div>
+                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                        <br>
+                        <span>${totalInboxes} x $${parseFloat(planToShow.price).toFixed(2)} <small>/${planToShow.duration}</small></span>
                     </div>
                 </div>
                 <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
                 <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
+                <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${planToShow.duration}</small></h6>
             `;
-            
-            // Check if total inboxes exceeds current plan limit
-            if (currentPlan && totalInboxes > currentPlan.max_inbox && currentPlan.max_inbox !== 0) {
-                priceHtml = `
-                    <div class="d-flex align-items-center gap-3 mb-4">
-                        <div>
-                            <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
-                                width="30" alt="">
-                        </div>
-                        <div>
-                            <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                            <br>
-                            <span>Configuration exceeds available limits</span>
-                        </div>
-                    </div>
-                    <h6><span class="theme-text">Original Price:</span> <small class="text-danger">Please contact support for a custom solution</small></h6>
-                    <h6><span class="theme-text">Discount:</span> 0%</h6>
-                    <h6><span class="theme-text">Total:</span> <small class="text-danger">Configuration exceeds available limits</small></h6>
-                `;
-                
-                // Disable submit button 
-                submitButton.prop('disabled', true);
-                submitButton.hide();
-                
-                // Show upgrade confirmation
-                Swal.fire({
-                    title: 'Plan Limit Exceeded',
-                    html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${currentPlan.max_inbox}).<br>Would you like to upgrade your plan?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Upgrade Plan',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = "{{ route('customer.pricing') }}";
-                    }
-                });
-            } else {
-                // Enable submit button
-                submitButton.prop('disabled', false);
-                submitButton.show();
-            }
-
-            $('.price-display-section').html(priceHtml);
         } else {
-            $('.price-display-section').html(`
+            priceHtml = `
                 <div class="d-flex align-items-center gap-3 mb-4">
                     <div>
                         <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png"
@@ -824,7 +907,15 @@ $(document).ready(function() {
                 <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
                 <h6><span class="theme-text">Discount:</span> 0%</h6>
                 <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-            `);
+            `;
+        }
+        
+        // Update displayed price
+        $('.price-display-section').html(priceHtml);
+        
+        // Update form's plan_id if there's a suitable plan
+        if (suitablePlan) {
+            $('input[name="plan_id"]').val(suitablePlan.id);
         }
     }
 

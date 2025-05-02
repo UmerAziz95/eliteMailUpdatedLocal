@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Invoice;
 use Illuminate\Validation\ValidationException;
-
+// Subscription
+use App\Models\Subscription;
+use Illuminate\Support\Facades\Auth;
 class OrderController extends Controller
 {
     private $statuses = [
@@ -275,9 +277,7 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li class="dropdown-header">Manage Statuses</li>
-                                    ' . $statusOptions . '
+                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
                                 </ul>
                             </div>';
                 })
@@ -285,9 +285,9 @@ class OrderController extends Controller
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
-                    $statusClass = $this->statuses[ucfirst($order->status_manage_by_admin ?? 'N/A')] ?? 'secondary';
+                    $statusClass = $this->statuses[ucfirst(strtolower($order->status_manage_by_admin) ?? 'N/A')] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($order->status_manage_by_admin ?? 'N/A') . '</span>';
+                        . ucfirst(strtolower($order->status_manage_by_admin) ?? 'N/A') . '</span>';
                 })
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
@@ -525,4 +525,43 @@ class OrderController extends Controller
             return response()->json(['error' => 'Error loading invoices'], 500);
         }
     }
+    public function orderStatusProcess(Request $request)
+  {
+      $request->validate([
+          'chargebee_subscription_id' => 'required|string',
+          'marked_status' => 'required|string',
+          'reason' => 'nullable|string',
+      ]);
+      $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+  
+      if (!$subscription || $subscription->status !== 'active') {
+          return response()->json([
+              'success' => false,
+              'message' => 'No active subscription found.'
+          ], 404);
+      }
+  
+      try {
+          $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+          if ($order) {
+              $order->update([
+                  'status_manage_by_admin' => $request->marked_status,
+                  'reason' => $request->reason? $request->reason."(Reason given by)"." ".Auth::user()->name: null,
+              ]);
+          }
+  
+          return response()->json([
+              'success' => true,
+              'message' => 'Order Status Updated Successfully.'
+          ]);
+  
+      } catch (\Exception $e) {
+          \Log::error('Error While Updating The Status: ' . $e->getMessage());
+  
+          return response()->json([
+              'success' => false,
+              'message' => 'Failed To Update The Status: ' . $e->getMessage()
+          ], 500);
+      }
+  }
 }
