@@ -105,7 +105,7 @@
                                 @csrf
                                 <div class="input-group">
                                     <label for="email">Email</label>
-                                    <input type="email" name="email" id="email" placeholder="Email">
+                                    <input type="email" name="email" id="email" placeholder="Email" value="{{ old('email') }}" >
                                     {{-- error --}}
                                     {{-- @error('email')
                                         <div class="text-danger">{{ $message }}</div>
@@ -113,22 +113,19 @@
                                 </div>
                                 <div class="input-group">
                                     <label for="password">Password</label>
-                                    <input type="password" name="password" id="password" placeholder="Password">
+                                    <input type="password" name="password" id="password" placeholder="Password" value="{{ old('password') }}" >
                                     <span id="togglePassword"
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
                                     </span>
-                                    {{-- error --}}
-                                    {{-- @error('password')
-                                        <div class="text-danger">{{ $message }}</div>
-                                    @enderror --}}
+
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value=""
-                                            id="flexCheckDefault">
-                                        <label class="form-check-label" for="flexCheckDefault">
-                                            I agree to privacy policy & terms
+                                        <input class="form-check-input" type="checkbox" name="remember" 
+                                            id="remember" {{ old('remember') ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="remember">
+                                            Remember me
                                         </label>
                                     </div>
 

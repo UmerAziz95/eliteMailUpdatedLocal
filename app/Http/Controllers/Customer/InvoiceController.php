@@ -8,7 +8,7 @@ use App\Models\Invoice;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
-
+use App\Services\ActivityLogService;
 class InvoiceController extends Controller
 {
     private $statuses = [
@@ -257,6 +257,21 @@ class InvoiceController extends Controller
                     'data' => $invoice
                 ]);
             }
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-invoice-view', 
+                'Viewed invoice: ' . $invoiceId, 
+                $invoice, 
+                [
+                    'invoice_id' => $invoiceId,
+                    'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+                    'order_id' => $invoice->order_id,
+                    'amount' => $invoice->amount,
+                    'status' => $invoice->status,
+                    'view_date' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            );
 
             return view('customer.invoices.show', compact('invoice'));
         } catch (Exception $e) {
@@ -293,7 +308,21 @@ class InvoiceController extends Controller
             
             // Generate filename
             $filename = 'invoice_' . $invoiceId . '.pdf';
-
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-invoice-download', 
+                'Downloaded invoice: ' . $invoiceId, 
+                $invoice, 
+                [
+                    'invoice_id' => $invoiceId,
+                    'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+                    'order_id' => $invoice->order_id,
+                    'amount' => $invoice->amount,
+                    'status' => $invoice->status,
+                    'download_date' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            );
             // Return PDF file as download
             return $pdf->download($filename);
 

@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionCancellationMail;
 use App\Mail\OrderCreatedMail;
 use Log;
+use App\Mail\InvoiceGeneratedMail;
+use App\Models\ReorderInfo;
+// User
+use App\Models\User;
+use App\Services\ActivityLogService;
 
 class PlanController extends Controller
 {
@@ -183,6 +188,85 @@ class PlanController extends Controller
             ], 500);
         }
     }
+    
+    // public function initiateSubscription(Request $request)
+    // {
+    //     try {
+    //         $user = auth()->user();
+    //         $charge_customer_id = null;
+    
+    //         // Retrieve chargebee_customer_id from order if available
+    //         if ($request->has('order_id')) {
+    //             $order = Order::findOrFail($request->order_id);
+    //             $charge_customer_id = $order->chargebee_customer_id ?? null;
+    //         }
+    
+    //         // ✅ Ensure Product Family ID is correct, change if necessary
+    //         $productFamilyId = 'cbdemo_omnisupport-solutions'; // Check this ID in Chargebee for accuracy
+    
+    //         // Setup subscription items
+    //         $subscriptionItems = [
+    //             [
+    //                 "item_family_id" => $productFamilyId,
+    //                 "quantity" => 1,
+    //                 "quantity_editable" => false,
+    //             ]
+    //         ];
+    
+    //         // Prepare parameters for Chargebee request
+    //         $params = [
+    //             "subscription_items" => $subscriptionItems,
+    //             "redirect_url" => route('customer.subscription.success'),
+    //             "cancel_url" => route('customer.subscription.cancel'),
+    //         ];
+    
+    //         // Log URLs to ensure they are correct
+    //         Log::info('Redirect URL: ' . route('customer.subscription.success'));
+    //         Log::info('Cancel URL: ' . route('customer.subscription.cancel'));
+    
+    //         // Add customer details (either new or existing)
+    //         if ($charge_customer_id) {
+    //             $params["customer"] = ["id" => $charge_customer_id];
+    //         } else {
+    //             // Ensure user data is complete (add 'last_name' if required by Chargebee)
+    //             $params["customer"] = [
+    //                 "email" => $user->email,
+    //                 "first_name" => $user->name,
+    //                 "phone" => $user->phone,
+    //                 "last_name" => $user->last_name ?? '', // Add last_name if needed
+    //             ];
+    //         }
+    
+    //         // Log the parameters for debugging
+    //         Log::info('Chargebee Request Params:', $params);
+    
+    //         // Call Chargebee API to initiate checkout
+    //         $result = HostedPage::checkoutNewForItems($params);
+    
+    //         // Check the response from Chargebee and handle the URL properly
+    //         if ($result && $result->hostedPage()) {
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'hosted_page_url' => $result->hostedPage()->url
+    //             ]);
+    //         } else {
+    //             Log::error('Chargebee API Response Error: ' . json_encode($result));
+    //             throw new \Exception('Failed to retrieve hosted page URL from Chargebee API.');
+    //         }
+    
+    //     } catch (\Exception $e) {
+    //         // Log the error to troubleshoot
+    //         Log::error('Chargebee Subscription Error: ' . $e->getMessage());
+    
+    //         // Return a detailed error response
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to initiate subscription: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+    
+
 
     public function subscriptionSuccess(Request $request)
     {
@@ -314,7 +398,7 @@ class PlanController extends Controller
             }
 
             // Create or update subscription
-            UserSubscription::updateOrCreate(
+            $user_subscription_data = UserSubscription::updateOrCreate(
                 ['chargebee_subscription_id' => $subscription->id],
                 [
                     'user_id' => $user->id,
@@ -338,32 +422,62 @@ class PlanController extends Controller
                 'plan_id' => $plan_id,
                 'chargebee_customer_id' => $customer->id,
             ]);
-            // dd("success");
-
+            
             // destroy session order_info
             if ($request->session()->has('order_info')) {
                 $request->session()->forget('order_info');
             }
-
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-order-created',
+                'Order created successfully: ' . $order->id,
+                $order, 
+                [
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'plan_id' => $plan_id,
+                    'chargebee_subscription_id' => $subscription->id,
+                    'chargebee_invoice_id' => $invoice->id,
+                    'amount' => ($invoice->amountPaid ?? 0) / 100,
+                    'status' => $invoice->status,
+                    'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
+                ]
+            );
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-subscription-created',
+                'Subscription created successfully: ' . $user_subscription_data->id,
+                $user_subscription_data, 
+                [
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'plan_id' => $plan_id,
+                    'chargebee_subscription_id' => $subscription->id,
+                    'chargebee_invoice_id' => $invoice->id,
+                    'amount' => ($invoice->amountPaid ?? 0) / 100,
+                    'status' => $invoice->status,
+                    'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
+                ]
+            );
             // Send email notifications
             try {
                 // Send email to user
-                // Mail::to($user->email)
-                //     ->queue(new OrderCreatedMail(
-                //         $order,
-                //         $user,
-                //         false
-                //     ));
+                Mail::to($user->email)
+                    ->queue(new OrderCreatedMail(
+                        $order,
+                        $user,
+                        false
+                    ));
 
                 // Send email to admin
-                // Mail::to(config('mail.admin_address', 'admin@example.com'))
-                //     ->queue(new OrderCreatedMail(
-                //         $order,
-                //         $user,
-                //         true
-                //     ));
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderCreatedMail(
+                        $order,
+                        $user,
+                        true
+                    ));
             } catch (\Exception $e) {
-                // \Log::error('Failed to send order creation emails: ' . $e->getMessage());
+                \Log::error('Failed to send order creation emails: ' . $e->getMessage());
                 // Continue execution since the order was already created
             }
 
@@ -470,27 +584,38 @@ class PlanController extends Controller
                 $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
                 if ($order) {
                     $order->update([
-                        'status_manage_by_admin' => 'expired',
+                        'status_manage_by_admin' => 'cancelled',
                     ]);
                 }
+                // Create a new activity log using the custom log service
+                ActivityLogService::log(
+                    'customer-subscription-cancelled',
+                    'Subscription cancelled successfully: ' . $subscription->id,
+                    $subscription, 
+                    [
+                        'user_id' => auth()->user()->id,
+                        'subscription_id' => $subscription->id,
+                        'status' => $subscription->status,
+                    ]
+                );
 
                 try {
                     // Send email to user
-                    // Mail::to($user->email)
-                    //     ->queue(new SubscriptionCancellationMail(
-                    //         $subscription, 
-                    //         $user, 
-                    //         $request->reason
-                    //     ));
+                    Mail::to($user->email)
+                        ->queue(new SubscriptionCancellationMail(
+                            $subscription, 
+                            $user, 
+                            $request->reason
+                        ));
 
                     // Send email to admin
-                    // Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    //     ->queue(new SubscriptionCancellationMail(
-                    //         $subscription, 
-                    //         $user, 
-                    //         $request->reason,
-                    //         true
-                    //     ));
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new SubscriptionCancellationMail(
+                            $subscription, 
+                            $user, 
+                            $request->reason,
+                            true
+                        ));
                 } catch (\Exception $e) {
                     // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
                     // Continue execution since the subscription was already cancelled
@@ -842,9 +967,9 @@ class PlanController extends Controller
                         [
                             'chargebee_customer_id' => $invoiceData['customer_id'] ?? null,
                             'chargebee_subscription_id' => $invoiceData['subscription_id'] ?? null,
-                            'user_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('user_id') ?? 2,
-                            'plan_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('plan_id') ?? 4,
-                            'order_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('order_id') ?? 5,
+                            'user_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('user_id') ?? 1,
+                            'plan_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('plan_id') ?? null,
+                            'order_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('order_id') ?? 1,
                             'amount' => $amount,
                             'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
@@ -853,6 +978,33 @@ class PlanController extends Controller
                             'metadata' => $metadata,
                         ]
                     );
+
+                    // Send email notification if invoice is generated
+                    if ($eventType === 'invoice_generated') {
+                        try {
+                            $user = User::find($invoice->user_id);
+                            if ($user) {
+                                // Send email to user
+                                Mail::to($user->email)
+                                    ->queue(new InvoiceGeneratedMail(
+                                        $invoice,
+                                        $user,
+                                        false
+                                    ));
+
+                                // Send email to admin
+                                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                    ->queue(new InvoiceGeneratedMail(
+                                        $invoice,
+                                        $user,
+                                        true
+                                    ));
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send invoice generation emails: ' . $e->getMessage());
+                        }
+                    }
+
                     // update subscription last_billing_date, next_billing_date
                     $subscription = UserSubscription::where('chargebee_subscription_id', $invoiceData['subscription_id'])->first();
                     if ($subscription) {
@@ -871,6 +1023,7 @@ class PlanController extends Controller
                         'status' => $invoice->status,
                         'event_type' => $eventType
                     ]);
+                    
                     break;
 
                 default:

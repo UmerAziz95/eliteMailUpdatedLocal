@@ -176,7 +176,8 @@ class SubscriptionController extends Controller
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="CancelSubscription(\'' . $subscription->chargebee_subscription_id . '\')">Cancel Subscription</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="CancelSubscription(\'' . $subscription->chargebee_subscription_id . '\')"><i class="fa-solid fa-ban"></i> &nbsp;Cancel Subscription</a></li>
+                                    <li><a class="dropdown-item" href="' . route('customer.orders.view', $subscription->order_id ) . '"><i class="fa-solid fa-eye"></i> &nbsp;View Order</a></li>
                                 </ul>
                             </div>';
                 })

@@ -60,7 +60,9 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $remember = $request->has('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             // Log the user ID and the requested path
             Log::info('User ' . Auth::user()->id . ' logged in at ' . now());
@@ -119,7 +121,7 @@ class AuthController extends Controller
 
     //     Auth::login($user);
 
-    //     return redirect($this->redirectTo($user));
+    //     return redirect($this->.redirectTo($user));
     // }
     public function register(Request $request)
     {
@@ -156,22 +158,22 @@ class AuthController extends Controller
             'phone' => $data['phone'],
         ]);
         // dd($user);
-        // try {
-        //     // Send welcome email
-        //     // ✅ Queue the welcome email
-        //     // Mail::to($user->email)->queue(new UserWelcomeMail($user));
-        //     // ✅ Delay until a specific date/time
-        //     // add 2 minutes to the current time
-        //     $sendDate = Carbon::now()->addMinutes(2);
-        //     // add 30 days to the current time
-        //     // $sendDate = Carbon::now()->addDays(30);
-        //     Mail::to($user->email)->later(
-        //         $sendDate,
-        //         new UserWelcomeMail($user)
-        //     );
-        // } catch (\Exception $e) {
-        //     Log::error('Failed to send welcome email: ' . $e->getMessage());
-        // }
+        try {
+            // Send welcome email
+            // ✅ Queue the welcome email
+            // Mail::to($user->email)->queue(new UserWelcomeMail($user));
+            // ✅ Delay until a specific date/time
+            // add 2 minutes to the current time
+            $sendDate = Carbon::now()->addMinutes(2);
+            // add 30 days to the current time
+            // $sendDate = Carbon::now()->addDays(30);
+            Mail::to($user->email)->later(
+                $sendDate,
+                new UserWelcomeMail($user)
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
         Auth::login($user);
         $user = User::where('email', $data['email'])->first();
         // dd($user);

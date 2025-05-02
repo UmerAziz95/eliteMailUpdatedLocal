@@ -205,11 +205,6 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
-        Log::info('Orders data request received', [
-            'plan_id' => $request->plan_id,
-            'request_data' => $request->all()
-        ]);
-
         try {
             $orders = Order::query()
                 ->with(['user', 'plan', 'reorderInfo'])
@@ -558,7 +553,6 @@ class OrderController extends Controller
 
                 // Get user details
                 $user = $order->user;
-
                 // Send email to user
                 try {
                     Mail::to($user->email)
@@ -570,7 +564,12 @@ class OrderController extends Controller
                             $reason,
                             false
                         ));
-
+                    Log::info('Order status change email sent to user', [
+                        'user_id' => $user->id,
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus
+                    ]);
                     // Send email to admin
                     Mail::to(config('mail.admin_address', 'admin@example.com'))
                         ->queue(new OrderStatusChangeMail(
@@ -581,6 +580,10 @@ class OrderController extends Controller
                             $reason,
                             true
                         ));
+                    Log::info('Order status change email sent to admin', [
+                        'admin_email' => config('mail.admin_address'),
+                        'order_id' => $order->id,
+                    ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
                     // Continue execution since the status was already updated
