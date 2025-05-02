@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->string('chargebee_invoice_id')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('status')->default('pending');
-            $table->text('reason')->nullable();
+            // $table->text('reason')->nullable();
             $table->string('currency')->default('USD');
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
