@@ -69,6 +69,8 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
     ];
 
+    
+
     protected $routeMiddleware = [
         'custom_role' => \App\Http\Middleware\RoleMiddleware::class,
         'view.only' => \App\Http\Middleware\ViewOnlyMiddleware::class,
