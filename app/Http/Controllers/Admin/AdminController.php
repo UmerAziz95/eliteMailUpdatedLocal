@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\SidebarNavigation;
 use Carbon\Carbon;
 use DataTables;
 use Illuminate\Validation\Rule;
+
 class AdminController extends Controller
 {
     public function index(Request $request)
@@ -90,7 +92,9 @@ class AdminController extends Controller
 
     public function dashboard()
     {
-        return view('admin.dashboard.dashboard');
+        $navigations=SidebarNavigation::get();
+
+        return view('admin.dashboard.dashboard',['navigations'=>$navigations]);
     }
 
     public function profile()

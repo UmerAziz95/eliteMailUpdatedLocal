@@ -8,8 +8,13 @@
             style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
             value="" id="checkDefault">
     </div>
+    
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->
+      
+            
+
+       @can('Dashboard')
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
                 href="{{ route('admin.dashboard') }}">
@@ -19,21 +24,29 @@
                 </div>
             </a>
         </li>
+        @endcan
 
+    
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
+        @foreach ($navigations as $item)
+        @if ($item->name == 'Dashboard')
+        @continue
+        @endif
+        @can( $item->permission)
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin') ? 'active' : '' }}"
-                href="{{ url('admin') }}">
+                href="{{ route($item->route) }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-user fs-5"></i></div>
-                    <div class="text">Admins</div>
+                    <div class="text">{{ $item->name }}</div>
                 </div>
             </a>
         </li>
+        @endcan
 
         <!-- Users -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/customer') ? 'active' : '' }}"
                 href="{{ url('admin/customer') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -64,22 +77,22 @@
             </a>
         </li>
       <li class="nav-item">
-    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/invoices') ? 'active' : '' }}"
+        <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/invoices') ? 'active' : '' }}"
         href="{{ url('admin/invoices') }}">
         <div class="d-flex align-items-center" style="gap: 13px">
             <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
             <div class="text">Invoices</div>
-        </div>
-    </a>
-</li>
-
+           </div>
+      </a>
+      </li> --}}
+@endforeach
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
         </p>
         <!-- Roles -->
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('roles') ? 'active' : '' }}"
-                href="{{ url('roles') }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('/admin/role') ? 'active' : '' }}"
+                href="{{ url('/admin/role') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-circles fs-5"></i></div>
                     <div class="text">Roles</div>
