@@ -186,7 +186,7 @@ class HostingPlatformSeeder extends Seeder
                 'sort_order' => 7
             ]
         ];
-
+        HostingPlatform::truncate();
         foreach ($platforms as $platform) {
             HostingPlatform::create($platform);
         }

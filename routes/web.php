@@ -46,6 +46,7 @@ use App\Http\Controllers\CronController;
 
 //logs for application
 Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
+Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
 Route::view('/plans', 'plans');
 
 
