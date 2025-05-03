@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Log;
 use DataTables;
 use Exception;
-
+use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 class AppLogController extends Controller
 {
     public function getLogs(Request $request)
@@ -63,7 +64,8 @@ class AppLogController extends Controller
 }
 
 
-// // log creation 
+
+// log creation 
 // $user=Auth::user();
 // // Create a new activity log using the custom log service
 // ActivityLogService::log(
