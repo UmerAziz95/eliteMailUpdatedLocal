@@ -21,7 +21,7 @@ class UsersTableSeeder extends Seeder
                 'role_id' => 3,
             ],
             [
-                'email' => 'contractor@email',
+                'email' => 'contractor@email.com',
                 'name' => 'Contractor User',
                 'role_id' => 4,
             ],
