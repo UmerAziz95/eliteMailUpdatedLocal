@@ -124,6 +124,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // roles permission 
         Route::get('/role',[CustomRolePermissionController::class,'index'])->name('role.index');
         Route::get('/role/create',[CustomRolePermissionController::class,'index'])->name('role.create');
+        Route::post('/role/store',[CustomRolePermissionController::class,'store'])->name('role.store');
         Route::get('/role/edit',[CustomRolePermissionController::class,'index'])->name('role.edit');
         Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
         Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');

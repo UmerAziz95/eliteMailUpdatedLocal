@@ -19,6 +19,9 @@ class CustomRolePermissionController extends Controller
                 ->addColumn('permissions', function ($role) {
                     return $role->permissions->pluck('name')->implode(', ');
                 })
+                ->addColumn('created_at', function ($role) {
+                    return $role->created_at->format("D_F_Y");
+                })
                 // ->addColumn('action', function ($role) {
                 //     return view('admin.roles.partials.actions', compact('role'))->render();
                 // })
@@ -26,7 +29,10 @@ class CustomRolePermissionController extends Controller
                 ->make(true);
         }
     
-        return view('admin.roles.roles');
+        $roles=Role::all();
+        $permissions=Permission::all();
+      
+        return view('admin.roles.roles', ['roles'=>$roles,'permissions'=>$permissions]);
     }
 
     public function create()
@@ -37,19 +43,28 @@ class CustomRolePermissionController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|unique:roles,name',
-            'permissions' => 'array',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'exists:permissions,id',
         ]);
+    
+        // Create role
+        $Createdrole = Role::create(['name' => $validated['name']]);
+        $role=Role::find($Createdrole->id);
+        if (!empty($validated['permissions'])) {
+            // Fetch Permission models by ID
+        
+            $permission= Permission::whereIn('id', $request->permissions)->get();
 
-        $role = Role::create(['name' => $request->name]);
-        if ($request->has('permissions')) {
-            $role->givePermissionTo($request->permissions);
+            $role->syncPermissions($permission);
+          //  $role->syncPermissions($permissions); // Now passes Permission objects
+        
         }
-
-        return redirect()->route('roles.index')->with('success', 'Role created successfully.');
+    
+        return redirect()->route('admin.role.index')->with('success', 'Role created successfully.');
     }
-
+    
     public function edit(Role $role)
     {
         $permissions = Permission::all();

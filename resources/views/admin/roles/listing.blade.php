@@ -10,6 +10,7 @@
                 <tr>
                     <th>Id</th>
                     <th>Role</th>
+                    <th>Permissions</th>
                     <th>Created at</th>
                  
                 </tr>

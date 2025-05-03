@@ -35,10 +35,10 @@
         @endif
         @can( $item->permission)
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin') ? 'active' : '' }}"
-                href="{{ route($item->route) }}">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
+               href="{{ route($item->route) }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-user fs-5"></i></div>
+                    <div class="icons"><i class="{{ $item->icon }}"></i></div>
                     <div class="text">{{ $item->name }}</div>
                 </div>
             </a>
@@ -101,7 +101,7 @@
         </li>
 
         <!-- Permissions -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('permissions') ? 'active' : '' }}"
                 href="{{ url('permissions') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -109,11 +109,11 @@
                     <div class="text">Permissions</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Website settings</p>
+        {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Website settings</p> --}}
         <!-- Pages -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
                 data-bs-toggle="collapse" href="#pages" role="button" aria-expanded="false">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -132,10 +132,10 @@
                 <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
                         href="{{ url('/') }}"><span class="circle"></span> Projects</a></li>
             </ul>
-        </li>
+        </li> --}}
 
         <!-- Front Pages -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
                 data-bs-toggle="collapse" href="#front_pages" role="button" aria-expanded="false">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -156,7 +156,7 @@
                 <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
                             class="circle"></span> Testimonials</a></li>
             </ul>
-        </li>
+        </li> --}}
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
         <!-- Pricing -->
@@ -165,13 +165,13 @@
                 href="{{ url('admin/pricing') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                    <div class="text">Pricing</div>
+                    <div class="text">Packages/Plans</div>
                 </div>
             </a>
         </li>
 
         <!-- Payments -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('payments') ? 'active' : '' }}"
                 href="{{ url('payments') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -179,7 +179,7 @@
                     <div class="text">Payments</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"

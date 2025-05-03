@@ -11,6 +11,8 @@ use App\Models\SidebarNavigation;
 use Carbon\Carbon;
 use DataTables;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class AdminController extends Controller
 {
@@ -85,16 +87,18 @@ class AdminController extends Controller
             ->make(true);
     }
 
-    return view('admin.admins.admins');
-}
+      
+        $roles=Role::all();
+        $permissions=Permission::all();
+        return view('admin.admins.admins', ['roles'=>$roles,'permissions'=>$permissions]);
+} 
 
     
 
     public function dashboard()
     {
-        $navigations=SidebarNavigation::get();
-
-        return view('admin.dashboard.dashboard',['navigations'=>$navigations]);
+       
+        return view('admin.dashboard.dashboard');
     }
 
     public function profile()
@@ -110,26 +114,40 @@ class AdminController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
         $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
-            'status' => 'required|in:0,1',
-        ]);
-    //    dd($validated['status']);
-        $user = User::create([
-            'name' => $validated['full_name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'status' => (int) $validated['status'], 
+            'full_name'   => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|min:6|confirmed',
+            'status'      => 'required|in:0,1',
+            'role_id'     => 'required|in:0,1',
         ]);
     
+        // Create the user
+        $user = User::create([
+            'name'     => $validated['full_name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status'   => (int) $validated['status'],
+        ]);
+    
+        // Assign role and permissions if role_id is provided 
+        if ($validated['role_id']) {
+            $role = Role::find($validated['role_id']);
+            if ($role) {
+                $user->assignRole($role);
+            }
+            return response()->json([
+                'message' => 'User created and role has assigned successfully',
+                'user'    => $user
+            ]);
+        }
+    
         return response()->json([
-            'message' => 'User created successfully',
-            'user' => $user
+            'message' => 'User created successfully but failed to assign role',
+            'user'    => $user
         ]);
     }
+    
 
     public function edit($id)
     {

@@ -103,7 +103,7 @@
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
                             <h5 class="mb-1">Administrator</h5>
-                            <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Edit Role</a>
+                            <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Add Role</a>
                         </div>
                         <a href="javascript:void(0);"><i class="icon-base ti tabler-copy icon-md text-heading"></i></a>
                     </div>
@@ -250,10 +250,24 @@
                 </div>
             </div>
         </div>
-    </div>
-
+        <div class="text-center mb-6">
+            @if($errors->any())
+            <div class="" style="background-color: #2f3349">
+                <h4 class="role-title text-danger">Opps! error</h4>
+                <strong class="text-danger">There were some problems with your input.</strong>
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li class="text-danger" style="list-style: none">{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        </div>
+        
     @include('admin.roles.listing')
+    
 
+    </div>
 
     <!-- Modal -->
     <div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
@@ -267,8 +281,9 @@
                         <h4 class="role-title">Edit Role</h4>
                         <p>Set role permissions</p>
                     </div>
+                  
 
-                    @include('modules.roles.add_new_form')
+                    @include('admin.roles.add_new_form')
                 </div>
             </div>
         </div>
@@ -350,6 +365,7 @@ function initDataTable(planId = '') {
         columns: [
             { data: 'id', name: 'id' },
             { data: 'name', name: 'name' },
+            { data: 'permissions', name: 'permissions' },
             { data: 'created_at', name: 'created_at' },
           
        
@@ -358,6 +374,7 @@ function initDataTable(planId = '') {
             { width: '10%', targets: 0 },
             { width: '20%', targets: 1 },
             { width: '15%', targets: 2 },
+            { width: '15%', targets: 3},
           
         ],
         order: [[1, 'desc']],
@@ -460,5 +477,14 @@ function initDataTable(planId = '') {
             console.error('Error in document ready:', error);
         }
     });
+</script>
+<script>
+ $('#addRoleModal').on('shown.bs.modal', function () {
+    $('#permissions').select2({
+        placeholder: "Select permissions",
+        width: '100%',
+        dropdownParent: $('#addRoleModal')
+    });
+});
 </script>
 @endpush
