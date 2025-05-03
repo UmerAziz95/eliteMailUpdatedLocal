@@ -55,7 +55,7 @@
                 </div>
             </a>
         </li>
-
+       
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/subscriptions') ? 'active' : '' }}"
                 href="{{ url('admin/subscriptions') }}">
@@ -76,18 +76,18 @@
                 </div>
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/invoices') ? 'active' : '' }}"
-                href="{{ url('admin/invoices') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
-                    <div class="text">Invoices</div>
-                </div>
-            </a>
-        </li>
+      <li class="nav-item">
+        <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/invoices') ? 'active' : '' }}"
+        href="{{ url('admin/invoices') }}">
+        <div class="d-flex align-items-center" style="gap: 13px">
+            <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
+            <div class="text">Invoices</div>
+           </div>
+      </a>
+      </li> --}}
+@endforeach
 
-
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
+        {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
         </p>
         <!-- Roles -->
         <li class="nav-item">
@@ -98,7 +98,7 @@
                     <div class="text">Roles</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
         <!-- Permissions -->
         {{-- <li class="nav-item">
@@ -158,17 +158,17 @@
             </ul>
         </li> --}}
 
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
+        {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
         <!-- Pricing -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
                 href="{{ url('admin/pricing') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                    <div class="text">Packages/Plans</div>
+                    <div class="text">Plans</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
         <!-- Payments -->
         {{-- <li class="nav-item">
@@ -181,7 +181,7 @@
             </a>
         </li> --}}
 
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"
                 href="{{ url('admin/orders') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -189,7 +189,7 @@
                     <div class="text">Orders</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
         <!-- Support -->

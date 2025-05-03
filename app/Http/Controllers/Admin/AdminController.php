@@ -119,7 +119,7 @@ class AdminController extends Controller
             'email'       => 'required|email|unique:users,email',
             'password'    => 'required|min:6|confirmed',
             'status'      => 'required|in:0,1',
-            'role_id'     => 'required|in:0,1',
+            'role_id'     => 'required',
         ]);
     
         // Create the user

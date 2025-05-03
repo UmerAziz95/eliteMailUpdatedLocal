@@ -5,7 +5,7 @@
     </button>
 
     <div class="d-flex align-items-center gap-3">
-        <div class="dropdown">
+        {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-language fs-5"></i>
             </div>
@@ -14,7 +14,7 @@
                 <li><a class="dropdown-item" href="#">French</a></li>
                 <li><a class="dropdown-item" href="#">German</a></li>
             </ul>
-        </div>
+        </div> --}}
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -28,16 +28,16 @@
             </ul>
         </div>
 
-        <div class="dropdown">
+        {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-category fs-5"></i>
             </div>
-            {{-- <ul class="dropdown-menu">
+            <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#">Action</a></li>
                 <li><a class="dropdown-item" href="#">Another action</a></li>
                 <li><a class="dropdown-item" href="#">Something else here</a></li> 
-            </ul> --}}
-        </div>
+            </ul>
+        </div> --}}
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
