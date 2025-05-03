@@ -13,14 +13,14 @@ class SidebarNavigationSeeder extends Seeder
         $navs = [
             [
                 'name' => 'Dashboard',
-                'icon' => 'fa fa-dashboard',
+                'icon' => 'ti ti-home fs-5',
                 'route' => 'admin.dashboard',
                 'sub_menu' => [],
                 'permission' => 'Dashboard'
             ],
             [
                 'name' => 'Admins',
-                'icon' => 'fa fa-users',
+                'icon' => 'ti ti-user fs-5',
                 'route' => 'admin.index',
                 'permission' => 'Admins',
                 'sub_menu' => [
@@ -29,7 +29,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 'name' => 'Customer',
-                'icon' => 'fa fa-users',
+                'icon' => 'ti ti-headphones fs-5',
                 'route' => 'admin.customer',
                 'permission' => 'Customer',
                 'sub_menu' => [
@@ -38,7 +38,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 'name' => 'Subscriptions',
-                'icon' => 'fa fa-users',
+                'icon' => 'ti ti-currency-dollar fs-5',
                 'route' => 'admin.subs.view',
                 'permission' => 'Subscriptions',
                 'sub_menu' => [
@@ -48,7 +48,7 @@ class SidebarNavigationSeeder extends Seeder
          
             [
                 'name' => 'Contractors',
-                'icon' => 'fa fa-money-check-dollar',
+                'icon' => 'ti ti-contract fs-5',
                 'route' => 'admin.contractorList',
                 // Payments
                 'permission' => 'Contractors',
@@ -58,7 +58,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 'name' => 'Invoices',
-                'icon' => 'fa fa-money-check-dollar',
+                'icon' => 'ti ti-file-invoice fs-5',
                 'route' => 'admin.invoices.index',
                 // Payments
                 'permission' => 'Invoices',
@@ -68,7 +68,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 'name' => 'Orders',
-                'icon' => 'fa fa-money-check-dollar',
+                'icon' => 'ti ti-box fs-5',
                 'route' => 'admin.orders',
                 // Payments
                 'permission' => 'Orders',
@@ -77,23 +77,24 @@ class SidebarNavigationSeeder extends Seeder
                 ]
             ],
             [
-                'name' => 'Payments',
-                'icon' => 'fa fa-money-check-dollar',
-                'route' => 'admin.payments',
+                'name' => 'Plans',
+                'icon' => 'ti ti-devices-dollar fs-5',
+                'route' => 'admin.pricing',
                 // Payments
-                'permission' => 'Payments',
+                'permission' => 'Plans',
                 'sub_menu' => [
                  
                 ]
             ],
+          
          
             // admin.setting
             [
-                'name' => 'Settings',
-                'icon' => 'fa fa-cogs',
-                'route' => 'admin.setting',
+                'name' => 'Roles',
+                'icon' => 'ti ti-circles fs-5',
+                'route' => 'admin.role.index',
                 // Settings
-                'permission' => 'Settings',
+                'permission' => 'Roles',
                 'sub_menu' => [
                   
                 ]
