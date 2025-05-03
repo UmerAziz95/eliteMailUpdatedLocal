@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\UserWelcomeMail;
+// use App\Mail\UserWelcomeMail;
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -167,10 +167,10 @@ class AuthController extends Controller
             $sendDate = Carbon::now()->addMinutes(2);
             // add 30 days to the current time
             // $sendDate = Carbon::now()->addDays(30);
-            Mail::to($user->email)->later(
-                $sendDate,
-                new UserWelcomeMail($user)
-            );
+            // Mail::to($user->email)->later(
+            //     $sendDate,
+            //     new UserWelcomeMail($user)
+            // );
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email: ' . $e->getMessage());
         }
