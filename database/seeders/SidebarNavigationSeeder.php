@@ -30,7 +30,7 @@ class SidebarNavigationSeeder extends Seeder
             [
                 'name' => 'Customer',
                 'icon' => 'ti ti-headphones fs-5',
-                'route' => 'admin.customer',
+                'route' => 'admin.customerList',
                 'permission' => 'Customer',
                 'sub_menu' => [
                  
