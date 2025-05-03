@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             HostingPlatformSeeder::class,
             SendingPlatformSeeder::class,
             UsersTableSeeder::class,
+            SidebarNavigationSeeder::class,
         ]);
     }
 }

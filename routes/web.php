@@ -66,7 +66,7 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name(
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
-
+Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
@@ -129,7 +129,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/role/edit',[CustomRolePermissionController::class,'index'])->name('role.edit');
         Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
         Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');
-        Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
+       
         //payments
         Route::get('/payments',[CustomRolePermissionController::class,'assign'])->name('payments');
         //settings
