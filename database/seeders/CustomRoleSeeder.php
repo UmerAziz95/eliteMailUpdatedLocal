@@ -21,7 +21,7 @@ class CustomRoleSeeder extends Seeder
         $now = Carbon::now();
 
         foreach ($roles as $role) {
-            DB::table('roles')->updateOrInsert(
+            DB::table('custom_roles')->updateOrInsert(
                 ['id' => $role['id']],
                 [
                     'name' => $role['name'],
