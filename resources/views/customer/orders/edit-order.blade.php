@@ -466,7 +466,9 @@ $(document).ready(function() {
         
         // Get current plan details
         const currentPlan = @json($plan);
-        
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        console.log(orderInfo);
+        const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
         let priceHtml = '';
         
         if (!totalInboxes) {
@@ -485,7 +487,8 @@ $(document).ready(function() {
                 <h6><span class="theme-text">Discount:</span> 0%</h6>
                 <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
             `;
-        } else if (currentPlan && totalInboxes > currentPlan.max_inbox && currentPlan.max_inbox !== 0) {
+        } 
+        else if (currentPlan && totalInboxes > TOTAL_INBOXES) {
             priceHtml = `
                 <div class="d-flex align-items-center gap-3 mb-4">
                     <div>
@@ -508,17 +511,21 @@ $(document).ready(function() {
             
             Swal.fire({
                 title: 'Plan Limit Exceeded',
-                html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${currentPlan.max_inbox}).<br>Would you like to upgrade your plan?`,
+                html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${TOTAL_INBOXES}).<br>Would you like to upgrade your plan?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Upgrade Plan',
-                cancelButtonText: 'Cancel'
+                cancelButtonText: 'Cancel',
+                allowOutsideClick: false,
+                allowEscapeKey:false,
+                allowEnterKey:false,
+                backdrop: true,
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = "{{ route('customer.pricing') }}";
                 } else if (result.dismiss === Swal.DismissReason.cancel) {
                     // Calculate how many domains we can keep within the plan limit
-                    const maxDomainsAllowed = Math.floor(currentPlan.max_inbox / inboxesPerDomain);
+                    const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
                     const trimmedDomains = domains.slice(0, maxDomainsAllowed);
                     
                     // Update domains field with trimmed list
@@ -528,7 +535,7 @@ $(document).ready(function() {
                     calculateTotalInboxes();
                     
                     // Show notification to user
-                    toastr.info(`Domains list has been trimmed to fit within your current plan limit of ${currentPlan.max_inbox} inboxes.`);
+                    toastr.info(`Domains list has been trimmed to fit within your current plan limit of ${TOTAL_INBOXES} inboxes.`);
                 }
             });
         } else {
@@ -745,6 +752,7 @@ $(document).ready(function() {
                 if (response.success) {
                     toastr.success('Order updated successfully');
                     // subscribePlan(response.plan_id);
+                    window.location.href = "{{ route('customer.orders') }}";
                 } else {
                     toastr.error(response.message || 'An error occurred. Please try again later.');
                 }

@@ -60,7 +60,9 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $remember = $request->has('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             // Log the user ID and the requested path
             Log::info('User ' . Auth::user()->id . ' logged in at ' . now());
@@ -119,7 +121,7 @@ class AuthController extends Controller
 
     //     Auth::login($user);
 
-    //     return redirect($this->redirectTo($user));
+    //     return redirect($this->.redirectTo($user));
     // }
     public function register(Request $request)
     {
@@ -156,22 +158,22 @@ class AuthController extends Controller
             'phone' => $data['phone'],
         ]);
         // dd($user);
-        // try {
-        //     // Send welcome email
-        //     // ✅ Queue the welcome email
-        //     // Mail::to($user->email)->queue(new UserWelcomeMail($user));
-        //     // ✅ Delay until a specific date/time
-        //     // add 2 minutes to the current time
-        //     $sendDate = Carbon::now()->addMinutes(2);
-        //     // add 30 days to the current time
-        //     // $sendDate = Carbon::now()->addDays(30);
-        //     Mail::to($user->email)->later(
-        //         $sendDate,
-        //         new UserWelcomeMail($user)
-        //     );
-        // } catch (\Exception $e) {
-        //     Log::error('Failed to send welcome email: ' . $e->getMessage());
-        // }
+        try {
+            // Send welcome email
+            // ✅ Queue the welcome email
+            // Mail::to($user->email)->queue(new UserWelcomeMail($user));
+            // ✅ Delay until a specific date/time
+            // add 2 minutes to the current time
+            $sendDate = Carbon::now()->addMinutes(2);
+            // add 30 days to the current time
+            // $sendDate = Carbon::now()->addDays(30);
+            Mail::to($user->email)->later(
+                $sendDate,
+                new UserWelcomeMail($user)
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
         Auth::login($user);
         $user = User::where('email', $data['email'])->first();
         // dd($user);
@@ -202,26 +204,39 @@ class AuthController extends Controller
     // Show reset password form
     public function showResetPasswordForm($token)
     {
-        return view('auth.reset-password', ['token' => $token]);
+        return view('modules.auth.reset_password', ['token' => $token, 'email'=>$email = request('email')]);
     }
 
     // Handle password reset
     public function resetPassword(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|min:6|confirmed',
-            'token' => 'required',
-        ]);
+        try {
+            $validated = $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'password' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'confirmed',
+                    'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                ],
+                'token' => 'required',
+            ],
+            [
+                'password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+            ]);
+            
+            Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function ($user, $password) {
+                    $user->update(['password' => Hash::make($password)]);
+                }
+            );
 
-        Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->update(['password' => Hash::make($password)]);
-            }
-        );
-
-        return redirect()->route('login')->with('success', 'Your password has been reset.');
+            return redirect()->route('login')->with('success', 'Your password has been reset.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
     }
 
     // Handle password change

@@ -33,7 +33,7 @@
         </li>
 
         <!-- Pricing -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.pricing') ? 'active' : '' }}"
             href="{{ route('contractor.pricing') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -41,10 +41,10 @@
                     <div class="text">Pricing</div>
                 </div>
             </a>
-        </li>
+        </li> -->
 
         <!-- Payments -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.payments') ? 'active' : '' }}"
             href="{{ route('contractor.payments') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -52,7 +52,7 @@
                     <div class="text">Payments</div>
                 </div>
             </a>
-        </li>
+        </li> -->
 
         <!-- Support -->
         <li class="nav-item">

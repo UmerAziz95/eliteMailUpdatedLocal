@@ -88,21 +88,37 @@
                                 Enter your email and we'll send you instructions to reset your password
                             </p>
 
-                            <form action="#" method="post">
+                            <form action="{{ route('password.update') }}" method="POST" id="resetPasswordForm">
+                                @csrf
+                                <input type="hidden" name="token" value="{{ $token }}">
+                                <input type="hidden" name="email" value="{{ $email }}">
+
                                 <div class="input-group">
                                     <label for="password">New Password</label>
-                                    <input type="password" name="password" id="password" placeholder="*************" required>
+                                    <input type="password" name="password" id="password" class="@error('password') is-invalid @enderror" placeholder="*************" value="{{old('password')}}" required>
+                                    <span class="input-group-text" id="togglePassword1">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </span>
+                                    @error('password')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
                                 </div>
 
                                 <div class="input-group">
-                                    <label for="password">Confirm Password</label>
-                                    <input type="password" name="password" id="password" placeholder="*************" required>
+                                    <label for="password_confirmation">Confirm Password</label>
+                                    <input type="password" name="password_confirmation" id="password_confirmation" class="" placeholder="*************" value="{{old('password_confirmation')}}" required>
+                                    <span class="input-group-text" id="togglePassword2">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </span>
                                 </div>
-                                <button type="submit" class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Send Reset Link</button>
+
+                                <button type="submit" class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Reset Password</button>
                             </form>
 
                             <div class="mt-3 text-center">
-                                <a href="/" class="theme-text text-decoration-none">
+                                <a href="{{ route('login') }}" class="theme-text text-decoration-none">
                                     <i class="fa-solid fa-chevron-left"></i> Back to login
                                 </a>
                             </div>
@@ -113,10 +129,21 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordField = document.getElementById('password');
-            const icon = this.querySelector('i');
+        // Password toggle functionality
+        document.getElementById('togglePassword1').addEventListener('click', function() {
+            togglePasswordVisibility('password', this);
+        });
+
+        document.getElementById('togglePassword2').addEventListener('click', function() {
+            togglePasswordVisibility('password_confirmation', this);
+        });
+
+        function togglePasswordVisibility(inputId, element) {
+            const passwordField = document.getElementById(inputId);
+            const icon = element.querySelector('i');
+            
             if (passwordField.type === 'password') {
                 passwordField.type = 'text';
                 icon.classList.remove('fa-eye-slash');
@@ -126,9 +153,26 @@
                 icon.classList.remove('fa-eye');
                 icon.classList.add('fa-eye-slash');
             }
+        }
+
+        // Form validation
+        document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('password_confirmation').value;
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                return false;
+            }
+
+            if (password.length < 8) {
+                e.preventDefault();
+                alert('Password must be at least 8 characters long!');
+                return false;
+            }
         });
     </script>
-
 </body>
 
 </html>

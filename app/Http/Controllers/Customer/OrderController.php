@@ -13,15 +13,16 @@ use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-
+use App\Services\ActivityLogService;
 class OrderController extends Controller
 {
     private $statuses = [
         "Pending" => "warning",
+        "In-approval"=> "warning",
         "Approved" => "success",
         "Reject" => "secondary",
         "In-progress" => "primary",
-        "Cancel" => "danger",
+        "Cancelled" => "danger",
         "Completed" => "success",
         // "Delivered" => "success",
 
@@ -267,10 +268,6 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
-        Log::info('Orders data request received', [
-            'plan_id' => $request->plan_id,
-            'request_data' => $request->all()
-        ]);
 
         try {
             $orders = Order::query()
@@ -492,7 +489,9 @@ class OrderController extends Controller
             // for edit order
             if($request->edit_id && $request->order_id){
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
-                
+                $order->update([
+                    'status_manage_by_admin' => 'In-approval',
+                ]);
                 // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
                 
@@ -530,6 +529,40 @@ class OrderController extends Controller
                         'coupon_code' => $request->coupon_code,
                     ]);
                    $message = 'Order information updated successfully.';
+                   // Create a new activity log using the custom log service
+                    ActivityLogService::log(
+                        'customer-order-update',
+                        'Order updated: '. $order->id,
+                        $order, 
+                        [
+                            'user_id' => $request->user_id,
+                            'plan_id' => $request->plan_id,
+                            'forwarding_url' => $request->forwarding_url,
+                            'hosting_platform' => $request->hosting_platform,
+                            'other_platform' => $request->other_platform,
+                            'bison_url' => $request->bison_url,
+                            'bison_workspace' => $request->bison_workspace,
+                            'backup_codes' => $request->backup_codes,
+                            'platform_login' => $request->platform_login,
+                            'platform_password' => $request->platform_password,
+                            'domains' => implode(',', array_filter($domains)),
+                            'sending_platform' => $request->sending_platform,
+                            'sequencer_login' => $request->sequencer_login,
+                            'sequencer_password' => $request->sequencer_password,
+                            'total_inboxes' => $calculatedTotalInboxes,
+                            'inboxes_per_domain' => $request->inboxes_per_domain,
+                            'first_name' => $request->first_name,
+                            'last_name' => $request->last_name,
+                            'prefix_variant_1' => $request->prefix_variant_1,
+                            'prefix_variant_2' => $request->prefix_variant_2,
+                            'persona_password' => $request->persona_password,
+                            'profile_picture_link' => $request->profile_picture_link,
+                            'email_persona_password' => $request->email_persona_password,
+                            'email_persona_picture_link' => $request->email_persona_picture_link,
+                            'master_inbox_email' => $request->master_inbox_email,
+                            'additional_info' => $request->additional_info,
+                        ]
+                    );
                 }
             }
             
