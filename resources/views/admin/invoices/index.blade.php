@@ -14,7 +14,7 @@
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Total Invoices</h6>
+                            <h6 class="card-subtitle mb-2">Total Invoices</h6>
                             <h3 class="card-title mb-0" id="totalInvoices">0</h3>
                         </div>
                     </div>
@@ -22,7 +22,7 @@
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Paid Invoices</h6>
+                            <h6 class="card-subtitle mb-2">Paid Invoices</h6>
                             <h3 class="card-title mb-0 text-success" id="paidInvoices">0</h3>
                         </div>
                     </div>
@@ -30,7 +30,7 @@
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Pending Invoices</h6>
+                            <h6 class="card-subtitle mb-2">Pending Invoices</h6>
                             <h3 class="card-title mb-0 text-warning" id="pendingInvoices">0</h3>
                         </div>
                     </div>
@@ -38,7 +38,7 @@
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Failed Invoices</h6>
+                            <h6 class="card-subtitle mb-2">Failed Invoices</h6>
                             <h3 class="card-title mb-0 text-danger" id="failedInvoices">0</h3>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table id="invoicesTable" class="display w-100">
+                <table id="invoicesTable">
                     <thead>
                         <tr>
                             <th>Invoice #</th>
