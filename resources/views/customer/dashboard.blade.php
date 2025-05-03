@@ -603,33 +603,17 @@
                         <table id="myTable" class="display">
                             <thead>
                                 <tr>
-                                    <th class="text-start">User ID</th>
-                                    <th>Name</th>
-                                    <th>Email Address</th>
-                                    <th>Purchase Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="text-start">ID</th>
+                                    <th>Action Type</th>
+                                    <th>Performed By</th>
+                                    <th>Performed On Type</th>
+                                    <th>Performed On Id</th>
+                                    <th>Description</th>
+                                    <th>Data</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @for ($i = 0; $i < 10; $i++)
-                                    <tr>
-                                        <td class="text-start">001</td>
-                                        <td>
-                                            <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                                style="border-radius: 50%" height="35" width="35"
-                                                class="object-fit-cover" alt="">
-                                            John Doe
-                                        </td>
-                                        <td><i class="ti ti-mail text-success"></i> Johndoe123@gmail.com</td>
-                                        <td>4/4/2025</td>
-                                        <td><span class="active_status">Active</span></td>
-                                        <td>
-                                            <button class="bg-transparent p-0 border-0 mx-2"><i
-                                                    class="fa-regular fa-eye"></i></button>
-                                        </td>
-                                    </tr>
-                                @endfor
+                               
                             </tbody>
                         </table>
                     </div>
@@ -657,14 +641,6 @@
                     nextEl: ".swiper-button-next",
                     prevEl: ".swiper-button-prev",
                 },
-            });
-
-            $(document).ready(function() {
-                var table = $('#myTable').DataTable();
-
-                $(".dt-search").append(
-                    '<button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white" style="padding: .4rem 1rem" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAddAdmin" aria-controls="offcanvasAddAdmin"> + Add New Record </button>'
-                );
             });
         });
 
@@ -865,5 +841,131 @@
 
         var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
         chart.render();
+    </script>
+    <script>
+    function initDataTable(planId = '') {
+        console.log('Initializing DataTable for planId:', planId);
+        const tableId = '#myTable';
+        const $table = $(tableId);
+
+        if (!$table.length) {
+            console.error('Table not found with selector:', tableId);
+            return null;
+        }
+
+        try {
+            const table = $table.DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                autoWidth: false,
+                dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+                ajax: {
+                    url: "{{ route('specific.logs') }}",
+                    type: "GET",
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json'
+                    },
+                    data: function (d) {
+                        d.plan_id = planId;
+                        d.user_name = $('#user_name_filter').val();
+                        d.email = $('#email_filter').val();
+                        d.status = $('#status_filter').val();
+                    },
+                    dataSrc: function (json) {
+                        console.log('Server response:', json);
+                        return json.data;
+                    },
+                    error: function (xhr, error, thrown) {
+                        console.error('DataTables error:', error);
+                        console.error('Server response:', xhr.responseText);
+
+                        if (xhr.status === 401) {
+                            window.location.href = "{{ route('login') }}";
+                        } else if (xhr.status === 403) {
+                            toastr.error('You do not have permission to view this data');
+                        } else {
+                            toastr.error('Error loading data: ' + error);
+                        }
+                    }
+                },
+                columns: [
+                    { data: 'id', name: 'id' },
+                    { data: 'action_type', name: 'action_type' },
+                    { data: 'description', name: 'description' },
+                    { data: 'performed_by', name: 'performed_by' },
+                    { data: 'performed_on', name: 'performed_on' },
+                    { data: 'extra_data', name: 'extra_data' },
+                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                ],
+                columnDefs: [
+                    { width: '10%', targets: 0 },
+                    { width: '20%', targets: 1 },
+                    { width: '15%', targets: 2 },
+                    { width: '25%', targets: 3 },
+                    { width: '15%', targets: 4 },
+                    { width: '15%', targets: 5 }
+                ],
+                order: [[1, 'desc']],
+                drawCallback: function (settings) {
+                    const counters = settings.json?.counters;
+
+                    if (counters) {
+                        $('#total_counter').text(counters.total);
+                        $('#active_counter').text(counters.active);
+                        $('#inactive_counter').text(counters.inactive);
+                    }
+
+                    $('[data-bs-toggle="tooltip"]').tooltip();
+                    this.api().columns.adjust();
+                    this.api().responsive?.recalc();
+                },
+                initComplete: function () {
+                    console.log('Table initialization complete');
+                    this.api().columns.adjust();
+                    this.api().responsive?.recalc();
+
+                    // 🔽 Append your custom button next to the search bar
+                    // const button = `
+                    //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                    //             style="padding: .4rem 1rem"
+                    //             type="button"
+                    //             data-bs-toggle="offcanvas"
+                    //             data-bs-target="#offcanvasAddAdmin"
+                    //             aria-controls="offcanvasAddAdmin">
+                    //         + Add New Record
+                    //     </button>
+                    // `;
+
+                    // $('.dataTables_filter').append(button);
+                }
+            });
+
+            // Optional loading indicator
+            table.on('processing.dt', function (e, settings, processing) {
+                const wrapper = $(tableId + '_wrapper');
+                if (processing) {
+                    wrapper.addClass('loading');
+                    if (!wrapper.find('.dt-loading').length) {
+                        wrapper.append('<div class="dt-loading">Loading...</div>');
+                    }
+                } else {
+                    wrapper.removeClass('loading');
+                    wrapper.find('.dt-loading').remove();
+                }
+            });
+
+            return table;
+        } catch (error) {
+            console.error('Error initializing DataTable:', error);
+            toastr.error('Error initializing table. Please refresh the page.');
+        }
+
+    }
+    const table2 = initDataTable();
+    table2.columns.adjust();
+    table2.responsive.recalc();
+    console.log('Adjusting columns for table:', table2.table().node().id);
     </script>
 @endpush
