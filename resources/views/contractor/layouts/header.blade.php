@@ -45,7 +45,7 @@
             </div>
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
-                    <h6 class="mb-0">Notification</h6>
+                    <h6 class="mb-0">Activity</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
                 @php
