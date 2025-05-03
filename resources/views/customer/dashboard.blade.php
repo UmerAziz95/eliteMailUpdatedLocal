@@ -600,7 +600,7 @@
             <div class="col-8">
                 <div class="card p-3">
                     <div class="table-responsive">
-                        <table id="myTable" class="display">
+                        <table id="myTable" class="display" >
                             <thead>
                                 <tr>
                                     <th class="text-start">User ID</th>
