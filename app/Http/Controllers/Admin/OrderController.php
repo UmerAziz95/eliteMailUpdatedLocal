@@ -139,13 +139,25 @@ class OrderController extends Controller
 
             return DataTables::of($orders)
             ->addColumn('action', function ($order) {
+                $user = auth()->user();
+            
+                $viewButton = '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
+            
+                if ($user->hasPermissionTo('Mod')) {
+                    // Show only the View button if user has 'Mod' permission
+                    return '<div style="display: flex; gap: 6px;">' . $viewButton . '</div>';
+                }
+            
+                $markStatusButton = '<a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="' . $order->chargebee_subscription_id . '" data-status="' . $order->status_manage_by_admin . '" data-reason="' . $order->reason . '" >Mark Status</a>';
+            
                 return '
                     <div style="display: flex; gap: 6px;">
-                        <a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>
-                        <a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" >Mark Status</a>
+                        ' . $viewButton . '
+                        ' . $markStatusButton . '
                     </div>
                 ';
             })
+            
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d-F-Y') : '';
                 })

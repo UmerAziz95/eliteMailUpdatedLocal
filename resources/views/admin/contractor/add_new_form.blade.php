@@ -30,5 +30,9 @@
         </select>
     </div>
 
-    <button type="submit" class="btn btn-primary">Submit</button>
+    @if (Auth::user()->hasPermissionTo('Mod')) 
+
+    @else   
+     <button type="submit" class="btn btn-primary">Submit</button>
+    @endif
 </form>

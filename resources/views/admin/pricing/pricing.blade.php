@@ -85,12 +85,14 @@
     <div class="d-flex flex-column align-items-center justify-content-center">
         <h2 class="text-center fw-bold">Manage Plans</h2>
         <p class="text-center">Create and manage subscription plans</p>
+        @if (!auth()->user()->hasPermissionTo('Mod'))
         @if (auth()->user()->role_id != 5)
-        <button id="addNew" data-bs-target="#addPlan" data-bs-toggle="modal"
-            class="m-btn rounded-1 border-0 py-2 px-4">
-            <i class="fa-solid fa-plus"></i> Add New Plan
-        </button>
+            <button id="addNew" data-bs-target="#addPlan" data-bs-toggle="modal"
+                    class="m-btn rounded-1 border-0 py-2 px-4">
+                <i class="fa-solid fa-plus"></i> Add New Plan
+            </button>
         @endif
+    @endif
     </div>
 
     <div class="row mt-4" id="plans-container">
@@ -116,7 +118,7 @@
                     </li>
                     @endforeach
                 </ul>
-                @if (auth()->user()->role_id != 5)
+                @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
                 <div class="d-flex gap-2">
                     <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
                         class="{{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'grey-btn' : 'm-btn' }} rounded-1 border-0 py-2 px-4 w-100">
@@ -127,7 +129,8 @@
                         <i class="fa-regular fa-trash-can"></i> Delete
                     </button>
                 </div>
-                @endif
+            @endif
+            
             </div>
         </div>
 

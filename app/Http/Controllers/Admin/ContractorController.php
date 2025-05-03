@@ -52,25 +52,34 @@ class ContractorController extends Controller
                    return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
                })
                ->addColumn('action', function ($row) {
-                   return '
-                       <div class="d-flex align-items-center gap-2">
-                           <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
-                               <i class="fa-regular fa-trash-can text-danger"></i>
-                           </button>
-                           <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
-                               <i class="fa-regular fa-eye"></i>
-                           </button>
-                           <div class="dropdown">
-                               <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                   <i class="fa-solid fa-ellipsis-vertical"></i>
-                               </button>
-                               <ul class="dropdown-menu">
-                                   <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
-                               </ul>
-                           </div>
-                       </div>
-                   ';
-               })
+                $user = auth()->user();
+            
+                // If the user has 'Mod' permission, restrict action buttons
+                if ($user->hasPermissionTo('Mod')) {
+                    return ' <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                            <i class="fa-regular fa-eye"></i>'; // Or return only specific buttons, like 'view'
+                }
+            
+                return '
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
+                            <i class="fa-regular fa-trash-can text-danger"></i>
+                        </button>
+                        <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                ';
+            })
+            
                ->rawColumns(['role', 'status', 'action'])
                ->with([
                    'counters' => [

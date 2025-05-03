@@ -259,24 +259,27 @@ function initDataTable(planId = '') {
             this.api().responsive?.recalc();
         },
         initComplete: function() {
-            console.log('Table initialization complete');
-            this.api().columns.adjust();
-            this.api().responsive?.recalc();
+    console.log('Table initialization complete');
+    this.api().columns.adjust();
+    this.api().responsive?.recalc();
 
-            // 🔽 Append your custom button next to the search bar
-            const button = `
-                <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                        style="padding: .4rem 1rem"
-                        type="button"
-                        data-bs-toggle="offcanvas"
-                        data-bs-target="#offcanvasAddAdmin"
-                        aria-controls="offcanvasAddAdmin">
-                    + Add New Record
-                </button>
-            `;
+    @if (Auth::user()->hasPermissionTo('Mod'))
+        // Don't show the button for users with 'Mod' permission
+    @else
+        const button = `
+            <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                    style="padding: .4rem 1rem"
+                    type="button"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#offcanvasAddAdmin"
+                    aria-controls="offcanvasAddAdmin">
+                + Add New Record
+            </button>
+        `;
+        $('.dataTables_filter').append(button);
+    @endif
+}
 
-            $('.dataTables_filter').append(button);
-        }
     });
 
     // Optional loading indicator
