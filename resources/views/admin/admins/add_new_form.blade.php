@@ -50,6 +50,9 @@
             @endforeach
         </select>
     </div> --}}
+   @if (Auth::user()->hasPermissionTo('Mod')) 
 
-    <button type="submit" class="btn btn-primary">Submit</button>
+    @else   
+     <button type="submit" class="btn btn-primary">Submit</button>
+    @endif
 </form>

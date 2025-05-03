@@ -8,13 +8,12 @@
 <form action="{{ route('admin.role.store') }}" method="post" id="addRoleForm" class="row g-3">
     @csrf
     <div class="col-12 mb-3">
-  
+
 
         <label class="form-label" for="modalRoleName">Role Name</label>
-        
-        <input type="text" id="name" name="name" class="form-control" placeholder="Enter a role name"
-            tabindex="-1">
-            
+
+        <input type="text" id="name" name="name" class="form-control" placeholder="Enter a role name" tabindex="-1">
+
         <div class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
         </div>
     </div>
@@ -22,19 +21,20 @@
         <h5 class="mb-4">Role Permissions</h5>
         <!-- Permission table -->
         <div class="table-responsive">
-          
-    <div class="mb-3">
-        <label for="permissions" class="form-label">Assign Permissions</label>
-        <select name="permissions[]" id="permissions" class="form-control select2" multiple
-            style="background-color: #000; color: #fff; border: 1px solid #444;">
-            @foreach($permissions as $permission)
-                <option value="{{ $permission->id }}"
-                    style="background-color: #000; color: #fff;">
-                    {{ $permission->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
+
+            <div class="mb-3">
+                <label for="permissions" class="form-label">Assign Permissions</label>
+                <select name="permissions[]" id="permissions" class="form-control select2" multiple
+                    style="background-color: #2f3349; color: #fff; border: 1px solid #444;">
+                    @foreach($permissions as $permission)
+                    <option value="{{ $permission->id }}">{{ $permission->name }}</option>
+                    @endforeach
+                </select>
+
+
+
+
+            </div>
         </div>
         <!-- Permission table -->
     </div>
@@ -45,3 +45,24 @@
     </div>
     <input type="hidden">
 </form>
+<script>
+    $(document).ready(function() {
+        $('#permissions').select2({
+            dropdownAutoWidth: true,
+            width: '100%',
+            dropdownParent: $('#permissions').parent() // helps if inside a modal
+        });
+
+        // When dropdown opens, style options and dropdown container
+        $('#permissions').on('select2:open', function() {
+            $('.select2-results__option').each(function() {
+                $(this).attr('style', 'background-color: #2f3349 !important; color: #fff !important;');
+            });
+
+            $('.select2-results').parent().attr('style', 'background-color: #2f3349 !important; color: #fff !important; border: 1px solid #444 !important;');
+        });
+
+        // Style the selected area
+        $('.select2-selection').attr('style', 'background-color: #2f3349 !important; color: #fff !important; border: 1px solid #444 !important;');
+    });
+</script>

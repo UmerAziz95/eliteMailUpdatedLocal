@@ -67,6 +67,7 @@ Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
+Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
