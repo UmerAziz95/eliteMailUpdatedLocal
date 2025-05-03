@@ -127,10 +127,6 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
-        Log::info('Orders data request received', [
-            'plan_id' => $request->plan_id,
-            'request_data' => $request->all()
-        ]);
         try {
             $orders = Order::query()
                 ->with(['user', 'plan','reorderInfo'])

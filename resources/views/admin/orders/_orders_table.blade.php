@@ -18,6 +18,7 @@
         </tbody>
     </table>
 </div>
+
 <!-- Cancel Subscription Modal -->
 <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
     aria-hidden="true">
@@ -34,8 +35,6 @@
                     </div>
                     Mark Status
                 </h6>
-
-
 
                 <form id="cancelSubscriptionForm" action="{{ route('admin.order.cancel.process') }}"
                     method="POST">

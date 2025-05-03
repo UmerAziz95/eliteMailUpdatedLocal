@@ -474,5 +474,12 @@ $(document).on('click', '.delete-btn', function (e) {
 });
 </script>
 
-
+<script>
+    $(document).ready(function() {
+        $('#permissions').select2({
+            placeholder: 'Select permissions',
+            width: '100%'
+        });
+    });
+</script>
 @endpush

@@ -172,7 +172,7 @@
         <table>
             <tr>
                 <td><strong>Total</strong></td>
-                <td>${{ number_format($invoice->amount, 2) }}</td>
+                <td>${{ number_format($invoice->amount, decimals: 2) }}</td>
             </tr>
             @if(isset($invoice->metadata['tax']))
             <tr>

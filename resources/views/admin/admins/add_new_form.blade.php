@@ -28,6 +28,28 @@
             <option value="0">Inactive</option>
         </select>
     </div>
+    <div class="mb-3">
+        <label for="role" class="form-label">Select Role</label>
+        <select name="role_id" id="role" class="form-control">
+            @foreach($roles as $role)
+            <option value="{{ $role->id }}">{{ $role->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    {{-- <!-- Permissions Multi-Select -->
+    <div class="mb-3">
+        <label for="permissions" class="form-label">Assign Permissions</label>
+        <select name="permissions[]" id="permissions" class="form-control select2" multiple
+            style="background-color: #000; color: #fff; border: 1px solid #444;">
+            @foreach($permissions as $permission)
+                <option value="{{ $permission->id }}"
+                    style="background-color: #000; color: #fff;">
+                    {{ $permission->name }}
+                </option>
+            @endforeach
+        </select>
+    </div> --}}
 
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>

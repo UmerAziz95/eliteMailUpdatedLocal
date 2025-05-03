@@ -25,6 +25,8 @@ use App\Http\Controllers\Contractor\OrderEmailController as ContractorOrderEmail
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
+//role
+use App\Http\Controllers\CustomRolePermissionController;
 
 //cron
 use App\Http\Controllers\CronController;
@@ -44,6 +46,7 @@ use App\Http\Controllers\CronController;
 
 //logs for application
 Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
+Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
 Route::view('/plans', 'plans');
 
 
@@ -119,6 +122,18 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/invoices/{invoiceId}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
         Route::get('/invoices/{invoiceId}/download', [AdminInvoiceController::class, 'download'])->name('invoices.download');
         Route::get('/invoices', [AdminInvoiceController::class, 'index'])->name('invoices.index');
+        // roles permission 
+        Route::get('/role',[CustomRolePermissionController::class,'index'])->name('role.index');
+        Route::get('/role/create',[CustomRolePermissionController::class,'index'])->name('role.create');
+        Route::post('/role/store',[CustomRolePermissionController::class,'store'])->name('role.store');
+        Route::get('/role/edit',[CustomRolePermissionController::class,'index'])->name('role.edit');
+        Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
+        Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');
+        Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
+        //payments
+        Route::get('/payments',[CustomRolePermissionController::class,'assign'])->name('payments');
+        //settings
+
 
 
     }); 
@@ -259,9 +274,9 @@ Route::get('/contractor', function () {
     return view('admin/contractor/contractor');
 });
 
-Route::get('/roles', function () {
-    return view('admin/roles/roles');
-});
+// Route::get('/roles', function () {
+//     return view('admin/roles/roles');
+// });
 
 Route::get('/permissions', function () {
     return view('admin/permissions/permissions');

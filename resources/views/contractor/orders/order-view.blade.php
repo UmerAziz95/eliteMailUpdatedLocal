@@ -28,22 +28,22 @@
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link px-5 active" id="configuration-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
                 data-bs-target="#configuration-tab-pane" type="button" role="tab"
                 aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link px-5" id="email-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab"
                 data-bs-target="#email-tab-pane" type="button" role="tab"
                 aria-controls="email-tab-pane" aria-selected="false">Emails</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link px-5" id="subscription-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
                 data-bs-target="#subscription-tab-pane" type="button" role="tab"
                 aria-controls="subscription-tab-pane" aria-selected="false">Subscription</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link px-5" id="tickets-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab"
                 data-bs-target="#tickets-tab-pane" type="button" role="tab"
                 aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
         </li>

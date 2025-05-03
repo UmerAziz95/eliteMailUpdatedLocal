@@ -9,6 +9,8 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
+use App\Mail\OrderStatusChangeMail;
+use Illuminate\Support\Facades\Mail;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +20,7 @@ use Illuminate\Validation\ValidationException;
 // Subscription
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 class OrderController extends Controller
 {
     private $statuses = [
@@ -202,11 +205,6 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
-        Log::info('Orders data request received', [
-            'plan_id' => $request->plan_id,
-            'request_data' => $request->all()
-        ]);
-
         try {
             $orders = Order::query()
                 ->with(['user', 'plan', 'reorderInfo'])
@@ -397,6 +395,18 @@ class OrderController extends Controller
             $oldStatus = $order->status_manage_by_admin;
             $order->status_manage_by_admin = strtolower($request->status);
             $order->save();
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'contractor-order-status-update',
+                'Order status updated : ' . $order->id,
+                $order,
+                [
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $order->status_manage_by_admin,
+                    'updated_by' => auth()->id()
+                ]
+            );
 
             // Log the status change
             Log::info('Order status updated', [
@@ -526,42 +536,96 @@ class OrderController extends Controller
         }
     }
     public function orderStatusProcess(Request $request)
-  {
-      $request->validate([
-          'chargebee_subscription_id' => 'required|string',
-          'marked_status' => 'required|string',
-          'reason' => 'nullable|string',
-      ]);
-      $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-  
-      if (!$subscription || $subscription->status !== 'active') {
-          return response()->json([
-              'success' => false,
-              'message' => 'No active subscription found.'
-          ], 404);
-      }
-  
-      try {
-          $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-          if ($order) {
-              $order->update([
-                  'status_manage_by_admin' => $request->marked_status,
-                  'reason' => $request->reason? $request->reason."(Reason given by)"." ".Auth::user()->name: null,
-              ]);
-          }
-  
-          return response()->json([
-              'success' => true,
-              'message' => 'Order Status Updated Successfully.'
-          ]);
-  
-      } catch (\Exception $e) {
-          \Log::error('Error While Updating The Status: ' . $e->getMessage());
-  
-          return response()->json([
-              'success' => false,
-              'message' => 'Failed To Update The Status: ' . $e->getMessage()
-          ], 500);
-      }
-  }
+    {
+        $request->validate([
+            'chargebee_subscription_id' => 'required|string',
+            'marked_status' => 'required|string',
+            'reason' => 'nullable|string',
+        ]);
+        $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+    
+        if (!$subscription || $subscription->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active subscription found.'
+            ], 404);
+        }
+    
+        try {
+            $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+            if ($order) {
+                $oldStatus = $order->status_manage_by_admin;
+                $newStatus = $request->marked_status;
+                $reason = $request->reason ? $request->reason."(Reason given by) ".Auth::user()->name : null;
+                
+                $order->update([
+                    'status_manage_by_admin' => $newStatus,
+                    'reason' => $reason,
+                ]);
+                // Create a new activity log using the custom log service
+                ActivityLogService::log(
+                    'contractor-order-status-update',
+                    'Order status updated : ' . $order->id,
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $order->status_manage_by_admin,
+                        'updated_by' => auth()->id()
+                    ]
+                );
+
+                // Get user details
+                $user = $order->user;
+                // Send email to user
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+                    Log::info('Order status change email sent to user', [
+                        'user_id' => $user->id,
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus
+                    ]);
+                    // Send email to admin
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                    Log::info('Order status change email sent to admin', [
+                        'admin_email' => config('mail.admin_address'),
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                    // Continue execution since the status was already updated
+                }
+            }
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Order Status Updated Successfully.'
+            ]);
+    
+        } catch (\Exception $e) {
+            \Log::error('Error While Updating The Status: ' . $e->getMessage());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed To Update The Status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
