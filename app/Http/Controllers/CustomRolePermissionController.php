@@ -20,7 +20,7 @@ class CustomRolePermissionController extends Controller
                     return $role->permissions->pluck('name')->implode(', ');
                 })
                 ->addColumn('created_at', function ($role) {
-                    return $role->created_at->format("D_F_Y") ?? 'N/A';
+                    return $role->created_at ? $role->created_at->format('D_F_Y') : 'N/A';
                 })
                 // ->addColumn('action', function ($role) {
                 //     return view('admin.roles.partials.actions', compact('role'))->render();
