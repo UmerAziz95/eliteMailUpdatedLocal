@@ -57,6 +57,14 @@ class AdminController extends Controller
                 return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
             })
             ->addColumn('action', function ($row) {
+                $user = auth()->user();
+            
+                // If user has permission 'Mod', hide edit/delete
+                if ($user->hasPermissionTo('Mod')) {
+                    return '   <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                            <i class="fa-regular fa-eye"></i>'; // Or return a minimal view-only action if needed
+                }
+            
                 return '
                     <div class="d-flex align-items-center gap-2">
                         <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
@@ -76,6 +84,7 @@ class AdminController extends Controller
                     </div>
                 ';
             })
+            
             ->rawColumns(['role', 'status', 'action'])
             ->with([
                 'counters' => [

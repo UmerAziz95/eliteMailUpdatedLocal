@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Yajra\DataTables\Facades\DataTables;
@@ -13,7 +14,9 @@ class CustomRolePermissionController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Role::with('permissions')->select('roles.*');
+            $query = Role::with('permissions')
+                ->select('roles.*')
+                ->latest(); // this makes sure newest entries appear at the top
     
             return DataTables::of($query)
                 ->addColumn('permissions', function ($role) {
@@ -22,18 +25,15 @@ class CustomRolePermissionController extends Controller
                 ->addColumn('created_at', function ($role) {
                     return $role->created_at ? $role->created_at->format('D_F_Y') : 'N/A';
                 })
-                // ->addColumn('action', function ($role) {
-                //     return view('admin.roles.partials.actions', compact('role'))->render();
-                // })
-                //->rawColumns(['action'])
                 ->make(true);
         }
     
-        $roles=Role::all();
-        $permissions=Permission::all();
+        $roles = Role::latest()->get(); // same ordering in the default (non-AJAX) load
+        $permissions = Permission::all();
       
-        return view('admin.roles.roles', ['roles'=>$roles,'permissions'=>$permissions]);
+        return view('admin.roles.roles', ['roles' => $roles, 'permissions' => $permissions]);
     }
+    
 
     public function create()
     {
@@ -105,5 +105,21 @@ class CustomRolePermissionController extends Controller
         $user = User::find(1);
         $user->assignRole($role);
         return "done";
+    }
+
+
+    public function addPermissionMod(){
+    
+     $permission=   Permission::create([
+            'name' => "Mod",
+            'guard_name' => "web",
+            'created_at' => Carbon::parse('2025-05-02 10:21:17'),
+            'updated_at' => Carbon::parse('2025-05-02 10:21:17'),
+        ]);
+        if($permission){
+            return "done";
+        }else{
+            return "false";
+        }
     }
 }

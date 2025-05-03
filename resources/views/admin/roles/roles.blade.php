@@ -238,12 +238,15 @@
                     </div>
                     <div class="col-sm-7">
                         <div class="card-body text-sm-end text-center ps-sm-0">
+                            @if (!auth()->user()->hasPermissionTo('Mod'))
                             <button data-bs-target="#addRoleModal" data-bs-toggle="modal"
-                                class="text-nowrap m-btn py-1 px-3 mb-3 rounded-2 border-0">Add
-                                New Role</button>
+                                    class="text-nowrap m-btn py-1 px-3 mb-3 rounded-2 border-0">
+                                Add New Role
+                            </button>
+                        @endif
+                        
                             <p class="mb-0">
-                                Add new role, <br>
-                                if it doesn't exist.
+                             
                             </p>
                         </div>
                     </div>
@@ -392,17 +395,21 @@ function initDataTable(planId = '') {
             this.api().responsive?.recalc();
         },
         initComplete: function() {
-            console.log('Table initialization complete');
-            this.api().columns.adjust();
-            this.api().responsive?.recalc();
+    console.log('Table initialization complete');
+    this.api().columns.adjust();
+    this.api().responsive?.recalc();
 
-            // 🔽 Append your custom button next to the search bar
-            const button = `
-               <button id="addNew" data-bs-target="#addRoleModal" data-bs-toggle="modal" class="m-btn rounded-1 border-0 ms-2" style="padding: .4rem 1.4rem"><i class="fa-solid fa-plus"></i> Add New Role</button>
-            `;
+    // 🔽 Append your custom button next to the search bar, if user doesn't have Mod permission
+    @if (!auth()->user()->hasPermissionTo('Mod'))
+        const button = `
+            <button id="addNew" data-bs-target="#addRoleModal" data-bs-toggle="modal" class="m-btn rounded-1 border-0 ms-2" style="padding: .4rem 1.4rem">
+                <i class="fa-solid fa-plus"></i> Add New Role
+            </button>
+        `;
+        $('.dataTables_filter').append(button);
+    @endif
+}
 
-            $('.dataTables_filter').append(button);
-        }
     });
 
     // Optional loading indicator
