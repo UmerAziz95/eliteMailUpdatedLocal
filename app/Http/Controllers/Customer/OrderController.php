@@ -326,7 +326,7 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> View</a></li>
-                                    ' . ($order->status_manage_by_admin === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                    ' . ($order->status_manage_by_admin === 'reject' || 'In-approval' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
                                 </ul>
                             </div>';
