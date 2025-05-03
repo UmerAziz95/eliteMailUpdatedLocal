@@ -96,7 +96,7 @@ class CustomRolePermissionController extends Controller
         $role = Role::find(1); // admin
 
         // Step 2: Get the permissions by IDs
-        $permissions = Permission::whereIn('id', [3, 4, 5,6,7,8,9,13,14])->get();
+        $permissions = Permission::whereIn('id', [1,2,3,4,5,6,7,8,9])->get();
 
         // Step 3: Assign permissions to role
         $role->syncPermissions($permissions);
