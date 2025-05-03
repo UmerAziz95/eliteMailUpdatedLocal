@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 // Subscription
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
-
+use App\Services\ActivityLogService;
 class OrderController extends Controller
 {
     private $statuses = [
@@ -395,6 +395,18 @@ class OrderController extends Controller
             $oldStatus = $order->status_manage_by_admin;
             $order->status_manage_by_admin = strtolower($request->status);
             $order->save();
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'contractor-order-status-update',
+                'Order status updated : ' . $order->id,
+                $order,
+                [
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $order->status_manage_by_admin,
+                    'updated_by' => auth()->id()
+                ]
+            );
 
             // Log the status change
             Log::info('Order status updated', [
@@ -550,6 +562,18 @@ class OrderController extends Controller
                     'status_manage_by_admin' => $newStatus,
                     'reason' => $reason,
                 ]);
+                // Create a new activity log using the custom log service
+                ActivityLogService::log(
+                    'contractor-order-status-update',
+                    'Order status updated : ' . $order->id,
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $order->status_manage_by_admin,
+                        'updated_by' => auth()->id()
+                    ]
+                );
 
                 // Get user details
                 $user = $order->user;

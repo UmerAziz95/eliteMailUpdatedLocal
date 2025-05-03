@@ -83,7 +83,7 @@
             <h2 class="text-center mb-4">Choose Your Plan</h2>
             <div class="row" id="plans-container">
                 @foreach($plans as $plan)
-                <div class="col-md-4" id="plan-{{ $plan->id }}">
+                <div class="col-md-4 mt-4" id="plan-{{ $plan->id }}">
                     <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                         <h4 class="fw-bold plan-name">{{ $plan->name }}</h4>
                         <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span

@@ -383,7 +383,7 @@ class PlanController extends Controller
                     'metadata' => $meta_json,
                 ]);
             } else {
-                Invoice::create([
+                $existingInvoice = Invoice::create([
                     'chargebee_invoice_id' => $invoice->id,
                     'chargebee_customer_id' => $customer->id,
                     'chargebee_subscription_id' => $subscription->id,
@@ -448,6 +448,22 @@ class PlanController extends Controller
                 'customer-subscription-created',
                 'Subscription created successfully: ' . $user_subscription_data->id,
                 $user_subscription_data, 
+                [
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'plan_id' => $plan_id,
+                    'chargebee_subscription_id' => $subscription->id,
+                    'chargebee_invoice_id' => $invoice->id,
+                    'amount' => ($invoice->amountPaid ?? 0) / 100,
+                    'status' => $invoice->status,
+                    'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
+                ]
+            );
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-invoice-processed',
+                'Invoice created successfully: ' . $existingInvoice->id,
+                $existingInvoice, 
                 [
                     'user_id' => $user->id,
                     'order_id' => $order->id,
@@ -1023,6 +1039,23 @@ class PlanController extends Controller
                         'status' => $invoice->status,
                         'event_type' => $eventType
                     ]);
+                    // Create a new activity log using the custom log service
+                    ActivityLogService::log(
+                        'customer-invoice-processed',
+                        'Invoice processed successfully: ' . $invoice->id,
+                        $invoice, 
+                        [
+                            'user_id' => $invoice->user_id,
+                            'invoice_id' => $invoice->id,
+                            'chargebee_invoice_id' => $invoiceData['id'],
+                            'amount' => $amount,
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            'paid_at' => isset($invoiceData['paid_at']) 
+                                ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                                : null,
+                        ],
+                        $invoice->user_id
+                    );
                     
                     break;
 

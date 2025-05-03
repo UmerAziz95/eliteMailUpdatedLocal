@@ -38,7 +38,7 @@
                 href="{{ url('customer/pricing') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                    <div class="text">Pricing</div>
+                    <div class="text">Plan</div>
                 </div>
             </a>
         </li>

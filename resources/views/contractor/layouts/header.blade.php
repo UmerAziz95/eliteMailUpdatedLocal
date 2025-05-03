@@ -5,7 +5,7 @@
     </button>
 
     <div class="d-flex align-items-center gap-3">
-        <div class="dropdown">
+        <!-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-language fs-5"></i>
             </div>
@@ -14,7 +14,7 @@
                 <li><a class="dropdown-item" href="#">French</a></li>
                 <li><a class="dropdown-item" href="#">German</a></li>
             </ul>
-        </div>
+        </div> -->
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -28,16 +28,16 @@
             </ul>
         </div>
 
-        <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- <div class="dropdown"> -->
+            <!-- <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-category fs-5"></i>
-            </div>
-            {{-- <ul class="dropdown-menu">
+            </div> -->
+            <!-- {{-- <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#">Action</a></li>
                 <li><a class="dropdown-item" href="#">Another action</a></li>
                 <li><a class="dropdown-item" href="#">Something else here</a></li> 
-            </ul> --}}
-        </div>
+            </ul> --}} -->
+        <!-- </div> -->
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -48,31 +48,38 @@
                     <h6 class="mb-0">Notification</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
-                @for ($i = 0; $i < 15; $i++)
+                @php
+                    $logs = \App\Models\Log::with(['user', 'performedOn'])
+                        ->where('performed_by', Auth::user()->id)
+                        ->latest()
+                        ->take(15)
+                        ->get();
+                @endphp
+                @foreach($logs as $log)
                     <hr class="my-0">
                     <li class="dropdown-item py-2">
                         <div class="d-flex">
                             <div class="flex-shrink-0 me-3">
                                 <div class="avatar">
-                                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        style="border-radius: 50%" height="40" width="40"
-                                        class="object-fit-cover" alt="">
+                                    @if($log->user && $log->user->profile_photo)
+                                        <img src="{{ $log->user->profile_photo }}" style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                                    @else
+                                        <i class="ti ti-user-circle fs-2"></i>
+                                    @endif
                                 </div>
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="small mb-2">Congratulation Lettie 🎉</h6>
-                                <small class="mb-1 d-block opacity-75">Won the monthly best seller gold badge</small>
-                                <small class="opacity-50">1h ago</small>
+                                <h6 class="small mb-2">{{ $log->description }}</h6>
+                                <small class="mb-1 d-block opacity-75">{{ $log->action_type }}</small>
+                                <small class="opacity-50">{{ $log->created_at->diffForHumans() }}</small>
                             </div>
                             <div class="flex-shrink-0 dropdown-notifications-actions">
-                                <a href="javascript:void(0)" class="dropdown-notifications-read"><span
-                                        class="badge badge-dot"></span></a>
-                                <a href="javascript:void(0)" class="dropdown-notifications-archive"><span
-                                        class="icon-base ti tabler-x"></span></a>
+                                <a href="javascript:void(0)" class="dropdown-notifications-read"><span class="badge badge-dot"></span></a>
+                                <a href="javascript:void(0)" class="dropdown-notifications-archive"><span class="icon-base ti tabler-x"></span></a>
                             </div>
                         </div>
                     </li>
-                @endfor
+                @endforeach
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
                     <a href="/notification" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
                 </div>

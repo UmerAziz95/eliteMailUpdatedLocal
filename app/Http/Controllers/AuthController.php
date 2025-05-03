@@ -204,26 +204,39 @@ class AuthController extends Controller
     // Show reset password form
     public function showResetPasswordForm($token)
     {
-        return view('auth.reset-password', ['token' => $token]);
+        return view('modules.auth.reset_password', ['token' => $token, 'email'=>$email = request('email')]);
     }
 
     // Handle password reset
     public function resetPassword(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|min:6|confirmed',
-            'token' => 'required',
-        ]);
+        try {
+            $validated = $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'password' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'confirmed',
+                    'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                ],
+                'token' => 'required',
+            ],
+            [
+                'password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+            ]);
+            
+            Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function ($user, $password) {
+                    $user->update(['password' => Hash::make($password)]);
+                }
+            );
 
-        Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->update(['password' => Hash::make($password)]);
-            }
-        );
-
-        return redirect()->route('login')->with('success', 'Your password has been reset.');
+            return redirect()->route('login')->with('success', 'Your password has been reset.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
     }
 
     // Handle password change

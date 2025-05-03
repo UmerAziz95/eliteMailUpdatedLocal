@@ -18,10 +18,11 @@ class OrderController extends Controller
 {
     private $statuses = [
         "Pending" => "warning",
+        "In-approval"=> "warning",
         "Approved" => "success",
         "Reject" => "secondary",
         "In-progress" => "primary",
-        "Cancel" => "danger",
+        "Cancelled" => "danger",
         "Completed" => "success",
         // "Delivered" => "success",
 
