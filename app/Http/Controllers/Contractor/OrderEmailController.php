@@ -7,7 +7,7 @@ use App\Models\OrderEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Order;
-
+use App\Services\ActivityLogService;
 class OrderEmailController extends Controller
 {
     public function store(Request $request)
@@ -45,6 +45,7 @@ class OrderEmailController extends Controller
             if (!$user_id) {
                 return response()->json(['error' => 'User not found for the given order ID'], 404);
             }
+            
             // Create new emails
             $emails = collect($request->emails)->map(function ($emailData) use ($request, $user_id) {
                 return OrderEmail::create([
@@ -56,6 +57,18 @@ class OrderEmailController extends Controller
                     'profile_picture' => $emailData['profile_picture'] ?? null,
                 ]);
             });
+            $_temp = Order::where('id', $request->order_id)->first();
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'contractor-order-email-create',
+                'Order email created : ' . $request->order_id,
+                $_temp,
+                [
+                    'order_id' => $request->order_id,
+                    'emails' => $emails,
+                    'created_by' => auth()->id()
+                ]
+            );
 
             return response()->json([
                 'success' => true,
