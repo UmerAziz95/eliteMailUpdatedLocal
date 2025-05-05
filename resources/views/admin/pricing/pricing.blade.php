@@ -57,9 +57,9 @@
 
     .remove-feature-btn {
         position: absolute;
-        top: 5px;
-        right: 5px;
-        font-size: 12px;
+        top: 6px;
+        right: 4px;
+        font-size: 6px;
         padding: 2px 5px;
     }
 
@@ -87,12 +87,11 @@
         <p class="text-center">Create and manage subscription plans</p>
         @if (!auth()->user()->hasPermissionTo('Mod'))
         @if (auth()->user()->role_id != 5)
-            <button id="addNew" data-bs-target="#addPlan" data-bs-toggle="modal"
-                    class="m-btn rounded-1 border-0 py-2 px-4">
-                <i class="fa-solid fa-plus"></i> Add New Plan
-            </button>
+        <button id="addNew" data-bs-target="#addPlan" data-bs-toggle="modal" class="m-btn rounded-1 border-0 py-2 px-4">
+            <i class="fa-solid fa-plus"></i> Add New Plan
+        </button>
         @endif
-    @endif
+        @endif
     </div>
 
     <div class="row mt-4" id="plans-container">
@@ -100,8 +99,8 @@
         <div class="col-md-4  mb-5" id="plan-{{ $plan->id }}">
             <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                 <h4 class="fw-bold plan-name">{{ $plan->name }}</h4>
-                <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span
-                        class="fs-6">/{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
+                <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span class="fs-6">/{{
+                        $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
                         inboxes</span>
                 </h2>
                 <p class="plan-description">{{ $plan->description }}</p>
@@ -129,8 +128,8 @@
                         <i class="fa-regular fa-trash-can"></i> Delete
                     </button>
                 </div>
-            @endif
-            
+                @endif
+
             </div>
         </div>
 
@@ -144,51 +143,50 @@
                         <div class="text-center mb-4">
                             <h4>Edit Plan</h4>
                         </div>
-                        <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form"
-                            data-id="{{ $plan->id }}">
+                        <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form" data-id="{{ $plan->id }}">
                             @csrf
-                            <label style="display: none;" for="chargebee_plan_id{{ $plan->id }}">Chargebee Plan ID:</label>
+                            <label style="display: none;" for="chargebee_plan_id{{ $plan->id }}">Chargebee Plan
+                                ID:</label>
                             <input style="display: none;" type="text" class="form-control mb-3"
                                 id="chargebee_plan_id{{ $plan->id }}" name="chargebee_plan_id"
                                 value="{{ $plan->chargebee_plan_id }}">
                             <label style="display: none;" for="duration{{ $plan->id }}">Duration:</label>
                             <select style="display: none;" class="form-control mb-3" id="duration{{ $plan->id }}"
                                 name="duration" required>
-                                <option value="monthly"
-                                    {{ $plan->duration === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                <option value="yearly"
-                                    {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly</option>
+                                <option value="monthly" {{ $plan->duration === 'monthly' ? 'selected' : '' }}>Monthly
+                                </option>
+                                <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
+                                </option>
                             </select>
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="name{{ $plan->id }}">Plan Name:</label>
-                                    <input type="text" class="form-control mb-3" id="name{{ $plan->id }}"
-                                        name="name" value="{{ $plan->name }}" required>
+                                    <input type="text" class="form-control mb-3" id="name{{ $plan->id }}" name="name"
+                                        value="{{ $plan->name }}" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="price{{ $plan->id }}">Price ($):</label>
+                                    <label for="price{{ $plan->id }}">Price Per Inboxes ($):</label>
                                     <input type="number" class="form-control mb-3" id="price{{ $plan->id }}"
                                         name="price" step="0.01" value="{{ $plan->price }}" required>
                                 </div>
                                 <div class="col-md-12">
-                                    <label for="description{{ $plan->id }}">Description:</label>
-                                    <textarea class="form-control mb-3" id="description{{ $plan->id }}" name="description" rows="2">{{ $plan->description }}</textarea>
+                                    <label for="description{{ $plan->id }}">Descriptionx:</label>
+                                    <textarea class="form-control mb-3" id="description{{ $plan->id }}"
+                                        name="description" rows="2">{{ $plan->description }}</textarea>
                                 </div>
                                 <div class="col-md-12">
                                     <h5 class="mt-2">Inbox Limits</h5>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
-                                            <input type="number" class="form-control mb-3"
-                                                id="min_inbox{{ $plan->id }}" name="min_inbox"
-                                                value="{{ $plan->min_inbox }}" min="1" required>
+                                            <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
+                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
                                                 unlimited):</label>
-                                            <input type="number" class="form-control mb-3"
-                                                id="max_inbox{{ $plan->id }}" name="max_inbox"
-                                                value="{{ $plan->max_inbox }}" min="0" required>
+                                            <input type="number" class="form-control mb-3" id="max_inbox{{ $plan->id }}"
+                                                name="max_inbox" value="{{ $plan->max_inbox }}" min="0" required>
                                         </div>
                                     </div>
                                 </div>
@@ -204,12 +202,10 @@
                                     <div class="row">
                                         <div class="col-md-5">
                                             <strong>{{ $feature->title }}</strong>
-                                            <input type="hidden" name="feature_ids[]"
-                                                value="{{ $feature->id }}">
+                                            <input type="hidden" name="feature_ids[]" value="{{ $feature->id }}">
                                         </div>
                                         <div class="col-md-7">
-                                            <input type="text"
-                                                class="form-control form-control-sm feature-value-input"
+                                            <input type="text" class="form-control form-control-sm feature-value-input"
                                                 name="feature_values[]" value="{{ $feature->pivot->value }}"
                                                 placeholder="Value">
                                         </div>
@@ -220,8 +216,7 @@
 
                             <div class="row mt-3">
                                 <div class="col-md-7">
-                                    <select class="form-control feature-dropdown"
-                                        id="featureDropdown{{ $plan->id }}">
+                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $plan->id }}">
                                         <option value="">Select an existing feature</option>
                                         <!-- Will be populated via AJAX -->
                                     </select>
@@ -237,13 +232,13 @@
                                     </button>
                                 </div>
                                 {{-- <div class="col-md-4">
-                                        
-                                    </div> --}}
+
+                                </div> --}}
                             </div>
 
                             {{-- <div class="mt-3">
-                                    
-                                </div> --}}
+
+                            </div> --}}
 
                             <div class="new-feature-form mt-3" id="newFeatureForm{{ $plan->id }}"
                                 style="display: none;">
@@ -267,8 +262,8 @@
                             </div>
 
                             <div class="mt-4">
-                                <button type="submit"
-                                    class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Update Plan</button>
+                                <button type="submit" class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Update
+                                    Plan</button>
                             </div>
                         </form>
                     </div>
@@ -302,30 +297,30 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="name">Plan Name:</label>
-                                <input type="text" class="form-control mb-3" id="name" name="name"
-                                    required>
+                                <input type="text" class="form-control mb-3" id="name" name="name" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="price">Price ($):</label>
-                                <input type="number" class="form-control mb-3" id="price" name="price"
-                                    step="0.01" required>
+                                <label for="price">Price Per Inboxes ($):</label>
+                                <input type="number" class="form-control mb-3" id="price" name="price" step="0.01"
+                                    required>
                             </div>
                             <div class="col-md-12">
                                 <label for="description">Description:</label>
-                                <textarea class="form-control mb-3" id="description" name="description" rows="2"></textarea>
+                                <textarea class="form-control mb-3" id="description" name="description"
+                                    rows="2"></textarea>
                             </div>
                             <div class="col-md=6">
                                 <h5 class="mt-2">Inbox Limits</h5>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label for="min_inbox">Min Inboxes:</label>
-                                        <input type="number" class="form-control mb-3" id="min_inbox"
-                                            name="min_inbox" value="1" min="1" required>
+                                        <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox"
+                                            value="1" min="1" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="max_inbox">Max Inboxes (0 for unlimited):</label>
-                                        <input type="number" class="form-control mb-3" id="max_inbox"
-                                            name="max_inbox" value="0" min="0" required>
+                                        <input type="number" class="form-control mb-3" id="max_inbox" name="max_inbox"
+                                            value="0" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -344,8 +339,7 @@
                                 </select>
                             </div>
                             <div class="col-md-5" style="text-align: right;">
-                                <button type="button" class="btn btn-secondary add-selected-feature"
-                                    data-plan-id="new">
+                                <button type="button" class="btn btn-secondary add-selected-feature" data-plan-id="new">
                                     <i class="fa-solid fa-plus"></i> Selected Feature
                                 </button>
                                 <button type="button" class="btn btn-primary toggle-new-feature-form"

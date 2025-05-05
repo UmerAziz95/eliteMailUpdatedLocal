@@ -245,6 +245,7 @@
                     { width: '15%', targets: planId ? 3 : 4 }, // Domain URL
                     { width: '15%', targets: planId ? 4 : 5 }, // Status
                     { width: '15%', targets: planId ? 4 : 5 }, // Status
+                    { width: '15%', targets: planId ? 4 : 5 }, // Status
                     { width: '10%', targets: planId ? 5 : 6 }  // Actions
                 ],
                 ajax: {
@@ -275,15 +276,9 @@
                         return d;
                     },
                     dataSrc: function(json) {
-                        console.log('Server response:', json);
                         return json.data;
                     },
-                    error: function (xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-                        console.error('Status:', xhr.status);
-                        console.error('Full XHR:', xhr);
-                        
+                    error: function (xhr, error, thrown) {    
                         if (xhr.status === 401) {
                             window.location.href = "{{ route('login') }}";
                         } else if (xhr.status === 403) {
@@ -301,6 +296,7 @@
                     { data: 'name', name: 'name' },
                     { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
                     { data: 'total_inboxes', name: 'total_inboxes' },
+                    { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[1, 'desc']],
