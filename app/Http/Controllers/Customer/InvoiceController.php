@@ -8,17 +8,12 @@ use App\Models\Invoice;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use App\Models\Status;
 use App\Services\ActivityLogService;
 class InvoiceController extends Controller
 {
-    private $statuses = [
-        "Pending" => "warning",
-        "Approve" => "success",
-        "Cancel" => "danger",
-        "Expired" => "secondary",
-        "In-Progress" => "primary",
-        "Completed" => "success"
-    ];
+    
+    private $statuses;
     // payment-status
     private $paymentStatuses = [
         "Pending" => "warning",
@@ -26,6 +21,10 @@ class InvoiceController extends Controller
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
+    public function __construct()
+    {
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
+    }
     // index
     public function index(Request $request)
     {
@@ -98,15 +97,11 @@ class InvoiceController extends Controller
                         . ucfirst($row->status) . '</span>';
                 })
                 ->editColumn('status_manage_by_admin', function($row) {
-                    $statusClass = match ($row->order->status_manage_by_admin ?? 'N/A') {
-                        'active' => 'success',
-                        'expired' => 'danger',
-                        'pending' => 'warning',
-                        'completed' => 'primary',
-                        default => 'secondary',
-                    };
+                    $status = strtolower($row->order->status_manage_by_admin ?? 'n/a');
+                    $statusKey = $status;
+                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($row->order->status_manage_by_admin ?? 'N/A') . '</span>';
+                        . ucfirst($status) . '</span>';
                 })
                 ->orderColumn('status_manage_by_admin', function($query, $direction) {
                     $query->whereHas('order', function($q) use ($direction) {
@@ -215,9 +210,9 @@ class InvoiceController extends Controller
                         . $statusKey . '</span>';
                 })
                 ->editColumn('status_manage_by_admin', function($invoice) {
-                    $statusKey = ucfirst($invoice->order->status_manage_by_admin ?? 'N/A');
+                    $statusKey = strtolower($invoice->order->status_manage_by_admin ?? 'N/A');
                     return '<span class="py-1 px-2 text-' . ($this->statuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
-                        . $statusKey . '</span>';
+                        . ucfirst($statusKey) . '</span>';
                 })
                 ->filterColumn('status_manage_by_admin', function($query, $keyword) {
                     $query->whereHas('order', function($q) use ($keyword) {

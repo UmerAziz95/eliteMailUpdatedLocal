@@ -318,3 +318,12 @@ Route::get('/chargebee/webhook', function () {
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
 
+
+
+
+
+// For Development Purpose Only
+// Delete order if plan_id is null 
+Route::get('/delete-order', [App\Http\Controllers\Customer\OrderController::class, 'deleteAllOrderNullPlanID'])->name('delete.order');
+// Fixed Order Status to lowercase
+Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\OrderController::class, 'updateOrderStatusToLowerCase'])->name('updateOrderStatusToLowerCase');

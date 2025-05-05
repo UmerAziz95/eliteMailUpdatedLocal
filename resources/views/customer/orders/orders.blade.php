@@ -231,7 +231,7 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab"
                     data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab"
-                    aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ $plan->name }}</button>
+                    aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ ucfirst($plan->name) }}</button>
             </li>
             @endforeach
         </ul>
