@@ -51,13 +51,18 @@ class SubscriptionController extends Controller
     
             return DataTables::of($subscriptions)
             ->addColumn('last_billing_date', function ($subscription) {
-                return $subscription->order && $subscription->order->paid_at
-                    ? \Carbon\Carbon::parse($subscription->order->paid_at)->format('Y-F-d')
+                return $subscription->last_billing_date
+                    ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('Y-F-d')
                     : 'N/A';
             })
             ->addColumn('next_billing_date', function ($subscription) {
-                return $subscription->order && $subscription->order->paid_at
-                    ? \Carbon\Carbon::parse($subscription->order->paid_at)->addMonth()->format('Y-F-d')
+                return $subscription->next_billing_date
+                    ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('Y-F-d')
+                    : 'N/A';
+            })
+            ->addColumn('cancellation_at', function ($subscription) {
+                return $subscription->cancellation_at
+                    ? \Carbon\Carbon::parse($subscription->cancellation_at)->format('Y-F-d')
                     : 'N/A';
             })
                 ->addColumn('name', function ($subscription) {

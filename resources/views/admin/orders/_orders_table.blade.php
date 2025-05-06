@@ -11,6 +11,7 @@
                 <th>Customer Name</th>
                 <th>Domain URL</th>
                 <th>Total Inboxes</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>

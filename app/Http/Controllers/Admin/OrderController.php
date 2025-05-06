@@ -161,6 +161,9 @@ class OrderController extends Controller
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d-F-Y') : '';
                 })
+                ->editColumn('status_manage_by_admin', function ($order) {
+                    return $order->status_manage_by_admin ? $order->status_manage_by_admin : '';
+                })
                 ->editColumn('total_inboxes', function ($order) {
                     return $order->reorderInfo->first()?->total_inboxes ?? '';
                 })               

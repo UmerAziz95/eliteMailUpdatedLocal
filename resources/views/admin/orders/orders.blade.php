@@ -152,6 +152,57 @@
         </div>
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row gy-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h5 class="mb-2">Filters</h5>
+                            <div>
+                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderIdFilter" class="form-label">Order ID</label>
+                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                @foreach($statuses as $key => $status)
+                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="emailFilter" class="form-label">Email</label>
+                            <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="domainFilter" class="form-label">Domain URL</label>
+                            <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
+                            <input type="number" id="totalInboxesFilter" class="form-control" placeholder="Search by total inboxes" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card py-3 px-4">
         <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -245,6 +296,7 @@
                     { width: '15%', targets: planId ? 3 : 4 }, // Domain URL
                     { width: '15%', targets: planId ? 4 : 5 }, // Status
                     { width: '15%', targets: planId ? 4 : 5 }, // Status
+                    { width: '15%', targets: planId ? 4 : 5 }, // Status
                     { width: '10%', targets: planId ? 5 : 6 }  // Actions
                 ],
                 ajax: {
@@ -275,15 +327,9 @@
                         return d;
                     },
                     dataSrc: function(json) {
-                        console.log('Server response:', json);
                         return json.data;
                     },
-                    error: function (xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-                        console.error('Status:', xhr.status);
-                        console.error('Full XHR:', xhr);
-                        
+                    error: function (xhr, error, thrown) {    
                         if (xhr.status === 401) {
                             window.location.href = "{{ route('login') }}";
                         } else if (xhr.status === 403) {
@@ -301,6 +347,7 @@
                     { data: 'name', name: 'name' },
                     { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
                     { data: 'total_inboxes', name: 'total_inboxes' },
+                    { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[1, 'desc']],
@@ -571,6 +618,44 @@ $('.marked_status').on('change', function () {
 });
 
 
+//filters 
+  // Filter functionality
+  function applyFilters() {
+                // Clear previous event handlers
+                Object.values(window.orderTables).forEach(function(table) {
+                    table.off('preXhr.dt');
+                });
+
+                Object.values(window.orderTables).forEach(function(table) {
+                    if ($(table.table().node()).is(':visible')) {
+                        // Add filter parameters
+                        table.on('preXhr.dt', function(e, settings, data) {
+                            data.orderId = $('#orderIdFilter').val();
+                            data.status = $('#statusFilter').val();
+                            data.email = $('#emailFilter').val();
+                            data.domain = $('#domainFilter').val();
+                            data.totalInboxes = $('#totalInboxesFilter').val();
+                            data.startDate = $('#startDate').val();
+                            data.endDate = $('#endDate').val();
+                        });
+
+                        table.draw();
+                    }
+                });
+            }
+
+            // Apply filters button click handler
+            $('#applyFilters').on('click', function() {
+                applyFilters();
+            });
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#orderIdFilter, #emailFilter, #domainFilter').val('');
+                $('#statusFilter').val('');
+                $('#startDate, #endDate').val('');
+                applyFilters();
+            });
 </script>
 
 

@@ -59,19 +59,25 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-
+    
         $remember = $request->has('remember');
-
+    
         if (Auth::attempt($credentials, $remember)) {
+            // Check if the authenticated user's account is inactive
+            if (Auth::user()->status == 0) {
+                Auth::logout(); // Immediately log them out
+                return back()->withErrors(['email' => 'Your account is inactive. Please contact support.']);
+            }
+    
             $request->session()->regenerate();
-            // Log the user ID and the requested path
             Log::info('User ' . Auth::user()->id . ' logged in at ' . now());
-            // Redirect based on role
+    
             return redirect()->intended($this->redirectTo(Auth::user()));
         }
-
+    
         return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
     }
+    
 
     // Determine redirection based on user role
     protected function redirectTo($user)

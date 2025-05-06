@@ -27,6 +27,11 @@ use App\Http\Controllers\Contractor\OrderEmailController as ContractorOrderEmail
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
 //role
 use App\Http\Controllers\CustomRolePermissionController;
+use App\Http\Controllers\Admin\MediaHandlerController;
+//supports
+use App\Http\Controllers\Admin\AdminSupportController;
+use App\Http\Controllers\Customer\CustomerSupportController;
+
 
 //cron
 use App\Http\Controllers\CronController;
@@ -85,8 +90,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         //create admin 
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
+        Route::post('users/customer/store', [AdminController::class, 'storeCustomer'])->name('users.customer.store');
         Route::get('/{id}/edit', [AdminController::class, 'edit'])->name('edit');
+        Route::get('customer/{id}/edit', [AdminController::class, 'userEdit'])->name('user.edit');
         Route::put('/{id}', [AdminController::class, 'update'])->name('update');   // Update
+        Route::put('user/{id}', [AdminController::class, 'updateUser'])->name('user.update');   // Update
         Route::delete('/{id}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
 
         // Plans routes
@@ -131,13 +139,14 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/role/edit',[CustomRolePermissionController::class,'index'])->name('role.edit');
         Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
         Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');
-       
         //payments
         Route::get('/payments',[CustomRolePermissionController::class,'assign'])->name('payments');
         //settings
+        Route::get('/ticket_conversation',[MediaHandlerController::class,'ticket_conversation'])->name('ticket_conversation');
+        //profile
+        Route::post('profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
 
-
-
+    
     }); 
 
 });
@@ -150,13 +159,6 @@ Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::cl
 
 Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [CustomerPlanController::class, 'index'])->name('pricing');
-    // reorder routes
-    // Route::get('/orders/new-order/{id}', [App\Http\Controllers\Customer\OrderController::class, 'newOrder'])->name('orders.new.order');
-    // Route::get('/orders/reorder/{order_id}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('orders.reorder');
-    // Route::post('/orders/reorder', [App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.reorder.store');
-    // Route::get('/orders/{id}/view', [App\Http\Controllers\Customer\OrderController::class, 'view'])->name('orders.view');
-    // Route::get('/orders', [App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders');
-    // Route::get('/orders/data', [App\Http\Controllers\Customer\OrderController::class, 'getOrders'])->name('orders.data');
     Route::get('/dashboard', function () {
         return view('customer.dashboard');
     })->name('dashboard');
@@ -171,9 +173,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     })->name('dashboard');
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [CustomerOrderController::class, 'getOrders'])->name('orders.data');
-    Route::get('/support', function () {
-        return view('customer.support.support');
-    })->name('support');
+  
+   
     Route::get('/profile', function () {
         return view('customer.profile.profile');
     })->name('profile');
@@ -211,6 +212,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
+    //support 
+    Route::get('/support', [CustomerSupportController::class, 'index'])->name('support');
 });
 
 // Info: Contractor Access
@@ -289,8 +292,6 @@ Route::get('/payments', function () {
     return view('admin/payments/payments');
 });
 
-
-
 Route::get('/orders', function () {
     return view('admin/orders/orders');
 });
@@ -299,9 +300,7 @@ Route::get('/contact_us', function () {
     return view('admin/contact_us/contact_us');
 });
 
-Route::get('/support', function () {
-    return view('admin/support/support');
-});
+
 
 Route::get('/profile', function () {
     return view('admin/profile/profile');
@@ -310,6 +309,8 @@ Route::get('/profile', function () {
 Route::get('/settings', function () {
     return view('admin/settings/settings');
 });
+
+
     
 Route::get('/notification', function () {
     return view('admin/notification/notification');
@@ -319,6 +320,7 @@ Route::get('/chargebee/webhook', function () {
 });
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
+Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
 
 
 
