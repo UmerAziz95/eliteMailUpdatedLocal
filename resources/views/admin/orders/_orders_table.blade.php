@@ -4,11 +4,11 @@
             <tr>
                 <th>Order ID</th>
                 <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
                 @if(!isset($plan_id))
                 <th>Plan</th>
                 @endif
-                <th>Customer Email</th>
-                <th>Customer Name</th>
                 <th>Domain URL</th>
                 <th>Total Inboxes</th>
                 <th>Status</th>
@@ -19,6 +19,7 @@
         </tbody>
     </table>
 </div>
+
 
 <!-- Cancel Subscription Modal -->
 <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
