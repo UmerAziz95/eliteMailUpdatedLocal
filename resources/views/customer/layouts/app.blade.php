@@ -20,6 +20,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <style>
+        .notification-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            position: absolute;
+        }
+        .ti-bell {
+            position: relative;
+        }
+    </style>
     @stack('styles')
 </head>
 
@@ -89,6 +101,62 @@
             $btn.addClass('btn-loading');
             $btn.prop('disabled', true);
         });
+
+        // Notification count update functionality
+        function updateNotificationCount() {
+            fetch('/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    const bellIcon = document.querySelector('.ti-bell');
+                    const count = data.count;
+                    const existingDot = bellIcon.querySelector('.notification-dot');
+                    
+                    if (count > 0) {
+                        if (!existingDot) {
+                            const dot = document.createElement('span');
+                            dot.className = 'notification-dot badge-dot position-absolute';
+                            dot.style.top = '0';
+                            dot.style.right = '0';
+                            dot.style.transform = 'translate(50%, -50%)';
+                            bellIcon.appendChild(dot);
+                        }
+                    } else {
+                        if (existingDot) {
+                            existingDot.remove();
+                        }
+                    }
+                });
+        }
+
+        // Handle marking notifications as read
+        document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.id;
+                fetch(`/notifications/${notificationId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        // Update notification count
+                        updateNotificationCount();
+                        // Remove the unread indicator
+                        this.remove();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Update count every 10 seconds
+        setInterval(updateNotificationCount, 10000);
+        
+        // Initial update when page loads
+        document.addEventListener('DOMContentLoaded', updateNotificationCount);
     </script>
 </body>
 
