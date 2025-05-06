@@ -75,6 +75,44 @@
         .timeline:not(.timeline-center) {
             padding-inline-start: .5rem;
         }
+
+        .cropper-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        #cropperModal .modal-content {
+            background-color: var(--secondary-color);
+            color: var(--extra-light);
+        }
+
+        .cropper-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cropper-controls button {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: var(--second-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-slider {
+            width: 150px;
+        }
     </style>
 @endpush
 
@@ -86,10 +124,18 @@
             <div class="card mb-4">
                 <div class="card-body pt-12">
                     <div class="user-avatar-section">
-                        <div class=" d-flex align-items-center flex-column">
-                            <img class="img-fluid rounded mb-4"
-                                src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png"
-                                height="120" width="120" alt="User avatar">
+                        <div class="d-flex align-items-center flex-column">
+                            <div class="position-relative">
+                                <img class="img-fluid rounded mb-4" id="profile-image"
+                                    src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                                    height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                <div class="position-absolute bottom-0 end-0">
+                                    <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
+                                        <i class="ti ti-camera"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                             <div class="user-info text-center">
                                 <h5>{{ Auth::user()->name }}</h5>
                                 <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
@@ -945,6 +991,38 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Cropper Modal -->
+    <div class="modal fade" id="cropperModal" tabindex="-1" role="dialog" aria-labelledby="cropperModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adjust Profile Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="cropper-container">
+                        <img id="cropperImage" src="" alt="Image to crop" style="max-width: 100%;">
+                    </div>
+                    <div class="cropper-controls">
+                        <button type="button" class="rotate-left"><i class="ti ti-rotate-clockwise-2"></i> Rotate Left</button>
+                        <button type="button" class="rotate-right"><i class="ti ti-rotate"></i> Rotate Right</button>
+                        <button type="button" class="flip-horizontal"><i class="ti ti-flip-horizontal"></i> Flip H</button>
+                        <button type="button" class="flip-vertical"><i class="ti ti-flip-vertical"></i> Flip V</button>
+                        <div class="zoom-controls">
+                            <button type="button" class="zoom-in"><i class="ti ti-zoom-in"></i></button>
+                            <input type="range" class="zoom-slider" min="0" max="100" value="0">
+                            <button type="button" class="zoom-out"><i class="ti ti-zoom-out"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -1022,6 +1100,151 @@
                     }
                 });
             });
+        });
+
+        let cropper;
+        let zoomValue = 0;
+        
+        // Initialize image cropping when file is selected
+        $('#profile-image-input').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Initialize cropper
+                    const image = document.getElementById('cropperImage');
+                    image.src = e.target.result;
+                    
+                    // Show cropper modal
+                    $('#cropperModal').modal('show');
+                    
+                    // Initialize Cropper.js after modal is shown
+                    $('#cropperModal').on('shown.bs.modal', function() {
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 1,
+                            cropBoxResizable: true,
+                            cropBoxMovable: true,
+                            minCropBoxWidth: 200,
+                            minCropBoxHeight: 200,
+                            width: 200,
+                            height: 200,
+                            guides: true,
+                            center: true,
+                            highlight: true,
+                            background: true,
+                            autoCrop: true,
+                            responsive: true,
+                            toggleDragModeOnDblclick: true
+                        });
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle image manipulation controls
+        $('.rotate-left').on('click', function() {
+            cropper.rotate(-90);
+        });
+
+        $('.rotate-right').on('click', function() {
+            cropper.rotate(90);
+        });
+
+        $('.flip-horizontal').on('click', function() {
+            cropper.scaleX(cropper.getData().scaleX === 1 ? -1 : 1);
+        });
+
+        $('.flip-vertical').on('click', function() {
+            cropper.scaleY(cropper.getData().scaleY === 1 ? -1 : 1);
+        });
+
+        $('.zoom-in').on('click', function() {
+            zoomValue = Math.min(zoomValue + 10, 100);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(0.1);
+        });
+
+        $('.zoom-out').on('click', function() {
+            zoomValue = Math.max(zoomValue - 10, 0);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(-0.1);
+        });
+
+        $('.zoom-slider').on('input', function() {
+            const newZoom = parseInt($(this).val());
+            const zoomDiff = (newZoom - zoomValue) / 100;
+            cropper.zoom(zoomDiff);
+            zoomValue = newZoom;
+        });
+
+        // Clean up cropper when modal is hidden
+        $('#cropperModal').on('hidden.bs.modal', function() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+                zoomValue = 0;
+                $('.zoom-slider').val(0);
+            }
+        });
+
+        // Rest of your existing cropper code...
+        $('#cropButton').on('click', function() {
+            if (!cropper) return;
+
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas({
+                width: 200,
+                height: 200
+            });
+
+            // Apply copper filter effect
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.min(255, data[i] * 1.2); // Red
+                data[i + 1] = Math.min(255, data[i + 1] * 0.9); // Green
+                data[i + 2] = Math.min(255, data[i + 2] * 0.7); // Blue
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+
+            // Convert to blob and upload
+            canvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('profile_image', blob, 'profile.jpg');
+                formData.append('_token', '{{ csrf_token() }}');
+
+                $.ajax({
+                    url: '{{ route('profile.update.image') }}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Update the image preview
+                            $('#profile-image').attr('src', response.image_url);
+                            // login-user-profile
+                            $('.login-user-profile').attr('src', response.image_url);
+                            toastr.success('Profile image updated successfully');
+                            $('#cropperModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Error updating profile image');
+                        console.log(xhr.responseText);
+                    }
+                });
+            }, 'image/jpeg', 0.95);
         });
     </script>
 @endpush

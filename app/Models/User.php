@@ -30,6 +30,7 @@ class User extends Authenticatable
         'billing_address', // Add billing address attribute
         'domain_forwarding_url',
         'status',
+        'profile_image',
     ];
 
     /**
