@@ -64,24 +64,25 @@
                 .then(data => {
                     const bellIcon = document.querySelector('.ti-bell');
                     const count = data.count;
+                    const existingDot = bellIcon.querySelector('.notification-dot');
                     
                     if (count > 0) {
-                        if (!bellIcon.querySelector('.notification-dot')) {
+                        if (!existingDot) {
                             const dot = document.createElement('span');
-                            dot.className = 'badge-dot position-absolute';
+                            dot.className = 'notification-dot badge-dot position-absolute';
                             dot.style.top = '0';
                             dot.style.right = '0';
                             dot.style.transform = 'translate(50%, -50%)';
                             bellIcon.appendChild(dot);
                         }
                     } else {
-                        const dot = bellIcon.querySelector('.notification-dot');
-                        if (dot) {
-                            dot.remove();
+                        if (existingDot) {
+                            existingDot.remove();
                         }
                     }
                 });
         }
+
         // Handle marking notifications as read
         document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
             button.addEventListener('click', function() {
@@ -96,17 +97,21 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.message) {
-                        // Remove the unread indicator
-                        this.remove();
-                        // Update the notification count
+                        // Immediately update the notification count
                         updateNotificationCount();
+                        
+                        // Remove the unread indicator from this notification
+                        this.closest('.notification-item').classList.remove('unread');
+                        this.remove();
                     }
                 })
                 .catch(error => console.error('Error:', error));
             });
         });
+
         // Update count every 30 seconds
-        // setInterval(updateNotificationCount, 30000);
+        setInterval(updateNotificationCount, 30000);
+        
         // Initial update
         document.addEventListener('DOMContentLoaded', updateNotificationCount);
     </script>
