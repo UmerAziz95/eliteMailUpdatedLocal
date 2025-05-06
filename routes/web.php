@@ -340,4 +340,5 @@ Route::middleware('auth')->group(function () {
         $notification->update(['is_read' => true]);
         return response()->json(['message' => 'success']);
     })->middleware('auth');
+    Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
 });

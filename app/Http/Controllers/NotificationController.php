@@ -55,4 +55,26 @@ class NotificationController extends Controller
 
         return response()->json(['count' => $count]);
     }
+
+    public function getNotificationsList()
+    {
+        $notifications = Notification::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'is_read' => $notification->is_read,
+                    'created_at' => $notification->created_at->diffForHumans(),
+                    'user_profile_photo' => auth()->user()->profile_image 
+                        ? asset('storage/profile_images/' . auth()->user()->profile_image)
+                        : null
+                ];
+            });
+
+        return response()->json(['notifications' => $notifications]);
+    }
 }

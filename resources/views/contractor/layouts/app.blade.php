@@ -110,7 +110,7 @@
         });
 
         // Update count every 30 seconds
-        setInterval(updateNotificationCount, 30000);
+        setInterval(updateNotificationCount, 10000);
         
         // Initial update
         document.addEventListener('DOMContentLoaded', updateNotificationCount);

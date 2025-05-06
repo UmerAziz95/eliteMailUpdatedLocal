@@ -55,53 +55,18 @@
             </ul> --}} -->
         <!-- </div> -->
 
-        <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="dropdown notification-dropdown">
+            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationDropdownToggle">
                 <i class="ti ti-bell fs-5"></i>
             </div>
-            <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
+            <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;" id="notificationDropdown">
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
-                @php
-                    $notifications = \App\Models\Notification::where('user_id', Auth::user()->id)
-                        ->orderBy('created_at', 'desc')
-                        ->take(15)
-                        ->get();
-                @endphp
-                @foreach($notifications as $notification)
-                    <hr class="my-0">
-                    <li class="dropdown-item py-2">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0 me-3">
-                                <div class="avatar">
-                                    @if(Auth::user()->profile_photo)
-                                        <img src="{{ Auth::user()->profile_photo }}" style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
-                                    @else
-                                        <i class="ti ti-user-circle fs-2"></i>
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="small mb-2">{{ $notification->title }}</h6>
-                                <small class="mb-1 d-block opacity-75">{{ $notification->message }}</small>
-                                <small class="opacity-50">{{ $notification->created_at->diffForHumans() }}</small>
-                                <small class="opacity-50">
-                                    @if(!$notification->is_read)
-                                        <a href="javascript:void(0)" class="dropdown-notifications-read" data-id="{{ $notification->id }}">
-                                            <span class="badge bg-danger">Unread</span>
-                                        </a>
-                                    @endif
-                                </small>
-                            </div>
-                            <div class="flex-shrink-0 dropdown-notifications-actions">
-                                
-                                <a href="javascript:void(0)" class="dropdown-notifications-archive"><span class="icon-base ti tabler-x"></span></a>
-                            </div>
-                        </div>
-                    </li>
-                @endforeach
+                <div id="notificationList">
+                    <!-- Notifications will be loaded here dynamically -->
+                </div>
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
                     <a href="/notification" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
                 </div>
@@ -332,5 +297,80 @@
             localStorage.setItem("theme", "dark");
         });
 
+    });
+
+    function loadNotifications() {
+        fetch('/notifications/list')
+            .then(response => response.json())
+            .then(data => {
+                const notificationList = document.getElementById('notificationList');
+                notificationList.innerHTML = data.notifications.map(notification => `
+                    <hr class="my-0">
+                    <li class="dropdown-item py-2">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="avatar">
+                                    ${notification.user_profile_photo 
+                                        ? `<img src="${notification.user_profile_photo}" style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">`
+                                        : '<i class="ti ti-user-circle fs-2"></i>'
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="small mb-2">${notification.title}</h6>
+                                <small class="mb-1 d-block opacity-75">${notification.message}</small>
+                                <small class="opacity-50">${notification.created_at}</small>
+                                <small class="opacity-50">
+                                    ${!notification.is_read 
+                                        ? `<a href="javascript:void(0)" class="dropdown-notifications-read" data-id="${notification.id}">
+                                            <span class="badge bg-danger">Unread</span>
+                                           </a>`
+                                        : ''
+                                    }
+                                </small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                                <a href="javascript:void(0)" class="dropdown-notifications-archive"><span class="icon-base ti tabler-x"></span></a>
+                            </div>
+                        </div>
+                    </li>
+                `).join('');
+
+                // Reattach event listeners for mark as read buttons
+                document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
+                    button.addEventListener('click', handleNotificationRead);
+                });
+            })
+            .catch(error => console.error('Error loading notifications:', error));
+    }
+
+    function handleNotificationRead() {
+        const notificationId = this.dataset.id;
+        fetch(`/notifications/${notificationId}/mark-as-read`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                // Update the notification count
+                updateNotificationCount();
+                // Remove the unread badge
+                this.remove();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Add event listener to load notifications when dropdown is opened
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listener to notification dropdown
+        const notificationDropdownEl = document.querySelector('.notification-dropdown');
+        notificationDropdownEl.addEventListener('show.bs.dropdown', function () {
+            loadNotifications();
+        });
     });
 </script>
