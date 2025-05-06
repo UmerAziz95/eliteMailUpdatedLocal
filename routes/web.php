@@ -30,6 +30,7 @@ use App\Http\Controllers\CustomRolePermissionController;
 
 //cron
 use App\Http\Controllers\CronController;
+use App\Http\Controllers\NotificationController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -327,3 +328,11 @@ Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::c
 Route::get('/delete-order', [App\Http\Controllers\Customer\OrderController::class, 'deleteAllOrderNullPlanID'])->name('delete.order');
 // Fixed Order Status to lowercase
 Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\OrderController::class, 'updateOrderStatusToLowerCase'])->name('updateOrderStatusToLowerCase');
+
+// Notification routes
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+});

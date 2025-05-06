@@ -45,36 +45,39 @@
             </div>
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
-                    <h6 class="mb-0">Activity</h6>
+                    <h6 class="mb-0">Notifications</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
                 @php
-                    $logs = \App\Models\Log::with(['user', 'performedOn'])
-                        ->where('performed_by', Auth::user()->id)
-                        ->latest()
+                    $notifications = \App\Models\Notification::where('user_id', Auth::user()->id)
+                        ->orderBy('created_at', 'desc')
                         ->take(15)
                         ->get();
                 @endphp
-                @foreach($logs as $log)
+                @foreach($notifications as $notification)
                     <hr class="my-0">
                     <li class="dropdown-item py-2">
                         <div class="d-flex">
                             <div class="flex-shrink-0 me-3">
                                 <div class="avatar">
-                                    @if($log->user && $log->user->profile_photo)
-                                        <img src="{{ $log->user->profile_photo }}" style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                                    @if(Auth::user()->profile_photo)
+                                        <img src="{{ Auth::user()->profile_photo }}" style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
                                     @else
                                         <i class="ti ti-user-circle fs-2"></i>
                                     @endif
                                 </div>
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="small mb-2">{{ $log->description }}</h6>
-                                <small class="mb-1 d-block opacity-75">{{ $log->action_type }}</small>
-                                <small class="opacity-50">{{ $log->created_at->diffForHumans() }}</small>
+                                <h6 class="small mb-2">{{ $notification->title }}</h6>
+                                <small class="mb-1 d-block opacity-75">{{ $notification->message }}</small>
+                                <small class="opacity-50">{{ $notification->created_at->diffForHumans() }}</small>
                             </div>
                             <div class="flex-shrink-0 dropdown-notifications-actions">
-                                <a href="javascript:void(0)" class="dropdown-notifications-read"><span class="badge badge-dot"></span></a>
+                                @if(!$notification->is_read)
+                                    <a href="javascript:void(0)" class="dropdown-notifications-read" data-id="{{ $notification->id }}">
+                                        <span class="badge badge-dot"></span>
+                                    </a>
+                                @endif
                                 <a href="javascript:void(0)" class="dropdown-notifications-archive"><span class="icon-base ti tabler-x"></span></a>
                             </div>
                         </div>
@@ -308,6 +311,28 @@
         darkThemeBtn.addEventListener("click", () => {
             document.body.classList.remove("light-theme");
             localStorage.setItem("theme", "dark");
+        });
+
+        // Handle marking notifications as read
+        document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.id;
+                fetch(`/notifications/${notificationId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        // Remove the unread indicator
+                        this.remove();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
         });
     });
 </script>

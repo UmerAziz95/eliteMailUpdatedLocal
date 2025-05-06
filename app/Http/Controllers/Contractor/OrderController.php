@@ -21,7 +21,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
-
+use App\Models\OrderEmail;
+use App\Models\Notification;
 class OrderController extends Controller
 {
     private $statuses;
@@ -570,10 +571,34 @@ class OrderController extends Controller
                         'updated_by' => auth()->id()
                     ]
                 );
-
-                // Get user details
+                // Notification for customer
+                Notification::create([
+                    'user_id' => $order->user_id,
+                    'type' => 'order_status_change',
+                    'title' => 'Order Status Changed',
+                    'message' => 'Your order #' . $order->id . ' status has been changed to ' . $newStatus,
+                    'data' => [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'reason' => $reason
+                    ]
+                ]);
+                // Notification for contractor
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'type' => 'order_status_change',
+                    'title' => 'Order Status Changed',
+                    'message' => 'Order #' . $order->id . ' status changed to ' . $newStatus,
+                    'data' => [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'reason' => $reason
+                    ]
+                ]);
+                // Get user details and send email
                 $user = $order->user;
-                // Send email to user
                 try {
                     Mail::to($user->email)
                         ->queue(new OrderStatusChangeMail(
@@ -584,13 +609,8 @@ class OrderController extends Controller
                             $reason,
                             false
                         ));
-                    Log::info('Order status change email sent to user', [
-                        'user_id' => $user->id,
-                        'order_id' => $order->id,
-                        'old_status' => $oldStatus,
-                        'new_status' => $newStatus
-                    ]);
-                    // Send email to admin
+
+                    // Only send email to admin
                     Mail::to(config('mail.admin_address', 'admin@example.com'))
                         ->queue(new OrderStatusChangeMail(
                             $order,
@@ -600,13 +620,11 @@ class OrderController extends Controller
                             $reason,
                             true
                         ));
-                    Log::info('Order status change email sent to admin', [
-                        'admin_email' => config('mail.admin_address'),
+                    Log::info('Order status change email sent', [
                         'order_id' => $order->id,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
-                    // Continue execution since the status was already updated
                 }
             }
     
