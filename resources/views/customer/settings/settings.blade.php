@@ -220,37 +220,63 @@
             <!-- Plan Card -->
             <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
                 <div class="card-body">
+                    @php
+                        $latestOrder = Auth::user()->orders()->with(['plan', 'reorderInfo','subscription'])->latest()->first();
+                    @endphp
                     <div class="d-flex justify-content-between align-items-start">
-                        <span class="badge bg-label-primary">Standard</span>
-                        <div class="d-flex justify-content-center">
-                            <sub class="h5 pricing-currency mb-auto mt-1 theme-text">$</sub>
-                            <h1 class="mb-0 theme-text">99</h1>
-                            <sub class="h6 pricing-duration mt-auto mb-3 fw-normal">month</sub>
+                        @if($latestOrder && $latestOrder->plan)
+                            <span class="badge bg-label-primary">{{ $latestOrder->plan->name }}</span>
+                            <div class="d-flex justify-content-center">
+                                <sub class="h5 pricing-currency mb-auto mt-1 theme-text">$</sub>
+                                <h1 class="mb-0 theme-text">{{ number_format($latestOrder->plan->price, 2) }}</h1>
+                                <sub class="h6 pricing-duration mt-auto mb-3 fw-normal">/ {{ $latestOrder->plan->duration }} Per Inboxes</sub>
+                            </div>
+                        @else
+                            <span class="badge bg-label-secondary">No Active Plan</span>
+                        @endif
+                    </div>
+                    @if($latestOrder && $latestOrder->reorderInfo && $latestOrder->reorderInfo->count() > 0)
+                        <ul class="list-unstyled g-2 my-4">
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
+                                <span>Total Inboxes: {{ $latestOrder->reorderInfo->first()->total_inboxes }}</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
+                                <span>Inboxes per Domain: {{ $latestOrder->reorderInfo->first()->inboxes_per_domain }}</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
+                                <span>Status: <span class="badge bg-label-{{ $latestOrder->status_manage_by_admin == 'completed' ? 'success' : ($latestOrder->status_manage_by_admin == 'pending' ? 'warning' : 'info') }}">
+                                    {{ ucfirst($latestOrder->status_manage_by_admin) }}
+                                </span></span>
+                            </li>
+                        </ul>
+                    @endif
+
+                    @if($latestOrder && $latestOrder->subscription)
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="h6 mb-0">Subscription Period: </span>
+                            <span class="h6 mb-0">
+                                {{ \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date)->format('M d, Y') }} - 
+                                {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') : 'N/A' }}
+                            </span>
                         </div>
-                    </div>
-                    <ul class="list-unstyled g-2 my-6">
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>10
-                                Users</span></li>
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>Up to 10
-                                GB storage</span></li>
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>Basic
-                                Support</span></li>
-                    </ul>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="h6 mb-0">Days</span>
-                        <span class="h6 mb-0">26 of 30 Days</span>
-                    </div>
-                    <div class="progress mb-1 bg-label-primary" style="height: 6px;">
-                        <div class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65"
-                            aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <small>4 days remaining</small>
-                    <div class="d-grid w-100 mt-6">
-                        <button class="m-btn border-0 py-2 px-4 rounded-2 mt-3" data-bs-target="#upgradePlanModal"
-                            data-bs-toggle="modal">Upgrade Plan</button>
+                        <div class="progress mb-1 bg-label-primary" style="height: 6px;">
+                            @php
+                                $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
+                                $endDate = $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date) : now();
+                                $totalDays = $startDate->diffInDays($endDate);
+                                $daysElapsed = $startDate->diffInDays(now());
+                                $progress = $totalDays > 0 ? ($daysElapsed / $totalDays) * 100 : 0;
+                            @endphp
+                            <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small>{{ $totalDays - $daysElapsed }} days remaining</small>
+                    @endif
+
+                    <div class="d-grid w-100 mt-4">
+                        <a href="{{ route('customer.pricing') }}" class="m-btn border-0 py-2 px-4 rounded-2">Upgrade Plan</a>
                     </div>
                 </div>
             </div>

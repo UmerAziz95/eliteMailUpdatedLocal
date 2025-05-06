@@ -57,6 +57,59 @@
      <!-- sweeetalert2 -->
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
      <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        function updateNotificationCount() {
+            fetch('/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    const bellIcon = document.querySelector('.ti-bell');
+                    const count = data.count;
+                    
+                    if (count > 0) {
+                        if (!bellIcon.querySelector('.notification-dot')) {
+                            const dot = document.createElement('span');
+                            dot.className = 'badge-dot position-absolute';
+                            dot.style.top = '0';
+                            dot.style.right = '0';
+                            dot.style.transform = 'translate(50%, -50%)';
+                            bellIcon.appendChild(dot);
+                        }
+                    } else {
+                        const dot = bellIcon.querySelector('.notification-dot');
+                        if (dot) {
+                            dot.remove();
+                        }
+                    }
+                });
+        }
+        // Handle marking notifications as read
+        document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.id;
+                fetch(`/notifications/${notificationId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        // Remove the unread indicator
+                        this.remove();
+                        // Update the notification count
+                        updateNotificationCount();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+        // Update count every 30 seconds
+        // setInterval(updateNotificationCount, 30000);
+        // Initial update
+        document.addEventListener('DOMContentLoaded', updateNotificationCount);
+    </script>
     @stack('scripts')
     <script>
         // Global AJAX request handler
@@ -81,6 +134,7 @@
             $btn.addClass('btn-loading');
             $btn.prop('disabled', true);
         });
+
     </script>
 </body>
 </html>

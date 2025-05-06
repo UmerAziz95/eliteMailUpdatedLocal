@@ -1,3 +1,19 @@
+<style>
+.badge-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    margin-right: 5px;
+}
+.dropdown-notifications-read {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}
+</style>
+
 <header class="d-flex align-items-center justify-content-between py-2 px-4 rounded-3">
     <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
         data-bs-target="#search">
@@ -71,13 +87,16 @@
                                 <h6 class="small mb-2">{{ $notification->title }}</h6>
                                 <small class="mb-1 d-block opacity-75">{{ $notification->message }}</small>
                                 <small class="opacity-50">{{ $notification->created_at->diffForHumans() }}</small>
+                                <small class="opacity-50">
+                                    @if(!$notification->is_read)
+                                        <a href="javascript:void(0)" class="dropdown-notifications-read" data-id="{{ $notification->id }}">
+                                            <span class="badge bg-danger">Unread</span>
+                                        </a>
+                                    @endif
+                                </small>
                             </div>
                             <div class="flex-shrink-0 dropdown-notifications-actions">
-                                @if(!$notification->is_read)
-                                    <a href="javascript:void(0)" class="dropdown-notifications-read" data-id="{{ $notification->id }}">
-                                        <span class="badge badge-dot"></span>
-                                    </a>
-                                @endif
+                                
                                 <a href="javascript:void(0)" class="dropdown-notifications-archive"><span class="icon-base ti tabler-x"></span></a>
                             </div>
                         </div>
@@ -313,26 +332,5 @@
             localStorage.setItem("theme", "dark");
         });
 
-        // Handle marking notifications as read
-        document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
-            button.addEventListener('click', function() {
-                const notificationId = this.dataset.id;
-                fetch(`/notifications/${notificationId}/mark-as-read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) {
-                        // Remove the unread indicator
-                        this.remove();
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-        });
     });
 </script>

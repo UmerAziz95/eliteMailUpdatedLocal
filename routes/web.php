@@ -336,4 +336,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
     Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+    Route::post('/notifications/{notification}/mark-as-read', function(\App\Models\Notification $notification) {
+        $notification->update(['is_read' => true]);
+        return response()->json(['message' => 'success']);
+    })->middleware('auth');
 });

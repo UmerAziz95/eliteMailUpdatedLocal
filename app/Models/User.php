@@ -53,6 +53,11 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
@@ -66,6 +71,19 @@ class User extends Authenticatable
     public function currentPlan()
     {
         return $this->belongsTo(Plan::class, 'plan_id');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(Log::class, 'performed_by');
+    }
+
+    /**
+     * Get the user's latest order with plan and reorder info
+     */
+    public function latestOrder()
+    {
+        return $this->orders()->with(['plan', 'reorderInfo', 'subscription'])->latest()->first();
     }
 
     /**
