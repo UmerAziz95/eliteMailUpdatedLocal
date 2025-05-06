@@ -4,6 +4,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <style>
         .avatar {
             position: relative;
@@ -118,8 +119,8 @@
                 <div class="col-md-4">
                     <select id="status_filter" class="form-select">
                         <option value="">Select Status</option>
-                        <option value="1">active</option>
-                        <option value="0">inactive</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
                      
                     </select>
                 </div>

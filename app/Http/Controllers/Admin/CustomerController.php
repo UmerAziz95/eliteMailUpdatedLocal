@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Carbon\Carbon;
 use DataTables;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 class CustomerController extends Controller
 {
      public function customerList(Request $request)
@@ -61,12 +63,7 @@ class CustomerController extends Controller
                 
                     return '
                         <div class="d-flex align-items-center gap-2">
-                            <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
-                                <i class="fa-regular fa-trash-can text-danger"></i>
-                            </button>
-                            <button class="bg-transparent p-0 border-0 mx-2 view-btn" data-id="' . $row->id . '">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
+
                             <div class="dropdown">
                                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -90,6 +87,7 @@ class CustomerController extends Controller
                 ->make(true);
         }
     
-        return view('admin.customers.customers');
-    }
+        $roles=Role::all();
+        return view('admin.customers.customers',["roles"=>$roles]);
+      }
 }

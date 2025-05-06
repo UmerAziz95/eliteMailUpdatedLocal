@@ -1,12 +1,12 @@
-<aside class="sidebar px-2 py-4 overflow-y-auto" style="scrollbar-width: none">
+<aside class="sidebar px-2 py-4 overflow-y-auto d-none d-lg-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2">
         <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="50" alt="">
         <h4 class="text">Mailboxes</h4>
     </div>
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
         <input class="form-check-input"
-            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
-            value="" id="checkDefault">
+            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox" value=""
+            id="checkDefault">
     </div>
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->
@@ -90,14 +90,14 @@
                 <i class="fa-solid fa-chevron-right rotate-icon"></i>
             </a>
             <ul class="collapse list-unstyled" id="pages">
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                        href="{{ url('/') }}"><span class="circle"></span> Faq</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                        href="{{ url('/') }}"><span class="circle"></span> Pricing</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                        href="{{ url('/') }}"><span class="circle"></span> Teams</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                        href="{{ url('/') }}"><span class="circle"></span> Projects</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Faq</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Pricing</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Teams</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Projects</a></li>
             </ul>
         </li>
 

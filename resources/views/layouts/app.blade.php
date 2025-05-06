@@ -8,6 +8,8 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 
+    <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet" />
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -29,15 +31,19 @@
 
     <div class="d-flex w-100 h-100 overflow-hidden">
         <div>
-            @include('layouts.sidebar') <!-- Include Sidennnbar -->
+            @include('layouts.sidebar')
+            <!-- Include Sidennnbar -->
         </div>
 
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
-                @include('layouts.header') <!-- Include Header -->
-                @yield('content') <!-- Main Page Content -->
+                @include('layouts.header')
+                <!-- Include Header -->
+                @yield('content')
+                <!-- Main Page Content -->
             </div>
-            @include('layouts.footer') <!-- Include Footer (Optional) -->
+            @include('layouts.footer')
+            <!-- Include Footer (Optional) -->
         </div>
     </div>
 
@@ -50,7 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     @stack('scripts')
-    
+
     <script>
         // Global AJAX request handler
         $(document).ajaxStart(function() {

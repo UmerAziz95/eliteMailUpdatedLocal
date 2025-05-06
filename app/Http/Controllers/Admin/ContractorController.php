@@ -152,10 +152,11 @@ class ContractorController extends Controller
        public function destroy($id)
    {
        $user = User::findOrFail($id);
-       $user->delete();
+       $user->status=0;
+       $user->save();
 
        return response()->json([
-           'message' => 'User deleted successfully.'
+           'message' => 'User Deactivated successfully.'
        ]);
    }
-}  
+}   
