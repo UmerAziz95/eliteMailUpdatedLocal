@@ -228,7 +228,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                         <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-tab-pane"
-                            type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
+                            type="button" role="tab" aria-controls="activity-tab-pane" aria-selected="false"><i
                                 class="fa-regular fa-bell"></i> Activity</button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -301,7 +301,7 @@
                         </div>
                     </div>
 
-                    <div class="card p-3">
+                    <!-- <div class="card p-3">
                         <h5 class="card-header">Recent Devices</h5>
                         <div class="table-responsive table-border-bottom-0">
                             <table class="table">
@@ -353,7 +353,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="tab-pane fade show active" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab"
