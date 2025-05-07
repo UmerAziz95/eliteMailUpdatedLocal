@@ -3,7 +3,8 @@
 namespace App\Observers;
 
 use App\Models\SupportTicket;
-use App\Notifications\TicketStatusChanged;
+use App\Models\Notification;
+use App\Models\User;
 
 class SupportTicketObserver
 {
@@ -23,37 +24,41 @@ class SupportTicketObserver
                 ]
             ]);
         }
+        // not assigned to send all contractors and admins
+        else {
+            $contractors = User::where('role_id', '4')->orWhere('role_id', '1')->get();
+            // dd($contractors);
+            foreach ($contractors as $contractor) {
+                Notification::create([
+                    'user_id' => $contractor->id,
+                    'title' => 'New Ticket Created',
+                    'message' => "A new ticket #{$ticket->ticket_number} has been created",
+                    'type' => 'ticket_created',
+                    'data' => [
+                        'ticket_id' => $ticket->id,
+                        'ticket_number' => $ticket->ticket_number
+                    ]
+                ]);
+            }
+        }
     }
 
     public function updating(SupportTicket $ticket)
     {
-        // Store the original status as a temporary property
-        if ($ticket->isDirty('status')) {
-            $ticket->temp_old_status = $ticket->getOriginal('status');
-        }
+        // No need to set old_status here as it's now handled by the model
     }
 
     public function updated(SupportTicket $ticket)
     {
-        // Check if status has changed
-        if (isset($ticket->temp_old_status) && $ticket->temp_old_status !== $ticket->status) {
-            // Notify the customer
-            $ticket->user->notify(new TicketStatusChanged(
-                $ticket,
-                $ticket->temp_old_status,
-                $ticket->status
-            ));
-
-            // Create a notification record
-            $ticket->user->notifications()->create([
+        if ($ticket->isDirty('status') && $ticket->user) {
+            $notification = (new Notification())->create([
+                'user_id' => $ticket->user->id,
                 'title' => 'Ticket Status Updated',
-                'message' => "Status of ticket #{$ticket->ticket_number} changed from {$ticket->temp_old_status} to {$ticket->status}",
-                'type' => 'ticket_status_change',
-                'user_id' => $ticket->user_id,
+                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$ticket->getOriginal('status')} to {$ticket->status}",
+                'type' => 'ticket_status_updated',
                 'data' => [
                     'ticket_id' => $ticket->id,
-                    'ticket_number' => $ticket->ticket_number,
-                    'old_status' => $ticket->temp_old_status,
+                    'old_status' => $ticket->getOriginal('status'),
                     'new_status' => $ticket->status
                 ]
             ]);

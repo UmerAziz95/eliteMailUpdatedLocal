@@ -25,6 +25,13 @@ class SupportTicket extends Model
         'attachments' => 'array'
     ];
 
+    protected $appends = ['old_status'];
+
+    public function getOldStatusAttribute()
+    {
+        return $this->getOriginal('status');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

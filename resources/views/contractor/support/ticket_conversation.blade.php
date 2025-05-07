@@ -62,6 +62,16 @@
         position: relative;
         border-radius: 5px;
         overflow: hidden;
+        border: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+    }
+
+    .attachment-preview.document {
+        font-size: 40px;
+        color: #6c757d;
     }
 
     .attachment-preview img {
@@ -70,16 +80,20 @@
         object-fit: cover;
     }
 
-    .reply-box {
-        background: var(--dark);
-        padding: 20px;
-        border-radius: 10px;
-        margin-top: 20px;
-    }
-
-    .attachment-icon {
+    .remove-attachment {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        color: var(--second-primary);
     }
 
     .internal-note {
@@ -88,11 +102,24 @@
         padding: 10px;
         margin-top: 10px;
     }
+
+    .attachment-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 10px;
+        padding: 2px 5px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
 </style>
 @endpush
 
 @section('content')
-<meta name="csrf-token" content="{{ csrf_token() }}">
 <section class="py-3">
     <div class="d-flex align-items-center mb-4">
         <a href="{{ route('contractor.support') }}" class="btn btn-sm btn-secondary me-3">
@@ -116,57 +143,7 @@
                         </div>
                     </div>
 
-                    <div class="chat-container" id="chatContainer">
-                        <!-- Original Ticket Message -->
-                        <div class="message-bubble received">
-                            <div class="message-content">
-                                <p>{{ $ticket->description }}</p>
-                                @if($ticket->attachments)
-                                    <div class="attachments-area">
-                                        @foreach($ticket->attachments as $attachment)
-                                            <div class="attachment-preview">
-                                                <img src="{{ Storage::url($attachment) }}" alt="Attachment">
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="message-meta">
-                                {{ $ticket->user->name }} - {{ $ticket->created_at->format('M d, Y H:i') }}
-                            </div>
-                        </div>
-
-                        <!-- Replies -->
-                        @foreach($ticket->replies as $reply)
-                            <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
-                                <div class="message-content">
-                                    @if($reply->is_internal)
-                                        <div class="internal-note">
-                                            <strong>Internal Note</strong>
-                                            <p>{{ $reply->message }}</p>
-                                        </div>
-                                    @else
-                                        <p>{{ $reply->message }}</p>
-                                    @endif
-
-                                    @if($reply->attachments)
-                                        <div class="attachments-area">
-                                            @foreach($reply->attachments as $attachment)
-                                                <div class="attachment-preview">
-                                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="message-meta">
-                                    {{ $reply->user->name }} - {{ $reply->created_at->format('M d, Y H:i') }}
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="reply-box">
+                    <div class="reply-box mb-4">
                         <form id="replyForm">
                             <div class="mb-3">
                                 <div class="form-check mb-3">
@@ -187,6 +164,87 @@
                             </div>
                             <button type="submit" class="btn btn-primary">Send Reply</button>
                         </form>
+                    </div>
+
+                    <div id="chatContainer" class="chat-container">
+                        <!-- Ticket replies in reverse chronological order -->
+                        @foreach($ticket->replies->sortByDesc('created_at') as $reply)
+                        <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
+                            <div class="message-content">
+                                {{ $reply->message }}
+                                @if($reply->is_internal)
+                                <div class="internal-note">
+                                    <i class="fas fa-eye-slash"></i> Internal Note
+                                </div>
+                                @endif
+                            </div>
+                            <div class="message-meta">
+                                {{ $reply->user->name }} - {{ $reply->created_at->format('M d, Y H:i') }}
+                            </div>
+                            @if($reply->attachments && count($reply->attachments) > 0)
+                            <div class="attachments-area">
+                                @foreach($reply->attachments as $attachment)
+                                @php
+                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                    $fileName = basename($attachment);
+                                @endphp
+                                <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
+                                    @if($isImage)
+                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    @else
+                                        <i class="fas {{ 
+                                            in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
+                                            (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
+                                            (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
+                                        }}"></i>
+                                    @endif
+                                    <div class="attachment-name">{{ $fileName }}</div>
+                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+
+                        <!-- Initial ticket message -->
+                        <div class="message-bubble received">
+                            <div class="message-content">
+                                {{ $ticket->description }}
+                            </div>
+                            <div class="message-meta">
+                                {{ $ticket->user->name }} - {{ $ticket->created_at->format('M d, Y H:i') }}
+                            </div>
+                            @if($ticket->attachments && count($ticket->attachments) > 0)
+                            <div class="attachments-area">
+                                @foreach($ticket->attachments as $attachment)
+                                @php
+                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                    $fileName = basename($attachment);
+                                @endphp
+                                <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
+                                    @if($isImage)
+                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    @else
+                                        <i class="fas {{ 
+                                            in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
+                                            (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
+                                            (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
+                                        }}"></i>
+                                    @endif
+                                    <div class="attachment-name">{{ $fileName }}</div>
+                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,9 +292,6 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    const chatContainer = document.getElementById('chatContainer');
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
     // Handle status changes
     $('#ticketStatus').change(function() {
         const status = $(this).val();
@@ -268,16 +323,35 @@ $(document).ready(function() {
         previewContainer.empty();
 
         files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = `
-                    <div class="attachment-preview">
+            const extension = file.name.split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+            
+            const preview = document.createElement('div');
+            preview.className = `attachment-preview ${isImage ? '' : 'document'}`;
+            
+            if (isImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
                         <img src="${e.target.result}" alt="attachment">
+                        <div class="attachment-name">${file.name}</div>
                         <button type="button" class="remove-attachment" data-index="${index}">×</button>
-                    </div>`;
-                previewContainer.append(preview);
+                    `;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                const icon = extension === 'pdf' ? 'fa-file-pdf' :
+                            ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
+                            ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file';
+                
+                preview.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <div class="attachment-name">${file.name}</div>
+                    <button type="button" class="remove-attachment" data-index="${index}">×</button>
+                `;
             }
-            reader.readAsDataURL(file);
+            
+            previewContainer.append(preview);
         });
     });
 
@@ -300,32 +374,74 @@ $(document).ready(function() {
     $('#replyForm').on('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
-        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        formData.append('_token', '{{ csrf_token() }}');
 
         $.ajax({
             url: "{{ route('contractor.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
                 if (response.success) {
+                    // Clear form
+                    $('#message').val('');
+                    $('#attachments').val('');
+                    $('#attachmentPreviews').empty();
+                    $('#isInternal').prop('checked', false);
+                    
+                    // Add new message to chat
+                    const newMessage = `
+                        <div class="message-bubble sent" style="display: none;">
+                            <div class="message-content">
+                                ${response.reply.message}
+                                ${response.reply.is_internal ? `
+                                    <div class="internal-note">
+                                        <i class="fas fa-eye-slash"></i> Internal Note
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="message-meta">
+                                ${response.reply.user.name} - Just now
+                            </div>
+                            ${response.reply.attachments ? `
+                                <div class="attachments-area">
+                                    ${response.reply.attachments.map(attachment => {
+                                        const extension = attachment.split('.').pop().toLowerCase();
+                                        const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+                                        const fileName = attachment.split('/').pop();
+                                        
+                                        return `
+                                            <div class="attachment-preview ${isImage ? '' : 'document'}">
+                                                ${isImage ? 
+                                                    `<img src="${attachment}" alt="Attachment">` :
+                                                    `<i class="fas ${
+                                                        extension === 'pdf' ? 'fa-file-pdf' :
+                                                        ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
+                                                        ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file'
+                                                    }"></i>`
+                                                }
+                                                <div class="attachment-name">${fileName}</div>
+                                                <a href="${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    // Prepend new message and show with animation
+                    $('#chatContainer').prepend(newMessage);
+                    $('.message-bubble:first').slideDown();
+                    
                     toastr.success('Reply sent successfully');
-                    location.reload();
                 }
             },
-            error: function(xhr) {
-                if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    Object.keys(errors).forEach(key => {
-                        toastr.error(errors[key][0]);
-                    });
-                } else {
-                    toastr.error('An error occurred while sending your reply');
-                }
+            error: function() {
+                toastr.error('Failed to send reply');
             }
         });
     });
