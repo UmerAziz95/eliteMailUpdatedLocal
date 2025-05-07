@@ -1,6 +1,6 @@
 @extends('customer.layouts.app')
 
-@section('title', 'Roles & Permissions')
+@section('title', 'Support')
 
 @push('styles')
 <style>
@@ -48,29 +48,64 @@
         flex: 1;
         padding: 8px;
     }
+
+    .file-upload-label {
+        cursor: pointer;
+        color: var(--second-primary);
+    }
+    
+    .ticket-attachments {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .attachment-preview {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .attachment-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .remove-attachment {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0,0,0,0.5);
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3">
-    <div>
-        <h5>Roles List</h5>
-        <p>A role provides access to predefined menus and features so that an administrator can have access based on
-            their assigned role.</p>
-    </div>
-
-    <div class="row gy-4">
-        <!-- Administrator Role -->
+    <div class="row mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total tickets</p>
-
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-primary">1100</h1>
+                            <h1 class="mb-0 text-primary">{{ $totalTickets }}</h1>
                         </div>
                         <div class="bg-label-primary rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-primary"></i>
@@ -80,7 +115,6 @@
             </div>
         </div>
 
-        <!-- Manager Role -->
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -89,7 +123,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-warning">1100</h1>
+                            <h1 class="mb-0 text-warning">{{ $pendingTickets }}</h1>
                         </div>
                         <div class="bg-label-warning rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-warning"></i>
@@ -99,16 +133,15 @@
             </div>
         </div>
 
-        <!-- Users Role -->
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Completed 5 tickets</p>
+                        <p class="fw-normal mb-0">Completed tickets</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-success">1100</h1>
+                            <h1 class="mb-0 text-success">{{ $completedTickets }}</h1>
                         </div>
                         <div class="bg-label-success rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-success"></i>
@@ -118,77 +151,94 @@
             </div>
         </div>
 
-        <!-- Users Role -->
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card h-100">
                 <div class="card-body d-flex align-items-center justify-content-center">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Create a new ticket</p>
-                    </div>
-                    {{-- <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h1 class="mb-0 text-success">1100</h1>
-                        </div>
-                        <div class="bg-label-success rounded-1 px-1">
-                            <i class="ti ti-location-plus text-primary fs-1"></i>
-                        </div>
-                    </div> --}}
+                    <button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+                        <i class="fa-solid fa-plus me-2"></i>Create New Ticket
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    @include('customer.support.listing')
-
-
-    <!-- Modal -->
-    <div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body p-5 position-relative">
-                    <button type="button" class="p-0 border-0 bg-transparent position-absolute"
-                        style="top: 20px; right: 20px" data-bs-dismiss="modal" aria-label="Close"><i
-                            class="fa-solid fa-xmark"></i></button>
-
-                    <div class="chat-container overflow-y-auto" style="max-height: 70vh;">
-                        <h3>Support Chat</h3>
-                        <div class="chat-box" id="chatBox">
-                            <div>
-                                <div class="message user-message">Hi, I'm having an issue with my account.</div>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-end">
-                                <div class="message support-message">Hello! Can you please describe the issue?</div>
-                            </div>
-                        </div>
-                        <div class="input-container position-sticky bottom-0"
-                            style="background-color: var(--secondary-color)">
-                            <input type="text" id="messageInput" placeholder="Type a message...">
-
-                            <!-- Hidden File Input -->
-                            <input type="file" id="fileInput" style="display: none;">
-
-                            <!-- File Upload Icon -->
-                            <label for="fileInput" class="file-icon">
-                                <i class="fa-solid fa-paperclip"></i>
-                            </label>
-
-                            <button onclick="sendMessage()" class="m-btn py-2 px-4 rounded-2 border-0">Send</button>
-                        </div>
-
-                        <style>
-                            .file-icon {
-                                cursor: pointer;
-                                font-size: 18px;
-                                margin: 0 10px;
-                            }
-                        </style>
-
-                    </div>
-                </div>
-            </div>
+    <div class="card p-3">
+        <div class="table-responsive">
+            <table id="ticketsTable" class="display w-100">
+                <thead>
+                    <tr>
+                        <th>Ticket #</th>
+                        <th>Subject</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            </table>
         </div>
     </div>
 </section>
+
+<!-- Create Ticket Modal -->
+<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTicketModalLabel">Create New Support Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTicketForm">
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="technical">Technical Issue</option>
+                            <option value="billing">Billing Issue</option>
+                            <option value="account">Account Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="">Select Priority</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-block">Attachments</label>
+                        <label for="attachments" class="file-upload-label">
+                            <i class="fas fa-paperclip me-2"></i>Add Attachments
+                        </label>
+                        <input type="file" id="attachments" name="attachments[]" multiple style="display: none;">
+                        <div class="ticket-attachments" id="attachmentPreviews"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitTicket">Create Ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -231,5 +281,95 @@
             fileInput.value = "";
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+$(document).ready(function() {
+    // Initialize DataTable
+    const table = $('#ticketsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: "{{ route('customer.support.tickets') }}",
+        columns: [
+            { data: 'ticket_number', name: 'ticket_number' },
+            { data: 'subject', name: 'subject' },
+            { data: 'category', name: 'category' },
+            { data: 'priority', name: 'priority' },
+            { data: 'status', name: 'status' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'action', name: 'action', orderable: false, searchable: false }
+        ]
+    });
+
+    // Handle file input change
+    $('#attachments').on('change', function(e) {
+        const files = Array.from(e.target.files);
+        const previewContainer = $('#attachmentPreviews');
+        previewContainer.empty();
+
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = `
+                    <div class="attachment-preview">
+                        <img src="${e.target.result}" alt="attachment">
+                        <button type="button" class="remove-attachment" data-index="${index}">×</button>
+                    </div>`;
+                previewContainer.append(preview);
+            }
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // Handle attachment removal
+    $(document).on('click', '.remove-attachment', function() {
+        const index = $(this).data('index');
+        const dt = new DataTransfer();
+        const input = document.getElementById('attachments');
+        const { files } = input;
+        
+        for (let i = 0; i < files.length; i++) {
+            if (i !== index) dt.items.add(files[i]);
+        }
+        
+        input.files = dt.files;
+        $(this).closest('.attachment-preview').remove();
+    });
+
+    // Handle ticket submission
+    $('#submitTicket').click(function() {
+        const form = $('#createTicketForm')[0];
+        const formData = new FormData(form);
+
+        $.ajax({
+            url: "{{ route('customer.support.tickets.store') }}",
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    $('#createTicketModal').modal('hide');
+                    table.ajax.reload();
+                    form.reset();
+                    $('#attachmentPreviews').empty();
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    Object.keys(errors).forEach(key => {
+                        toastr.error(errors[key][0]);
+                    });
+                } else {
+                    toastr.error('An error occurred while creating the ticket');
+                }
+            }
+        });
+    });
+});
+
+function viewTicket(id) {
+    window.location.href = `/customer/support/tickets/${id}`;
+}
 </script>
 @endpush

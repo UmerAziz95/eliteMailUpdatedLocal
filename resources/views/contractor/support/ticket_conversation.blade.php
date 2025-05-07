@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('contractor.layouts.app')
 
 @section('title', 'Ticket Details')
 
@@ -70,20 +70,16 @@
         object-fit: cover;
     }
 
-    .remove-attachment {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: rgba(0, 0, 0, 0.5);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .reply-box {
+        background: var(--dark);
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    .attachment-icon {
         cursor: pointer;
+        color: var(--second-primary);
     }
 
     .internal-note {
@@ -96,9 +92,10 @@
 @endpush
 
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <section class="py-3">
     <div class="d-flex align-items-center mb-4">
-        <a href="{{ route('admin.support') }}" class="btn btn-sm btn-secondary me-3">
+        <a href="{{ route('contractor.support') }}" class="btn btn-sm btn-secondary me-3">
             <i class="fas fa-arrow-left"></i> Back to Tickets
         </a>
         <h4 class="mb-0">Ticket #{{ $ticket->ticket_number }}</h4>
@@ -119,52 +116,53 @@
                         </div>
                     </div>
 
-                    <div id="chatContainer" class="chat-container">
-                        <!-- Initial ticket message -->
+                    <div class="chat-container" id="chatContainer">
+                        <!-- Original Ticket Message -->
                         <div class="message-bubble received">
                             <div class="message-content">
-                                {{ $ticket->description }}
+                                <p>{{ $ticket->description }}</p>
+                                @if($ticket->attachments)
+                                    <div class="attachments-area">
+                                        @foreach($ticket->attachments as $attachment)
+                                            <div class="attachment-preview">
+                                                <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                             <div class="message-meta">
                                 {{ $ticket->user->name }} - {{ $ticket->created_at->format('M d, Y H:i') }}
                             </div>
-                            @if($ticket->attachments && count($ticket->attachments) > 0)
-                            <div class="attachments-area">
-                                @foreach($ticket->attachments as $attachment)
-                                <div class="attachment-preview">
-                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
-                                    <a href="{{ Storage::url($attachment) }}" target="_blank" class="btn btn-sm btn-primary mt-1">View</a>
-                                </div>
-                                @endforeach
-                            </div>
-                            @endif
                         </div>
 
-                        <!-- Ticket replies -->
+                        <!-- Replies -->
                         @foreach($ticket->replies as $reply)
-                        <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
-                            <div class="message-content">
-                                {{ $reply->message }}
-                                @if($reply->is_internal)
-                                <div class="internal-note">
-                                    <i class="fas fa-eye-slash"></i> Internal Note
+                            <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
+                                <div class="message-content">
+                                    @if($reply->is_internal)
+                                        <div class="internal-note">
+                                            <strong>Internal Note</strong>
+                                            <p>{{ $reply->message }}</p>
+                                        </div>
+                                    @else
+                                        <p>{{ $reply->message }}</p>
+                                    @endif
+
+                                    @if($reply->attachments)
+                                        <div class="attachments-area">
+                                            @foreach($reply->attachments as $attachment)
+                                                <div class="attachment-preview">
+                                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
-                                @endif
-                            </div>
-                            <div class="message-meta">
-                                {{ $reply->user->name }} - {{ $reply->created_at->format('M d, Y H:i') }}
-                            </div>
-                            @if($reply->attachments && count($reply->attachments) > 0)
-                            <div class="attachments-area">
-                                @foreach($reply->attachments as $attachment)
-                                <div class="attachment-preview">
-                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
-                                    <a href="{{ Storage::url($attachment) }}" target="_blank" class="btn btn-sm btn-primary mt-1">View</a>
+                                <div class="message-meta">
+                                    {{ $reply->user->name }} - {{ $reply->created_at->format('M d, Y H:i') }}
                                 </div>
-                                @endforeach
                             </div>
-                            @endif
-                        </div>
                         @endforeach
                     </div>
 
@@ -244,7 +242,7 @@ $(document).ready(function() {
         const status = $(this).val();
         
         $.ajax({
-            url: "{{ route('admin.support.tickets.status', $ticket->id) }}",
+            url: "{{ route('contractor.support.tickets.status', $ticket->id) }}",
             method: 'PATCH',
             data: {
                 status: status,
@@ -302,21 +300,32 @@ $(document).ready(function() {
     $('#replyForm').on('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
-        formData.append('_token', '{{ csrf_token() }}');
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
         $.ajax({
-            url: "{{ route('admin.support.tickets.reply', $ticket->id) }}",
+            url: "{{ route('contractor.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
                 if (response.success) {
+                    toastr.success('Reply sent successfully');
                     location.reload();
                 }
             },
-            error: function() {
-                toastr.error('Failed to send reply');
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    Object.keys(errors).forEach(key => {
+                        toastr.error(errors[key][0]);
+                    });
+                } else {
+                    toastr.error('An error occurred while sending your reply');
+                }
             }
         });
     });

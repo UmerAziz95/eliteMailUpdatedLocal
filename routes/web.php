@@ -146,6 +146,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         //profile
         Route::post('profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
 
+        // Support Ticket Routes
+        Route::get('/support', [App\Http\Controllers\Admin\SupportTicketController::class, 'index'])->name('support');
+        Route::get('/support/tickets', [App\Http\Controllers\Admin\SupportTicketController::class, 'getTickets'])->name('support.tickets');
+        Route::get('/support/tickets/{id}', [App\Http\Controllers\Admin\SupportTicketController::class, 'show'])->name('support.tickets.show');
+        Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Admin\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
+        Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Admin\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
     
     }); 
 
@@ -213,7 +219,11 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
     //support 
-    Route::get('/support', [CustomerSupportController::class, 'index'])->name('support');
+    Route::get('/support', [App\Http\Controllers\Customer\SupportTicketController::class, 'index'])->name('support');
+    Route::get('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'getTickets'])->name('support.tickets');
+    Route::post('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'store'])->name('support.tickets.store');
+    Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
+    Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
 });
 
 // Info: Contractor Access
@@ -257,6 +267,12 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/emails', [ContractorOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [ContractorOrderEmailController::class, 'delete']);
     
+    // Support ticket routes
+    Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
+    Route::get('/support/tickets', [App\Http\Controllers\Contractor\SupportTicketController::class, 'getTickets'])->name('support.tickets');
+    Route::get('/support/tickets/{id}', [App\Http\Controllers\Contractor\SupportTicketController::class, 'show'])->name('support.tickets.show');
+    Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Contractor\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
+    Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Contractor\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
 });
 
 Route::get('/forget_password', function () {

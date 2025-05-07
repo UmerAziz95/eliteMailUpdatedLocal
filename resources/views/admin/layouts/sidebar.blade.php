@@ -206,7 +206,7 @@
         <!-- Support -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('support') ? 'active' : '' }}"
-                href="{{ url('support') }}">
+                href="{{ url('admin/support') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
                     <div class="text">Support</div>

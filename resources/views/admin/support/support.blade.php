@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Roles & Permissions')
+@section('title', 'Support Tickets')
 
 @push('styles')
 <style>
@@ -48,29 +48,27 @@
         flex: 1;
         padding: 8px;
     }
+
+    .unassigned-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.5rem;
+        margin-left: 1rem;
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3">
-    <div>
-        <h5>Roles List</h5>
-        <p>A role provides access to predefined menus and features so that an administrator can have access based on
-            their assigned role.</p>
-    </div>
-
-    <div class="row gy-4">
-        <!-- Administrator Role -->
-        <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="row gy-4 mb-4">
+        <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total tickets</p>
-
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-primary">1100</h1>
+                            <h1 class="mb-0 text-primary">{{ $totalTickets }}</h1>
                         </div>
                         <div class="bg-label-primary rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-primary"></i>
@@ -80,8 +78,7 @@
             </div>
         </div>
 
-        <!-- Manager Role -->
-        <div class="col-xl-4 col-lg-6 col-md-6">
+        <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -89,7 +86,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-warning">1100</h1>
+                            <h1 class="mb-0 text-warning">{{ $pendingTickets }}</h1>
                         </div>
                         <div class="bg-label-warning rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-warning"></i>
@@ -99,16 +96,33 @@
             </div>
         </div>
 
-        <!-- Users Role -->
-        <div class="col-xl-4 col-lg-6 col-md-6">
+        <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Completed 5 tickets</p>
+                        <p class="fw-normal mb-0">In Progress</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-success">1100</h1>
+                            <h1 class="mb-0 text-info">{{ $inProgressTickets }}</h1>
+                        </div>
+                        <div class="bg-label-info rounded-1 px-1">
+                            <i class="ti ti-ticket fs-2 text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="fw-normal mb-0">Completed</p>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="role-heading">
+                            <h1 class="mb-0 text-success">{{ $completedTickets }}</h1>
                         </div>
                         <div class="bg-label-success rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-success"></i>
@@ -119,7 +133,40 @@
         </div>
     </div>
 
-    @include('modules.support.listing')
+    <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="card-title mb-0">Support Tickets</h5>
+            </div>
+            <div>
+                <select id="statusFilter" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="closed">Closed</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="ticketsTable" class="display w-100">
+                <thead>
+                    <tr>
+                        <th>Ticket #</th>
+                        <th>Customer</th>
+                        <th>Subject</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <!-- @include('modules.support.listing') -->
 
 
     <!-- Modal -->
@@ -212,5 +259,64 @@
             fileInput.value = "";
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+$(document).ready(function() {
+    const table = $('#ticketsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{{ route('admin.support.tickets') }}",
+            data: function(d) {
+                d.status = $('#statusFilter').val();
+                return d;
+            }
+        },
+        columns: [
+            { data: 'ticket_number', name: 'ticket_number' },
+            { data: 'user.name', name: 'user.name' },
+            { data: 'subject', name: 'subject' },
+            { data: 'category', name: 'category' },
+            { data: 'priority', name: 'priority' },
+            { data: 'status', name: 'status' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'action', name: 'action', orderable: false, searchable: false }
+        ],
+        order: [[6, 'desc']]
+    });
+
+    // Handle status filter change
+    $('#statusFilter').on('change', function() {
+        table.ajax.reload();
+    });
+
+    // Handle status update
+    $(document).on('click', '.updateStatus', function(e) {
+        e.preventDefault();
+        const ticketId = $(this).data('id');
+        const status = $(this).data('status');
+        
+        $.ajax({
+            url: `/admin/support/tickets/${ticketId}/status`,
+            method: 'PATCH',
+            data: {
+                status: status,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success('Ticket status updated successfully');
+                    table.ajax.reload();
+                }
+            },
+            error: function() {
+                toastr.error('Failed to update ticket status');
+            }
+        });
+    });
+});
+
+function viewTicket(id) {
+    window.location.href = `/admin/support/tickets/${id}`;
+}
 </script>
 @endpush

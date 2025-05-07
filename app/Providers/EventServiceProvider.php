@@ -21,6 +21,15 @@ class EventServiceProvider extends ServiceProvider
     ];
 
     /**
+     * The observer mappings for the application.
+     *
+     * @var array<class-string, array<int, class-string>>
+     */
+    protected $observers = [
+        \App\Models\SupportTicket::class => [\App\Observers\SupportTicketObserver::class],
+    ];
+
+    /**
      * Register any events for your application.
      */
     public function boot(): void
