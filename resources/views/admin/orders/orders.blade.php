@@ -272,32 +272,49 @@
             return null;
         }
         console.log('Found table:', $table);
-        
+
         try {
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: {
-                    details: {
-                        display: $.fn.dataTable.Responsive.display.modal({
-                            header: function(row) {
-                                return 'Order Details';
-                            }
-                        }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                    }
-                },
+                responsive: true,
                 autoWidth: false,
-                columnDefs: [
-                    { width: '10%', targets: 0 }, // ID
-                    { width: '15%', targets: 1 }, // Date
-                    ...(planId ? [] : [{ width: '15%', targets: 2 }]), // Plan (only for All Orders)
-                    { width: '20%', targets: planId ? 2 : 3 }, // Email
-                    { width: '15%', targets: planId ? 3 : 4 }, // Domain URL
-                    { width: '15%', targets: planId ? 4 : 5 }, // Status
-                    { width: '15%', targets: planId ? 4 : 5 }, // Status
-                    { width: '15%', targets: planId ? 4 : 5 }, // Status
-                    { width: '10%', targets: planId ? 5 : 6 }  // Actions
+                columnDefs: [{
+                        width: '10%',
+                        targets: 0
+                    }, // ID 
+                    {
+                        width: '15%',
+                        targets: 1
+                    }, // Date
+                    {
+                        width: '15%',
+                        targets: 2
+                    }, // Name
+                    {
+                        width: '15%',
+                        targets: 3
+                    }, // Email
+                    ...(planId ? [] : [{
+                        width: '15%',
+                        targets: 4
+                    }]), // Plan (only for All Orders) 
+                    {
+                        width: '20%',
+                        targets: planId ? 4 : 5
+                    }, // Domain URL
+                    {
+                        width: '15%',
+                        targets: planId ? 5 : 6
+                    }, // Total Inboxes 
+                    {
+                        width: '15%',
+                        targets: planId ? 6 : 7
+                    }, // Status
+                    {
+                        width: '10%',
+                        targets: planId ? 7 : 8
+                    } // Actions
                 ],
                 ajax: {
                     url: "{{ route('admin.orders.data') }}",
@@ -310,26 +327,35 @@
                         d.draw = d.draw || 1;
                         d.length = d.length || 10;
                         d.start = d.start || 0;
-                        d.search = d.search || { value: '', regex: false };
+                        d.search = d.search || {
+                            value: '',
+                            regex: false
+                        };
                         d.plan_id = planId;
 
-                        // Debug request parameters
-                        console.log('Request parameters:', {
-                            draw: d.draw,
-                            start: d.start,
-                            length: d.length,
-                            search: d.search,
-                            plan_id: d.plan_id,
-                            columns: d.columns,
-                            order: d.order
-                        });
+                        // Add filter parameters
+                        d.orderId = $('#orderIdFilter').val();
+                        d.name = $('#nameFilter').val();
+                        d.status = $('#statusFilter').val();
+                        d.email = $('#emailFilter').val();
+                        d.domain = $('#domainFilter').val();
+                        d.totalInboxes = $('#totalInboxesFilter').val();
+                        d.startDate = $('#startDate').val();
+                        d.endDate = $('#endDate').val();
 
+                        console.log('DataTables request parameters:', d);
                         return d;
                     },
                     dataSrc: function(json) {
+                        console.log('Server response:', json);
                         return json.data;
                     },
-                    error: function (xhr, error, thrown) {    
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTables error:', error);
+                        console.error('Server response:', xhr.responseText);
+                        console.error('Status:', xhr.status);
+                        console.error('Full XHR:', xhr);
+
                         if (xhr.status === 401) {
                             window.location.href = "{{ route('login') }}";
                         } else if (xhr.status === 403) {
@@ -339,33 +365,61 @@
                         }
                     }
                 },
-                columns: [
-                    { data: 'id', name: 'orders.id' },
-                    { data: 'created_at', name: 'orders.created_at' },
-                    ...(planId ? [] : [{ data: 'plan_name', name: 'plans.name' }]),
-                    { data: 'email', name: 'email' },
-                    { data: 'name', name: 'name' },
-                    { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
-                    { data: 'total_inboxes', name: 'total_inboxes' },
-                    { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                columns: [{
+                        data: 'id',
+                        name: 'orders.id'
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'orders.created_at'
+                    },
+                    {
+                        data: 'name',
+                        name: 'users.name'
+                    },
+                    {
+                        data: 'email',
+                        name: 'users.email'
+                    },
+                    ...(planId ? [] : [{
+                        data: 'plan_name',
+                        name: 'plans.name'
+                    }]),
+                    {
+                        data: 'domain_forwarding_url',
+                        name: 'domain_forwarding_url'
+                    },
+                    {
+                        data: 'total_inboxes',
+                        name: 'total_inboxes'
+                    },
+                    {
+                        data: 'status',
+                        name: 'orders.status'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
                 ],
-                order: [[1, 'desc']],
+                order: [
+                    [1, 'desc']
+                ],
                 drawCallback: function(settings) {
                     console.log('Table draw complete. Response:', settings.json);
                     if (settings.json && settings.json.error) {
                         toastr.error(settings.json.message || 'Error loading data');
                     }
                     $('[data-bs-toggle="tooltip"]').tooltip();
-                    
-                    // Adjust columns after draw
+
+                    // Only adjust columns
                     this.api().columns.adjust();
-                    this.api().responsive.recalc();
                 },
                 initComplete: function(settings, json) {
                     console.log('Table initialization complete');
                     this.api().columns.adjust();
-                    this.api().responsive.recalc();
                 }
             });
 
@@ -387,13 +441,14 @@
         } catch (error) {
             console.error('Error initializing DataTable:', error);
             toastr.error('Error initializing table. Please refresh the page.');
+            return null;
         }
     }
 
     $(document).ready(function() {
         try {
             console.log('Document ready, initializing tables');
-            
+
             // Initialize DataTables object to store all table instances
             window.orderTables = {};
 
@@ -406,31 +461,62 @@
             @endforeach
 
             // Handle tab changes
-            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
                 const tabId = $(e.target).attr('id');
                 console.log('Tab changed to:', tabId);
-                
+
+                // Clear DataTables events before reapplying
+                Object.values(window.orderTables).forEach(function(table) {
+                    if (table) {
+                        table.off('preXhr.dt');
+                    }
+                });
+
                 // Force recalculation of column widths for visible tables
                 setTimeout(function() {
                     Object.values(window.orderTables).forEach(function(table) {
-                        if ($(table.table().node()).is(':visible')) {
-                            table.columns.adjust();
-                            table.responsive.recalc();
-                            console.log('Adjusting columns for table:', table.table().node().id);
+                        if (table && $(table.table().node()).is(':visible')) {
+                            try {
+                                // Add filter parameters before redraw
+                                table.on('preXhr.dt', function(e, settings, data) {
+                                    data.orderId = $('#orderIdFilter').val();
+                                    data.name = $('#nameFilter').val();
+                                    data.status = $('#statusFilter').val();
+                                    data.email = $('#emailFilter').val();
+                                    data.domain = $('#domainFilter').val();
+                                    data.totalInboxes = $('#totalInboxesFilter').val();
+                                    data.startDate = $('#startDate').val();
+                                    data.endDate = $('#endDate').val();
+                                });
+
+                                table.columns.adjust();
+                                if (table.responsive && typeof table.responsive.recalc === 'function') {
+                                    table.responsive.recalc();
+                                }
+                                table.draw();
+                            } catch (error) {
+                                console.error('Error adjusting table:', error);
+                            }
                         }
                     });
-                }, 10);
+                }, 100); // Increased timeout to ensure DOM is ready
             });
 
             // Initial column adjustment for the active tab
             setTimeout(function() {
-                const activeTable = $('.tab-pane.active .table').DataTable();
-                if (activeTable) {
-                    activeTable.columns.adjust();
-                    activeTable.responsive.recalc();
-                    console.log('Initial column adjustment for active table');
+                try {
+                    const activeTable = $('.tab-pane.active .table').DataTable();
+                    if (activeTable) {
+                        activeTable.columns.adjust();
+                        if (activeTable.responsive && typeof activeTable.responsive.recalc === 'function') {
+                            activeTable.responsive.recalc();
+                        }
+                        console.log('Initial column adjustment for active table completed');
+                    }
+                } catch (error) {
+                    console.error('Error in initial column adjustment:', error);
                 }
-            }, 10);
+            }, 100);
 
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {
@@ -441,6 +527,46 @@
                     toastr.error('You do not have permission to perform this action');
                 }
             });
+
+            // Filter functionality
+            function applyFilters() {
+                // Clear previous event handlers
+                Object.values(window.orderTables).forEach(function(table) {
+                    table.off('preXhr.dt');
+                });
+
+                Object.values(window.orderTables).forEach(function(table) {
+                    if ($(table.table().node()).is(':visible')) {
+                        // Add filter parameters
+                        table.on('preXhr.dt', function(e, settings, data) {
+                            data.orderId = $('#orderIdFilter').val();
+                            data.name = $('#nameFilter').val();
+                            data.status = $('#statusFilter').val();
+                            data.email = $('#emailFilter').val();
+                            data.domain = $('#domainFilter').val();
+                            data.totalInboxes = $('#totalInboxesFilter').val();
+                            data.startDate = $('#startDate').val();
+                            data.endDate = $('#endDate').val();
+                        });
+
+                        table.draw();
+                    }
+                });
+            }
+
+            // Apply filters button click handler
+            $('#applyFilters').on('click', function() {
+                applyFilters();
+            });
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#orderIdFilter, #nameFilter, #emailFilter, #domainFilter').val('');
+                $('#statusFilter').val('');
+                $('#startDate, #endDate').val('');
+                applyFilters();
+            });
+
         } catch (error) {
             console.error('Error in document ready:', error);
         }
