@@ -270,7 +270,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // Support ticket routes
     Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Contractor\SupportTicketController::class, 'getTickets'])->name('support.tickets');
-    Route::get('/support/tickets/{id}', [App\Http\Controllers\Contractor\SupportTicketController::class, 'show'])->name('support.tickets.show');
+    // Route::get('/support/tickets/{id}', [App\Http\Controllers\Contractor\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Contractor\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Contractor\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
 });

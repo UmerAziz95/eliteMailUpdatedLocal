@@ -277,6 +277,7 @@
 
         $(document).ready(function() {
             var table = $('#ticketsTable').DataTable({
+                responsive:true,
                 processing: true,
                 serverSide: true,
                 ajax: {

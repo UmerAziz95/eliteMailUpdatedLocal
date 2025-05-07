@@ -158,6 +158,37 @@
         overflow: hidden;
         white-space: nowrap;
     }
+
+    /* Quill editor custom styles */
+    .ql-editor {
+        min-height: 120px;
+        color: var(--light-color);
+    }
+    
+    .ql-toolbar.ql-snow {
+        border-color: var(--input-border);
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+    
+    .ql-container.ql-snow {
+        border-color: var(--input-border);
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        background: transparent;
+    }
+    
+    .ql-snow .ql-stroke {
+        stroke: var(--light-color);
+    }
+    
+    .ql-snow .ql-fill {
+        fill: var(--light-color);
+    }
+    
+    .ql-snow .ql-picker {
+        color: var(--light-color);
+    }
 </style>
 @endpush
 
@@ -286,7 +317,7 @@
                     
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        <div id="description-editor"></div>
                     </div>
                     
                     <div class="mb-3">
@@ -420,10 +451,26 @@ $(document).ready(function() {
         $(this).closest('.attachment-preview').remove();
     });
 
+    // Initialize Quill editor
+    const quill = new Quill('#description-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        placeholder: 'Type your description here...'
+    });
+
     // Handle ticket submission
     $('#submitTicket').click(function() {
         const form = $('#createTicketForm')[0];
         const formData = new FormData(form);
+        // Add Quill editor content to form data
+        formData.append('description', quill.root.innerHTML);
 
         $.ajax({
             url: "{{ route('customer.support.tickets.store') }}",
@@ -437,6 +484,7 @@ $(document).ready(function() {
                     $('#createTicketModal').modal('hide');
                     table.ajax.reload();
                     form.reset();
+                    quill.root.innerHTML = ''; // Clear Quill editor
                     $('#attachmentPreviews').empty();
                 }
             },

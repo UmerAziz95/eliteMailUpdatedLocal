@@ -117,6 +117,7 @@
         white-space: nowrap;
     }
 </style>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 @endpush
 
 @section('content')
@@ -146,14 +147,15 @@
                     <div class="reply-box mb-4">
                         <form id="replyForm">
                             <div class="mb-3">
-                                <div class="form-check mb-3" style="display: none;">
+                                <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="isInternal" name="is_internal">
                                     <label class="form-check-label" for="isInternal">
                                         Internal Note (only visible to staff)
                                     </label>
                                 </div>
                                 <label for="message" class="form-label">Your Reply</label>
-                                <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                                <div id="message" style="height: 200px;"></div>
+                                <input type="hidden" name="message" id="messageContent">
                             </div>
                             <div class="mb-3">
                                 <label for="attachments" class="attachment-icon">
@@ -290,6 +292,21 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script>
+const quill = new Quill('#message', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ]
+    },
+    placeholder: 'Type your message here...'
+});
+</script>
 <script>
 $(document).ready(function() {
     // Handle status changes
@@ -375,6 +392,7 @@ $(document).ready(function() {
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('_token', '{{ csrf_token() }}');
+        formData.append('message', quill.root.innerHTML);
 
         $.ajax({
             url: "{{ route('admin.support.tickets.reply', $ticket->id) }}",
@@ -385,7 +403,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Clear form
-                    $('#message').val('');
+                    quill.root.innerHTML = '';
                     $('#attachments').val('');
                     $('#attachmentPreviews').empty();
                     $('#isInternal').prop('checked', false);
