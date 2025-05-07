@@ -35,7 +35,7 @@
     }
 
     .received .message-content {
-        background-color: #f0f0f0;
+        background-color: #64738c;
         color: #333;
     }
 

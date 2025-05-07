@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Notification;
 use App\Services\ActivityLogService;
+use Illuminate\Support\Facades\Mail;
 
 class SupportTicketController extends Controller
 {
@@ -52,7 +53,8 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'message' => 'required|string',
             'attachments.*' => 'nullable|file|max:10240',
-            'is_internal' => 'boolean'
+            'is_internal' => 'nullable|boolean',
+            'update_status' => 'nullable|in:open,in_progress,closed'
         ]);
 
         $ticket = SupportTicket::where(function($query) {
@@ -85,58 +87,36 @@ class SupportTicketController extends Controller
         if ($request->has('update_status') && $request->update_status) {
             $ticket->update(['status' => $request->update_status]);
         }
-        // Create a new activity log using the custom log service
-        // ActivityLogService::log(
-        //     'customer-support-ticket-reply', 
-        //     'Replied to support ticket: ' . $ticket->id, 
-        //     $reply, 
-        //     [
-        //         'ticket_id' => $ticket->id,
-        //         'reply_id' => $reply->id,
-        //         'message' => $reply->message,
-        //         'attachments' => $reply->attachments,
-        //         'created_at' => now()->toDateTimeString(),
-        //         'ip_address' => request()->ip()
-        //     ]
-        // );
-        ActivityLogService::log(
-            'contractor-support-ticket-reply', 
-            'Replied to support ticket: ' . $ticket->id, 
-            $reply, 
-            [
-                'ticket_id' => $ticket->id,
-                'reply_id' => $reply->id,
-                'message' => $reply->message,
-                'attachments' => $reply->attachments,
-                'created_at' => now()->toDateTimeString(),
-                'ip_address' => request()->ip()
-            ]
-        );
-        // Create notification for the customer after sending mail
-        // Notification::create([
-        //     'user_id' => $user->id,
-        //     'type' => 'subscription_created',
-        //     'title' => 'New Subscription Created',
-        //     'message' => "Your subscription #{$subscription->id} has been created successfully",
-        //     'data' => [
-        //         'subscription_id' => $subscription->id,
-        //         'amount' => ($invoice->amountPaid ?? 0) / 100
-        //     ]
-        // ]);
-        Notification::create([
-            'user_id' => $ticket->assigned_to,
-            'type' => 'support_ticket_reply',
-            'title' => 'New Reply on Ticket',
-            'message' => "You have a new reply on your support ticket #{$ticket->id}",
-            'data' => [
-                'ticket_id' => $ticket->id,
-                'reply_id' => $reply->id,
-                'message' => $reply->message,
-                'attachments' => $reply->attachments,
-                'created_at' => now()->toDateTimeString(),
-                'ip_address' => request()->ip()
-            ]
-        ]);
+
+        // If this is not an internal note, notify the customer
+        // if (!($validated['is_internal'] ?? false)) {
+            // Send email to customer
+            $ticket->user->email = "muhammad.farooq.raaj@gmail.com";
+            Mail::to($ticket->user->email)
+                ->queue(new \App\Mail\TicketReplyMail(
+                    $ticket,
+                    $reply,
+                    Auth::user(),  
+                    $ticket->user
+                ));
+
+            // Create notification for the customer
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'type' => 'support_ticket_reply',
+                'title' => 'New Reply on Ticket',
+                'message' => "You have a new reply on your support ticket #{$ticket->id}",
+                'data' => [
+                    'ticket_id' => $ticket->id,
+                    'reply_id' => $reply->id,
+                    'message' => $reply->message,
+                    'attachments' => $reply->attachments,
+                    'created_at' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            ]);
+        // }
+
         return response()->json([
             'success' => true,
             'message' => 'Reply added successfully',

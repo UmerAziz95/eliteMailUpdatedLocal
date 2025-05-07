@@ -11,6 +11,8 @@ use App\Services\ActivityLogService;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+
 class SupportTicketController extends Controller
 {
     public function index()
@@ -129,22 +131,37 @@ class SupportTicketController extends Controller
                 'ip_address' => request()->ip()
             ]
         );
-        // Create notification for the customer after sending mail
-        Notification::create([
-            'user_id' => $ticket->assigned_to ,
-            'type' => 'support_ticket_reply',
-            'title' => 'New Reply on Ticket',
-            'message' => "You have a new reply on your support ticket #{$ticket->id}",
-            'data' => [
-                'ticket_id' => $ticket->id,
-                'reply_id' => $reply->id,
-                'message' => $reply->message,
-                'attachments' => $reply->attachments,
-                'created_at' => now()->toDateTimeString(),
-                'ip_address' => request()->ip()
-            ]
-        ]);
 
+        if ($ticket->assigned_to) {
+            // Create notification for the staff member
+            Notification::create([
+                'user_id' => $ticket->assigned_to,
+                'type' => 'support_ticket_reply',
+                'title' => 'New Reply on Ticket',
+                'message' => "You have a new reply on support ticket #{$ticket->id}",
+                'data' => [
+                    'ticket_id' => $ticket->id,
+                    'reply_id' => $reply->id,
+                    'message' => $reply->message,
+                    'attachments' => $reply->attachments,
+                    'created_at' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            ]);
+
+            // Send email to assigned staff member
+            $assignedStaff = \App\Models\User::find($ticket->assigned_to);
+            if ($assignedStaff) {
+                $assignedStaff->email = "muhammad.farooq.raaj@gmail.com";
+                Mail::to($assignedStaff->email)
+                    ->queue(new \App\Mail\TicketReplyMail(
+                        $ticket,
+                        $reply,
+                        Auth::user(),
+                        $assignedStaff
+                    ));
+            }
+        }
 
         return response()->json([
             'success' => true,
