@@ -391,6 +391,7 @@
             { data: 'name', name: 'users.name' }, // name
             { data: 'email', name: 'users.email' }, // From addColumn() in controller
             { data: 'status', name: 'subscriptions.status' }, // Subscription status
+            { data: 'cancellation_at', name: 'cancellation_at' }, // Subscription status
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
         order: [[1, 'desc']],

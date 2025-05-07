@@ -7,6 +7,8 @@ use App\Models\OrderEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Order;
+use App\Services\ActivityLogService;
+use App\Models\Notification;
 
 class OrderEmailController extends Controller
 {
@@ -45,6 +47,7 @@ class OrderEmailController extends Controller
             if (!$user_id) {
                 return response()->json(['error' => 'User not found for the given order ID'], 404);
             }
+            
             // Create new emails
             $emails = collect($request->emails)->map(function ($emailData) use ($request, $user_id) {
                 return OrderEmail::create([
@@ -56,6 +59,43 @@ class OrderEmailController extends Controller
                     'profile_picture' => $emailData['profile_picture'] ?? null,
                 ]);
             });
+            $_temp = Order::where('id', $request->order_id)->first();
+
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $user_id, // customer
+                'type' => 'email_created',
+                'title' => 'New Email Accounts Created',
+                'message' => 'New email accounts have been created for your order #' . $request->order_id,
+                'data' => [
+                    'order_id' => $request->order_id,
+                    'email_count' => count($request->emails)
+                ]
+            ]);
+
+            // Create notification for contractor
+            Notification::create([
+                'user_id' => auth()->id(), // contractor
+                'type' => 'email_created',
+                'title' => 'Email Accounts Created',
+                'message' => 'You have created new email accounts for order #' . $request->order_id,
+                'data' => [
+                    'order_id' => $request->order_id,
+                    'email_count' => count($request->emails)
+                ]
+            ]);
+
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'contractor-order-email-create',
+                'Order email created : ' . $request->order_id,
+                $_temp,
+                [
+                    'order_id' => $request->order_id,
+                    'emails' => $emails,
+                    'created_by' => auth()->id()
+                ]
+            );
 
             return response()->json([
                 'success' => true,

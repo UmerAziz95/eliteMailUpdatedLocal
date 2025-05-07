@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             SendingPlatformSeeder::class,
             UsersTableSeeder::class,
             SidebarNavigationSeeder::class,
+            StatusesTableSeeder::class,
         ]);
     }
 }

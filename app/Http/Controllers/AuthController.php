@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-// use App\Mail\UserWelcomeMail;
+use App\Mail\UserWelcomeMail;
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -59,19 +59,25 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-
+    
         $remember = $request->has('remember');
-
+    
         if (Auth::attempt($credentials, $remember)) {
+            // Check if the authenticated user's account is inactive
+            if (Auth::user()->status == 0) {
+                Auth::logout(); // Immediately log them out
+                return back()->withErrors(['email' => 'Your account is inactive. Please contact support.']);
+            }
+    
             $request->session()->regenerate();
-            // Log the user ID and the requested path
             Log::info('User ' . Auth::user()->id . ' logged in at ' . now());
-            // Redirect based on role
+    
             return redirect()->intended($this->redirectTo(Auth::user()));
         }
-
+    
         return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
     }
+    
 
     // Determine redirection based on user role
     protected function redirectTo($user)
@@ -160,17 +166,11 @@ class AuthController extends Controller
         // dd($user);
         try {
             // Send welcome email
-            // ✅ Queue the welcome email
-            // Mail::to($user->email)->queue(new UserWelcomeMail($user));
-            // ✅ Delay until a specific date/time
-            // add 2 minutes to the current time
-            $sendDate = Carbon::now()->addMinutes(2);
-            // add 30 days to the current time
-            // $sendDate = Carbon::now()->addDays(30);
-            // Mail::to($user->email)->later(
-            //     $sendDate,
-            //     new UserWelcomeMail($user)
-            // );
+            // Queue the welcome email
+            Mail::to($user->email)->queue(new UserWelcomeMail($user));
+            // If you want to delay it, use this instead:
+            // $sendDate = Carbon::now()->addMinutes(2);
+            // Mail::to($user->email)->later($sendDate, new UserWelcomeMail($user));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email: ' . $e->getMessage());
         }

@@ -26,6 +26,12 @@ class Order extends Model
         'status_manage_by_admin',
         'reason'
     ];
+    
+    // status_manage_by_admin
+    public function setStatusManageByAdminAttribute($value)
+    {
+        $this->attributes['status_manage_by_admin'] = strtolower($value);
+    }
 
     public function user()
     {

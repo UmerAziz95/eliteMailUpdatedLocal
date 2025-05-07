@@ -17,8 +17,21 @@ use Carbon\Carbon;
 use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Log as ModelLog;
+use App\Models\Status;
 class OrderController extends Controller
 {
+    private $statuses;
+    private $paymentStatuses = [
+        "Pending" => "warning",
+        "Paid" => "success",
+        "Failed" => "danger",
+        "Refunded" => "secondary"
+    ];
+
+    public function __construct()
+    {
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
+    }
     public function index()
     {
 
@@ -54,13 +67,14 @@ class OrderController extends Controller
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
 
-          
+            $statuses = $this->statuses;
         return view('admin.orders.orders', compact(
             'plans', 
             'totalOrders', 
             'pendingOrders', 
             'completedOrders', 
             'inProgressOrders',
+            'statuses',
             'percentageChange'
         ));
     }
@@ -127,105 +141,222 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
+        // try {
+        //     $orders = Order::query()
+        //         ->with(['user', 'plan','reorderInfo'])
+        //         ->select('orders.*')
+        //         ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id');
+
+        //     if ($request->has('plan_id') && $request->plan_id != '') {
+        //         $orders->where('orders.plan_id', $request->plan_id);
+        //     }
+
+        //     return DataTables::of($orders)
+        //     ->addColumn('action', function ($order) {
+        //         $user = auth()->user();
+            
+        //         $viewButton = '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
+            
+        //         if ($user->hasPermissionTo('Mod')) {
+        //             // Show only the View button if user has 'Mod' permission
+        //             return '<div style="display: flex; gap: 6px;">' . $viewButton . '</div>';
+        //         }
+            
+        //         $markStatusButton = '<a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="' . $order->chargebee_subscription_id . '" data-status="' . $order->status_manage_by_admin . '" data-reason="' . $order->reason . '" >Mark Status</a>';
+            
+        //         return '
+        //             <div style="display: flex; gap: 6px;">
+        //                 ' . $viewButton . '
+        //                 ' . $markStatusButton . '
+        //             </div>
+        //         ';
+        //     })
+            
+        //         ->editColumn('created_at', function ($order) {
+        //             return $order->created_at ? $order->created_at->format('d-F-Y') : '';
+        //         })
+        //         ->editColumn('status_manage_by_admin', function ($order) {
+        //             return $order->status_manage_by_admin ? $order->status_manage_by_admin : '';
+        //         })
+        //         ->editColumn('total_inboxes', function ($order) {
+        //             return $order->reorderInfo->first()?->total_inboxes ?? '';
+        //         })               
+        //         ->rawColumns(['status']) // Important to render HTML
+                
+        //         ->addColumn('email', function ($order) {
+        //             return $order->user ? $order->user->email : 'N/A';
+        //         })
+        //         ->addColumn('name', function ($order) {
+        //             return $order->user ? $order->user->name : 'N/A';
+        //         })
+        //         ->addColumn('domain_forwarding_url', function ($order) {
+        //             return $order->user ? $order->user->domain_forwarding_url : 'N/A';
+        //         })
+        //         ->addColumn('plan_name', function ($order) {
+        //             return $order->plan ? $order->plan->name : 'N/A';
+        //         })
+        //         ->filterColumn('email', function($query, $keyword) {
+        //             $query->whereHas('user', function($q) use ($keyword) {
+        //                 $q->where('email', 'like', "%{$keyword}%");
+        //             });
+        //         })
+        //         ->filterColumn('domain_forwarding_url', function($query, $keyword) {
+        //             $query->whereHas('user', function($q) use ($keyword) {
+        //                 $q->where('domain_forwarding_url', 'like', "%{$keyword}%");
+        //             });
+        //         })
+        //         ->filterColumn('plan_name', function($query, $keyword) {
+        //             $query->whereHas('plan', function($q) use ($keyword) {
+        //                 $q->where('name', 'like', "%{$keyword}%");
+        //             });
+        //         })
+        //         ->filterColumn('total_inboxes', function($query, $keyword) {
+        //             $query->whereHas('reorderInfo', function($q) use ($keyword) {
+        //                 $q->where('total_inboxes', 'like', "%{$keyword}%");
+        //             });
+        //         })
+        //         ->orderColumn('email', function($query, $direction) {
+        //             $query->orderBy(
+        //                 User::select('email')
+        //                     ->whereColumn('users.id', 'orders.user_id')
+        //                     ->latest()
+        //                     ->take(1),
+        //                 $direction
+        //             );
+        //         })
+        //         ->orderColumn('domain_forwarding_url', function($query, $direction) {
+        //             $query->orderBy(
+        //                 User::select('domain_forwarding_url')
+        //                     ->whereColumn('users.id', 'orders.user_id')
+        //                     ->latest()
+        //                     ->take(1),
+        //                 $direction
+        //             );
+        //         })
+        //         ->orderColumn('plan_name', function($query, $direction) {
+        //             $query->orderBy(
+        //                 Plan::select('name')
+        //                     ->whereColumn('plans.id', 'orders.plan_id')
+        //                     ->latest()
+        //                     ->take(1),
+        //                 $direction
+        //             );
+        //         })
+        //         ->rawColumns(['action','status'])
+        //         ->make(true);
+        // } catch (Exception $e) {
+        //     Log::error('Error in getOrders', [
+        //         'error' => $e->getMessage(),
+        //         'trace' => $e->getTraceAsString()
+        //     ]);
+
+        //     return response()->json([
+        //         'error' => true,
+        //         'message' => 'Error loading orders: ' . $e->getMessage()
+        //     ], 500);
+        // }
+        
         try {
             $orders = Order::query()
-                ->with(['user', 'plan','reorderInfo'])
+                ->with(['user', 'plan', 'reorderInfo'])
                 ->select('orders.*')
-                ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id');
+                ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
+                ->leftJoin('users', 'orders.user_id', '=', 'users.id');
 
+            // Apply plan filter if provided
             if ($request->has('plan_id') && $request->plan_id != '') {
                 $orders->where('orders.plan_id', $request->plan_id);
             }
 
+            // Apply filters
+            if ($request->has('orderId') && $request->orderId != '') {
+                $orders->where('orders.id', 'like', "%{$request->orderId}%");
+            }
+
+            if ($request->has('status') && $request->status != '') {
+                $orders->where('orders.status_manage_by_admin', $request->status);
+            }
+
+            if ($request->has('email') && $request->email != '') {
+                $orders->where('users.email', 'like', "%{$request->email}%");
+            }
+
+            if ($request->has('name') && $request->name != '') {
+                $orders->where('users.name', 'like', "%{$request->name}%");
+            }
+
+            if ($request->has('domain') && $request->domain != '') {
+                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                    $query->where('forwarding_url', 'like', "%{$request->domain}%");
+                });
+            }
+
+            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                    $query->where('total_inboxes', $request->totalInboxes);
+                });
+            }
+
+            if ($request->has('startDate') && $request->startDate != '') {
+                $orders->whereDate('orders.created_at', '>=', $request->startDate);
+            }
+
+            if ($request->has('endDate') && $request->endDate != '') {
+                $orders->whereDate('orders.created_at', '<=', $request->endDate);
+            }
+
             return DataTables::of($orders)
-            ->addColumn('action', function ($order) {
-                $user = auth()->user();
-            
-                $viewButton = '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
-            
-                if ($user->hasPermissionTo('Mod')) {
-                    // Show only the View button if user has 'Mod' permission
-                    return '<div style="display: flex; gap: 6px;">' . $viewButton . '</div>';
-                }
-            
-                $markStatusButton = '<a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="' . $order->chargebee_subscription_id . '" data-status="' . $order->status_manage_by_admin . '" data-reason="' . $order->reason . '" >Mark Status</a>';
-            
-                return '
-                    <div style="display: flex; gap: 6px;">
-                        ' . $viewButton . '
-                        ' . $markStatusButton . '
-                    </div>
-                ';
-            })
-            
-                ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('d-F-Y') : '';
+                ->addColumn('action', function ($order) {
+                    $statuses = $this->statuses;
+                    $statusOptions = '';
+
+                    foreach ($statuses as $status => $color) {
+                        $statusOptions .= '<li>
+                            <a class="dropdown-item status-change" href="javascript:void(0)" data-order-id="' . $order->id . '" data-status="' . strtolower($status) . '">
+                                <span class="py-1 px-2 text-' . $color . ' border border-' . $color . ' rounded-2 bg-transparent">' . $status . '</span>
+                            </a>
+                        </li>';
+                    }
+
+                    return '<div class="dropdown">
+                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
+                                        <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
+                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
+                                </ul>
+                            </div>';
                 })
-                ->editColumn('total_inboxes', function ($order) {
-                    return $order->reorderInfo->first()?->total_inboxes ?? '';
-                })               
-                ->rawColumns(['status']) // Important to render HTML
-                
-                ->addColumn('email', function ($order) {
-                    return $order->user ? $order->user->email : 'N/A';
+                ->editColumn('created_at', function ($order) {
+                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
+                })
+                ->editColumn('status', function ($order) {
+                    $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                    $statusKey = $status;
+                    // dd($order->status_manage_by_admin, $statusKey);
+                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($status) . '</span>';
                 })
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
                 })
+                ->addColumn('email', function ($order) {
+                    return $order->user ? $order->user->email : 'N/A';
+                })
                 ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->user ? $order->user->domain_forwarding_url : 'N/A';
+                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->forwarding_url : 'N/A';
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
-                ->filterColumn('email', function($query, $keyword) {
-                    $query->whereHas('user', function($q) use ($keyword) {
-                        $q->where('email', 'like', "%{$keyword}%");
-                    });
+                ->addColumn('total_inboxes', function ($order) {
+                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
                 })
-                ->filterColumn('domain_forwarding_url', function($query, $keyword) {
-                    $query->whereHas('user', function($q) use ($keyword) {
-                        $q->where('domain_forwarding_url', 'like', "%{$keyword}%");
-                    });
-                })
-                ->filterColumn('plan_name', function($query, $keyword) {
-                    $query->whereHas('plan', function($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%");
-                    });
-                })
-                ->filterColumn('total_inboxes', function($query, $keyword) {
-                    $query->whereHas('reorderInfo', function($q) use ($keyword) {
-                        $q->where('total_inboxes', 'like', "%{$keyword}%");
-                    });
-                })
-                ->orderColumn('email', function($query, $direction) {
-                    $query->orderBy(
-                        User::select('email')
-                            ->whereColumn('users.id', 'orders.user_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->orderColumn('domain_forwarding_url', function($query, $direction) {
-                    $query->orderBy(
-                        User::select('domain_forwarding_url')
-                            ->whereColumn('users.id', 'orders.user_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->orderColumn('plan_name', function($query, $direction) {
-                    $query->orderBy(
-                        Plan::select('name')
-                            ->whereColumn('plans.id', 'orders.plan_id')
-                            ->latest()
-                            ->take(1),
-                        $direction
-                    );
-                })
-                ->rawColumns(['action','status'])
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [

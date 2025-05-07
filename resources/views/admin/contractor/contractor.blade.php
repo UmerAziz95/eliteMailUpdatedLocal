@@ -118,8 +118,8 @@
                 <div class="col-md-4">
                     <select id="status_filter" class="form-select">
                         <option value="">Select Status</option>
-                        <option value="1">active</option>
-                        <option value="0">inactive</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
                      
                     </select>
                 </div>

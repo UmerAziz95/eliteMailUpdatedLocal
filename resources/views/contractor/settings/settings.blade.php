@@ -75,6 +75,44 @@
         .timeline:not(.timeline-center) {
             padding-inline-start: .5rem;
         }
+
+        .cropper-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        #cropperModal .modal-content {
+            background-color: var(--secondary-color);
+            color: var(--extra-light);
+        }
+
+        .cropper-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cropper-controls button {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: var(--second-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-slider {
+            width: 150px;
+        }
     </style>
 @endpush
 
@@ -86,10 +124,18 @@
             <div class="card mb-4">
                 <div class="card-body pt-12">
                     <div class="user-avatar-section">
-                        <div class=" d-flex align-items-center flex-column">
-                            <img class="img-fluid rounded mb-4"
-                                src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png"
-                                height="120" width="120" alt="User avatar">
+                        <div class="d-flex align-items-center flex-column">
+                            <div class="position-relative">
+                                <img class="img-fluid rounded mb-4" id="profile-image"
+                                    src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                                    height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                <div class="position-absolute bottom-0 end-0">
+                                    <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
+                                        <i class="ti ti-camera"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                             <div class="user-info text-center">
                                 <h5>{{ Auth::user()->name }}</h5>
                                 <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
@@ -97,7 +143,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-around flex-wrap my-5 gap-0 gap-md-3 gap-lg-4">
+                    <!-- <div class="d-flex justify-content-around flex-wrap my-5 gap-0 gap-md-3 gap-lg-4">
                         <div class="d-flex align-items-center me-5 gap-4">
                             <div class="avatar">
                                 <div class="avatar-initial bg-label-primary rounded p-2">
@@ -120,7 +166,7 @@
                                 <span class="small opacity-50">Project Done</span>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
                     <h5 class="pb-4 border-bottom mb-4">Details</h5>
                     <div class="info-container">
@@ -163,177 +209,37 @@
                         <div class="d-flex justify-content-center gap-2">
                             <button class="m-btn rounded-2 py-2 px-4 border-0" data-bs-target="#edit"
                                 data-bs-toggle="modal">Edit</button>
-                            <a href="javascript:;"
-                                class="cancel-btn py-2 px-4 rounded-2 border-0 text-decoration-none opacity-75">Suspend</a>
+                            <!-- <a href="javascript:;"
+                                class="cancel-btn py-2 px-4 rounded-2 border-0 text-decoration-none opacity-75">Suspend</a> -->
                         </div>
                     </div>
                 </div>
             </div>
             <!-- /User Card -->
-
-            <!-- Plan Card -->
-            <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <span class="badge bg-label-primary">Standard</span>
-                        <div class="d-flex justify-content-center">
-                            <sub class="h5 pricing-currency mb-auto mt-1 theme-text">$</sub>
-                            <h1 class="mb-0 theme-text">99</h1>
-                            <sub class="h6 pricing-duration mt-auto mb-3 fw-normal">month</sub>
-                        </div>
-                    </div>
-                    <ul class="list-unstyled g-2 my-6">
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>10
-                                Users</span></li>
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>Up to 10
-                                GB storage</span></li>
-                        <li class="mb-2 d-flex align-items-center"><i
-                                class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i><span>Basic
-                                Support</span></li>
-                    </ul>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="h6 mb-0">Days</span>
-                        <span class="h6 mb-0">26 of 30 Days</span>
-                    </div>
-                    <div class="progress mb-1 bg-label-primary" style="height: 6px;">
-                        <div class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65"
-                            aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <small>4 days remaining</small>
-                    <div class="d-grid w-100 mt-6">
-                        <button class="m-btn border-0 py-2 px-4 rounded-2 mt-3" data-bs-target="#upgradePlanModal"
-                            data-bs-toggle="modal">Upgrade Plan</button>
-                    </div>
-                </div>
-            </div>
-            <!-- /Plan Card -->
         </div>
         <!--/ User Sidebar -->
 
         <div class="col-xl-8 col-lg-5">
             <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="account-tab" data-bs-toggle="tab" data-bs-target="#account-tab-pane"
-                        type="button" role="tab" aria-controls="account-tab-pane" aria-selected="true"><i
-                            class="fa-regular fa-user"></i>
-                        Account</button>
+                        <button class="nav-link active" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane"
+                            type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
+                                class="fa-regular fa-bell"></i> Notifications</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-tab-pane"
+                            type="button" role="tab" aria-controls="activity-tab-pane" aria-selected="false"><i
+                                class="fa-regular fa-bell"></i> Activity</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-tab-pane"
                         type="button" role="tab" aria-controls="security-tab-pane" aria-selected="false"><i
                             class="fa-solid fa-unlock"></i> Security</button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="plans-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
-                        type="button" role="tab" aria-controls="plans-tab-pane" aria-selected="false"><i
-                            class="fa-solid fa-file-invoice"></i> Billing & Plans</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane"
-                        type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
-                            class="fa-regular fa-bell"></i> Notifications</button>
-                </li>
+               
             </ul>
 
             <div class="tab-content mt-4" id="myTabContent">
-                <div class="tab-pane fade show active" id="account-tab-pane" role="tabpanel"
-                    aria-labelledby="account-tab" tabindex="0">
-                    <!-- table-->
-                    <div class="card p-3 mb-4">
-                        <div class="table-responsive">
-                            <table id="myTable" class="display">
-                                <thead>
-                                    <tr>
-                                        <th class="text-start">User ID</th>
-                                        <th>Name</th>
-                                        <th>Email Address</th>
-                                        <th>Purchase Date</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for ($i = 0; $i < 20; $i++)
-                                        <tr>
-                                            <td class="text-start">001</td>
-                                            <td>
-                                                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                                    style="border-radius: 50%" height="35" width="35"
-                                                    class="object-fit-cover" alt="">
-                                                John Doe
-                                            </td>
-                                            <td><i class="ti ti-mail text-success"></i> Johndoe123@gmail.com</td>
-                                            <td>4/4/2025</td>
-                                            <td><span class="active_status">Active</span></td>
-                                            <td>
-                                                <button class="bg-transparent p-0 border-0 mx-2"><i
-                                                        class="fa-regular fa-eye"></i></button>
-                                            </td>
-                                        </tr>
-                                    @endfor
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <!-- table-->
-
-                    <!-- Activity Timeline -->
-                    <div class="card p-2 mb-4">
-                        <div class="card-header border-0">
-                            <h5 class="card-action-title mb-0">
-                                <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline
-                            </h5>
-                        </div>
-                        <div class="card-body pt-3">
-                            <ul class="timeline mb-0 list-unstyled">
-                                <li class="timeline-item timeline-item-transparent">
-                                    <span class="timeline-point timeline-point-primary"></span>
-                                    <div class="timeline-event">
-                                        <div
-                                            class="timeline-header d-flex align-items-center justify-content-between mb-3">
-                                            <h6 class="mb-0">12 Invoices have been paid</h6>
-                                            <small class="">12 min ago</small>
-                                        </div>
-                                        <p class="mb-2">Invoices have been paid to the company</p>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <div class="badge bg-lighter rounded d-flex align-items-center">
-                                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets//img/icons/misc/pdf.png"
-                                                    alt="img" width="15" class="me-2">
-                                                <span class="mb-0">invoices.pdf</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="timeline-item timeline-item-transparent">
-                                    <span class="timeline-point timeline-point-success"></span>
-                                    <div class="timeline-event">
-                                        <div
-                                            class="timeline-header d-flex align-items-center justify-content-between mb-3">
-                                            <h6 class="mb-0">Client Meeting</h6>
-                                            <small class="">45 min ago</small>
-                                        </div>
-                                        <p class="mb-2">Project meeting with john @10:15am</p>
-                                        <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
-                                            <div class="d-flex flex-wrap align-items-center mb-50">
-                                                <div class="avatar avatar-sm me-2">
-                                                    <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png"
-                                                        width="30" alt="Avatar" class="rounded-circle">
-                                                </div>
-                                                <div>
-                                                    <p class="mb-0 small fw-semibold">Lester McCarthy (Client)</p>
-                                                    <small>CEO of Pixinvent</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <!-- Activity Timeline -->
-                </div>
 
 
                 <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
@@ -395,33 +301,7 @@
                         </div>
                     </div>
 
-                    <div class="card mb-4 p-3">
-                        <div class="card-header">
-                            <h5 class="mb-0">Two-steps verification</h5>
-                            <span class="card-subtitle mt-0">Keep your account secure with authentication step.</span>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="mb-1">SMS</h6>
-                            <div class="mb-4">
-                                <div class="d-flex w-100 action-icons">
-                                    <input id="defaultInput" class="form-control me-4" type="text"
-                                        placeholder="+1(968) 945-8832">
-                                    <a href="javascript:;" class="btn btn-icon btn-text-secondary waves-effect"
-                                        data-bs-target="#enableOTP" data-bs-toggle="modal"><i
-                                            class="icon-base ti tabler-edit icon-22px"></i></a>
-                                    <a href="javascript:;" class="btn btn-icon btn-text-secondary waves-effect"><i
-                                            class="icon-base ti tabler-trash icon-22px"></i></a>
-                                </div>
-                            </div>
-                            <p class="mb-0">
-                                Two-factor authentication adds an additional layer of security to your account by requiring
-                                more than just a password to log in.
-                                <a href="javascript:void(0);" class="text-primary">Learn more.</a>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="card p-3">
+                    <!-- <div class="card p-3">
                         <h5 class="card-header">Recent Devices</h5>
                         <div class="table-responsive table-border-bottom-0">
                             <table class="table">
@@ -473,229 +353,107 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
 
-
-                <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab"
-                    tabindex="0">
-                    <div class="card mb-4 p-3">
-                        <h5 class="card-header">Current Plan</h5>
-                        <div class="card-body">
-                            <div class="row row-gap-4">
-                                <div class="col-xl-6 order-1 order-xl-0">
-                                    <div class="mb-4">
-                                        <h6 class="mb-1">Your Current Plan is Basic</h6>
-                                        <p>A simple start for everyone</p>
-                                    </div>
-                                    <div class="mb-4">
-                                        <h6 class="mb-1">Active until Dec 09, 2021</h6>
-                                        <p>We will send you a notification upon Subscription expiration</p>
-                                    </div>
-                                    <div class="mb-xl-6">
-                                        <h6 class="mb-1"><span class="me-1">$199 Per Month</span> <span
-                                                class="badge bg-label-primary rounded-pill">Popular</span></h6>
-                                        <p class="mb-0">Standard plan for small to medium businesses</p>
-                                    </div>
-                                </div>
-                                <div class="col-xl-6 order-0 order-xl-0">
-                                    <div class="alert" style="background-color: rgba(255, 166, 0, 0.176); color: orange "
-                                        role="alert">
-                                        <h5 class="alert-heading mb-2">We need your attention!</h5>
-                                        <span>Your plan requires update</span>
-                                    </div>
-                                    <div class="plan-statistics">
-                                        <div class="d-flex justify-content-between">
-                                            <h6 class="mb-1">Days</h6>
-                                            <h6 class="mb-1">26 of 30 Days</h6>
-                                        </div>
-                                        <div class="progress mb-1 bg-label-primary" style="height: 10px;">
-                                            <div class="progress-bar w-75" role="progressbar" aria-valuenow="75"
-                                                aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                        <small>Your plan requires update</small>
-                                    </div>
-                                </div>
-                                <div class="col-12 order-2 order-xl-0 d-flex gap-2 flex-wrap">
-                                    <button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal"
-                                        data-bs-target="#upgradePlanModal">Upgrade Plan</button>
-                                    <button class="cancel-btn py-2 px-4 rounded-2 border-0">Cancel
-                                        Subscription</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card p-3 mb-4">
-                        <div class="card-header d-flex align-items-center justify-content-between gap-2">
-                            <h5 class="card-action-title mb-0">Billing Address</h5>
-                            <div class="card-action-element">
-                                <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
-                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
-                                    address</button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-xl-7 col-12">
-                                    <div class="row mb-0 gx-2">
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Company Name:
-                                        </div>
-                                        <div class="col-sm-8 opacity-50 small">Kelly Group</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Billing Email:
-                                        </div>
-                                        <div class="col-sm-8 opacity-50 small">user@ex.com</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Tax ID:</div>
-                                        <div class="col-sm-8 opacity-50 small">TAX-357378</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">VAT Number:</div>
-                                        <div class="col-sm-8 opacity-50 small">SDF754K77</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading mb-0">Billing
-                                            Address:</div>
-                                        <div class="col-sm-8 opacity-50 small mb-0">
-                                            100 Water Plant <br>Avenue, Building 1303<br>
-                                            Wake Island
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-xl-5 col-12">
-                                    <div class="row mb-0 gx-2">
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">plans:</div>
-                                        <div class="col-sm-8 opacity-50 small">+1 (605) 977-32-65</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Country:</div>
-                                        <div class="col-sm-8 opacity-50 small">Wake Island</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">State:</div>
-                                        <div class="col-sm-8 opacity-50 small">Capholim</div>
-
-                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Zipcode:</div>
-                                        <div class="col-sm-8 opacity-50 small">403114</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab"
+                <div class="tab-pane fade show active" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab"
                     tabindex="0">
                     <div class="card p-3">
                         <!-- Notifications -->
                         <div class="card-header">
                             <h5 class="mb-0">Notifications</h5>
-                            <span class="card-subtitle">Change to notification settings, the user will get the
-                                update</span>
                         </div>
-
+                        
                         <div class="table-responsive">
-                            <table class="table">
-                                <thead class="border-top">
+                            <table class="display w-100" id="notificationsTable">
+                                <thead>
                                     <tr>
-                                        <th class="text-nowrap">Type</th>
-                                        <th class="text-nowrap text-center">Email</th>
-                                        <th class="text-nowrap text-center">Browser</th>
-                                        <th class="text-nowrap text-center">App</th>
+                                        <th>Title</th>
+                                        <th>Message</th>
+                                        <th>Type</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">New for you</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck1" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck2" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck3" checked="">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">Account activity</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck4" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck5" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck6" checked="">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">A new browser used to sign in</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck7" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck8" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck9">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">A new device is linked</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck10" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck11">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck12">
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    @php
+                                        $notifications = \App\Models\Notification::where('user_id', Auth::id())
+                                            ->orderBy('created_at', 'desc')
+                                            ->get();
+                                    @endphp
+                                    @foreach($notifications as $notification)
+                                        <tr>
+                                            <td>{{ $notification->title }}</td>
+                                            <td>{{ $notification->message }}</td>
+                                            <td><span class="badge bg-label-{{ $notification->type === 'order_status_change' ? 'warning' : 'info' }}">{{ str_replace('_', ' ', ucfirst($notification->type)) }}</span></td>
+                                            <td>{{ $notification->created_at->diffForHumans() }}</td>
+                                            <td>
+                                                @if($notification->is_read)
+                                                    <span class="badge bg-label-success">Read</span>
+                                                @else
+                                                    <span class="badge bg-label-warning">Unread</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if(!$notification->is_read)
+                                                    <button class="btn btn-sm btn-icon m-btn mark-as-read" data-id="{{ $notification->id }}" title="Mark as Read">
+                                                        <i class="ti ti-check"></i>
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        <div class="card-body">
-                            <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Save
-                                changes</button>
-                            <button type="reset" class="cancel-btn py-2 px-4 rounded-2 border-0">Discard</button>
-                        </div>
                         <!-- /Notifications -->
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="activity-tab-pane" role="tabpanel" aria-labelledby="activity-tab"
+                    tabindex="0">
+                    <div class="card p-3">
+                        <!-- Activity -->
+                        <div class="card-header">
+                            <h5 class="mb-0">Activity</h5>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="display w-100" id="activityTable">
+                                <thead>
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Description</th>
+                                        <th>Performed On</th>
+                                        <!-- <th>Additional Data</th> -->
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $logs = \App\Models\Log::where('performed_by', Auth::id())
+                                            ->orderBy('created_at', 'desc')
+                                            ->get();
+                                    @endphp
+                                    @foreach($logs as $log)
+                                        <tr>
+                                            <td><span class="badge bg-label-primary">{{ str_replace('_', ' ', ucfirst($log->action_type)) }}</span></td>
+                                            <td>{{ $log->description }}</td>
+                                            <td>{{ class_basename($log->performed_on_type) }} #{{ $log->performed_on_id }}</td>
+                                            <!-- <td>
+                                                @if($log->data)
+                                                {{ json_encode($log->data) }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td> -->
+                                            <td>{{ $log->created_at->diffForHumans() }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /Activity -->
                     </div>
                 </div>
             </div>
@@ -913,7 +671,7 @@
 
 
 
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-12" style="display: none;">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
@@ -926,7 +684,7 @@
 
 
                         {{-- bill address --}}
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-6" style="display: none;">
                             <label class="form-label" for="modalEditUserBillingAddress">Billing Address</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserBillingAddress" name="modalEditUserBillingAddress"
@@ -941,6 +699,38 @@
                                 data-bs-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Cropper Modal -->
+    <div class="modal fade" id="cropperModal" tabindex="-1" role="dialog" aria-labelledby="cropperModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adjust Profile Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="cropper-container">
+                        <img id="cropperImage" src="" alt="Image to crop" style="max-width: 100%;">
+                    </div>
+                    <div class="cropper-controls">
+                        <button type="button" class="rotate-left"><i class="ti ti-rotate-clockwise-2"></i> Rotate Left</button>
+                        <button type="button" class="rotate-right"><i class="ti ti-rotate"></i> Rotate Right</button>
+                        <button type="button" class="flip-horizontal"><i class="ti ti-flip-horizontal"></i> Flip H</button>
+                        <button type="button" class="flip-vertical"><i class="ti ti-flip-vertical"></i> Flip V</button>
+                        <div class="zoom-controls">
+                            <button type="button" class="zoom-in"><i class="ti ti-zoom-in"></i></button>
+                            <input type="range" class="zoom-slider" min="0" max="100" value="0">
+                            <button type="button" class="zoom-out"><i class="ti ti-zoom-out"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
                 </div>
             </div>
         </div>
@@ -1021,6 +811,195 @@
                         }
                     }
                 });
+            });
+        });
+
+        let cropper;
+        let zoomValue = 0;
+        
+        // Initialize image cropping when file is selected
+        $('#profile-image-input').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Initialize cropper
+                    const image = document.getElementById('cropperImage');
+                    image.src = e.target.result;
+                    
+                    // Show cropper modal
+                    $('#cropperModal').modal('show');
+                    
+                    // Initialize Cropper.js after modal is shown
+                    $('#cropperModal').on('shown.bs.modal', function() {
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 1,
+                            cropBoxResizable: true,
+                            cropBoxMovable: true,
+                            minCropBoxWidth: 200,
+                            minCropBoxHeight: 200,
+                            width: 200,
+                            height: 200,
+                            guides: true,
+                            center: true,
+                            highlight: true,
+                            background: true,
+                            autoCrop: true,
+                            responsive: true,
+                            toggleDragModeOnDblclick: true
+                        });
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle image manipulation controls
+        $('.rotate-left').on('click', function() {
+            cropper.rotate(-90);
+        });
+
+        $('.rotate-right').on('click', function() {
+            cropper.rotate(90);
+        });
+
+        $('.flip-horizontal').on('click', function() {
+            cropper.scaleX(cropper.getData().scaleX === 1 ? -1 : 1);
+        });
+
+        $('.flip-vertical').on('click', function() {
+            cropper.scaleY(cropper.getData().scaleY === 1 ? -1 : 1);
+        });
+
+        $('.zoom-in').on('click', function() {
+            zoomValue = Math.min(zoomValue + 10, 100);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(0.1);
+        });
+
+        $('.zoom-out').on('click', function() {
+            zoomValue = Math.max(zoomValue - 10, 0);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(-0.1);
+        });
+
+        $('.zoom-slider').on('input', function() {
+            const newZoom = parseInt($(this).val());
+            const zoomDiff = (newZoom - zoomValue) / 100;
+            cropper.zoom(zoomDiff);
+            zoomValue = newZoom;
+        });
+
+        // Clean up cropper when modal is hidden
+        $('#cropperModal').on('hidden.bs.modal', function() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+                zoomValue = 0;
+                $('.zoom-slider').val(0);
+            }
+        });
+
+        // Handle crop and upload
+        $('#cropButton').on('click', function() {
+            if (!cropper) return;
+
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas({
+                width: 200,
+                height: 200
+            });
+
+            // Apply copper filter effect
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.min(255, data[i] * 1.2); // Red
+                data[i + 1] = Math.min(255, data[i + 1] * 0.9); // Green
+                data[i + 2] = Math.min(255, data[i + 2] * 0.7); // Blue
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+
+            // Convert to blob and upload
+            canvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('profile_image', blob, 'profile.jpg');
+                formData.append('_token', '{{ csrf_token() }}');
+
+                $.ajax({
+                    url: '{{ route('profile.update.image') }}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            $('#profile-image').attr('src', response.image_url);
+                            // login-user-profile
+                            $('.login-user-profile').attr('src', response.image_url);
+                            toastr.success('Profile image updated successfully');
+                            $('#cropperModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Error updating profile image');
+                        console.log(xhr.responseText);
+                    }
+                });
+            }, 'image/jpeg', 0.95);
+        });
+
+        // Initialize DataTable for notifications
+        var notificationsTable = $('#notificationsTable').DataTable({
+            responseive: true,
+            order: [[3, 'desc']],  // Sort by date column descending
+            pageLength: 10,
+            language: {
+                emptyTable: "No notifications found"
+            }
+        });
+        // Initialize DataTable for notifications
+        var activityTable = $('#activityTable').DataTable({
+            responseive: true,
+            order: [[3, 'desc']],  // Sort by date column descending
+            pageLength: 10,
+            language: {
+                emptyTable: "No Activity found"
+            }
+        });
+
+        // Handle mark as read functionality
+        $('.mark-as-read').on('click', function() {
+            const button = $(this);
+            const notificationId = button.data('id');
+            
+            $.ajax({
+                url: `/notifications/${notificationId}/mark-read`,
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    // Update the status badge
+                    button.closest('tr').find('.badge').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                    // Remove the mark as read button
+                    button.remove();
+                    // Show success message
+                    toastr.success('Notification marked as read');
+                },
+                error: function(xhr) {
+                    toastr.error('Error marking notification as read');
+                    console.error(xhr.responseText);
+                }
             });
         });
     </script>

@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     @stack('styles')
 </head>
@@ -56,6 +56,65 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script>
      <!-- sweeetalert2 -->
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        function updateNotificationCount() {
+            fetch('/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    const bellIcon = document.querySelector('.ti-bell');
+                    const count = data.count;
+                    const existingDot = bellIcon.querySelector('.notification-dot');
+                    
+                    if (count > 0) {
+                        if (!existingDot) {
+                            const dot = document.createElement('span');
+                            dot.className = 'notification-dot badge-dot position-absolute';
+                            dot.style.top = '0';
+                            dot.style.right = '0';
+                            dot.style.transform = 'translate(50%, -50%)';
+                            bellIcon.appendChild(dot);
+                        }
+                    } else {
+                        if (existingDot) {
+                            existingDot.remove();
+                        }
+                    }
+                });
+        }
+
+        // Handle marking notifications as read
+        document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.id;
+                fetch(`/notifications/${notificationId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        // Immediately update the notification count
+                        updateNotificationCount();
+                        
+                        // Remove the unread indicator from this notification
+                        this.closest('.notification-item').classList.remove('unread');
+                        this.remove();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Update count every 30 seconds
+        setInterval(updateNotificationCount, 10000);
+        
+        // Initial update
+        document.addEventListener('DOMContentLoaded', updateNotificationCount);
+    </script>
     @stack('scripts')
     <script>
         // Global AJAX request handler
@@ -80,6 +139,7 @@
             $btn.addClass('btn-loading');
             $btn.prop('disabled', true);
         });
+
     </script>
 </body>
 </html>

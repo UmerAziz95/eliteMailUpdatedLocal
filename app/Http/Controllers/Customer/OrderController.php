@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Status;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
 use DataTables;
@@ -14,26 +15,22 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
+
 class OrderController extends Controller
 {
-    private $statuses = [
-        "Pending" => "warning",
-        "In-approval"=> "warning",
-        "Approved" => "success",
-        "Reject" => "secondary",
-        "In-progress" => "primary",
-        "Cancelled" => "danger",
-        "Completed" => "success",
-        // "Delivered" => "success",
-
-    ];
-    // payment-status
+    private $statuses;
     private $paymentStatuses = [
         "Pending" => "warning",
         "Paid" => "success",
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
+
+    public function __construct()
+    {
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
+    }
+    
     public function index()
     {
         $plans = Plan::all();        
@@ -45,21 +42,21 @@ class OrderController extends Controller
         
         // Get orders by admin status
         $pendingOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Pending')
+            ->where('status_manage_by_admin', 'pending')
             ->count();
             
         $completedOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Completed')
+            ->where('status_manage_by_admin', 'completed')
             ->count();
             
         $inProgressOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'In-Progress')
+            ->where('status_manage_by_admin', 'in-progress')
             ->count();
         $expiredOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Expired')
+            ->where('status_manage_by_admin', 'expired')
             ->count();
         $approvedOrders = Order::where('user_id', $userId)
-            ->where('status_manage_by_admin', 'Approved')
+            ->where('status_manage_by_admin', 'approved')
             ->count();
         
 
@@ -218,7 +215,8 @@ class OrderController extends Controller
     public function view($id)
     {
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
-        // dd($order);
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
         // Retrieve subscription metadata if available
         $subscriptionMeta = json_decode($order->subscription->meta, true);
         $nextBillingInfo = [];
@@ -326,7 +324,7 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> View</a></li>
-                                    ' . ($order->status_manage_by_admin === 'reject' || 'In-approval' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                    ' . (strtolower($order->status_manage_by_admin ?? 'n/a') === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
                                 </ul>
                             </div>';
@@ -335,9 +333,12 @@ class OrderController extends Controller
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
-                    $statusClass = $this->statuses[ucfirst($order->status_manage_by_admin ?? 'N/A')] ?? 'secondary';
+                    $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                    $statusKey = $status;
+                    // dd($order->status_manage_by_admin, $statusKey);
+                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($order->status_manage_by_admin ?? 'N/A') . '</span>';
+                        . ucfirst($status) . '</span>';
                 })
                 ->addColumn('domain_forwarding_url', function ($order) {
                     // Since reorderInfo is a hasMany relationship, we need to get the first item from the collection
@@ -585,6 +586,51 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create order: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    // deleteAllOrderNullPlanID
+    public function deleteAllOrderNullPlanID(Request $request)
+    {
+        try {
+            $orders = Order::where('plan_id', null)->get();
+            foreach ($orders as $order) {
+                // Delete related reorder_info records first
+                ReorderInfo::where('order_id', $order->id)->delete();
+                // Then delete the order
+                $order->delete();
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'All orders with null plan_id and their reorder info have been deleted successfully.'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error deleting orders: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete orders: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+    // updateOrderStatusToLowerCase
+    public function updateOrderStatusToLowerCase(Request $request)
+    {
+        try {
+            $orders = Order::all();
+            foreach ($orders as $order) {
+                $order->status_manage_by_admin = strtolower($order->status_manage_by_admin);
+                $order->save();
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'All order statuses have been updated to lowercase successfully.'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error updating order statuses: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order statuses: ' . $e->getMessage()
             ], 422);
         }
     }

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Status;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
 use App\Mail\OrderStatusChangeMail;
@@ -17,63 +18,53 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Invoice;
 use Illuminate\Validation\ValidationException;
-// Subscription
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
+use App\Models\OrderEmail;
+use App\Models\Notification;
 class OrderController extends Controller
 {
-    private $statuses = [
-        "Pending" => "warning",
-        "Approved" => "success",
-        "Cancel" => "danger",
-        "Reject" => "secondary",
-        "In-progress" => "primary",
-        "Completed" => "success",
-        "Delivered" => "success",
-    ];
-    // payment-status
+    private $statuses;
     private $paymentStatuses = [
         "Pending" => "warning",
         "Paid" => "success",
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
+
+    public function __construct()
+    {
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
+    }
+
     public function index()
     {
-        $plans = Plan::where('is_active', true)->get();;
+        $plans = Plan::where('is_active', true)->get();
         
         // Get order statistics
         $orders = Order::query();
         
         $totalOrders = $orders->count();
         
-        // Get orders by admin status
-        $pendingOrders = Order::where('status_manage_by_admin', 'Pending')
-            ->count();
-            
-        $completedOrders = Order::where('status_manage_by_admin', 'Completed')
-            ->count();
-            
-        $inProgressOrders = Order::where('status_manage_by_admin', 'In-Progress')
-            ->count();
-        $expiredOrders = Order::where('status_manage_by_admin', 'Expired')
-            ->count();
-        $approvedOrders = Order::where('status_manage_by_admin', 'Approved')
-            ->count();
+        // Get orders by admin status using actual status names from Status model
+        $pendingOrders = Order::where('status_manage_by_admin', 'pending')->count();
+        $completedOrders = Order::where('status_manage_by_admin', 'completed')->count();
+        $inProgressOrders = Order::where('status_manage_by_admin', 'in-progress')->count();
+        $expiredOrders = Order::where('status_manage_by_admin', 'expired')->count();
+        $approvedOrders = Order::where('status_manage_by_admin', 'approved')->count();
+
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
 
-        $lastWeekOrders = Order::whereBetween('created_at', $lastWeek)
-            ->count();
-            
-        $previousWeekOrders = Order::whereBetween('created_at', $previousWeek)
-            ->count();
+        $lastWeekOrders = Order::whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = Order::whereBetween('created_at', $previousWeek)->count();
 
         $percentageChange = $previousWeekOrders > 0 
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
+
         $statuses = $this->statuses;
         return view('contractor.orders.orders', compact(
             'plans', 
@@ -82,7 +73,7 @@ class OrderController extends Controller
             'completedOrders', 
             'inProgressOrders',
             'percentageChange',
-            'statuses', // Pass statuses to the view,
+            'statuses',
             'expiredOrders',
             'approvedOrders'
         ));
@@ -169,7 +160,10 @@ class OrderController extends Controller
     public function view($id)
     {
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo','plan'])->findOrFail($id);
-        // dd($order);
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+        
+        
         // Retrieve subscription metadata if available
         $subscriptionMeta = json_decode($order->subscription->meta ?? '[]', true);
         $nextBillingInfo = [];
@@ -283,9 +277,12 @@ class OrderController extends Controller
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
-                    $statusClass = $this->statuses[ucfirst(strtolower($order->status_manage_by_admin) ?? 'N/A')] ?? 'secondary';
+                    $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                    $statusKey = $status;
+                    // dd($order->status_manage_by_admin, $statusKey);
+                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst(strtolower($order->status_manage_by_admin) ?? 'N/A') . '</span>';
+                        . ucfirst($status) . '</span>';
                 })
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
@@ -514,9 +511,9 @@ class OrderController extends Controller
                         . $statusKey . '</span>';
                 })
                 ->editColumn('status_manage_by_admin', function($invoice) {
-                    $statusKey = ucfirst($invoice->order->status_manage_by_admin ?? 'N/A');
+                    $statusKey = strtolower($invoice->order->status_manage_by_admin ?? 'N/A');
                     return '<span class="py-1 px-2 text-' . ($this->statuses[$statusKey] ?? 'secondary') . ' border border-' . ($this->statuses[$statusKey] ?? 'secondary') . ' rounded-2 bg-transparent">' 
-                        . $statusKey . '</span>';
+                        . ucfirst($statusKey) . '</span>';
                 })
                 ->filterColumn('status_manage_by_admin', function($query, $keyword) {
                     $query->whereHas('order', function($q) use ($keyword) {
@@ -574,10 +571,34 @@ class OrderController extends Controller
                         'updated_by' => auth()->id()
                     ]
                 );
-
-                // Get user details
+                // Notification for customer
+                Notification::create([
+                    'user_id' => $order->user_id,
+                    'type' => 'order_status_change',
+                    'title' => 'Order Status Changed',
+                    'message' => 'Your order #' . $order->id . ' status has been changed to ' . $newStatus,
+                    'data' => [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'reason' => $reason
+                    ]
+                ]);
+                // Notification for contractor
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'type' => 'order_status_change',
+                    'title' => 'Order Status Changed',
+                    'message' => 'Order #' . $order->id . ' status changed to ' . $newStatus,
+                    'data' => [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'reason' => $reason
+                    ]
+                ]);
+                // Get user details and send email
                 $user = $order->user;
-                // Send email to user
                 try {
                     Mail::to($user->email)
                         ->queue(new OrderStatusChangeMail(
@@ -588,13 +609,8 @@ class OrderController extends Controller
                             $reason,
                             false
                         ));
-                    Log::info('Order status change email sent to user', [
-                        'user_id' => $user->id,
-                        'order_id' => $order->id,
-                        'old_status' => $oldStatus,
-                        'new_status' => $newStatus
-                    ]);
-                    // Send email to admin
+
+                    // Only send email to admin
                     Mail::to(config('mail.admin_address', 'admin@example.com'))
                         ->queue(new OrderStatusChangeMail(
                             $order,
@@ -604,13 +620,11 @@ class OrderController extends Controller
                             $reason,
                             true
                         ));
-                    Log::info('Order status change email sent to admin', [
-                        'admin_email' => config('mail.admin_address'),
+                    Log::info('Order status change email sent', [
                         'order_id' => $order->id,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
-                    // Continue execution since the status was already updated
                 }
             }
     

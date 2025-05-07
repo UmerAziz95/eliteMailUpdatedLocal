@@ -22,11 +22,11 @@
 
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
-            <h5 class="mb-3">Order #{{ $order->chargebee_invoice_id ?? 'N/A' }}</h5>
+            <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
             <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div class="border border-{{ $order->status == 'paid' ? 'success' : 'warning' }} rounded-2 py-1 px-2 text-{{ $order->status == 'paid' ? 'success' : 'warning' }} bg-transparent">
-            {{ ucfirst($order->status ?? 'Pending') }}
+        <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
+            {{ ucfirst($order->status2 ?? 'Pending') }}
         </div>
     </div>
 

@@ -18,9 +18,9 @@ class AdminController extends Controller
 {
     public function index(Request $request)
      {
-    if ($request->ajax()) {
+      if ($request->ajax()) {
         // Start query builder
-        $query = User::query()->whereIn('role_id', [1, 2, 5]);
+        $query = User::query()->whereIn('role_id', [2, 5]);
             // 🔍 Apply individual column filters
             if ($request->filled('user_name')) {
                 $query->where('name', 'like', '%' . $request->input('user_name') . '%');
@@ -156,9 +156,43 @@ class AdminController extends Controller
             'user'    => $user
         ]);
     }
+
+
+    
+    public function storeCustomer(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name'   => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|min:6|confirmed',
+            'status'      => 'required|in:0,1',
+           
+        ]);
+    
+        // Create the user
+        $user = User::create([
+            'name'     => $validated['full_name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status'   => (int) $validated['status'],
+        ]);
+    
+    
+            return response()->json([
+                'message' => 'User created successfully',
+                'user'    => $user
+            ]);
+      
+    }
     
 
     public function edit($id)
+    {
+        $user = User::findOrFail($id);
+
+        return response()->json($user); // Used to populate the form
+    }
+    public function userEdit($id)
     {
         $user = User::findOrFail($id);
 
@@ -188,14 +222,38 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'User updated successfully']);
     }
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => 'nullable|min:6|confirmed',
+            'status' => 'required|in:0,1',
+        ]);
+
+        $user->name = $validated['full_name'];
+        $user->email = $validated['email'];
+        $user->status = $validated['status'];
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return response()->json(['message' => 'User updated successfully']);
+    }
 
         public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $user->delete();
+        $user->status=0;
+        $user->save();
 
         return response()->json([
-            'message' => 'User deleted successfully.'
+            'message' => 'User Deactivated successfully.'
         ]);
     }
     

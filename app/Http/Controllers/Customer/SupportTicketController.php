@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Http\Controllers\Customer;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\SupportTicket;
+use App\Models\TicketReply;
+use DataTables;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
+class SupportTicketController extends Controller
+{
+    public function index()
+    {
+        $tickets = SupportTicket::where('user_id', Auth::id())
+            ->latest()
+            ->get();
+            
+        $totalTickets = $tickets->count();
+        $pendingTickets = $tickets->where('status', 'open')->count();
+        $completedTickets = $tickets->where('status', 'closed')->count();
+        
+        return view('customer.support.support', compact('totalTickets', 'pendingTickets', 'completedTickets'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'description' => 'required|string',
+            'category' => 'required|string',
+            'priority' => 'required|in:low,medium,high',
+            'attachments.*' => 'nullable|file|max:10240' // 10MB max per file
+        ]);
+
+        $attachments = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('ticket-attachments', 'public');
+                $attachments[] = $path;
+            }
+        }
+
+        $ticket = SupportTicket::create([
+            'user_id' => Auth::id(),
+            'subject' => $validated['subject'],
+            'description' => $validated['description'],
+            'category' => $validated['category'],
+            'priority' => $validated['priority'],
+            'attachments' => $attachments,
+            'status' => 'open'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ticket created successfully',
+            'ticket' => $ticket
+        ]);
+    }
+
+    public function show($id)
+    {
+        $ticket = SupportTicket::with(['replies.user', 'user'])
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        return view('customer.support.ticket_conversation', compact('ticket'));
+    }
+
+    public function reply(Request $request, $ticketId)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string',
+            'attachments.*' => 'nullable|file|max:10240'
+        ]);
+
+        $ticket = SupportTicket::where('user_id', Auth::id())->findOrFail($ticketId);
+
+        $attachments = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('ticket-replies', 'public');
+                $attachments[] = $path;
+            }
+        }
+
+        $reply = TicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => Auth::id(),
+            'message' => $validated['message'],
+            'attachments' => $attachments
+        ]);
+
+        // If ticket was closed, reopen it when customer replies
+        if ($ticket->status === 'closed') {
+            $ticket->update(['status' => 'open']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reply added successfully',
+            'reply' => $reply->load('user')
+        ]);
+    }
+
+    public function getTickets(Request $request)
+    {
+        $tickets = SupportTicket::with(['user'])
+            ->where('user_id', Auth::id())
+            ->select('support_tickets.*');
+
+        return DataTables::of($tickets)
+            ->addColumn('action', function ($ticket) {
+                return '<div class="d-flex align-items-center gap-2">
+                    <button class="bg-transparent p-0 border-0" onclick="viewTicket('.$ticket->id.')">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>';
+            })
+            ->editColumn('created_at', function ($ticket) {
+                return $ticket->created_at->format('d M, Y');
+            })
+            ->editColumn('status', function ($ticket) {
+                $statusClass = match($ticket->status) {
+                    'open' => 'warning',
+                    'in_progress' => 'primary',
+                    'closed' => 'success',
+                    default => 'secondary'
+                };
+                return '<span class="py-1 px-2 text-'.$statusClass.' border border-'.$statusClass.' rounded-2 bg-transparent">'.ucfirst($ticket->status).'</span>';
+            })
+            ->editColumn('priority', function ($ticket) {
+                $priorityClass = match($ticket->priority) {
+                    'low' => 'success',
+                    'medium' => 'warning',
+                    'high' => 'danger',
+                    default => 'secondary'
+                };
+                return '<span class="py-1 px-2 text-'.$priorityClass.' border border-'.$priorityClass.' rounded-2 bg-transparent">'.ucfirst($ticket->priority).'</span>';
+            })
+            ->rawColumns(['action', 'status', 'priority'])
+            ->make(true);
+    }
+}

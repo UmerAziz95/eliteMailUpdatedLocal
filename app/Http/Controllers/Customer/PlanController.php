@@ -21,7 +21,7 @@ use App\Models\ReorderInfo;
 // User
 use App\Models\User;
 use App\Services\ActivityLogService;
-
+use App\Models\Notification;
 class PlanController extends Controller
 {
     public function index()
@@ -459,6 +459,17 @@ class PlanController extends Controller
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                 ]
             );
+            // Create notification for the customer after sending mail
+            Notification::create([
+                'user_id' => $user->id,
+                'type' => 'subscription_created',
+                'title' => 'New Subscription Created',
+                'message' => "Your subscription #{$subscription->id} has been created successfully",
+                'data' => [
+                    'subscription_id' => $subscription->id,
+                    'amount' => ($invoice->amountPaid ?? 0) / 100
+                ]
+            ]);
             // Create a new activity log using the custom log service
             ActivityLogService::log(
                 'customer-invoice-processed',
@@ -484,6 +495,18 @@ class PlanController extends Controller
                         $user,
                         false
                     ));
+
+                // Create notification for the customer after sending mail
+                Notification::create([
+                    'user_id' => $user->id,
+                    'type' => 'order_created',
+                    'title' => 'New Order Created',
+                    'message' => "Your order #{$order->id} has been created successfully",
+                    'data' => [
+                        'order_id' => $order->id,
+                        'amount' => $order->amount
+                    ]
+                ]);
 
                 // Send email to admin
                 Mail::to(config('mail.admin_address', 'admin@example.com'))
