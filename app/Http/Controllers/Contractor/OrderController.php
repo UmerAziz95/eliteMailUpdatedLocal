@@ -651,7 +651,8 @@ class OrderController extends Controller
         // Validate file and order_id
         $validator = Validator::make($request->all(), [
             'bulk_file' => 'required|file|mimes:csv,txt',
-            'order_id' => 'required|exists:orders,id'
+            'order_id' => 'required|exists:orders,id',
+            'order_total_inboxes' => 'required|integer'
         ]);
     
         if ($validator->fails()) {
@@ -667,19 +668,31 @@ class OrderController extends Controller
         // Read the uploaded CSV file
         $file = $request->file('bulk_file');
         $filePath = $file->getRealPath();
-    
         $csv = array_map('str_getcsv', file($filePath));
-        
+    
+        if (empty($csv) || count($csv) < 2) {
+            return response()->json([
+                'message' => 'The uploaded file is empty or lacks data.'
+            ], 400);
+        }
+    
         // Get the header and remove it from data
         $headers = array_map('trim', $csv[0]);
         unset($csv[0]);
+       
+
+        if (count($csv) > $request->order_total_inboxes) {
+            return response()->json([
+                'message' => 'Oops! Limit exceeded. File contains more emails than allowed.',
+                'count' => count($csv)
+            ], 400);
+        }
     
         $emails = [];
     
         foreach ($csv as $row) {
             if (count($row) !== count($headers)) {
-                // skip malformed row
-                continue;
+                continue; // Skip malformed row
             }
     
             $data = array_combine($headers, $row);
@@ -689,7 +702,7 @@ class OrderController extends Controller
                 'name' => $data['name'] ?? null,
                 'email' => $data['email'] ?? null,
                 'password' => $data['password'] ?? null,
-                'user_id'=>$order->user_id,
+                'user_id' => $order->user_id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -703,6 +716,7 @@ class OrderController extends Controller
             'count' => count($emails)
         ]);
     }
+    
 
 
 

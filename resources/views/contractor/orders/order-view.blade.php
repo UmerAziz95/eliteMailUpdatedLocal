@@ -979,6 +979,14 @@
                         </div>
                         Bulk Import
                     </h6>
+                    <div class="row text-muted">
+                        <p class="text-danger">Only .csv files are accepted.</p>
+                        <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
+                            <strong>email</strong>, and <strong>password</strong>.</p>
+                        <p><a 
+                                href="http://127.0.0.1:8000/assets/samples/emails.csv"><strong class="text-primary">Download
+                                    Sample File</strong></a></p>
+                    </div>
 
 
 
@@ -1007,6 +1015,7 @@
     </div>
 
 </section>
+
 @endsection
 
 @push('scripts')
@@ -1028,7 +1037,9 @@
 
     const formData = new FormData(this);
     const order_id={{ $order->id }}
+    const order_total_inboxes={{ $order->reorderInfo[0]->total_inboxes }}
     formData.append('order_id',order_id);
+    formData.append('order_total_inboxes',order_total_inboxes);
    
 
     Swal.fire({
