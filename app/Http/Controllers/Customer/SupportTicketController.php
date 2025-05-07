@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SupportTicket;
 use App\Models\TicketReply;
+use App\Models\Notification;
 use App\Services\ActivityLogService;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
 class SupportTicketController extends Controller
 {
     public function index()
@@ -130,20 +130,10 @@ class SupportTicketController extends Controller
             ]
         );
         // Create notification for the customer after sending mail
-        // Notification::create([
-        //     'user_id' => $user->id,
-        //     'type' => 'subscription_created',
-        //     'title' => 'New Subscription Created',
-        //     'message' => "Your subscription #{$subscription->id} has been created successfully",
-        //     'data' => [
-        //         'subscription_id' => $subscription->id,
-        //         'amount' => ($invoice->amountPaid ?? 0) / 100
-        //     ]
-        // ]);
         Notification::create([
-            'user_id' => $ticket->user_id,
+            'user_id' => $ticket->assigned_to ,
             'type' => 'support_ticket_reply',
-            'title' => 'New Reply on Your Ticket',
+            'title' => 'New Reply on Ticket',
             'message' => "You have a new reply on your support ticket #{$ticket->id}",
             'data' => [
                 'ticket_id' => $ticket->id,

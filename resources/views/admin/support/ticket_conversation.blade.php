@@ -116,6 +116,36 @@
         overflow: hidden;
         white-space: nowrap;
     }
+        /* Quill editor custom styles */
+        .ql-editor {
+        min-height: 120px;
+        color: var(--light-color);
+    }
+    
+    .ql-toolbar.ql-snow {
+        border-color: var(--input-border);
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+    
+    .ql-container.ql-snow {
+        border-color: var(--input-border);
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        background: transparent;
+    }
+    
+    .ql-snow .ql-stroke {
+        stroke: var(--light-color);
+    }
+    
+    .ql-snow .ql-fill {
+        fill: var(--light-color);
+    }
+    
+    .ql-snow .ql-picker {
+        color: var(--light-color);
+    }
 </style>
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 @endpush
@@ -147,7 +177,7 @@
                     <div class="reply-box mb-4">
                         <form id="replyForm">
                             <div class="mb-3">
-                                <div class="form-check mb-3">
+                                <div class="form-check mb-3" style="display: none;">
                                     <input class="form-check-input" type="checkbox" id="isInternal" name="is_internal">
                                     <label class="form-check-label" for="isInternal">
                                         Internal Note (only visible to staff)
@@ -173,7 +203,7 @@
                         @foreach($ticket->replies->sortByDesc('created_at') as $reply)
                         <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
                             <div class="message-content">
-                                {{ $reply->message }}
+                                {!! $reply->message !!}
                                 @if($reply->is_internal)
                                 <div class="internal-note">
                                     <i class="fas fa-eye-slash"></i> Internal Note

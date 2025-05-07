@@ -74,7 +74,7 @@ class SupportTicketController extends Controller
 
     public function getTickets(Request $request)
     {
-        dd($request->all());
+        // dd($request->all());
         $tickets = SupportTicket::with(['user'])
             ->select('support_tickets.*');
 
