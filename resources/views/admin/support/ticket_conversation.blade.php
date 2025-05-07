@@ -146,7 +146,7 @@
                     <div class="reply-box mb-4">
                         <form id="replyForm">
                             <div class="mb-3">
-                                <div class="form-check mb-3">
+                                <div class="form-check mb-3" style="display: none;">
                                     <input class="form-check-input" type="checkbox" id="isInternal" name="is_internal">
                                     <label class="form-check-label" for="isInternal">
                                         Internal Note (only visible to staff)
@@ -392,19 +392,14 @@ $(document).ready(function() {
                     
                     // Add new message to chat
                     const newMessage = `
-                        <div class="message-bubble sent" style="display: none;">
+                        <div class="message-bubble sent">
                             <div class="message-content">
                                 ${response.reply.message}
-                                ${response.reply.is_internal ? `
-                                    <div class="internal-note">
-                                        <i class="fas fa-eye-slash"></i> Internal Note
-                                    </div>
-                                ` : ''}
                             </div>
                             <div class="message-meta">
                                 ${response.reply.user.name} - Just now
                             </div>
-                            ${response.reply.attachments ? `
+                            ${response.reply.attachments && response.reply.attachments.length > 0 ? `
                                 <div class="attachments-area">
                                     ${response.reply.attachments.map(attachment => {
                                         const extension = attachment.split('.').pop().toLowerCase();
@@ -414,7 +409,7 @@ $(document).ready(function() {
                                         return `
                                             <div class="attachment-preview ${isImage ? '' : 'document'}">
                                                 ${isImage ? 
-                                                    `<img src="${attachment}" alt="Attachment">` :
+                                                    `<img src="/storage/${attachment}" alt="Attachment">` :
                                                     `<i class="fas ${
                                                         extension === 'pdf' ? 'fa-file-pdf' :
                                                         ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
@@ -422,7 +417,7 @@ $(document).ready(function() {
                                                     }"></i>`
                                                 }
                                                 <div class="attachment-name">${fileName}</div>
-                                                <a href="${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                                <a href="/storage/${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             </div>

@@ -91,6 +91,73 @@
         justify-content: center;
         cursor: pointer;
     }
+    .attachments-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .attachment-preview {
+        width: 100px;
+        height: 100px;
+        position: relative;
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+    }
+
+    .attachment-preview.document {
+        font-size: 40px;
+        color: #6c757d;
+    }
+
+    .attachment-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .remove-attachment {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .internal-note {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 4px solid #ffc107;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .attachment-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 10px;
+        padding: 2px 5px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
 </style>
 @endpush
 
@@ -306,16 +373,35 @@ $(document).ready(function() {
         previewContainer.empty();
 
         files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = `
-                    <div class="attachment-preview">
+            const extension = file.name.split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+            
+            const preview = document.createElement('div');
+            preview.className = `attachment-preview ${isImage ? '' : 'document'}`;
+            
+            if (isImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
                         <img src="${e.target.result}" alt="attachment">
+                        <div class="attachment-name">${file.name}</div>
                         <button type="button" class="remove-attachment" data-index="${index}">×</button>
-                    </div>`;
-                previewContainer.append(preview);
+                    `;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                const icon = extension === 'pdf' ? 'fa-file-pdf' :
+                            ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
+                            ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file';
+                
+                preview.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <div class="attachment-name">${file.name}</div>
+                    <button type="button" class="remove-attachment" data-index="${index}">×</button>
+                `;
             }
-            reader.readAsDataURL(file);
+            
+            previewContainer.append(preview);
         });
     });
 
