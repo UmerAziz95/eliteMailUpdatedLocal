@@ -779,6 +779,15 @@
         // Show the modal
         $('#cancel_subscription').modal('show');
     });
+    $(document).on('click', '.', function() 
+        // Show the modal
+        $('#BulkImportModal').modal('show');
+    });
+
+
+ 
+
+
     //handle the reason field on status change
     $('.marked_status').on('change', function() {
         const selected = $(this).val();
@@ -892,104 +901,10 @@
             }
         });
     });
-    // Handle form submission
-    $('#cancelSubscriptionForm').on('submit', function(e) {
-        e.preventDefault();
 
-        const selectedStatus = $('input[name="marked_status"]:checked').val();
-        const reason = $('#cancellation_reason').val().trim();
-
-
-        // If status is required
-        if (!selectedStatus) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please select a status.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // If Reject is selected but no reason
-        if (selectedStatus === 'Reject' && !reason) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'The reason field is required for rejection.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Gather form data manually
-        const formData = new FormData(this);
-        formData.append('marked_status', selectedStatus);
-
-        // Confirm dialog
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: $(this).attr('action'),
-                    method: 'POST',
-                    data: Object.fromEntries(formData),
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    beforeSend: function() {
-                        Swal.fire({
-                            title: 'Processing...',
-                            text: 'Please wait a while...',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                    },
-                    success: function(response) {
-                        $('#cancel_subscription').modal('hide');
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Status has been updated successfully.',
-                            confirmButtonColor: '#3085d6'
-                        }).then(() => {
-                            $('#cancellation_reason').val('');
-                            // Refresh all DataTables instead of reloading page
-                            if (window.orderTables) {
-                                Object.values(window.orderTables).forEach(function(table) {
-                                    if (table) {
-                                        table.ajax.reload(null, false);
-                                    }
-                                });
-                            }
-                        });
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'An error occurred while updating status.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: errorMessage,
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                });
-            }
-        });
-    });
+    
+    
+   
+ 
 </script>
 @endpush

@@ -13,15 +13,18 @@
 
     @php
     $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
-    $defaultProfilePic = 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
+    $defaultProfilePic =
+    'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
     @endphp
 
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
             <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
-            <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $order->created_at ? $order->created_at->format('M
+                d, Y') : 'N/A' }}</h6>
         </div>
-        <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
+        <div
+            class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
             {{ ucfirst($order->status2 ?? 'Pending') }}
         </div>
     </div>
@@ -29,23 +32,21 @@
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
-                data-bs-target="#configuration-tab-pane" type="button" role="tab"
-                aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
+                data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
+                aria-selected="true">Configuration</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab"
-                data-bs-target="#email-tab-pane" type="button" role="tab"
-                aria-controls="email-tab-pane" aria-selected="false">Emails</button>
+            <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
+                type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
-                data-bs-target="#subscription-tab-pane" type="button" role="tab"
-                aria-controls="subscription-tab-pane" aria-selected="false">Subscription</button>
+                data-bs-target="#subscription-tab-pane" type="button" role="tab" aria-controls="subscription-tab-pane"
+                aria-selected="false">Subscription</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab"
-                data-bs-target="#tickets-tab-pane" type="button" role="tab"
-                aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
+            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane"
+                type="button" role="tab" aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
         </li>
     </ul>
 
@@ -66,7 +67,8 @@
                         @if(optional($order->reorderInfo)->count() > 0)
                         <div class="d-flex align-items-center justify-content-between">
                             <span>Total Inboxes <br> {{ $order->reorderInfo->first()->total_inboxes ?? '0' }}</span>
-                            <span>Inboxes per domain <br> {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
+                            <span>Inboxes per domain <br> {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0'
+                                }}</span>
                         </div>
                         <hr>
                         <div class="d-flex flex-column">
@@ -109,7 +111,9 @@
                                 <!-- <span class="opacity-50">Officially Google Workspace Inboxes</span> -->
                                 <br>
                                 @if(isset($order->meta['product_details']))
-                                <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }} <small>/monthly</small></span>
+                                <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x ${{
+                                    number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }}
+                                    <small>/monthly</small></span>
                                 @else
                                 <!-- <span>Price details not available</span> -->
                                 @endif
@@ -171,8 +175,7 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab"
-            tabindex="0">
+        <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
             <div class="col-12">
                 <div class="card p-3">
                     <h6 class="d-flex align-items-center gap-2">
@@ -186,6 +189,10 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="d-flex align-items-center gap-3">
                             <div>
+                                <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                                    data-bs-target="#BulkImportModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
+                                </button>
                                 <button id="addNewBtn" class="btn btn-primary me-2">
                                     <i class="fa-solid fa-plus me-1"></i> Add Email
                                 </button>
@@ -203,7 +210,9 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span id="totalRowCount" class="fw-bold">0</span>
                                     <div class="progress" style="width: 100px; height: 6px;">
-                                        <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -512,8 +521,8 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel"
-            aria-labelledby="subscription-tab" tabindex="0">
+        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
+            tabindex="0">
             @if($order->subscription)
             <div class="card p-3">
                 <div class="d-flex align-items-center justify-content-between">
@@ -524,7 +533,8 @@
                         </div>
                         Subscriptions
                     </h6>
-                    <button class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
+                    <button
+                        class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
                         {{ ucfirst($order->subscription->status) }}
                     </button>
                 </div>
@@ -593,7 +603,8 @@
                                     <div class="d-flex align-items-center justify-content-between">
                                         <h5 class="mb-2">Filters</h5>
                                         <div>
-                                            <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                            <button id="applyFilters"
+                                                class="btn btn-primary btn-sm me-2">Filter</button>
                                             <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
                                         </div>
                                     </div>
@@ -884,8 +895,7 @@
             @endif
         </div>
 
-        <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel"
-            aria-labelledby="tickets-tab" tabindex="0">
+        <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab" tabindex="0">
             <div class="card p-3">
                 <div class="table-responsive">
                     <table id="myTable" class="display w-100">
@@ -907,7 +917,8 @@
                             <tr>
                                 <td>{{ $ticket['tags'] ?? 'N/A' }}</td>
                                 <td>{{ $ticket['number'] ?? 'N/A' }}</td>
-                                <td>{{ isset($ticket['created_at']) ? \Carbon\Carbon::parse($ticket['created_at'])->format('d M, Y') : 'N/A' }}</td>
+                                <td>{{ isset($ticket['created_at']) ?
+                                    \Carbon\Carbon::parse($ticket['created_at'])->format('d M, Y') : 'N/A' }}</td>
                                 <td>{{ $ticket['status'] ?? 'N/A' }}</td>
                                 <td>{{ $ticket['type'] ?? 'N/A' }}</td>
                                 <td>{{ $ticket['order_id'] ?? 'N/A' }}</td>
@@ -924,13 +935,12 @@
     </div>
 
     <!-- Cancel Subscription Modal -->
-    <div class="modal fade" id="cancel_subscription" tabindex="-1"
-        aria-labelledby="cancel_subscriptionLabel" aria-hidden="true">
+    <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header border-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
@@ -947,10 +957,137 @@
                         feedback.
                     </p>
 
-                    
+
                 </div>
             </div>
         </div>
     </div>
+
+
+    <div class="modal fade" id="BulkImportModal" tabindex="-1" aria-labelledby="BulkImportModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </div>
+                        Bulk Import
+                    </h6>
+
+
+
+                    <form id="BulkImportForm" action="{{ route('contractor.order.email.bulkImport') }}" method="POST">
+                        @csrf
+
+                        <div class="mb-3">
+                            <label for="bulk_file" class="form-label">Select CSV *</label>
+                            <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
+                                required>
+                        </div>
+
+                        <div
+                            class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                            <button type="button"
+                                class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                                data-bs-dismiss="modal">No</button>
+                            <button type="submit"
+                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                                I'm sure</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </section>
 @endsection
+
+@push('scripts')
+<script>
+    $('#addBulkEmail').on('click', function () {
+    $('#BulkImportModal').modal('show');
+   
+});
+
+
+
+    $('#addBulkEmail').on('click', function() {
+        $('#BulkImportModal').modal('show');
+
+    });
+
+    $('#BulkImportForm').on('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const order_id={{ $order->id }}
+    formData.append('order_id',order_id);
+   
+
+    Swal.fire({
+        title: 'Are you sure?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                beforeSend: function() {
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait a while...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function(response) {
+                    $('#BulkImportModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'File has been imported successfully.',
+                        confirmButtonColor: '#3085d6'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred while processing the file.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: errorMessage,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            });
+        }
+    });
+});
+
+</script>
+@endpush

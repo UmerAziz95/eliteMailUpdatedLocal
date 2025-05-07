@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Validator;
-
+use App\Models\Order;
+use Illuminate\Support\Facades\Response;
 class OrderEmailController extends Controller
 {
     public function store(Request $request)
@@ -104,5 +105,44 @@ class OrderEmailController extends Controller
                 'message' => 'Error fetching emails: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+
+
+
+
+    public function exportCsv($orderId)
+    {
+        $order = Order::findOrFail($orderId);
+    
+        $emails = OrderEmail::where('order_id', $order->id)->get(['name', 'email', 'password']);
+    
+        if ($emails->isEmpty()) {
+            return back()->with('error', 'No email records found for this order.');
+        }
+    
+        $filename = "order_{$order->id}_emails.csv";
+    
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+    
+        $callback = function () use ($emails) {
+            $file = fopen('php://output', 'w');
+    
+            // Add CSV header
+            fputcsv($file, ['Name', 'Email', 'Password']);
+    
+            // Add data rows
+            foreach ($emails as $email) {
+                fputcsv($file, [$email->name, $email->email, $email->password]);
+            }
+    
+            fclose($file);
+        };
+    
+        return Response::stream($callback, 200, $headers);
     }
 }

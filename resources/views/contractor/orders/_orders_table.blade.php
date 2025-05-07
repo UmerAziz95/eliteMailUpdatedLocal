@@ -38,8 +38,7 @@
 
 
 
-                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.status.process') }}"
-                    method="POST">
+                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.status.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
                     <div class="mb-3">
@@ -84,3 +83,5 @@
         </div>
     </div>
 </div>
+
+{{-- import file modal --}}

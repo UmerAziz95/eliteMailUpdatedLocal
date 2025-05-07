@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
 use App\Models\OrderEmail;
 use App\Models\Notification;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 class OrderController extends Controller
 {
     private $statuses;
@@ -642,4 +644,67 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+
+    public function orderImportProcess(Request $request)
+    {
+        // Validate file and order_id
+        $validator = Validator::make($request->all(), [
+            'bulk_file' => 'required|file|mimes:csv,txt',
+            'order_id' => 'required|exists:orders,id'
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+    
+        // Retrieve order
+        $order = Order::find($request->order_id);
+    
+        // Read the uploaded CSV file
+        $file = $request->file('bulk_file');
+        $filePath = $file->getRealPath();
+    
+        $csv = array_map('str_getcsv', file($filePath));
+        
+        // Get the header and remove it from data
+        $headers = array_map('trim', $csv[0]);
+        unset($csv[0]);
+    
+        $emails = [];
+    
+        foreach ($csv as $row) {
+            if (count($row) !== count($headers)) {
+                // skip malformed row
+                continue;
+            }
+    
+            $data = array_combine($headers, $row);
+    
+            $emails[] = [
+                'order_id' => $order->id,
+                'name' => $data['name'] ?? null,
+                'email' => $data['email'] ?? null,
+                'password' => $data['password'] ?? null,
+                'user_id'=>$order->user_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+    
+        // Insert all at once
+        OrderEmail::insert($emails);
+    
+        return response()->json([
+            'message' => 'Emails imported successfully.',
+            'count' => count($emails)
+        ]);
+    }
+
+
+
+
 }
