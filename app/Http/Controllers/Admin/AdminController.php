@@ -13,7 +13,7 @@ use DataTables;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-
+use App\Services\ActivityLogService;
 class AdminController extends Controller
 {
     public function index(Request $request)
@@ -139,16 +139,45 @@ class AdminController extends Controller
             'status'   => (int) $validated['status'],
         ]);
     
+        // Log the user creation
+        ActivityLogService::log(
+            'user_created',
+            'A new user was created',
+            $user,
+            [
+                'email' => $user->email,
+                'status' => $user->status,
+                'role_id' => $validated['role_id'],
+                'created_by' => Auth::id(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+            ],
+            Auth::id() // Admin or creator performing this action
+        );
+    
         // Assign role and permissions if role_id is provided 
         if ($validated['role_id']) {
             $role = Role::find($validated['role_id']);
             if ($role) {
                 $user->assignRole($role);
+    
+                // Log role assignment
+                ActivityLogService::log(
+                    'role_assigned',
+                    'Role assigned to user',
+                    $user,
+                    [
+                        'role_name' => $role->name,
+                        'assigned_by' => Auth::id(),
+                    ],
+                    Auth::id()
+                );
+    
+                return response()->json([
+                    'message' => 'User created and role has assigned successfully',
+                    'user'    => $user
+                ]);
             }
-            return response()->json([
-                'message' => 'User created and role has assigned successfully',
-                'user'    => $user
-            ]);
         }
     
         return response()->json([
@@ -156,17 +185,17 @@ class AdminController extends Controller
             'user'    => $user
         ]);
     }
+    
 
 
     
     public function storeCustomer(Request $request)
     {
         $validated = $request->validate([
-            'full_name'   => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'password'    => 'required|min:6|confirmed',
-            'status'      => 'required|in:0,1',
-           
+            'full_name' => 'required|string|max:255',
+            'email'     => 'required|email|unique:users,email',
+            'password'  => 'required|min:6|confirmed',
+            'status'    => 'required|in:0,1',
         ]);
     
         // Create the user
@@ -177,13 +206,27 @@ class AdminController extends Controller
             'status'   => (int) $validated['status'],
         ]);
     
+        // Log activity
+        ActivityLogService::log(
+            'customer_created',
+            'A new customer account was created.',
+            $user,
+            [
+                'email' => $user->email,
+                'status' => $user->status,
+                'created_by' => Auth::id(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+            ],
+            Auth::id()
+        );
     
-            return response()->json([
-                'message' => 'User created successfully',
-                'user'    => $user
-            ]);
-      
+        return response()->json([
+            'message' => 'User created successfully',
+            'user'    => $user
+        ]);
     }
+    
     
 
     public function edit($id)
@@ -213,7 +256,6 @@ class AdminController extends Controller
         $user->name = $validated['full_name'];
         $user->email = $validated['email'];
         $user->status = $validated['status'];
-
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
@@ -222,6 +264,9 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'User updated successfully']);
     }
+
+
+
     public function updateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -246,15 +291,30 @@ class AdminController extends Controller
         return response()->json(['message' => 'User updated successfully']);
     }
 
-        public function destroy($id)
+    public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $user->status=0;
+        $user->status = 0;
         $user->save();
-
+    
+        // Log activity
+        ActivityLogService::log(
+            'user_deactivated',
+            'User account was deactivated.',
+            $user,
+            [
+                'email' => $user->email,
+                'deactivated_by' => Auth::id(),
+                'ip' => request()->ip(),
+                'user_agent' => request()->header('User-Agent'),
+            ],
+            Auth::id()
+        );
+    
         return response()->json([
-            'message' => 'User Deactivated successfully.'
+            'message' => 'User deactivated successfully.'
         ]);
     }
+    
     
 }
