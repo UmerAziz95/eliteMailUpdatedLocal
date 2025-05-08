@@ -38,7 +38,15 @@ class SupportTicketController extends Controller
     public function reply(Request $request, $ticketId)
     {
         $validated = $request->validate([
-            'message' => 'required|string',
+            'message' => [
+            'required',
+            function ($attribute, $value, $fail) {
+                // Strip HTML tags and check if content is empty
+                if (empty(trim(strip_tags($value)))) {
+                $fail('The message field cannot be empty.');
+                }
+            }
+            ],
             'attachments.*' => 'nullable|file|max:10240',
             'is_internal' => 'boolean'
         ]);

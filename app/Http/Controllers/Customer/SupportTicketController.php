@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Order;
 use App\Models\SupportTicket;
 use App\Models\TicketReply;
 use App\Models\Notification;
@@ -35,6 +36,7 @@ class SupportTicketController extends Controller
             'description' => 'required|string',
             'category' => 'required|string',
             'priority' => 'required|in:low,medium,high',
+            'order_id' => 'required_if:category,order|nullable|exists:orders,id,user_id,'.Auth::id(),
             'attachments.*' => 'nullable|file|max:10240' // 10MB max per file
         ]);
 
@@ -46,6 +48,14 @@ class SupportTicketController extends Controller
             }
         }
 
+        // Verify order belongs to user if category is order
+        $assignedTo = null;
+        if ($validated['category'] === 'order' && $request->order_id) {
+            $order = Order::where('id', $request->order_id)
+                         ->where('user_id', Auth::id())
+                         ->firstOrFail();
+            $assignedTo = $order->assigned_to;
+        }
         $ticket = SupportTicket::create([
             'user_id' => Auth::id(),
             'subject' => $validated['subject'],
@@ -53,8 +63,11 @@ class SupportTicketController extends Controller
             'category' => $validated['category'],
             'priority' => $validated['priority'],
             'attachments' => $attachments,
-            'status' => 'open'
+            'status' => 'open',
+            'order_id' => $request->order_id,
+            'assigned_to' => $assignedTo
         ]);
+        
         // Create a new activity log using the custom log service
         ActivityLogService::log(
             'customer-support-ticket-create', 
@@ -71,7 +84,6 @@ class SupportTicketController extends Controller
                 'ip_address' => request()->ip()
             ]
         );
-        
 
         return response()->json([
             'success' => true,
@@ -92,9 +104,18 @@ class SupportTicketController extends Controller
     public function reply(Request $request, $ticketId)
     {
         $validated = $request->validate([
-            'message' => 'required|string',
+            'message' => [
+            'required',
+            function ($attribute, $value, $fail) {
+                // Strip HTML tags and check if content is empty
+                if (empty(trim(strip_tags($value)))) {
+                $fail('The message field cannot be empty.');
+                }
+            }
+            ],
             'attachments.*' => 'nullable|file|max:10240'
         ]);
+        // dd($validated);
 
         $ticket = SupportTicket::where('user_id', Auth::id())->findOrFail($ticketId);
 
@@ -207,5 +228,40 @@ class SupportTicketController extends Controller
             })
             ->rawColumns(['action', 'status', 'priority'])
             ->make(true);
+    }
+
+    public function getUserOrders(Request $request)
+    {
+        $query = Order::where('user_id', Auth::id())
+                     ->with(['plan', 'reorderInfo']);
+
+        // Apply search filter if search term is provided
+        if ($request->has('q') && !empty($request->q)) {
+            $searchTerm = $request->q;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('id', 'LIKE', "%{$searchTerm}%")
+                  ->orWhereHas('plan', function($q) use ($searchTerm) {
+                      $q->where('name', 'LIKE', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')
+                       ->get()
+                       ->map(function($order) {
+                           return [
+                               'id' => $order->id,
+                               'text' => sprintf(
+                                   "Order #%d - %s (%s)", 
+                                   $order->id,
+                                   $order->plan ? $order->plan->name : 'N/A',
+                                   $order->created_at->format('d M Y')
+                               )
+                           ];
+                       });
+        
+        return response()->json([
+            'results' => array_values($orders->toArray())
+        ]);
     }
 }

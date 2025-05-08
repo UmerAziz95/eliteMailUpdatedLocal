@@ -17,9 +17,13 @@ class SupportTicketController extends Controller
 {
     public function index()
     {
-        // Get both assigned and unassigned tickets
-        $assignedTickets = SupportTicket::where('assigned_to', Auth::id())->get();
-        $unassignedTickets = SupportTicket::whereNull('assigned_to')->get();
+        // Get both assigned and unassigned order tickets
+        $assignedTickets = SupportTicket::where('category', 'order')
+            ->where('assigned_to', Auth::id())
+            ->get();
+        $unassignedTickets = SupportTicket::where('category', 'order')
+            ->whereNull('assigned_to')
+            ->get();
         
         $totalTickets = $assignedTickets->count();
         $pendingTickets = $assignedTickets->where('status', 'open')->count();
@@ -37,8 +41,9 @@ class SupportTicketController extends Controller
 
     public function show($id)
     {
-        // Allow viewing both assigned and unassigned tickets
+        // Allow viewing both assigned and unassigned order tickets
         $ticket = SupportTicket::with(['replies.user', 'user'])
+            ->where('category', 'order')
             ->where(function($query) {
                 $query->where('assigned_to', Auth::id())
                       ->orWhereNull('assigned_to');
@@ -51,16 +56,25 @@ class SupportTicketController extends Controller
     public function reply(Request $request, $ticketId)
     {
         $validated = $request->validate([
-            'message' => 'required|string',
+            'message' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    // Strip HTML tags and check if content is empty
+                    if (empty(trim(strip_tags($value)))) {
+                    $fail('The message field cannot be empty.');
+                    }
+                }
+            ],
             'attachments.*' => 'nullable|file|max:10240',
             'is_internal' => 'nullable|boolean',
             'update_status' => 'nullable|in:open,in_progress,closed'
         ]);
 
-        $ticket = SupportTicket::where(function($query) {
-            $query->where('assigned_to', Auth::id())
-                  ->orWhereNull('assigned_to');
-        })->findOrFail($ticketId);
+        $ticket = SupportTicket::where('category', 'order')
+            ->where(function($query) {
+                $query->where('assigned_to', Auth::id())
+                      ->orWhereNull('assigned_to');
+            })->findOrFail($ticketId);
 
         // Auto-assign ticket if unassigned
         if (!$ticket->assigned_to) {
@@ -153,10 +167,14 @@ class SupportTicketController extends Controller
 
     public function getTickets(Request $request)
     {
-        $tickets = SupportTicket::with(['user'])
+        $tickets = SupportTicket::with(['user', 'order'])
             ->where(function($query) {
                 $query->where('assigned_to', Auth::id())
-                      ->orWhereNull('assigned_to');
+                        ->orWhereNull('assigned_to');
+            })
+            ->when(Auth::user()->role_id == 4, function($query) {
+                // For contractors, only show order-related tickets
+                $query->where('category', 'order');
             })
             ->select('support_tickets.*');
 
@@ -182,6 +200,9 @@ class SupportTicketController extends Controller
                     </div>
                     '.$assignedBadge.'
                 </div>';
+            })
+            ->addColumn('order_number', function ($ticket) {
+                return $ticket->order ? '#'.$ticket->order->id : 'N/A';
             })
             ->editColumn('created_at', function ($ticket) {
                 return $ticket->created_at->format('d M, Y');

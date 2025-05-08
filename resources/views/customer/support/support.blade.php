@@ -189,6 +189,62 @@
     .ql-snow .ql-picker {
         color: var(--light-color);
     }
+
+    /* Select2 Styles */
+    .select2-container--default .select2-selection--single {
+        background-color: var(--primary-color);
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        height: auto;
+        padding: .4rem;
+    }
+    
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--light-color);
+        padding-left: 0;
+        opacity: .7;
+        font-size: 14px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 8px;
+    }
+    
+    .select2-dropdown {
+        background-color: var(--primary-color);
+        border: 1px solid var(--input-border);
+        z-index: 9999;
+    }
+    
+    .select2-search--dropdown .select2-search__field {
+        background-color: var(--primary-color);
+        color: var(--light-color);
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        padding: .4rem;
+    }
+    
+    .select2-container--default .select2-results__option {
+        padding: .5rem;
+        font-size: 14px;
+        opacity: .7;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--second-primary);
+        color: var(--white-color);
+        opacity: 1;
+    }
+    
+    .select2-container--default .select2-selection--single:focus {
+        border: 2px solid var(--second-primary) !important;
+        box-shadow: rgba(159, 93, 209, 0.814) 0px 0px 4px !important;
+    }
 </style>
 @endpush
 
@@ -301,7 +357,15 @@
                             <option value="technical">Technical Issue</option>
                             <option value="billing">Billing Issue</option>
                             <option value="account">Account Issue</option>
+                            <option value="order">Order Issue</option>
                             <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="orderSelection" style="display: none;">
+                        <label for="order_id" class="form-label">Select Order</label>
+                        <select class="form-select" id="order_id" name="order_id">
+                            <option value="">Select Order</option>
                         </select>
                     </div>
                     
@@ -467,9 +531,22 @@ $(document).ready(function() {
 
     // Handle ticket submission
     $('#submitTicket').click(function() {
+        const submitBtn = $(this);
+        submitBtn.prop('disabled', true);
+        
+        Swal.fire({
+            title: 'Creating ticket...',
+            text: 'Please wait while we process your request',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         const form = $('#createTicketForm')[0];
         const formData = new FormData(form);
-        // Add Quill editor content to form data
         formData.append('description', quill.root.innerHTML);
 
         $.ajax({
@@ -479,16 +556,18 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
+                Swal.close();
                 if (response.success) {
                     toastr.success(response.message);
                     $('#createTicketModal').modal('hide');
                     table.ajax.reload();
                     form.reset();
-                    quill.root.innerHTML = ''; // Clear Quill editor
+                    quill.root.innerHTML = '';
                     $('#attachmentPreviews').empty();
                 }
             },
             error: function(xhr) {
+                Swal.close();
                 if (xhr.status === 422) {
                     const errors = xhr.responseJSON.errors;
                     Object.keys(errors).forEach(key => {
@@ -497,13 +576,64 @@ $(document).ready(function() {
                 } else {
                     toastr.error('An error occurred while creating the ticket');
                 }
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false);
             }
         });
+    });
+
+    // Show/hide order selection based on category
+    $('#category').on('change',function() {
+        if ($(this).val() === 'order') {
+            $('#orderSelection').show();
+            $('#order_id').prop('required', true);
+        } else {
+            $('#orderSelection').hide();
+            $('#order_id').prop('required', false);
+            $('#order_id').val(null).trigger('change'); // Clear the selection
+        }
     });
 });
 
 function viewTicket(id) {
     window.location.href = `/customer/support/tickets/${id}`;
 }
+</script>
+
+<script>
+    $(document).ready(function() {
+        // Special initialization for order_id with AJAX
+        $('#order_id').select2({
+            placeholder: 'Select an order',
+            width: '100%',
+            dropdownParent: $('#createTicketModal'),
+            minimumResultsForSearch: 0, // This ensures search box appears
+            language: {
+                searching: function() {
+                    return "Searching...";
+                }
+            },
+            allowClear: true,
+            ajax: {
+                url: "{{ route('customer.support.tickets.orders') }}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        page: params.page
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+    });
 </script>
 @endpush

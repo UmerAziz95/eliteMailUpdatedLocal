@@ -13,11 +13,11 @@ class SupportTicketObserver
         // Notify assigned contractor if one is assigned
         if ($ticket->assigned_to) {
             $contractor = $ticket->assignedTo;
-            $contractor->notifications()->create([
-                'title' => 'New Ticket Assigned',
-                'message' => "You have been assigned ticket #{$ticket->ticket_number}",
-                'type' => 'ticket_assigned',
+            Notification::create([
                 'user_id' => $contractor->id,
+                'title' => 'New Ticket Assigned',
+                'message' => "A new ticket #{$ticket->ticket_number} has been assigned to you",
+                'type' => 'ticket_assigned',
                 'data' => [
                     'ticket_id' => $ticket->id,
                     'ticket_number' => $ticket->ticket_number

@@ -393,7 +393,6 @@ $(document).ready(function() {
         const formData = new FormData(this);
         formData.append('_token', '{{ csrf_token() }}');
         formData.append('message', quill.root.innerHTML);
-
         $.ajax({
             url: "{{ route('contractor.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
@@ -453,8 +452,9 @@ $(document).ready(function() {
                     toastr.success('Reply sent successfully');
                 }
             },
-            error: function() {
-                toastr.error('Failed to send reply');
+            error: function(xhr) {
+                const message = xhr.responseJSON?.message || 'Failed to send reply';
+                toastr.error(message);
             }
         });
     });

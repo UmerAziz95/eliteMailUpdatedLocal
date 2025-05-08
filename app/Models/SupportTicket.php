@@ -18,7 +18,8 @@ class SupportTicket extends Model
         'status',
         'category',
         'assigned_to',
-        'attachments'
+        'attachments',
+        'order_id'
     ];
 
     protected $casts = [
@@ -45,6 +46,11 @@ class SupportTicket extends Model
     public function replies()
     {
         return $this->hasMany(TicketReply::class, 'ticket_id');
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 
     protected static function boot()

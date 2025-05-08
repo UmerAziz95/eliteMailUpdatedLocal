@@ -361,7 +361,6 @@ $(document).ready(function() {
         const formData = new FormData(this);
         formData.append('_token', '{{ csrf_token() }}');
         formData.append('message', quill.root.innerHTML);
-
         $.ajax({
             url: "{{ route('customer.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
