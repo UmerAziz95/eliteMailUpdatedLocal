@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Order;
 use App\Models\SupportTicket;
 use App\Models\TicketReply;
+use App\Models\Notification;
+use App\Services\ActivityLogService;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 
 class SupportTicketController extends Controller
 {
@@ -32,6 +36,7 @@ class SupportTicketController extends Controller
             'description' => 'required|string',
             'category' => 'required|string',
             'priority' => 'required|in:low,medium,high',
+            'order_id' => 'required_if:category,order|nullable|exists:orders,id,user_id,'.Auth::id(),
             'attachments.*' => 'nullable|file|max:10240' // 10MB max per file
         ]);
 
@@ -43,6 +48,14 @@ class SupportTicketController extends Controller
             }
         }
 
+        // Verify order belongs to user if category is order
+        $assignedTo = null;
+        if ($validated['category'] === 'order' && $request->order_id) {
+            $order = Order::where('id', $request->order_id)
+                         ->where('user_id', Auth::id())
+                         ->firstOrFail();
+            $assignedTo = $order->assigned_to;
+        }
         $ticket = SupportTicket::create([
             'user_id' => Auth::id(),
             'subject' => $validated['subject'],
@@ -50,8 +63,27 @@ class SupportTicketController extends Controller
             'category' => $validated['category'],
             'priority' => $validated['priority'],
             'attachments' => $attachments,
-            'status' => 'open'
+            'status' => 'open',
+            'order_id' => $request->order_id,
+            'assigned_to' => $assignedTo
         ]);
+        
+        // Create a new activity log using the custom log service
+        ActivityLogService::log(
+            'customer-support-ticket-create', 
+            'Created a new support ticket: ' . $ticket->id, 
+            $ticket, 
+            [
+                'ticket_id' => $ticket->id,
+                'subject' => $ticket->subject,
+                'description' => $ticket->description,
+                'category' => $ticket->category,
+                'priority' => $ticket->priority,
+                'status' => $ticket->status,
+                'created_at' => now()->toDateTimeString(),
+                'ip_address' => request()->ip()
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -72,9 +104,18 @@ class SupportTicketController extends Controller
     public function reply(Request $request, $ticketId)
     {
         $validated = $request->validate([
-            'message' => 'required|string',
+            'message' => [
+            'required',
+            function ($attribute, $value, $fail) {
+                // Strip HTML tags and check if content is empty
+                if (empty(trim(strip_tags($value)))) {
+                $fail('The message field cannot be empty.');
+                }
+            }
+            ],
             'attachments.*' => 'nullable|file|max:10240'
         ]);
+        // dd($validated);
 
         $ticket = SupportTicket::where('user_id', Auth::id())->findOrFail($ticketId);
 
@@ -97,6 +138,50 @@ class SupportTicketController extends Controller
         if ($ticket->status === 'closed') {
             $ticket->update(['status' => 'open']);
         }
+        // Create a new activity log using the custom log service
+        ActivityLogService::log(
+            'customer-support-ticket-reply', 
+            'Replied to support ticket: ' . $ticket->id, 
+            $reply, 
+            [
+                'ticket_id' => $ticket->id,
+                'reply_id' => $reply->id,
+                'message' => $reply->message,
+                'attachments' => $reply->attachments,
+                'created_at' => now()->toDateTimeString(),
+                'ip_address' => request()->ip()
+            ]
+        );
+
+        if ($ticket->assigned_to) {
+            // Create notification for the staff member
+            Notification::create([
+                'user_id' => $ticket->assigned_to,
+                'type' => 'support_ticket_reply',
+                'title' => 'New Reply on Ticket',
+                'message' => "You have a new reply on support ticket #{$ticket->id}",
+                'data' => [
+                    'ticket_id' => $ticket->id,
+                    'reply_id' => $reply->id,
+                    'message' => $reply->message,
+                    'attachments' => $reply->attachments,
+                    'created_at' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            ]);
+
+            // Send email to assigned staff member
+            $assignedStaff = \App\Models\User::find($ticket->assigned_to);
+            if ($assignedStaff) {
+                Mail::to($assignedStaff->email)
+                    ->queue(new \App\Mail\TicketReplyMail(
+                        $ticket,
+                        $reply,
+                        Auth::user(),
+                        $assignedStaff
+                    ));
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -110,6 +195,39 @@ class SupportTicketController extends Controller
         $tickets = SupportTicket::with(['user'])
             ->where('user_id', Auth::id())
             ->select('support_tickets.*');
+
+        // Apply ticket number filter
+        if ($request->has('ticket_number') && $request->ticket_number != '') {
+            $tickets->where('ticket_number', 'like', '%' . $request->ticket_number . '%');
+        }
+
+        // Apply subject filter
+        if ($request->has('subject') && $request->subject != '') {
+            $tickets->where('subject', 'like', '%' . $request->subject . '%');
+        }
+
+        // Apply category filter
+        if ($request->has('category') && $request->category != '') {
+            $tickets->where('category', $request->category);
+        }
+
+        // Apply priority filter
+        if ($request->has('priority') && $request->priority != '') {
+            $tickets->where('priority', $request->priority);
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status != '') {
+            $tickets->where('status', $request->status);
+        }
+
+        // Apply date range filters
+        if ($request->has('start_date') && $request->start_date != '') {
+            $tickets->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->has('end_date') && $request->end_date != '') {
+            $tickets->whereDate('created_at', '<=', $request->end_date);
+        }
 
         return DataTables::of($tickets)
             ->addColumn('action', function ($ticket) {
@@ -142,5 +260,40 @@ class SupportTicketController extends Controller
             })
             ->rawColumns(['action', 'status', 'priority'])
             ->make(true);
+    }
+
+    public function getUserOrders(Request $request)
+    {
+        $query = Order::where('user_id', Auth::id())
+                     ->with(['plan', 'reorderInfo']);
+
+        // Apply search filter if search term is provided
+        if ($request->has('q') && !empty($request->q)) {
+            $searchTerm = $request->q;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('id', 'LIKE', "%{$searchTerm}%")
+                  ->orWhereHas('plan', function($q) use ($searchTerm) {
+                      $q->where('name', 'LIKE', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')
+                       ->get()
+                       ->map(function($order) {
+                           return [
+                               'id' => $order->id,
+                               'text' => sprintf(
+                                   "Order #%d - %s (%s)", 
+                                   $order->id,
+                                   $order->plan ? $order->plan->name : 'N/A',
+                                   $order->created_at->format('d M Y')
+                               )
+                           ];
+                       });
+        
+        return response()->json([
+            'results' => array_values($orders->toArray())
+        ]);
     }
 }

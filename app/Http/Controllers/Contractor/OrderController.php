@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
 use App\Models\OrderEmail;
 use App\Models\Notification;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 class OrderController extends Controller
 {
     private $statuses;
@@ -42,24 +44,27 @@ class OrderController extends Controller
     {
         $plans = Plan::where('is_active', true)->get();
         
-        // Get order statistics
-        $orders = Order::query();
+        // Get orders that are either unassigned or assigned to the current contractor
+        $orders = Order::where(function($query) {
+            $query->whereNull('assigned_to')
+                  ->orWhere('assigned_to', auth()->id());
+        });
         
         $totalOrders = $orders->count();
         
         // Get orders by admin status using actual status names from Status model
-        $pendingOrders = Order::where('status_manage_by_admin', 'pending')->count();
-        $completedOrders = Order::where('status_manage_by_admin', 'completed')->count();
-        $inProgressOrders = Order::where('status_manage_by_admin', 'in-progress')->count();
-        $expiredOrders = Order::where('status_manage_by_admin', 'expired')->count();
-        $approvedOrders = Order::where('status_manage_by_admin', 'approved')->count();
+        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
+        $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
+        $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
+        $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
+        $approvedOrders = $orders->clone()->where('status_manage_by_admin', 'approved')->count();
 
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
 
-        $lastWeekOrders = Order::whereBetween('created_at', $lastWeek)->count();
-        $previousWeekOrders = Order::whereBetween('created_at', $previousWeek)->count();
+        $lastWeekOrders = $orders->clone()->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = $orders->clone()->whereBetween('created_at', $previousWeek)->count();
 
         $percentageChange = $previousWeekOrders > 0 
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
@@ -204,7 +209,11 @@ class OrderController extends Controller
                 ->with(['user', 'plan', 'reorderInfo'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
-                ->leftJoin('users', 'orders.user_id', '=', 'users.id');
+                ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+                ->where(function($query) {
+                    $query->whereNull('assigned_to')
+                          ->orWhere('assigned_to', auth()->id());
+                });
 
             // Apply plan filter if provided
             if ($request->has('plan_id') && $request->plan_id != '') {
@@ -273,13 +282,18 @@ class OrderController extends Controller
                                 </ul>
                             </div>';
                 })
+                ->addColumn('assignment', function ($order) {
+                    if ($order->assigned_to == auth()->id()) {
+                        return '<span class="badge bg-success">Assigned to you</span>';
+                    }
+                    return '<span class="badge bg-secondary">Unassigned</span>';
+                })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusKey = $status;
-                    // dd($order->status_manage_by_admin, $statusKey);
                     $statusClass = $this->statuses[$statusKey] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                         . ucfirst($status) . '</span>';
@@ -299,7 +313,7 @@ class OrderController extends Controller
                 ->addColumn('total_inboxes', function ($order) {
                     return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
                 })
-                ->rawColumns(['action', 'status'])
+                ->rawColumns(['action', 'status', 'assignment'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -390,9 +404,16 @@ class OrderController extends Controller
 
             $order = Order::findOrFail($request->order_id);
             $oldStatus = $order->status_manage_by_admin;
+            
+            // Auto-assign the order if it's not already assigned
+            if (!$order->assigned_to) {
+                $order->assigned_to = auth()->id();
+            }
+            
             $order->status_manage_by_admin = strtolower($request->status);
             $order->save();
-            // Create a new activity log using the custom log service
+
+            // Create activity log
             ActivityLogService::log(
                 'contractor-order-status-update',
                 'Order status updated : ' . $order->id,
@@ -401,7 +422,8 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'old_status' => $oldStatus,
                     'new_status' => $order->status_manage_by_admin,
-                    'updated_by' => auth()->id()
+                    'updated_by' => auth()->id(),
+                    'assigned_to' => $order->assigned_to
                 ]
             );
 
@@ -410,7 +432,8 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'old_status' => $oldStatus,
                 'new_status' => $order->status_manage_by_admin,
-                'updated_by' => auth()->id()
+                'updated_by' => auth()->id(),
+                'assigned_to' => $order->assigned_to
             ]);
 
             return response()->json([
@@ -555,10 +578,16 @@ class OrderController extends Controller
                 $newStatus = $request->marked_status;
                 $reason = $request->reason ? $request->reason."(Reason given by) ".Auth::user()->name : null;
                 
+                // Auto-assign the order if it's not already assigned
+                if (!$order->assigned_to) {
+                    $order->assigned_to = auth()->id();
+                }
+                
                 $order->update([
                     'status_manage_by_admin' => $newStatus,
                     'reason' => $reason,
                 ]);
+
                 // Create a new activity log using the custom log service
                 ActivityLogService::log(
                     'contractor-order-status-update',
@@ -568,7 +597,8 @@ class OrderController extends Controller
                         'order_id' => $order->id,
                         'old_status' => $oldStatus,
                         'new_status' => $order->status_manage_by_admin,
-                        'updated_by' => auth()->id()
+                        'updated_by' => auth()->id(),
+                        'assigned_to' => $order->assigned_to
                     ]
                 );
                 // Notification for customer
@@ -581,7 +611,8 @@ class OrderController extends Controller
                         'order_id' => $order->id,
                         'old_status' => $oldStatus,
                         'new_status' => $newStatus,
-                        'reason' => $reason
+                        'reason' => $reason,
+                        'assigned_to' => $order->assigned_to
                     ]
                 ]);
                 // Notification for contractor
@@ -594,9 +625,11 @@ class OrderController extends Controller
                         'order_id' => $order->id,
                         'old_status' => $oldStatus,
                         'new_status' => $newStatus,
-                        'reason' => $reason
+                        'reason' => $reason,
+                        'assigned_to' => $order->assigned_to
                     ]
                 ]);
+
                 // Get user details and send email
                 $user = $order->user;
                 try {
@@ -622,6 +655,7 @@ class OrderController extends Controller
                         ));
                     Log::info('Order status change email sent', [
                         'order_id' => $order->id,
+                        'assigned_to' => $order->assigned_to
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
@@ -642,4 +676,81 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+
+    public function orderImportProcess(Request $request)
+    {
+        // Validate file and order_id
+        $validator = Validator::make($request->all(), [
+            'bulk_file' => 'required|file|mimes:csv,txt',
+            'order_id' => 'required|exists:orders,id',
+            'order_total_inboxes' => 'required|integer'
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+    
+        // Retrieve order
+        $order = Order::find($request->order_id);
+    
+        // Read the uploaded CSV file
+        $file = $request->file('bulk_file');
+        $filePath = $file->getRealPath();
+        $csv = array_map('str_getcsv', file($filePath));
+    
+        if (empty($csv) || count($csv) < 2) {
+            return response()->json([
+                'message' => 'The uploaded file is empty or lacks data.'
+            ], 400);
+        }
+    
+        // Get the header and remove it from data
+        $headers = array_map('trim', $csv[0]);
+        unset($csv[0]);
+       
+
+        if (count($csv) > $request->order_total_inboxes) {
+            return response()->json([
+                'message' => 'Oops! Limit exceeded. File contains more emails than allowed.',
+                'count' => count($csv)
+            ], 400);
+        }
+    
+        $emails = [];
+    
+        foreach ($csv as $row) {
+            if (count($row) !== count($headers)) {
+                continue; // Skip malformed row
+            }
+    
+            $data = array_combine($headers, $row);
+    
+            $emails[] = [
+                'order_id' => $order->id,
+                'name' => $data['name'] ?? null,
+                'email' => $data['email'] ?? null,
+                'password' => $data['password'] ?? null,
+                'user_id' => $order->user_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+    
+        // Insert all at once
+        OrderEmail::insert($emails);
+    
+        return response()->json([
+            'message' => 'Emails imported successfully.',
+            'count' => count($emails)
+        ]);
+    }
+    
+
+
+
+
 }

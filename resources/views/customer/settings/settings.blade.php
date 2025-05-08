@@ -499,7 +499,7 @@
                                                 @if($notification->is_read)
                                                     <span class="badge bg-label-success">Read</span>
                                                 @else
-                                                    <span class="badge bg-label-warning">Unread</span>
+                                                    <span class="badge bg-label-warning readToggle">Unread</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -1081,6 +1081,31 @@
                     }
                 });
             }, 'image/jpeg', 0.95);
+        });
+        // Handle mark as read functionality
+        $('.mark-as-read').on('click', function() {
+            const button = $(this);
+            const notificationId = button.data('id');
+            
+            $.ajax({
+                url: `/notifications/${notificationId}/mark-read`,
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    // Update the status badge
+                    button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                    // Remove the mark as read button
+                    button.remove();
+                    // Show success message
+                    toastr.success('Notification marked as read');
+                },
+                error: function(xhr) {
+                    toastr.error('Error marking notification as read');
+                    console.error(xhr.responseText);
+                }
+            });
         });
     </script>
 @endpush

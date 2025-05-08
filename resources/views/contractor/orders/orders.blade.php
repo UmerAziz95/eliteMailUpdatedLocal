@@ -326,7 +326,7 @@
                         targets: planId ? 4 : 5
                     }, // Domain URL
                     {
-                        width: '15%',
+                        width: '10%',
                         targets: planId ? 5 : 6
                     }, // Total Inboxes 
                     {
@@ -334,8 +334,12 @@
                         targets: planId ? 6 : 7
                     }, // Status
                     {
-                        width: '10%',
+                        width: '15%',
                         targets: planId ? 7 : 8
+                    }, // Assignment
+                    {
+                        width: '10%',
+                        targets: planId ? 8 : 9
                     } // Actions
                 ],
                 ajax: {
@@ -418,6 +422,10 @@
                     {
                         data: 'status',
                         name: 'orders.status'
+                    },
+                    {
+                        data: 'assignment',
+                        name: 'assignment'
                     },
                     {
                         data: 'action',
@@ -750,12 +758,20 @@
             });
         }
     });
+    
+    // Handle bulk import modal
+    $(document).on('click', '.bulk-import', function() {
+        // Show the modal
+        $('#BulkImportModal').modal('show');
+    });
+
     //open the modal for cancel subscription
     $(document).on('click', '.markStatus', function() {
         const chargebee_subscription_id = $(this).data('id');
         const status = $(this).data('status');
         const reason = $(this).data('reason');
-
+        console.log('Modal opening with:', { chargebee_subscription_id, status, reason });
+        
         // Set subscription ID in the hidden input
         $('#subscription_id_to_cancel').val(chargebee_subscription_id);
 
@@ -763,13 +779,13 @@
         $('input[name="marked_status"]').prop('checked', false);
 
         // Check the radio button that matches the status
-        $('input[name="marked_status"][value="' + status + '"]').prop('checked', true);
+        $(`input[name="marked_status"][value="${status}"]`).prop('checked', true);
 
         // Show or hide reason field depending on status
         if (status === 'Reject') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').attr('required', true);
-            $('#cancellation_reason').val(reason);
+            $('#cancellation_reason').val(reason || '');
         } else {
             $('#reason_wrapper').addClass('d-none');
             $('#cancellation_reason').removeAttr('required');
@@ -779,9 +795,12 @@
         // Show the modal
         $('#cancel_subscription').modal('show');
     });
+
     //handle the reason field on status change
-    $('.marked_status').on('change', function() {
+    $(document).on('change', 'input[name="marked_status"]', function() {
         const selected = $(this).val();
+        console.log('Status changed to:', selected);
+        
         if (selected === 'Reject') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').attr('required', true);
@@ -791,7 +810,6 @@
             $('#cancellation_reason').removeAttr('required');
         }
     });
-
 
     // Handle form submission
     $('#cancelSubscriptionForm').on('submit', function(e) {
@@ -867,105 +885,6 @@
                         }).then(() => {
                             $('#cancellation_reason').val('');
                             // window.location.reload();
-                            if (window.orderTables) {
-                                Object.values(window.orderTables).forEach(function(table) {
-                                    if (table) {
-                                        table.ajax.reload(null, false);
-                                    }
-                                });
-                            }
-                        });
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'An error occurred while updating status.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: errorMessage,
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                });
-            }
-        });
-    });
-    // Handle form submission
-    $('#cancelSubscriptionForm').on('submit', function(e) {
-        e.preventDefault();
-
-        const selectedStatus = $('input[name="marked_status"]:checked').val();
-        const reason = $('#cancellation_reason').val().trim();
-
-
-        // If status is required
-        if (!selectedStatus) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please select a status.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // If Reject is selected but no reason
-        if (selectedStatus === 'Reject' && !reason) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'The reason field is required for rejection.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Gather form data manually
-        const formData = new FormData(this);
-        formData.append('marked_status', selectedStatus);
-
-        // Confirm dialog
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: $(this).attr('action'),
-                    method: 'POST',
-                    data: Object.fromEntries(formData),
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    beforeSend: function() {
-                        Swal.fire({
-                            title: 'Processing...',
-                            text: 'Please wait a while...',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                    },
-                    success: function(response) {
-                        $('#cancel_subscription').modal('hide');
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Status has been updated successfully.',
-                            confirmButtonColor: '#3085d6'
-                        }).then(() => {
-                            $('#cancellation_reason').val('');
-                            // Refresh all DataTables instead of reloading page
                             if (window.orderTables) {
                                 Object.values(window.orderTables).forEach(function(table) {
                                     if (table) {

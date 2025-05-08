@@ -35,7 +35,7 @@
     }
 
     .received .message-content {
-        background-color: #f0f0f0;
+        background-color: #64738c;
         color: #333;
     }
 
@@ -144,7 +144,8 @@
                         <form id="replyForm">
                             <div class="mb-3">
                                 <label for="message" class="form-label">Your Reply</label>
-                                <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                                <div id="message" style="height: 200px;"></div>
+                                <input type="hidden" name="message" id="messageContent">
                             </div>
                             <div class="mb-3">
                                 <label for="attachments" class="attachment-icon">
@@ -167,7 +168,7 @@
                         @unless($reply->is_internal)
                         <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
                             <div class="message-content">
-                                {{ $reply->message }}
+                                {!! $reply->message !!}
                             </div>
                             <div class="message-meta">
                                 {{ $reply->user->name }} - {{ $reply->created_at->format('M d, Y H:i') }}
@@ -205,7 +206,7 @@
                         <!-- Initial ticket message -->
                         <div class="message-bubble sent">
                             <div class="message-content">
-                                {{ $ticket->description }}
+                                {!! $ticket->description !!}
                             </div>
                             <div class="message-meta">
                                 {{ $ticket->user->name }} - {{ $ticket->created_at->format('M d, Y H:i') }}
@@ -283,7 +284,23 @@
 
 @push('scripts')
 <script>
+const quill = new Quill('#message', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ]
+    },
+    placeholder: 'Type your message here...'
+});
+</script>
+<script>
 $(document).ready(function() {
+    const chatContainer = document.getElementById('chatContainer');
+    
     // Handle file input change
     $('#attachments').on('change', function(e) {
         const files = Array.from(e.target.files);
@@ -343,7 +360,7 @@ $(document).ready(function() {
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('_token', '{{ csrf_token() }}');
-
+        formData.append('message', quill.root.innerHTML);
         $.ajax({
             url: "{{ route('customer.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
@@ -353,57 +370,74 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Clear form
-                    $('#message').val('');
+                    quill.root.innerHTML = '';
                     $('#attachments').val('');
                     $('#attachmentPreviews').empty();
                     
-                    // Add new message to chat
-                    const newMessage = `
-                        <div class="message-bubble sent" style="display: none;">
-                            <div class="message-content">
-                                ${response.reply.message}
-                            </div>
-                            <div class="message-meta">
-                                ${response.reply.user.name} - Just now
-                            </div>
-                            ${response.reply.attachments ? `
-                                <div class="attachments-area">
-                                    ${response.reply.attachments.map(attachment => {
-                                        const extension = attachment.split('.').pop().toLowerCase();
-                                        const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
-                                        const fileName = attachment.split('/').pop();
-                                        
-                                        return `
-                                            <div class="attachment-preview ${isImage ? '' : 'document'}">
-                                                ${isImage ? 
-                                                    `<img src="${attachment}" alt="Attachment">` :
-                                                    `<i class="fas ${
-                                                        extension === 'pdf' ? 'fa-file-pdf' :
-                                                        ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
-                                                        ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file'
-                                                    }"></i>`
-                                                }
-                                                <div class="attachment-name">${fileName}</div>
-                                                <a href="${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
+                    // Create new message element
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message-bubble sent';
                     
-                    // Prepend new message and show with animation
-                    $('#chatContainer').prepend(newMessage);
-                    $('.message-bubble:first').slideDown();
+                    // Build message content
+                    const messageContent = document.createElement('div');
+                    messageContent.className = 'message-content';
+                    messageContent.innerHTML = response.reply.message;
+                    messageElement.appendChild(messageContent);
+                    
+                    // Build message meta
+                    const messageMeta = document.createElement('div');
+                    messageMeta.className = 'message-meta';
+                    messageMeta.textContent = `${response.reply.user.name} - Just now`;
+                    messageElement.appendChild(messageMeta);
+                    
+                    // Add attachments if any
+                    if (response.reply.attachments && response.reply.attachments.length > 0) {
+                        const attachmentsArea = document.createElement('div');
+                        attachmentsArea.className = 'attachments-area';
+                        
+                        response.reply.attachments.forEach(attachment => {
+                            const extension = attachment.split('.').pop().toLowerCase();
+                            const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+                            const fileName = attachment.split('/').pop();
+                            
+                            const preview = document.createElement('div');
+                            preview.className = `attachment-preview ${isImage ? '' : 'document'}`;
+                            
+                            if (isImage) {
+                                preview.innerHTML = `
+                                    <img src="/storage/${attachment}" alt="Attachment">
+                                    <div class="attachment-name">${fileName}</div>
+                                    <a href="/storage/${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                `;
+                            } else {
+                                const iconClass = extension === 'pdf' ? 'fa-file-pdf' :
+                                    ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
+                                    ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file';
+                                
+                                preview.innerHTML = `
+                                    <i class="fas ${iconClass}"></i>
+                                    <div class="attachment-name">${fileName}</div>
+                                    <a href="/storage/${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                `;
+                            }
+                            attachmentsArea.appendChild(preview);
+                        });
+                        messageElement.appendChild(attachmentsArea);
+                    }
+                    
+                    // Insert new message at the top of chat container
+                    chatContainer.insertBefore(messageElement, chatContainer.firstChild);
                     
                     toastr.success('Reply sent successfully');
                 }
             },
-            error: function() {
-                toastr.error('Failed to send reply');
+            error: function(xhr) {
+                const message = xhr.responseJSON?.message || 'Failed to send reply';
+                toastr.error(message);
             }
         });
     });

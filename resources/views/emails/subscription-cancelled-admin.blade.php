@@ -17,9 +17,6 @@ End Date: {{ $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_
 **Cancellation Reason:**  
 {{ $reason }}
 
-@component('mail::button', ['url' => url('/admin/subscriptions')])
-View Subscription Details
-@endcomponent
 
 Best regards,  
 {{ config('app.name') }}

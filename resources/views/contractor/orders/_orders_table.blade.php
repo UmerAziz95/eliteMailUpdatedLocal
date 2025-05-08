@@ -12,6 +12,7 @@
                 <th>Domain URL</th>
                 <th>Total Inboxes</th>
                 <th>Status</th>
+                <th>Assignment</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -38,8 +39,7 @@
 
 
 
-                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.status.process') }}"
-                    method="POST">
+                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.status.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
                     <div class="mb-3">
@@ -60,7 +60,7 @@
                             @foreach($statuses as $status => $badge)
                             <div class="form-check me-3">
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                    value="{{ ucfirst($status) }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
                                     {{ $status }}
                                 </label>
@@ -84,3 +84,5 @@
         </div>
     </div>
 </div>
+
+{{-- import file modal --}}

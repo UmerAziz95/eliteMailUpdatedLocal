@@ -9,10 +9,6 @@ Your order #{{ $order->id }} status has been updated from **{{ ucfirst($oldStatu
 **Reason:** {{ $reason }}
 @endif
 
-@component('mail::button', ['url' => config('app.url').'/customer/orders/'.$order->id.'/view'])
-View Order Details
-@endcomponent
-
 Thank you for using our service.
 
 Best regards,<br>

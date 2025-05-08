@@ -28,6 +28,13 @@
         <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
             {{ ucfirst($order->status2 ?? 'Pending') }}
         </div>
+       
+    </div>
+    <div class="row d-flex justify-content-end" id="exportCsvBtn" style="margin-right: 1px">
+        <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
+            <a href="">Bulk Export</a>
+            
+        </div>
     </div>
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
@@ -996,3 +1003,32 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function () {
+        // Get the export URL with the order ID from Blade
+        const exportUrl = "{{ url('/customer/orders/emails/' . $order->id . '/export') }}";
+
+        $('#exportCsvBtn').on('click', function(e) {
+            e.preventDefault();
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Start file download by redirecting the browser
+                    window.location.href = exportUrl;
+                }
+            });
+        });
+    });
+</script>
+
+@endpush

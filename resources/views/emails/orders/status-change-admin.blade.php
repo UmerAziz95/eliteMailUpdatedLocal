@@ -11,9 +11,6 @@ Order #{{ $order->id }} status has been changed from **{{ ucfirst($oldStatus) }}
 **Reason for Change:** {{ $reason }}
 @endif
 
-@component('mail::button', ['url' => config('app.url').'/admin/orders/'.$order->id.'/view'])
-View Order Details
-@endcomponent
 
 Best regards,<br>
 {{ config('app.name') }}

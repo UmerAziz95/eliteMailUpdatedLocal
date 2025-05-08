@@ -35,7 +35,7 @@
     }
 
     .received .message-content {
-        background-color: #f0f0f0;
+        background-color: #64738c;
         color: #333;
     }
 
@@ -117,6 +117,7 @@
         white-space: nowrap;
     }
 </style>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 @endpush
 
 @section('content')
@@ -146,14 +147,15 @@
                     <div class="reply-box mb-4">
                         <form id="replyForm">
                             <div class="mb-3">
-                                <div class="form-check mb-3">
+                                <div class="form-check mb-3" style="display: none;">>
                                     <input class="form-check-input" type="checkbox" id="isInternal" name="is_internal">
                                     <label class="form-check-label" for="isInternal">
                                         Internal Note (only visible to staff)
                                     </label>
                                 </div>
                                 <label for="message" class="form-label">Your Reply</label>
-                                <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                                <div id="message" style="height: 200px;"></div>
+                                <input type="hidden" name="message" id="messageContent">
                             </div>
                             <div class="mb-3">
                                 <label for="attachments" class="attachment-icon">
@@ -171,7 +173,7 @@
                         @foreach($ticket->replies->sortByDesc('created_at') as $reply)
                         <div class="message-bubble {{ $reply->user_id === auth()->id() ? 'sent' : 'received' }}">
                             <div class="message-content">
-                                {{ $reply->message }}
+                                {!! $reply->message !!}
                                 @if($reply->is_internal)
                                 <div class="internal-note">
                                     <i class="fas fa-eye-slash"></i> Internal Note
@@ -290,6 +292,21 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script>
+const quill = new Quill('#message', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ]
+    },
+    placeholder: 'Type your message here...'
+});
+</script>
 <script>
 $(document).ready(function() {
     // Handle status changes
@@ -375,7 +392,7 @@ $(document).ready(function() {
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('_token', '{{ csrf_token() }}');
-
+        formData.append('message', quill.root.innerHTML);
         $.ajax({
             url: "{{ route('contractor.support.tickets.reply', $ticket->id) }}",
             method: 'POST',
@@ -385,26 +402,21 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Clear form
-                    $('#message').val('');
+                    quill.root.innerHTML = '';
                     $('#attachments').val('');
                     $('#attachmentPreviews').empty();
                     $('#isInternal').prop('checked', false);
                     
                     // Add new message to chat
                     const newMessage = `
-                        <div class="message-bubble sent" style="display: none;">
+                        <div class="message-bubble sent">
                             <div class="message-content">
                                 ${response.reply.message}
-                                ${response.reply.is_internal ? `
-                                    <div class="internal-note">
-                                        <i class="fas fa-eye-slash"></i> Internal Note
-                                    </div>
-                                ` : ''}
                             </div>
                             <div class="message-meta">
                                 ${response.reply.user.name} - Just now
                             </div>
-                            ${response.reply.attachments ? `
+                            ${response.reply.attachments && response.reply.attachments.length > 0 ? `
                                 <div class="attachments-area">
                                     ${response.reply.attachments.map(attachment => {
                                         const extension = attachment.split('.').pop().toLowerCase();
@@ -414,7 +426,7 @@ $(document).ready(function() {
                                         return `
                                             <div class="attachment-preview ${isImage ? '' : 'document'}">
                                                 ${isImage ? 
-                                                    `<img src="${attachment}" alt="Attachment">` :
+                                                    `<img src="/storage/${attachment}" alt="Attachment">` :
                                                     `<i class="fas ${
                                                         extension === 'pdf' ? 'fa-file-pdf' :
                                                         ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
@@ -422,7 +434,7 @@ $(document).ready(function() {
                                                     }"></i>`
                                                 }
                                                 <div class="attachment-name">${fileName}</div>
-                                                <a href="${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                                <a href="/storage/${attachment}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             </div>
@@ -440,8 +452,9 @@ $(document).ready(function() {
                     toastr.success('Reply sent successfully');
                 }
             },
-            error: function() {
-                toastr.error('Failed to send reply');
+            error: function(xhr) {
+                const message = xhr.responseJSON?.message || 'Failed to send reply';
+                toastr.error(message);
             }
         });
     });

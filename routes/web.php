@@ -218,12 +218,16 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
+    Route::get('/orders/emails/{id}/export', [CustomerOrderEmailController::class, 'exportCsv'])->name('orders.email.exportCsv');
     //support 
     Route::get('/support', [App\Http\Controllers\Customer\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'getTickets'])->name('support.tickets');
     Route::post('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'store'])->name('support.tickets.store');
+    Route::get('/support/tickets/orders', [App\Http\Controllers\Customer\SupportTicketController::class, 'getUserOrders'])->name('support.tickets.orders');
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
+    
+
 });
 
 // Info: Contractor Access
@@ -238,6 +242,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // contractor.orders.reorder
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
+    Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
     // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
     Route::get('/dashboard', function () {
         // return view('contractor.dashboard');
