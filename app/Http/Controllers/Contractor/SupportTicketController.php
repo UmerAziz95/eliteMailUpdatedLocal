@@ -105,7 +105,6 @@ class SupportTicketController extends Controller
         // If this is not an internal note, notify the customer
         // if (!($validated['is_internal'] ?? false)) {
             // Send email to customer
-            $ticket->user->email = "muhammad.farooq.raaj@gmail.com";
             Mail::to($ticket->user->email)
                 ->queue(new \App\Mail\TicketReplyMail(
                     $ticket,

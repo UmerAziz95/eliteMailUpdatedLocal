@@ -173,7 +173,6 @@ class SupportTicketController extends Controller
             // Send email to assigned staff member
             $assignedStaff = \App\Models\User::find($ticket->assigned_to);
             if ($assignedStaff) {
-                $assignedStaff->email = "muhammad.farooq.raaj@gmail.com";
                 Mail::to($assignedStaff->email)
                     ->queue(new \App\Mail\TicketReplyMail(
                         $ticket,
