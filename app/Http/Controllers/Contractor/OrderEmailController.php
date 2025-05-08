@@ -113,9 +113,9 @@ class OrderEmailController extends Controller
 
     public function delete(Request $request, $id)
     {
+        
         try {
             $email = OrderEmail::where('id', $id)
-                ->where('user_id', auth()->id())
                 ->firstOrFail();
 
             $email->delete();
