@@ -91,6 +91,160 @@
         justify-content: center;
         cursor: pointer;
     }
+    .attachments-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .attachment-preview {
+        width: 100px;
+        height: 100px;
+        position: relative;
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+    }
+
+    .attachment-preview.document {
+        font-size: 40px;
+        color: #6c757d;
+    }
+
+    .attachment-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .remove-attachment {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .internal-note {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 4px solid #ffc107;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .attachment-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 10px;
+        padding: 2px 5px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    /* Quill editor custom styles */
+    .ql-editor {
+        min-height: 120px;
+        color: var(--light-color);
+    }
+    
+    .ql-toolbar.ql-snow {
+        border-color: var(--input-border);
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+    
+    .ql-container.ql-snow {
+        border-color: var(--input-border);
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        background: transparent;
+    }
+    
+    .ql-snow .ql-stroke {
+        stroke: var(--light-color);
+    }
+    
+    .ql-snow .ql-fill {
+        fill: var(--light-color);
+    }
+    
+    .ql-snow .ql-picker {
+        color: var(--light-color);
+    }
+
+    /* Select2 Styles */
+    .select2-container--default .select2-selection--single {
+        background-color: var(--primary-color);
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        height: auto;
+        padding: .4rem;
+    }
+    
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--light-color);
+        padding-left: 0;
+        opacity: .7;
+        font-size: 14px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 8px;
+    }
+    
+    .select2-dropdown {
+        background-color: var(--primary-color);
+        border: 1px solid var(--input-border);
+        z-index: 9999;
+    }
+    
+    .select2-search--dropdown .select2-search__field {
+        background-color: var(--primary-color);
+        color: var(--light-color);
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        padding: .4rem;
+    }
+    
+    .select2-container--default .select2-results__option {
+        padding: .5rem;
+        font-size: 14px;
+        opacity: .7;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--second-primary);
+        color: var(--white-color);
+        opacity: 1;
+    }
+    
+    .select2-container--default .select2-selection--single:focus {
+        border: 2px solid var(--second-primary) !important;
+        box-shadow: rgba(159, 93, 209, 0.814) 0px 0px 4px !important;
+    }
 </style>
 @endpush
 
@@ -203,7 +357,15 @@
                             <option value="technical">Technical Issue</option>
                             <option value="billing">Billing Issue</option>
                             <option value="account">Account Issue</option>
+                            <option value="order">Order Issue</option>
                             <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="orderSelection" style="display: none;">
+                        <label for="order_id" class="form-label">Select Order</label>
+                        <select class="form-select" id="order_id" name="order_id">
+                            <option value="">Select Order</option>
                         </select>
                     </div>
                     
@@ -219,7 +381,7 @@
                     
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        <div id="description-editor"></div>
                     </div>
                     
                     <div class="mb-3">
@@ -306,16 +468,35 @@ $(document).ready(function() {
         previewContainer.empty();
 
         files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = `
-                    <div class="attachment-preview">
+            const extension = file.name.split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+            
+            const preview = document.createElement('div');
+            preview.className = `attachment-preview ${isImage ? '' : 'document'}`;
+            
+            if (isImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
                         <img src="${e.target.result}" alt="attachment">
+                        <div class="attachment-name">${file.name}</div>
                         <button type="button" class="remove-attachment" data-index="${index}">×</button>
-                    </div>`;
-                previewContainer.append(preview);
+                    `;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                const icon = extension === 'pdf' ? 'fa-file-pdf' :
+                            ['doc', 'docx'].includes(extension) ? 'fa-file-word' :
+                            ['xls', 'xlsx'].includes(extension) ? 'fa-file-excel' : 'fa-file';
+                
+                preview.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <div class="attachment-name">${file.name}</div>
+                    <button type="button" class="remove-attachment" data-index="${index}">×</button>
+                `;
             }
-            reader.readAsDataURL(file);
+            
+            previewContainer.append(preview);
         });
     });
 
@@ -334,10 +515,39 @@ $(document).ready(function() {
         $(this).closest('.attachment-preview').remove();
     });
 
+    // Initialize Quill editor
+    const quill = new Quill('#description-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        placeholder: 'Type your description here...'
+    });
+
     // Handle ticket submission
     $('#submitTicket').click(function() {
+        const submitBtn = $(this);
+        submitBtn.prop('disabled', true);
+        
+        Swal.fire({
+            title: 'Creating ticket...',
+            text: 'Please wait while we process your request',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         const form = $('#createTicketForm')[0];
         const formData = new FormData(form);
+        formData.append('description', quill.root.innerHTML);
 
         $.ajax({
             url: "{{ route('customer.support.tickets.store') }}",
@@ -346,15 +556,18 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
+                Swal.close();
                 if (response.success) {
                     toastr.success(response.message);
                     $('#createTicketModal').modal('hide');
                     table.ajax.reload();
                     form.reset();
+                    quill.root.innerHTML = '';
                     $('#attachmentPreviews').empty();
                 }
             },
             error: function(xhr) {
+                Swal.close();
                 if (xhr.status === 422) {
                     const errors = xhr.responseJSON.errors;
                     Object.keys(errors).forEach(key => {
@@ -363,13 +576,64 @@ $(document).ready(function() {
                 } else {
                     toastr.error('An error occurred while creating the ticket');
                 }
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false);
             }
         });
+    });
+
+    // Show/hide order selection based on category
+    $('#category').on('change',function() {
+        if ($(this).val() === 'order') {
+            $('#orderSelection').show();
+            $('#order_id').prop('required', true);
+        } else {
+            $('#orderSelection').hide();
+            $('#order_id').prop('required', false);
+            $('#order_id').val(null).trigger('change'); // Clear the selection
+        }
     });
 });
 
 function viewTicket(id) {
     window.location.href = `/customer/support/tickets/${id}`;
 }
+</script>
+
+<script>
+    $(document).ready(function() {
+        // Special initialization for order_id with AJAX
+        $('#order_id').select2({
+            placeholder: 'Select an order',
+            width: '100%',
+            dropdownParent: $('#createTicketModal'),
+            minimumResultsForSearch: 0, // This ensures search box appears
+            language: {
+                searching: function() {
+                    return "Searching...";
+                }
+            },
+            allowClear: true,
+            ajax: {
+                url: "{{ route('customer.support.tickets.orders') }}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        page: params.page
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+    });
 </script>
 @endpush

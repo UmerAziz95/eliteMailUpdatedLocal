@@ -223,6 +223,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/support', [App\Http\Controllers\Customer\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'getTickets'])->name('support.tickets');
     Route::post('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'store'])->name('support.tickets.store');
+    Route::get('/support/tickets/orders', [App\Http\Controllers\Customer\SupportTicketController::class, 'getUserOrders'])->name('support.tickets.orders');
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     

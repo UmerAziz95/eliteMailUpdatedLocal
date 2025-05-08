@@ -326,7 +326,7 @@
                         targets: planId ? 4 : 5
                     }, // Domain URL
                     {
-                        width: '15%',
+                        width: '10%',
                         targets: planId ? 5 : 6
                     }, // Total Inboxes 
                     {
@@ -334,8 +334,12 @@
                         targets: planId ? 6 : 7
                     }, // Status
                     {
-                        width: '10%',
+                        width: '15%',
                         targets: planId ? 7 : 8
+                    }, // Assignment
+                    {
+                        width: '10%',
+                        targets: planId ? 8 : 9
                     } // Actions
                 ],
                 ajax: {
@@ -418,6 +422,10 @@
                     {
                         data: 'status',
                         name: 'orders.status'
+                    },
+                    {
+                        data: 'assignment',
+                        name: 'assignment'
                     },
                     {
                         data: 'action',
