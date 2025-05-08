@@ -5,6 +5,8 @@ namespace App\Observers;
 use App\Models\SupportTicket;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TicketCreatedMail;
 
 class SupportTicketObserver
 {
@@ -23,22 +25,49 @@ class SupportTicketObserver
                     'ticket_number' => $ticket->ticket_number
                 ]
             ]);
+            // Send email to assigned contractor
+            Mail::to($contractor->email)
+                ->queue(new TicketCreatedMail(
+                    $ticket,
+                    $ticket->user,
+                    $contractor
+                ));
         }
         // not assigned to send all contractors and admins
-        else {
-            $contractors = User::where('role_id', '4')->orWhere('role_id', '1')->get();
-            // dd($contractors);
-            foreach ($contractors as $contractor) {
-                Notification::create([
-                    'user_id' => $contractor->id,
-                    'title' => 'New Ticket Created',
-                    'message' => "A new ticket #{$ticket->ticket_number} has been created",
-                    'type' => 'ticket_created',
-                    'data' => [
-                        'ticket_id' => $ticket->id,
-                        'ticket_number' => $ticket->ticket_number
-                    ]
-                ]);
+        // else {
+        //     $contractors = User::where('role_id', '4')->orWhere('role_id', '1')->get();
+        //     foreach ($contractors as $contractor) {
+        //         Notification::create([
+        //             'user_id' => $contractor->id,
+        //             'title' => 'New Ticket Created',
+        //             'message' => "A new ticket #{$ticket->ticket_number} has been created",
+        //             'type' => 'ticket_created',
+        //             'data' => [
+        //                 'ticket_id' => $ticket->id,
+        //                 'ticket_number' => $ticket->ticket_number
+        //             ]
+        //         ]);
+                
+        //         // Send email to each contractor
+        //         Mail::to($contractor->email)
+        //             ->queue(new TicketCreatedMail(
+        //                 $ticket,
+        //                 $ticket->user,
+        //                 null
+        //             ));
+        //     }
+        // }
+
+        // ticket category is not order send mail admin
+        if ($ticket->category !== 'order') {
+            $admins = User::where('role_id', '1')->get();
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)
+                    ->queue(new TicketCreatedMail(
+                        $ticket,
+                        $ticket->user,
+                        $admin
+                    ));
             }
         }
     }

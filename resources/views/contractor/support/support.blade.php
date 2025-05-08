@@ -198,7 +198,67 @@
                 </div>
             </div>
         </div>
-
+        <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="row gy-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <h5 class="mb-2">Filters</h5>
+                                    <div>
+                                        <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                                        <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="ticketNumberFilter" class="form-label">Ticket #</label>
+                                    <input type="text" id="ticketNumberFilter" class="form-control" placeholder="Search by ticket number">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="subjectFilter" class="form-label">Subject</label>
+                                    <input type="text" id="subjectFilter" class="form-control" placeholder="Search by subject">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="categoryFilter" class="form-label">Category</label>
+                                    <select id="categoryFilter" class="form-select">
+                                        <option value="">All Categories</option>
+                                        <option value="order">Order Issue</option>
+                                        <option value="technical">Technical Issue</option>
+                                        <option value="billing">Billing Issue</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="priorityFilter" class="form-label">Priority</label>
+                                    <select id="priorityFilter" class="form-select">
+                                        <option value="">All Priorities</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="statusFilter" class="form-label">Status</label>
+                                    <select id="statusFilter" class="form-select">
+                                        <option value="">All Statuses</option>
+                                        <option value="open">Open</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="startDate" class="form-label">Start Date</label>
+                                    <input type="date" id="startDate" class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="endDate" class="form-label">End Date</label>
+                                    <input type="date" id="endDate" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         <div class="card p-3">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="d-flex align-items-center gap-3">
@@ -206,14 +266,6 @@
                     @if($unassignedTickets->count() > 0)
                         <span class="badge bg-info unassigned-badge">{{ $unassignedTickets->count() }} Unassigned</span>
                     @endif
-                </div>
-                <div>
-                    <select id="statusFilter" class="form-select form-select-sm">
-                        <option value="">All Statuses</option>
-                        <option value="open">Open</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="closed">Closed</option>
-                    </select>
                 </div>
             </div>
 
@@ -277,13 +329,19 @@
 
         $(document).ready(function() {
             var table = $('#ticketsTable').DataTable({
-                responsive:true,
+                responsive: true,
                 processing: true,
                 serverSide: true,
                 ajax: {
                     url: "{{ route('contractor.support.tickets') }}",
                     data: function(d) {
+                        d.ticket_number = $('#ticketNumberFilter').val();
+                        d.subject = $('#subjectFilter').val();
+                        d.category = $('#categoryFilter').val();
+                        d.priority = $('#priorityFilter').val();
                         d.status = $('#statusFilter').val();
+                        d.start_date = $('#startDate').val();
+                        d.end_date = $('#endDate').val();
                     }
                 },
                 columns: [
@@ -297,6 +355,23 @@
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[6, 'desc']] // Sort by created_at by default
+            });
+
+            // Apply filters
+            $('#applyFilters').on('click', function() {
+                table.draw();
+            });
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#ticketNumberFilter').val('');
+                $('#subjectFilter').val('');
+                $('#categoryFilter').val('');
+                $('#priorityFilter').val('');
+                $('#statusFilter').val('');
+                $('#startDate').val('');
+                $('#endDate').val('');
+                table.draw();
             });
 
             // Handle status filter change
