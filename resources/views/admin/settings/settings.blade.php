@@ -93,7 +93,7 @@
                                     height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-camera"></i>
+                                        <i class="ti ti-edit"></i>
                                     </label>
                                 </div>
                             </div>
@@ -228,7 +228,7 @@
                         Account</button>
                 </li> --}}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-tab-pane"
+                    <button class="nav-link active" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-tab-pane"
                         type="button" role="tab" aria-controls="security-tab-pane" aria-selected="false"><i
                             class="fa-solid fa-unlock"></i> Security</button>
                 </li>
@@ -483,7 +483,6 @@
                     </div> --}}
                 </div>
 
-
                 <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab"
                     tabindex="0">
                     <div class="card mb-4 p-3">
@@ -611,8 +610,8 @@
                             </thead>
                             <tbody>
                                 @php
-                                    $notifications = \App\Models\Notification::where('user_id', Auth::id())
-                                        ->orderBy('created_at', 'desc')
+                                    $notifications = \App\Models\Notification::
+                                        orderBy('created_at', 'desc')
                                         ->get();
                                 @endphp
                                 @foreach($notifications as $notification)
@@ -925,7 +924,7 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
-            var table = $('#myTable').DataTable();
+            var table = $('#notificationsTable').DataTable();
 
             // Handle user edit form submission
             $('#editUserForm').on('submit', function(e) {

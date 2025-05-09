@@ -18,79 +18,117 @@ class PlanController extends Controller
         return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed'));
     }
 
-    public function store(Request $request)
-    {
-        try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'price' => 'required|numeric|min:0',
-                'duration' => 'required|string',
-                'description' => 'required|string',
-                'min_inbox' => 'required|integer|min:1',
-                'max_inbox' => 'required|integer|min:0',
-                'feature_ids' => 'nullable|array',
-                'feature_ids.*' => 'exists:features,id',
-                'feature_values' => 'nullable|array',
-                'currency_code' => 'nullable|string|size:3'
-            ]);
+  public function store(Request $request)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'duration' => 'required|string',
+            'description' => 'required|string',
+            'min_inbox' => 'required|integer|min:1',
+            'max_inbox' => 'required|integer|min:0',
+            'feature_ids' => 'nullable|array',
+            'feature_ids.*' => 'exists:features,id',
+            'feature_values' => 'nullable|array',
+            'currency_code' => 'nullable|string|size:3'
+        ]);
 
-            // Set default currency code if not provided
-            $currencyCode = $request->currency_code ?? 'USD';
+        $min = $request->min_inbox;
+        $max = $request->max_inbox;
 
-            // First create plan in ChargeBee
-            $chargeBeePlan = $this->createChargeBeeItem([
-                'name' => $request->name,
-                'description' => $request->description,
-                'price' => $request->price,
-                'period' => $request->duration,
-                'period_unit' => 1, // Assuming 1 as default unit
-                'currency_code' => $currencyCode
-            ]);
-            
-            if (!$chargeBeePlan['success']) {
-                throw new \Exception($chargeBeePlan['message']);
-            }
+        $newMax = ($max == 0) ? PHP_INT_MAX : $max;
 
-            // Create plan in database with ChargeBee ID
-            $plan = Plan::create([
-                'name' => $request->name,
-                'chargebee_plan_id' => $chargeBeePlan['data']['price_id'],
-                'price' => $request->price,
-                'duration' => $request->duration,
-                'description' => $request->description,
-                'min_inbox' => $request->min_inbox,
-                'max_inbox' => $request->max_inbox,
-                'is_active' => true
-            ]);
+        /**
+         * ✅ CASE 1: Infinity Check
+         * If any existing plan has max_inbox = 0 (∞), 
+         * no new plan can start from a min_inbox inside that range.
+         */
+        $infinitePlanConflict = Plan::where('max_inbox', 0)
+            ->where('min_inbox', '<=', $min)
+            ->exists();
 
-            // Attach features with their values
-            if ($request->has('feature_ids')) {
-                foreach ($request->feature_ids as $index => $featureId) {
-                    $value = $request->feature_values[$index] ?? null;
-                    $plan->features()->attach($featureId, ['value' => $value]);
-                }
-            }
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Plan created successfully',
-                    'plan' => $plan->load('features')
-                ]);
-            }
-
-            return redirect()->back()->with('success', 'Plan created successfully');
-
-        } catch (\Exception $e) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error creating plan: ' . $e->getMessage()
-                ], 500);
-            }
-            return redirect()->back()->with('error', 'Error creating plan: ' . $e->getMessage());
+        if ($infinitePlanConflict) {
+            throw new \Exception("An existing plan allows unlimited inboxes starting from $min or lower. You cannot create a plan within or above this range.");
         }
+
+        /**
+         * ✅ CASE 2: Overlap Check
+         * Prevent plans with overlapping min-max ranges
+         */
+        $overlappingPlan = Plan::where(function ($query) use ($min, $newMax) {
+            $query->where(function ($sub) use ($min, $newMax) {
+                $sub->where('min_inbox', '<=', $newMax)
+                    ->where(function ($q) use ($min) {
+                        $q->where('max_inbox', '>=', $min)
+                          ->orWhere('max_inbox', 0); // includes infinity
+                    });
+            });
+        })->exists();
+
+        if ($overlappingPlan) {
+            throw new \Exception("A plan already exists that overlaps with the range $min - " . ($max == 0 ? '∞' : $max) . ".");
+        }
+
+        // Set default currency code if not provided
+        $currencyCode = $request->currency_code ?? 'USD';
+
+        // Create plan in ChargeBee
+        $chargeBeePlan = $this->createChargeBeeItem([
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'period' => $request->duration,
+            'period_unit' => 1,
+            'currency_code' => $currencyCode
+        ]);
+
+        if (!$chargeBeePlan['success']) {
+            throw new \Exception($chargeBeePlan['message']);
+        }
+
+        // Create local plan
+        $plan = Plan::create([
+            'name' => $request->name,
+            'chargebee_plan_id' => $chargeBeePlan['data']['price_id'],
+            'price' => $request->price,
+            'duration' => $request->duration,
+            'description' => $request->description,
+            'min_inbox' => $min,
+            'max_inbox' => $max,
+            'is_active' => true
+        ]);
+
+        // Attach features if present
+        if ($request->has('feature_ids')) {
+            foreach ($request->feature_ids as $index => $featureId) {
+                $value = $request->feature_values[$index] ?? null;
+                $plan->features()->attach($featureId, ['value' => $value]);
+            }
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Plan created successfully',
+                'plan' => $plan->load('features')
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Plan created successfully');
+
+    } catch (\Exception $e) {
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating plan: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return redirect()->back()->with('error', 'Error creating plan: ' . $e->getMessage());
     }
+}
+
 
     private function createChargeBeeItem($data)
     {

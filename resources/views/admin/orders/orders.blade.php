@@ -65,7 +65,8 @@
 <section class="py-3">
 
     <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-3">
+      
+         <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -73,21 +74,20 @@
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
-                                <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{
-                                    $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
+                                {{-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> --}}
                             </div>
-                            <small class="mb-0">Last week vs previous week</small>
+                            <small class="mb-0">Total Orders Placed</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-shopping-cart"></i>
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -95,20 +95,19 @@
                             <h6 class="text-heading">Pending Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Awaiting admin review</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-clock"></i>
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -116,20 +115,19 @@
                             <h6 class="text-heading">Complete Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Fully processed orders</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-check"></i>
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -137,13 +135,52 @@
                             <h6 class="text-heading">In-Progress Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
-                                <!-- <p class="text-success mb-0">Admin Status</p> -->
                             </div>
                             <small class="mb-0">Currently processing</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-brand-booking"></i>
+                                <i class="ti ti-loader"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Expired Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Expired orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-secondary">
+                                <i class="ti ti-alert-circle"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Approved Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($approvedOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Approved orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-thumb-up"></i>
                             </span>
                         </div>
                     </div>

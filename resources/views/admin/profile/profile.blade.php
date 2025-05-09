@@ -84,7 +84,8 @@
                     </div>
                     <div class="d-flex flex-column flex-lg-row align-items-stretch text-sm-start text-center mb-3">
                         <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
-                            <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
+                            
+                                <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
                                 style="inline-size: 160px" alt="user image"
                                 class="d-block h-auto ms-0 ms-sm-3 rounded user-profile-img">
                         </div>
@@ -175,11 +176,7 @@
             </div>
             <div class="col-xl-8 col-lg-7 col-md-7">
                 <!-- Activity Timeline -->
-                <div class="card p-2 mb-4">
-                    <div class="card-header border-0">
-                        <h5 class="card-action-title mb-0">
-                            <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline</h5>
-                    </div>
+              
                     <div class="card p-2 mb-4">
                         <div class="card-header border-0">
                             <h5 class="card-action-title mb-0">
@@ -224,7 +221,7 @@
                             </ul>
                         </div>
                     </div>
-                </div>
+               
                 <!-- Activity Timeline -->
 
                 <!-- Overview -->

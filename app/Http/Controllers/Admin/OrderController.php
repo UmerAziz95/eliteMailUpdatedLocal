@@ -33,52 +33,45 @@ class OrderController extends Controller
     {
         $this->statuses = Status::pluck('badge', 'name')->toArray();
     }
-    public function index()
-    {
+  public function index()
+{
+    $plans = Plan::all();
+    $userId = auth()->id();
+    $orders = Order::all();
 
-        $plans = Plan::all();
-        // Get order statistics for authenticated user
-        $userId = auth()->id();
-        $orders = Order::all();
-        
-        $totalOrders = $orders->count();
-        
-        // Get orders by admin status
-        $pendingOrders = Order::where('status_manage_by_admin', 'pending')
-            ->count();
-            
-        $completedOrders = Order::where('status_manage_by_admin', 'completed')
-            ->count();
-            
-        $inProgressOrders = Order::where('status_manage_by_admin', 'processing')
-            ->count();
+    $totalOrders = $orders->count();
 
-        // Calculate percentage changes (last week vs previous week)
-        $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
-        $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
+    $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
+    $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
+    $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
+    $expiredOrders = $orders->where('status_manage_by_admin', 'expired')->count();
+    $approvedOrders = $orders->where('status_manage_by_admin', 'approved')->count();
 
-        $lastWeekOrders = Order::where('user_id', $userId)
-            ->whereBetween('created_at', $lastWeek)
-            ->count();
-            
-        $previousWeekOrders = Order::whereBetween('created_at', $previousWeek)
-            ->count();
+    $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
+    $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
 
-        $percentageChange = $previousWeekOrders > 0 
-            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
-            : 0;
+    $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
+    $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
 
-            $statuses = $this->statuses;
-        return view('admin.orders.orders', compact(
-            'plans', 
-            'totalOrders', 
-            'pendingOrders', 
-            'completedOrders', 
-            'inProgressOrders',
-            'statuses',
-            'percentageChange'
-        ));
-    }
+    $percentageChange = $previousWeekOrders > 0 
+        ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+        : 0;
+
+    $statuses = $this->statuses;
+
+    return view('admin.orders.orders', compact(
+        'plans', 
+        'totalOrders', 
+        'pendingOrders', 
+        'completedOrders', 
+        'inProgressOrders',
+        'percentageChange',
+        'statuses',
+        'expiredOrders',
+        'approvedOrders'
+    ));
+}
+
     // neworder
  
     private function calculateNextBillingDate($currentDate, $billingPeriod, $billingPeriodUnit)
