@@ -18,6 +18,7 @@ use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Log as ModelLog;
 use App\Models\Status;
+
 class OrderController extends Controller
 {
     private $statuses;
@@ -371,59 +372,100 @@ class OrderController extends Controller
         }
     }
 
-  public function updateOrderStatus(Request $request){
-   $request->validate([
-        'order_id' => 'required|exists:orders,id',
-        'status_manage_by_admin' => 'required|string',
-    ]);
+    public function updateOrderStatus(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'status_manage_by_admin' => 'required|string',
+        ]);
+    
+        $order = Order::findOrFail($request->order_id);
+    
+        // Log before updating order status
+        ActivityLogService::log(
+            'order_status_updated', // Action type
+            'Order status updated by admin', // Description
+            $order, // The model the action was performed on
+            [
+                'order_id' => $order->id,
+                'previous_status' => $order->status_manage_by_admin, // Previous status before update
+                'new_status' => $request->status_manage_by_admin, // New status to be updated
+                'admin_user' => Auth::id(), // The admin who is updating the order status
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent')
+            ],
+            Auth::id() // Who performed the action
+        );
+    
+        // Update the order status
+        $order->status_manage_by_admin = $request->status_manage_by_admin;
+        $order->save();
+    
+        return response()->json(['success' => true, 'message' => 'Status updated']);
+    }
+    
 
-    $order = Order::findOrFail($request->order_id);
-    $order->status_manage_by_admin = $request->status_manage_by_admin;
-    $order->save();
-
-    return response()->json(['success' => true, 'message' => 'Status updated']);
-  }
-
-  public function subscriptionCancelProcess(Request $request)
-  {
-      $request->validate([
-          'chargebee_subscription_id' => 'required|string',
-          'marked_status' => 'required|string',
-          'reason' => 'nullable|string',
-      ]);
-  
-      $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-  
-      if (!$subscription || $subscription->status !== 'active') {
-          return response()->json([
-              'success' => false,
-              'message' => 'No active subscription found.'
-          ], 404);
-      }
-  
-      try {
-          $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-          if ($order) {
-              $order->update([
-                  'status_manage_by_admin' => $request->marked_status,
-                  'reason' => $request->reason? $request->reason."(Reason given by)"." ".Auth::user()->name: null,
-              ]);
-          }
-  
-          return response()->json([
-              'success' => true,
-              'message' => 'Order Status Updated Successfully.'
-          ]);
-  
-      } catch (\Exception $e) {
-          \Log::error('Error While Updating The Status: ' . $e->getMessage());
-  
-          return response()->json([
-              'success' => false,
-              'message' => 'Failed To Update The Status: ' . $e->getMessage()
-          ], 500);
-      }
-  }
+    public function subscriptionCancelProcess(Request $request)
+    {
+        $request->validate([
+            'chargebee_subscription_id' => 'required|string',
+            'marked_status' => 'required|string',
+            'reason' => 'nullable|string',
+        ]);
+    
+        $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+    
+        if (!$subscription || $subscription->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active subscription found.'
+            ], 404);
+        }
+    
+        try {
+            $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
+    
+            if ($order) {
+                $oldStatus = $order->status_manage_by_admin;
+    
+                $order->update([
+                    'status_manage_by_admin' => $request->marked_status,
+                    'reason' => $request->reason ? $request->reason . " (Reason given by " . Auth::user()->name . ")" : null,
+                ]);
+    
+                // Log the activity
+                ActivityLogService::log(
+                    'subscription_cancelled', // Action Type
+                    'Admin cancelled a subscription order', // Description
+                    $order, // Performed On (Order model)
+                    [
+                        'chargebee_subscription_id' => $request->chargebee_subscription_id,
+                        'previous_status' => $oldStatus,
+                        'new_status' => $request->marked_status,
+                        'reason' => $request->reason,
+                        'admin_user' => Auth::user()->email,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent')
+                    ],
+                    Auth::id() // Performed By
+                );
+            }
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Order Status Updated Successfully.'
+            ]);
+    
+        } catch (\Exception $e) {
+            \Log::error('Error While Updating The Status: ' . $e->getMessage());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed To Update The Status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
   
 
  

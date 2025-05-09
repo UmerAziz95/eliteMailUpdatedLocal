@@ -86,10 +86,18 @@
             <div class="card mb-4">
                 <div class="card-body pt-12">
                     <div class="user-avatar-section">
-                        <div class=" d-flex align-items-center flex-column">
-                            <img class="img-fluid rounded mb-4"
-                                src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png"
-                                height="120" width="120" alt="User avatar">
+                        <div class="d-flex align-items-center flex-column">
+                            <div class="position-relative">
+                                <img class="img-fluid rounded mb-4" id="profile-image"
+                                    src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                                    height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                <div class="position-absolute bottom-0 end-0">
+                                    <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
+                                        <i class="ti ti-camera"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                             <div class="user-info text-center">
                                 <h5>{{ Auth::user()->name }}</h5>
                                 <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
@@ -97,7 +105,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-around flex-wrap my-5 gap-0 gap-md-3 gap-lg-4">
+                    {{-- <div class="d-flex justify-content-around flex-wrap my-5 gap-0 gap-md-3 gap-lg-4">
                         <div class="d-flex align-items-center me-5 gap-4">
                             <div class="avatar">
                                 <div class="avatar-initial bg-label-primary rounded p-2">
@@ -120,7 +128,7 @@
                                 <span class="small opacity-50">Project Done</span>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <h5 class="pb-4 border-bottom mb-4">Details</h5>
                     <div class="info-container">
@@ -163,8 +171,7 @@
                         <div class="d-flex justify-content-center gap-2">
                             <button class="m-btn rounded-2 py-2 px-4 border-0" data-bs-target="#edit"
                                 data-bs-toggle="modal">Edit</button>
-                            <a href="javascript:;"
-                                class="cancel-btn py-2 px-4 rounded-2 border-0 text-decoration-none opacity-75">Suspend</a>
+                          
                         </div>
                     </div>
                 </div>
@@ -172,7 +179,7 @@
             <!-- /User Card -->
 
             <!-- Plan Card -->
-            <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
+            {{-- <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="badge bg-label-primary">Standard</span>
@@ -207,29 +214,29 @@
                             data-bs-toggle="modal">Upgrade Plan</button>
                     </div>
                 </div>
-            </div>
+            </div> --}}
             <!-- /Plan Card -->
         </div>
         <!--/ User Sidebar -->
 
         <div class="col-xl-8 col-lg-5">
             <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
+                {{-- <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="account-tab" data-bs-toggle="tab" data-bs-target="#account-tab-pane"
                         type="button" role="tab" aria-controls="account-tab-pane" aria-selected="true"><i
                             class="fa-regular fa-user"></i>
                         Account</button>
-                </li>
+                </li> --}}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-tab-pane"
                         type="button" role="tab" aria-controls="security-tab-pane" aria-selected="false"><i
                             class="fa-solid fa-unlock"></i> Security</button>
                 </li>
-                <li class="nav-item" role="presentation">
+                {{-- <li class="nav-item" role="presentation">
                     <button class="nav-link" id="plans-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
                         type="button" role="tab" aria-controls="plans-tab-pane" aria-selected="false"><i
                             class="fa-solid fa-file-invoice"></i> Billing & Plans</button>
-                </li>
+                </li> --}}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane"
                         type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
@@ -241,7 +248,7 @@
                 <div class="tab-pane fade show active" id="account-tab-pane" role="tabpanel"
                     aria-labelledby="account-tab" tabindex="0">
                     <!-- table-->
-                    <div class="card p-3 mb-4">
+                    {{-- <div class="card p-3 mb-4">
                         <div class="table-responsive">
                             <table id="myTable" class="display">
                                 <thead>
@@ -276,11 +283,11 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> --}}
                     <!-- table-->
 
                     <!-- Activity Timeline -->
-                    <div class="card p-2 mb-4">
+                    {{-- <div class="card p-2 mb-4">
                         <div class="card-header border-0">
                             <h5 class="card-action-title mb-0">
                                 <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline
@@ -331,12 +338,12 @@
                                 </li>
                             </ul>
                         </div>
-                    </div>
+                    </div> --}}
                     <!-- Activity Timeline -->
                 </div>
 
 
-                <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
+                <div class="tab-pane fade active show" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
                     tabindex="0">
                     <div class="card mb-4 p-3">
                         <h5 class="card-header">Change Password</h5>
@@ -395,7 +402,7 @@
                         </div>
                     </div>
 
-                    <div class="card mb-4 p-3">
+                    {{-- <div class="card mb-4 p-3">
                         <div class="card-header">
                             <h5 class="mb-0">Two-steps verification</h5>
                             <span class="card-subtitle mt-0">Keep your account secure with authentication step.</span>
@@ -419,9 +426,9 @@
                                 <a href="javascript:void(0);" class="text-primary">Learn more.</a>
                             </p>
                         </div>
-                    </div>
+                    </div> --}}
 
-                    <div class="card p-3">
+                    {{-- <div class="card p-3">
                         <h5 class="card-header">Recent Devices</h5>
                         <div class="table-responsive table-border-bottom-0">
                             <table class="table">
@@ -473,7 +480,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
 
 
@@ -583,121 +590,59 @@
 
 
                 <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab"
-                    tabindex="0">
-                    <div class="card p-3">
-                        <!-- Notifications -->
-                        <div class="card-header">
-                            <h5 class="mb-0">Notifications</h5>
-                            <span class="card-subtitle">Change to notification settings, the user will get the
-                                update</span>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead class="border-top">
-                                    <tr>
-                                        <th class="text-nowrap">Type</th>
-                                        <th class="text-nowrap text-center">Email</th>
-                                        <th class="text-nowrap text-center">Browser</th>
-                                        <th class="text-nowrap text-center">App</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">New for you</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck1" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck2" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck3" checked="">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">Account activity</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck4" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck5" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck6" checked="">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">A new browser used to sign in</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck7" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck8" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck9">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-nowrap text-heading">A new device is linked</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck10" checked="">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck11">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center mb-0">
-                                                <input class="form-check-input rounded-1" type="checkbox"
-                                                    id="defaultCheck12">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="card-body">
-                            <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Save
-                                changes</button>
-                            <button type="reset" class="cancel-btn py-2 px-4 rounded-2 border-0">Discard</button>
-                        </div>
-                        <!-- /Notifications -->
+                tabindex="0">
+                <div class="card p-3">
+                    <!-- Notifications -->
+                    <div class="card-header">
+                        <h5 class="mb-0">Notifications</h5>
                     </div>
+                    
+                    <div class="table-responsive">
+                        <table class="display w-100" id="notificationsTable">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Message</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $notifications = \App\Models\Notification::where('user_id', Auth::id())
+                                        ->orderBy('created_at', 'desc')
+                                        ->get();
+                                @endphp
+                                @foreach($notifications as $notification)
+                                    <tr>
+                                        <td>{{ $notification->title }}</td>
+                                        <td>{{ $notification->message }}</td>
+                                        <td><span class="badge bg-label-{{ $notification->type === 'order_status_change' ? 'warning' : 'primary' }}">{{ str_replace('_', ' ', ucfirst($notification->type)) }}</span></td>
+                                        <td>{{ $notification->created_at->diffForHumans() }}</td>
+                                        <td>
+                                            @if($notification->is_read)
+                                                <span class="badge bg-label-success">Read</span>
+                                            @else
+                                                <span class="badge bg-label-warning">Unread</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(!$notification->is_read)
+                                                <button class="btn btn-sm btn-icon m-btn mark-as-read" data-id="{{ $notification->id }}" title="Mark as Read">
+                                                    <i class="ti ti-check"></i>
+                                                </button>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- /Notifications -->
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -945,6 +890,36 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="cropperModal" tabindex="-1" role="dialog" aria-labelledby="cropperModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adjust Profile Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="cropper-container">
+                        <img id="cropperImage" src="" alt="Image to crop" style="max-width: 100%;">
+                    </div>
+                    <div class="cropper-controls">
+                        <button type="button" class="rotate-left"><i class="ti ti-rotate-clockwise-2"></i> Rotate Left</button>
+                        <button type="button" class="rotate-right"><i class="ti ti-rotate"></i> Rotate Right</button>
+                        <button type="button" class="flip-horizontal"><i class="ti ti-flip-horizontal"></i> Flip H</button>
+                        <button type="button" class="flip-vertical"><i class="ti ti-flip-vertical"></i> Flip V</button>
+                        <div class="zoom-controls">
+                            <button type="button" class="zoom-in"><i class="ti ti-zoom-in"></i></button>
+                            <input type="range" class="zoom-slider" min="0" max="100" value="0">
+                            <button type="button" class="zoom-out"><i class="ti ti-zoom-out"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -1022,6 +997,192 @@
                     }
                 });
             });
+        });
+    
+            // Handle user edit form submission
+            $('#editUserForm').on('submit', function(e) {
+                e.preventDefault();
+
+                var formData = {
+                    name: $('#modalEditUserFirstName').val(),
+                    email: $('#modalEditUserEmail').val(),
+                    phone: $('#modalEditUserPhone').val(),
+                    billing_address: $('#modalEditUserBillingAddress').val(),
+                    _token: '{{ csrf_token() }}'
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '{{ route('admin.profile.update') }}',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            // Close modal
+                            $('#edit').modal('hide');
+
+                            // Show success message
+                            toastr.success('Profile updated successfully');
+
+                            // Reload page to reflect changes
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 1500);
+                        }
+                    },
+                    error: function(xhr) {
+                        // Show error message
+                        toastr.error('Error updating profile');
+                        console.log(xhr.responseText);
+                    }
+                });
+            });
+
+      
+     
+
+        let cropper;
+        let zoomValue = 0;
+        
+        // Initialize image cropping when file is selected
+        $('#profile-image-input').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Initialize cropper
+                    const image = document.getElementById('cropperImage');
+                    image.src = e.target.result;
+                    
+                    // Show cropper modal
+                    $('#cropperModal').modal('show');
+                    
+                    // Initialize Cropper.js after modal is shown
+                    $('#cropperModal').on('shown.bs.modal', function() {
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 1,
+                            cropBoxResizable: true,
+                            cropBoxMovable: true,
+                            minCropBoxWidth: 200,
+                            minCropBoxHeight: 200,
+                            width: 200,
+                            height: 200,
+                            guides: true,
+                            center: true,
+                            highlight: true,
+                            background: true,
+                            autoCrop: true,
+                            responsive: true,
+                            toggleDragModeOnDblclick: true
+                        });
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle image manipulation controls
+        $('.rotate-left').on('click', function() {
+            cropper.rotate(-90);
+        });
+
+        $('.rotate-right').on('click', function() {
+            cropper.rotate(90);
+        });
+
+        $('.flip-horizontal').on('click', function() {
+            cropper.scaleX(cropper.getData().scaleX === 1 ? -1 : 1);
+        });
+
+        $('.flip-vertical').on('click', function() {
+            cropper.scaleY(cropper.getData().scaleY === 1 ? -1 : 1);
+        });
+
+        $('.zoom-in').on('click', function() {
+            zoomValue = Math.min(zoomValue + 10, 100);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(0.1);
+        });
+
+        $('.zoom-out').on('click', function() {
+            zoomValue = Math.max(zoomValue - 10, 0);
+            $('.zoom-slider').val(zoomValue);
+            cropper.zoom(-0.1);
+        });
+
+        $('.zoom-slider').on('input', function() {
+            const newZoom = parseInt($(this).val());
+            const zoomDiff = (newZoom - zoomValue) / 100;
+            cropper.zoom(zoomDiff);
+            zoomValue = newZoom;
+        });
+
+        // Clean up cropper when modal is hidden
+        $('#cropperModal').on('hidden.bs.modal', function() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+                zoomValue = 0;
+                $('.zoom-slider').val(0);
+            }
+        });
+
+        // Rest of your existing cropper code...
+        $('#cropButton').on('click', function() {
+            if (!cropper) return;
+
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas({
+                width: 200,
+                height: 200
+            });
+
+            // Apply copper filter effect
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.min(255, data[i] * 1.2); // Red
+                data[i + 1] = Math.min(255, data[i + 1] * 0.9); // Green
+                data[i + 2] = Math.min(255, data[i + 2] * 0.7); // Blue
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+
+            // Convert to blob and upload
+            canvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('profile_image', blob, 'profile.jpg');
+                formData.append('_token', '{{ csrf_token() }}');
+
+                $.ajax({
+                    url: '{{ route('profile.update.image') }}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Update the image preview
+                            $('#profile-image').attr('src', response.image_url);
+                            // login-user-profile
+                            $('.login-user-profile').attr('src', response.image_url);
+                            toastr.success('Profile image updated successfully');
+                            $('#cropperModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Error updating profile image');
+                        console.log(xhr.responseText);
+                    }
+                });
+            }, 'image/jpeg', 0.95);
         });
     </script>
 @endpush

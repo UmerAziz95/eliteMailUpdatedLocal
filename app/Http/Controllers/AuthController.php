@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserWelcomeMail;
 use Carbon\Carbon;
-
+use App\Services\ActivityLogService;
 class AuthController extends Controller
 {
     // testAdmin
@@ -70,7 +70,17 @@ class AuthController extends Controller
             }
     
             $request->session()->regenerate();
-            Log::info('User ' . Auth::user()->id . ' logged in at ' . now());
+            ActivityLogService::log(
+                'user_signin',
+                'User signed in successfully',
+                Auth::user(), // performed on this user
+                [
+                    'email' => Auth::user()->email,
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent')
+                ]
+                // 'performed_by' will be set automatically using Auth::id()
+            );
     
             return redirect()->intended($this->redirectTo(Auth::user()));
         }
@@ -136,12 +146,13 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6|confirmed',
             'role' => 'required|in:admin,customer,contractor',
-            'phone' => 'required|regex:/^\+?[0-9]{7,15}$/', // Allow + sign and ensure phone is numeric and between 7 to 15 digits
+            'phone' => 'required|regex:/^\+?[0-9]{7,15}$/',
         ],
         [
             'phone.regex' => 'The phone number must be a valid format (7 to 15 digits).',
             'phone.required' => 'The phone number is required.',
         ]);
+    
         switch ($data['role']) {
             case 'admin':
                 $data['role'] = 1;
@@ -153,37 +164,46 @@ class AuthController extends Controller
                 $data['role'] = 4;
                 break;
             default:
-                $data['role'] = 3; // Default to customer
+                $data['role'] = 3;
         }
-        // dd($data);
+    
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role_id' => $data['role'], // Default role
+            'role_id' => $data['role'],
             'phone' => $data['phone'],
         ]);
-        // dd($user);
+    
+        // Log the user registration activity
+        ActivityLogService::log(
+            'user_signup',
+            'New user registered successfully',
+            $user, // Performed on
+            [
+                'email' => $user->email,
+                'role_id' => $user->role_id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+            ],
+            $user->id // Performed by
+        );
+    
         try {
-            // Send welcome email
-            // Queue the welcome email
             Mail::to($user->email)->queue(new UserWelcomeMail($user));
-            // If you want to delay it, use this instead:
-            // $sendDate = Carbon::now()->addMinutes(2);
-            // Mail::to($user->email)->later($sendDate, new UserWelcomeMail($user));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email: ' . $e->getMessage());
         }
+    
         Auth::login($user);
-        $user = User::where('email', $data['email'])->first();
-        // dd($user);
-        // $user = Auth::user();
+    
         return response()->json([
             'message' => 'User registered successfully!',
             'redirect' => $this->redirectTo($user),
             'user' => $user,
         ], 200);
     }
+    
 
     // Show forgot password form
     public function showForgotPasswordForm()
