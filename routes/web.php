@@ -366,4 +366,5 @@ Route::middleware('auth')->group(function () {
         return response()->json(['message' => 'success']);
     })->middleware('auth');
     Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
+    Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
 });
