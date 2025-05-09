@@ -84,7 +84,8 @@
                     </div>
                     <div class="d-flex flex-column flex-lg-row align-items-stretch text-sm-start text-center mb-3">
                         <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
-                            <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
+                            
+                                <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
                                 style="inline-size: 160px" alt="user image"
                                 class="d-block h-auto ms-0 ms-sm-3 rounded user-profile-img">
                         </div>
@@ -108,9 +109,9 @@
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="javascript:void(0)"
+                                {{-- <a href="javascript:void(0)"
                                     class="m-btn rounded-2 border-0 py-2 px-4 text-decoration-none fs-6">
-                                    <i class="ti ti-user-check fs-6 me-2"></i>Connected </a>
+                                    <i class="ti ti-user-check fs-6 me-2"></i>Connected </a> --}}
                             </div>
                         </div>
                     </div>
@@ -175,59 +176,56 @@
             </div>
             <div class="col-xl-8 col-lg-7 col-md-7">
                 <!-- Activity Timeline -->
-                <div class="card p-2 mb-4">
-                    <div class="card-header border-0">
-                        <h5 class="card-action-title mb-0">
-                            <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline</h5>
-                    </div>
-                    <div class="card-body pt-3">
-                        <ul class="timeline mb-0 list-unstyled">
-                            <li class="timeline-item timeline-item-transparent">
-                                <span class="timeline-point timeline-point-primary"></span>
-                                <div class="timeline-event">
-                                    <div class="timeline-header d-flex align-items-center justify-content-between mb-3">
-                                        <h6 class="mb-0">12 Invoices have been paid</h6>
-                                        <small class="">12 min ago</small>
-                                    </div>
-                                    <p class="mb-2">Invoices have been paid to the company</p>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="badge bg-lighter rounded d-flex align-items-center">
-                                            <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets//img/icons/misc/pdf.png"
-                                                alt="img" width="15" class="me-2">
-                                            <span class="mb-0">invoices.pdf</span>
+              
+                    <div class="card p-2 mb-4">
+                        <div class="card-header border-0">
+                            <h5 class="card-action-title mb-0">
+                                <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline</h5>
+                        </div>
+                        <div class="card-body pt-3">
+                            <ul class="timeline mb-0 list-unstyled">
+                                @forelse(Auth::user()->logs()->latest()->take(5)->get() as $log)
+                                <li class="timeline-item timeline-item-transparent">
+                                    <span class="timeline-point timeline-point-primary"></span>
+                                    <div class="timeline-event">
+                                        <div class="timeline-header d-flex align-items-center justify-content-between mb-3">
+                                            <h6 class="mb-0">{{ $log->description }}</h6>
+                                            <small class="">{{ $log->created_at->diffForHumans() }}</small>
                                         </div>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="timeline-item timeline-item-transparent">
-                                <span class="timeline-point timeline-point-success"></span>
-                                <div class="timeline-event">
-                                    <div class="timeline-header d-flex align-items-center justify-content-between mb-3">
-                                        <h6 class="mb-0">Client Meeting</h6>
-                                        <small class="">45 min ago</small>
-                                    </div>
-                                    <p class="mb-2">Project meeting with john @10:15am</p>
-                                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
-                                        <div class="d-flex flex-wrap align-items-center mb-50">
-                                            <div class="avatar avatar-sm me-2">
-                                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png" width="30" alt="Avatar"
-                                                    class="rounded-circle">
-                                            </div>
-                                            <div>
-                                                <p class="mb-0 small fw-semibold">Lester McCarthy (Client)</p>
-                                                <small>CEO of Pixinvent</small>
+                                        <p class="mb-2">{{ $log->action_type }}</p>
+                                        @if($log->data)
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="badge bg-lighter rounded d-flex align-items-center">
+                                                @if(isset($log->data['file']))
+                                                    <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/icons/misc/pdf.png"
+                                                        alt="img" width="15" class="me-2">
+                                                    <span class="mb-0">{{ $log->data['file'] }}</span>
+                                                @else
+                                                    <span class="mb-0">{{ json_encode($log->data) }}</span>
+                                                @endif
                                             </div>
                                         </div>
+                                        @endif
                                     </div>
-                                </div>
-                            </li>
-                        </ul>
+                                </li>
+                                @empty
+                                <li class="timeline-item timeline-item-transparent">
+                                    <span class="timeline-point timeline-point-primary"></span>
+                                    <div class="timeline-event">
+                                        <div class="timeline-header">
+                                            <h6 class="mb-0">No activity logs found</h6>
+                                        </div>
+                                    </div>
+                                </li>
+                                @endforelse
+                            </ul>
+                        </div>
                     </div>
-                </div>
+               
                 <!-- Activity Timeline -->
 
                 <!-- Overview -->
-                <div class="card">
+                {{-- <div class="card">
                     <div class="card-body">
                         <p class="card-text text-uppercase ">Overview</p>
                         <ul class="list-unstyled mb-0">
@@ -240,7 +238,7 @@
                                     class="fw-semibold mx-2">Connections:</span> <span>897</span></li>
                         </ul>
                     </div>
-                </div>
+                </div> --}}
                 <!--/ Overview -->
             </div>
         </div>

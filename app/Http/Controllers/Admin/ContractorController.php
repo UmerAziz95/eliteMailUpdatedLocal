@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use DataTables;
 use Illuminate\Validation\Rule;
+use App\Services\ActivityLogService;
 class ContractorController extends Controller
 {
     //
@@ -94,29 +95,46 @@ class ContractorController extends Controller
        return view('admin.contractor.contractor');
      }
 
-   public function store(Request $request)
-   {
-       // dd($request->all());
-       $validated = $request->validate([
-           'full_name' => 'required|string|max:255',
-           'email' => 'required|email|unique:users,email',
-           'password' => 'required|min:6|confirmed',
-           'status' => 'required|in:0,1',
-       ]);
-   //    dd($validated['status']);
-       $user = User::create([
-           'name' => $validated['full_name'],
-           'email' => $validated['email'],
-           'password' => Hash::make($validated['password']),
-           'status' => (int) $validated['status'], 
-           'role_id'=>4,
-       ]);
-   
-       return response()->json([
-           'message' => 'User created successfully',
-           'user' => $user
-       ]);
-   }
+     use Illuminate\Support\Facades\Auth;
+
+     public function store(Request $request)
+     {
+         $validated = $request->validate([
+             'full_name' => 'required|string|max:255',
+             'email' => 'required|email|unique:users,email',
+             'password' => 'required|min:6|confirmed',
+             'status' => 'required|in:0,1',
+         ]);
+     
+         $user = User::create([
+             'name'     => $validated['full_name'],
+             'email'    => $validated['email'],
+             'password' => Hash::make($validated['password']),
+             'status'   => (int) $validated['status'],
+             'role_id'  => 4,
+         ]);
+     
+         // Log the user creation
+         ActivityLogService::log(
+             'user_created',
+             'A new user was created.',
+             $user,
+             [
+                 'created_by' => Auth::id(),
+                 'user_email' => $user->email,
+                 'status' => $user->status,
+                 'ip' => $request->ip(),
+                 'user_agent' => $request->header('User-Agent'),
+             ],
+             Auth::id()
+         );
+     
+         return response()->json([
+             'message' => 'User created successfully',
+             'user'    => $user
+         ]);
+     }
+     
 
    public function edit($id)
    {
@@ -128,35 +146,68 @@ class ContractorController extends Controller
    public function update(Request $request, $id)
    {
        $user = User::findOrFail($id);
-
+   
        $validated = $request->validate([
            'full_name' => 'required|string|max:255',
            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
            'password' => 'nullable|min:6|confirmed',
            'status' => 'required|in:0,1',
        ]);
-
+   
+       $oldData = $user->only(['name', 'email', 'status']);
+   
        $user->name = $validated['full_name'];
        $user->email = $validated['email'];
        $user->status = $validated['status'];
-
+   
        if (!empty($validated['password'])) {
            $user->password = Hash::make($validated['password']);
        }
-
+   
        $user->save();
-
+   
+       // Log the update action
+       ActivityLogService::log(
+           'user_updated',
+           'User details were updated.',
+           $user,
+           [
+               'updated_by' => Auth::id(),
+               'old_data' => $oldData,
+               'new_data' => $user->only(['name', 'email', 'status']),
+               'ip' => $request->ip(),
+               'user_agent' => $request->header('User-Agent'),
+           ],
+           Auth::id()
+       );
+   
        return response()->json(['message' => 'User updated successfully']);
    }
+   
+   
 
-       public function destroy($id)
+   public function destroy($id)
    {
        $user = User::findOrFail($id);
-       $user->status=0;
+       $user->status = 0;
        $user->save();
-
+   
+       // Log the deactivation action
+       ActivityLogService::log(
+           'user_deactivated',
+           'Contractor account was deactivated.',
+           $user,
+           [
+               'deactivated_by' => Auth::id(),
+               'email' => $user->email,
+               'ip' => request()->ip(),
+               'user_agent' => request()->header('User-Agent'),
+           ],
+           Auth::id()
+       );
+   
        return response()->json([
            'message' => 'User Deactivated successfully.'
        ]);
-   }
+   }   
 }   

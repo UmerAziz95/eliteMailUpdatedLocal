@@ -1,8 +1,8 @@
-<header class="d-flex align-items-center justify-content-between py-2 px-4 rounded-3">
-    <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
+<header class="d-flex align-items-center justify-content-end py-2 px-4 rounded-3">
+    {{-- <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
         data-bs-target="#search">
         <i class="fa-solid fa-magnifying-glass fs-5"></i> Search
-    </button>
+    </button> --}}
 
     <div class="d-flex align-items-center gap-3">
         {{-- <div class="dropdown">
@@ -38,41 +38,17 @@
                 <li><a class="dropdown-item" href="#">Something else here</a></li> 
             </ul>
         </div> --}}
+      
+      
 
         <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="ti ti-bell fs-5"></i>
-            </div>
+           
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notification</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
-                @for ($i = 0; $i < 15; $i++)
-                    <hr class="my-0">
-                    <li class="dropdown-item py-2">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0 me-3">
-                                <div class="avatar">
-                                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        style="border-radius: 50%" height="40" width="40"
-                                        class="object-fit-cover" alt="">
-                                </div>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="small mb-2">Congratulation Lettie 🎉</h6>
-                                <small class="mb-1 d-block opacity-75">Won the monthly best seller gold badge</small>
-                                <small class="opacity-50">1h ago</small>
-                            </div>
-                            <div class="flex-shrink-0 dropdown-notifications-actions">
-                                <a href="javascript:void(0)" class="dropdown-notifications-read"><span
-                                        class="badge badge-dot"></span></a>
-                                <a href="javascript:void(0)" class="dropdown-notifications-archive"><span
-                                        class="icon-base ti tabler-x"></span></a>
-                            </div>
-                        </div>
-                    </li>
-                @endfor
+            
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
                     <a href="/notification" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
                 </div>
@@ -81,13 +57,15 @@
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile" alt="">
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
-                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                    <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                            style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile" alt="">
+                    </div>
                     <div>
                         <h6 class="mb-0">{{Auth::user()->name}}</h6>
                         <p class="small mb-0">{{Auth::user()->role->name}}</p>
@@ -97,9 +75,7 @@
 
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="{{route("admin.profile")}}"><i class="ti ti-user"></i> My Profile</a></li>
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="{{route("admin.settings")}}"><i class="ti ti-settings"></i> Settings</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-receipt"></i> Billing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/pricing"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li>
+
 
                 <a class="logout-btn" href="{{route('logout')}}">
                     <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i> Logout</button>

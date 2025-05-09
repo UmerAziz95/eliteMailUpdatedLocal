@@ -32,7 +32,9 @@
     </div>
     <div class="row d-flex justify-content-end" id="exportCsvBtn" style="margin-right: 1px">
         <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
-            <a href="">Bulk Export</a>
+            
+            <a href="javascript:;">Bulk Export</a>
+
             
         </div>
     </div>
@@ -635,10 +637,9 @@
                                         <label for="orderStatusFilter" class="form-label">Order Status</label>
                                         <select id="orderStatusFilter" class="form-select">
                                             <option value="">All Order Statuses</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="processing">Processing</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="expired">Expired</option>
+                                            @foreach($statuses as $key => $status)
+                                            <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-3">
@@ -1024,7 +1025,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Start file download by redirecting the browser
-                    window.location.href = exportUrl;
+                    window.location.href = "{{ url('/customer/orders/emails/' . $order->id . '/export') }}";;
                 }
             });
         });

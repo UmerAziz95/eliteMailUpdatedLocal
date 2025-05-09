@@ -131,7 +131,7 @@
                                     height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-camera"></i>
+                                        <i class="ti ti-edit"></i>
                                     </label>
                                 </div>
                             </div>

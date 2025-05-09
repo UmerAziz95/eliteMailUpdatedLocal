@@ -193,7 +193,7 @@
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
         <!-- Support -->
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contact_us') ? 'active' : '' }}"
                 href="{{ url('contact_us') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -201,7 +201,7 @@
                     <div class="text">Contact Us</div>
                 </div>
             </a>
-        </li>
+        </li> --}}
 
         <!-- Support -->
         <li class="nav-item">

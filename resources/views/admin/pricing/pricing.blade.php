@@ -423,49 +423,57 @@
             $('.new-feature-value').val('');
         });
 
-        // Load features for dropdowns
-        function loadFeatures() {
-            $.ajax({
-                url: "{{ route('admin.features.list') }}",
-                type: "GET",
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        // Populate all feature dropdowns with filtering for each plan
-                        $('.feature-dropdown').each(function() {
-                            const dropdown = $(this);
-                            let planId = dropdown.attr('id').replace('featureDropdown', '');
+    function loadFeatures() {
+    $.ajax({
+        url: "{{ route('admin.features.list') }}",
+        type: "GET",
+        dataType: "json",
+        success: function(response) {
+            console.log(response.features);
+            console.log(response);
+            console.log("features are loading here");
 
-                            // Handle the special case for new plan dropdown
-                            if (dropdown.attr('id') === 'newPlanFeatureDropdown') {
-                                planId = 'new';
-                            }
+            if (response.success) {
+                // Populate all feature dropdowns with filtering for each plan
+                $('.feature-dropdown').each(function() {
+                    const dropdown = $(this);
+                    let planId = dropdown.attr('id').replace('featureDropdown', '');
 
-                            const container = planId === 'new' ? $('#newPlanFeatures') : $(`#selectedFeatures${planId}`);
-                            let options = '<option value="">Select an existing feature</option>';
-
-                            // Get all currently added feature IDs for this plan
-                            const addedFeatureIds = [];
-                            container.find('.feature-item').each(function() {
-                                addedFeatureIds.push($(this).data('feature-id').toString());
-                            });
-
-                            // Filter out features that are already added to this plan
-                            $.each(response.features, function(index, feature) {
-                                if (!addedFeatureIds.includes(feature.id.toString())) {
-                                    options += `<option value="${feature.id}" data-title="${feature.title}">${feature.title}</option>`;
-                                }
-                            });
-
-                            dropdown.html(options);
-                        });
+                    // Handle the special case for new plan dropdown
+                    if (dropdown.attr('id') === 'newPlanFeatureDropdown') {
+                        planId = 'new';
                     }
-                },
-                error: function(xhr) {
-                    showErrorToast('Failed to load features');
-                }
-            });
+
+                    const container = planId === 'new' 
+                        ? $('#newPlanFeatures') 
+                        : $(`#selectedFeatures${planId}`);
+
+                    let options = '<option value="">Select an existing feature</option>';
+
+                    // Get all currently added feature IDs for this plan
+                    const addedFeatureIds = [];
+                    container.find('.feature-item').each(function() {
+                        addedFeatureIds.push($(this).data('feature-id').toString());
+                    });
+
+                    // Filter out features that are already added to this plan
+                    $.each(response.features, function(index, feature) {
+                        if (!addedFeatureIds.includes(feature.id.toString())) {
+                            options += `<option value="${feature.id}" data-title="${feature.title}">${feature.title}</option>`;
+                        }
+                    });
+
+                    dropdown.html(options);
+                });
+            }
+        },
+        error: function(xhr) {
+            //showErrorToast('Failed to load features');
+            console.log("failed to load features ");
         }
+    });
+}
+
 
         // Initial load of features
         loadFeatures();
@@ -740,6 +748,9 @@
                         updatePlanCard(response.plan);
 
                         showSuccessToast('Plan updated successfully');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
                     } else {
                         showErrorToast(response.message || 'Failed to update plan');
                         submitBtn.prop('disabled', false).html('Update Plan');
