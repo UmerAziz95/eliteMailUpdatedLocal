@@ -22,13 +22,18 @@ class DashboardController extends Controller
             ->first();
 
         // Get inbox statistics
-        $totalInboxes = 0;
+        $totalInboxes = $user->orders()
+            ->whereHas('reorderInfo')
+            ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
+            // not equal to 'cancelled' or 'reject'
+            ->where('orders.status_manage_by_admin', '!=', 'cancelled')
+            ->where('orders.status_manage_by_admin', '!=', 'reject')
+            ->sum('reorder_infos.total_inboxes');
+            
         $activeInboxes = 0;
         $pendingInboxes = 0;
         
-        if ($latestOrder && $latestOrder->reorderInfo()->exists()) {
-            $totalInboxes = $latestOrder->reorderInfo->first()->total_inboxes ?? 0;
-            
+        if ($latestOrder) {
             // Active inboxes are those in completed orders
             $activeInboxes = $user->orders()
                 ->where('status_manage_by_admin', 'completed')
@@ -36,9 +41,9 @@ class DashboardController extends Controller
                 ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
                 ->sum('reorder_infos.total_inboxes');
 
-            // Pending inboxes are those in pending/processing orders
+            // Pending inboxes are those in pending/in-progress orders
             $pendingInboxes = $user->orders()
-                ->whereIn('status_manage_by_admin', ['pending', 'processing'])
+                ->whereIn('status_manage_by_admin', ['pending', 'in-progress'])
                 ->whereHas('reorderInfo')
                 ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
                 ->sum('reorder_infos.total_inboxes');
@@ -59,7 +64,7 @@ class DashboardController extends Controller
         // Get order statistics
         $totalOrders = $user->orders()->count();
         $pendingOrders = $user->orders()
-            ->whereIn('status_manage_by_admin', ['pending', 'processing'])
+            ->whereIn('status_manage_by_admin', ['pending', 'in-progress'])
             ->count();
         $completedOrders = $user->orders()
             ->where('status_manage_by_admin', 'completed')
