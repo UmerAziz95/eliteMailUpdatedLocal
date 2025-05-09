@@ -29,10 +29,10 @@ class DashboardController extends Controller
             ->where('orders.status_manage_by_admin', '!=', 'cancelled')
             ->where('orders.status_manage_by_admin', '!=', 'reject')
             ->sum('reorder_infos.total_inboxes');
-            
+        // dd($totalInboxes);
         $activeInboxes = 0;
         $pendingInboxes = 0;
-        
+        // dd($latestOrder);
         if ($latestOrder) {
             // Active inboxes are those in completed orders
             $activeInboxes = $user->orders()
@@ -72,13 +72,16 @@ class DashboardController extends Controller
 
         // Get ticket statistics
         $totalTickets = $user->tickets()->count();
+        $newTickets = $user->tickets()
+            ->where('status', 'open')
+            ->count();
         $pendingTickets = $user->tickets()
-            ->whereIn('status', ['open', 'in_progress'])
+            ->whereIn('status', ['in_progress'])
             ->count();
         $resolvedTickets = $user->tickets()
             ->where('status', 'closed')
             ->count();
-
+        // dd($resolvedTickets, $pendingTickets, $totalTickets);
         return view('customer.dashboard', compact(
             'totalInboxes',
             'activeInboxes', 
@@ -90,7 +93,8 @@ class DashboardController extends Controller
             'completedOrders',
             'totalTickets',
             'pendingTickets',
-            'resolvedTickets'
+            'resolvedTickets',
+            'newTickets',
         ));
     }
 }

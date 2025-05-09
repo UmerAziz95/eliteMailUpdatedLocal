@@ -178,7 +178,7 @@
             </div>
 
             <!-- Subscription Info -->
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #11998e, #38ef7d);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -224,10 +224,10 @@
                         @endif
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Order Statistics -->
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #FF512F, #F09819);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -270,10 +270,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Support Tickets -->
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #834d9b, #d04ed6);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -316,7 +316,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <div class="col-md-6">
                 <div class="swiper">
@@ -485,7 +485,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card h-100 p-2">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
@@ -526,7 +526,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
+            
 
             <div class="col-12 col-md-6">
                 <div class="card h-100 p-2">
@@ -641,7 +642,7 @@
                             </ul>
                         </div>
                         <div class="col-12 col-md-8">
-                            <div id="taskGaugeChart"></div>
+                            <div id="ticketPieChart"></div>
                         </div>
                     </div>
                 </div>
@@ -724,6 +725,7 @@
 @push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Initialize Swiper
             var swiper = new Swiper(".swiper", {
                 loop: true,
                 speed: 1000,
@@ -740,330 +742,328 @@
                     prevEl: ".swiper-button-prev",
                 },
             });
-        });
 
-        var options = {
-            series: [{
-                data: [0, 40, 35, 70, 60, 80, 50]
-            }],
-            chart: {
-                type: 'area',
-                height: 135,
-                sparkline: {
-                    enabled: true
+            // Initialize all charts with error handling
+            function initializeChart(selector, options) {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    console.warn(`Chart container ${selector} not found`);
+                    return null;
                 }
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2,
-                colors: ['#00e396']
-            },
-            fill: {
-                colors: ['rgba(0,227,150,0.6162114504004728)'],
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.4,
-                    opacityTo: 0,
-                    stops: [0, 90, 100]
+                try {
+                    const chart = new ApexCharts(element, options);
+                    chart.render();
+                    return chart;
+                } catch (error) {
+                    console.error(`Error initializing chart ${selector}:`, error);
+                    return null;
                 }
-            },
-            tooltip: {
-                enabled: false,
-                enabledOnSeries: undefined,
-                shared: true,
-                followCursor: true,
-                intersect: false,
-                inverseOrder: false,
-                custom: undefined,
-                hideEmptySeries: true,
-                fillSeriesColor: false,
-                theme: false,
-                style: {
-                    fontSize: '12px',
-                    fontFamily: undefined
-                },
-                onDatasetHover: {
-                    highlightDataSeries: false,
-                },
-                x: {
-                    show: true,
-                    format: 'dd MMM',
-                    formatter: undefined,
-                },
-                y: {
-                    formatter: undefined,
-                    // title: {
-                    //     formatter: (seriesName) => seriesName,
-                    // },
-                },
-                z: {
-                    formatter: undefined,
-                    title: 'Size: '
-                },
-                marker: {
-                    show: true,
-                },
-                // items: {
-                //     display: flex,
-                // },
-                fixed: {
-                    enabled: false,
-                    position: 'topRight',
-                    offsetX: 0,
-                    offsetY: 0,
-                },
             }
-        };
 
-        var chart = new ApexCharts(document.querySelector("#salesChart"), options);
-        chart.render();
-
-
-        var options = {
-            series: [{
-                data: [20, 40, 35, 30, 60, 40, 45]
-            }],
-            chart: {
-                type: 'bar',
-                height: 180,
-                toolbar: {
-                    show: false
+            // Ticket distribution pie chart
+            const ticketOptions = {
+                series: [{{ $newTickets ?? 0 }}, {{ $pendingTickets ?? 0 }}, {{ $resolvedTickets ?? 0 }}],
+                chart: {
+                    type: 'pie',
+                    height: 300,
                 },
-            },
-            plotOptions: {
-                bar: {
-                    borderRadius: 3,
-                    columnWidth: '40%',
-                    distributed: true
-                }
-            },
-            colors: [
-                '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
-            ],
-            dataLabels: {
-                enabled: false
-            },
-            xaxis: {
-                categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-                labels: {
-                    style: {
-                        colors: '#A3A9BD',
-                        fontSize: '12px'
+                labels: ['New', 'Open', 'Resolved'],
+                colors: ['#7367f0', '#00cfe8', '#28c76f'],
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        colors: '#a3a9bd'
                     }
                 },
-                axisBorder: {
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total Tickets',
+                                    formatter: function (w) {
+                                        return {{ $totalTickets ?? 0 }};
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Sales chart options
+            const salesOptions = {
+                series: [{
+                    data: [0, 40, 35, 70, 60, 80, 50]
+                }],
+                chart: {
+                    type: 'area',
+                    height: 135,
+                    sparkline: {
+                        enabled: true
+                    }
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 2,
+                    colors: ['#00e396']
+                },
+                fill: {
+                    colors: ['rgba(0,227,150,0.6162114504004728)'],
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.4,
+                        opacityTo: 0,
+                        stops: [0, 90, 100]
+                    }
+                },
+                tooltip: {
+                    enabled: false
+                }
+            };
+
+            // Week bar chart options
+            const weekBarOptions = {
+                series: [{
+                    data: [20, 40, 35, 30, 60, 40, 45]
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 180,
+                    toolbar: {
+                        show: false
+                    },
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 3,
+                        columnWidth: '40%',
+                        distributed: true
+                    }
+                },
+                colors: [
+                    '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
+                ],
+                dataLabels: {
+                    enabled: false
+                },
+                xaxis: {
+                    categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+                    labels: {
+                        style: {
+                            colors: '#A3A9BD',
+                            fontSize: '12px'
+                        }
+                    },
+                    axisBorder: {
+                        show: false
+                    },
+                    axisTicks: {
+                        show: false
+                    }
+                },
+                yaxis: {
                     show: false
                 },
-                axisTicks: {
+                grid: {
                     show: false
+                },
+                tooltip: {
+                    enabled: false
                 }
-            },
-            yaxis: {
-                show: false
-            },
-            grid: {
-                show: false
-            },
-            tooltip: {
-                enabled: false
-            }
-        };
+            };
 
-        var chart = new ApexCharts(document.querySelector("#weekBarChart"), options);
-        chart.render();
-
-
-
-
-        var options = {
-            series: [85],
-            chart: {
-                height: 400,
-                type: 'radialBar',
-            },
-
-            plotOptions: {
-                radialBar: {
-                    startAngle: -135,
-                    endAngle: 135,
-                    hollow: {
-                        margin: 0,
-                        size: '60%',
-                        background: 'transparent',
-                    },
-                    track: {
-                        background: 'transparent',
-                        strokeWidth: '100%',
-                    },
-                    dataLabels: {
-                        show: true,
-                        name: {
-                            offsetY: 20,
-                            show: true,
-                            color: '#A3A9BD',
-                            fontSize: '14px',
-                            text: 'Completed Task'
+            // Task gauge chart options
+            const taskGaugeOptions = {
+                series: [85],
+                chart: {
+                    height: 400,
+                    type: 'radialBar',
+                },
+                plotOptions: {
+                    radialBar: {
+                        startAngle: -135,
+                        endAngle: 135,
+                        hollow: {
+                            margin: 0,
+                            size: '60%',
+                            background: 'transparent',
                         },
-                        value: {
-                            offsetY: -10,
-                            color: '#fff',
-                            fontSize: '28px',
+                        track: {
+                            background: 'transparent',
+                            strokeWidth: '100%',
+                        },
+                        dataLabels: {
                             show: true,
-                            formatter: function(val) {
-                                return val + "%";
+                            name: {
+                                offsetY: 20,
+                                show: true,
+                                color: '#A3A9BD',
+                                fontSize: '14px',
+                                text: 'Completed Task'
+                            },
+                            value: {
+                                offsetY: -10,
+                                color: '#fff',
+                                fontSize: '28px',
+                                show: true,
+                                formatter: function(val) {
+                                    return val + "%";
+                                }
+                            }
+                        },
+                    }
+                },
+                stroke: {
+                    dashArray: 12
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shade: 'dark',
+                        type: 'horizontal',
+                        gradientToColors: ['#7F6CFF'],
+                        stops: [0, 100]
+                    }
+                },
+                colors: ['#3D3D66'],
+                labels: ['Completed Task']
+            };
+
+            // Initialize all charts
+            initializeChart("#ticketPieChart", ticketOptions);
+            initializeChart("#salesChart", salesOptions);
+            initializeChart("#weekBarChart", weekBarOptions);
+            initializeChart("#taskGaugeChart", taskGaugeOptions);
+        });
+
+        // DataTable initialization code
+        function initDataTable(planId = '') {
+            console.log('Initializing DataTable for planId:', planId);
+            const tableId = '#myTable';
+            const $table = $(tableId);
+
+            if (!$table.length) {
+                console.error('Table not found with selector:', tableId);
+                return null;
+            }
+
+            try {
+                const table = $table.DataTable({
+                    processing: true,
+                    serverSide: true,
+                    responsive: true,
+                    autoWidth: false,
+                    dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+                    ajax: {
+                        url: "{{ route('specific.logs') }}",
+                        type: "GET",
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'Accept': 'application/json'
+                        },
+                        data: function (d) {
+                            d.plan_id = planId;
+                            d.user_name = $('#user_name_filter').val();
+                            d.email = $('#email_filter').val();
+                            d.status = $('#status_filter').val();
+                        },
+                        dataSrc: function (json) {
+                            console.log('Server response:', json);
+                            return json.data;
+                        },
+                        error: function (xhr, error, thrown) {
+                            console.error('DataTables error:', error);
+                            console.error('Server response:', xhr.responseText);
+
+                            if (xhr.status === 401) {
+                                window.location.href = "{{ route('login') }}";
+                            } else if (xhr.status === 403) {
+                                toastr.error('You do not have permission to view this data');
+                            } else {
+                                toastr.error('Error loading data: ' + error);
                             }
                         }
                     },
-                }
-            },
+                    columns: [
+                        { data: 'id', name: 'id' },
+                        { data: 'action_type', name: 'action_type' },
+                        { data: 'description', name: 'description' },
+                        { data: 'performed_by', name: 'performed_by' },
+                        { data: 'performed_on', name: 'performed_on' },
+                        { data: 'extra_data', name: 'extra_data' },
+                        { data: 'action', name: 'action', orderable: false, searchable: false }
+                    ],
+                    columnDefs: [
+                        { width: '10%', targets: 0 },
+                        { width: '20%', targets: 1 },
+                        { width: '15%', targets: 2 },
+                        { width: '25%', targets: 3 },
+                        { width: '15%', targets: 4 },
+                        { width: '15%', targets: 5 }
+                    ],
+                    order: [[1, 'desc']],
+                    drawCallback: function (settings) {
+                        const counters = settings.json?.counters;
 
-            // ✅ Make it segmented like bars
-            stroke: {
-                dashArray: 12
-            },
-
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shade: 'dark',
-                    type: 'horizontal',
-                    gradientToColors: ['#7F6CFF'],
-                    stops: [0, 100]
-                }
-            },
-
-            colors: ['#3D3D66'],
-            labels: ['Completed Task']
-        };
-
-        var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
-        chart.render();
-    </script>
-    <script>
-    function initDataTable(planId = '') {
-        console.log('Initializing DataTable for planId:', planId);
-        const tableId = '#myTable';
-        const $table = $(tableId);
-
-        if (!$table.length) {
-            console.error('Table not found with selector:', tableId);
-            return null;
-        }
-
-        try {
-            const table = $table.DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                autoWidth: false,
-                dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
-                ajax: {
-                    url: "{{ route('specific.logs') }}",
-                    type: "GET",
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'Accept': 'application/json'
-                    },
-                    data: function (d) {
-                        d.plan_id = planId;
-                        d.user_name = $('#user_name_filter').val();
-                        d.email = $('#email_filter').val();
-                        d.status = $('#status_filter').val();
-                    },
-                    dataSrc: function (json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
-                    error: function (xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading data: ' + error);
+                        if (counters) {
+                            $('#total_counter').text(counters.total);
+                            $('#active_counter').text(counters.active);
+                            $('#inactive_counter').text(counters.inactive);
                         }
+
+                        $('[data-bs-toggle="tooltip"]').tooltip();
+                        this.api().columns.adjust();
+                        this.api().responsive?.recalc();
+                    },
+                    initComplete: function () {
+                        console.log('Table initialization complete');
+                        this.api().columns.adjust();
+                        this.api().responsive?.recalc();
+
+                        // 🔽 Append your custom button next to the search bar
+                        // const button = `
+                        //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                        //             style="padding: .4rem 1rem"
+                        //             type="button"
+                        //             data-bs-toggle="offcanvas"
+                        //             data-bs-target="#offcanvasAddAdmin"
+                        //             aria-controls="offcanvasAddAdmin">
+                        //         + Add New Record
+                        //     </button>
+                        // `;
+
+                        // $('.dataTables_filter').append(button);
                     }
-                },
-                columns: [
-                    { data: 'id', name: 'id' },
-                    { data: 'action_type', name: 'action_type' },
-                    { data: 'description', name: 'description' },
-                    { data: 'performed_by', name: 'performed_by' },
-                    { data: 'performed_on', name: 'performed_on' },
-                    { data: 'extra_data', name: 'extra_data' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
-                ],
-                columnDefs: [
-                    { width: '10%', targets: 0 },
-                    { width: '20%', targets: 1 },
-                    { width: '15%', targets: 2 },
-                    { width: '25%', targets: 3 },
-                    { width: '15%', targets: 4 },
-                    { width: '15%', targets: 5 }
-                ],
-                order: [[1, 'desc']],
-                drawCallback: function (settings) {
-                    const counters = settings.json?.counters;
+                });
 
-                    if (counters) {
-                        $('#total_counter').text(counters.total);
-                        $('#active_counter').text(counters.active);
-                        $('#inactive_counter').text(counters.inactive);
+                // Optional loading indicator
+                table.on('processing.dt', function (e, settings, processing) {
+                    const wrapper = $(tableId + '_wrapper');
+                    if (processing) {
+                        wrapper.addClass('loading');
+                        if (!wrapper.find('.dt-loading').length) {
+                            wrapper.append('<div class="dt-loading">Loading...</div>');
+                        }
+                    } else {
+                        wrapper.removeClass('loading');
+                        wrapper.find('.dt-loading').remove();
                     }
+                });
 
-                    $('[data-bs-toggle="tooltip"]').tooltip();
-                    this.api().columns.adjust();
-                    this.api().responsive?.recalc();
-                },
-                initComplete: function () {
-                    console.log('Table initialization complete');
-                    this.api().columns.adjust();
-                    this.api().responsive?.recalc();
+                return table;
+            } catch (error) {
+                console.error('Error initializing DataTable:', error);
+                toastr.error('Error initializing table. Please refresh the page.');
+            }
 
-                    // 🔽 Append your custom button next to the search bar
-                    // const button = `
-                    //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                    //             style="padding: .4rem 1rem"
-                    //             type="button"
-                    //             data-bs-toggle="offcanvas"
-                    //             data-bs-target="#offcanvasAddAdmin"
-                    //             aria-controls="offcanvasAddAdmin">
-                    //         + Add New Record
-                    //     </button>
-                    // `;
-
-                    // $('.dataTables_filter').append(button);
-                }
-            });
-
-            // Optional loading indicator
-            table.on('processing.dt', function (e, settings, processing) {
-                const wrapper = $(tableId + '_wrapper');
-                if (processing) {
-                    wrapper.addClass('loading');
-                    if (!wrapper.find('.dt-loading').length) {
-                        wrapper.append('<div class="dt-loading">Loading...</div>');
-                    }
-                } else {
-                    wrapper.removeClass('loading');
-                    wrapper.find('.dt-loading').remove();
-                }
-            });
-
-            return table;
-        } catch (error) {
-            console.error('Error initializing DataTable:', error);
-            toastr.error('Error initializing table. Please refresh the page.');
         }
-
-    }
-    const table2 = initDataTable();
-    table2.columns.adjust();
-    table2.responsive.recalc();
-    console.log('Adjusting columns for table:', table2.table().node().id);
+        const table2 = initDataTable();
+        table2.columns.adjust();
+        table2.responsive.recalc();
+        console.log('Adjusting columns for table:', table2.table().node().id);
     </script>
 @endpush
