@@ -131,7 +131,7 @@
                                     height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-camera"></i>
+                                        <i class="ti ti-pencil"></i>
                                     </label>
                                 </div>
                             </div>
@@ -221,7 +221,11 @@
             <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
                 <div class="card-body">
                     @php
-                        $latestOrder = Auth::user()->orders()->with(['plan', 'reorderInfo','subscription'])->latest()->first();
+                        $latestOrder = Auth::user()->orders()
+                            ->where('status_manage_by_admin', '!=', 'cancelled')
+                            ->with(['plan', 'reorderInfo','subscription'])
+                            ->latest()
+                            ->first();
                     @endphp
                     <div class="d-flex justify-content-between align-items-start">
                         @if($latestOrder && $latestOrder->plan)
@@ -315,6 +319,11 @@
                         <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-tab-pane"
                             type="button" role="tab" aria-controls="activity-tab-pane" aria-selected="false"><i
                                 class="fa-regular fa-bell"></i> Activity</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="plans-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
+                        type="button" role="tab" aria-controls="plans-tab-pane" aria-selected="false"><i
+                            class="fa-solid fa-file-invoice"></i> Billing & Plans</button>
                 </li>
                 
             </ul>
@@ -499,7 +508,7 @@
                                                 @if($notification->is_read)
                                                     <span class="badge bg-label-success">Read</span>
                                                 @else
-                                                    <span class="badge bg-label-warning">Unread</span>
+                                                    <span class="badge bg-label-warning readToggle">Unread</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -563,6 +572,160 @@
                         <!-- /Activity -->
                     </div>
                 </div>
+                <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab"
+                    tabindex="0">
+                    <div class="card mb-4 p-3">
+                        <h5 class="card-header">Current Plan</h5>
+                        <div class="card-body">
+                            <div class="row row-gap-4">
+                                <div class="col-xl-6 order-1 order-xl-0">
+                                    @if($latestOrder && $latestOrder->plan)
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">Your Current Plan is {{ $latestOrder->plan->name }}</h6>
+                                        <p>{{ $latestOrder->plan->description }}</p>
+                                    </div>
+                                    @if($latestOrder->subscription)
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">Active until {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
+                                        <p>We will send you a notification upon Subscription expiration</p>
+                                    </div>
+                                    <div class="mb-xl-6">
+                                        <h6 class="mb-1">
+                                            <span class="me-1">${{ number_format($latestOrder->plan->price, 2) }} per {{ $latestOrder->plan->duration }}</span>
+                                            @if($latestOrder->plan->id === \App\Models\Plan::getMostlyUsed()?->id)
+                                                <span class="badge bg-label-primary rounded-pill">Popular</span>
+                                            @endif
+                                        </h6>
+                                        <p class="mb-0">{{ $latestOrder->plan->min_inbox }} {{ $latestOrder->plan->max_inbox == 0 ? '+' : '- ' . $latestOrder->plan->max_inbox }} Inboxes</p>
+                                    </div>
+                                    @endif
+                                    @else
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">No Active Plan</h6>
+                                        <p>Subscribe to a plan to get started</p>
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="col-xl-6 order-0 order-xl-0">
+                                    @if($latestOrder && $latestOrder->subscription)
+                                        @if($latestOrder->subscription->next_billing_date)
+                                            <div class="alert" style="background-color: rgba(255, 166, 0, 0.176); color: orange" role="alert">
+                                                <h5 class="alert-heading mb-2">Next Billing Information</h5>
+                                                <span>Your next billing date is {{ \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') }}</span>
+                                            </div>
+                                            <div class="plan-statistics">
+                                                @php
+                                                    $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
+                                                    $endDate = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date);
+                                                    $totalDays = $startDate->diffInDays($endDate);
+                                                    $daysLeft = now()->diffInDays($endDate, false);
+                                                    $progress = max(0, min(100, (($totalDays - $daysLeft) / $totalDays) * 100));
+                                                @endphp
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Days</h6>
+                                                    <!-- <h6 class="mb-1">{{ $totalDays - $daysLeft }} of {{ $totalDays }} Days</h6> -->
+                                                </div>
+                                                <div class="progress mb-1 bg-label-primary" style="height: 6px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" 
+                                                         aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <small>{{ $daysLeft }} days remaining</small>
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div class="col-12 order-2 order-xl-0 d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('customer.pricing') }}" class="m-btn py-2 px-4 rounded-2 border-0">
+                                        @if($latestOrder && $latestOrder->subscription && $latestOrder->subscription->status === 'active')
+                                            Upgrade Plan
+                                        @else
+                                            View Plans
+                                        @endif
+                                    </a>
+                                    @if($latestOrder && $latestOrder->subscription && $latestOrder->subscription->status === 'active')
+                                        <button class="cancel-btn py-2 px-4 rounded-2 border-0" onclick="CancelSubscription('{{ $latestOrder->subscription->chargebee_subscription_id }}')">
+                                            Cancel Subscription
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($latestOrder && $latestOrder->plan && $latestOrder->plan->features->count() > 0)
+                    <div class="card p-3 mb-4">
+                        <div class="card-header">
+                            <h5 class="card-action-title mb-0">Plan Features</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <ul class="list-unstyled mb-0">
+                                        @foreach($latestOrder->plan->features as $feature)
+                                            <li class="mb-2">
+                                                <i class="fas fa-check text-success"></i>
+                                                {{ $feature->title }}
+                                                @if($feature->pivot->value)
+                                                    : {{ $feature->pivot->value }}
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- Customer Billing Address -->
+                    <div class="card p-3 mb-4">
+                        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                            <h5 class="card-action-title mb-0">Billing Address</h5>
+                            <div class="card-action-element">
+                                <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
+                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
+                                    address</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-xl-7 col-12">
+                                    <div class="row mb-0 gx-2">
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Company Name:</div>
+                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_company ?? 'Not set' }}</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Billing Email:</div>
+                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->email }}</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading mb-0">Billing Address:</div>
+                                        <div class="col-sm-8 opacity-50 small mb-0">
+                                            {{ Auth::user()->billing_address ?? 'Not set' }}<br>
+                                            @if(Auth::user()->billing_address2)
+                                                {{ Auth::user()->billing_address2 }}<br>
+                                            @endif
+                                            @if(Auth::user()->billing_landmark)
+                                                {{ Auth::user()->billing_landmark }}<br>
+                                            @endif
+                                            {{ Auth::user()->billing_city ?? 'Not set' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-5 col-12">
+                                    <div class="row mb-0 gx-2">
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Country:</div>
+                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_country ?? 'Not set' }}</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">State:</div>
+                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_state ?? 'Not set' }}</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Zipcode:</div>
+                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_zip ?? 'Not set' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -581,161 +744,61 @@
                         <p class="address-subtitle">Edit your current address</p>
                     </div>
                     <form id="addNewAddressForm" class="row g-6">
-                        <div class="col-12">
-                            <div class="row">
-                                <div class="col-md mb-md-0 mb-4">
-                                    <div class="form-check custom-option custom-option-icon checked">
-                                        <label class="form-check-label custom-option-content" for="customRadioHome">
-                                            <span class="custom-option-body">
-                                                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path opacity="0.2"
-                                                        d="M16.625 23.625V16.625H11.375V23.625H4.37501V12.6328C4.37437 12.5113 4.39937 12.391 4.44837 12.2798C4.49737 12.1686 4.56928 12.069 4.65939 11.9875L13.4094 4.03592C13.5689 3.88911 13.7778 3.80762 13.9945 3.80762C14.2113 3.80762 14.4202 3.88911 14.5797 4.03592L23.3406 11.9875C23.4287 12.0706 23.4992 12.1706 23.548 12.2814C23.5969 12.3922 23.6231 12.5117 23.625 12.6328V23.625H16.625Z">
-                                                    </path>
-                                                    <path
-                                                        d="M23.625 23.625V12.6328C23.623 12.5117 23.5969 12.3922 23.548 12.2814C23.4992 12.1706 23.4287 12.0706 23.3406 11.9875L14.5797 4.03592C14.4202 3.88911 14.2113 3.80762 13.9945 3.80762C13.7777 3.80762 13.5689 3.88911 13.4094 4.03592L4.65937 11.9875C4.56926 12.069 4.49736 12.1686 4.44836 12.2798C4.39936 12.391 4.37436 12.5113 4.375 12.6328V23.625M1.75 23.625H26.25M16.625 23.625V17.5C16.625 17.2679 16.5328 17.0454 16.3687 16.8813C16.2046 16.7172 15.9821 16.625 15.75 16.625H12.25C12.0179 16.625 11.7954 16.7172 11.6313 16.8813C11.4672 17.0454 11.375 17.2679 11.375 17.5V23.625"
-                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    </path>
-                                                </svg>
-                                                <span class="custom-option-title">Home</span>
-                                                <small> Delivery time (9am – 9pm) </small>
-                                            </span>
-                                            <input name="customRadioIcon" class="form-check-input rounded-1"
-                                                type="radio" value="" id="customRadioHome" checked="">
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md mb-md-0 mb-4">
-                                    <div class="form-check custom-option custom-option-icon">
-                                        <label class="form-check-label custom-option-content" for="customRadioOffice">
-                                            <span class="custom-option-body">
-                                                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path opacity="0.2"
-                                                        d="M15.75 23.625V4.375C15.75 4.14294 15.6578 3.92038 15.4937 3.75628C15.3296 3.59219 15.1071 3.5 14.875 3.5H4.375C4.14294 3.5 3.92038 3.59219 3.75628 3.75628C3.59219 3.92038 3.5 4.14294 3.5 4.375V23.625">
-                                                    </path>
-                                                    <path
-                                                        d="M1.75 23.625H26.25M15.75 23.625V4.375C15.75 4.14294 15.6578 3.92038 15.4937 3.75628C15.3296 3.59219 15.1071 3.5 14.875 3.5H4.375C4.14294 3.5 3.92038 3.59219 3.75628 3.75628C3.59219 3.92038 3.5 4.14294 3.5 4.375V23.625M24.5 23.625V11.375C24.5 11.1429 24.4078 10.9204 24.2437 10.7563C24.0796 10.5922 23.8571 10.5 23.625 10.5H15.75M7 7.875H10.5M8.75 14.875H12.25M7 19.25H10.5M19.25 19.25H21M19.25 14.875H21"
-                                                        stroke-opacity="0.9" stroke-width="2" stroke-linecap="round"
-                                                        stroke-linejoin="round"></path>
-                                                </svg>
-                                                <span class="custom-option-title"> Office </span>
-                                                <small> Delivery time (9am – 5pm) </small>
-                                            </span>
-                                            <input name="customRadioIcon" class="form-check-input rounded-1"
-                                                type="radio" value="" id="customRadioOffice">
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label class="form-label" for="modalAddressFirstName">First Name</label>
-                            <input type="text" id="modalAddressFirstName" name="modalAddressFirstName"
-                                class="form-control" placeholder="John">
-                            <div
-                                class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label class="form-label" for="modalAddressLastName">Last Name</label>
-                            <input type="text" id="modalAddressLastName" name="modalAddressLastName"
-                                class="form-control" placeholder="Doe">
-                            <div
-                                class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label" for="modalAddressCountry">Country</label>
-                            <div class="position-relative">
-                                <div class="position-relative"><select id="modalAddressCountry"
-                                        name="modalAddressCountry" class="select2 form-select select2-hidden-accessible"
-                                        data-allow-clear="true" tabindex="-1" aria-hidden="true"
-                                        data-select2-id="modalAddressCountry">
-                                        <option value="" data-select2-id="82">Select</option>
-                                        <option value="Australia">Australia</option>
-                                        <option value="Bangladesh">Bangladesh</option>
-                                        <option value="Belarus">Belarus</option>
-                                        <option value="Brazil">Brazil</option>
-                                        <option value="Canada">Canada</option>
-                                        <option value="China">China</option>
-                                        <option value="France">France</option>
-                                        <option value="Germany">Germany</option>
-                                        <option value="India">India</option>
-                                        <option value="Indonesia">Indonesia</option>
-                                        <option value="Israel">Israel</option>
-                                        <option value="Italy">Italy</option>
-                                        <option value="Japan">Japan</option>
-                                        <option value="Korea">Korea, Republic of</option>
-                                        <option value="Mexico">Mexico</option>
-                                        <option value="Philippines">Philippines</option>
-                                        <option value="Russia">Russian Federation</option>
-                                        <option value="South Africa">South Africa</option>
-                                        <option value="Thailand">Thailand</option>
-                                        <option value="Turkey">Turkey</option>
-                                        <option value="Ukraine">Ukraine</option>
-                                        <option value="United Arab Emirates">United Arab Emirates</option>
-                                        <option value="United Kingdom">United Kingdom</option>
-                                        <option value="United States">United States</option>
-                                    </select><span class="select2 select2-container select2-container--default"
-                                        dir="ltr" data-select2-id="81" style="width: auto;"><span
-                                            class="selection"><span class="select2-selection select2-selection--single"
-                                                role="combobox" aria-haspopup="true" aria-expanded="false"
-                                                tabindex="0" aria-disabled="false"
-                                                aria-labelledby="select2-modalAddressCountry-container"><span
-                                                    class="select2-selection__rendered"
-                                                    id="select2-modalAddressCountry-container" role="textbox"
-                                                    aria-readonly="true"><span
-                                                        class="select2-selection__placeholder">Select
-                                                        value</span></span><span class="select2-selection__arrow"
-                                                    role="presentation"><b
-                                                        role="presentation"></b></span></span></span><span
-                                            class="dropdown-wrapper" aria-hidden="true"></span></span></div>
-                            </div>
-                        </div>
+                    <!-- billing_company -->
+                     <div class="col-12">
+                        <label class="form-label" for="modalAddressCompany">Company Name</label>
+                        <input type="text" id="modalAddressCompany" name="modalAddressCompany"
+                            class="form-control" placeholder="Company Name" value="{{ Auth::user()->billing_company ?? '' }}">
+                    </div>
+                    <div class="col-md-12">
+                    <label>Country</label>
+                    <select id="modalcountry" name="modalcountry" class="form-control" required="">
+                    <option value="">Select Country</option>
+                    @foreach(['Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo (Congo-Brazzaville)', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Democratic Republic of the Congo', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'] as $country)
+                        <option value="{{ $country }}" {{ Auth::user()->billing_country == $country ? 'selected' : '' }}>{{ $country }}</option>
+                    @endforeach
+                    </select>
+                </div>
 
                         <div class="col-12">
                             <label class="form-label" for="modalAddressAddress1">Address Line 1</label>
                             <input type="text" id="modalAddressAddress1" name="modalAddressAddress1"
-                                class="form-control" placeholder="12, Business Park">
+                                class="form-control" placeholder="12, Business Park" value="{{ Auth::user()->billing_address ?? '' }}">
                         </div>
 
                         <div class="col-12">
                             <label class="form-label" for="modalAddressAddress2">Address Line 2</label>
                             <input type="text" id="modalAddressAddress2" name="modalAddressAddress2"
-                                class="form-control" placeholder="Mall Road">
+                                class="form-control" placeholder="Mall Road" value="{{ Auth::user()->billing_address2 ?? '' }}">
                         </div>
 
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="modalAddressLandmark">Landmark</label>
                             <input type="text" id="modalAddressLandmark" name="modalAddressLandmark"
-                                class="form-control" placeholder="Nr. Hard Rock Cafe">
+                                class="form-control" placeholder="Nr. Hard Rock Cafe" value="{{ Auth::user()->billing_landmark ?? '' }}">
                         </div>
 
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="modalAddressCity">City</label>
                             <input type="text" id="modalAddressCity" name="modalAddressCity" class="form-control"
-                                placeholder="Los Angeles">
+                                placeholder="Los Angeles" value="{{ Auth::user()->billing_city ?? '' }}">
                         </div>
 
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="modalAddressLandmark">State</label>
                             <input type="text" id="modalAddressState" name="modalAddressState" class="form-control"
-                                placeholder="California">
+                                placeholder="California" value="{{ Auth::user()->billing_state ?? '' }}">
                         </div>
 
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="modalAddressZipCode">Zip Code</label>
                             <input type="text" id="modalAddressZipCode" name="modalAddressZipCode"
-                                class="form-control" placeholder="99950">
+                                class="form-control" placeholder="99950" value="{{ Auth::user()->billing_zip ?? '' }}">
                         </div>
 
                         <div class="col-12">
                             <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input rounded-1" id="billingAddress">
+                                <input type="checkbox" class="form-check-input rounded-1" id="billingAddress" checked>
                                 <label for="billingAddress" class="form-switch-label">Use as a billing address?</label>
                             </div>
                         </div>
@@ -745,14 +808,11 @@
                             <button type="reset" class="cancel-btn py-2 px-4 border-0 rounded-2"
                                 data-bs-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
-
-                        <input type="hidden">
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="modal fade" style="scrollbar-width: none" id="edit" tabindex="-1" aria-labelledby="editLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-md modal-dialog-centered">
@@ -778,7 +838,7 @@
 
 
 
-                        <div class="col-12 col-md-6" style="display: none;">
+                        <div class="col-12 col-md-12">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
@@ -809,8 +869,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
+    </div>                        
     <!-- Add Cropper Modal -->
     <div class="modal fade" id="cropperModal" tabindex="-1" role="dialog" aria-labelledby="cropperModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -838,6 +897,57 @@
                 <div class="modal-footer">
                     <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Subscription Modal -->
+    <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </div>
+                        Cancel Subscription
+                    </h6>
+
+                    <p class="note">
+                        We are sad to hear you're cancelling. Would you mind sharing the reason
+                        for the cancellation? We strive to always improve and would appreciate your
+                        feedback.
+                    </p>
+
+                    <form id="cancelSubscriptionForm" action="{{ route('customer.subscription.cancel.process') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
+                        <div class="mb-3">
+                            <label for="cancellation_reason">Reason *</label>
+                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
+                            <label class="form-check-label" for="remove_accounts">
+                                I would like to have these email accounts removed and the domains
+                                released immediately. I will not be using these inboxes any longer.
+                            </label>
+                        </div>
+
+                        <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                            <button type="button" class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                                data-bs-dismiss="modal">No, I changed my mind</button>
+                            <button type="submit"
+                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                                I'm sure</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1081,6 +1191,158 @@
                     }
                 });
             }, 'image/jpeg', 0.95);
+        });
+        // Handle mark as read functionality
+        $('.mark-as-read').on('click', function() {
+            const button = $(this);
+            const notificationId = button.data('id');
+            
+            $.ajax({
+                url: `/notifications/${notificationId}/mark-read`,
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    // Update the status badge
+                    button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                    // Remove the mark as read button
+                    button.remove();
+                    // Show success message
+                    toastr.success('Notification marked as read');
+                },
+                error: function(xhr) {
+                    toastr.error('Error marking notification as read');
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+
+        // Handle subscription cancellation
+        function CancelSubscription(subscriptionId) {
+            $('#subscription_id_to_cancel').val(subscriptionId);
+            $('#cancel_subscription').modal('show');
+        }
+
+        // Handle form submission for subscription cancellation
+        $('#cancelSubscriptionForm').on('submit', function(e) {
+            e.preventDefault();
+
+            // Check if reason is provided
+            const reason = $('#cancellation_reason').val().trim();
+            if (!reason) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'The reason field is required.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            // Get form data and ensure remove_accounts is boolean
+            const formData = new FormData(this);
+            formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+
+            // Show confirmation dialog
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('customer.subscription.cancel.process') }}",
+                        method: 'POST',
+                        data: Object.fromEntries(formData),
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        beforeSend: function() {
+                            // Show loading state
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Please wait while we cancel your subscription',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            // Close the modal
+                            $('#cancel_subscription').modal('hide');
+                            
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Your subscription has been cancelled successfully.',
+                                confirmButtonColor: '#3085d6'
+                            }).then(() => {
+                                // Reload the page to reflect changes
+                                window.location.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while cancelling your subscription.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle billing address form submission
+        $('#addNewAddressForm').on('submit', function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: "{{ route('customer.address.update') }}",
+                type: "POST",
+                data: $(this).serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Close modal
+                        $('#addRoleModal').modal('hide');
+                        
+                        // Show success message
+                        toastr.success('Billing address updated successfully');
+
+                        // Reload page to reflect changes
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        Object.values(xhr.responseJSON.errors).forEach(function(error) {
+                            toastr.error(error[0]);
+                        });
+                    } else {
+                        toastr.error('Error updating billing address');
+                    }
+                }
+            });
         });
     </script>
 @endpush

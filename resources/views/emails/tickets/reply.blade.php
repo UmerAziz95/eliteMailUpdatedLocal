@@ -20,10 +20,6 @@ Dear {{ $assignedStaff->name }},
 @endforeach
 @endif
 
-@component('mail::button', ['url' => url("/admin/support/tickets/{$ticket->id}")])
-View Ticket
-@endcomponent
-
 Best regards,  
 {{ config('app.name') }}
 @endcomponent

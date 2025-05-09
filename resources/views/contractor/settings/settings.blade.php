@@ -131,7 +131,7 @@
                                     height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-camera"></i>
+                                        <i class="ti ti-edit"></i>
                                     </label>
                                 </div>
                             </div>
@@ -392,7 +392,7 @@
                                                 @if($notification->is_read)
                                                     <span class="badge bg-label-success">Read</span>
                                                 @else
-                                                    <span class="badge bg-label-warning">Unread</span>
+                                                    <span class="badge bg-label-warning readToggle">Unread</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -990,7 +990,7 @@
                 },
                 success: function(response) {
                     // Update the status badge
-                    button.closest('tr').find('.badge').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                    button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
                     // Remove the mark as read button
                     button.remove();
                     // Show success message

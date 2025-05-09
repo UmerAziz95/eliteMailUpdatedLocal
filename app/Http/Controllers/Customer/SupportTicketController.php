@@ -173,7 +173,6 @@ class SupportTicketController extends Controller
             // Send email to assigned staff member
             $assignedStaff = \App\Models\User::find($ticket->assigned_to);
             if ($assignedStaff) {
-                $assignedStaff->email = "muhammad.farooq.raaj@gmail.com";
                 Mail::to($assignedStaff->email)
                     ->queue(new \App\Mail\TicketReplyMail(
                         $ticket,
@@ -196,6 +195,39 @@ class SupportTicketController extends Controller
         $tickets = SupportTicket::with(['user'])
             ->where('user_id', Auth::id())
             ->select('support_tickets.*');
+
+        // Apply ticket number filter
+        if ($request->has('ticket_number') && $request->ticket_number != '') {
+            $tickets->where('ticket_number', 'like', '%' . $request->ticket_number . '%');
+        }
+
+        // Apply subject filter
+        if ($request->has('subject') && $request->subject != '') {
+            $tickets->where('subject', 'like', '%' . $request->subject . '%');
+        }
+
+        // Apply category filter
+        if ($request->has('category') && $request->category != '') {
+            $tickets->where('category', $request->category);
+        }
+
+        // Apply priority filter
+        if ($request->has('priority') && $request->priority != '') {
+            $tickets->where('priority', $request->priority);
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status != '') {
+            $tickets->where('status', $request->status);
+        }
+
+        // Apply date range filters
+        if ($request->has('start_date') && $request->start_date != '') {
+            $tickets->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->has('end_date') && $request->end_date != '') {
+            $tickets->whereDate('created_at', '<=', $request->end_date);
+        }
 
         return DataTables::of($tickets)
             ->addColumn('action', function ($ticket) {

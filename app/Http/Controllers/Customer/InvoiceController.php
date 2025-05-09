@@ -125,8 +125,8 @@ class InvoiceController extends Controller
                 ])
                 ->make(true);
         }
-
-        return view('customer.invoices.index');
+        $statuses = $this->statuses;
+        return view('customer.invoices.index', compact('statuses'));
     }
 
     public function getInvoices(Request $request)

@@ -260,8 +260,8 @@ class OrderController extends Controller
             ];
             // dd($nextBillingInfo);
         }
-    
-        return view('customer.orders.order-view', compact('order', 'nextBillingInfo'));
+        $statuses = $this->statuses;
+        return view('customer.orders.order-view', compact('order', 'nextBillingInfo', 'statuses'));
     }
 
     public function getOrders(Request $request)

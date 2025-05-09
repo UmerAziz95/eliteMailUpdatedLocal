@@ -60,7 +60,7 @@
                             @foreach($statuses as $status => $badge)
                             <div class="form-check me-3">
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                    value="{{ ucfirst($status) }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
                                     {{ $status }}
                                 </label>

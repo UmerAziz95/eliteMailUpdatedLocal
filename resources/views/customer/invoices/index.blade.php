@@ -76,10 +76,9 @@
                             <label for="orderStatusFilter" class="form-label">Order Status</label>
                             <select id="orderStatusFilter" class="form-select">
                                 <option value="">All Order Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
-                                <option value="completed">Completed</option>
-                                <option value="expired">Expired</option>
+                                @foreach($statuses as $key => $status)
+                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3">

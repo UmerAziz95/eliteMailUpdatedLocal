@@ -150,7 +150,7 @@
                             <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-phone-call"></i>
                                 <span class="fw-semibold mx-2">Contact:</span>
-                                <span>{{Auth::user()->phone}}</span>
+                                <span>{{Auth::user()->phone ?? 'N/A'}}</span>
                             </li>
                             {{--<li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-brand-skype"></i><span class="fw-semibold mx-2">Skype:</span>
