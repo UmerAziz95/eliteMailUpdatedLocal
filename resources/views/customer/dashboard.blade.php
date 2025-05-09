@@ -453,12 +453,44 @@
             <div class="col-xl-3 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
-                        <h6 class="mb-2 ">Average Daily Sales</h6>
-                        <p class="mb-0">Total Sales This Month</p>
-                        <h4 class="mb-0">$28,450</h4>
+                        <h6 class="mb-2">Orders Overview</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p class="mb-0">All Time Orders</p>
+                            <span class="badge bg-label-primary">
+                                <i class="ti ti-shopping-cart fs-5"></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-0 mt-2">{{ $totalOrders ?? 0 }}</h4>
                     </div>
-                    <div class="card-body px-0 pt-0 border-0" style="margin-top: -1rem;">
-                        <div id="salesChart"></div>
+                    <div class="card-body px-3 pt-0">
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <p class="mb-0">Pending Orders</p>
+                                <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                @php
+                                    $pendingPercentage = $totalOrders > 0 ? ($pendingOrders / $totalOrders) * 100 : 0;
+                                @endphp
+                                <div class="progress-bar bg-primary" style="width: {{ $pendingPercentage }}%" role="progressbar" 
+                                    aria-valuenow="{{ $pendingPercentage }}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <p class="mb-0">Completed Orders</p>
+                                <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                @php
+                                    $completedPercentage = $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0;
+                                @endphp
+                                <div class="progress-bar bg-success" style="width: {{ $completedPercentage }}%" role="progressbar" 
+                                    aria-valuenow="{{ $completedPercentage }}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -469,22 +501,26 @@
                 <div class="card h-100 p-2">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
-                            <p class="mb-0 small">Sales Overview</p>
-                            <p class="card-text fw-medium text-success">+18.2%</p>
+                            <p class="mb-0 small">Inboxes Overview</p>
+                            @if(isset($inboxGrowthPercentage))
+                            <p class="card-text fw-medium {{ $inboxGrowthPercentage >= 0 ? 'text-success' : 'text-danger' }}">
+                                {{ $inboxGrowthPercentage >= 0 ? '+' : '' }}{{ number_format($inboxGrowthPercentage, 1) }}%
+                            </p>
+                            @endif
                         </div>
-                        <h4 class="card-title mb-1">$42.5k</h4>
+                        <h4 class="card-title mb-1">{{ $totalInboxes ?? 0 }} Inboxes</h4>
                     </div>
                     <div class="card-body d-flex flex-column justify-content-between gap-3">
                         <div class="row">
                             <div class="col-4">
                                 <div class="d-flex gap-2 align-items-center mb-2">
-                                    <span class="badge bg-label-info p-1 rounded">
-                                        <i class="ti ti-shopping-cart text-info fs-5"></i>
+                                    <span class="badge bg-label-success p-1 rounded">
+                                        <i class="ti ti-inbox-filled text-success fs-5"></i>
                                     </span>
-                                    <p class="mb-0">Order</p>
+                                    <p class="mb-0">Active</p>
                                 </div>
-                                <h5 class="mb-0 pt-1">62.2%</h5>
-                                <small class="opacity-50 fw-light">6,440</small>
+                                <h5 class="mb-0 pt-1">{{ number_format(($activeInboxes ?? 0) / ($totalInboxes ?? 1) * 100, 1) }}%</h5>
+                                <small class="opacity-50 fw-light">{{ $activeInboxes ?? 0 }}</small>
                             </div>
                             <div class="col-4">
                                 <div class="divider divider-vertical">
@@ -495,21 +531,25 @@
                             </div>
                             <div class="col-4 text-end">
                                 <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-                                    <p class="mb-0">Visits</p>
-                                    <span class="badge bg-label-primary p-1 rounded">
-                                        <i class="ti ti-link theme-text fs-5"></i>
+                                    <p class="mb-0">Pending</p>
+                                    <span class="badge bg-label-warning p-1 rounded">
+                                        <i class="ti ti-inbox text-warning fs-5"></i>
                                     </span>
                                 </div>
-                                <h5 class="mb-0 pt-1">25.5%</h5>
-                                <small class="opacity-50 fw-light">12,749</small>
+                                <h5 class="mb-0 pt-1">{{ number_format(($pendingInboxes ?? 0) / ($totalInboxes ?? 1) * 100, 1) }}%</h5>
+                                <small class="opacity-50 fw-light">{{ $pendingInboxes ?? 0 }}</small>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center mt-6">
+                        <div class="d-flex align-items-center mt-4">
                             <div class="progress w-100" style="height: 10px;">
-                                <div class="progress-bar bg-info" style="width: 70%" role="progressbar"
-                                    aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
-                                <div class="progress-bar" role="progressbar" style="width: 30%" aria-valuenow="30"
-                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                @php
+                                    $activePercentage = $totalInboxes > 0 ? ($activeInboxes / $totalInboxes * 100) : 0;
+                                    $pendingPercentage = $totalInboxes > 0 ? ($pendingInboxes / $totalInboxes * 100) : 0;
+                                @endphp
+                                <div class="progress-bar bg-success" style="width: {{ $activePercentage }}%" role="progressbar"
+                                    aria-valuenow="{{ $activePercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-warning" style="width: {{ $pendingPercentage }}%" role="progressbar"
+                                    aria-valuenow="{{ $pendingPercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
                     </div>
@@ -522,110 +562,53 @@
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
-                            <h5 class="mb-1">Subscription Statistics</h5>
-                            <p>Current Subscription Overview</p>
+                            <h5 class="mb-1">Current Subscription Overview</h5>
+                            <p>Subscription and billing details</p>
                         </div>
                     </div>
                     <div class="card-body pt-0">
-                        <div class="row align-items-center">
+                        <div class="row g-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                    <h1 class="mb-2">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h1>
+                                    <h2 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h2>
                                     @if(isset($subscription) && $subscription->status === 'active')
                                         <div class="badge rounded bg-label-success">Active</div>
                                     @else
                                         <div class="badge rounded bg-label-warning">No Active Plan</div>
                                     @endif
                                 </div>
-                                <div class="d-flex flex-column gap-2 mb-4">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted">Next Billing Date</span>
-                                        <span class="fw-semibold">{{ $nextBillingInfo['next_billing_at'] ?? 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Next Billing Date</span>
+                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->next_billing_date ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
                                     </div>
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted">Current Plan</span>
-                                        <span class="fw-semibold">{{ $subscription->plan->name ?? 'No Plan' }}</span>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Last Billing Date</span>
+                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y') : 'N/A' }}</h6>
                                     </div>
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted">Billing Cycle</span>
-                                        <span class="fw-semibold">{{ $subscription->plan->duration ?? 'N/A' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded p-4" style="border: 1px solid var(--input-border);">
-                            <h6 class="mb-3">Subscription Overview</h6>
-                            <div class="row gap-4 gap-sm-0">
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-primary p-1">
-                                            <i class="ti ti-currency-dollar theme-text fs-5"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Current</h6>
-                                    </div>
-                                    <h4 class="my-2">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar" role="progressbar" style="width: 100%"
-                                            aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-info p-1">
-                                            <i class="ti ti-box fs-5 text-info"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Total Orders</h6>
-                                    </div>
-                                    <h4 class="my-2">{{ $totalOrders ?? 0 }}</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: 50%"
-                                            aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-success p-1">
-                                            <i class="ti ti-inbox fs-5 text-success"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Active Inboxes</h6>
-                                    </div>
-                                    <h4 class="my-2">{{ $activeInboxes ?? 0 }}</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%"
-                                            aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Billing Period</span>
+                                        <h6 class="mb-0">Monthly</h6>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        @if(isset($relatedSubscriptions) && count($relatedSubscriptions) > 0)
-                        <div class="mt-4">
-                            <h6 class="mb-3">Related Subscriptions</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Plan</th>
-                                            <th>Status</th>
-                                            <th>Next Billing</th>
-                                            <th>Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($relatedSubscriptions as $relSub)
-                                        <tr>
-                                            <td>{{ $relSub->plan->name }}</td>
-                                            <td><span class="badge bg-label-{{ $relSub->status === 'active' ? 'success' : 'warning' }}">{{ ucfirst($relSub->status) }}</span></td>
-                                            <td>{{ $relSub->next_billing_date ? Carbon::parse($relSub->next_billing_date)->format('M d, Y') : 'N/A' }}</td>
-                                            <td>${{ number_format($relSub->amount, 2) }}</td>
-                                        </tr>
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="mb-3">Plan Features</h6>
+                                @if(isset($subscription) && $subscription->plan && $subscription->plan->features)
+                                    <ul class="p-0 m-0">
+                                        @foreach($subscription->plan->features as $feature)
+                                        <li class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="ti ti-check text-success"></i>
+                                            <span>{{ $feature->title }} {{ $feature->pivot->value }}</span>
+                                        </li>
                                         @endforeach
-                                    </tbody>
-                                </table>
+                                    </ul>
+                                @else
+                                    <p class="text-muted mb-0">No active plan features</p>
+                                @endif
                             </div>
                         </div>
-                        @endif
                     </div>
                 </div>
             </div>
