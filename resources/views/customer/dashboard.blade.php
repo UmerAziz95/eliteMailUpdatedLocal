@@ -469,12 +469,7 @@
                                 <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
                             </div>
                             <div class="progress" style="height: 8px;">
-                                @php
-                                    $pendingPercentage = $totalOrders > 0 ? ($pendingOrders / $totalOrders) * 100 : 0;
-                                @endphp
-                                <div class="progress-bar bg-primary" style="width: {{ $pendingPercentage }}%" role="progressbar" 
-                                    aria-valuenow="{{ $pendingPercentage }}" aria-valuemin="0" aria-valuemax="100">
-                                </div>
+                                <div class="progress-bar bg-primary" style="width: {{ ($totalOrders > 0 ? ($pendingOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -483,80 +478,55 @@
                                 <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
                             </div>
                             <div class="progress" style="height: 8px;">
-                                @php
-                                    $completedPercentage = $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0;
-                                @endphp
-                                <div class="progress-bar bg-success" style="width: {{ $completedPercentage }}%" role="progressbar" 
-                                    aria-valuenow="{{ $completedPercentage }}" aria-valuemin="0" aria-valuemax="100">
-                                </div>
+                                <div class="progress-bar bg-success" style="width: {{ ($totalOrders > 0 ? ($completedOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-
 
             <div class="col-xl-3 col-sm-6">
                 <div class="card h-100 p-2">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
-                            <p class="mb-0 small">Inboxes Overview</p>
-                            @if(isset($inboxGrowthPercentage))
-                            <p class="card-text fw-medium {{ $inboxGrowthPercentage >= 0 ? 'text-success' : 'text-danger' }}">
-                                {{ $inboxGrowthPercentage >= 0 ? '+' : '' }}{{ number_format($inboxGrowthPercentage, 1) }}%
-                            </p>
-                            @endif
+                            <p class="mb-0">Inboxes Overview</p>
                         </div>
-                        <h4 class="card-title mb-1">{{ $totalInboxes ?? 0 }} Inboxes</h4>
+                        <h4 class="card-title mb-1">{{ $totalInboxes ?? 0 }} Total Inboxes</h4>
                     </div>
-                    <div class="card-body d-flex flex-column justify-content-between gap-3">
+                    <div class="card-body">
                         <div class="row">
-                            <div class="col-4">
-                                <div class="d-flex gap-2 align-items-center mb-2">
-                                    <span class="badge bg-label-success p-1 rounded">
-                                        <i class="ti ti-inbox-filled text-success fs-5"></i>
-                                    </span>
-                                    <p class="mb-0">Active</p>
-                                </div>
-                                <h5 class="mb-0 pt-1">{{ number_format(($activeInboxes ?? 0) / ($totalInboxes ?? 1) * 100, 1) }}%</h5>
-                                <small class="opacity-50 fw-light">{{ $activeInboxes ?? 0 }}</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="divider divider-vertical">
-                                    <div class="divider-text">
-                                        <span class="badge-divider-bg bg-label-secondary">VS</span>
+                            <div class="col-12 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-label-success p-1 rounded me-2">
+                                            <i class="ti ti-inbox-filled text-success fs-5"></i>
+                                        </span>
+                                        <p class="mb-0">Active Inboxes</p>
                                     </div>
+                                    <p class="mb-0 fw-semibold">{{ $activeInboxes ?? 0 }}</p>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: {{ ($totalInboxes > 0 ? ($activeInboxes / $totalInboxes * 100) : 0) }}%" role="progressbar"></div>
                                 </div>
                             </div>
-                            <div class="col-4 text-end">
-                                <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-                                    <p class="mb-0">Pending</p>
-                                    <span class="badge bg-label-warning p-1 rounded">
-                                        <i class="ti ti-inbox text-warning fs-5"></i>
-                                    </span>
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-label-warning p-1 rounded me-2">
+                                            <i class="ti ti-inbox text-warning fs-5"></i>
+                                        </span>
+                                        <p class="mb-0">Pending Inboxes</p>
+                                    </div>
+                                    <p class="mb-0 fw-semibold">{{ $pendingInboxes ?? 0 }}</p>
                                 </div>
-                                <h5 class="mb-0 pt-1">{{ number_format(($pendingInboxes ?? 0) / ($totalInboxes ?? 1) * 100, 1) }}%</h5>
-                                <small class="opacity-50 fw-light">{{ $pendingInboxes ?? 0 }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mt-4">
-                            <div class="progress w-100" style="height: 10px;">
-                                @php
-                                    $activePercentage = $totalInboxes > 0 ? ($activeInboxes / $totalInboxes * 100) : 0;
-                                    $pendingPercentage = $totalInboxes > 0 ? ($pendingInboxes / $totalInboxes * 100) : 0;
-                                @endphp
-                                <div class="progress-bar bg-success" style="width: {{ $activePercentage }}%" role="progressbar"
-                                    aria-valuenow="{{ $activePercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                <div class="progress-bar bg-warning" style="width: {{ $pendingPercentage }}%" role="progressbar"
-                                    aria-valuenow="{{ $pendingPercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" style="width: {{ ($totalInboxes > 0 ? ($pendingInboxes / $totalInboxes * 100) : 0) }}%" role="progressbar"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-
 
             <div class="col-12 col-md-6">
                 <div class="card h-100 p-2">
