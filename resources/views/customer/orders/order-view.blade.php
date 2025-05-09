@@ -32,7 +32,9 @@
     </div>
     <div class="row d-flex justify-content-end" id="exportCsvBtn" style="margin-right: 1px">
         <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
-            <a href="">Bulk Export</a>
+            
+            <a href="javascript:;">Bulk Export</a>
+
             
         </div>
     </div>
@@ -1024,7 +1026,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Start file download by redirecting the browser
-                    window.location.href = exportUrl;
+                    window.location.href = "{{ url('/customer/orders/emails/' . $order->id . '/export') }}";;
                 }
             });
         });

@@ -226,6 +226,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/support/tickets/orders', [App\Http\Controllers\Customer\SupportTicketController::class, 'getUserOrders'])->name('support.tickets.orders');
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
+    // Route::post('/update-address', 'Customer\ProfileController@updateAddress')->name('address.update');
+    Route::post('/update-address', [App\Http\Controllers\Customer\ProfileController::class, 'updateAddress'])->name('address.update');
     
 
 });

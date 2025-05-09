@@ -19,18 +19,21 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        // 'last_name',
         'email',
-        'phone',
-        'password',
-        'subscription_id',
-        'subscription_status',
-        'plan_id',
-        'role_id', // Add role attribute
-        'billing_address', // Add billing address attribute
         'domain_forwarding_url',
+        'password',
+        'role_id',
         'status',
+        'phone',
         'profile_image',
+        'billing_company',
+        'billing_address',
+        'billing_address2',
+        'billing_city',
+        'billing_state',
+        'billing_country',
+        'billing_zip',
+        'billing_landmark'
     ];
 
     /**
