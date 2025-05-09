@@ -18,7 +18,7 @@ class PlanController extends Controller
         return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed'));
     }
 
-  public function store(Request $request)
+   public function store(Request $request)
 {
     try {
         $request->validate([
@@ -26,7 +26,7 @@ class PlanController extends Controller
             'price' => 'required|numeric|min:0',
             'duration' => 'required|string',
             'description' => 'required|string',
-            'min_inbox' => 'required|integer|min:1',
+            'min_inbox' => 'required|integer|min:0',
             'max_inbox' => 'required|integer|min:0',
             'feature_ids' => 'nullable|array',
             'feature_ids.*' => 'exists:features,id',
@@ -37,13 +37,18 @@ class PlanController extends Controller
         $min = $request->min_inbox;
         $max = $request->max_inbox;
 
+        // ✅ CASE 0: Prevent multiple infinite plans
+        if ($min == 0 && $max == 0) {
+            $existingInfinite = Plan::where('max_inbox', 0)->exists();
+
+            if ($existingInfinite) {
+                throw new \Exception("A plan with unlimited inbox already exists. You cannot create another one with min=0 and max=0.");
+            }
+        }
+
         $newMax = ($max == 0) ? PHP_INT_MAX : $max;
 
-        /**
-         * ✅ CASE 1: Infinity Check
-         * If any existing plan has max_inbox = 0 (∞), 
-         * no new plan can start from a min_inbox inside that range.
-         */
+        // ✅ CASE 1: Prevent new plan if existing infinite plan overlaps
         $infinitePlanConflict = Plan::where('max_inbox', 0)
             ->where('min_inbox', '<=', $min)
             ->exists();
@@ -52,10 +57,7 @@ class PlanController extends Controller
             throw new \Exception("An existing plan allows unlimited inboxes starting from $min or lower. You cannot create a plan within or above this range.");
         }
 
-        /**
-         * ✅ CASE 2: Overlap Check
-         * Prevent plans with overlapping min-max ranges
-         */
+        // ✅ CASE 2: Prevent overlapping range
         $overlappingPlan = Plan::where(function ($query) use ($min, $newMax) {
             $query->where(function ($sub) use ($min, $newMax) {
                 $sub->where('min_inbox', '<=', $newMax)
@@ -128,7 +130,6 @@ class PlanController extends Controller
         return redirect()->back()->with('error', 'Error creating plan: ' . $e->getMessage());
     }
 }
-
 
     private function createChargeBeeItem($data)
     {

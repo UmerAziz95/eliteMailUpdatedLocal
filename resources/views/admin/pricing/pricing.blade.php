@@ -423,13 +423,16 @@
             $('.new-feature-value').val('');
         });
 
-        // Load features for dropdowns
-     function loadFeatures() {
+    function loadFeatures() {
     $.ajax({
         url: "{{ route('admin.features.list') }}",
         type: "GET",
         dataType: "json",
         success: function(response) {
+            console.log(response.features);
+            console.log(response);
+            console.log("features are loading here");
+
             if (response.success) {
                 // Populate all feature dropdowns with filtering for each plan
                 $('.feature-dropdown').each(function() {
@@ -465,7 +468,8 @@
             }
         },
         error: function(xhr) {
-            showErrorToast('Failed to load features');
+            //showErrorToast('Failed to load features');
+            console.log("failed to load features ");
         }
     });
 }
