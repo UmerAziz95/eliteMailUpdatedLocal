@@ -47,7 +47,7 @@
 <section class="py-3">
 
     <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -69,7 +69,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -89,7 +89,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -109,7 +109,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -129,7 +129,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -149,7 +149,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
