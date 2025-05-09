@@ -131,7 +131,7 @@
                                     height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-camera"></i>
+                                        <i class="ti ti-pencil"></i>
                                     </label>
                                 </div>
                             </div>
@@ -221,7 +221,11 @@
             <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
                 <div class="card-body">
                     @php
-                        $latestOrder = Auth::user()->orders()->with(['plan', 'reorderInfo','subscription'])->latest()->first();
+                        $latestOrder = Auth::user()->orders()
+                            ->where('status_manage_by_admin', '!=', 'cancelled')
+                            ->with(['plan', 'reorderInfo','subscription'])
+                            ->latest()
+                            ->first();
                     @endphp
                     <div class="d-flex justify-content-between align-items-start">
                         @if($latestOrder && $latestOrder->plan)
@@ -315,6 +319,11 @@
                         <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-tab-pane"
                             type="button" role="tab" aria-controls="activity-tab-pane" aria-selected="false"><i
                                 class="fa-regular fa-bell"></i> Activity</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="plans-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
+                        type="button" role="tab" aria-controls="plans-tab-pane" aria-selected="false"><i
+                            class="fa-solid fa-file-invoice"></i> Billing & Plans</button>
                 </li>
                 
             </ul>
@@ -563,6 +572,166 @@
                         <!-- /Activity -->
                     </div>
                 </div>
+                <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab"
+                    tabindex="0">
+                    <div class="card mb-4 p-3">
+                        <h5 class="card-header">Current Plan</h5>
+                        <div class="card-body">
+                            <div class="row row-gap-4">
+                                <div class="col-xl-6 order-1 order-xl-0">
+                                    @if($latestOrder && $latestOrder->plan)
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">Your Current Plan is {{ $latestOrder->plan->name }}</h6>
+                                        <p>{{ $latestOrder->plan->description }}</p>
+                                    </div>
+                                    @if($latestOrder->subscription)
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">Active until {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
+                                        <p>We will send you a notification upon Subscription expiration</p>
+                                    </div>
+                                    <div class="mb-xl-6">
+                                        <h6 class="mb-1">
+                                            <span class="me-1">${{ number_format($latestOrder->plan->price, 2) }} per {{ $latestOrder->plan->duration }}</span>
+                                            @if($latestOrder->plan->id === \App\Models\Plan::getMostlyUsed()?->id)
+                                                <span class="badge bg-label-primary rounded-pill">Popular</span>
+                                            @endif
+                                        </h6>
+                                        <p class="mb-0">{{ $latestOrder->plan->min_inbox }} {{ $latestOrder->plan->max_inbox == 0 ? '+' : '- ' . $latestOrder->plan->max_inbox }} Inboxes</p>
+                                    </div>
+                                    @endif
+                                    @else
+                                    <div class="mb-4">
+                                        <h6 class="mb-1">No Active Plan</h6>
+                                        <p>Subscribe to a plan to get started</p>
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="col-xl-6 order-0 order-xl-0">
+                                    @if($latestOrder && $latestOrder->subscription)
+                                        @if($latestOrder->subscription->next_billing_date)
+                                            <div class="alert" style="background-color: rgba(255, 166, 0, 0.176); color: orange" role="alert">
+                                                <h5 class="alert-heading mb-2">Next Billing Information</h5>
+                                                <span>Your next billing date is {{ \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') }}</span>
+                                            </div>
+                                            <div class="plan-statistics">
+                                                @php
+                                                    $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
+                                                    $endDate = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date);
+                                                    $totalDays = $startDate->diffInDays($endDate);
+                                                    $daysLeft = now()->diffInDays($endDate, false);
+                                                    $progress = max(0, min(100, (($totalDays - $daysLeft) / $totalDays) * 100));
+                                                @endphp
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Days</h6>
+                                                    <!-- <h6 class="mb-1">{{ $totalDays - $daysLeft }} of {{ $totalDays }} Days</h6> -->
+                                                </div>
+                                                <div class="progress mb-1 bg-label-primary" style="height: 6px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" 
+                                                         aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <small>{{ $daysLeft }} days remaining</small>
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div class="col-12 order-2 order-xl-0 d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('customer.pricing') }}" class="m-btn py-2 px-4 rounded-2 border-0">
+                                        @if($latestOrder && $latestOrder->subscription && $latestOrder->subscription->status === 'active')
+                                            Upgrade Plan
+                                        @else
+                                            View Plans
+                                        @endif
+                                    </a>
+                                    @if($latestOrder && $latestOrder->subscription && $latestOrder->subscription->status === 'active')
+                                        <button class="cancel-btn py-2 px-4 rounded-2 border-0" onclick="CancelSubscription('{{ $latestOrder->subscription->chargebee_subscription_id }}')">
+                                            Cancel Subscription
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($latestOrder && $latestOrder->plan && $latestOrder->plan->features->count() > 0)
+                    <div class="card p-3 mb-4">
+                        <div class="card-header">
+                            <h5 class="card-action-title mb-0">Plan Features</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <ul class="list-unstyled mb-0">
+                                        @foreach($latestOrder->plan->features as $feature)
+                                            <li class="mb-2">
+                                                <i class="fas fa-check text-success"></i>
+                                                {{ $feature->title }}
+                                                @if($feature->pivot->value)
+                                                    : {{ $feature->pivot->value }}
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- Customer Billing Address -->
+                    <div class="card p-3 mb-4">
+                        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                            <h5 class="card-action-title mb-0">Billing Address</h5>
+                            <div class="card-action-element">
+                                <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
+                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
+                                    address</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-xl-7 col-12">
+                                    <div class="row mb-0 gx-2">
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Company Name:
+                                        </div>
+                                        <div class="col-sm-8 opacity-50 small">Kelly Group</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Billing Email:
+                                        </div>
+                                        <div class="col-sm-8 opacity-50 small">user@ex.com</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Tax ID:</div>
+                                        <div class="col-sm-8 opacity-50 small">TAX-357378</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">VAT Number:</div>
+                                        <div class="col-sm-8 opacity-50 small">SDF754K77</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading mb-0">Billing
+                                            Address:</div>
+                                        <div class="col-sm-8 opacity-50 small mb-0">
+                                            100 Water Plant <br>Avenue, Building 1303<br>
+                                            Wake Island
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-5 col-12">
+                                    <div class="row mb-0 gx-2">
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">plans:</div>
+                                        <div class="col-sm-8 opacity-50 small">+1 (605) 977-32-65</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Country:</div>
+                                        <div class="col-sm-8 opacity-50 small">Wake Island</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">State:</div>
+                                        <div class="col-sm-8 opacity-50 small">Capholim</div>
+
+                                        <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Zipcode:</div>
+                                        <div class="col-sm-8 opacity-50 small">403114</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -778,7 +947,7 @@
 
 
 
-                        <div class="col-12 col-md-6" style="display: none;">
+                        <div class="col-12 col-md-6">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
@@ -838,6 +1007,57 @@
                 <div class="modal-footer">
                     <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Subscription Modal -->
+    <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </div>
+                        Cancel Subscription
+                    </h6>
+
+                    <p class="note">
+                        We are sad to hear you're cancelling. Would you mind sharing the reason
+                        for the cancellation? We strive to always improve and would appreciate your
+                        feedback.
+                    </p>
+
+                    <form id="cancelSubscriptionForm" action="{{ route('customer.subscription.cancel.process') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
+                        <div class="mb-3">
+                            <label for="cancellation_reason">Reason *</label>
+                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
+                            <label class="form-check-label" for="remove_accounts">
+                                I would like to have these email accounts removed and the domains
+                                released immediately. I will not be using these inboxes any longer.
+                            </label>
+                        </div>
+
+                        <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                            <button type="button" class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                                data-bs-dismiss="modal">No, I changed my mind</button>
+                            <button type="submit"
+                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                                I'm sure</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1104,6 +1324,96 @@
                 error: function(xhr) {
                     toastr.error('Error marking notification as read');
                     console.error(xhr.responseText);
+                }
+            });
+        });
+
+        // Handle subscription cancellation
+        function CancelSubscription(subscriptionId) {
+            $('#subscription_id_to_cancel').val(subscriptionId);
+            $('#cancel_subscription').modal('show');
+        }
+
+        // Handle form submission for subscription cancellation
+        $('#cancelSubscriptionForm').on('submit', function(e) {
+            e.preventDefault();
+
+            // Check if reason is provided
+            const reason = $('#cancellation_reason').val().trim();
+            if (!reason) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'The reason field is required.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            // Get form data and ensure remove_accounts is boolean
+            const formData = new FormData(this);
+            formData.set('remove_accounts', $('#remove_accounts').is(':checked'));
+
+            // Show confirmation dialog
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('customer.subscription.cancel.process') }}",
+                        method: 'POST',
+                        data: Object.fromEntries(formData),
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        beforeSend: function() {
+                            // Show loading state
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Please wait while we cancel your subscription',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            // Close the modal
+                            $('#cancel_subscription').modal('hide');
+                            
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Your subscription has been cancelled successfully.',
+                                confirmButtonColor: '#3085d6'
+                            }).then(() => {
+                                // Reload the page to reflect changes
+                                window.location.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while cancelling your subscription.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
                 }
             });
         });
