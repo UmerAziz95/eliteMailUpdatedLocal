@@ -95,7 +95,7 @@ class ContractorController extends Controller
        return view('admin.contractor.contractor');
      }
 
-     use Illuminate\Support\Facades\Auth;
+    
 
      public function store(Request $request)
      {
