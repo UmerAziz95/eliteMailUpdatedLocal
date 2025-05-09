@@ -20,7 +20,7 @@ class AdminController extends Controller
      {
       if ($request->ajax()) {
         // Start query builder
-        $query = User::query()->whereIn('role_id', [2, 5]);
+        $query = User::query()->whereIn('role_id', [1,2, 5]);
             // 🔍 Apply individual column filters
             if ($request->filled('user_name')) {
                 $query->where('name', 'like', '%' . $request->input('user_name') . '%');
