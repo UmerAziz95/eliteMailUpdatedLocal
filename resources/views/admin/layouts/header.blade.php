@@ -35,22 +35,25 @@
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#">Action</a></li>
                 <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><a class="dropdown-item" href="#">Something else here</a></li> 
+                <li><a class="dropdown-item" href="#">Something else here</a></li>
             </ul>
         </div> --}}
-      
-      
+
+
 
         <div class="dropdown">
-           
+
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
-                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
+                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
+                    style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notification</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
-            
+
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
-                    <a href="/notification" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
+                    <a href="/notification"
+                        class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View
+                        All Notifications</a>
                 </div>
             </ul>
         </div>
@@ -58,13 +61,16 @@
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile" alt="">
+                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
+                    alt="">
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
-                    <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
                         <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                            style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile" alt="">
+                            style="border-radius: 50%" height="40" width="40"
+                            class="object-fit-cover login-user-profile" alt="">
                     </div>
                     <div>
                         <h6 class="mb-0">{{Auth::user()->name}}</h6>
@@ -73,12 +79,15 @@
                 </div>
                 <hr>
 
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="{{route("admin.profile")}}"><i class="ti ti-user"></i> My Profile</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="{{route("admin.settings")}}"><i class="ti ti-settings"></i> Settings</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="{{route("admin.profile")}}"><i class="ti ti-user"></i> My Profile</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="{{route("admin.settings")}}"><i class="ti ti-settings"></i> Settings</a></li>
 
 
                 <a class="logout-btn" href="{{route('logout')}}">
-                    <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
+                        Logout</button>
                 </a>
             </ul>
         </div>

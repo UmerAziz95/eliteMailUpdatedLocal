@@ -857,11 +857,11 @@
 
 
 
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-12">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
-                                    class="form-control phone-number-mask" placeholder="202 555 0111"
+                                    class="form-control phone-number-mask" placeholder=""
                                     value="{{ Auth::user()->phone }}">
                             </div>
                         </div>
@@ -870,14 +870,14 @@
 
 
                         {{-- bill address --}}
-                        <div class="col-12 col-md-6">
+                        {{-- <div class="col-12 col-md-6">
                             <label class="form-label" for="modalEditUserBillingAddress">Billing Address</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserBillingAddress" name="modalEditUserBillingAddress"
                                     class="form-control" placeholder="123 Main St, City, Country"
                                     value="{{ Auth::user()->billing_address ?? '' }}">
                             </div>
-                        </div>
+                        </div> --}}
 
                         <div class="col-12 text-center">
                             <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0 ">Submit</button>

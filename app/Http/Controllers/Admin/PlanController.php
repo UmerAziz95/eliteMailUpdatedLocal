@@ -395,7 +395,7 @@ class PlanController extends Controller
                         (!$priceResponse || ($priceResult && $priceResult->itemPrice()))) {
                         // Delete from local database only if ChargeBee operations were successful
                         $plan->features()->detach();
-                        $plan->delete();
+                        $plan->is_active=0; 
                         
                         if (request()->ajax()) {
                             return response()->json([
