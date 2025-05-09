@@ -131,8 +131,117 @@
 @section('content')
     <section class="py-3 overflow-hidden">
         <div class="row gy-4">
+            <!-- Inbox Statistics -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge rounded bg-label-primary p-1">
+                            <i class="ti ti-inbox fs-5"></i>
+                        </div>
+                        <h6 class="mb-0">Inbox Status</h6>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Total Inboxes</span>
+                            <h6 class="mb-0">{{ $totalInboxes ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Active</span> 
+                            <h6 class="mb-0">{{ $activeInboxes ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Issues/Pending</span>
+                            <h6 class="mb-0">{{ $pendingInboxes ?? 0 }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Subscription Info -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge rounded bg-label-success p-1">
+                            <i class="ti ti-currency-dollar fs-5"></i>
+                        </div>
+                        <h6 class="mb-0">Subscription</h6>
+                    </div>
+                    @if(isset($nextBillingInfo))
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Next Payment</span>
+                            <h6 class="mb-0">{{ $nextBillingInfo['next_billing_at'] ?? 'N/A' }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Amount</span>
+                            <h6 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Status</span>
+                            <span class="badge bg-label-{{ $subscription->status === 'active' ? 'success' : 'warning' }}">
+                                {{ ucfirst($subscription->status ?? 'N/A') }}
+                            </span>
+                        </div>
+                    </div>
+                    @else
+                    <div class="text-center text-muted py-3">
+                        No active subscription
+                    </div>
+                    @endif
+                </div>
+            </div>
 
+            <!-- Order Statistics -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge rounded bg-label-info p-1">
+                            <i class="ti ti-shopping-cart fs-5"></i>
+                        </div>
+                        <h6 class="mb-0">Orders</h6>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Total Orders</span>
+                            <h6 class="mb-0">{{ $totalOrders ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Pending</span>
+                            <h6 class="mb-0">{{ $pendingOrders ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Completed</span>
+                            <h6 class="mb-0">{{ $completedOrders ?? 0 }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Tickets -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge rounded bg-label-warning p-1">
+                            <i class="ti ti-ticket fs-5"></i>
+                        </div>
+                        <h6 class="mb-0">Support</h6>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Total Tickets</span>
+                            <h6 class="mb-0">{{ $totalTickets ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Pending</span>
+                            <h6 class="mb-0">{{ $pendingTickets ?? 0 }}</h6>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Resolved</span>
+                            <h6 class="mb-0">{{ $resolvedTickets ?? 0 }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="col-md-6">
                 <div class="swiper">
