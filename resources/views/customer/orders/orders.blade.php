@@ -55,9 +55,10 @@
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
-                                <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
+                                <!-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> -->
                             </div>
-                            <small class="mb-0">Last week vs previous week</small>
+                            <small class="mb-0">Total orders placed</small>
+                            <!-- <small class="mb-0">Last week vs previous week</small> -->
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-primary">
