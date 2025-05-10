@@ -14,7 +14,8 @@
         href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;ampdisplay=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
-    {{-- <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> --}}
+    {{--
+    <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
         .login {
@@ -93,8 +94,7 @@
                                 @csrf
                                 <div class="input-group">
                                     <label for="name">Username</label>
-                                    <input type="text" name="name" id="name" placeholder="User Name"
-                                        required>
+                                    <input type="text" name="name" id="name" placeholder="User Name" required>
                                 </div>
                                 <div class="input-group">
                                     <label for="email">Email</label>
@@ -113,7 +113,7 @@
                                     <label for="password_confirmation">Password Confirmation</label>
                                     <input type="password" name="password_confirmation" id="password_confirmation"
                                         placeholder="Password Confirmation" required>
-                                    <span id="togglePassword"
+                                    <span id="togglePasswordConfirmation"
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
                                     </span>
@@ -125,24 +125,23 @@
                                 </div>
                                 {{-- role customer, contractor radio button --}}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="role"
-                                        id="radioDefault1" value="customer">
+                                    <input class="form-check-input" type="radio" name="role" id="radioDefault1"
+                                        value="customer">
                                     <label class="form-check-label" for="radioDefault1">
                                         Customer
                                     </label>
                                 </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="role"
-                                        id="radioDefault2" value="contractor">
+                                {{-- <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="radioDefault2"
+                                        value="contractor">
                                     <label class="form-check-label" for="radioDefault2">
                                         Contractor
                                     </label>
-                                </div>
+                                </div> --}}
 
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value=""
-                                            id="flexCheckDefault">
+                                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
                                             I agree to privacy policy & terms
                                         </label>
@@ -153,8 +152,8 @@
                             </form>
 
                             <div class="mt-3 text-center">
-                                <p>Already have an account? <a href="/"
-                                        class="theme-text text-decoration-none">Sign in instead</a></p>
+                                <p>Already have an account? <a href="/" class="theme-text text-decoration-none">Sign in
+                                        instead</a></p>
                             </div>
                         </div>
                     </div>
@@ -184,45 +183,61 @@
                 icon.classList.add('fa-eye-slash');
             }
         });
-    </script>
-    <script>
-        $(document).ready(function() {
-            $("#registerForm").submit(function(event) {
-                console.log("Form submitted");
-                event.preventDefault(); // Prevent default form submission
-
-                $(".text-danger").html(""); // Clear previous errors
-
-                $.ajax({
-                    url: "{{ route('register') }}",
-                    type: "POST",
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        // Handle success response
-                        toastr.success('Registration successful! Redirecting...', 'Success');
-                        console.log(response);
-                        // $("#alert-container").html('<div class="alert alert-success">Registration successful! Redirecting...</div>');
-                        setTimeout(() => window.location.href = response.redirect, 2000);
-                    },
-                    error: function(xhr) {
-                        if (xhr.status === 422) {
-                            let errors = xhr.responseJSON.errors;
-                            $.each(errors, function(key, value) {
-                                toastr.error(value, 'Error');
-                                // is-invalid
-                                // $("#" + key).addClass(
-                                // "is-invalid"); // Add error class to input
-                                // $("#error-" + key).html(value[0]); // Show validation errors
-                            });
-                        } else {
-                            toastr.error('An error occurred. Please try again.', 'Error');
-                            // $("#alert-container").html('<div class="alert alert-danger">An error occurred. Please try again.</div>');
-                        }
-                    }
-                });
-            });
+        document.getElementById('togglePasswordConfirmation').addEventListener('click', function() {
+            const passwordField = document.getElementById('password_');
+            const icon = this.querySelector('i');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
         });
     </script>
+    <script>
+        $(document).ready(function() { 
+        $("#registerForm").submit(function(event) {
+            event.preventDefault(); // Prevent default form submission
+            console.log("Form submitted");
+
+            $(".text-danger").html(""); // Clear previous errors
+
+            const submitBtn = $(this).find("button[type=submit]");
+            submitBtn.prop("disabled", true).text("Submitting...");
+
+            $.ajax({
+                url: "{{ route('register') }}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function(response) {
+                    toastr.success('Registration successful! Redirecting...', 'Success');
+                    console.log(response);
+                    setTimeout(() => window.location.href = response.redirect, 2000);
+                },
+                error: function(xhr) {
+                    submitBtn.prop("disabled", false).text("Register");
+
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function(key, value) {
+                            toastr.error(value, 'Error');
+                        });
+                    } else {
+                        toastr.error('An error occurred. Please try again.', 'Error');
+                    }
+                },
+                complete: function() {
+                    // Optional: In case you want to re-enable the button always at the end
+                    // submitBtn.prop("disabled", false).text("Register");
+                }
+            });
+        });
+    });
+    </script>
+
 
 </body>
 

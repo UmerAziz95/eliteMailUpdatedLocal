@@ -45,7 +45,7 @@ class ContractorController extends Controller
                    return $row->name ?? 'N/A';
                })
                ->addColumn('role', function ($row) {
-                   return '<i class="ti ti-contract me-2 text-primary"></i>Customer';
+                   return '<i class="ti ti-contract me-2 text-primary"></i>Contractor';
                })
                ->addColumn('status', function ($row) {
                    $statusText = $row->status == 1 ? 'active' : 'inactive';

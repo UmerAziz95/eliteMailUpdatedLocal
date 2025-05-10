@@ -17,23 +17,25 @@ use App\Services\ActivityLogService;
 class AdminController extends Controller
 {
     public function index(Request $request)
-     {
-      if ($request->ajax()) {
-        // Start query builder
-        $query = User::query()->whereIn('role_id', [1,2, 5]);
-            // 🔍 Apply individual column filters
-            if ($request->filled('user_name')) {
-                $query->where('name', 'like', '%' . $request->input('user_name') . '%');
-            }
+{
+    if ($request->ajax()) {
+        // Start query builder with eager-loaded roles
+        $query = User::with('roles')->whereIn('role_id', [1, 2, 5]);
 
-            if ($request->filled('email')) {
-                $query->where('email', 'like', '%' . $request->input('email') . '%');
-            }
+        // 🔍 Apply individual column filters
+        if ($request->filled('user_name')) {
+            $query->where('name', 'like', '%' . $request->input('user_name') . '%');
+        }
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->input('status'));
-            }
-        // Only apply search to the query builder — NOT to a Collection
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Global search
         if ($request->has('search') && $request->input('search.value') != '') {
             $search = $request->input('search.value');
             $query->where(function ($q) use ($search) {
@@ -42,14 +44,14 @@ class AdminController extends Controller
             });
         }
 
-        // DO NOT call ->get()
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->addColumn('name', function ($row) {
                 return $row->name ?? 'N/A';
             })
             ->addColumn('role', function ($row) {
-                return '<i class="ti ti-contract me-2 text-primary"></i>Admin';
+                $roleName = $row->getRoleNames()->first(); // Get the first assigned role
+                return '<i class="ti ti-contract me-2 text-primary"></i>' . ucfirst($roleName ?? 'N/A');
             })
             ->addColumn('status', function ($row) {
                 $statusText = $row->status == 1 ? 'active' : 'inactive';
@@ -58,13 +60,12 @@ class AdminController extends Controller
             })
             ->addColumn('action', function ($row) {
                 $user = auth()->user();
-            
-                // If user has permission 'Mod', hide edit/delete
+
                 if ($user->hasPermissionTo('Mod')) {
-                    return '   <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
-                            <i class="fa-regular fa-eye"></i>'; // Or return a minimal view-only action if needed
+                    return '<button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                            <i class="fa-regular fa-eye"></i>';
                 }
-            
+
                 return '
                     <div class="d-flex align-items-center gap-2">
                         <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
@@ -84,7 +85,6 @@ class AdminController extends Controller
                     </div>
                 ';
             })
-            
             ->rawColumns(['role', 'status', 'action'])
             ->with([
                 'counters' => [
@@ -96,11 +96,10 @@ class AdminController extends Controller
             ->make(true);
     }
 
-      
-        $roles=Role::all();
-        $permissions=Permission::all();
-        return view('admin.admins.admins', ['roles'=>$roles,'permissions'=>$permissions]);
-} 
+    $roles = Role::all();
+    $permissions = Permission::all();
+    return view('admin.admins.admins', ['roles' => $roles, 'permissions' => $permissions]);
+}
 
     
 
