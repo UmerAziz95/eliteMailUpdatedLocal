@@ -46,59 +46,63 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <div class="row gy-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-2">Filters</h5>
-                            <div>
+                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <h5 class="mb-0">Filters</h5>
+                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png" width="30" alt="">
+                    </div>
+                    <div class="collapse" id="collapseExample">
+                        <div class="row gy-3">
+                            <div class="col-md-3">
+                                <label for="statusFilter" class="form-label">Invoice Status</label>
+                                <select id="statusFilter" class="form-select">
+                                    <option value="">All Statuses</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="failed">Failed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="orderIdFilter" class="form-label">Order ID</label>
+                                <input type="text" id="orderIdFilter" class="form-control" placeholder="Enter Order ID">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="orderStatusFilter" class="form-label">Order Status</label>
+                                <select id="orderStatusFilter" class="form-select">
+                                    <option value="">All Order Statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="expired">Expired</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" id="endDate" class="form-control" placeholder="End Date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="priceRange" class="form-label">Price Range</label>
+                                <select id="priceRange" class="form-select">
+                                    <option value="">All Prices</option>
+                                    <option value="0-100">$0 - $100</option>
+                                    <option value="101-500">$101 - $500</option>
+                                    <option value="501-1000">$501 - $1000</option>
+                                    <option value="1001+">$1000+</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-end">
                                 <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
                                 <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="statusFilter" class="form-label">Invoice Status</label>
-                            <select id="statusFilter" class="form-select">
-                                <option value="">All Statuses</option>
-                                <option value="paid">Paid</option>
-                                <option value="pending">Pending</option>
-                                <option value="failed">Failed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="orderIdFilter" class="form-label">Order ID</label>
-                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Enter Order ID">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="orderStatusFilter" class="form-label">Order Status</label>
-                            <select id="orderStatusFilter" class="form-select">
-                                <option value="">All Order Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
-                                <option value="completed">Completed</option>
-                                <option value="expired">Expired</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" id="startDate" class="form-control" placeholder="Start Date">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" id="endDate" class="form-control" placeholder="End Date">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="priceRange" class="form-label">Price Range</label>
-                            <select id="priceRange" class="form-select">
-                                <option value="">All Prices</option>
-                                <option value="0-100">$0 - $100</option>
-                                <option value="101-500">$101 - $500</option>
-                                <option value="501-1000">$501 - $1000</option>
-                                <option value="1001+">$1000+</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -107,7 +111,6 @@
     </div>
 
     <div class="card">
-        
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">My Invoices</h5>
         </div>
@@ -161,22 +164,58 @@
                     return d;
                 }
             },
-            columns: [
-                { data: 'id', name: 'id' },
-                { data: 'order_id', name: 'order_id' },
-                { data: 'created_at', name: 'created_at' },
-                { data: 'created_at', name: 'created_at' },
-                { data: 'amount', name: 'amount' },
-                { data: 'customer_name', name: 'customer_name' },
-                { data: 'paid_at', name: 'paid_at' },
-                { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
-                { data: 'status', name: 'status' },
-                { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
+            columns: [{
+                    data: 'id',
+                    name: 'id'
+                },
+                {
+                    data: 'order_id',
+                    name: 'order_id'
+                },
+                {
+                    data: 'created_at',
+                    name: 'created_at'
+                },
+                {
+                    data: 'created_at',
+                    name: 'created_at'
+                },
+                {
+                    data: 'amount',
+                    name: 'amount'
+                },
+                {
+                    data: 'customer_name',
+                    name: 'customer_name'
+                },
+                {
+                    data: 'paid_at',
+                    name: 'paid_at'
+                },
+                {
+                    data: 'chargebee_subscription_id',
+                    name: 'chargebee_subscription_id'
+                },
+                {
+                    data: 'status',
+                    name: 'status'
+                },
+                {
+                    data: 'status_manage_by_admin',
+                    name: 'status_manage_by_admin'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }
             ],
-            order: [[1, 'desc']],
+            order: [
+                [1, 'desc']
+            ],
             drawCallback: function(settings) {
-                if(settings.json && settings.json.counters) {
+                if (settings.json && settings.json.counters) {
                     $('#totalInvoices').text(settings.json.counters.total);
                     $('#paidInvoices').text(settings.json.counters.paid);
                     $('#pendingInvoices').text(settings.json.counters.pending);
@@ -203,7 +242,7 @@
     });
 
     function downloadInvoice(invoiceId) {
-        
+
         window.location.href = `/admin/invoices/${invoiceId}/download`;
     }
 

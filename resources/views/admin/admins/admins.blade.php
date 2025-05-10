@@ -77,7 +77,7 @@
             <div class="col-sm-6 col-xl-4">
                 <div class="card p-2">
                     <div class="card-body">  
-                    {{-- //card body --}}
+                    <!-- {{-- //card body --}} -->
                         <div class="d-flex align-items-start justify-content-between">
                             <div class="content-left">
                                 <h6 class="text-heading">InActive Users</h6>
@@ -103,11 +103,11 @@
         <div class="card py-3 px-4">
             <div class="row gy-3">
                  <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-2">Filters</h5>
-                            <div>
-                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
+                    <h5 class="mb-2">Filters</h5>
+                    <div>
+                        <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                        <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                    </div>
                 </div>
                <div class="col-md-4">
                             <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
