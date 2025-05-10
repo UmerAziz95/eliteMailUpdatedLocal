@@ -180,7 +180,7 @@
                                         <div class="col-md-6">
                                             <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
                                             <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
-                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" required>
+                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="0" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
@@ -315,7 +315,7 @@
                                     <div class="col-md-6">
                                         <label for="min_inbox">Min Inboxes:</label>
                                         <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox"
-                                            value="1" min="1" required>
+                                            value="0" min="0" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="max_inbox">Max Inboxes (0 for unlimited):</label>
@@ -772,63 +772,60 @@
             });
         });
 
-        // Delete plan
-        $(document).on('click', '.delete-plan-btn', function() {
-            // Get plan ID from data attribute
-            if (!$(this).data('id')) {
-                showErrorToast('Plan ID not found');
-                return;
-            }
-            // Confirm deletion
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, do it!',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Perform the confirmed action here
-                    const planId = $(this).data('id');
+     // Delete plan
+$(document).on('click', '.delete-plan-btn', function () {
+    const $btn = $(this);
 
-                    $.ajax({
-                        url: `/admin/plans/${planId}`,
-                        type: "DELETE",
-                        data: {
-                            _token: "{{ csrf_token() }}"
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            if (response.success) {
-                                // Remove plan card
-                                $(`#plan-${planId}`).fadeOut(300, function() {
-                                    $(this).remove();
-                                });
+    // Get plan ID from data attribute
+    const planId = $btn.data('id');
+    if (!planId) {
+        showErrorToast('Plan ID not found');
+        return;
+    }
 
-                                showSuccessToast('Plan deleted successfully');
-                            } else {
-                                showErrorToast(response.message ||
-                                    'Failed to delete plan');
-                            }
-                        },
-                        error: function(xhr) {
-                            showErrorToast('Failed to delete plan');
-                        }
-                    });
-                } else {
-                    console.log('User cancelled');
+    // Confirm deletion
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, do it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Disable button and show loading text
+            $btn.prop('disabled', true).html('Deleting...');
+
+            // Perform the AJAX request
+            $.ajax({
+                url: `/admin/plans/${planId}`,
+                type: "DELETE",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                dataType: "json",
+                success: function (response) {
+                    if (response.success) {
+                        $(`#plan-${planId}`).fadeOut(300, function () {
+                            $(this).remove();
+                        });
+                        showSuccessToast('Plan deleted successfully');
+                        location.reload();
+                    } else {
+                        showErrorToast(response.message || 'Failed to delete plan');
+                        $btn.prop('disabled', false).html('Delete');
+                    }
+                },
+                error: function () {
+                    showErrorToast('Failed to delete plan');
+                    $btn.prop('disabled', false).html('Delete');
                 }
             });
-
-
-            // sweetalert confirmation
-
-
-
-        });
+        }
+    });
+});
 
         // Helper function to update plan card after edit
         function updatePlanCard(plan) {

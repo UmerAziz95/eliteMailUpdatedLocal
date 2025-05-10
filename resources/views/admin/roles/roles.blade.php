@@ -84,34 +84,42 @@
     </div>
 
     <div class="row gy-4">
-        <!-- Administrator Role -->
-        <div class="col-xl-4 col-lg-6 col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Total 4 users</p>
-                        <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
-                            @foreach (['5.png', '12.png', '6.png', '3.png'] as $avatar)
-                            <li class="avatar pull-up" data-bs-toggle="tooltip" title="User">
-                                <img class="rounded-circle"
-                                    src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/{{ $avatar }}"
-                                    alt="Avatar">
+
+         @foreach ($roles as $role)
+    <div class="col-xl-4 col-lg-6 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <p class="fw-normal mb-0">Total {{ $role->users->count() }} users</p>
+                    <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
+                        @foreach ($role->users as $user)
+                            @php
+                                $image = $user->profile_image
+                                    ? asset('storage/profile_images/' . $user->profile_image)
+                                    : asset('storage/profile_images/default.jpg');
+                            @endphp
+                            <li class="avatar pull-up" data-bs-toggle="tooltip" title="{{ $user->name ?? 'User' }}">
+                                <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
                             </li>
-                            @endforeach
-                        </ul>
+                        @endforeach
+                    </ul>
+                </div>
+                <div class="d-flex justify-content-between align-items-end">
+                    <div class="role-heading">
+                        <h5 class="mb-1">{{ $role->name }}</h5>
+                        {{-- <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Add Role</a> --}}
                     </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h5 class="mb-1">Administrator</h5>
-                            <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Add Role</a>
-                        </div>
-                        <a href="javascript:void(0);"><i class="icon-base ti tabler-copy icon-md text-heading"></i></a>
-                    </div>
+                    <a href="javascript:void(0);">
+                        <i class="icon-base ti tabler-copy icon-md text-heading"></i>
+                    </a>
                 </div>
             </div>
         </div>
+    </div>
+@endforeach
 
-        <!-- Manager Role -->
+
+        {{-- <!-- Manager Role -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -252,7 +260,8 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
+
         <div class="text-center mb-6">
             @if($errors->any())
             <div class="" style="background-color: #2f3349">
@@ -281,7 +290,7 @@
                         style="top: 20px; right: 20px" data-bs-dismiss="modal" aria-label="Close"><i
                             class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-6">
-                        <h4 class="role-title">Edit Role</h4>
+                        <h4 class="role-title">Manage Role</h4>
                         <p>Set role permissions</p>
                     </div>
                   
@@ -370,14 +379,16 @@ function initDataTable(planId = '') {
             { data: 'name', name: 'name' },
             { data: 'permissions', name: 'permissions' },
             { data: 'created_at', name: 'created_at' },
+            { data: 'action', name: 'action' },
           
        
         ],
         columnDefs: [
-            { width: '10%', targets: 0 },
+            { width: '20%', targets: 0 },
             { width: '20%', targets: 1 },
-            { width: '15%', targets: 2 },
-            { width: '15%', targets: 3},
+            { width: '20%', targets: 2 },
+            { width: '20%', targets: 3},
+            { width: '20%', targets: 3},
           
         ],
         order: [[1, 'desc']],
@@ -493,5 +504,46 @@ function initDataTable(planId = '') {
         dropdownParent: $('#addRoleModal')
     });
 });
+
+$('body').on('click','#addNew',function(){
+            // Clear the role name
+            $('#name').val('');
+
+            // Clear the role_id hidden field
+            $('#roleId').val('');
+
+            // Clear selected permissions
+            $('#permissions').val(null).trigger('change');
+
+            // Optional: clear validation messages
+            $('.text-danger').html('');
+        });
+
+ function editRole(id) {
+        $('#addRoleModal').modal('show');
+        $('#addRoleForm')[0].reset();
+        $('#permissions').val(null).trigger('change');
+
+        $.ajax({
+            url: `/admin/roles/${id}`,
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const role = response.role;
+                    $('#roleId').val(role.id);
+                    $('#name').val(role.name);
+
+                    // Set selected permissions by ID
+                    const permissionIds = role.permissions.map(p => p.id);
+                    $('#permissions').val(permissionIds).trigger('change');
+                }
+            },
+            error: function() {
+                toastr.error('Failed to load role details.');
+            }
+        });
+    }
+
+
 </script>
 @endpush

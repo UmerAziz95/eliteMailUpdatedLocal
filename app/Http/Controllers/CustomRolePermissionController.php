@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 class CustomRolePermissionController extends Controller
 {
     //
@@ -25,10 +26,24 @@ class CustomRolePermissionController extends Controller
                 ->addColumn('created_at', function ($role) {
                     return $role->created_at ? $role->created_at->format('D_F_Y') : 'N/A';
                 })
+                ->addColumn('action', function ($role) {
+                    return '<div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary" onclick="editRole(' . $role->id . ')">Edit</button>
+                              
+                            </div>';
+                })
                 ->make(true);
         }
     
-        $roles = Role::latest()->get(); // same ordering in the default (non-AJAX) load
+            $roles = Role::with('users')->get();
+
+            // foreach ($roles as $role) {
+            //     echo "Role: " . $role->name . "<br>";
+            //     foreach ($role->users as $user) {
+            //         dd($user);
+            //         echo " - " . $user->name . " (" . $user->email . ")<br>";
+            //     }
+            // }
         $permissions = Permission::all();
       
         return view('admin.roles.roles', ['roles' => $roles, 'permissions' => $permissions]);
@@ -41,36 +56,74 @@ class CustomRolePermissionController extends Controller
         return view('roles.create', compact('permissions'));
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|unique:roles,name',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
-    
-        // Create role
-        $Createdrole = Role::create(['name' => $validated['name']]);
-        $role=Role::find($Createdrole->id);
-        if (!empty($validated['permissions'])) {
-            // Fetch Permission models by ID
+    // public function store(Request $request)
+    // {
         
-            $permission= Permission::whereIn('id', $request->permissions)->get();
+    //     $validated = $request->validate([
+    //         'name' => 'required|unique:roles,name',
+    //         'permissions' => 'nullable|array',
+    //         'permissions.*' => 'exists:permissions,id',
+    //     ]);
+    
+    //     // Create role
+    //     $Createdrole = Role::create(['name' => $validated['name']]);
+    //     $role=Role::find($Createdrole->id);
+    //     if (!empty($validated['permissions'])) {
+    //         // Fetch Permission models by ID
+        
+    //         $permission= Permission::whereIn('id', $request->permissions)->get();
 
-            $role->syncPermissions($permission);
-          //  $role->syncPermissions($permissions); // Now passes Permission objects
+    //         $role->syncPermissions($permission);
+    //       //  $role->syncPermissions($permissions); // Now passes Permission objects
         
-        }
+    //     }
     
-        return redirect()->route('admin.role.index')->with('success', 'Role created successfully.');
+    //     return redirect()->route('admin.role.index')->with('success', 'Role created successfully.');
+    // }
+
+    public function store(Request $request)
+{
+    $roleId = $request->input('role_id');
+
+    $rules = [
+        'name' => [
+            'required',
+            Rule::unique('roles', 'name')->ignore($roleId)
+        ],
+        'permissions' => 'nullable|array',
+        'permissions.*' => 'exists:permissions,id',
+    ];
+
+    $validated = $request->validate($rules);
+
+    if ($roleId) {
+        // Update existing role
+        $role = Role::findOrFail($roleId);
+        $role->name = $validated['name'];
+        $role->save();
+    } else {
+        // Create new role
+        $role = Role::create(['name' => $validated['name']]);
     }
+
+    // Sync permissions
+    $permissions = Permission::whereIn('id', $request->permissions ?? [])->get();
+    $role->syncPermissions($permissions);
+
+    return redirect()->route('admin.role.index')->with('success', $roleId ? 'Role updated successfully.' : 'Role created successfully.');
+}
     
-    public function edit(Role $role)
-    {
-        $permissions = Permission::all();
-        $rolePermissions = $role->permissions->pluck('name')->toArray();
-        return view('roles.edit', compact('role', 'permissions', 'rolePermissions'));
-    }
+    public function getRole($id)
+{
+    $role = Role::with('permissions')->findOrFail($id);
+
+    return response()->json([
+        'success' => true,
+        'role' => $role,
+        'permissions' => $role->permissions->pluck('name'),
+    ]);
+}
+    
 
     public function update(Request $request, Role $role)
     {

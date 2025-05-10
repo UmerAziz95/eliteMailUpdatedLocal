@@ -51,9 +51,9 @@
         </select>
     </div> --}}
 
-    @if (!Auth::user()->hasPermissionTo('Mod')) 
+    {{-- @if (!Auth::user()->hasPermissionTo('Mod')) 
         <button type="submit" class="btn btn-primary">Submit</button>
-    @endif
+    @endif --}}
 </form>
 
 <script>

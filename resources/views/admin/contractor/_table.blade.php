@@ -4,7 +4,7 @@
                         <tr>
                             <th>ID</th>
                             <th>User</th>
-                            <th>Role</th>
+                            <th>Type</th>
                             <th>Email</th>
                             <th>Status</th>
                             <th>Actions</th>
