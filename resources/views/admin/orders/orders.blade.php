@@ -156,46 +156,49 @@
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <div class="row gy-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-2">Filters</h5>
-                            <div>
+                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <h5 class="mb-0">Filters</h5>
+                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png" width="30" alt="">
+                    </div>
+                    <div class="collapse" id="collapseExample">
+                        <div class="row gy-3">
+                            <div class="col-md-3">
+                                <label for="orderIdFilter" class="form-label">Order ID</label>
+                                <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="statusFilter" class="form-label">Status</label>
+                                <select id="statusFilter" class="form-select">
+                                    <option value="">All Statuses</option>
+                                    @foreach($statuses as $key => $status)
+                                    <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="emailFilter" class="form-label">Email</label>
+                                <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="domainFilter" class="form-label">Domain URL</label>
+                                <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
+                                <input type="number" id="totalInboxesFilter" class="form-control" placeholder="Search by total inboxes" min="1">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" id="startDate" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" id="endDate" class="form-control">
+                            </div>
+                            <div class="d-flex align-items-center justify-content-end">
                                 <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
                                 <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="orderIdFilter" class="form-label">Order ID</label>
-                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="statusFilter" class="form-label">Status</label>
-                            <select id="statusFilter" class="form-select">
-                                <option value="">All Statuses</option>
-                                @foreach($statuses as $key => $status)
-                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="emailFilter" class="form-label">Email</label>
-                            <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="domainFilter" class="form-label">Domain URL</label>
-                            <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
-                            <input type="number" id="totalInboxesFilter" class="form-control" placeholder="Search by total inboxes" min="1">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" id="endDate" class="form-control">
                         </div>
                     </div>
                 </div>
@@ -261,7 +264,7 @@
     function viewOrder(id) {
         window.location.href = `{{ url('/admin/orders/${id}/view') }}`;
     }
-    
+
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         var tableId = planId ? `#myTable-${planId}` : '#myTable';
@@ -574,70 +577,70 @@
 
 
 
-$(document).on('change', '.status-dropdown', function () {
-    let selectedStatus = $(this).val();
-    let orderId = $(this).data('id');
+    $(document).on('change', '.status-dropdown', function() {
+        let selectedStatus = $(this).val();
+        let orderId = $(this).data('id');
 
-    $.ajax({
-        url: '/admin/update-order-status',
-        method: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            order_id: orderId,
-            status_manage_by_admin: selectedStatus
-        },
-        success: function (response) {
-            // Reload the correct table instead of re-initializing it
-            if (window.orderTables && window.orderTables.all) {
-                window.orderTables.all.ajax.reload(null, false); // false to stay on the current page
-            }
+        $.ajax({
+            url: '/admin/update-order-status',
+            method: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                order_id: orderId,
+                status_manage_by_admin: selectedStatus
+            },
+            success: function(response) {
+                // Reload the correct table instead of re-initializing it
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false); // false to stay on the current page
+                }
 
-            alert('Status updated successfully!');
-        },
-        error: function (xhr) {
-              if (window.orderTables && window.orderTables.all) {
-                window.orderTables.all.ajax.reload(null, false); // false to stay on the current page
+                alert('Status updated successfully!');
+            },
+            error: function(xhr) {
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false); // false to stay on the current page
+                }
+                alert('Something went wrong!');
+                console.error(xhr.responseText);
             }
-            alert('Something went wrong!');
-            console.error(xhr.responseText);
-        }
+        });
     });
-});
 
 
-//open the modal for cancel subscription
-$(document).on('click', '.markStatus', function () {
-    const chargebee_subscription_id = $(this).data('id');
-    const status = $(this).data('status');
-    const reason = $(this).data('reason');
+    //open the modal for cancel subscription
+    $(document).on('click', '.markStatus', function() {
+        const chargebee_subscription_id = $(this).data('id');
+        const status = $(this).data('status');
+        const reason = $(this).data('reason');
 
-    // Set subscription ID in the hidden input
-    $('#subscription_id_to_cancel').val(chargebee_subscription_id);
+        // Set subscription ID in the hidden input
+        $('#subscription_id_to_cancel').val(chargebee_subscription_id);
 
-    // Uncheck all first to reset previous state
-    $('input[name="marked_status"]').prop('checked', false);
+        // Uncheck all first to reset previous state
+        $('input[name="marked_status"]').prop('checked', false);
 
-    // Check the radio button that matches the status
-    $('input[name="marked_status"][value="' + status + '"]').prop('checked', true);
+        // Check the radio button that matches the status
+        $('input[name="marked_status"][value="' + status + '"]').prop('checked', true);
 
-    // Show or hide reason field depending on status
-    if (status === 'Reject') {
-        $('#reason_wrapper').removeClass('d-none');
-        $('#cancellation_reason').attr('required', true);
-        $('#cancellation_reason').val(reason);
-    } else { 
-        $('#reason_wrapper').addClass('d-none');
-        $('#cancellation_reason').removeAttr('required');
-        $('#cancellation_reason').val('');
-    }
+        // Show or hide reason field depending on status
+        if (status === 'Reject') {
+            $('#reason_wrapper').removeClass('d-none');
+            $('#cancellation_reason').attr('required', true);
+            $('#cancellation_reason').val(reason);
+        } else {
+            $('#reason_wrapper').addClass('d-none');
+            $('#cancellation_reason').removeAttr('required');
+            $('#cancellation_reason').val('');
+        }
 
-    // Show the modal
-    $('#cancel_subscription').modal('show');
-});
+        // Show the modal
+        $('#cancel_subscription').modal('show');
+    });
 
 
-//handle the reason field on status change
-$('.marked_status').on('change', function () {
+    //handle the reason field on status change
+    $('.marked_status').on('change', function() {
         const selected = $(this).val();
         if (selected === 'Reject') {
             $('#reason_wrapper').removeClass('d-none');
@@ -651,137 +654,137 @@ $('.marked_status').on('change', function () {
 
 
     // Handle form submission
- $('#cancelSubscriptionForm').on('submit', function(e) {
-    e.preventDefault();
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
 
-    const selectedStatus = $('input[name="marked_status"]:checked').val();
-    const reason = $('#cancellation_reason').val().trim();
+        const selectedStatus = $('input[name="marked_status"]:checked').val();
+        const reason = $('#cancellation_reason').val().trim();
 
 
-    // If status is required
-    if (!selectedStatus) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Please select a status.',
-            confirmButtonColor: '#3085d6'
-        });
-        return;
-    }
-
-    // If Reject is selected but no reason
-    if (selectedStatus === 'Reject' && !reason) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'The reason field is required for rejection.',
-            confirmButtonColor: '#3085d6'
-        });
-        return;
-    }
-
-    // Gather form data manually
-    const formData = new FormData(this);
-    formData.append('marked_status', selectedStatus);
-
-    // Confirm dialog
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: $(this).attr('action'),
-                method: 'POST',
-                data: Object.fromEntries(formData),
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                beforeSend: function() {
-                    Swal.fire({
-                        title: 'Processing...',
-                        text: 'Please wait a while...',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                },
-                success: function(response) {
-                    $('#cancel_subscription').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Status has been updated successfully.',
-                        confirmButtonColor: '#3085d6'
-                    }).then(() => {
-                        $('#cancellation_reason').val('');
-                        window.location.reload();
-                    });
-                },
-                error: function(xhr) {
-                    let errorMessage = 'An error occurred while updating status.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: errorMessage,
-                        confirmButtonColor: '#3085d6'
-                    });
-                }
+        // If status is required
+        if (!selectedStatus) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a status.',
+                confirmButtonColor: '#3085d6'
             });
+            return;
         }
-    });
-});
 
+        // If Reject is selected but no reason
+        if (selectedStatus === 'Reject' && !reason) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'The reason field is required for rejection.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
 
-//filters 
-  // Filter functionality
-  function applyFilters() {
-                // Clear previous event handlers
-                Object.values(window.orderTables).forEach(function(table) {
-                    table.off('preXhr.dt');
-                });
+        // Gather form data manually
+        const formData = new FormData(this);
+        formData.append('marked_status', selectedStatus);
 
-                Object.values(window.orderTables).forEach(function(table) {
-                    if ($(table.table().node()).is(':visible')) {
-                        // Add filter parameters
-                        table.on('preXhr.dt', function(e, settings, data) {
-                            data.orderId = $('#orderIdFilter').val();
-                            data.status = $('#statusFilter').val();
-                            data.email = $('#emailFilter').val();
-                            data.domain = $('#domainFilter').val();
-                            data.totalInboxes = $('#totalInboxesFilter').val();
-                            data.startDate = $('#startDate').val();
-                            data.endDate = $('#endDate').val();
+        // Confirm dialog
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: Object.fromEntries(formData),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        Swal.fire({
+                            title: 'Processing...',
+                            text: 'Please wait a while...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
                         });
-
-                        table.draw();
+                    },
+                    success: function(response) {
+                        $('#cancel_subscription').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Status has been updated successfully.',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            $('#cancellation_reason').val('');
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred while updating status.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: errorMessage,
+                            confirmButtonColor: '#3085d6'
+                        });
                     }
                 });
             }
+        });
+    });
 
-            // Apply filters button click handler
-            $('#applyFilters').on('click', function() {
-                applyFilters();
-            });
 
-            // Clear filters
-            $('#clearFilters').on('click', function() {
-                $('#orderIdFilter, #emailFilter, #domainFilter').val('');
-                $('#statusFilter').val('');
-                $('#startDate, #endDate').val('');
-                applyFilters();
-            });
+    //filters 
+    // Filter functionality
+    function applyFilters() {
+        // Clear previous event handlers
+        Object.values(window.orderTables).forEach(function(table) {
+            table.off('preXhr.dt');
+        });
+
+        Object.values(window.orderTables).forEach(function(table) {
+            if ($(table.table().node()).is(':visible')) {
+                // Add filter parameters
+                table.on('preXhr.dt', function(e, settings, data) {
+                    data.orderId = $('#orderIdFilter').val();
+                    data.status = $('#statusFilter').val();
+                    data.email = $('#emailFilter').val();
+                    data.domain = $('#domainFilter').val();
+                    data.totalInboxes = $('#totalInboxesFilter').val();
+                    data.startDate = $('#startDate').val();
+                    data.endDate = $('#endDate').val();
+                });
+
+                table.draw();
+            }
+        });
+    }
+
+    // Apply filters button click handler
+    $('#applyFilters').on('click', function() {
+        applyFilters();
+    });
+
+    // Clear filters
+    $('#clearFilters').on('click', function() {
+        $('#orderIdFilter, #emailFilter, #domainFilter').val('');
+        $('#statusFilter').val('');
+        $('#startDate, #endDate').val('');
+        applyFilters();
+    });
 </script>
 
 
