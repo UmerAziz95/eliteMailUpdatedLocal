@@ -11,14 +11,14 @@ class PlanController extends Controller
 {
     public function index()
     {
-        $plans = Plan::all();
+        $plans = Plan::where('is_active',1)->get();
         $getMostlyUsed = Plan::getMostlyUsed();
         // dd($getMostlyUsedPlan);
         $features = Feature::where('is_active', true)->get();
         return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed'));
     }
 
-   public function store(Request $request)
+public function store(Request $request)
 {
     try {
         $request->validate([
@@ -36,46 +36,49 @@ class PlanController extends Controller
 
         $min = $request->min_inbox;
         $max = $request->max_inbox;
+        $newMax = ($max == 0) ? PHP_INT_MAX : $max;
 
-        // ✅ CASE 0: Prevent multiple infinite plans
+        // ✅ CASE 0: Prevent multiple unlimited plans
         if ($min == 0 && $max == 0) {
-            $existingInfinite = Plan::where('max_inbox', 0)->exists();
+            $existingInfinite = Plan::where('max_inbox', 0)
+                ->where('is_active', 1)
+                ->exists();
 
             if ($existingInfinite) {
-                throw new \Exception("A plan with unlimited inbox already exists. You cannot create another one with min=0 and max=0.");
+                throw new \Exception("A plan with unlimited inbox already exists.");
             }
         }
 
-        $newMax = ($max == 0) ? PHP_INT_MAX : $max;
-
-        // ✅ CASE 1: Prevent new plan if existing infinite plan overlaps
+        // ✅ CASE 1: Prevent new plan if existing infinite active plan overlaps
         $infinitePlanConflict = Plan::where('max_inbox', 0)
+            ->where('is_active', 1)
             ->where('min_inbox', '<=', $min)
             ->exists();
 
         if ($infinitePlanConflict) {
-            throw new \Exception("An existing plan allows unlimited inboxes starting from $min or lower. You cannot create a plan within or above this range.");
+            throw new \Exception("An existing active plan allows unlimited inboxes starting from $min or lower.");
         }
 
-        // ✅ CASE 2: Prevent overlapping range
-        $overlappingPlan = Plan::where(function ($query) use ($min, $newMax) {
-            $query->where(function ($sub) use ($min, $newMax) {
-                $sub->where('min_inbox', '<=', $newMax)
-                    ->where(function ($q) use ($min) {
-                        $q->where('max_inbox', '>=', $min)
-                          ->orWhere('max_inbox', 0); // includes infinity
-                    });
-            });
-        })->exists();
+        // ✅ CASE 2: Prevent overlapping ranges with active plans
+        $overlappingPlan = Plan::where('is_active', 1)
+            ->where(function ($query) use ($min, $newMax) {
+                $query->where(function ($sub) use ($min, $newMax) {
+                    $sub->where('min_inbox', '<=', $newMax)
+                        ->where(function ($q) use ($min) {
+                            $q->where('max_inbox', '>=', $min)
+                              ->orWhere('max_inbox', 0);
+                        });
+                });
+            })->exists();
 
         if ($overlappingPlan) {
-            throw new \Exception("A plan already exists that overlaps with the range $min - " . ($max == 0 ? '∞' : $max) . ".");
+            throw new \Exception("An active plan overlaps with the range $min - " . ($max == 0 ? '∞' : $max) . ".");
         }
 
         // Set default currency code if not provided
         $currencyCode = $request->currency_code ?? 'USD';
 
-        // Create plan in ChargeBee
+        // ChargeBee Plan Creation
         $chargeBeePlan = $this->createChargeBeeItem([
             'name' => $request->name,
             'description' => $request->description,
@@ -89,7 +92,7 @@ class PlanController extends Controller
             throw new \Exception($chargeBeePlan['message']);
         }
 
-        // Create local plan
+        // Local Plan Creation
         $plan = Plan::create([
             'name' => $request->name,
             'chargebee_plan_id' => $chargeBeePlan['data']['price_id'],
@@ -101,7 +104,7 @@ class PlanController extends Controller
             'is_active' => true
         ]);
 
-        // Attach features if present
+        // Attach Features (if any)
         if ($request->has('feature_ids')) {
             foreach ($request->feature_ids as $index => $featureId) {
                 $value = $request->feature_values[$index] ?? null;
@@ -130,6 +133,7 @@ class PlanController extends Controller
         return redirect()->back()->with('error', 'Error creating plan: ' . $e->getMessage());
     }
 }
+
 
     private function createChargeBeeItem($data)
     {
@@ -349,8 +353,9 @@ class PlanController extends Controller
         }
     }
 
-    public function destroy(Plan $plan)
+    public function destroy(Request $request,Plan $plan)
     {
+        // dd("destory");
         try {
             // Archive plan in ChargeBee first
             if ($plan->chargebee_plan_id) {
@@ -389,15 +394,19 @@ class PlanController extends Controller
                             'status' => 'archived'
                         ]);
                     }
+                    // dd((!$itemResponse || ($result && $result->item())) && 
+                    //     (!$priceResponse || ($priceResult && $priceResult->itemPrice())));
                     // dd($result, $priceResult);
                     // Check if archival was successful
                     if ((!$itemResponse || ($result && $result->item())) && 
                         (!$priceResponse || ($priceResult && $priceResult->itemPrice()))) {
                         // Delete from local database only if ChargeBee operations were successful
                         $plan->features()->detach();
-                        $plan->is_active=0; 
                         
-                        if (request()->ajax()) {
+                        $plan->is_active=0; 
+                        $plan->save();
+                        
+                        if ($request->ajax()) {
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Plan deleted successfully'

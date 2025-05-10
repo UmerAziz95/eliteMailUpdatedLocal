@@ -1,7 +1,7 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2">
-        <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="50" alt="">
-        <h4 class="text">Mailboxes</h4>
+        <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
+        <h4 class="text fs-5 mb-0">Mailboxes</h4>
     </div>
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
         <input class="form-check-input"

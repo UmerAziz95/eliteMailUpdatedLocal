@@ -12,6 +12,7 @@
                     <th>Role</th>
                     <th>Permissions</th>
                     <th>Created at</th>
+                    <th>Action</th>
                  
                 </tr>
             </thead>

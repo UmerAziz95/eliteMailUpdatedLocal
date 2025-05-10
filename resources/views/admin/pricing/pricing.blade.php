@@ -11,6 +11,7 @@
         padding: 30px;
         text-align: center;
         transition: 0.3s ease-in-out;
+        min-height: 28rem;
     }
 
     a {
@@ -57,9 +58,9 @@
 
     .remove-feature-btn {
         position: absolute;
-        top: 6px;
-        right: 4px;
-        font-size: 6px;
+        top: -8px;
+        right: -8px;
+        font-size: 8px;
         padding: 2px 5px;
     }
 
@@ -96,27 +97,29 @@
 
     <div class="row mt-4" id="plans-container">
         @foreach ($plans as $plan)
-        <div class="col-md-4  mb-5" id="plan-{{ $plan->id }}">
-            <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                <h4 class="fw-bold plan-name">{{ $plan->name }}</h4>
-                <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span class="fs-6">/{{
+        <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
+            <div class="pricing-card d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
+                <div>
+                    <h4 class="fw-bold plan-name text-capitalize fs-5">{{ $plan->name }}</h4>
+                    <h2 class="fw-bold plan-price fs-3">${{ number_format($plan->price, 2) }} <span class="fs-6 fw-normal">/{{
                         $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
-                        inboxes</span>
-                </h2>
-                <p class="plan-description">{{ $plan->description }}</p>
-                <hr>
-                <div class="mb-3">
-                    {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
-                    <strong>Inboxes</strong>
+                            inboxes</span>
+                    </h2>
+                    <p class="plan-description text-capitalize">{{ $plan->description }}</p>
+                    <hr>
+                    <div class="mb-2">
+                        {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
+                        <strong>Inboxes</strong>
+                    </div>
+                    <ul class="list-unstyled features-list">
+                        @foreach ($plan->features as $feature)
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            {{ $feature->title }} {{ $feature->pivot->value }}
+                        </li>
+                        @endforeach
+                    </ul>
                 </div>
-                <ul class="list-unstyled features-list">
-                    @foreach ($plan->features as $feature)
-                    <li class="mb-2">
-                        <i class="fas fa-check text-success"></i>
-                        {{ $feature->title }} {{ $feature->pivot->value }}
-                    </li>
-                    @endforeach
-                </ul>
                 @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
                 <div class="d-flex gap-2">
                     <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
@@ -137,7 +140,7 @@
         <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-body p-5 position-relative">
+                    <div class="modal-body p-3 p-md-5 position-relative">
                         <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                             data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                         <div class="text-center mb-4">
@@ -180,7 +183,7 @@
                                         <div class="col-md-6">
                                             <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
                                             <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
-                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" required>
+                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="0" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
@@ -213,8 +216,8 @@
                                 </div>
                                 @endforeach
                             </div>
-
-                            <div class="row mt-3">
+ 
+                            <div class="row mt-3 gy-3">
                                 <div class="col-md-7">
                                     <select class="form-control feature-dropdown" id="featureDropdown{{ $plan->id }}">
                                         <option value="">Select an existing feature</option>
@@ -277,7 +280,7 @@
     <div class="modal fade" id="addPlan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-body p-5 position-relative">
+                <div class="modal-body p-3 p-md-5 position-relative">
                     <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-4">
@@ -315,7 +318,7 @@
                                     <div class="col-md-6">
                                         <label for="min_inbox">Min Inboxes:</label>
                                         <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox"
-                                            value="1" min="1" required>
+                                            value="0" min="0" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="max_inbox">Max Inboxes (0 for unlimited):</label>
@@ -331,7 +334,7 @@
                             <!-- Selected features will be added dynamically -->
                         </div>
 
-                        <div class="row mt-3">
+                        <div class="row gy-3 mt-3">
                             <div class="col-md-7">
                                 <select class="form-control feature-dropdown" id="newPlanFeatureDropdown">
                                     <option value="">Select an existing feature</option>
@@ -772,63 +775,60 @@
             });
         });
 
-        // Delete plan
-        $(document).on('click', '.delete-plan-btn', function() {
-            // Get plan ID from data attribute
-            if (!$(this).data('id')) {
-                showErrorToast('Plan ID not found');
-                return;
-            }
-            // Confirm deletion
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, do it!',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Perform the confirmed action here
-                    const planId = $(this).data('id');
+     // Delete plan
+$(document).on('click', '.delete-plan-btn', function () {
+    const $btn = $(this);
 
-                    $.ajax({
-                        url: `/admin/plans/${planId}`,
-                        type: "DELETE",
-                        data: {
-                            _token: "{{ csrf_token() }}"
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            if (response.success) {
-                                // Remove plan card
-                                $(`#plan-${planId}`).fadeOut(300, function() {
-                                    $(this).remove();
-                                });
+    // Get plan ID from data attribute
+    const planId = $btn.data('id');
+    if (!planId) {
+        showErrorToast('Plan ID not found');
+        return;
+    }
 
-                                showSuccessToast('Plan deleted successfully');
-                            } else {
-                                showErrorToast(response.message ||
-                                    'Failed to delete plan');
-                            }
-                        },
-                        error: function(xhr) {
-                            showErrorToast('Failed to delete plan');
-                        }
-                    });
-                } else {
-                    console.log('User cancelled');
+    // Confirm deletion
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, do it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Disable button and show loading text
+            $btn.prop('disabled', true).html('Deleting...');
+
+            // Perform the AJAX request
+            $.ajax({
+                url: `/admin/plans/${planId}`,
+                type: "DELETE",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                dataType: "json",
+                success: function (response) {
+                    if (response.success) {
+                        $(`#plan-${planId}`).fadeOut(300, function () {
+                            $(this).remove();
+                        });
+                        showSuccessToast('Plan deleted successfully');
+                        location.reload();
+                    } else {
+                        showErrorToast(response.message || 'Failed to delete plan');
+                        $btn.prop('disabled', false).html('Delete');
+                    }
+                },
+                error: function () {
+                    showErrorToast('Failed to delete plan');
+                    $btn.prop('disabled', false).html('Delete');
                 }
             });
-
-
-            // sweetalert confirmation
-
-
-
-        });
+        }
+    });
+});
 
         // Helper function to update plan card after edit
         function updatePlanCard(plan) {

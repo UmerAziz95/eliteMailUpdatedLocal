@@ -69,7 +69,7 @@ class CustomerController extends Controller
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
+                                    <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">View</a></li>
                                 </ul>
                             </div>
                         </div>

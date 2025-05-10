@@ -7,7 +7,7 @@
 <style>
     .swiper {
         width: 100%;
-        max-width: 600px;
+
     }
 
     .swiper-slide {
@@ -131,11 +131,11 @@
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="row gy-4">
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <div class="swiper w-100">
                 <div class="swiper-wrapper w-100">
                     <div class="swiper-slide w-100 d-flex align-items-center p-4 justify-content-between">
-                        <div>
+                        <div class="w-100">
                             <h5 class="mb-0">Websites Analyticss</h5>
                             <span>Total 28.5% conversation rate</span>
                             <div class="mt-5">
@@ -172,11 +172,11 @@
                             </div>
                         </div>
                         <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-1.png"
-                            width="160" alt="Slide 1">
+                            width="160" class="d-none d-sm-block" alt="Slide 1">
                     </div>
 
                     <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                        <div>
+                        <div class="w-100">
                             <h5 class="mb-0">Websites Analytics</h5>
                             <span>Total 28.5% conversation rate</span>
                             <div class="mt-5">
@@ -213,11 +213,11 @@
                             </div>
                         </div>
                         <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-2.png"
-                            width="160" alt="Slide 1">
+                            width="160" class="d-none d-sm-block" alt="Slide 1">
                     </div>
 
                     <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                        <div>
+                        <div class="w-100">
                             <h5 class="mb-0">Websites Analytics</h5>
                             <span>Total 28.5% conversation rate</span>
                             <div class="mt-5">
@@ -254,12 +254,13 @@
                             </div>
                         </div>
                         <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-3.png"
-                            width="160" alt="Slide 1">
+                            width="160" class="d-none d-sm-block" alt="Slide 1">
                     </div>
                 </div>
                 <div class="swiper-pagination"></div>
             </div>
         </div>
+
 
         <div class="col-xl-3 col-sm-6">
             <div class="card h-100">
@@ -273,7 +274,6 @@
                 </div>
             </div>
         </div>
-
 
 
         <div class="col-xl-3 col-sm-6">
@@ -328,7 +328,6 @@
         </div>
 
 
-
         <div class="col-md-6">
             <div class="card h-100 p-2">
                 <div class="card-header border-0 pb-0 d-flex justify-content-between">
@@ -348,6 +347,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="card-body pt-0">
                     <div class="row align-items-center g-md-8">
                         <div class="col-12 col-md-5 d-flex flex-column">
@@ -369,9 +369,9 @@
                                     <div class="badge rounded bg-label-primary p-1">
                                         <i class="ti ti-currency-dollar theme-text fs-5"></i>
                                     </div>
-                                    <h6 class="mb-0 fw-normal">Earnings</h6>
+                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Earnings</h6>
                                 </div>
-                                <h4 class="my-2">$545.69</h4>
+                                <h4 class="my-2 fs-6">$545.69</h4>
                                 <div class="progress w-75" style="height:4px">
                                     <div class="progress-bar" role="progressbar" style="width: 65%" aria-valuenow="65"
                                         aria-valuemin="0" aria-valuemax="100">
@@ -383,9 +383,9 @@
                                     <div class="badge rounded bg-label-info p-1">
                                         <i class="ti ti-clock-share text-info fs-5"></i>
                                     </div>
-                                    <h6 class="mb-0 fw-normal">Profit</h6>
+                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Profit</h6>
                                 </div>
-                                <h4 class="my-2">$256.34</h4>
+                                <h4 class="my-2 fs-6">$256.34</h4>
                                 <div class="progress w-75" style="height:4px">
                                     <div class="progress-bar bg-info" role="progressbar" style="width: 50%"
                                         aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
@@ -396,9 +396,9 @@
                                     <div class="badge rounded bg-label-danger p-1">
                                         <i class="ti ti-brand-paypal text-danger fs-5"></i>
                                     </div>
-                                    <h6 class="mb-0 fw-normal">Expense</h6>
+                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Expense</h6>
                                 </div>
-                                <h4 class="my-2">$74.19</h4>
+                                <h4 class="my-2 fs-6">$74.19</h4>
                                 <div class="progress w-75" style="height:4px">
                                     <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"
                                         aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
@@ -467,7 +467,7 @@
                             </li>
                         </ul>
                     </div>
-                    <div class="col-12 col-md-8">
+                    <div class="col-12 col-sm-8">
                         <div id="taskGaugeChart"></div>
                     </div>
                 </div>
@@ -476,7 +476,7 @@
 
 
 
-        <div class="col-xxl-4 col-md-6 order-1 order-xl-0">
+        <div class="col-xxl-4 col-md-6">
             <div class="card h-100 p-2">
                 <div class="card-header border-0 d-flex justify-content-between">
                     <div class="card-title mb-0">
@@ -588,7 +588,7 @@
 
 
 
-        <div class="col-8">
+        <div class="col-xxl-8">
             <div class="card p-3">
                 <div class="table-responsive">
                     <table id="myTable" class="display">
@@ -633,494 +633,536 @@
 @push('scripts')
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-            var swiper = new Swiper(".swiper", {
-                loop: true,
-                speed: 1000,
-                autoplay: {
-                    delay: 3000,
-                    disableOnInteraction: false,
-                },
-                pagination: {
-                    el: ".swiper-pagination",
-                    clickable: true,
-                },
-                navigation: {
-                    nextEl: ".swiper-button-next",
-                    prevEl: ".swiper-button-prev",
-                },
-            });
-
+        var swiper = new Swiper(".swiper", {
+            loop: true,
+            speed: 1000,
+            autoplay: {
+                delay: 3000,
+                disableOnInteraction: false,
+            },
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+            navigation: {
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+            },
         });
 
-        var options = {
-            series: [{
-                data: [0, 40, 35, 70, 60, 80, 50]
-            }],
-            chart: {
-                type: 'area',
-                height: 135,
-                sparkline: {
-                    enabled: true
-                }
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2,
-                colors: ['#00e396']
-            },
-            fill: {
-                colors: ['rgba(0,227,150,0.6162114504004728)'],
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.4,
-                    opacityTo: 0,
-                    stops: [0, 90, 100]
-                }
-            },
-            tooltip: {
-                enabled: false,
-                enabledOnSeries: undefined,
-                shared: true,
-                followCursor: true,
-                intersect: false,
-                inverseOrder: false,
-                custom: undefined,
-                hideEmptySeries: true,
-                fillSeriesColor: false,
-                theme: false,
-                style: {
-                    fontSize: '12px',
-                    fontFamily: undefined
-                },
-                onDatasetHover: {
-                    highlightDataSeries: false,
-                },
-                x: {
-                    show: true,
-                    format: 'dd MMM',
-                    formatter: undefined,
-                },
-                y: {
-                    formatter: undefined,
-                    // title: {
-                    //     formatter: (seriesName) => seriesName,
-                    // },
-                },
-                z: {
-                    formatter: undefined,
-                    title: 'Size: '
-                },
-                marker: {
-                    show: true,
-                },
-                // items: {
-                //     display: flex,
-                // },
-                fixed: {
-                    enabled: false,
-                    position: 'topRight',
-                    offsetX: 0,
-                    offsetY: 0,
-                },
+    });
+
+    var options = {
+        series: [{
+            data: [0, 40, 35, 70, 60, 80, 50]
+        }],
+        chart: {
+            type: 'area',
+            height: 135,
+            sparkline: {
+                enabled: true
             }
-        };
-
-        var chart = new ApexCharts(document.querySelector("#salesChart"), options);
-        chart.render();
-
-
-        var options = {
-            series: [{
-                data: [20, 40, 35, 30, 60, 40, 45]
-            }],
-            chart: {
-                type: 'bar',
-                height: 180,
-                toolbar: {
-                    show: false
-                },
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2,
+            colors: ['#00e396']
+        },
+        fill: {
+            colors: ['rgba(0,227,150,0.6162114504004728)'],
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.4,
+                opacityTo: 0,
+                stops: [0, 90, 100]
+            }
+        },
+        tooltip: {
+            enabled: false,
+            enabledOnSeries: undefined,
+            shared: true,
+            followCursor: true,
+            intersect: false,
+            inverseOrder: false,
+            custom: undefined,
+            hideEmptySeries: true,
+            fillSeriesColor: false,
+            theme: false,
+            style: {
+                fontSize: '12px',
+                fontFamily: undefined
             },
-            plotOptions: {
-                bar: {
-                    borderRadius: 3,
-                    columnWidth: '40%',
-                    distributed: true
+            onDatasetHover: {
+                highlightDataSeries: false,
+            },
+            x: {
+                show: true,
+                format: 'dd MMM',
+                formatter: undefined,
+            },
+            y: {
+                formatter: undefined,
+                // title: {
+                //     formatter: (seriesName) => seriesName,
+                // },
+            },
+            z: {
+                formatter: undefined,
+                title: 'Size: '
+            },
+            marker: {
+                show: true,
+            },
+            // items: {
+            //     display: flex,
+            // },
+            fixed: {
+                enabled: false,
+                position: 'topRight',
+                offsetX: 0,
+                offsetY: 0,
+            },
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#salesChart"), options);
+    chart.render();
+
+
+    var options = {
+        series: [{
+            data: [20, 40, 35, 30, 60, 40, 45]
+        }],
+        chart: {
+            type: 'bar',
+            height: 180,
+            toolbar: {
+                show: false
+            },
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 3,
+                columnWidth: '40%',
+                distributed: true
+            }
+        },
+        colors: [
+            '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
+        ],
+        dataLabels: {
+            enabled: false
+        },
+        xaxis: {
+            categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            labels: {
+                style: {
+                    colors: '#A3A9BD',
+                    fontSize: '12px'
                 }
             },
-            colors: [
-                '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
-            ],
-            dataLabels: {
-                enabled: false
+            axisBorder: {
+                show: false
             },
-            xaxis: {
-                categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-                labels: {
-                    style: {
-                        colors: '#A3A9BD',
-                        fontSize: '12px'
+            axisTicks: {
+                show: false
+            }
+        },
+        yaxis: {
+            show: false
+        },
+        grid: {
+            show: false
+        },
+        tooltip: {
+            enabled: false
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#weekBarChart"), options);
+    chart.render();
+
+
+
+
+    var options = {
+        series: [85],
+        chart: {
+            height: 400,
+            type: 'radialBar',
+        },
+
+        plotOptions: {
+            radialBar: {
+                startAngle: -135,
+                endAngle: 135,
+                hollow: {
+                    margin: 0,
+                    size: '60%',
+                    background: 'transparent',
+                },
+                track: {
+                    background: 'transparent',
+                    strokeWidth: '100%',
+                },
+                dataLabels: {
+                    show: true,
+                    name: {
+                        offsetY: 20,
+                        show: true,
+                        color: '#A3A9BD',
+                        fontSize: '14px',
+                        text: 'Completed Task'
+                    },
+                    value: {
+                        offsetY: -10,
+                        color: '#fff',
+                        fontSize: '28px',
+                        show: true,
+                        formatter: function(val) {
+                            return val + "%";
+                        }
                     }
                 },
-                axisBorder: {
-                    show: false
-                },
-                axisTicks: {
-                    show: false
-                }
-            },
-            yaxis: {
-                show: false
-            },
-            grid: {
-                show: false
-            },
-            tooltip: {
-                enabled: false
             }
-        };
+        },
 
-        var chart = new ApexCharts(document.querySelector("#weekBarChart"), options);
-        chart.render();
+        // ✅ Make it segmented like bars
+        stroke: {
+            dashArray: 12
+        },
 
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shade: 'dark',
+                type: 'horizontal',
+                gradientToColors: ['#7F6CFF'],
+                stops: [0, 100]
+            }
+        },
 
+        colors: ['#3D3D66'],
+        labels: ['Completed Task']
+    };
 
-
-        var options = {
-            series: [85],
-            chart: {
-                height: 400,
-                type: 'radialBar',
-            },
-
-            plotOptions: {
-                radialBar: {
-                    startAngle: -135,
-                    endAngle: 135,
-                    hollow: {
-                        margin: 0,
-                        size: '60%',
-                        background: 'transparent',
-                    },
-                    track: {
-                        background: 'transparent',
-                        strokeWidth: '100%',
-                    },
-                    dataLabels: {
-                        show: true,
-                        name: {
-                            offsetY: 20,
-                            show: true,
-                            color: '#A3A9BD',
-                            fontSize: '14px',
-                            text: 'Completed Task'
-                        },
-                        value: {
-                            offsetY: -10,
-                            color: '#fff',
-                            fontSize: '28px',
-                            show: true,
-                            formatter: function(val) {
-                                return val + "%";
-                            }
-                        }
-                    },
-                }
-            },
-
-            // ✅ Make it segmented like bars
-            stroke: {
-                dashArray: 12
-            },
-
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shade: 'dark',
-                    type: 'horizontal',
-                    gradientToColors: ['#7F6CFF'],
-                    stops: [0, 100]
-                }
-            },
-
-            colors: ['#3D3D66'],
-            labels: ['Completed Task']
-        };
-
-        var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
-        chart.render();
+    var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
+    chart.render();
 </script>
 <script>
     // Debug AJAX calls  
-        $(document).ajaxSend(function(event, jqXHR, settings) {
-            console.log('AJAX Request:', {
-                url: settings.url,
-                type: settings.type,
-                data: settings.data,
-                headers: jqXHR.headers
-            });
+    $(document).ajaxSend(function(event, jqXHR, settings) {
+        console.log('AJAX Request:', {
+            url: settings.url,
+            type: settings.type,
+            data: settings.data,
+            headers: jqXHR.headers
         });
-    
-    
-        function viewOrder(id) {
-            window.location.href = "{{ route('admin.index') }}?id=" + id;
+    });
+
+
+    function viewOrder(id) {
+        window.location.href = "{{ route('admin.index') }}?id=" + id;
+    }
+
+    // Apply Filters
+    $('#applyFilters').click(function() {
+        refreshDataTable();
+    });
+
+    // Clear Filters
+    $('#clearFilters').click(function() {
+        $('#user_name_filter').val('');
+        $('#email_filter').val('');
+        $('#status_filter').val('');
+        refreshDataTable();
+    });
+
+    function refreshDataTable() {
+        if (window.orderTables && window.orderTables.all) {
+            window.orderTables.all.ajax.reload(null, false);
         }
-    
-          // Apply Filters
-        $('#applyFilters').click(function() {
-            refreshDataTable();
-        });
-    
-        // Clear Filters
-        $('#clearFilters').click(function() {
-            $('#user_name_filter').val('');
-            $('#email_filter').val('');
-            $('#status_filter').val('');
-            refreshDataTable();
-        });
-    
-        function refreshDataTable(){
-                     if (window.orderTables && window.orderTables.all) {
-                        window.orderTables.all.ajax.reload(null, false);
-            }
-        }
-    
-        
-    
+    }
+
+
+
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         const tableId = '#myTable';
         const $table = $(tableId);
-    
+
         if (!$table.length) {
             console.error('Table not found with selector:', tableId);
             return null;
         }
-    
-       try {
-        const table = $table.DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            autoWidth: false,
-            dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
-            ajax: {
-                url: "{{ route('logs.index') }}",
-                type: "GET",
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Accept': 'application/json'
-                },
-                data: function(d) {
-                    d.plan_id = planId;
-                    d.user_name = $('#user_name_filter').val();
-                    d.email = $('#email_filter').val();
-                    d.status = $('#status_filter').val();
-                },
-                dataSrc: function(json) {
-                    console.log('Server response:', json);
-                    return json.data;
-                },
-                error: function(xhr, error, thrown) {
-                    console.error('DataTables error:', error);
-                    console.error('Server response:', xhr.responseText);
-    
-                    if (xhr.status === 401) {
-                        window.location.href = "{{ route('login') }}";
-                    } else if (xhr.status === 403) {
-                        toastr.error('You do not have permission to view this data');
-                    } else {
-                        toastr.error('Error loading data: ' + error);
+
+        try {
+            const table = $table.DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                autoWidth: false,
+                dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+                ajax: {
+                    url: "{{ route('logs.index') }}",
+                    type: "GET",
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json'
+                    },
+                    data: function(d) {
+                        d.plan_id = planId;
+                        d.user_name = $('#user_name_filter').val();
+                        d.email = $('#email_filter').val();
+                        d.status = $('#status_filter').val();
+                    },
+                    dataSrc: function(json) {
+                        console.log('Server response:', json);
+                        return json.data;
+                    },
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTables error:', error);
+                        console.error('Server response:', xhr.responseText);
+
+                        if (xhr.status === 401) {
+                            window.location.href = "{{ route('login') }}";
+                        } else if (xhr.status === 403) {
+                            toastr.error('You do not have permission to view this data');
+                        } else {
+                            toastr.error('Error loading data: ' + error);
+                        }
                     }
+                },
+                columns: [{
+                        data: 'id',
+                        name: 'id'
+                    },
+                    {
+                        data: 'action_type',
+                        name: 'action_type'
+                    },
+                    {
+                        data: 'description',
+                        name: 'description'
+                    },
+                    {
+                        data: 'performed_by',
+                        name: 'performed_by'
+                    },
+                    {
+                        data: 'performed_on',
+                        name: 'performed_on'
+                    },
+                    {
+                        data: 'extra_data',
+                        name: 'extra_data'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                columnDefs: [{
+                        width: '10%',
+                        targets: 0
+                    },
+                    {
+                        width: '20%',
+                        targets: 1
+                    },
+                    {
+                        width: '15%',
+                        targets: 2
+                    },
+                    {
+                        width: '25%',
+                        targets: 3
+                    },
+                    {
+                        width: '15%',
+                        targets: 4
+                    },
+                    {
+                        width: '15%',
+                        targets: 5
+                    }
+                ],
+                order: [
+                    [1, 'desc']
+                ],
+                drawCallback: function(settings) {
+                    const counters = settings.json?.counters;
+
+                    if (counters) {
+                        $('#total_counter').text(counters.total);
+                        $('#active_counter').text(counters.active);
+                        $('#inactive_counter').text(counters.inactive);
+                    }
+
+                    $('[data-bs-toggle="tooltip"]').tooltip();
+                    this.api().columns.adjust();
+                    this.api().responsive?.recalc();
+                },
+                initComplete: function() {
+                    console.log('Table initialization complete');
+                    this.api().columns.adjust();
+                    this.api().responsive?.recalc();
+
+                    // 🔽 Append your custom button next to the search bar
+                    // const button = `
+                    //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                    //             style="padding: .4rem 1rem"
+                    //             type="button"
+                    //             data-bs-toggle="offcanvas"
+                    //             data-bs-target="#offcanvasAddAdmin"
+                    //             aria-controls="offcanvasAddAdmin">
+                    //         + Add New Record
+                    //     </button>
+                    // `;
+
+                    // $('.dataTables_filter').append(button);
                 }
-            },
-            columns: [
-    { data: 'id', name: 'id' },
-    { data: 'action_type', name: 'action_type' },
-    { data: 'description', name: 'description' },
-    { data: 'performed_by', name: 'performed_by' },
-    { data: 'performed_on', name: 'performed_on' },
-    { data: 'extra_data', name: 'extra_data' },
-    { data: 'action', name: 'action', orderable: false, searchable: false }
-],
-            columnDefs: [
-                { width: '10%', targets: 0 },
-                { width: '20%', targets: 1 },
-                { width: '15%', targets: 2 },
-                { width: '25%', targets: 3 },
-                { width: '15%', targets: 4 },
-                { width: '15%', targets: 5 }
-            ],
-            order: [[1, 'desc']],
-            drawCallback: function(settings) {
-                const counters = settings.json?.counters;
-    
-                if (counters) {
-                    $('#total_counter').text(counters.total);
-                    $('#active_counter').text(counters.active);
-                    $('#inactive_counter').text(counters.inactive);
+            });
+
+            // Optional loading indicator
+            table.on('processing.dt', function(e, settings, processing) {
+                const wrapper = $(tableId + '_wrapper');
+                if (processing) {
+                    wrapper.addClass('loading');
+                    if (!wrapper.find('.dt-loading').length) {
+                        wrapper.append('<div class="dt-loading">Loading...</div>');
+                    }
+                } else {
+                    wrapper.removeClass('loading');
+                    wrapper.find('.dt-loading').remove();
                 }
-    
-                $('[data-bs-toggle="tooltip"]').tooltip();
-                this.api().columns.adjust();
-                this.api().responsive?.recalc();
-            },
-            initComplete: function() {
-                console.log('Table initialization complete');
-                this.api().columns.adjust();
-                this.api().responsive?.recalc();
-    
-                // 🔽 Append your custom button next to the search bar
-                // const button = `
-                //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                //             style="padding: .4rem 1rem"
-                //             type="button"
-                //             data-bs-toggle="offcanvas"
-                //             data-bs-target="#offcanvasAddAdmin"
-                //             aria-controls="offcanvasAddAdmin">
-                //         + Add New Record
-                //     </button>
-                // `;
-    
-                // $('.dataTables_filter').append(button);
-            }
-        });
-    
-        // Optional loading indicator
-        table.on('processing.dt', function(e, settings, processing) {
-            const wrapper = $(tableId + '_wrapper');
-            if (processing) {
-                wrapper.addClass('loading');
-                if (!wrapper.find('.dt-loading').length) {
-                    wrapper.append('<div class="dt-loading">Loading...</div>');
-                }
-            } else {
-                wrapper.removeClass('loading');
-                wrapper.find('.dt-loading').remove();
-            }
-        });
-    
-        return table;
-    } catch (error) {
-        console.error('Error initializing DataTable:', error);
-        toastr.error('Error initializing table. Please refresh the page.');
+            });
+
+            return table;
+        } catch (error) {
+            console.error('Error initializing DataTable:', error);
+            toastr.error('Error initializing table. Please refresh the page.');
+        }
+
     }
-    
-    }
-    
-    
-    
-    
-        $(document).ready(function() {
-            try {
-                console.log('Document ready, initializing tables');
-                window.orderTables = {};
-                // Initialize table for all Subscriptions
-                window.orderTables.all = initDataTable();
-    
-                // Handle tab changes
-                $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-                    const tabId = $(e.target).attr('id');
-                    console.log('Tab changed to:', tabId);
-                    
-                    // Force recalculation of column widths for visible tables
-                    setTimeout(function() {
-                        Object.values(window.orderTables).forEach(function(table) {
-                            if ($(table.table().node()).is(':visible')) {
-                                table.columns.adjust();
-                                table.responsive.recalc();
-                                console.log('Adjusting columns for table:', table.table().node().id);
-                            }
-                        });
-                    }, 10);
-                });
-    
-                // Initial column adjustment for the active tab
+
+
+
+
+    $(document).ready(function() {
+        try {
+            console.log('Document ready, initializing tables');
+            window.orderTables = {};
+            // Initialize table for all Subscriptions
+            window.orderTables.all = initDataTable();
+
+            // Handle tab changes
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+                const tabId = $(e.target).attr('id');
+                console.log('Tab changed to:', tabId);
+
+                // Force recalculation of column widths for visible tables
                 setTimeout(function() {
-                    const activeTable = $('.tab-pane.active .table').DataTable();
-                    if (activeTable) {
-                        activeTable.columns.adjust();
-                        activeTable.responsive.recalc();
-                        console.log('Initial column adjustment for active table');
-                    }
+                    Object.values(window.orderTables).forEach(function(table) {
+                        if ($(table.table().node()).is(':visible')) {
+                            table.columns.adjust();
+                            table.responsive.recalc();
+                            console.log('Adjusting columns for table:', table.table().node().id);
+                        }
+                    });
                 }, 10);
-    
-                // Add global error handler for AJAX requests
-                $(document).ajaxError(function(event, xhr, settings, error) {
-                    console.error('AJAX Error:', error);
-                    if (xhr.status === 401) {
-                        window.location.href = "{{ route('login') }}";
-                    } else if (xhr.status === 403) {
-                        toastr.error('You do not have permission to perform this action');
-                    }
-                });
-            } catch (error) {
-                console.error('Error in document ready:', error);
-            }
-        });
+            });
+
+            // Initial column adjustment for the active tab
+            setTimeout(function() {
+                const activeTable = $('.tab-pane.active .table').DataTable();
+                if (activeTable) {
+                    activeTable.columns.adjust();
+                    activeTable.responsive.recalc();
+                    console.log('Initial column adjustment for active table');
+                }
+            }, 10);
+
+            // Add global error handler for AJAX requests
+            $(document).ajaxError(function(event, xhr, settings, error) {
+                console.error('AJAX Error:', error);
+                if (xhr.status === 401) {
+                    window.location.href = "{{ route('login') }}";
+                } else if (xhr.status === 403) {
+                    toastr.error('You do not have permission to perform this action');
+                }
+            });
+        } catch (error) {
+            console.error('Error in document ready:', error);
+        }
+    });
 </script>
 
 
 <script>
-    $('#createUserForm').on('submit', function (e) {
-            e.preventDefault();
-    
-            const form = this;
-            const userId = $('#user_id').val();
-            const password = $('#password').val();
-            const confirmPassword = $('#confirm_password').val();
-    
-            if (password && password !== confirmPassword) {
-                toastr.error('Passwords do not match!');
-                return;
-            }
-    
-            let formData = new FormData(form);
-            let url = userId
-                ? "{{ url('admin/') }}/" + userId  // Edit URL
-                : "{{ route('admin.users.store') }}";   // Create URL
-    
-            let method = userId ? "POST" : "POST"; // Both will use POST, but we spoof PUT for update
-    
-            if (userId) {
-                formData.append('_method', 'PUT'); // Laravel expects PUT for update
-            }
-    
-            $.ajax({
-                url: url,
-                method: method,
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    let action = userId ? 'updated' : 'created';
-                    toastr.success(`User ${action} successfully!`);
-    
-                    // Reset and clear form
-                    $('#createUserForm')[0].reset();
-                    $('#user_id').val('');
-    
-                    // Hide the offcanvas
-                    let offcanvasElement = document.getElementById('offcanvasAddAdmin');
-                    let offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
-                    offcanvasInstance.hide();
-    
-                    // Reload DataTable
-                    if (window.orderTables && window.orderTables.all) {
-                        window.orderTables.all.ajax.reload(null, false);
-                    }
-                },
-                error: function (xhr) {
-                    if (xhr.responseJSON?.errors) {
-                        let errors = xhr.responseJSON.errors;
-                        let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');
-                        toastr.error(errorMessages);
-                    } else {
-                        toastr.error('Something went wrong.');
-                    }
+    $('#createUserForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const form = this;
+        const userId = $('#user_id').val();
+        const password = $('#password').val();
+        const confirmPassword = $('#confirm_password').val();
+
+        if (password && password !== confirmPassword) {
+            toastr.error('Passwords do not match!');
+            return;
+        }
+
+        let formData = new FormData(form);
+        let url = userId ?
+            "{{ url('admin/') }}/" + userId // Edit URL
+            :
+            "{{ route('admin.users.store') }}"; // Create URL
+
+        let method = userId ? "POST" : "POST"; // Both will use POST, but we spoof PUT for update
+
+        if (userId) {
+            formData.append('_method', 'PUT'); // Laravel expects PUT for update
+        }
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                let action = userId ? 'updated' : 'created';
+                toastr.success(`User ${action} successfully!`);
+
+                // Reset and clear form
+                $('#createUserForm')[0].reset();
+                $('#user_id').val('');
+
+                // Hide the offcanvas
+                let offcanvasElement = document.getElementById('offcanvasAddAdmin');
+                let offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                offcanvasInstance.hide();
+
+                // Reload DataTable
+                if (window.orderTables && window.orderTables.all) {
+                    window.orderTables.all.ajax.reload(null, false);
                 }
-            });
+            },
+            error: function(xhr) {
+                if (xhr.responseJSON?.errors) {
+                    let errors = xhr.responseJSON.errors;
+                    let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');
+                    toastr.error(errorMessages);
+                } else {
+                    toastr.error('Something went wrong.');
+                }
+            }
         });
+    });
 </script>
 
 @endpush
