@@ -52,7 +52,7 @@
                     <!-- Notifications will be loaded here dynamically -->
                 </div>
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
-                    <a href="/customer/dashboard" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
+                    <a href="/admin/settings" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
                 </div>
             </ul>
         </div>

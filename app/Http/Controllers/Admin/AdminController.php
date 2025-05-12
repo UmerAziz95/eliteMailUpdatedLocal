@@ -14,6 +14,8 @@ use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Services\ActivityLogService;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UserWelcomeMail;
 class AdminController extends Controller
 {
     public function index(Request $request)
@@ -153,7 +155,11 @@ class AdminController extends Controller
             ],
             Auth::id() // Admin or creator performing this action
         );
-    
+      try {
+            Mail::to($user->email)->queue(new UserWelcomeMail($user));
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
         // Assign role and permissions if role_id is provided 
         if ($validated['role_id']) {
             $role = Role::find($validated['role_id']);

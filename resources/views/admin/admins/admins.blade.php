@@ -3,145 +3,145 @@
 @section('title', 'Admins')
 
 @push('styles')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <style>
-        .avatar {
-            position: relative;
-            block-size: 2.5rem;
-            cursor: pointer;
-            inline-size: 2.5rem;
-        }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+    .avatar {
+        position: relative;
+        block-size: 2.5rem;
+        cursor: pointer;
+        inline-size: 2.5rem;
+    }
 
-        .avatar .avatar-initial {
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--second-primary);
-            font-size: 1.5rem;
-            font-weight: 500;
-            inset: 0;
-            text-transform: uppercase;
-        }
-    </style>
+    .avatar .avatar-initial {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--second-primary);
+        font-size: 1.5rem;
+        font-weight: 500;
+        inset: 0;
+        text-transform: uppercase;
+    }
+</style>
 @endpush
 
 @section('content')
 
-    <section class="py-3">
-     
-        <div class="row gy-4 mb-4">
-          <div class="col-sm-6 col-xl-4">
-                <div class="card p-2">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Total Users</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2" id="total_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
+<section class="py-3">
+
+    <div class="row gy-4 mb-4">
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Total Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total_counter">0</h4>
+                                <p class="text-success mb-0"></p>
                             </div>
-                            <div class="avatar">
-                                <span class="avatar-initial rounded bg-label-warning">
-                                    <i class="ti ti-user-search"></i>
-                                </span>
-                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
         <div class="col-sm-6 col-xl-4">
-                <div class="card p-2">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Active Users</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2" id="active_counter" >0</h4>
-                                    <p class="text-danger mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Active Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="active_counter">0</h4>
+                                <p class="text-danger mb-0"></p>
                             </div>
-                            <div class="avatar">
-                                <span class="avatar-initial rounded bg-label-success">
-                                    <i class="ti ti-user-check"></i>
-                                </span>
-                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-user-check"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
-            <div class="col-sm-6 col-xl-4">
-                <div class="card p-2">
-                    <div class="card-body">  
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
                     {{-- //card body --}}
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">InActive Users</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2" id="inactive_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">InActive Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
                             </div>
-                            <div class="avatar">
-                                <span class="avatar-initial rounded bg-label-danger">
-                                    <i class="ti ti-user-plus"></i>
-                                </span>
-                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-        
-         
-        </div>
-
-        <div class="card py-3 px-4">
-            <div class="row gy-3">
-                 <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-2">Filters</h5>
-                            <div>
-                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
-                </div>
-               <div class="col-md-4">
-                            <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
-                </div>
-               <div class="col-md-4">
-                            <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
-                </div>
-               
-                <div class="col-md-4">
-                    <select id="status_filter" class="form-select">
-                        <option value="">Select Status</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                     
-                    </select>
-                </div>
-            </div>
-            <hr>
-           @include('admin.admins._table')
         </div>
 
 
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-            aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
-            <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
-                <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">Add User</h5>
-                <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
-                        class="fa-solid fa-xmark fs-5"></i></button>
+    </div>
+
+    <div class="card py-3 px-4">
+        <div class="row gy-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <h5 class="mb-2">Filters</h5>
+                <div>
+                    <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                    <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                </div>
             </div>
-            <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
-                @include('admin.admins.add_new_form')
+            <div class="col-md-4">
+                <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
+            </div>
+
+            <div class="col-md-4">
+                <select id="status_filter" class="form-select">
+                    <option value="">Select Status</option>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+
+                </select>
             </div>
         </div>
-    </section>
+        <hr>
+        @include('admin.admins._table')
+    </div>
+
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+        aria-modal="true" role="dialog">
+        <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
+            <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">Add User</h5>
+            <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
+                    class="fa-solid fa-xmark fs-5"></i></button>
+        </div>
+        <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
+            @include('admin.admins.add_new_form')
+        </div>
+    </div>
+</section>
 @endsection
 
 @push('scripts')
@@ -367,17 +367,23 @@ function initDataTable(planId = '') {
         const password = $('#password').val();
         const confirmPassword = $('#confirm_password').val();
 
-        if (password && password !== confirmPassword) {
-            toastr.error('Passwords do not match!');
-            return;
-        }
+        // Disable button and add loading class at the start
+        $('#submit_btn').attr('disabled', true).addClass('btn-loading');
 
+     if (password && password !== confirmPassword) {
+        toastr.error('Passwords do not match!');
+        // Wait 3 seconds before re-enabling the button
+        setTimeout(function () {
+            $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+        }, 3000);
+        return;
+}
         let formData = new FormData(form);
         let url = userId
             ? "{{ url('admin/') }}/" + userId  // Edit URL
             : "{{ route('admin.users.store') }}";   // Create URL
 
-        let method = userId ? "POST" : "POST"; // Both will use POST, but we spoof PUT for update
+        let method = "POST"; // Both create/update use POST, with _method spoofed for update
 
         if (userId) {
             formData.append('_method', 'PUT'); // Laravel expects PUT for update
@@ -406,6 +412,11 @@ function initDataTable(planId = '') {
                 if (window.orderTables && window.orderTables.all) {
                     window.orderTables.all.ajax.reload(null, false);
                 }
+
+                // Re-enable button
+                 setTimeout(function () {
+                    $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+                }, 3000);
             },
             error: function (xhr) {
                 if (xhr.responseJSON?.errors) {
@@ -415,10 +426,16 @@ function initDataTable(planId = '') {
                 } else {
                     toastr.error('Something went wrong.');
                 }
+
+                // Re-enable the button on error
+                 setTimeout(function () {
+                    $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+                }, 3000);
             }
         });
     });
 </script>
+
 
 
 <script>
@@ -453,7 +470,7 @@ function initDataTable(planId = '') {
     });
 </script>
 <script>
-$(document).on('click', '.delete-btn', function (e) {
+    $(document).on('click', '.delete-btn', function (e) {
     e.preventDefault();
     let userId = $(this).data('id');
 
