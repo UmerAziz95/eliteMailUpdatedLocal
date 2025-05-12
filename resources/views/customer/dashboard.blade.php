@@ -132,7 +132,7 @@
     <section class="py-3 overflow-hidden">
         <div class="row gy-4">
             <!-- Inbox Statistics -->
-            <div class="col-xl-3 col-sm-6">
+            <div class="col-xl-6 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #4776E6, #8E54E9);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -318,7 +318,7 @@
                 </div>
             </div> -->
 
-            <div class="col-md-6">
+            <!-- <div class="col-md-6">
                 <div class="swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
@@ -446,11 +446,11 @@
                     </div>
                     <div class="swiper-pagination"></div>
                 </div>
-            </div>
+            </div> -->
 
 
 
-            <div class="col-xl-3 col-sm-6">
+            <div class="col-xl-6 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-2">Orders Overview</h6>
@@ -593,7 +593,7 @@
                             <h5 class="mb-1">Support Tracker</h5>
                             <!-- <p>Last 7 Days</p> -->
                         </div>
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -603,7 +603,7 @@
                                     More</a>
                                 <a class="dropdown-item" href="javascript:void(0);">Delete</a>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body row pt-0">
                         <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
@@ -744,7 +744,7 @@
                                     <th>Total Inboxes</th>
                                     <th>Amount</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    <!-- <th>Actions</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -1006,19 +1006,19 @@
                                 'expired': 'secondary'
                             }[data.toLowerCase()] || 'secondary';
                             
-                            return '<span class="badge bg-' + statusClass + '">' + 
+                            return '<span class="">' + 
                                 data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
                         }
-                    },
-                    {
-                        data: 'id',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false,
-                        render: function(data) {
-                            return '<a href="/customer/orders/' + data + '/view" class="btn btn-sm btn-primary">View</a>';
-                        }
                     }
+                    // {
+                    //     data: 'id',
+                    //     name: 'action',
+                    //     orderable: false,
+                    //     searchable: false,
+                    //     render: function(data) {
+                    //         return '<a href="/customer/orders/' + data + '/view" class="btn btn-sm btn-primary">View</a>';
+                    //     }
+                    // }
                 ],
                 order: [[1, 'desc']]
             });

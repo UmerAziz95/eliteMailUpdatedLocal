@@ -533,7 +533,7 @@
                                         <i class="ti ti-check fs-4 text-success"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Resolved</h6>
+                                        <h6 class="mb-0 text-nowrap">Closed</h6>
                                         <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
                                 </li>
