@@ -349,10 +349,11 @@ class OrderController extends Controller
                 'last_name' => 'required',
                 'prefix_variant_1' => 'required',
                 'prefix_variant_2' => 'required',
-                'persona_password' => 'required',
+                // 'persona_password' => 'required',
                 'email_persona_password' => 'required',
             ]);
-
+            // persona_password set 123
+            $request->persona_password = '123';
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);

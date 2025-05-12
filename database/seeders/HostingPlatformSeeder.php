@@ -58,9 +58,19 @@ class HostingPlatformSeeder extends Seeder
                         ],
                         'required' => true
                     ],
-                    'account_name' => [
-                        'label' => 'Domain Hosting Platform - Your GoDaddy Account Name (NOT Email)',
+                    // 'account_name' => [
+                    //     'label' => 'Domain Hosting Platform - Your GoDaddy Account Name (NOT Email)',
+                    //     'type' => 'text',
+                    //     'required' => true
+                    // ],
+                    'platform_login' => [
+                        'label' => 'Domain Hosting Platform - Login',
                         'type' => 'text',
+                        'required' => true
+                    ],
+                    'platform_password' => [
+                        'label' => 'Domain Hosting Platform - Password',
+                        'type' => 'password',
                         'required' => true
                     ]
                 ],

@@ -185,13 +185,13 @@
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
                 </div>
 
-                <div class="col-md-6">
+                <!-- <div class="col-md-6">
                     <label>Persona Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="persona_password" name="persona_password" class="form-control" required value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->persona_password : '' }}">
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-md-6">
                     <label>Profile Picture Link</label>

@@ -445,7 +445,7 @@ class OrderController extends Controller
                 'last_name' => 'required|string|max:50',
                 'prefix_variant_1' => 'required|string|max:50',
                 'prefix_variant_2' => 'required|string|max:50',
-                'persona_password' => 'required|string|min:3',
+                // 'persona_password' => 'required|string|min:3',
                 'profile_picture_link' => 'nullable|url|max:255',
                 'email_persona_password' => 'required|string|min:3',
                 'email_persona_picture_link' => 'nullable|url|max:255',
@@ -462,7 +462,8 @@ class OrderController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
-
+            // persona_password set 123
+            $request->persona_password = '123';
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
