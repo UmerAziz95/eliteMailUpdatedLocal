@@ -437,9 +437,13 @@ class OrderController extends Controller
                 'assigned_to' => $order->assigned_to
             ]);
 
+            $orderCounts = $this->getOrderCounts();
+            $counts = $this->getOrderCounts();
             return response()->json([
                 'success' => true,
-                'message' => 'Order status updated successfully'
+                'message' => 'Order status updated successfully',
+                'counts' => $counts,
+                'counts' => $orderCounts
             ]);
 
         } catch (ValidationException $e) {
@@ -662,10 +666,11 @@ class OrderController extends Controller
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
                 }
             }
-    
+            $orderCounts = $this->getOrderCounts();
             return response()->json([
                 'success' => true,
-                'message' => 'Order Status Updated Successfully.'
+                'message' => 'Order Status Updated Successfully.',
+                'counts' => $orderCounts
             ]);
     
         } catch (\Exception $e) {
@@ -750,8 +755,21 @@ class OrderController extends Controller
         ]);
     }
     
-
-
-
+    private function getOrderCounts()
+    {
+        $orders = Order::where(function($query) {
+            $query->whereNull('assigned_to')
+                  ->orWhere('assigned_to', auth()->id());
+        });
+        
+        return [
+            'totalOrders' => $orders->count(),
+            'pendingOrders' => $orders->clone()->where('status_manage_by_admin', 'pending')->count(),
+            'completedOrders' => $orders->clone()->where('status_manage_by_admin', 'completed')->count(),
+            'inProgressOrders' => $orders->clone()->where('status_manage_by_admin', 'in-progress')->count(),
+            'expiredOrders' => $orders->clone()->where('status_manage_by_admin', 'expired')->count(),
+            'approvedOrders' => $orders->clone()->where('status_manage_by_admin', 'approved')->count(),
+        ];
+    }
 
 }
