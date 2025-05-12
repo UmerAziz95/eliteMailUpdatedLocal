@@ -3,6 +3,35 @@
 @section('title', 'Dashboard')
 
 @push('styles')
+    <!-- Additional styles for statistics cards -->
+    <style>
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-icon {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .bg-soft-primary {
+            background-color: rgba(115, 103, 240, 0.12);
+        }
+        .bg-soft-success {
+            background-color: rgba(40, 199, 111, 0.12);
+        }
+        .bg-soft-warning {
+            background-color: rgba(255, 159, 67, 0.12);
+        }
+    </style>
+@endpush
+
+@push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 <style>
     .swiper {
@@ -131,6 +160,79 @@
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="row gy-4">
+        <!-- Total Customers -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 fw-semibold">Total Customers</h6>
+                            <h4 class="mb-0">{{ $totalCustomers ?? 0 }}</h4>
+                        </div>
+                        <div class="avatar avatar-sm bg-primary-subtle rounded p-2">
+                            <i class="fa-solid fa-users fs-4 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Contractors -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 fw-semibold">Total Contractors</h6>
+                            <h4 class="mb-0">{{ $totalContractors ?? 0 }}</h4>
+                        </div>
+                        <div class="avatar avatar-sm bg-warning-subtle rounded p-2">
+                            <i class="fa-solid fa-user-tie fs-4 text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Inboxes Sold -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 fw-semibold">Total Inboxes Sold</h6>
+                            <h4 class="mb-0">{{ $totalInboxesSold ?? 0 }}</h4>
+                        </div>
+                        <div class="avatar avatar-sm bg-success-subtle rounded p-2">
+                            <i class="fa-solid fa-inbox fs-4 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="mb-3 fw-semibold">Recent Orders</h6>
+                    @forelse($recentOrders ?? [] as $order)
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fs-sm">#{{ $order->id }}</h6>
+                                <span class="text-muted fs-xs">{{ $order->created_at?->diffForHumans() }}</span>
+                            </div>
+                            <span class="badge bg-{{ $order->status->color ?? 'secondary' }} rounded-pill">
+                                {{ $order->status_manage_by_admin ?? 'N/A' }}
+                            </span>
+                        </div>
+                    @empty
+                        <p class="text-muted mb-0">No recent orders</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
         <div class="col-lg-6">
             <div class="swiper w-100">
                 <div class="swiper-wrapper w-100">

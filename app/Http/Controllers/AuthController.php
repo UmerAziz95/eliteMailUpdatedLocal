@@ -70,19 +70,29 @@ class AuthController extends Controller
             }
     
             $request->session()->regenerate();
+
+            // Log the login activity
             ActivityLogService::log(
                 'user_signin',
                 'User signed in successfully',
-                Auth::user(), // performed on this user
+                Auth::user(),
                 [
                     'email' => Auth::user()->email,
                     'ip' => $request->ip(),
                     'user_agent' => $request->header('User-Agent')
                 ]
-                // 'performed_by' will be set automatically using Auth::id()
             );
     
-            return redirect()->intended($this->redirectTo(Auth::user()));
+            // Get the redirect URL based on user role
+            $redirectUrl = $this->redirectTo(Auth::user());
+            
+            // If it's an AJAX request, return JSON
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['redirect' => $redirectUrl]);
+            }
+            
+            // Otherwise redirect to the appropriate dashboard
+            return redirect()->intended($redirectUrl);
         }
     
         return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
@@ -92,14 +102,22 @@ class AuthController extends Controller
     // Determine redirection based on user role
     protected function redirectTo($user)
     {
-        // dd($user);
-        if ($user->role_id == 1 || $user->role_id == 2 || $user->role_id == 5) {
-            return route('admin.dashboard');
-        } elseif ($user->role_id == 3) {
-            return route('customer.dashboard');
-        } elseif ($user->role_id == 4) {
-            return route('contractor.dashboard');
-        } 
+        if (!$user) {
+            return route('login');
+        }
+
+        switch ($user->role_id) {
+            case 1:
+            case 2:
+            case 5:
+                return route('admin.dashboard');
+            case 3:
+                return route('customer.dashboard');
+            case 4:
+                return route('contractor.dashboard');
+            default:
+                return route('login');
+        }
     }
 
     // Handle logout

@@ -46,7 +46,7 @@
     @if (Auth::user()->hasPermissionTo('Mod')) 
 
     @else   
-     <button type="submit" class="btn btn-primary">Submit</button>
+     <button type="submit" id="submit_btn" class="btn btn-primary">Submit</button>
     @endif
 </form>
 

@@ -49,6 +49,10 @@ class NotificationController extends Controller
 
     public function getUnreadCount()
     {
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $count = Notification::where('user_id', auth()->id())
             ->where('is_read', false)
             ->count();
@@ -58,6 +62,10 @@ class NotificationController extends Controller
 
     public function getNotificationsList()
     {
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $notifications = Notification::where('user_id', auth()->id())
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -77,6 +85,7 @@ class NotificationController extends Controller
 
         return response()->json(['notifications' => $notifications]);
     }
+
     public function getNotificationsListAll()
     {
         $notifications = Notification::

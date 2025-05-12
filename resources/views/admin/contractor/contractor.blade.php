@@ -214,8 +214,6 @@ function initDataTable(planId = '') {
                     return json.data;
                 },
                 error: function(xhr, error, thrown) {
-                    console.error('DataTables error:', error);
-                    console.error('Server response:', xhr.responseText);
 
                     if (xhr.status === 401) {
                         window.location.href = "{{ route('login') }}";
@@ -362,7 +360,10 @@ function initDataTable(planId = '') {
 
         if (password && password !== confirmPassword) {
             toastr.error('Passwords do not match!');
-            return;
+                setTimeout(function () {
+                    $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+                }, 3000);
+            return false;
         }
 
         let formData = new FormData(form);
@@ -399,8 +400,15 @@ function initDataTable(planId = '') {
                 if (window.orderTables && window.orderTables.all) {
                     window.orderTables.all.ajax.reload(null, false);
                 }
+
+                    setTimeout(function () {
+                    $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+                }, 3000);
             },
             error: function (xhr) {
+                    setTimeout(function () {
+                    $('#submit_btn').removeAttr('disabled').removeClass('btn-loading');
+                }, 3000);
                 if (xhr.responseJSON?.errors) {
                     let errors = xhr.responseJSON.errors;
                     let errorMessages = Object.values(errors).map(err => err.join(', ')).join('<br>');

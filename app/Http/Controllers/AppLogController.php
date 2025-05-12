@@ -8,6 +8,7 @@ use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
+
 class AppLogController extends Controller
 {
     public function getLogs(Request $request)
@@ -61,6 +62,7 @@ class AppLogController extends Controller
 
         return view('admin.logs.index'); // Make sure you create this Blade view  
     }
+
     public function specificLogs(Request $request)
     {
         if ($request->ajax()) {
@@ -112,23 +114,35 @@ class AppLogController extends Controller
 
         // return view('admin.logs.index'); // Make sure you create this Blade view  
     }
+
+    public function getContractorActivity(Request $request)
+    {
+        if ($request->ajax()) {
+            $logs = Log::with(['user', 'performedOn'])
+                ->where('performed_by', Auth::id())
+                ->latest();
+
+            return DataTables::of($logs)
+                ->addColumn('action_type', function ($log) {
+                    return $log->action_type ?? 'N/A';
+                })
+                ->addColumn('description', function ($log) {
+                    return $log->description ?? 'N/A';
+                })
+                ->addColumn('performed_on', function ($log) {
+                    if ($log->performedOn) {
+                        return class_basename($log->performed_on_type) . ' #' . $log->performed_on_id;
+                    }
+                    return 'N/A';
+                })
+                ->addColumn('data', function ($log) {
+                    return $log->data ?? null;
+                })
+                ->editColumn('created_at', function ($log) {
+                    return $log->created_at->format('Y-m-d H:i:s');
+                })
+                ->rawColumns(['action_type'])
+                ->make(true);
+        }
+    }
 }
-
-
-
-// log creation 
-// $user=Auth::user();
-// // Create a new activity log using the custom log service
-// ActivityLogService::log(
-//     'user_signup', // 🟢 Action Type: This is a short, unique identifier for the action (e.g. 'user_signup', 'order_created', 'payment_done', etc.)
-    
-//     'New user registered', // 🟢 Description: A human-readable message that describes what happened. This will be shown in logs.
-    
-//     $user, // 🟢 Performed By: The user (model instance) who performed this action. Can be null if action was performed by a system task.
-    
-//     [   // 🟢 Extra Data: (Optional) An array of additional data related to the action. This is stored as JSON.
-//         'email' => $user->email,
-//         // You can add any other contextual info here: IP, user role, referral code, etc.
-//         // You can add any other contextual info here: IP, user role, referral code, etc.
-//     ]
-// );

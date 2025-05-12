@@ -229,6 +229,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
 
 // Info: Contractor Access
 Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')->group(function () {
+    Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
+    
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
     
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
@@ -240,17 +242,13 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
-    // Route::post('/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/dashboard', function () {
-        // return view('contractor.dashboard');
-        return view('contractor.dashboard');
-    })->name('dashboard');
-    // Route::get('/orders', function () {
-    //     return view('contractor.orders.orders');
-    // })->name('orders');
+    
+    Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
+    
     Route::get('/pricing', function () {
         return view('contractor.pricing.pricing');
     })->name('pricing');
+    
     Route::get('/payments', function () {
         return view('contractor.payments.payments');
     })->name('payments');
