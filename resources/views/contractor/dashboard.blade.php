@@ -134,7 +134,7 @@
 
 
 
-            <div class="col-md-6">
+            <!-- <div class="col-md-6">
                 <div class="swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
@@ -262,11 +262,11 @@
                     </div>
                     <div class="swiper-pagination"></div>
                 </div>
-            </div>
+            </div> -->
 
 
 
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-2 ">Average Daily Sales</h6>
@@ -330,7 +330,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
 
 
@@ -658,7 +658,7 @@
                 series: [{{ $newTickets ?? 0 }}, {{ $inProgressTickets ?? 0 }}, {{ $resolvedTickets ?? 0 }}],
                 chart: {
                     type: 'pie',
-                    height: 300,
+                    height: 350,
                 },
                 labels: ['New', 'In Progress', 'Resolved'],
                 colors: ['#7367f0', '#ff9f43', '#28c76f'],
