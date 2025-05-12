@@ -131,8 +131,192 @@
 @section('content')
     <section class="py-3 overflow-hidden">
         <div class="row gy-4">
+            <!-- Inbox Statistics -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card overflow-hidden" style="background: linear-gradient(45deg, #4776E6, #8E54E9);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
+                                    <i class="ti ti-inbox fs-4 text-white"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="text-white mb-1">Inbox Status</h5>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-white">
+                                    <span class="d-block opacity-75">Total Inboxes</span>
+                                    <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
+                                </div>
+                                <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
+                                    <i class="ti ti-inbox-off me-1"></i> Total
+                                </span>
+                            </div>
+                            <div class="progress bg-white bg-opacity-25" style="height: 2px;">
+                                <div class="progress-bar bg-white" style="width: 100%"></div>
+                            </div>
+                            <div class="row g-0 mt-1">
+                                <div class="col-6">
+                                    <div class="text-white">
+                                        <span class="d-block opacity-75">Active</span>
+                                        <h4 class="mb-0">{{ $activeInboxes ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-white text-end">
+                                        <span class="d-block opacity-75">Pending</span>
+                                        <h4 class="mb-0">{{ $pendingInboxes ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Subscription Info -->
+            <!-- <div class="col-xl-3 col-sm-6">
+                <div class="card overflow-hidden" style="background: linear-gradient(45deg, #11998e, #38ef7d);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
+                                    <i class="ti ti-currency-dollar fs-4 text-white"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="text-white mb-1">Subscription</h5>
+                            </div>
+                        </div>
+                        @if(isset($nextBillingInfo))
+                        <div class="d-flex flex-column gap-3">
+                            <div class="text-white">
+                                <span class="d-block opacity-75">Next Payment</span>
+                                <h4 class="mb-0 mt-1">{{ $nextBillingInfo['next_billing_at'] ?? 'N/A' }}</h4>
+                            </div>
+                            <div class="progress bg-white bg-opacity-25" style="height: 2px;">
+                                <div class="progress-bar bg-white" style="width: 100%"></div>
+                            </div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="text-white">
+                                        <span class="d-block opacity-75">Amount</span>
+                                        <h4 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <div class="text-white">
+                                        <span class="d-block opacity-75">Status</span>
+                                        <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill mt-1">
+                                            {{ ucfirst($subscription->status ?? 'N/A') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                        <div class="text-white text-center py-3">
+                            No active subscription
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div> -->
 
+            <!-- Order Statistics -->
+            <!-- <div class="col-xl-3 col-sm-6">
+                <div class="card overflow-hidden" style="background: linear-gradient(45deg, #FF512F, #F09819);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
+                                    <i class="ti ti-shopping-cart fs-4 text-white"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="text-white mb-1">Orders</h5>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-white">
+                                    <span class="d-block opacity-75">Total Orders</span>
+                                    <h3 class="mb-0 mt-1">{{ $totalOrders ?? 0 }}</h3>
+                                </div>
+                                <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
+                                    <i class="ti ti-shopping me-1"></i> Total
+                                </span>
+                            </div>
+                            <div class="progress bg-white bg-opacity-25" style="height: 2px;">
+                                <div class="progress-bar bg-white" style="width: 100%"></div>
+                            </div>
+                            <div class="row g-0 mt-1">
+                                <div class="col-6">
+                                    <div class="text-white">
+                                        <span class="d-block opacity-75">Pending</span>
+                                        <h4 class="mb-0">{{ $pendingOrders ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-white text-end">
+                                        <span class="d-block opacity-75">Completed</span>
+                                        <h4 class="mb-0">{{ $completedOrders ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- Support Tickets -->
+            <!-- <div class="col-xl-3 col-sm-6">
+                <div class="card overflow-hidden" style="background: linear-gradient(45deg, #834d9b, #d04ed6);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
+                                    <i class="ti ti-ticket fs-4 text-white"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="text-white mb-1">Support</h5>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-white">
+                                    <span class="d-block opacity-75">Total Tickets</span>
+                                    <h3 class="mb-0 mt-1">{{ $totalTickets ?? 0 }}</h3>
+                                </div>
+                                <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
+                                    <i class="ti ti-ticket me-1"></i> Total
+                                </span>
+                            </div>
+                            <div class="progress bg-white bg-opacity-25" style="height: 2px;">
+                                <div class="progress-bar bg-white" style="width: 100%"></div>
+                            </div>
+                            <div class="row g-0 mt-1">
+                                <div class="col-6">
+                                    <div class="text-white">
+                                        <span class="d-block opacity-75">Pending</span>
+                                        <h4 class="mb-0">{{ $pendingTickets ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-white text-end">
+                                        <span class="d-block opacity-75">Resolved</span>
+                                        <h4 class="mb-0">{{ $resolvedTickets ?? 0 }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
 
             <div class="col-md-6">
                 <div class="swiper">
@@ -269,146 +453,131 @@
             <div class="col-xl-3 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
-                        <h6 class="mb-2 ">Average Daily Sales</h6>
-                        <p class="mb-0">Total Sales This Month</p>
-                        <h4 class="mb-0">$28,450</h4>
+                        <h6 class="mb-2">Orders Overview</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p class="mb-0">All Time Orders</p>
+                            <span class="badge bg-label-primary">
+                                <i class="ti ti-shopping-cart fs-5"></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-0 mt-2">{{ $totalOrders ?? 0 }}</h4>
                     </div>
-                    <div class="card-body px-0 pt-0 border-0" style="margin-top: -1rem;">
-                        <div id="salesChart"></div>
+                    <div class="card-body px-3 pt-0">
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <p class="mb-0">Pending Orders</p>
+                                <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-primary" style="width: {{ ($totalOrders > 0 ? ($pendingOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <p class="mb-0">Completed Orders</p>
+                                <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ ($totalOrders > 0 ? ($completedOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-
-
-            <div class="col-xl-3 col-sm-6">
+            <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card h-100 p-2">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
-                            <p class="mb-0 small">Sales Overview</p>
-                            <p class="card-text fw-medium text-success">+18.2%</p>
+                            <p class="mb-0">Inboxes Overview</p>
                         </div>
-                        <h4 class="card-title mb-1">$42.5k</h4>
+                        <h4 class="card-title mb-1">{{ $totalInboxes ?? 0 }} Total Inboxes</h4>
                     </div>
-                    <div class="card-body d-flex flex-column justify-content-between gap-3">
+                    <div class="card-body">
                         <div class="row">
-                            <div class="col-4">
-                                <div class="d-flex gap-2 align-items-center mb-2">
-                                    <span class="badge bg-label-info p-1 rounded">
-                                        <i class="ti ti-shopping-cart text-info fs-5"></i>
-                                    </span>
-                                    <p class="mb-0">Order</p>
-                                </div>
-                                <h5 class="mb-0 pt-1">62.2%</h5>
-                                <small class="opacity-50 fw-light">6,440</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="divider divider-vertical">
-                                    <div class="divider-text">
-                                        <span class="badge-divider-bg bg-label-secondary">VS</span>
+                            <div class="col-12 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-label-success p-1 rounded me-2">
+                                            <i class="ti ti-inbox-filled text-success fs-5"></i>
+                                        </span>
+                                        <p class="mb-0">Active Inboxes</p>
                                     </div>
+                                    <p class="mb-0 fw-semibold">{{ $activeInboxes ?? 0 }}</p>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: {{ ($totalInboxes > 0 ? ($activeInboxes / $totalInboxes * 100) : 0) }}%" role="progressbar"></div>
                                 </div>
                             </div>
-                            <div class="col-4 text-end">
-                                <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-                                    <p class="mb-0">Visits</p>
-                                    <span class="badge bg-label-primary p-1 rounded">
-                                        <i class="ti ti-link theme-text fs-5"></i>
-                                    </span>
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-label-warning p-1 rounded me-2">
+                                            <i class="ti ti-inbox text-warning fs-5"></i>
+                                        </span>
+                                        <p class="mb-0">Pending Inboxes</p>
+                                    </div>
+                                    <p class="mb-0 fw-semibold">{{ $pendingInboxes ?? 0 }}</p>
                                 </div>
-                                <h5 class="mb-0 pt-1">25.5%</h5>
-                                <small class="opacity-50 fw-light">12,749</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mt-6">
-                            <div class="progress w-100" style="height: 10px;">
-                                <div class="progress-bar bg-info" style="width: 70%" role="progressbar"
-                                    aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
-                                <div class="progress-bar" role="progressbar" style="width: 30%" aria-valuenow="30"
-                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" style="width: {{ ($totalInboxes > 0 ? ($pendingInboxes / $totalInboxes * 100) : 0) }}%" role="progressbar"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
+            
 
-
-
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
-                            <h5 class="mb-1">Earning Reports</h5>
-                            <p>Weekly Earnings Overview</p>
-                        </div>
-                        <div class="dropdown">
-                            <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                <a class="dropdown-item" href="javascript:void(0);">View
-                                    More</a>
-                                <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                            </div>
+                            <h5 class="mb-1">Current Subscription Overview</h5>
+                            <p>Subscription and billing details</p>
                         </div>
                     </div>
                     <div class="card-body pt-0">
-                        <div class="row align-items-center g-md-8">
-                            <div class="col-12 col-md-5 d-flex flex-column">
+                        <div class="row g-3">
+                            <div class="col-12">
                                 <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                    <h1 class="mb-2">$468</h1>
-                                    <div class="badge rounded bg-label-success">+4.2%</div>
+                                    <h2 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h2>
+                                    @if(isset($subscription) && $subscription->status === 'active')
+                                        <div class="badge rounded bg-label-success">Active</div>
+                                    @else
+                                        <div class="badge rounded bg-label-warning">No Active Plan</div>
+                                    @endif
                                 </div>
-                                <small class="">You informed of this week compared to last
-                                    week</small>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Next Billing Date</span>
+                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->next_billing_date ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Last Billing Date</span>
+                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y') : 'N/A' }}</h6>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="theme-text">Billing Period</span>
+                                        <h6 class="mb-0">Monthly</h6>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-12 col-md-7">
-                                <div id="weekBarChart"></div>
-                            </div>
-                        </div>
-                        <div class="rounded p-4 mt-4" style="border: 1px solid var(--input-border);">
-                            <div class="row gap-4 gap-sm-0">
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-primary p-1">
-                                            <i class="ti ti-currency-dollar theme-text fs-5"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Earnings</h6>
-                                    </div>
-                                    <h4 class="my-2">$545.69</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar" role="progressbar" style="width: 65%"
-                                            aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-info p-1">
-                                            <i class="ti ti-clock-share text-info fs-5"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Profit</h6>
-                                    </div>
-                                    <h4 class="my-2">$256.34</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: 50%"
-                                            aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="badge rounded bg-label-danger p-1">
-                                            <i class="ti ti-brand-paypal text-danger fs-5"></i>
-                                        </div>
-                                        <h6 class="mb-0 fw-normal">Expense</h6>
-                                    </div>
-                                    <h4 class="my-2">$74.19</h4>
-                                    <div class="progress w-75" style="height:4px">
-                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"
-                                            aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="mb-3">Plan Features</h6>
+                                @if(isset($subscription) && $subscription->plan && $subscription->plan->features)
+                                    <ul class="p-0 m-0">
+                                        @foreach($subscription->plan->features as $feature)
+                                        <li class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="ti ti-check text-success"></i>
+                                            <span>{{ $feature->title }} {{ $feature->pivot->value }}</span>
+                                        </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p class="text-muted mb-0">No active plan features</p>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -422,7 +591,7 @@
                     <div class="card-header border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
                             <h5 class="mb-1">Support Tracker</h5>
-                            <p>Last 7 Days</p>
+                            <!-- <p>Last 7 Days</p> -->
                         </div>
                         <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
@@ -439,7 +608,7 @@
                     <div class="card-body row pt-0">
                         <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
                             <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
-                                <h1 class="mb-0">164</h1>
+                                <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
                                 <p class="mb-0">Total Tickets</p>
                             </div>
                             <ul class="p-0 m-0">
@@ -449,7 +618,7 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-0 text-nowrap">New Tickets</h6>
-                                        <p class="small opacity-75">142</p>
+                                        <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                                 <li class="d-flex gap-3 align-items-start mb-2">
@@ -458,22 +627,22 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                                        <p class="small opacity-75">28</p>
+                                        <p class="small opacity-75">{{ $pendingTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                                 <li class="d-flex gap-3 align-items-start pb-1">
-                                    <div class="badge rounded bg-label-warning mt-1">
-                                        <i class="ti ti-clock-hour-10 fs-4 text-danger"></i>
+                                    <div class="badge rounded bg-label-success mt-1">
+                                        <i class="ti ti-check fs-4 text-success"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Response Time</h6>
-                                        <p class="small"> opacity-751 Day</p>
+                                        <h6 class="mb-0 text-nowrap">Resolved Tickets</h6>
+                                        <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                             </ul>
                         </div>
                         <div class="col-12 col-md-8">
-                            <div id="taskGaugeChart"></div>
+                            <div id="ticketPieChart"></div>
                         </div>
                     </div>
                 </div>
@@ -481,7 +650,7 @@
 
 
 
-            <div class="col-xxl-4 col-md-6 order-1 order-xl-0">
+            <div class="col-xxl-4 col-md-6">
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -494,8 +663,7 @@
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                <a class="dropdown-item" href="javascript:void(0);">View
-                                    More</a>
+                                <a class="dropdown-item" href="javascript:void(0);">View More</a>
                                 <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
                                 <a class="dropdown-item" href="javascript:void(0);">Delete</a>
                             </div>
@@ -518,73 +686,7 @@
                                     </div>
                                     <div class="user-progress">
                                         <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                            <i class=" fa fa-chevron-up"></i>
-                                            25.8%
-                                        </p>
-                                    </div>
-                                </div>
-                            </li>
-
-                            <li class="d-flex align-items-center mb-3">
-                                <div class="avatar flex-shrink-0 me-4">
-                                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        class="object-fit-cover" width="35" height="35"
-                                        style="border-radius: 50px;" alt="">
-                                </div>
-                                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                    <div class="me-2">
-                                        <div class="d-flex align-items-center">
-                                            <h6 class="mb-0 me-1">$8,567k</h6>
-                                        </div>
-                                        <small class="opacity-50">United states</small>
-                                    </div>
-                                    <div class="user-progress">
-                                        <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                            <i class=" fa fa-chevron-up"></i>
-                                            25.8%
-                                        </p>
-                                    </div>
-                                </div>
-                            </li>
-
-                            <li class="d-flex align-items-center mb-3">
-                                <div class="avatar flex-shrink-0 me-4">
-                                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        class="object-fit-cover" width="35" height="35"
-                                        style="border-radius: 50px;" alt="">
-                                </div>
-                                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                    <div class="me-2">
-                                        <div class="d-flex align-items-center">
-                                            <h6 class="mb-0 me-1">$8,567k</h6>
-                                        </div>
-                                        <small class="opacity-50">United states</small>
-                                    </div>
-                                    <div class="user-progress">
-                                        <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                            <i class=" fa fa-chevron-up"></i>
-                                            25.8%
-                                        </p>
-                                    </div>
-                                </div>
-                            </li>
-
-                            <li class="d-flex align-items-center">
-                                <div class="avatar flex-shrink-0 me-4">
-                                    <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        class="object-fit-cover" width="35" height="35"
-                                        style="border-radius: 50px;" alt="">
-                                </div>
-                                <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                    <div class="me-2">
-                                        <div class="d-flex align-items-center">
-                                            <h6 class="mb-0 me-1">$8,567k</h6>
-                                        </div>
-                                        <small class="opacity-50">United states</small>
-                                    </div>
-                                    <div class="user-progress">
-                                        <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                            <i class=" fa fa-chevron-up"></i>
+                                            <i class="fa fa-chevron-up"></i>
                                             25.8%
                                         </p>
                                     </div>
@@ -594,8 +696,6 @@
                     </div>
                 </div>
             </div>
-
-            
 
             <div class="col-8">
                 <div class="card p-3">
@@ -613,7 +713,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                               
                             </tbody>
                         </table>
                     </div>
@@ -626,6 +725,7 @@
 @push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Initialize Swiper
             var swiper = new Swiper(".swiper", {
                 loop: true,
                 speed: 1000,
@@ -642,330 +742,328 @@
                     prevEl: ".swiper-button-prev",
                 },
             });
-        });
 
-        var options = {
-            series: [{
-                data: [0, 40, 35, 70, 60, 80, 50]
-            }],
-            chart: {
-                type: 'area',
-                height: 135,
-                sparkline: {
-                    enabled: true
+            // Initialize all charts with error handling
+            function initializeChart(selector, options) {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    console.warn(`Chart container ${selector} not found`);
+                    return null;
                 }
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2,
-                colors: ['#00e396']
-            },
-            fill: {
-                colors: ['rgba(0,227,150,0.6162114504004728)'],
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.4,
-                    opacityTo: 0,
-                    stops: [0, 90, 100]
+                try {
+                    const chart = new ApexCharts(element, options);
+                    chart.render();
+                    return chart;
+                } catch (error) {
+                    console.error(`Error initializing chart ${selector}:`, error);
+                    return null;
                 }
-            },
-            tooltip: {
-                enabled: false,
-                enabledOnSeries: undefined,
-                shared: true,
-                followCursor: true,
-                intersect: false,
-                inverseOrder: false,
-                custom: undefined,
-                hideEmptySeries: true,
-                fillSeriesColor: false,
-                theme: false,
-                style: {
-                    fontSize: '12px',
-                    fontFamily: undefined
-                },
-                onDatasetHover: {
-                    highlightDataSeries: false,
-                },
-                x: {
-                    show: true,
-                    format: 'dd MMM',
-                    formatter: undefined,
-                },
-                y: {
-                    formatter: undefined,
-                    // title: {
-                    //     formatter: (seriesName) => seriesName,
-                    // },
-                },
-                z: {
-                    formatter: undefined,
-                    title: 'Size: '
-                },
-                marker: {
-                    show: true,
-                },
-                // items: {
-                //     display: flex,
-                // },
-                fixed: {
-                    enabled: false,
-                    position: 'topRight',
-                    offsetX: 0,
-                    offsetY: 0,
-                },
             }
-        };
 
-        var chart = new ApexCharts(document.querySelector("#salesChart"), options);
-        chart.render();
-
-
-        var options = {
-            series: [{
-                data: [20, 40, 35, 30, 60, 40, 45]
-            }],
-            chart: {
-                type: 'bar',
-                height: 180,
-                toolbar: {
-                    show: false
+            // Ticket distribution pie chart
+            const ticketOptions = {
+                series: [{{ $newTickets ?? 0 }}, {{ $pendingTickets ?? 0 }}, {{ $resolvedTickets ?? 0 }}],
+                chart: {
+                    type: 'pie',
+                    height: 300,
                 },
-            },
-            plotOptions: {
-                bar: {
-                    borderRadius: 3,
-                    columnWidth: '40%',
-                    distributed: true
-                }
-            },
-            colors: [
-                '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
-            ],
-            dataLabels: {
-                enabled: false
-            },
-            xaxis: {
-                categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-                labels: {
-                    style: {
-                        colors: '#A3A9BD',
-                        fontSize: '12px'
+                labels: ['New', 'Open', 'Resolved'],
+                colors: ['#7367f0', '#00cfe8', '#28c76f'],
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        colors: '#a3a9bd'
                     }
                 },
-                axisBorder: {
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total Tickets',
+                                    formatter: function (w) {
+                                        return {{ $totalTickets ?? 0 }};
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Sales chart options
+            const salesOptions = {
+                series: [{
+                    data: [0, 40, 35, 70, 60, 80, 50]
+                }],
+                chart: {
+                    type: 'area',
+                    height: 135,
+                    sparkline: {
+                        enabled: true
+                    }
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 2,
+                    colors: ['#00e396']
+                },
+                fill: {
+                    colors: ['rgba(0,227,150,0.6162114504004728)'],
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.4,
+                        opacityTo: 0,
+                        stops: [0, 90, 100]
+                    }
+                },
+                tooltip: {
+                    enabled: false
+                }
+            };
+
+            // Week bar chart options
+            const weekBarOptions = {
+                series: [{
+                    data: [20, 40, 35, 30, 60, 40, 45]
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 180,
+                    toolbar: {
+                        show: false
+                    },
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 3,
+                        columnWidth: '40%',
+                        distributed: true
+                    }
+                },
+                colors: [
+                    '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
+                ],
+                dataLabels: {
+                    enabled: false
+                },
+                xaxis: {
+                    categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+                    labels: {
+                        style: {
+                            colors: '#A3A9BD',
+                            fontSize: '12px'
+                        }
+                    },
+                    axisBorder: {
+                        show: false
+                    },
+                    axisTicks: {
+                        show: false
+                    }
+                },
+                yaxis: {
                     show: false
                 },
-                axisTicks: {
+                grid: {
                     show: false
+                },
+                tooltip: {
+                    enabled: false
                 }
-            },
-            yaxis: {
-                show: false
-            },
-            grid: {
-                show: false
-            },
-            tooltip: {
-                enabled: false
-            }
-        };
+            };
 
-        var chart = new ApexCharts(document.querySelector("#weekBarChart"), options);
-        chart.render();
-
-
-
-
-        var options = {
-            series: [85],
-            chart: {
-                height: 400,
-                type: 'radialBar',
-            },
-
-            plotOptions: {
-                radialBar: {
-                    startAngle: -135,
-                    endAngle: 135,
-                    hollow: {
-                        margin: 0,
-                        size: '60%',
-                        background: 'transparent',
-                    },
-                    track: {
-                        background: 'transparent',
-                        strokeWidth: '100%',
-                    },
-                    dataLabels: {
-                        show: true,
-                        name: {
-                            offsetY: 20,
-                            show: true,
-                            color: '#A3A9BD',
-                            fontSize: '14px',
-                            text: 'Completed Task'
+            // Task gauge chart options
+            const taskGaugeOptions = {
+                series: [85],
+                chart: {
+                    height: 400,
+                    type: 'radialBar',
+                },
+                plotOptions: {
+                    radialBar: {
+                        startAngle: -135,
+                        endAngle: 135,
+                        hollow: {
+                            margin: 0,
+                            size: '60%',
+                            background: 'transparent',
                         },
-                        value: {
-                            offsetY: -10,
-                            color: '#fff',
-                            fontSize: '28px',
+                        track: {
+                            background: 'transparent',
+                            strokeWidth: '100%',
+                        },
+                        dataLabels: {
                             show: true,
-                            formatter: function(val) {
-                                return val + "%";
+                            name: {
+                                offsetY: 20,
+                                show: true,
+                                color: '#A3A9BD',
+                                fontSize: '14px',
+                                text: 'Completed Task'
+                            },
+                            value: {
+                                offsetY: -10,
+                                color: '#fff',
+                                fontSize: '28px',
+                                show: true,
+                                formatter: function(val) {
+                                    return val + "%";
+                                }
+                            }
+                        },
+                    }
+                },
+                stroke: {
+                    dashArray: 12
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shade: 'dark',
+                        type: 'horizontal',
+                        gradientToColors: ['#7F6CFF'],
+                        stops: [0, 100]
+                    }
+                },
+                colors: ['#3D3D66'],
+                labels: ['Completed Task']
+            };
+
+            // Initialize all charts
+            initializeChart("#ticketPieChart", ticketOptions);
+            initializeChart("#salesChart", salesOptions);
+            initializeChart("#weekBarChart", weekBarOptions);
+            initializeChart("#taskGaugeChart", taskGaugeOptions);
+        });
+
+        // DataTable initialization code
+        function initDataTable(planId = '') {
+            console.log('Initializing DataTable for planId:', planId);
+            const tableId = '#myTable';
+            const $table = $(tableId);
+
+            if (!$table.length) {
+                console.error('Table not found with selector:', tableId);
+                return null;
+            }
+
+            try {
+                const table = $table.DataTable({
+                    processing: true,
+                    serverSide: true,
+                    responsive: true,
+                    autoWidth: false,
+                    dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+                    ajax: {
+                        url: "{{ route('specific.logs') }}",
+                        type: "GET",
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'Accept': 'application/json'
+                        },
+                        data: function (d) {
+                            d.plan_id = planId;
+                            d.user_name = $('#user_name_filter').val();
+                            d.email = $('#email_filter').val();
+                            d.status = $('#status_filter').val();
+                        },
+                        dataSrc: function (json) {
+                            console.log('Server response:', json);
+                            return json.data;
+                        },
+                        error: function (xhr, error, thrown) {
+                            console.error('DataTables error:', error);
+                            console.error('Server response:', xhr.responseText);
+
+                            if (xhr.status === 401) {
+                                window.location.href = "{{ route('login') }}";
+                            } else if (xhr.status === 403) {
+                                toastr.error('You do not have permission to view this data');
+                            } else {
+                                toastr.error('Error loading data: ' + error);
                             }
                         }
                     },
-                }
-            },
+                    columns: [
+                        { data: 'id', name: 'id' },
+                        { data: 'action_type', name: 'action_type' },
+                        { data: 'description', name: 'description' },
+                        { data: 'performed_by', name: 'performed_by' },
+                        { data: 'performed_on', name: 'performed_on' },
+                        { data: 'extra_data', name: 'extra_data' },
+                        { data: 'action', name: 'action', orderable: false, searchable: false }
+                    ],
+                    columnDefs: [
+                        { width: '10%', targets: 0 },
+                        { width: '20%', targets: 1 },
+                        { width: '15%', targets: 2 },
+                        { width: '25%', targets: 3 },
+                        { width: '15%', targets: 4 },
+                        { width: '15%', targets: 5 }
+                    ],
+                    order: [[1, 'desc']],
+                    drawCallback: function (settings) {
+                        const counters = settings.json?.counters;
 
-            // ✅ Make it segmented like bars
-            stroke: {
-                dashArray: 12
-            },
-
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shade: 'dark',
-                    type: 'horizontal',
-                    gradientToColors: ['#7F6CFF'],
-                    stops: [0, 100]
-                }
-            },
-
-            colors: ['#3D3D66'],
-            labels: ['Completed Task']
-        };
-
-        var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
-        chart.render();
-    </script>
-    <script>
-    function initDataTable(planId = '') {
-        console.log('Initializing DataTable for planId:', planId);
-        const tableId = '#myTable';
-        const $table = $(tableId);
-
-        if (!$table.length) {
-            console.error('Table not found with selector:', tableId);
-            return null;
-        }
-
-        try {
-            const table = $table.DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                autoWidth: false,
-                dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
-                ajax: {
-                    url: "{{ route('specific.logs') }}",
-                    type: "GET",
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'Accept': 'application/json'
-                    },
-                    data: function (d) {
-                        d.plan_id = planId;
-                        d.user_name = $('#user_name_filter').val();
-                        d.email = $('#email_filter').val();
-                        d.status = $('#status_filter').val();
-                    },
-                    dataSrc: function (json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
-                    error: function (xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading data: ' + error);
+                        if (counters) {
+                            $('#total_counter').text(counters.total);
+                            $('#active_counter').text(counters.active);
+                            $('#inactive_counter').text(counters.inactive);
                         }
+
+                        $('[data-bs-toggle="tooltip"]').tooltip();
+                        this.api().columns.adjust();
+                        this.api().responsive?.recalc();
+                    },
+                    initComplete: function () {
+                        console.log('Table initialization complete');
+                        this.api().columns.adjust();
+                        this.api().responsive?.recalc();
+
+                        // 🔽 Append your custom button next to the search bar
+                        // const button = `
+                        //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
+                        //             style="padding: .4rem 1rem"
+                        //             type="button"
+                        //             data-bs-toggle="offcanvas"
+                        //             data-bs-target="#offcanvasAddAdmin"
+                        //             aria-controls="offcanvasAddAdmin">
+                        //         + Add New Record
+                        //     </button>
+                        // `;
+
+                        // $('.dataTables_filter').append(button);
                     }
-                },
-                columns: [
-                    { data: 'id', name: 'id' },
-                    { data: 'action_type', name: 'action_type' },
-                    { data: 'description', name: 'description' },
-                    { data: 'performed_by', name: 'performed_by' },
-                    { data: 'performed_on', name: 'performed_on' },
-                    { data: 'extra_data', name: 'extra_data' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
-                ],
-                columnDefs: [
-                    { width: '10%', targets: 0 },
-                    { width: '20%', targets: 1 },
-                    { width: '15%', targets: 2 },
-                    { width: '25%', targets: 3 },
-                    { width: '15%', targets: 4 },
-                    { width: '15%', targets: 5 }
-                ],
-                order: [[1, 'desc']],
-                drawCallback: function (settings) {
-                    const counters = settings.json?.counters;
+                });
 
-                    if (counters) {
-                        $('#total_counter').text(counters.total);
-                        $('#active_counter').text(counters.active);
-                        $('#inactive_counter').text(counters.inactive);
+                // Optional loading indicator
+                table.on('processing.dt', function (e, settings, processing) {
+                    const wrapper = $(tableId + '_wrapper');
+                    if (processing) {
+                        wrapper.addClass('loading');
+                        if (!wrapper.find('.dt-loading').length) {
+                            wrapper.append('<div class="dt-loading">Loading...</div>');
+                        }
+                    } else {
+                        wrapper.removeClass('loading');
+                        wrapper.find('.dt-loading').remove();
                     }
+                });
 
-                    $('[data-bs-toggle="tooltip"]').tooltip();
-                    this.api().columns.adjust();
-                    this.api().responsive?.recalc();
-                },
-                initComplete: function () {
-                    console.log('Table initialization complete');
-                    this.api().columns.adjust();
-                    this.api().responsive?.recalc();
+                return table;
+            } catch (error) {
+                console.error('Error initializing DataTable:', error);
+                toastr.error('Error initializing table. Please refresh the page.');
+            }
 
-                    // 🔽 Append your custom button next to the search bar
-                    // const button = `
-                    //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                    //             style="padding: .4rem 1rem"
-                    //             type="button"
-                    //             data-bs-toggle="offcanvas"
-                    //             data-bs-target="#offcanvasAddAdmin"
-                    //             aria-controls="offcanvasAddAdmin">
-                    //         + Add New Record
-                    //     </button>
-                    // `;
-
-                    // $('.dataTables_filter').append(button);
-                }
-            });
-
-            // Optional loading indicator
-            table.on('processing.dt', function (e, settings, processing) {
-                const wrapper = $(tableId + '_wrapper');
-                if (processing) {
-                    wrapper.addClass('loading');
-                    if (!wrapper.find('.dt-loading').length) {
-                        wrapper.append('<div class="dt-loading">Loading...</div>');
-                    }
-                } else {
-                    wrapper.removeClass('loading');
-                    wrapper.find('.dt-loading').remove();
-                }
-            });
-
-            return table;
-        } catch (error) {
-            console.error('Error initializing DataTable:', error);
-            toastr.error('Error initializing table. Please refresh the page.');
         }
-
-    }
-    const table2 = initDataTable();
-    table2.columns.adjust();
-    table2.responsive.recalc();
-    console.log('Adjusting columns for table:', table2.table().node().id);
+        const table2 = initDataTable();
+        table2.columns.adjust();
+        table2.responsive.recalc();
+        console.log('Adjusting columns for table:', table2.table().node().id);
     </script>
 @endpush
