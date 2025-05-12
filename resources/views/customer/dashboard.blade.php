@@ -167,7 +167,7 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="text-white text-end">
-                                        <span class="d-block opacity-75">Pending</span>
+                                        <span class="d-block opacity-75">Pending/Issue</span>
                                         <h4 class="mb-0">{{ $pendingInboxes ?? 0 }}</h4>
                                     </div>
                                 </div>

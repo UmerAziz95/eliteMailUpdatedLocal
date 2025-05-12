@@ -545,34 +545,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="col-12">
-                <div class="card p-3">
-                    <!-- heading  -->
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Recent Activity</h5>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="activityTable" class="display w-100">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Action</th>
-                                    <th>Description</th>
-                                    <th>Performed On</th>
-                                    <th>Data</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             <div class="col-12">
                 <div class="card p-3">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between">
@@ -601,6 +573,34 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12">
+                <div class="card p-3">
+                    <!-- heading  -->
+                    <div class="card-header border-0 d-flex justify-content-between">
+                        <div class="card-title mb-0">
+                            <h5 class="mb-1">Recent Activity</h5>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="activityTable" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>Performed On</th>
+                                    <th>Data</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            
 
             
 
