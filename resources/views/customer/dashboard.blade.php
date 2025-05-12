@@ -650,7 +650,7 @@
 
 
 
-            <div class="col-xxl-4 col-md-6">
+            <!-- <div class="col-xxl-4 col-md-6">
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -695,10 +695,16 @@
                         </ul>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
-            <div class="col-8">
+            <div class="col-12">
                 <div class="card p-3">
+                    <!-- heading  -->
+                    <div class="card-header border-0 d-flex justify-content-between">
+                        <div class="card-title mb-0">
+                            <h5 class="mb-1">Recent Activity</h5>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="myTable" class="display">
                             <thead>
