@@ -31,21 +31,24 @@ class OrderController extends Controller
 
     public function __construct()
     {
-        $this->statuses = Status::pluck('badge', 'name')->toArray();
+        $this->statuses = Status::get();
     }
   public function index()
 {
     $plans = Plan::all();
     $userId = auth()->id();
     $orders = Order::all();
+    $statuses = $this->statuses;
 
     $totalOrders = $orders->count();
 
     $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
-    $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
-    $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
-    $expiredOrders = $orders->where('status_manage_by_admin', 'expired')->count();
+    $inApprovalOrders = $orders->where('status_manage_by_admin', 'in-approval')->count();
     $approvedOrders = $orders->where('status_manage_by_admin', 'approved')->count();
+    $rejectOrders = $orders->where('status_manage_by_admin', 'reject')->count();
+    $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
+    $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
+    $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
 
     $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
     $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -57,18 +60,20 @@ class OrderController extends Controller
         ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
         : 0;
 
-    $statuses = $this->statuses;
+   
 
     return view('admin.orders.orders', compact(
         'plans', 
         'totalOrders', 
         'pendingOrders', 
-        'completedOrders', 
+        'inApprovalOrders',
+        'approvedOrders',
+        'rejectOrders',
         'inProgressOrders',
+        'cancelledOrders',
+        'completedOrders', 
         'percentageChange',
-        'statuses',
-        'expiredOrders',
-        'approvedOrders'
+        'statuses'
     ));
 }
 
