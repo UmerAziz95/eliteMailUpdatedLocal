@@ -3,6 +3,35 @@
 @section('title', 'Dashboard')
 
 @push('styles')
+    <!-- Additional styles for statistics cards -->
+    <style>
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-icon {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .bg-soft-primary {
+            background-color: rgba(115, 103, 240, 0.12);
+        }
+        .bg-soft-success {
+            background-color: rgba(40, 199, 111, 0.12);
+        }
+        .bg-soft-warning {
+            background-color: rgba(255, 159, 67, 0.12);
+        }
+    </style>
+@endpush
+
+@push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 <style>
     .swiper {

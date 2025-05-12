@@ -635,7 +635,7 @@
                                         <i class="ti ti-check fs-4 text-success"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Resolved Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">Closed Tickets</h6>
                                         <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -773,8 +773,8 @@
                     type: 'pie',
                     height: 300,
                 },
-                labels: ['New', 'Open', 'Resolved'],
-                colors: ['#7367f0', '#00cfe8', '#28c76f'],
+                labels: ['New', 'Open', 'Closed'],
+                colors: ['#9b86e4', '#dc3545', '#df7040'],
                 legend: {
                     position: 'bottom',
                     labels: {
@@ -785,7 +785,7 @@
                     pie: {
                         donut: {
                             labels: {
-                                show: true,
+                                show: false,
                                 total: {
                                     show: true,
                                     label: 'Total Tickets',

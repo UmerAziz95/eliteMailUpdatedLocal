@@ -660,8 +660,8 @@
                     type: 'pie',
                     height: 350,
                 },
-                labels: ['New', 'In Progress', 'Resolved'],
-                colors: ['#7367f0', '#ff9f43', '#28c76f'],
+                labels: ['New', 'Open', 'Closed'],
+                colors: ['#9b86e4', '#dc3545', '#df7040'],
                 legend: {
                     position: 'bottom',
                     labels: {
@@ -672,7 +672,7 @@
                     pie: {
                         donut: {
                             labels: {
-                                show: true,
+                                show: false,
                                 total: {
                                     show: true,
                                     label: 'Total Tickets',
@@ -708,7 +708,7 @@
                     pie: {
                         donut: {
                             labels: {
-                                show: true,
+                                show: false,
                                 total: {
                                     show: true,
                                     label: 'Total Orders',
@@ -847,8 +847,12 @@
                 }
             };
 
-            var chart = new ApexCharts(document.querySelector("#salesChart"), options);
-            chart.render();
+            // Only initialize salesChart if the element exists
+            const salesChartElement = document.querySelector("#salesChart");
+            if (salesChartElement) {
+                var chart = new ApexCharts(salesChartElement, options);
+                chart.render();
+            }
 
 
             // Only initialize weekBarChart if the element exists
