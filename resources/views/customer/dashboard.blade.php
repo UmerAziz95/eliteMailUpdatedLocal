@@ -741,8 +741,8 @@
                                     <th>Order ID</th>
                                     <th>Date</th>
                                     <th>Plan</th>
+                                    <th>Domain Url</th>
                                     <th>Total Inboxes</th>
-                                    <th>Amount</th>
                                     <th>Status</th>
                                     <!-- <th>Actions</th> -->
                                 </tr>
@@ -981,46 +981,34 @@
                 ajax: {
                     url: "{{ route('customer.orders.data') }}"
                 },
-                columns: [
-                    {data: 'id', name: 'orders.id'},
-                    {data: 'created_at', name: 'orders.created_at'},
-                    {data: 'plan_name', name: 'plans.name'},
-                    {data: 'total_inboxes', name: 'reorder_infos.total_inboxes'},
-                    {
-                        data: 'amount', 
-                        name: 'orders.amount',
-                        render: function(data) {
-                            return '$' + parseFloat(data).toFixed(2);
-                        }
+                columns: [{
+                        data: 'id',
+                        name: 'orders.id'
                     },
                     {
-                        data: 'status', 
-                        name: 'orders.status_manage_by_admin',
-                        render: function(data, type, row) {
-                            let statusClass = {
-                                'pending': 'warning',
-                                'in-progress': 'info',
-                                'completed': 'success',
-                                'cancelled': 'danger',
-                                'approved': 'primary',
-                                'expired': 'secondary'
-                            }[data.toLowerCase()] || 'secondary';
-                            
-                            return '<span class="">' + 
-                                data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
-                        }
+                        data: 'created_at',
+                        name: 'orders.created_at'
+                    },
+                    {
+                        data: 'plan_name',
+                        name: 'plans.name'
+                    },
+                    {
+                        data: 'domain_forwarding_url',
+                        name: 'domain_forwarding_url'
+                    },
+                    {
+                        data: 'total_inboxes',
+                        name: 'total_inboxes'
+                    },
+                    {
+                        data: 'status',
+                        name: 'orders.status'
                     }
-                    // {
-                    //     data: 'id',
-                    //     name: 'action',
-                    //     orderable: false,
-                    //     searchable: false,
-                    //     render: function(data) {
-                    //         return '<a href="/customer/orders/' + data + '/view" class="btn btn-sm btn-primary">View</a>';
-                    //     }
-                    // }
                 ],
-                order: [[1, 'desc']]
+                order: [
+                    [1, 'desc']
+                ]
             });
         });
 
