@@ -470,7 +470,7 @@
                                         <i class="ti ti-alert-circle fs-4 text-danger"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Expired</h6>
+                                        <h6 class="mb-0 text-nowrap">Cancelled</h6>
                                         <p class="small opacity-75">{{ $expiredOrders ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -493,7 +493,7 @@
                             <h5 class="mb-1">Support Tracker</h5>
                             <p>Assigned Tickets Overview</p>
                         </div>
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -501,7 +501,7 @@
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
                                 <a class="dropdown-item" href="javascript:void(0);">View All</a>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body row pt-0">
                         <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">

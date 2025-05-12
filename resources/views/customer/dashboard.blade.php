@@ -724,6 +724,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Order History -->
+            <div class="col-12">
+                <div class="card p-3">
+                    <div class="card-header border-0 d-flex justify-content-between">
+                        <div class="card-title mb-0">
+                            <h5 class="mb-1">Order History</h5>
+                            <p>Your orders and their current status</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="ordersTable" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date</th>
+                                    <th>Plan</th>
+                                    <th>Total Inboxes</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 @endsection
@@ -939,11 +968,60 @@
                 labels: ['Completed Task']
             };
 
-            // Initialize all charts
+            // Initialize all charts and tables
             initializeChart("#ticketPieChart", ticketOptions);
             initializeChart("#salesChart", salesOptions);
             initializeChart("#weekBarChart", weekBarOptions);
             initializeChart("#taskGaugeChart", taskGaugeOptions);
+
+            // Initialize orders DataTable
+            const ordersTable = $('#ordersTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('customer.orders.data') }}"
+                },
+                columns: [
+                    {data: 'id', name: 'orders.id'},
+                    {data: 'created_at', name: 'orders.created_at'},
+                    {data: 'plan_name', name: 'plans.name'},
+                    {data: 'total_inboxes', name: 'reorder_infos.total_inboxes'},
+                    {
+                        data: 'amount', 
+                        name: 'orders.amount',
+                        render: function(data) {
+                            return '$' + parseFloat(data).toFixed(2);
+                        }
+                    },
+                    {
+                        data: 'status', 
+                        name: 'orders.status_manage_by_admin',
+                        render: function(data, type, row) {
+                            let statusClass = {
+                                'pending': 'warning',
+                                'in-progress': 'info',
+                                'completed': 'success',
+                                'cancelled': 'danger',
+                                'approved': 'primary',
+                                'expired': 'secondary'
+                            }[data.toLowerCase()] || 'secondary';
+                            
+                            return '<span class="badge bg-' + statusClass + '">' + 
+                                data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            return '<a href="/customer/orders/' + data + '/view" class="btn btn-sm btn-primary">View</a>';
+                        }
+                    }
+                ],
+                order: [[1, 'desc']]
+            });
         });
 
         // DataTable initialization code
@@ -976,10 +1054,6 @@
                             d.user_name = $('#user_name_filter').val();
                             d.email = $('#email_filter').val();
                             d.status = $('#status_filter').val();
-                        },
-                        dataSrc: function (json) {
-                            console.log('Server response:', json);
-                            return json.data;
                         },
                         error: function (xhr, error, thrown) {
                             console.error('DataTables error:', error);
@@ -1024,25 +1098,10 @@
                         $('[data-bs-toggle="tooltip"]').tooltip();
                         this.api().columns.adjust();
                         this.api().responsive?.recalc();
-                    },
-                    initComplete: function () {
+                    },                    initComplete: function () {
                         console.log('Table initialization complete');
                         this.api().columns.adjust();
                         this.api().responsive?.recalc();
-
-                        // 🔽 Append your custom button next to the search bar
-                        // const button = `
-                        //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                        //             style="padding: .4rem 1rem"
-                        //             type="button"
-                        //             data-bs-toggle="offcanvas"
-                        //             data-bs-target="#offcanvasAddAdmin"
-                        //             aria-controls="offcanvasAddAdmin">
-                        //         + Add New Record
-                        //     </button>
-                        // `;
-
-                        // $('.dataTables_filter').append(button);
                     }
                 });
 
@@ -1066,10 +1125,6 @@
                 toastr.error('Error initializing table. Please refresh the page.');
             }
 
-        }
-        const table2 = initDataTable();
-        table2.columns.adjust();
-        table2.responsive.recalc();
-        console.log('Adjusting columns for table:', table2.table().node().id);
+        }                initDataTable();
     </script>
 @endpush
