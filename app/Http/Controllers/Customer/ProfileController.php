@@ -18,7 +18,7 @@ class ProfileController extends Controller
                 'modalAddressAddress2' => 'nullable|string|max:255',
                 'modalAddressLandmark' => 'nullable|string|max:255',
                 'modalAddressCity' => 'required|string|max:255',
-                'modalAddressState' => 'required|string|max:255',
+                'modalAddressState' => 'nullable|string|max:255',
                 'modalAddressZipCode' => 'required|string|max:20',
             ]);
 

@@ -163,13 +163,13 @@
                     <input type="text" name="prefix_variant_2" class="form-control" required>
                 </div>
 
-                <div class="col-md-6">
+                <!-- <div class="col-md-6">
                     <label>Persona Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="persona_password" name="persona_password" class="form-control" required>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-md-6">
                     <label>Profile Picture Link</label>
