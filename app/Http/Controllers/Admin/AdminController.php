@@ -107,8 +107,43 @@ class AdminController extends Controller
 
     public function dashboard()
     {
-       
-        return view('admin.dashboard.dashboard');
+        // Get total customers (users with role_id 3)
+        $totalCustomers = User::where('role_id', 3)->count();
+
+        // Get total contractors (users with role_id 4)
+        $totalContractors = User::where('role_id', 4)->count();
+
+        // Get total inboxes sold (sum of total_inboxes from reorder_infos table where orders are not cancelled/rejected)
+        $totalInboxesSold = \App\Models\Order::whereNotIn('status_manage_by_admin', ['cancelled', 'reject', 'pending'])
+            ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
+            ->sum('reorder_infos.total_inboxes');
+
+        // Get recent orders with their status from status_manage_by_admin column
+        $recentOrders = \App\Models\Order::latest()
+            ->take(3)
+            ->get()
+            ->map(function($order) {
+                $order->status_color = match($order->status_manage_by_admin) {
+                    'pending' => 'warning',
+                    'in-progress' => 'info',
+                    'completed' => 'success',
+                    'cancelled', 'reject' => 'danger',
+                    default => 'secondary'
+                };
+                return $order;
+            });
+        // dd([
+        //     'totalCustomers'=>$totalCustomers,
+        //     'totalContractors'=>$totalContractors,
+        //     'totalInboxesSold'=>$totalInboxesSold,
+        //     'recentOrders'=>$recentOrders
+        // ]);
+        return view('admin.dashboard.dashboard', compact(
+            'totalCustomers',
+            'totalContractors', 
+            'totalInboxesSold',
+            'recentOrders'
+        ));
     }
 
     public function profile()

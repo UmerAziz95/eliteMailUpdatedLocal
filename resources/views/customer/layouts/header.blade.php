@@ -303,7 +303,57 @@
         notificationDropdownEl.addEventListener('show.bs.dropdown', function () {
             loadNotifications();
         });
+
+        // Initial notification count update
+        updateNotificationCount();
+        
+        // Update notifications every 30 seconds
+        setInterval(updateNotificationCount, 30000);
     });
+
+    function updateNotificationCount() {
+        fetch('/notifications/unread-count', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.status === 401) {
+                // Unauthorized - ignore silently
+                return;
+            }
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data || data.error) return;
+            
+            const bellIcon = document.querySelector('.ti-bell');
+            if (!bellIcon) return;
+            
+            const count = data.count;
+            const existingDot = bellIcon.querySelector('.notification-dot');
+            
+            if (count > 0) {
+                if (!existingDot) {
+                    const dot = document.createElement('span');
+                    dot.className = 'notification-dot badge-dot position-absolute';
+                    dot.style.top = '0';
+                    dot.style.right = '0';
+                    dot.style.transform = 'translate(50%, -50%)';
+                    bellIcon.appendChild(dot);
+                }
+            } else if (existingDot) {
+                existingDot.remove();
+            }
+        })
+        .catch(error => {
+            // Silently fail to avoid disrupting the user experience
+            console.error('Error fetching notification count:', error);
+        });
+    }
 
     function loadNotifications() {
         fetch('/notifications/list')
