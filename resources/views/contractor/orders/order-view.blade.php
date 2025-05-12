@@ -982,9 +982,9 @@
                     <div class="row text-muted">
                         <p class="text-danger">Only .csv files are accepted.</p>
                         <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
-                            <strong>email</strong>, and <strong>password</strong>.</p>
-                        <p><a 
-                                href="http://127.0.0.1:8000/assets/samples/emails.csv"><strong class="text-primary">Download
+                            <strong>email</strong>, and <strong>password</strong>.
+                        </p>
+                        <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                     Sample File</strong></a></p>
                     </div>
 
