@@ -377,6 +377,7 @@
 
         if (password && password !== confirmPassword) {
             toastr.error('Passwords do not match!');
+            
             return;
         }
 
