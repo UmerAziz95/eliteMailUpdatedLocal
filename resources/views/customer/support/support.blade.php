@@ -544,10 +544,10 @@ $(document).ready(function() {
             dataSrc: function(json) {
                 // Update counters when data is received
                 if (json.counters) {
-                    $('#totalTicketsCount').text(json.counters.totalTickets);
-                    $('#pendingTicketsCount').text(json.counters.pendingTickets);
-                    $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
-                    $('#completedTicketsCount').text(json.counters.completedTickets);
+                    // $('#totalTicketsCount').text(json.counters.totalTickets);
+                    // $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                    // $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
+                    // $('#completedTicketsCount').text(json.counters.completedTickets);
                 }
                 return json.data;
             }
