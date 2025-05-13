@@ -57,16 +57,17 @@
                         </div>
                         <label class="form-label">Select Status *</label>
                         <div class="d-flex flex-wrap gap-2">
-                            @php
+                            {{-- @php
                             $statuses = ["Pending", "Approved", "Reject", "Cancelled","In-Progress",
                             "Completed"];
-                            @endphp
+                            @endphp --}}
+                           {{-- {{ dd($statuses)}} --}}
                             @foreach($statuses as $status)
                             <div class="form-check me-3">
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                    value="{{ $status->name }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label" for="status_{{ $loop->index }}">
-                                    {{ $status }}
+                                    {{ $status->name }}
                                 </label>
                             </div>
                             @endforeach

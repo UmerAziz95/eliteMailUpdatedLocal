@@ -470,7 +470,7 @@
                                         <i class="ti ti-alert-circle fs-4 text-danger"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Expired</h6>
+                                        <h6 class="mb-0 text-nowrap">Cancelled</h6>
                                         <p class="small opacity-75">{{ $expiredOrders ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -493,7 +493,7 @@
                             <h5 class="mb-1">Support Tracker</h5>
                             <p>Assigned Tickets Overview</p>
                         </div>
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -501,7 +501,7 @@
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
                                 <a class="dropdown-item" href="javascript:void(0);">View All</a>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body row pt-0">
                         <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
@@ -515,7 +515,7 @@
                                         <i class="ti ti-ticket theme-text fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">New Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
                                         <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -533,7 +533,7 @@
                                         <i class="ti ti-check fs-4 text-success"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Resolved</h6>
+                                        <h6 class="mb-0 text-nowrap">Closed</h6>
                                         <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -545,34 +545,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="col-12">
-                <div class="card p-3">
-                    <!-- heading  -->
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Recent Activity</h5>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="activityTable" class="display w-100">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Action</th>
-                                    <th>Description</th>
-                                    <th>Performed On</th>
-                                    <th>Data</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             <div class="col-12">
                 <div class="card p-3">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between">
@@ -601,6 +573,34 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12">
+                <div class="card p-3">
+                    <!-- heading  -->
+                    <div class="card-header border-0 d-flex justify-content-between">
+                        <div class="card-title mb-0">
+                            <h5 class="mb-1">Recent Activity</h5>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="activityTable" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>Performed On</th>
+                                    <th>Data</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            
 
             
 
@@ -660,7 +660,7 @@
                     type: 'pie',
                     height: 350,
                 },
-                labels: ['New', 'Open', 'Closed'],
+                labels: ['Open', 'In-Progress', 'Closed'],
                 colors: ['#9b86e4', '#dc3545', '#df7040'],
                 legend: {
                     position: 'bottom',

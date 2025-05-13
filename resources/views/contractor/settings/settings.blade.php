@@ -671,7 +671,7 @@
 
 
 
-                        <div class="col-12 col-md-12" style="display: none;">
+                        <div class="col-12 col-md-12">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"

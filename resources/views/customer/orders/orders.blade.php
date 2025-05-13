@@ -94,7 +94,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
+                            <h6 class="text-heading">Completed Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
                             </div>
@@ -129,7 +129,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-4" style="display: none;">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -161,8 +161,68 @@
                             <small class="mb-0">Approved orders</small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
+                            <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-thumb-up"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">In-Approval Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($inApprovalOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Under review</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ti ti-file-check"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Rejected Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($rejectOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Not approved</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-x"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Cancelled Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($cancelledOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Orders cancelled</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-trash"></i>
                             </span>
                         </div>
                     </div>

@@ -214,14 +214,14 @@
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <!-- <div class="col-md-6">
                     <label>Persona Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->persona_password : '' }}" required>
                         <div class="invalid-feedback" id="persona_password-error"></div>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-md-6">
                     <label>Profile Picture Link</label>

@@ -215,7 +215,7 @@
                         <!-- Initial ticket message -->
                         <div class="message-bubble received">
                             <div class="message-content">
-                                {{ $ticket->description }}
+                                {!! $ticket->description !!}
                             </div>
                             <div class="message-meta">
                                 {{ $ticket->user->name }} - {{ $ticket->created_at->format('M d, Y H:i') }}

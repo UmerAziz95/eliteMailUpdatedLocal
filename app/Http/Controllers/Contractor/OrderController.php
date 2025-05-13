@@ -58,6 +58,9 @@ class OrderController extends Controller
         $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
         $approvedOrders = $orders->clone()->where('status_manage_by_admin', 'approved')->count();
+        $inApprovalOrders = $orders->clone()->where('status_manage_by_admin', 'in-approval')->count();
+        $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
+        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
 
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
@@ -74,13 +77,15 @@ class OrderController extends Controller
         return view('contractor.orders.orders', compact(
             'plans', 
             'totalOrders', 
-            'pendingOrders', 
-            'completedOrders', 
+            'pendingOrders',            'completedOrders',
             'inProgressOrders',
             'percentageChange',
             'statuses',
             'expiredOrders',
-            'approvedOrders'
+            'approvedOrders',
+            'inApprovalOrders',
+            'rejectOrders',
+            'cancelledOrders'
         ));
     }
     // neworder
@@ -349,10 +354,11 @@ class OrderController extends Controller
                 'last_name' => 'required',
                 'prefix_variant_1' => 'required',
                 'prefix_variant_2' => 'required',
-                'persona_password' => 'required',
+                // 'persona_password' => 'required',
                 'email_persona_password' => 'required',
             ]);
-
+            // persona_password set 123
+            $request->persona_password = '123';
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
@@ -436,9 +442,13 @@ class OrderController extends Controller
                 'assigned_to' => $order->assigned_to
             ]);
 
+            $orderCounts = $this->getOrderCounts();
+            $counts = $this->getOrderCounts();
             return response()->json([
                 'success' => true,
-                'message' => 'Order status updated successfully'
+                'message' => 'Order status updated successfully',
+                'counts' => $counts,
+                'counts' => $orderCounts
             ]);
 
         } catch (ValidationException $e) {
@@ -661,10 +671,11 @@ class OrderController extends Controller
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
                 }
             }
-    
+            $orderCounts = $this->getOrderCounts();
             return response()->json([
                 'success' => true,
-                'message' => 'Order Status Updated Successfully.'
+                'message' => 'Order Status Updated Successfully.',
+                'counts' => $orderCounts
             ]);
     
         } catch (\Exception $e) {
@@ -749,8 +760,24 @@ class OrderController extends Controller
         ]);
     }
     
-
-
-
+    private function getOrderCounts()
+    {
+        $orders = Order::where(function($query) {
+            $query->whereNull('assigned_to')
+                  ->orWhere('assigned_to', auth()->id());
+        });
+        
+        return [
+            'totalOrders' => $orders->count(),
+            'pendingOrders' => $orders->clone()->where('status_manage_by_admin', 'pending')->count(),
+            'completedOrders' => $orders->clone()->where('status_manage_by_admin', 'completed')->count(),
+            'inProgressOrders' => $orders->clone()->where('status_manage_by_admin', 'in-progress')->count(),
+            'expiredOrders' => $orders->clone()->where('status_manage_by_admin', 'expired')->count(),
+            'approvedOrders' => $orders->clone()->where('status_manage_by_admin', 'approved')->count(),
+            'inApprovalOrders' => $orders->clone()->where('status_manage_by_admin', 'in-approval')->count(),
+            'rejectOrders' => $orders->clone()->where('status_manage_by_admin', 'reject')->count(),
+            'cancelledOrders' => $orders->clone()->where('status_manage_by_admin', 'cancelled')->count(),
+        ];
+    }
 
 }

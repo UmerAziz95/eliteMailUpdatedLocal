@@ -65,8 +65,8 @@
 <section class="py-3">
 
     <div class="row gy-4 mb-4">
-      
-         <div class="col-sm-6 col-xl-4">
+
+        <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -74,7 +74,9 @@
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
-                                {{-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> --}}
+                                {{-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{
+                                    $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p>
+                                --}}
                             </div>
                             <small class="mb-0">Total Orders Placed</small>
                         </div>
@@ -112,7 +114,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
+                            <h6 class="text-heading">Completed Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
                             </div>
@@ -152,11 +154,11 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Expired Orders</h6>
+                            <h6 class="text-heading">Cancelled Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
+                                <h4 class="mb-0 me-2">{{ number_format($cancelledOrders) }}</h4>
                             </div>
-                            <small class="mb-0">Expired orders</small>
+                            <small class="mb-0">Cancelled orders</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-secondary">
@@ -187,15 +189,57 @@
                 </div>
             </div>
         </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Rejected Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($rejectOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Rejected orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-thumb-up"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">In-Approval Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($inApprovalOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">In-Approval orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-thumb-up"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample"
+                        role="button" aria-expanded="false" aria-controls="collapseExample">
                         <h5 class="mb-0">Filters</h5>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png" width="30" alt="">
+                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                            width="30" alt="">
                     </div>
                     <div class="collapse" id="collapseExample">
                         <div class="row gy-3">
@@ -218,11 +262,13 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="domainFilter" class="form-label">Domain URL</label>
-                                <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
+                                <input type="text" id="domainFilter" class="form-control"
+                                    placeholder="Search by domain">
                             </div>
                             <div class="col-md-3">
                                 <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
-                                <input type="number" id="totalInboxesFilter" class="form-control" placeholder="Search by total inboxes" min="1">
+                                <input type="number" id="totalInboxesFilter" class="form-control"
+                                    placeholder="Search by total inboxes" min="1">
                             </div>
                             <div class="col-md-3">
                                 <label for="startDate" class="form-label">Start Date</label>

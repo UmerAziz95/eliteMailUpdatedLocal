@@ -132,7 +132,7 @@
     <section class="py-3 overflow-hidden">
         <div class="row gy-4">
             <!-- Inbox Statistics -->
-            <div class="col-xl-3 col-sm-6">
+            <div class="col-xl-6 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #4776E6, #8E54E9);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -167,7 +167,7 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="text-white text-end">
-                                        <span class="d-block opacity-75">Pending</span>
+                                        <span class="d-block opacity-75">Pending/Issue</span>
                                         <h4 class="mb-0">{{ $pendingInboxes ?? 0 }}</h4>
                                     </div>
                                 </div>
@@ -318,7 +318,7 @@
                 </div>
             </div> -->
 
-            <div class="col-md-6">
+            <!-- <div class="col-md-6">
                 <div class="swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
@@ -446,11 +446,11 @@
                     </div>
                     <div class="swiper-pagination"></div>
                 </div>
-            </div>
+            </div> -->
 
 
 
-            <div class="col-xl-3 col-sm-6">
+            <div class="col-xl-6 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-2">Orders Overview</h6>
@@ -593,7 +593,7 @@
                             <h5 class="mb-1">Support Tracker</h5>
                             <!-- <p>Last 7 Days</p> -->
                         </div>
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -603,7 +603,7 @@
                                     More</a>
                                 <a class="dropdown-item" href="javascript:void(0);">Delete</a>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body row pt-0">
                         <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
@@ -617,7 +617,7 @@
                                         <i class="ti ti-ticket theme-text fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">New Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
                                         <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -626,7 +626,7 @@
                                         <i class="ti ti-circle-check fs-4 text-info"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">In-Progress Tickets</h6>
                                         <p class="small opacity-75">{{ $pendingTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -724,6 +724,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Order History -->
+            <div class="col-12">
+                <div class="card p-3">
+                    <div class="card-header border-0 d-flex justify-content-between">
+                        <div class="card-title mb-0">
+                            <h5 class="mb-1">Order History</h5>
+                            <p>Your orders and their current status</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="ordersTable" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date</th>
+                                    <th>Plan</th>
+                                    <th>Domain Url</th>
+                                    <th>Total Inboxes</th>
+                                    <th>Status</th>
+                                    <!-- <th>Actions</th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 @endsection
@@ -773,7 +802,7 @@
                     type: 'pie',
                     height: 300,
                 },
-                labels: ['New', 'Open', 'Closed'],
+                labels: ['Open', 'In-Progress', 'Closed'],
                 colors: ['#9b86e4', '#dc3545', '#df7040'],
                 legend: {
                     position: 'bottom',
@@ -939,11 +968,48 @@
                 labels: ['Completed Task']
             };
 
-            // Initialize all charts
+            // Initialize all charts and tables
             initializeChart("#ticketPieChart", ticketOptions);
             initializeChart("#salesChart", salesOptions);
             initializeChart("#weekBarChart", weekBarOptions);
             initializeChart("#taskGaugeChart", taskGaugeOptions);
+
+            // Initialize orders DataTable
+            const ordersTable = $('#ordersTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('customer.orders.data') }}"
+                },
+                columns: [{
+                        data: 'id',
+                        name: 'orders.id'
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'orders.created_at'
+                    },
+                    {
+                        data: 'plan_name',
+                        name: 'plans.name'
+                    },
+                    {
+                        data: 'domain_forwarding_url',
+                        name: 'domain_forwarding_url'
+                    },
+                    {
+                        data: 'total_inboxes',
+                        name: 'total_inboxes'
+                    },
+                    {
+                        data: 'status',
+                        name: 'orders.status'
+                    }
+                ],
+                order: [
+                    [1, 'desc']
+                ]
+            });
         });
 
         // DataTable initialization code
@@ -976,10 +1042,6 @@
                             d.user_name = $('#user_name_filter').val();
                             d.email = $('#email_filter').val();
                             d.status = $('#status_filter').val();
-                        },
-                        dataSrc: function (json) {
-                            console.log('Server response:', json);
-                            return json.data;
                         },
                         error: function (xhr, error, thrown) {
                             console.error('DataTables error:', error);
@@ -1024,25 +1086,10 @@
                         $('[data-bs-toggle="tooltip"]').tooltip();
                         this.api().columns.adjust();
                         this.api().responsive?.recalc();
-                    },
-                    initComplete: function () {
+                    },                    initComplete: function () {
                         console.log('Table initialization complete');
                         this.api().columns.adjust();
                         this.api().responsive?.recalc();
-
-                        // 🔽 Append your custom button next to the search bar
-                        // const button = `
-                        //     <button class="m-btn fw-semibold border-0 rounded-1 ms-2 text-white"
-                        //             style="padding: .4rem 1rem"
-                        //             type="button"
-                        //             data-bs-toggle="offcanvas"
-                        //             data-bs-target="#offcanvasAddAdmin"
-                        //             aria-controls="offcanvasAddAdmin">
-                        //         + Add New Record
-                        //     </button>
-                        // `;
-
-                        // $('.dataTables_filter').append(button);
                     }
                 });
 
@@ -1066,10 +1113,6 @@
                 toastr.error('Error initializing table. Please refresh the page.');
             }
 
-        }
-        const table2 = initDataTable();
-        table2.columns.adjust();
-        table2.responsive.recalc();
-        console.log('Adjusting columns for table:', table2.table().node().id);
+        }                initDataTable();
     </script>
 @endpush
