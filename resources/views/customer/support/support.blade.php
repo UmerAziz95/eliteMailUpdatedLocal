@@ -259,7 +259,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-primary">{{ $totalTickets }}</h1>
+                            <h1 class="mb-0 text-primary" id="totalTicketsCount">{{ $totalTickets }}</h1>
                         </div>
                         <div class="bg-label-primary rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-primary"></i>
@@ -277,7 +277,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-warning">{{ $pendingTickets }}</h1>
+                            <h1 class="mb-0 text-warning" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
                         </div>
                         <div class="bg-label-warning rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-warning"></i>
@@ -295,10 +295,28 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-success">{{ $completedTickets }}</h1>
+                            <h1 class="mb-0 text-success" id="completedTicketsCount">{{ $completedTickets }}</h1>
                         </div>
                         <div class="bg-label-success rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="fw-normal mb-0">In Progress tickets</p>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="role-heading">
+                            <h1 class="mb-0 text-info" id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                        </div>
+                        <div class="bg-label-info rounded-1 px-1">
+                            <i class="ti ti-ticket fs-2 text-info"></i>
                         </div>
                     </div>
                 </div>
@@ -360,7 +378,7 @@
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 <option value="open">Open</option>
-                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
                                 <option value="closed">Closed</option>
                             </select>
                         </div>
@@ -508,7 +526,7 @@
 $(document).ready(function() {
     // Initialize DataTable
     const table = $('#ticketsTable').DataTable({
-        responsive:true,
+        responsive: true,
         processing: true,
         serverSide: true,
         ajax: {
@@ -522,6 +540,16 @@ $(document).ready(function() {
                 d.status = $('#statusFilter').val();
                 d.start_date = $('#startDate').val();
                 d.end_date = $('#endDate').val();
+            },
+            dataSrc: function(json) {
+                // Update counters when data is received
+                if (json.counters) {
+                    $('#totalTicketsCount').text(json.counters.totalTickets);
+                    $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                    $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
+                    $('#completedTicketsCount').text(json.counters.completedTickets);
+                }
+                return json.data;
             }
         },
         columns: [
@@ -535,20 +563,22 @@ $(document).ready(function() {
         ]
     });
 
-    // Apply filters when the Filter button is clicked
-    $('#applyFilters').on('click', function() {
+    // Apply filters when any filter input changes
+    $('.form-control, .form-select').on('change', function() {
         table.draw();
     });
 
     // Clear all filters when the Clear button is clicked
     $('#clearFilters').on('click', function() {
-        $('#ticketNumberFilter').val('');
-        $('#subjectFilter').val('');
-        $('#categoryFilter').val('');
-        $('#priorityFilter').val('');
-        $('#statusFilter').val('');
-        $('#startDate').val('');
-        $('#endDate').val('');
+        $('.form-control, .form-select').val('');
+        table.draw();
+    });
+    
+    // Initially hide the filter button since we're auto-filtering
+    $('#applyFilters').hide();
+    
+    // Update counters on ticket status changes
+    $(document).on('ticketStatusChanged', function() {
         table.draw();
     });
 
@@ -651,7 +681,8 @@ $(document).ready(function() {
                 if (response.success) {
                     toastr.success(response.message);
                     $('#createTicketModal').modal('hide');
-                    table.ajax.reload();
+                    table.ajax.reload(null, false); // This will update both table and counters
+                    
                     form.reset();
                     quill.root.innerHTML = '';
                     $('#attachmentPreviews').empty();

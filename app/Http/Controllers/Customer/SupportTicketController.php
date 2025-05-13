@@ -24,9 +24,15 @@ class SupportTicketController extends Controller
             
         $totalTickets = $tickets->count();
         $pendingTickets = $tickets->where('status', 'open')->count();
+        $inProgressTickets = $tickets->where('status', 'in_progress')->count();
         $completedTickets = $tickets->where('status', 'closed')->count();
         
-        return view('customer.support.support', compact('totalTickets', 'pendingTickets', 'completedTickets'));
+        return view('customer.support.support', compact(
+            'totalTickets', 
+            'pendingTickets', 
+            'inProgressTickets', 
+            'completedTickets'
+        ));
     }
 
     public function store(Request $request)
@@ -229,7 +235,16 @@ class SupportTicketController extends Controller
             $tickets->whereDate('created_at', '<=', $request->end_date);
         }
 
+        // Get updated counters
+        $updatedCounts = [
+            'totalTickets' => SupportTicket::where('user_id', Auth::id())->count(),
+            'pendingTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'open')->count(),
+            'inProgressTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'in_progress')->count(),
+            'completedTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'closed')->count()
+        ];
+
         return DataTables::of($tickets)
+            ->with('counters', $updatedCounts)
             ->addColumn('action', function ($ticket) {
                 return '<div class="d-flex align-items-center gap-2">
                     <button class="bg-transparent p-0 border-0" onclick="viewTicket('.$ticket->id.')">
