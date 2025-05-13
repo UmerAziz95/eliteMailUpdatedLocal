@@ -254,7 +254,7 @@ class SupportTicketController extends Controller
                     'closed' => 'success',
                     default => 'secondary'
                 };
-                return '<span class="py-1 px-2 text-'.$statusClass.' border border-'.$statusClass.' rounded-2 bg-transparent">'.ucfirst($ticket->status).'</span>';
+                return '<span class="py-1 px-2 text-'.$statusClass.' border border-'.$statusClass.' rounded-2 bg-transparent">'.str_replace('_', ' ', ucfirst($ticket->status)).'</span>';
             })
             ->editColumn('priority', function ($ticket) {
                 $priorityClass = match($ticket->priority) {
