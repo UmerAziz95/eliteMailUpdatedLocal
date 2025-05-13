@@ -23,7 +23,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-primary">{{ $totalTickets }}</h1>
+                            <h1 class="mb-0 text-primary" id="totalTicketsCount">{{ $totalTickets }}</h1>
                         </div>
                         <div class="bg-label-primary rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-primary"></i>
@@ -37,11 +37,11 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Pending tickets</p>
+                        <p class="fw-normal mb-0">Open</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-warning">{{ $pendingTickets }}</h1>
+                            <h1 class="mb-0 text-warning" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
                         </div>
                         <div class="bg-label-warning rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-warning"></i>
@@ -59,7 +59,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-info">{{ $inProgressTickets }}</h1>
+                            <h1 class="mb-0 text-info" id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
                         </div>
                         <div class="bg-label-info rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-info"></i>
@@ -73,11 +73,11 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Completed</p>
+                        <p class="fw-normal mb-0">Closed</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-success">{{ $completedTickets }}</h1>
+                            <h1 class="mb-0 text-success" id="completedTicketsCount">{{ $completedTickets }}</h1>
                         </div>
                         <div class="bg-label-success rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-success"></i>
@@ -193,6 +193,15 @@
             serverSide: true,
             ajax: {
                 url: "{{ route('admin.support.tickets') }}",
+                dataSrc: function(json) {
+                    if (json.counters) {
+                        // $('#totalTicketsCount').text(json.counters.totalTickets);
+                        // $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                        // $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
+                        // $('#completedTicketsCount').text(json.counters.completedTickets);
+                    }
+                    return json.data;
+                },
                 data: function(d) {
                     d.ticket_number = $('#ticketNumberFilter').val();
                     d.subject = $('#subjectFilter').val();

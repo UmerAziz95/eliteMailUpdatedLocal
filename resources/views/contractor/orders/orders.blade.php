@@ -54,7 +54,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="totalOrders">{{ number_format($totalOrders) }}</h4>
                                 <!-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> -->
                             </div>
                             <small class="mb-0">Total orders placed</small>
@@ -76,7 +76,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Pending Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="pendingOrders">{{ number_format($pendingOrders) }}</h4>
                             </div>
                             <small class="mb-0">Awaiting admin review</small>
                         </div>
@@ -94,9 +94,9 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
+                            <h6 class="text-heading">Completed Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="completedOrders">{{ number_format($completedOrders) }}</h4>
                             </div>
                             <small class="mb-0">Fully processed orders</small>
                         </div>
@@ -116,7 +116,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">In-Progress Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="inProgressOrders">{{ number_format($inProgressOrders) }}</h4>
                             </div>
                             <small class="mb-0">Currently processing</small>
                         </div>
@@ -134,9 +134,69 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
+                            <h6 class="text-heading">In-Approval Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="inApprovalOrders">{{ number_format($inApprovalOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Orders in approval</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-hourglass"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Rejected Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="rejectOrders">{{ number_format($rejectOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Rejected orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-x"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Cancelled Orders</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="cancelledOrders">{{ number_format($cancelledOrders) }}</h4>
+                            </div>
+                            <small class="mb-0">Cancelled orders</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-secondary">
+                                <i class="ti ti-ban"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4" style="display: none;">
+            <div class="card p-2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
                             <h6 class="text-heading">Expired Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="expiredOrders">{{ number_format($expiredOrders) }}</h4>
                             </div>
                             <small class="mb-0">Expired orders</small>
                         </div>
@@ -156,7 +216,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Approved Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($approvedOrders) }}</h4>
+                                <h4 class="mb-0 me-2" id="approvedOrders">{{ number_format($approvedOrders) }}</h4>
                             </div>
                             <small class="mb-0">Approved orders</small>
                         </div>
@@ -270,6 +330,24 @@
 
 @push('scripts')
 <script>
+    // Add this at the beginning of your script section
+    function formatNumber(number) {
+        return new Intl.NumberFormat().format(number);
+    }
+    
+    function updateCounters(counts) {
+        console.log('Updating counters with:', counts);
+        Object.keys(counts).forEach(key => {
+            const element = document.getElementById(key);
+            if(element) {
+                console.log(`Updating ${key} to ${counts[key]}`);
+                element.textContent = formatNumber(counts[key]);
+            } else {
+                console.log(`Element with ID ${key} not found`);
+            }
+        });
+    }
+
     // Debug AJAX calls
     $(document).ajaxSend(function(event, jqXHR, settings) {
         console.log('AJAX Request:', {
@@ -300,7 +378,16 @@
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                return 'Ticket Details';
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                    }
+                },
                 autoWidth: false,
                 columnDefs: [{
                         width: '10%',
@@ -629,13 +716,19 @@
                         status_manage_by_admin: selectedStatus
                     },
                     success: function(response) {
-                        Swal.fire(
-                            'Updated!',
-                            'Order status has been updated.',
-                            'success'
-                        );
-                        if (window.orderTables && window.orderTables.all) {
-                            window.orderTables.all.ajax.reload(null, false);
+                        if (response.success) {
+                            // Update the counters
+                            if (response.counts) {
+                                updateCounters(response.counts);
+                            }
+                            Swal.fire(
+                                'Updated!',
+                                'Order status has been updated.',
+                                'success'
+                            );
+                            if (window.orderTables && window.orderTables.all) {
+                                window.orderTables.all.ajax.reload(null, false);
+                            }
                         }
                     },
                     error: function(xhr) {
@@ -724,25 +817,29 @@
                             Swal.showLoading();
                         }
                     });
-                },
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: response.message,
-                            timer: 1500
-                        }).then(() => {
-                            // Refresh the DataTable
-                            $('#myTable').DataTable().ajax.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: response.message || 'Something went wrong!'
-                        });
-                    }
+                },                    success: function(response) {
+                        if (response.success) {
+                            // Update the counters with the new values
+                            if (response.counts) {
+                                updateCounters(response.counts);
+                            }
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: response.message,
+                                timer: 1500
+                            }).then(() => {
+                                // Refresh the DataTable
+                                $('#myTable').DataTable().ajax.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Something went wrong!'
+                            });
+                        }
                 },
                 error: function(xhr) {
                     let errorMessage = 'Something went wrong!';
@@ -878,6 +975,9 @@
                     },
                     success: function(response) {
                         $('#cancel_subscription').modal('hide');
+                        if (response.success && response.counts) {
+                            updateCounters(response.counts);
+                        }
                         Swal.fire({
                             icon: 'success',
                             title: 'Success!',

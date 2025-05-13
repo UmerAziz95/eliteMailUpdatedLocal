@@ -107,7 +107,7 @@
                             @endif
                         </div>
 
-                        <div class="card p-3">
+                        <!-- <div class="card p-3">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center"
                                     style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -134,6 +134,30 @@
                                     @endif
                                 </div>
                             </div>
+                        </div> -->
+                        <div class="price-display-section">
+                            @if(isset($order->plan) && $order->plan)
+                                @php
+                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : 0;
+                                    $originalPrice = $order->plan->price * $totalInboxes;
+                                @endphp
+                                <div class="d-flex align-items-center gap-3">
+                                    <div>
+                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                    </div>
+                                    <div>
+                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                        <br>
+                                        <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{ $order->plan->duration }})</small></span>
+                                    </div>
+                                </div>
+                                <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
+                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
+                                <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
+                            @else
+                                <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small></h6>
+                                <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
+                            @endif
                         </div>
                     </div>
 
@@ -156,6 +180,11 @@
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Platform Login</span>
                                     <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                                </div>
+                                <!-- platform_password -->
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Platform Password</span>
+                                    <span>{{ $order->reorderInfo->first()->platform_password }}</span>
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">

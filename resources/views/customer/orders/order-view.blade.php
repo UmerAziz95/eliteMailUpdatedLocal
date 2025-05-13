@@ -130,7 +130,7 @@
                                     </div>
                                 </div>
                                 <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
-                                <h6><span class="theme-text">Discount:</span> 0%</h6>
+                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
                                 <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
                             @else
                                 <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small></h6>
@@ -159,6 +159,11 @@
                         <div class="d-flex flex-column mb-3">
                             <span class="opacity-50">Platform Login</span>
                             <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                        </div>
+                        <!-- platform_password -->
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform Password</span>
+                            <span>{{ $order->reorderInfo->first()->platform_password }}</span>
                         </div>
 
                         <div class="d-flex flex-column mb-3">
