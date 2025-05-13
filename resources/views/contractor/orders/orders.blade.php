@@ -382,7 +382,7 @@
                     details: {
                         display: $.fn.dataTable.Responsive.display.modal({
                             header: function(row) {
-                                return 'Ticket Details';
+                                return 'Order Details';
                             }
                         }),
                         renderer: $.fn.dataTable.Responsive.renderer.tableAll()
