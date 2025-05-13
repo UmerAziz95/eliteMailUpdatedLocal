@@ -273,7 +273,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Pending tickets</p>
+                        <p class="fw-normal mb-0">Open tickets</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
@@ -291,7 +291,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Completed tickets</p>
+                        <p class="fw-normal mb-0">Closed tickets</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">

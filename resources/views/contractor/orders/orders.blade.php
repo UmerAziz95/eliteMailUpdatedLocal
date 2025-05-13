@@ -378,7 +378,16 @@
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                return 'Ticket Details';
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                    }
+                },
                 autoWidth: false,
                 columnDefs: [{
                         width: '10%',

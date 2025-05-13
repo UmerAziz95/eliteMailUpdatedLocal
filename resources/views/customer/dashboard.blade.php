@@ -617,7 +617,7 @@
                                         <i class="ti ti-ticket theme-text fs-4"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">New Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
                                         <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -626,7 +626,7 @@
                                         <i class="ti ti-circle-check fs-4 text-info"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
+                                        <h6 class="mb-0 text-nowrap">In-Progress Tickets</h6>
                                         <p class="small opacity-75">{{ $pendingTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -802,7 +802,7 @@
                     type: 'pie',
                     height: 300,
                 },
-                labels: ['New', 'Open', 'Closed'],
+                labels: ['Open', 'In-Progress', 'Closed'],
                 colors: ['#9b86e4', '#dc3545', '#df7040'],
                 legend: {
                     position: 'bottom',

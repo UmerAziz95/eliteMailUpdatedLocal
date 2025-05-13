@@ -166,6 +166,17 @@ class SupportTicketController extends Controller
 
     public function getTickets(Request $request)
     {
+        // Get global counters for contractor's tickets
+        $assignedTickets = SupportTicket::where('category', 'order')
+            ->where('assigned_to', Auth::id());
+            
+        $counters = [
+            'totalTickets' => $assignedTickets->count(),
+            'pendingTickets' => (clone $assignedTickets)->where('status', 'open')->count(),
+            'inProgressTickets' => (clone $assignedTickets)->where('status', 'in_progress')->count(),
+            'completedTickets' => (clone $assignedTickets)->where('status', 'closed')->count(),
+        ];
+
         $tickets = SupportTicket::with(['user', 'order'])
             ->where(function($query) {
                 $query->where('assigned_to', Auth::id())
@@ -211,6 +222,7 @@ class SupportTicketController extends Controller
         }
 
         return DataTables::of($tickets)
+            ->with('counters', $counters)
             ->addColumn('action', function ($ticket) {
                 $assignedBadge = $ticket->assigned_to ? '' : '<span class="badge bg-info ms-2">Unassigned</span>';
                 return '<div class="d-flex align-items-center gap-2">
