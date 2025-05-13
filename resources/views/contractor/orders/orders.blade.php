@@ -94,7 +94,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
+                            <h6 class="text-heading">Completed Orders</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2" id="completedOrders">{{ number_format($completedOrders) }}</h4>
                             </div>
@@ -189,7 +189,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-4" style="display: none;">
             <div class="card p-2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
