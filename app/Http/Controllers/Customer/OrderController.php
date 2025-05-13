@@ -58,8 +58,19 @@ class OrderController extends Controller
         $approvedOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'approved')
             ->count();
-        
 
+        $inApprovalOrders = Order::where('user_id', $userId)
+            ->where('status_manage_by_admin', 'in-approval')
+            ->count();
+
+        $rejectOrders = Order::where('user_id', $userId)
+            ->where('status_manage_by_admin', 'reject')
+            ->count();
+
+        $cancelledOrders = Order::where('user_id', $userId)
+            ->where('status_manage_by_admin', 'cancelled')
+            ->count();
+            
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -85,7 +96,10 @@ class OrderController extends Controller
             'percentageChange',
             'statuses',
             'expiredOrders',
-            'approvedOrders'
+            'approvedOrders',
+            'inApprovalOrders',
+            'rejectOrders',
+            'cancelledOrders'
         ));
     }
     // edit
@@ -634,5 +648,22 @@ class OrderController extends Controller
                 'message' => 'Failed to update order statuses: ' . $e->getMessage()
             ], 422);
         }
+    }
+
+    private function getOrderCounts()
+    {
+        $userId = auth()->id();
+        
+        return [
+            'totalOrders' => Order::where('user_id', $userId)->count(),
+            'pendingOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'pending')->count(),
+            'completedOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'completed')->count(),
+            'inProgressOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'in-progress')->count(),
+            'expiredOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'expired')->count(),
+            'approvedOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'approved')->count(),
+            'inApprovalOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'in-approval')->count(),
+            'rejectOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'reject')->count(), 
+            'cancelledOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'cancelled')->count()
+        ];
     }
 }
