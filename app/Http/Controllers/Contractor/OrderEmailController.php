@@ -59,6 +59,13 @@ class OrderEmailController extends Controller
                     'profile_picture' => $emailData['profile_picture'] ?? null,
                 ]);
             });
+            // if order not assigned then assign the order to the contractor
+            $order = Order::where('id', $request->order_id)->first();
+            // assigned_to is null then assign the order to the contractor
+            if ($order->assigned_to == null) {
+                $order->assigned_to = auth()->id();
+                $order->save();
+            }
             $_temp = Order::where('id', $request->order_id)->first();
 
             // Create notification for customer
