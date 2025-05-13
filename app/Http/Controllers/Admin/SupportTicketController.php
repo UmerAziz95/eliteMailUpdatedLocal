@@ -84,6 +84,14 @@ class SupportTicketController extends Controller
     {
         $tickets = SupportTicket::with(['user'])
             ->select('support_tickets.*');
+            
+        // Get global counters
+        $counters = [
+            'totalTickets' => SupportTicket::count(),
+            'pendingTickets' => SupportTicket::where('status', 'open')->count(),
+            'inProgressTickets' => SupportTicket::where('status', 'in_progress')->count(),
+            'completedTickets' => SupportTicket::where('status', 'closed')->count(),
+        ];
 
         // Apply ticket number filter
         if ($request->has('ticket_number') && $request->ticket_number != '') {
@@ -126,6 +134,7 @@ class SupportTicketController extends Controller
         }
 
         return DataTables::of($tickets)
+            ->with('counters', $counters)
             ->addColumn('action', function ($ticket) {
                 return '<div class="d-flex align-items-center gap-2">
                     <button class="bg-transparent p-0 border-0" onclick="viewTicket('.$ticket->id.')">

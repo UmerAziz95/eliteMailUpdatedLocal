@@ -58,6 +58,9 @@ class OrderController extends Controller
         $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
         $approvedOrders = $orders->clone()->where('status_manage_by_admin', 'approved')->count();
+        $inApprovalOrders = $orders->clone()->where('status_manage_by_admin', 'in-approval')->count();
+        $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
+        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
 
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
@@ -74,13 +77,15 @@ class OrderController extends Controller
         return view('contractor.orders.orders', compact(
             'plans', 
             'totalOrders', 
-            'pendingOrders', 
-            'completedOrders', 
+            'pendingOrders',            'completedOrders',
             'inProgressOrders',
             'percentageChange',
             'statuses',
             'expiredOrders',
-            'approvedOrders'
+            'approvedOrders',
+            'inApprovalOrders',
+            'rejectOrders',
+            'cancelledOrders'
         ));
     }
     // neworder
@@ -769,6 +774,9 @@ class OrderController extends Controller
             'inProgressOrders' => $orders->clone()->where('status_manage_by_admin', 'in-progress')->count(),
             'expiredOrders' => $orders->clone()->where('status_manage_by_admin', 'expired')->count(),
             'approvedOrders' => $orders->clone()->where('status_manage_by_admin', 'approved')->count(),
+            'inApprovalOrders' => $orders->clone()->where('status_manage_by_admin', 'in-approval')->count(),
+            'rejectOrders' => $orders->clone()->where('status_manage_by_admin', 'reject')->count(),
+            'cancelledOrders' => $orders->clone()->where('status_manage_by_admin', 'cancelled')->count(),
         ];
     }
 
