@@ -526,7 +526,16 @@
 $(document).ready(function() {
     // Initialize DataTable
     const table = $('#ticketsTable').DataTable({
-        responsive: true,
+        responsive: {
+            details: {
+                display: $.fn.dataTable.Responsive.display.modal({
+                    header: function(row) {
+                        return 'Ticket Details';
+                    }
+                }),
+                renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+            }
+        },
         processing: true,
         serverSide: true,
         ajax: {
