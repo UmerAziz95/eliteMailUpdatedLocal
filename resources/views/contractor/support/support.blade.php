@@ -374,7 +374,7 @@
                 ],
                 order: [[6, 'desc']] // Sort by created_at by default
             });
-
+            
             // Apply filters
             $('#applyFilters').on('click', function() {
                 table.draw();

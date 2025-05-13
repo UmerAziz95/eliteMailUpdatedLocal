@@ -323,7 +323,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-lg-6 col-md-6">
+        <!-- <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card h-100">
                 <div class="card-body d-flex align-items-center justify-content-center">
                     <button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal" data-bs-target="#createTicketModal">
@@ -331,7 +331,7 @@
                     </button>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
     <div class="row mb-4">
         <div class="col-md-12">
@@ -562,7 +562,12 @@ $(document).ready(function() {
             { data: 'action', name: 'action', orderable: false, searchable: false }
         ]
     });
-
+    let createTicketButton = `<button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+                <i class="fa-solid fa-plus me-2"></i>Create New Ticket
+            </button>`;
+    // append the button to the top of the table filter
+    $('.dataTables_filter').append(createTicketButton);
+            
     // Apply filters when any filter input changes
     $('.form-control, .form-select').on('change', function() {
         table.draw();

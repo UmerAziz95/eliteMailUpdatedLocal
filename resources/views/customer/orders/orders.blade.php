@@ -161,7 +161,7 @@
                             <small class="mb-0">Approved orders</small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
+                            <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-thumb-up"></i>
                             </span>
                         </div>
@@ -181,7 +181,7 @@
                             <small class="mb-0">Under review</small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
+                            <span class="avatar-initial rounded bg-label-primary">
                                 <i class="ti ti-file-check"></i>
                             </span>
                         </div>
@@ -221,7 +221,7 @@
                             <small class="mb-0">Orders cancelled</small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-secondary">
+                            <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-trash"></i>
                             </span>
                         </div>
