@@ -736,7 +736,7 @@ class OrderController extends Controller
         foreach ($csv as $row) {
             if (count($row) !== count($headers)) {
                 continue; // Skip malformed row
-            }
+            }  
     
             $data = array_combine($headers, $row);
     
@@ -753,7 +753,13 @@ class OrderController extends Controller
     
         // Insert all at once
         OrderEmail::insert($emails);
-    
+        // if order not assigned then assign the order to the contractor
+        $order = Order::where('id', $request->order_id)->first();
+        // assigned_to is null then assign the order to the contractor
+        if ($order->assigned_to == null) {
+            $order->assigned_to = auth()->id();
+            $order->save();
+        }
         return response()->json([
             'message' => 'Emails imported successfully.',
             'count' => count($emails)

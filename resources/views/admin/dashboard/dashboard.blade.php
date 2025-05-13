@@ -3,32 +3,37 @@
 @section('title', 'Dashboard')
 
 @push('styles')
-    <!-- Additional styles for statistics cards -->
-    <style>
-        .stats-card {
-            transition: all 0.3s ease;
-        }
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-        .stats-icon {
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        .bg-soft-primary {
-            background-color: rgba(115, 103, 240, 0.12);
-        }
-        .bg-soft-success {
-            background-color: rgba(40, 199, 111, 0.12);
-        }
-        .bg-soft-warning {
-            background-color: rgba(255, 159, 67, 0.12);
-        }
-    </style>
+<!-- Additional styles for statistics cards -->
+<style>
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stats-icon {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    .bg-soft-primary {
+        background-color: rgba(115, 103, 240, 0.12);
+    }
+
+    .bg-soft-success {
+        background-color: rgba(40, 199, 111, 0.12);
+    }
+
+    .bg-soft-warning {
+        background-color: rgba(255, 159, 67, 0.12);
+    }
+</style>
 @endpush
 
 @push('styles')
@@ -217,26 +222,26 @@
                 <div class="card-body">
                     <h6 class="mb-3 fw-semibold">Recent Orders</h6>
                     @forelse($recentOrders ?? [] as $order)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-0 fs-sm">#{{ $order->id }}</h6>
-                                <span class="text-muted fs-xs">{{ $order->created_at?->diffForHumans() }}</span>
-                            </div>
-                            <span class="badge bg-{{ $order->status->color ?? 'secondary' }} rounded-pill">
-                                {{ $order->status_manage_by_admin ?? 'N/A' }}
-                            </span>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fs-sm">#{{ $order->id }}</h6>
+                            <span class="text-muted fs-xs">{{ $order->created_at?->diffForHumans() }}</span>
                         </div>
+                        <span class="badge bg-{{ $order->status->color ?? 'secondary' }} rounded-pill">
+                            {{ $order->status_manage_by_admin ?? 'N/A' }}
+                        </span>
+                    </div>
                     @empty
-                        <p class="text-muted mb-0">No recent orders</p>
+                    <p class="text-muted mb-0">No recent orders</p>
                     @endforelse
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="swiper w-100">
+            <div class="swiper w-100 h-100">
                 <div class="swiper-wrapper w-100">
-                    <div class="swiper-slide w-100 d-flex align-items-center p-4 justify-content-between">
+                    <div class="swiper-slide w-100 d-flex align-items-start p-4 justify-content-between">
                         <div class="w-100">
                             <h5 class="mb-0">Websites Analyticss</h5>
                             <span>Total 28.5% conversation rate</span>
@@ -277,7 +282,7 @@
                             width="160" class="d-none d-sm-block" alt="Slide 1">
                     </div>
 
-                    <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
+                    <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
                         <div class="w-100">
                             <h5 class="mb-0">Websites Analytics</h5>
                             <span>Total 28.5% conversation rate</span>
@@ -318,7 +323,7 @@
                             width="160" class="d-none d-sm-block" alt="Slide 1">
                     </div>
 
-                    <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
+                    <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
                         <div class="w-100">
                             <h5 class="mb-0">Websites Analytics</h5>
                             <span>Total 28.5% conversation rate</span>
@@ -364,21 +369,24 @@
         </div>
 
 
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-6 col-sm-6">
             <div class="card h-100">
-                <div class="card-header border-0 px-3 pt-3 pb-0">
-                    <h6 class="mb-2 ">Average Daily Sales</h6>
-                    <p class="mb-0">Total Sales This Month</p>
-                    <h4 class="mb-0">$28,450</h4>
-                </div>
-                <div class="card-body px-0 pt-0 border-0" style="margin-top: -1rem;">
-                    <div id="salesChart"></div>
+                <div class="d-flex align-items-start">
+                    <div class="border-0 px-3 pt-3 pb-0">
+                        <h6 class="mb-2 ">Average Daily Sales</h6>
+                        <p class="mb-0">Total Sales This Month</p>
+                        <h4 class="mb-0">$28,450</h4>
+                    </div>
+                    <div class="">
+                        {{-- <div id="salesChart"></div> --}}
+                        <div id="pieChart"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
 
-        <div class="col-xl-3 col-sm-6">
+        {{-- <div class="col-xl-3 col-sm-6">
             <div class="card h-100 p-2">
                 <div class="card-header">
                     <div class="d-flex justify-content-between">
@@ -427,26 +435,16 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
 
+        {{-- revenue overview graph --}}
         <div class="col-md-6">
             <div class="card h-100 p-2">
                 <div class="card-header border-0 pb-0 d-flex justify-content-between">
                     <div class="card-title mb-0">
                         <h5 class="mb-1">Earning Reports</h5>
-                        <p>Weekly Earnings Overview</p>
-                    </div>
-                    <div class="dropdown">
-                        <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                            <a class="dropdown-item" href="javascript:void(0);">View
-                                More</a>
-                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                        </div>
+
                     </div>
                 </div>
 
@@ -457,13 +455,70 @@
                                 <h1 class="mb-2">$468</h1>
                                 <div class="badge rounded bg-label-success">+4.2%</div>
                             </div>
-                            <small class="">You informed of this week compared to last
-                                week</small>
+                            <small class="">You informed of this week compared to last week</small>
                         </div>
+
                         <div class="col-12 col-md-7">
-                            <div id="weekBarChart"></div>
+                            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="pills-tab"
+                                role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="pills-month-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-month-revenue" type="button" role="tab"
+                                        aria-controls="pills-month-revenue" aria-selected="true">Month</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pills-week-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-week-revenue" type="button" role="tab"
+                                        aria-controls="pills-week-revenue" aria-selected="false">Week</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pills-day-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-day-revenue" type="button" role="tab"
+                                        aria-controls="pills-day-revenue" aria-selected="false">Day</button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="pills-tabContent">
+                                <!-- Month Tab -->
+                                <div class="tab-pane fade show active" id="pills-month-revenue" role="tabpanel"
+                                    aria-labelledby="pills-month-tab" tabindex="0">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label for="monthSelector" style="margin-right: 8px;">Select Month:</label>
+                                        <select class="form-select" id="monthSelector">
+                                            <option value="jan">January</option>
+                                            <option value="feb">February</option>
+                                            <option value="mar">March</option>
+                                            <option value="apr">April</option>
+                                            <option value="may">May</option>
+                                            <option value="jun">June</option>
+                                            <option value="jul">July</option>
+                                            <option value="aug">August</option>
+                                            <option value="sep">September</option>
+                                            <option value="oct">October</option>
+                                            <option value="nov">November</option>
+                                            <option value="dec">December</option>
+                                        </select>
+                                    </div>
+                                    <div id="monthLineChartRevenue"></div>
+                                </div>
+
+                                <!-- Week Tab -->
+                                <div class="tab-pane fade" id="pills-week-revenue" role="tabpanel"
+                                    aria-labelledby="pills-week-tab" tabindex="0">
+                                    <div id="weekBarChartRevenue"></div>
+                                </div>
+
+                                <!-- Day Tab -->
+                                <div class="tab-pane fade" id="pills-day-revenue" role="tabpanel"
+                                    aria-labelledby="pills-day-tab" tabindex="0">
+                                    <div id="dayBarChartRevenue"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    {{--
+                    <!-- Footer Section -->
                     <div class="rounded p-4 mt-4" style="border: 1px solid var(--input-border);">
                         <div class="row gap-4 gap-sm-0">
                             <div class="col-12 col-sm-4">
@@ -507,6 +562,83 @@
                                 </div>
                             </div>
                         </div>
+                    </div> --}}
+                </div>
+            </div>
+        </div>
+
+
+        {{-- subscription overview graph --}}
+        <div class="col-md-6">
+            <div class="card h-100 p-2">
+                <div class="card-header border-0 pb-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Subscriptions Overview</h5>
+                    </div>
+                </div>
+
+                <div class="card-body pt-0">
+                    <div class="row align-items-center g-md-8">
+                        <div class="col-12 col-md-5 d-flex flex-column">
+                            <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+                                <h1 class="mb-2">$468</h1>
+                                <div class="badge rounded bg-label-success">+4.2%</div>
+                            </div>
+                            <small>You informed of this week compared to last week</small>
+                        </div>
+
+                        <div class="col-12 col-md-7">
+                            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="pills-tab"
+                                role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="pills-month-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-month" type="button" role="tab"
+                                        aria-controls="pills-month" aria-selected="true">Month</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pills-week-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-week" type="button" role="tab" aria-controls="pills-week"
+                                        aria-selected="false">Week</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pills-day-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-day" type="button" role="tab" aria-controls="pills-day"
+                                        aria-selected="false">Day</button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="pills-tabContent">
+                                <div class="tab-pane fade show active" id="pills-month" role="tabpanel"
+                                    aria-labelledby="pills-month-tab" tabindex="0">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label for="monthSelector" style="margin-right: 8px;">Select Month:</label>
+                                        <select class="form-select" id="monthSelector">
+                                            <option value="jan">January</option>
+                                            <option value="feb">February</option>
+                                            <option value="mar">March</option>
+                                            <option value="apr">April</option>
+                                            <option value="may">May</option>
+                                            <option value="jun">June</option>
+                                            <option value="jul">July</option>
+                                            <option value="aug">August</option>
+                                            <option value="sep">September</option>
+                                            <option value="oct">October</option>
+                                            <option value="nov">November</option>
+                                            <option value="dec">December</option>
+                                        </select>
+                                    </div>
+                                    <div id="monthLineChartSubscription"></div>
+                                </div>
+                                <div class="tab-pane fade" id="pills-week" role="tabpanel"
+                                    aria-labelledby="pills-week-tab" tabindex="0">
+                                    <div id="weekBarChartSubscription"></div>
+                                </div>
+                                <div class="tab-pane fade" id="pills-day" role="tabpanel"
+                                    aria-labelledby="pills-day-tab" tabindex="0">
+                                    <div id="dayBarChartSubscription"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -514,7 +646,8 @@
 
 
 
-        <div class="col-12 col-md-6">
+
+        {{-- <div class="col-12 col-md-6">
             <div class="card h-100 p-2">
                 <div class="card-header border-0 d-flex justify-content-between">
                     <div class="card-title mb-0">
@@ -574,7 +707,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
 
 
@@ -781,7 +914,7 @@
             }
         },
         tooltip: {
-            enabled: false,
+            enabled: true,
             enabledOnSeries: undefined,
             shared: true,
             followCursor: true,
@@ -790,13 +923,13 @@
             custom: undefined,
             hideEmptySeries: true,
             fillSeriesColor: false,
-            theme: false,
+            theme: true,
             style: {
                 fontSize: '12px',
                 fontFamily: undefined
             },
             onDatasetHover: {
-                highlightDataSeries: false,
+                highlightDataSeries: true,
             },
             x: {
                 show: true,
@@ -820,7 +953,7 @@
             //     display: flex,
             // },
             fixed: {
-                enabled: false,
+                enabled: true,
                 position: 'topRight',
                 offsetX: 0,
                 offsetY: 0,
@@ -828,7 +961,7 @@
         }
     };
 
-    var chart = new ApexCharts(document.querySelector("#salesChart"), options);
+    var chart = new ApexCharts(document.querySelector("#salesChartRevenue"), options);
     chart.render();
 
 
@@ -882,76 +1015,378 @@
         }
     };
 
-    var chart = new ApexCharts(document.querySelector("#weekBarChart"), options);
+    var chart = new ApexCharts(document.querySelector("#dayBarChartRevenue"), options);
     chart.render();
 
+    var options = {
+        series: [{
+            data: [20, 40, 35, 30, 60, 40, 45]
+        }],
+        chart: {
+            type: 'bar',
+            height: 180,
+            toolbar: {
+                show: false
+            },
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 3,
+                columnWidth: '40%',
+                distributed: true
+            }
+        },
+        colors: [
+            '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
+        ],
+        dataLabels: {
+            enabled: false
+        },
+        xaxis: {
+            categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            labels: {
+                style: {
+                    colors: '#A3A9BD',
+                    fontSize: '12px'
+                }
+            },
+            axisBorder: {
+                show: false
+            },
+            axisTicks: {
+                show: false
+            }
+        },
+        yaxis: {
+            show: true,
+        },
+        grid: {
+            show: false
+        },
+        tooltip: {
+            enabled: true
+        }
+    };
 
+    var chart = new ApexCharts(document.querySelector("#weekBarChartRevenue"), options);
+    chart.render();
 
 
     var options = {
-        series: [85],
+        series: [{
+            data: [0, 40, 35, 70, 60, 80, 50]
+        }],
         chart: {
-            height: 400,
-            type: 'radialBar',
-        },
-
-        plotOptions: {
-            radialBar: {
-                startAngle: -135,
-                endAngle: 135,
-                hollow: {
-                    margin: 0,
-                    size: '60%',
-                    background: 'transparent',
-                },
-                track: {
-                    background: 'transparent',
-                    strokeWidth: '100%',
-                },
-                dataLabels: {
-                    show: true,
-                    name: {
-                        offsetY: 20,
-                        show: true,
-                        color: '#A3A9BD',
-                        fontSize: '14px',
-                        text: 'Completed Task'
-                    },
-                    value: {
-                        offsetY: -10,
-                        color: '#fff',
-                        fontSize: '28px',
-                        show: true,
-                        formatter: function(val) {
-                            return val + "%";
-                        }
-                    }
-                },
+            type: 'area',
+            height: 180,
+            sparkline: {
+                enabled: true
             }
         },
-
-        // ✅ Make it segmented like bars
         stroke: {
-            dashArray: 12
+            curve: 'smooth',
+            width: 2,
+            colors: ['#00e396']
         },
-
         fill: {
+            colors: ['rgba(0,227,150,0.6162114504004728)'],
             type: 'gradient',
             gradient: {
-                shade: 'dark',
-                type: 'horizontal',
-                gradientToColors: ['#7F6CFF'],
-                stops: [0, 100]
+                shadeIntensity: 1,
+                opacityFrom: 0.4,
+                opacityTo: 0,
+                stops: [0, 90, 100]
             }
         },
-
-        colors: ['#3D3D66'],
-        labels: ['Completed Task']
+        tooltip: {
+            enabled: true,
+            enabledOnSeries: true,
+            shared: true,
+            followCursor: true,
+            intersect: false,
+            inverseOrder: false,
+            custom: undefined,
+            hideEmptySeries: true,
+            fillSeriesColor: false,
+            theme: true,
+            style: {
+                fontSize: '12px',
+                fontFamily: undefined,
+            },
+            onDatasetHover: {
+                highlightDataSeries: false,
+            },
+            x: {
+                show: true,
+                format: 'dd MMM',
+                formatter: undefined,
+            },
+            y: {
+                formatter: undefined,
+                // title: {
+                //     formatter: (seriesName) => seriesName,
+                // },
+            },
+            z: {
+                formatter: undefined,
+                title: 'Size: '
+            },
+            marker: {
+                show: true,
+            },
+            // items: {
+            //     display: flex,
+            // },
+            fixed: {
+                enabled: false,
+                position: 'topRight',
+                offsetX: 0,
+                offsetY: 0,
+            },
+        }
     };
 
-    var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
+    var chart = new ApexCharts(document.querySelector("#monthLineChartRevenue"), options);
+      chart.render();
+
+      
+    var options = {
+      chart: {
+        type: 'pie',
+        height: 250
+      },
+      series: [44, 33, 23, 12, 43, 55, 76], // Values for the pie chart
+      labels: ['Apple', 'Banana', 'Cherry', 'Cherry', 'Cherry', 'Cherry'], // Labels for each slice
+      responsive: [{
+        breakpoint: 480,
+        options: {
+          chart: {
+            width: 300
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }]
+    };
+
+    var chart = new ApexCharts(document.querySelector("#pieChart"), options);
     chart.render();
+
+    // var options = {
+    //     series: [85],
+    //     chart: {
+    //         height: 400,
+    //         type: 'radialBar',
+    //     },
+
+    //     plotOptions: {
+    //         radialBar: {
+    //             startAngle: -135,
+    //             endAngle: 135,
+    //             hollow: {
+    //                 margin: 0,
+    //                 size: '60%',
+    //                 background: 'transparent',
+    //             },
+    //             track: {
+    //                 background: 'transparent',
+    //                 strokeWidth: '100%',
+    //             },
+    //             dataLabels: {
+    //                 show: true,
+    //                 name: {
+    //                     offsetY: 20,
+    //                     show: true,
+    //                     color: '#A3A9BD',
+    //                     fontSize: '14px',
+    //                     text: 'Completed Task'
+    //                 },
+    //                 value: {
+    //                     offsetY: -10,
+    //                     color: '#fff',
+    //                     fontSize: '28px',
+    //                     show: true,
+    //                     formatter: function(val) {
+    //                         return val + "%";
+    //                     }
+    //                 }
+    //             },
+    //         }
+    //     },
+
+    //     // ✅ Make it segmented like bars
+    //     stroke: {
+    //         dashArray: 12
+    //     },
+
+    //     fill: {
+    //         type: 'gradient',
+    //         gradient: {
+    //             shade: 'dark',
+    //             type: 'horizontal',
+    //             gradientToColors: ['#7F6CFF'],
+    //             stops: [0, 100]
+    //         }
+    //     },
+
+    //     colors: ['#3D3D66'],
+    //     labels: ['Completed Task']
+    // };
+
+    // var chart = new ApexCharts(document.querySelector("#taskGaugeChart"), options);
+    // chart.render();
+
+    // DAY - Subscription Chart
+var options = {
+    series: [{
+        data: [20, 40, 35, 30, 60, 40, 45]
+    }],
+    chart: {
+        type: 'bar',
+        height: 180,
+        toolbar: {
+            show: false
+        },
+    },
+    plotOptions: {
+        bar: {
+            borderRadius: 3,
+            columnWidth: '40%',
+            distributed: true
+        }
+    },
+    colors: ['#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'],
+    dataLabels: {
+        enabled: false
+    },
+    xaxis: {
+        categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+        labels: {
+            style: {
+                colors: '#A3A9BD',
+                fontSize: '12px'
+            }
+        },
+        axisBorder: {
+            show: false
+        },
+        axisTicks: {
+            show: false
+        }
+    },
+    yaxis: {
+        show: false
+    },
+    grid: {
+        show: false
+    },
+    tooltip: {
+        enabled: false
+    }
+};
+var chart = new ApexCharts(document.querySelector("#dayBarChartSubscription"), options);
+chart.render();
+
+// WEEK - Subscription Chart
+var options = {
+    series: [{
+        data: [20, 40, 35, 30, 60, 40, 45]
+    }],
+    chart: {
+        type: 'bar',
+        height: 180,
+        toolbar: {
+            show: false
+        },
+    },
+    plotOptions: {
+        bar: {
+            borderRadius: 3,
+            columnWidth: '40%',
+            distributed: true
+        }
+    },
+    colors: ['#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'],
+    dataLabels: {
+        enabled: false
+    },
+    xaxis: {
+        categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+        labels: {
+            style: {
+                colors: '#A3A9BD',
+                fontSize: '12px'
+            }
+        },
+        axisBorder: {
+            show: false
+        },
+        axisTicks: {
+            show: false
+        }
+    },
+    yaxis: {
+        show: true,
+    },
+    grid: {
+        show: false
+    },
+    tooltip: {
+        enabled: true
+    }
+};
+var chart = new ApexCharts(document.querySelector("#weekBarChartSubscription"), options);
+chart.render();
+
+// MONTH - Subscription Chart
+var options = {
+    series: [{
+        data: [0, 40, 35, 70, 60, 80, 50]
+    }],
+    chart: {
+        type: 'area',
+        height: 180,
+        sparkline: {
+            enabled: true
+        }
+    },
+    stroke: {
+        curve: 'smooth',
+        width: 2,
+        colors: ['#00e396']
+    },
+    fill: {
+        colors: ['rgba(0,227,150,0.6162114504004728)'],
+        type: 'gradient',
+        gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.4,
+            opacityTo: 0,
+            stops: [0, 90, 100]
+        }
+    },
+    tooltip: {
+        enabled: true,
+        shared: true,
+        followCursor: true,
+        intersect: false,
+        hideEmptySeries: true,
+        theme: true,
+        x: {
+            show: true,
+            format: 'dd MMM',
+        },
+        marker: {
+            show: true,
+        },
+    }
+};
+var chart = new ApexCharts(document.querySelector("#monthLineChartSubscription"), options);
+chart.render();
+
 </script>
+
 <script>
     // Debug AJAX calls  
     $(document).ajaxSend(function(event, jqXHR, settings) {
