@@ -278,7 +278,8 @@
                             <script>
                                 $(document).ready(function() {
                                     // Get the total_inboxes from order configuration
-                                    const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
+                                    // const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
+                                    const totalInboxes = {{ optional($order->reorderInfo->first())->total_inboxes ?? 0 }};
                                     const maxEmails = totalInboxes || 0; // If totalInboxes is 0, allow unlimited emails
 
                                     // Function declarations first
