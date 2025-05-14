@@ -643,6 +643,7 @@ class OrderController extends Controller
                 // Get user details and send email
                 $user = $order->user;
                 try {
+                    $user->email = "muhammad.farooq.raaj@gmail.com";
                     Mail::to($user->email)
                         ->queue(new OrderStatusChangeMail(
                             $order,
