@@ -49,6 +49,7 @@ class NotificationController extends Controller
 
     public function getUnreadCount()
     {
+       
         if (!auth()->check()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

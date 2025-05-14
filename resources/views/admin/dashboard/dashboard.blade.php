@@ -68,8 +68,8 @@
     }
 
     .swiper-pagination {
-        top: 10px !important;
-        left: 260px !important
+        top: 0px !important;
+        /* left: 260px !important */
     }
 
     .swiper-pagination-bullet-active {
@@ -159,61 +159,61 @@
         padding-block: .313rem;
         padding-inline: .252rem;
     }
+
+    .custom-dot {
+        font-size: 12px;
+        margin-bottom: .4rem
+    }
+
+    .custom-dot::marker {
+        color: var(--second-primary);
+    }
+
+    .bg-label-primary {
+        background-color:
+            color-mix(in sRGB, #2f3349 84%, var(--second-primary)) !important;
+    }
+
+    .bg-label-danger {
+        background-color:
+            color-mix(in sRGB, #2f3349 84%, red) !important;
+        color: rgb(255, 127, 127) !important;
+    }
+
+    .bg-label-warning {
+        background-color:
+            color-mix(in sRGB, #2f3349 84%, rgb(255, 150, 22)) !important;
+        color: rgb(255, 191, 114) !important;
+    }
+
+    .bg-label-success {
+        background-color:
+            color-mix(in sRGB, #2f3349 84%, rgb(16, 186, 16)) !important;
+        color: rgb(143, 255, 143) !important;
+    }
+
+    .nav-pills .nav-link {
+        background-color: transparent;
+        color: var(--extra-light)
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: var(--second-primary);
+        color: #fff
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="row gy-4">
-        <!-- Total Customers -->
-        <div class="col-xl-3 col-sm-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1 fw-semibold">Total Customers</h6>
-                            <h4 class="mb-0">{{ $totalCustomers ?? 0 }}</h4>
-                        </div>
-                        <div class="avatar avatar-sm bg-primary-subtle rounded p-2">
-                            <i class="fa-solid fa-users fs-4 text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
+        <div class="col-md-6">
+            @include('admin.dashboard.slider')
         </div>
 
-        <!-- Total Contractors -->
-        <div class="col-xl-3 col-sm-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1 fw-semibold">Total Contractors</h6>
-                            <h4 class="mb-0">{{ $totalContractors ?? 0 }}</h4>
-                        </div>
-                        <div class="avatar avatar-sm bg-warning-subtle rounded p-2">
-                            <i class="fa-solid fa-user-tie fs-4 text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Inboxes Sold -->
-        <div class="col-xl-3 col-sm-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1 fw-semibold">Total Inboxes Sold</h6>
-                            <h4 class="mb-0">{{ $totalInboxesSold ?? 0 }}</h4>
-                        </div>
-                        <div class="avatar avatar-sm bg-success-subtle rounded p-2">
-                            <i class="fa-solid fa-inbox fs-4 text-success"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="col-md-6">
+            @include('admin.dashboard.counter')
         </div>
 
         <!-- Recent Orders -->
@@ -225,9 +225,10 @@
                     <div class="d-flex align-items-center mb-3">
                         <div class="flex-grow-1">
                             <h6 class="mb-0 fs-sm">#{{ $order->id }}</h6>
-                            <span class="text-muted fs-xs">{{ $order->created_at?->diffForHumans() }}</span>
+                            <span class="opacity-50 fs-xs">{{ $order->created_at?->diffForHumans() }}</span>
                         </div>
-                        <span class="badge bg-{{ $order->status->color ?? 'secondary' }} rounded-pill">
+                        <span
+                            class="bg-{{ $order->status->color ?? 'secondary' }} bg-label-success px-3 py-1 rounded-pill">
                             {{ $order->status_manage_by_admin ?? 'N/A' }}
                         </span>
                     </div>
@@ -238,151 +239,13 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="swiper w-100 h-100">
-                <div class="swiper-wrapper w-100">
-                    <div class="swiper-slide w-100 d-flex align-items-start p-4 justify-content-between">
-                        <div class="w-100">
-                            <h5 class="mb-0">Websites Analyticss</h5>
-                            <span>Total 28.5% conversation rate</span>
-                            <div class="mt-5">
-                                <h6>Spending</h6>
-                                <div class="row gy-4">
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-1.png"
-                            width="160" class="d-none d-sm-block" alt="Slide 1">
-                    </div>
-
-                    <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
-                        <div class="w-100">
-                            <h5 class="mb-0">Websites Analytics</h5>
-                            <span>Total 28.5% conversation rate</span>
-                            <div class="mt-5">
-                                <h6>Spending</h6>
-                                <div class="row gy-4">
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-2.png"
-                            width="160" class="d-none d-sm-block" alt="Slide 1">
-                    </div>
-
-                    <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
-                        <div class="w-100">
-                            <h5 class="mb-0">Websites Analytics</h5>
-                            <span>Total 28.5% conversation rate</span>
-                            <div class="mt-5">
-                                <h6>Spending</h6>
-                                <div class="row gy-4">
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                            <h6 class="mb-0">Session</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-3.png"
-                            width="160" class="d-none d-sm-block" alt="Slide 1">
-                    </div>
-                </div>
-                <div class="swiper-pagination"></div>
-            </div>
+        <div class="col-xl-6 col-sm-6">
+            @include('admin.dashboard.pie_chart')
         </div>
 
 
-        <div class="col-xl-6 col-sm-6">
-            <div class="card h-100">
-                <div class="d-flex align-items-start">
-                    <div class="border-0 px-3 pt-3 pb-0">
-                        <h6 class="mb-2 ">Average Daily Sales</h6>
-                        <p class="mb-0">Total Sales This Month</p>
-                        <h4 class="mb-0">$28,450</h4>
-                    </div>
-                    <div class="">
-                        {{-- <div id="salesChart"></div> --}}
-                        <div id="pieChart"></div>
-                    </div>
-                </div>
-            </div>
+        <div class="col-xxl-3 col-md-6">
+            @include('admin.dashboard.sales_by')
         </div>
 
 
@@ -440,208 +303,13 @@
 
         {{-- revenue overview graph --}}
         <div class="col-md-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 pb-0 d-flex justify-content-between">
-                    <div class="card-title mb-0">
-                        <h5 class="mb-1">Earning Reports</h5>
-
-                    </div>
-                </div>
-
-                <div class="card-body pt-0">
-                    <div class="row align-items-center g-md-8">
-                        <div class="col-12 col-md-5 d-flex flex-column">
-                            <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                <h1 class="mb-2">$468</h1>
-                                <div class="badge rounded bg-label-success">+4.2%</div>
-                            </div>
-                            <small class="">You informed of this week compared to last week</small>
-                        </div>
-
-                        <div class="col-12 col-md-7">
-                            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="pills-tab"
-                                role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="pills-month-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-month-revenue" type="button" role="tab"
-                                        aria-controls="pills-month-revenue" aria-selected="true">Month</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="pills-week-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-week-revenue" type="button" role="tab"
-                                        aria-controls="pills-week-revenue" aria-selected="false">Week</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="pills-day-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-day-revenue" type="button" role="tab"
-                                        aria-controls="pills-day-revenue" aria-selected="false">Day</button>
-                                </li>
-                            </ul>
-
-                            <div class="tab-content" id="pills-tabContent">
-                                <!-- Month Tab -->
-                                <div class="tab-pane fade show active" id="pills-month-revenue" role="tabpanel"
-                                    aria-labelledby="pills-month-tab" tabindex="0">
-                                    <div style="margin-bottom: 1rem;">
-                                        <label for="monthSelector" style="margin-right: 8px;">Select Month:</label>
-                                        <select class="form-select" id="monthSelector">
-                                            <option value="jan">January</option>
-                                            <option value="feb">February</option>
-                                            <option value="mar">March</option>
-                                            <option value="apr">April</option>
-                                            <option value="may">May</option>
-                                            <option value="jun">June</option>
-                                            <option value="jul">July</option>
-                                            <option value="aug">August</option>
-                                            <option value="sep">September</option>
-                                            <option value="oct">October</option>
-                                            <option value="nov">November</option>
-                                            <option value="dec">December</option>
-                                        </select>
-                                    </div>
-                                    <div id="monthLineChartRevenue"></div>
-                                </div>
-
-                                <!-- Week Tab -->
-                                <div class="tab-pane fade" id="pills-week-revenue" role="tabpanel"
-                                    aria-labelledby="pills-week-tab" tabindex="0">
-                                    <div id="weekBarChartRevenue"></div>
-                                </div>
-
-                                <!-- Day Tab -->
-                                <div class="tab-pane fade" id="pills-day-revenue" role="tabpanel"
-                                    aria-labelledby="pills-day-tab" tabindex="0">
-                                    <div id="dayBarChartRevenue"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{--
-                    <!-- Footer Section -->
-                    <div class="rounded p-4 mt-4" style="border: 1px solid var(--input-border);">
-                        <div class="row gap-4 gap-sm-0">
-                            <div class="col-12 col-sm-4">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <div class="badge rounded bg-label-primary p-1">
-                                        <i class="ti ti-currency-dollar theme-text fs-5"></i>
-                                    </div>
-                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Earnings</h6>
-                                </div>
-                                <h4 class="my-2 fs-6">$545.69</h4>
-                                <div class="progress w-75" style="height:4px">
-                                    <div class="progress-bar" role="progressbar" style="width: 65%" aria-valuenow="65"
-                                        aria-valuemin="0" aria-valuemax="100">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-4">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <div class="badge rounded bg-label-info p-1">
-                                        <i class="ti ti-clock-share text-info fs-5"></i>
-                                    </div>
-                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Profit</h6>
-                                </div>
-                                <h4 class="my-2 fs-6">$256.34</h4>
-                                <div class="progress w-75" style="height:4px">
-                                    <div class="progress-bar bg-info" role="progressbar" style="width: 50%"
-                                        aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-4">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <div class="badge rounded bg-label-danger p-1">
-                                        <i class="ti ti-brand-paypal text-danger fs-5"></i>
-                                    </div>
-                                    <h6 class="mb-0 fw-normal" style="font-size: 12px;">Expense</h6>
-                                </div>
-                                <h4 class="my-2 fs-6">$74.19</h4>
-                                <div class="progress w-75" style="height:4px">
-                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"
-                                        aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> --}}
-                </div>
-            </div>
+            @include('admin.dashboard.revenue_graph')
         </div>
 
 
         {{-- subscription overview graph --}}
         <div class="col-md-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 pb-0 d-flex justify-content-between">
-                    <div class="card-title mb-0">
-                        <h5 class="mb-1">Subscriptions Overview</h5>
-                    </div>
-                </div>
-
-                <div class="card-body pt-0">
-                    <div class="row align-items-center g-md-8">
-                        <div class="col-12 col-md-5 d-flex flex-column">
-                            <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                <h1 class="mb-2">$468</h1>
-                                <div class="badge rounded bg-label-success">+4.2%</div>
-                            </div>
-                            <small>You informed of this week compared to last week</small>
-                        </div>
-
-                        <div class="col-12 col-md-7">
-                            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="pills-tab"
-                                role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="pills-month-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-month" type="button" role="tab"
-                                        aria-controls="pills-month" aria-selected="true">Month</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="pills-week-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-week" type="button" role="tab" aria-controls="pills-week"
-                                        aria-selected="false">Week</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="pills-day-tab" data-bs-toggle="pill"
-                                        data-bs-target="#pills-day" type="button" role="tab" aria-controls="pills-day"
-                                        aria-selected="false">Day</button>
-                                </li>
-                            </ul>
-
-                            <div class="tab-content" id="pills-tabContent">
-                                <div class="tab-pane fade show active" id="pills-month" role="tabpanel"
-                                    aria-labelledby="pills-month-tab" tabindex="0">
-                                    <div style="margin-bottom: 1rem;">
-                                        <label for="monthSelector" style="margin-right: 8px;">Select Month:</label>
-                                        <select class="form-select" id="monthSelector">
-                                            <option value="jan">January</option>
-                                            <option value="feb">February</option>
-                                            <option value="mar">March</option>
-                                            <option value="apr">April</option>
-                                            <option value="may">May</option>
-                                            <option value="jun">June</option>
-                                            <option value="jul">July</option>
-                                            <option value="aug">August</option>
-                                            <option value="sep">September</option>
-                                            <option value="oct">October</option>
-                                            <option value="nov">November</option>
-                                            <option value="dec">December</option>
-                                        </select>
-                                    </div>
-                                    <div id="monthLineChartSubscription"></div>
-                                </div>
-                                <div class="tab-pane fade" id="pills-week" role="tabpanel"
-                                    aria-labelledby="pills-week-tab" tabindex="0">
-                                    <div id="weekBarChartSubscription"></div>
-                                </div>
-                                <div class="tab-pane fade" id="pills-day" role="tabpanel"
-                                    aria-labelledby="pills-day-tab" tabindex="0">
-                                    <div id="dayBarChartSubscription"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('admin.dashboard.subscription_graph')
         </div>
 
 
@@ -711,119 +379,7 @@
 
 
 
-        <div class="col-xxl-4 col-md-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 d-flex justify-content-between">
-                    <div class="card-title mb-0">
-                        <h5 class="mb-1">Sales by Countries</h5>
-                        <p>Monthly Sales Overview</p>
-                    </div>
-                    <div class="dropdown">
-                        <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                            <a class="dropdown-item" href="javascript:void(0);">View
-                                More</a>
-                            <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body pt-0">
-                    <ul class="p-0 m-0">
-                        <li class="d-flex align-items-center mb-3">
-                            <div class="avatar flex-shrink-0 me-4">
-                                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                    class="object-fit-cover" width="35" height="35" style="border-radius: 50px;" alt="">
-                            </div>
-                            <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="me-2">
-                                    <div class="d-flex align-items-center">
-                                        <h6 class="mb-0 me-1">$8,567k</h6>
-                                    </div>
-                                    <small class="opacity-50">United states</small>
-                                </div>
-                                <div class="user-progress">
-                                    <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                        <i class=" fa fa-chevron-up"></i>
-                                        25.8%
-                                    </p>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="d-flex align-items-center mb-3">
-                            <div class="avatar flex-shrink-0 me-4">
-                                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                    class="object-fit-cover" width="35" height="35" style="border-radius: 50px;" alt="">
-                            </div>
-                            <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="me-2">
-                                    <div class="d-flex align-items-center">
-                                        <h6 class="mb-0 me-1">$8,567k</h6>
-                                    </div>
-                                    <small class="opacity-50">United states</small>
-                                </div>
-                                <div class="user-progress">
-                                    <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                        <i class=" fa fa-chevron-up"></i>
-                                        25.8%
-                                    </p>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="d-flex align-items-center mb-3">
-                            <div class="avatar flex-shrink-0 me-4">
-                                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                    class="object-fit-cover" width="35" height="35" style="border-radius: 50px;" alt="">
-                            </div>
-                            <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="me-2">
-                                    <div class="d-flex align-items-center">
-                                        <h6 class="mb-0 me-1">$8,567k</h6>
-                                    </div>
-                                    <small class="opacity-50">United states</small>
-                                </div>
-                                <div class="user-progress">
-                                    <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                        <i class=" fa fa-chevron-up"></i>
-                                        25.8%
-                                    </p>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="d-flex align-items-center">
-                            <div class="avatar flex-shrink-0 me-4">
-                                <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                    class="object-fit-cover" width="35" height="35" style="border-radius: 50px;" alt="">
-                            </div>
-                            <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="me-2">
-                                    <div class="d-flex align-items-center">
-                                        <h6 class="mb-0 me-1">$8,567k</h6>
-                                    </div>
-                                    <small class="opacity-50">United states</small>
-                                </div>
-                                <div class="user-progress">
-                                    <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                        <i class=" fa fa-chevron-up"></i>
-                                        25.8%
-                                    </p>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-
-
-        <div class="col-xxl-8">
+        <div class="col-12">
             <div class="card p-3">
                 <div class="table-responsive">
                     <table id="myTable" class="display">
@@ -887,292 +443,88 @@
 
     });
 
-    var options = {
-        series: [{
-            data: [0, 40, 35, 70, 60, 80, 50]
-        }],
-        chart: {
-            type: 'area',
-            height: 135,
-            sparkline: {
-                enabled: true
-            }
-        },
-        stroke: {
-            curve: 'smooth',
-            width: 2,
-            colors: ['#00e396']
-        },
-        fill: {
-            colors: ['rgba(0,227,150,0.6162114504004728)'],
-            type: 'gradient',
-            gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.4,
-                opacityTo: 0,
-                stops: [0, 90, 100]
-            }
-        },
-        tooltip: {
-            enabled: true,
-            enabledOnSeries: undefined,
-            shared: true,
-            followCursor: true,
-            intersect: false,
-            inverseOrder: false,
-            custom: undefined,
-            hideEmptySeries: true,
-            fillSeriesColor: false,
-            theme: true,
-            style: {
-                fontSize: '12px',
-                fontFamily: undefined
-            },
-            onDatasetHover: {
-                highlightDataSeries: true,
-            },
-            x: {
-                show: true,
-                format: 'dd MMM',
-                formatter: undefined,
-            },
-            y: {
-                formatter: undefined,
-                // title: {
-                //     formatter: (seriesName) => seriesName,
-                // },
-            },
-            z: {
-                formatter: undefined,
-                title: 'Size: '
-            },
-            marker: {
-                show: true,
-            },
-            // items: {
-            //     display: flex,
-            // },
-            fixed: {
-                enabled: true,
-                position: 'topRight',
-                offsetX: 0,
-                offsetY: 0,
-            },
-        }
-    };
+    // var options = {
+    //     series: [{
+    //         data: [0, 40, 35, 70, 60, 80, 50]
+    //     }],
+    //     chart: {
+    //         type: 'area',
+    //         height: 135,
+    //         sparkline: {
+    //             enabled: true
+    //         }
+    //     },
+    //     stroke: {
+    //         curve: 'smooth',
+    //         width: 2,
+    //         colors: ['#00e396']
+    //     },
+    //     fill: {
+    //         colors: ['rgba(0,227,150,0.6162114504004728)'],
+    //         type: 'gradient',
+    //         gradient: {
+    //             shadeIntensity: 1,
+    //             opacityFrom: 0.4,
+    //             opacityTo: 0,
+    //             stops: [0, 90, 100]
+    //         }
+    //     },
+    //     tooltip: {
+    //         enabled: true,
+    //         enabledOnSeries: undefined,
+    //         shared: true,
+    //         followCursor: true,
+    //         intersect: false,
+    //         inverseOrder: false,
+    //         custom: undefined,
+    //         hideEmptySeries: true,
+    //         fillSeriesColor: false,
+    //         theme: true,
+    //         style: {
+    //             fontSize: '12px',
+    //             fontFamily: undefined
+    //         },
+    //         onDatasetHover: {
+    //             highlightDataSeries: true,
+    //         },
+    //         x: {
+    //             show: true,
+    //             format: 'dd MMM',
+    //             formatter: undefined,
+    //         },
+    //         y: {
+    //             formatter: undefined,
+    //             // title: {
+    //             //     formatter: (seriesName) => seriesName,
+    //             // },
+    //         },
+    //         z: {
+    //             formatter: undefined,
+    //             title: 'Size: '
+    //         },
+    //         marker: {
+    //             show: true,
+    //         },
+    //         // items: {
+    //         //     display: flex,
+    //         // },
+    //         fixed: {
+    //             enabled: true,
+    //             position: 'topRight',
+    //             offsetX: 0,
+    //             offsetY: 0,
+    //         },
+    //     }
+    // };
 
-    var chart = new ApexCharts(document.querySelector("#salesChartRevenue"), options);
-    chart.render();
-
-
-    var options = {
-        series: [{
-            data: [20, 40, 35, 30, 60, 40, 45]
-        }],
-        chart: {
-            type: 'bar',
-            height: 180,
-            toolbar: {
-                show: false
-            },
-        },
-        plotOptions: {
-            bar: {
-                borderRadius: 3,
-                columnWidth: '40%',
-                distributed: true
-            }
-        },
-        colors: [
-            '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
-        ],
-        dataLabels: {
-            enabled: false
-        },
-        xaxis: {
-            categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-            labels: {
-                style: {
-                    colors: '#A3A9BD',
-                    fontSize: '12px'
-                }
-            },
-            axisBorder: {
-                show: false
-            },
-            axisTicks: {
-                show: false
-            }
-        },
-        yaxis: {
-            show: false
-        },
-        grid: {
-            show: false
-        },
-        tooltip: {
-            enabled: false
-        }
-    };
-
-    var chart = new ApexCharts(document.querySelector("#dayBarChartRevenue"), options);
-    chart.render();
-
-    var options = {
-        series: [{
-            data: [20, 40, 35, 30, 60, 40, 45]
-        }],
-        chart: {
-            type: 'bar',
-            height: 180,
-            toolbar: {
-                show: false
-            },
-        },
-        plotOptions: {
-            bar: {
-                borderRadius: 3,
-                columnWidth: '40%',
-                distributed: true
-            }
-        },
-        colors: [
-            '#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'
-        ],
-        dataLabels: {
-            enabled: false
-        },
-        xaxis: {
-            categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-            labels: {
-                style: {
-                    colors: '#A3A9BD',
-                    fontSize: '12px'
-                }
-            },
-            axisBorder: {
-                show: false
-            },
-            axisTicks: {
-                show: false
-            }
-        },
-        yaxis: {
-            show: true,
-        },
-        grid: {
-            show: false
-        },
-        tooltip: {
-            enabled: true
-        }
-    };
-
-    var chart = new ApexCharts(document.querySelector("#weekBarChartRevenue"), options);
-    chart.render();
+    // var chart = new ApexCharts(document.querySelector("#salesChartRevenue"), options);
+    // chart.render();
 
 
-    var options = {
-        series: [{
-            data: [0, 40, 35, 70, 60, 80, 50]
-        }],
-        chart: {
-            type: 'area',
-            height: 180,
-            sparkline: {
-                enabled: true
-            }
-        },
-        stroke: {
-            curve: 'smooth',
-            width: 2,
-            colors: ['#00e396']
-        },
-        fill: {
-            colors: ['rgba(0,227,150,0.6162114504004728)'],
-            type: 'gradient',
-            gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.4,
-                opacityTo: 0,
-                stops: [0, 90, 100]
-            }
-        },
-        tooltip: {
-            enabled: true,
-            enabledOnSeries: true,
-            shared: true,
-            followCursor: true,
-            intersect: false,
-            inverseOrder: false,
-            custom: undefined,
-            hideEmptySeries: true,
-            fillSeriesColor: false,
-            theme: true,
-            style: {
-                fontSize: '12px',
-                fontFamily: undefined,
-            },
-            onDatasetHover: {
-                highlightDataSeries: false,
-            },
-            x: {
-                show: true,
-                format: 'dd MMM',
-                formatter: undefined,
-            },
-            y: {
-                formatter: undefined,
-                // title: {
-                //     formatter: (seriesName) => seriesName,
-                // },
-            },
-            z: {
-                formatter: undefined,
-                title: 'Size: '
-            },
-            marker: {
-                show: true,
-            },
-            // items: {
-            //     display: flex,
-            // },
-            fixed: {
-                enabled: false,
-                position: 'topRight',
-                offsetX: 0,
-                offsetY: 0,
-            },
-        }
-    };
-
-    var chart = new ApexCharts(document.querySelector("#monthLineChartRevenue"), options);
-      chart.render();
+    
 
       
-    var options = {
-      chart: {
-        type: 'pie',
-        height: 250
-      },
-      series: [44, 33, 23, 12, 43, 55, 76], // Values for the pie chart
-      labels: ['Apple', 'Banana', 'Cherry', 'Cherry', 'Cherry', 'Cherry'], // Labels for each slice
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: {
-            width: 300
-          },
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }]
-    };
-
-    var chart = new ApexCharts(document.querySelector("#pieChart"), options);
-    chart.render();
-
+   
     // var options = {
     //     series: [85],
     //     chart: {
@@ -1238,152 +590,7 @@
     // chart.render();
 
     // DAY - Subscription Chart
-var options = {
-    series: [{
-        data: [20, 40, 35, 30, 60, 40, 45]
-    }],
-    chart: {
-        type: 'bar',
-        height: 180,
-        toolbar: {
-            show: false
-        },
-    },
-    plotOptions: {
-        bar: {
-            borderRadius: 3,
-            columnWidth: '40%',
-            distributed: true
-        }
-    },
-    colors: ['#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'],
-    dataLabels: {
-        enabled: false
-    },
-    xaxis: {
-        categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-        labels: {
-            style: {
-                colors: '#A3A9BD',
-                fontSize: '12px'
-            }
-        },
-        axisBorder: {
-            show: false
-        },
-        axisTicks: {
-            show: false
-        }
-    },
-    yaxis: {
-        show: false
-    },
-    grid: {
-        show: false
-    },
-    tooltip: {
-        enabled: false
-    }
-};
-var chart = new ApexCharts(document.querySelector("#dayBarChartSubscription"), options);
-chart.render();
 
-// WEEK - Subscription Chart
-var options = {
-    series: [{
-        data: [20, 40, 35, 30, 60, 40, 45]
-    }],
-    chart: {
-        type: 'bar',
-        height: 180,
-        toolbar: {
-            show: false
-        },
-    },
-    plotOptions: {
-        bar: {
-            borderRadius: 3,
-            columnWidth: '40%',
-            distributed: true
-        }
-    },
-    colors: ['#3D3D66', '#3D3D66', '#3D3D66', '#3D3D66', '#7F6CFF', '#3D3D66', '#3D3D66'],
-    dataLabels: {
-        enabled: false
-    },
-    xaxis: {
-        categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-        labels: {
-            style: {
-                colors: '#A3A9BD',
-                fontSize: '12px'
-            }
-        },
-        axisBorder: {
-            show: false
-        },
-        axisTicks: {
-            show: false
-        }
-    },
-    yaxis: {
-        show: true,
-    },
-    grid: {
-        show: false
-    },
-    tooltip: {
-        enabled: true
-    }
-};
-var chart = new ApexCharts(document.querySelector("#weekBarChartSubscription"), options);
-chart.render();
-
-// MONTH - Subscription Chart
-var options = {
-    series: [{
-        data: [0, 40, 35, 70, 60, 80, 50]
-    }],
-    chart: {
-        type: 'area',
-        height: 180,
-        sparkline: {
-            enabled: true
-        }
-    },
-    stroke: {
-        curve: 'smooth',
-        width: 2,
-        colors: ['#00e396']
-    },
-    fill: {
-        colors: ['rgba(0,227,150,0.6162114504004728)'],
-        type: 'gradient',
-        gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.4,
-            opacityTo: 0,
-            stops: [0, 90, 100]
-        }
-    },
-    tooltip: {
-        enabled: true,
-        shared: true,
-        followCursor: true,
-        intersect: false,
-        hideEmptySeries: true,
-        theme: true,
-        x: {
-            show: true,
-            format: 'dd MMM',
-        },
-        marker: {
-            show: true,
-        },
-    }
-};
-var chart = new ApexCharts(document.querySelector("#monthLineChartSubscription"), options);
-chart.render();
 
 </script>
 
