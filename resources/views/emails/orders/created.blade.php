@@ -248,7 +248,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Plan:</span>
-                    <span class="detail-value">{{ $order->plan->name }}</span>
+                    <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Amount:</span>
@@ -258,10 +258,6 @@
                     <span class="detail-label">Status:</span>
                     <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
                 </div>
-            </div>
-
-            <div style="text-align: center;">
-                <a href="{{ route('customer.orders.show', $order->id) }}" class="btn-primary">View Order Details</a>
             </div>
         </div>
 

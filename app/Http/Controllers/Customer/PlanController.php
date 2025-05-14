@@ -169,6 +169,8 @@ class PlanController extends Controller
                         "zip" => "12345", // Default value
                         "country" => "US" // Default value
                     ],
+                    "allow_plan_change" => true,
+                    'item_family_id' => 'cbdemo_omnisupport-solutions',
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);
@@ -358,7 +360,7 @@ class PlanController extends Controller
                     'last_name' => $order_info['last_name'],
                     'prefix_variant_1' => $order_info['prefix_variant_1'],
                     'prefix_variant_2' => $order_info['prefix_variant_2'],
-                    'persona_password' => $order_info['persona_password'],
+                    'persona_password' => $order_info['persona_password']??"123",
                     'profile_picture_link' => $order_info['profile_picture_link'] ?? null,
                     'email_persona_password' => $order_info['email_persona_password'] ?? null,
                     'email_persona_picture_link' => $order_info['email_persona_picture_link'] ?? null,

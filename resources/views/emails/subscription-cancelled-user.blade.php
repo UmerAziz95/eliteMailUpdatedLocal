@@ -16,7 +16,12 @@
             --white-color: #fff;
             --box-shadow: rgba(104, 104, 141, 0.214) 0px 2px 5px 0px,
                 rgba(148, 148, 148, 0.443) 0px 1px 3px 0px;
-            --input-border: #ffffff4c;
+            --input-border: rgba(255, 255, 255, 0.3);
+            --gradient-1: linear-gradient(135deg, #7367ef 0%, #8f84ff 100%);
+            --gradient-2: linear-gradient(45deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
+            --gradient-3: linear-gradient(to right, #7367ef 0%, #6254e8 100%);
+            --bg-gradient-1: linear-gradient(135deg, #1a1f2c 0%, #212433 100%);
+            --bg-gradient-2: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
         }
         * {
             margin: 0;
@@ -26,48 +31,83 @@
         body {
             font-family: "Public Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: var(--light-color);
+            color: var(--text-primary);
             margin: 0;
             padding: 0;
-            background-color: var(--primary-color);
+            min-height: 100vh;
+            background: var(--bg-gradient-1);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 30px;
-            background: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
-            border-radius: 12px;
-            box-shadow: var(--box-shadow);
+            width: min(90%, 800px);
+            margin: 40px auto;
+            background: var(--bg-gradient-2);
+            padding: clamp(25px, 5vw, 45px);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: fadeIn 0.8s ease-out forwards;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: fadeIn 0.5s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        h2 {
-            color: var(--second-primary);
-            font-size: 24px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            text-align: center;
-            animation: slideIn 0.5s ease-out;
+        .welcome-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: -25px -25px 35px -25px;
+            padding: 35px;
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.6s ease-out forwards;
+            border-radius: 15px;
         }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+        .welcome-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%
+            );
+        }
+        .welcome-header h2 {
+            color: var(--white-color);
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 10px rgba(115, 103, 240, 0.3);
+            position: relative;
+            z-index: 1;
         }
         .content {
-            background: linear-gradient(145deg, rgba(115, 103, 240, 0.1) 0%, rgba(115, 103, 240, 0.05) 100%);
-            padding: 25px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid rgba(115, 103, 240, 0.2);
-            animation: borderGlow 2s infinite alternate;
-        }
-        @keyframes borderGlow {
-            from { border-color: rgba(115, 103, 240, 0.1); }
-            to { border-color: rgba(115, 103, 240, 0.3); }
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.12) 100%);
+            /* padding: clamp(25px, 4vw, 35px); */
+            border-radius: 16px;
+            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 15px !important;
         }
         .detail-row {
             display: flex;
@@ -75,14 +115,13 @@
             margin: 12px 0;
             padding: 12px 0;
             border-bottom: 1px solid var(--input-border);
+            animation: slideIn 0.4s ease-out forwards;
         }
         .detail-row:last-child {
             border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0;
         }
         .detail-label {
-            color: var(--light-color);
+            color: var(--text-secondary);
             opacity: 0.7;
         }
         .detail-value {
@@ -91,7 +130,7 @@
         }
         .btn-primary {
             display: inline-block;
-            background: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+            background: var(--gradient-3);
             color: var(--white-color);
             padding: 12px 24px;
             text-decoration: none;
@@ -100,47 +139,83 @@
             margin: 20px 0;
             border: none;
             transition: all 0.3s ease;
+            animation: pulse 2s infinite;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(115, 103, 240, 0.4);
         }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
         .note {
             background: linear-gradient(145deg, rgba(255, 82, 82, 0.1) 0%, rgba(255, 82, 82, 0.05) 100%);
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            padding: clamp(20px, 3vw, 30px);
+            border-radius: 12px;
+            margin: 30px 0;
             border: 1px solid rgba(255, 82, 82, 0.2);
             color: var(--text-secondary);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.4s;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--input-border);
+            margin: 35px 0 0 0;
+            padding: 35px 40px;
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
             text-align: center;
-            color: var(--light-color);
-            opacity: 0.7;
             font-size: 14px;
+            color: var(--text-secondary);
+            position: relative;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.8s;
+            border-radius: 15px;
+            width: 100% !important;
+        }
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%
+            );
+        }
+        .footer p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+            font-size: clamp(13px, 1vw, 14px);
         }
         @media only screen and (max-width: 600px) {
             .container {
-                width: 100%;
+                width: 95%;
                 margin: 10px;
                 padding: 15px;
             }
             .content {
                 padding: 15px;
             }
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Subscription Cancelled</h2>
-        
-        <p>Dear {{ $user->name }},</p>
-        
+        <div class="welcome-header">
+            <h2>Subscription Cancelled</h2>
+        </div>
+        <br>
         <div class="content">
+            <p>Dear {{ $user->name }},</p>
             <p>Your subscription has been cancelled successfully. Here are the details:</p>
             
             <div class="detail-row">
@@ -158,14 +233,10 @@
         </div>
 
         <div class="note">
-            Your access to the services will continue until {{ $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date)->format('F j, Y') : 'N/A' }}.
+            <p>Your access to the services will continue until {{ $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date)->format('F j, Y') : 'N/A' }}.</p>
         </div>
 
         <p>If you change your mind or wish to subscribe again in the future, you can always visit our pricing page to select a new plan:</p>
-        
-        <div style="text-align: center;">
-            <a href="{{ route('pricing') }}" class="btn-primary">View Plans</a>
-        </div>
 
         <div class="footer">
             <p>Thank you for being our customer. We hope to see you again soon!</p>

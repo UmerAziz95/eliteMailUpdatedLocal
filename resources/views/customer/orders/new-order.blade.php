@@ -217,7 +217,7 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control">
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>

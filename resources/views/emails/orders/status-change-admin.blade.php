@@ -16,7 +16,12 @@
             --white-color: #fff;
             --box-shadow: rgba(104, 104, 141, 0.214) 0px 2px 5px 0px,
                 rgba(148, 148, 148, 0.443) 0px 1px 3px 0px;
-            --input-border: #ffffff4c;
+            --input-border: rgba(255, 255, 255, 0.3);
+            --gradient-1: linear-gradient(135deg, #7367ef 0%, #8f84ff 100%);
+            --gradient-2: linear-gradient(45deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
+            --gradient-3: linear-gradient(to right, #7367ef 0%, #6254e8 100%);
+            --bg-gradient-1: linear-gradient(135deg, #1a1f2c 0%, #212433 100%);
+            --bg-gradient-2: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
         }
         * {
             margin: 0;
@@ -26,38 +31,81 @@
         body {
             font-family: "Public Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: var(--light-color);
+            color: var(--text-primary);
             margin: 0;
             padding: 0;
-            background-color: var(--primary-color);
+            min-height: 100vh;
+            background: var(--bg-gradient-1);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 30px;
-            background: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
-            border-radius: 12px;
-            box-shadow: var(--box-shadow);
+            width: min(90%, 800px);
+            margin: 40px auto;
+            background: var(--bg-gradient-2);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: fadeIn 0.8s ease-out forwards;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: fadeIn 0.5s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .card {
-            background-color: var(--secondary-color);
-            color: var(--light-color);
-            box-shadow: var(--box-shadow);
-            border: none;
-            border-radius: 8px;
-            padding: 25px;
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.12) 100%);
+            padding: clamp(20px, 4vw, 30px);
+            border-radius: 16px;
             margin-bottom: 20px;
-            animation: borderGlow 2s infinite alternate;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            animation: fadeIn 0.8s ease-out forwards;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
-        @keyframes borderGlow {
-            from { border: 1px solid rgba(255, 255, 255, 0.1); }
-            to { border: 1px solid rgba(115, 103, 240, 0.3); }
+        .welcome-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: -20px -20px 40px -20px;
+            padding: 40px;
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.6s ease-out forwards;
+            border-radius: 15px;
+        }
+        .welcome-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%
+            );
+        }
+        .welcome-header h2 {
+            color: var(--white-color);
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 10px rgba(115, 103, 240, 0.3);
+            position: relative;
+            z-index: 1;
         }
         .card-header {
             display: flex;
@@ -66,22 +114,16 @@
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid var(--input-border);
-        }
-        .card-header h2 {
-            color: var(--second-primary);
-            font-size: 24px;
-            margin: 0;
-            font-weight: 600;
-            animation: slideIn 0.5s ease-out;
+            animation: slideIn 0.6s ease-out forwards;
         }
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         .status-badge {
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
             animation: pulse 2s infinite;
         }
@@ -91,23 +133,38 @@
             100% { transform: scale(1); }
         }
         .status-badge.success {
-            background-color: rgba(108, 255, 108, 0.302);
+            background: linear-gradient(145deg, rgba(16, 219, 16, 0.1) 0%, rgba(16, 219, 16, 0.2) 100%);
             color: rgb(16, 219, 16);
+            border: 1px solid rgba(16, 219, 16, 0.2);
         }
         .status-badge.warning {
-            background-color: rgba(255, 166, 0, 0.293);
+            background: linear-gradient(145deg, rgba(255, 150, 22, 0.1) 0%, rgba(255, 150, 22, 0.2) 100%);
             color: rgb(255, 150, 22);
+            border: 1px solid rgba(255, 150, 22, 0.2);
         }
         .status-badge.danger {
-            background-color: rgba(255, 0, 0, 0.2);
+            background: linear-gradient(145deg, rgba(255, 80, 80, 0.1) 0%, rgba(255, 80, 80, 0.2) 100%);
             color: rgb(255, 80, 80);
+            border: 1px solid rgba(255, 80, 80, 0.2);
+        }
+        .card-section {
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.12) 100%);
+            padding: clamp(20px, 4vw, 30px);
+            border-radius: 16px;
+            margin: 25px 0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
         .highlight-box {
-            background: linear-gradient(145deg, rgba(115, 103, 240, 0.1) 0%, rgba(115, 103, 240, 0.05) 100%);
-            padding: 20px;
-            border-radius: 8px;
+            background: rgba(115, 103, 240, 0.08);
+            border-radius: 12px;
+            padding: 25px;
             margin: 20px 0;
-            border: 1px solid rgba(115, 103, 240, 0.2);
+            border: 1px solid rgba(115, 103, 240, 0.15);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.4s;
         }
         .section-title {
             color: var(--second-primary);
@@ -124,14 +181,13 @@
             margin: 12px 0;
             padding: 12px 0;
             border-bottom: 1px solid var(--input-border);
+            animation: slideIn 0.4s ease-out forwards;
         }
         .detail-row:last-child {
             border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0;
         }
         .detail-label {
-            color: var(--light-color);
+            color: var(--text-secondary);
             opacity: 0.7;
         }
         .detail-value {
@@ -140,7 +196,7 @@
         }
         .button {
             display: inline-block;
-            background: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+            background: var(--gradient-3);
             color: var(--white-color);
             padding: 12px 24px;
             text-decoration: none;
@@ -149,48 +205,73 @@
             margin: 20px 0;
             border: none;
             transition: all 0.3s ease;
+            animation: pulse 2s infinite;
         }
         .button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(115, 103, 240, 0.4);
         }
-        .customer-info {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--input-border);
+            margin: 40px 0 0 0;
+            padding: 32px 40px;
+            background: linear-gradient(145deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
             text-align: center;
-            color: var(--light-color);
-            opacity: 0.7;
             font-size: 14px;
+            color: var(--text-secondary);
+            position: relative;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.8s;
+            border-radius: 15px;
+            width: 100 !important;
+        }
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%
+            );
+        }
+        .footer p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+            font-size: clamp(13px, 1vw, 14px);
         }
         @media only screen and (max-width: 600px) {
             .container {
-                width: 100%;
+                width: 95%;
                 margin: 10px;
                 padding: 15px;
             }
-            .card-section {
-                padding: 15px;
+            .card-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="welcome-header">
+            <h2>Order Status Changed</h2>
+        </div>
+        <br>
         <div class="card">
-            <div class="card-header">
+            <!-- <div class="card-header">
                 <h2>Order Status Changed</h2>
-                <span class="status-badge {{ $newStatus == 'completed' ? 'success' : ($newStatus == 'rejected' ? 'danger' : 'warning') }}">
-                    {{ ucfirst($newStatus) }}
-                </span>
-            </div>
+                
+            </div> -->
 
             <div class="highlight-box">
                 <div class="section-title">
@@ -217,7 +298,7 @@
                 @endif
             </div>
 
-            <div class="customer-info">
+            <div class="highlight-box">
                 <div class="section-title">
                     <i class="fa-regular fa-user"></i>
                     Customer Information
@@ -249,10 +330,10 @@
             </div>
             @endif
 
-            <div style="text-align: center;">
+            <!-- <div style="text-align: center;">
                 <p>To manage this order, click below:</p>
                 <a href="{{ route('admin.orders.view', $order->id) }}" class="button">View Order Details</a>
-            </div>
+            </div> -->
 
             <div class="footer">
                 <p>© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>

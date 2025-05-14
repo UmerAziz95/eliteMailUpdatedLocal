@@ -223,7 +223,7 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>
