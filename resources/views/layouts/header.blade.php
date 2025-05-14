@@ -35,7 +35,7 @@
             {{-- <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#">Action</a></li>
                 <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><a class="dropdown-item" href="#">Something else here</a></li> 
+                <li><a class="dropdown-item" href="#">Something else here</a></li>
             </ul> --}}
         </div>
 
@@ -44,19 +44,19 @@
                 <i class="ti ti-bell fs-5"></i>
             </div>
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
-                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3" style="background-color: var(--secondary-color); z-index: 10">
+                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
+                    style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notification</h6>
                     <i class="fa-regular fa-envelope fs-5"></i>
                 </div>
-                @for ($i = 0; $i < 15; $i++)
-                    <hr class="my-0">
+                @for ($i = 0; $i < 15; $i++) <hr class="my-0">
                     <li class="dropdown-item py-2">
                         <div class="d-flex">
                             <div class="flex-shrink-0 me-3">
                                 <div class="avatar">
                                     <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                        style="border-radius: 50%" height="40" width="40"
-                                        class="object-fit-cover" alt="">
+                                        style="border-radius: 50%" height="40" width="40" class="object-fit-cover"
+                                        alt="">
                                 </div>
                             </div>
                             <div class="flex-grow-1">
@@ -72,10 +72,12 @@
                             </div>
                         </div>
                     </li>
-                @endfor
-                <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
-                    <a href="/notification" class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View All Notifications</a>
-                </div>
+                    @endfor
+                    <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
+                        <a href="/notification"
+                            class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View
+                            All Notifications</a>
+                    </div>
             </ul>
         </div>
 
@@ -87,7 +89,7 @@
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
                     <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                        style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
                     <div>
                         <h6 class="mb-0">John Doe</h6>
                         <p class="small mb-0">Admin</p>
@@ -95,14 +97,20 @@
                 </div>
                 <hr>
 
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="{{route("profile")}}"><i class="ti ti-user"></i> My Profile</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/settings"><i class="ti ti-settings"></i> Settings</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-receipt"></i> Billing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/pricing"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="{{route(" profile")}}"><i class="ti ti-user"></i> My Profile</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="/settings"><i class="ti ti-settings"></i> Settings</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="#"><i class="ti ti-receipt"></i> Billing</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="/pricing"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="#"><i class="ti ti-message-2"></i> Faq</a></li>
 
                 <a class="logout-btn" href="{{route('logout')}}">
-                    <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
+                        Logout</button>
                 </a>
             </ul>
         </div>

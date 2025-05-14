@@ -1,7 +1,7 @@
 <header
-    class="d-flex align-items-center justify-content-between justify-content-lg-end py-2 px-4 rounded-3 position-sticky top-0"
-    style="z-index: 100;">
-    <div class="d-lg-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
+    class="d-flex align-items-center justify-content-between justify-content-xl-end py-2 px-4 rounded-3 position-sticky"
+    style="z-index: 100; top: -19px">
+    <div class="d-xl-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
         aria-controls="offcanvasExample">
         <i class="fa-solid fa-bars"></i>
     </div>
