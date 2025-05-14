@@ -219,7 +219,7 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control"
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->profile_picture_link : '' }}">

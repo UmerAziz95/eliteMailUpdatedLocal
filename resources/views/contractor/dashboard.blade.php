@@ -728,6 +728,16 @@
 
             // Initialize orders DataTable
             const ordersTable = $('#ordersTable').DataTable({
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                return 'Orders Details';
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                    }
+                },
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -750,7 +760,16 @@
 
             // Initialize activity log DataTable
             const activityTable = $('#activityTable').DataTable({
-                responsive:true,
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                return 'Activity Details';
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                    }
+                },
                 processing: true,
                 serverSide: true,
                 ajax: {

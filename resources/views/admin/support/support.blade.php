@@ -189,16 +189,26 @@
 <script>
     $(document).ready(function() {
         const table = $('#ticketsTable').DataTable({
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function(row) {
+                            return 'Ticket Details';
+                        }
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                }
+            },
             processing: true,
             serverSide: true,
             ajax: {
                 url: "{{ route('admin.support.tickets') }}",
                 dataSrc: function(json) {
                     if (json.counters) {
-                        // $('#totalTicketsCount').text(json.counters.totalTickets);
-                        // $('#pendingTicketsCount').text(json.counters.pendingTickets);
-                        // $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
-                        // $('#completedTicketsCount').text(json.counters.completedTickets);
+                        $('#totalTicketsCount').text(json.counters.totalTickets);
+                        $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                        $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
+                        $('#completedTicketsCount').text(json.counters.completedTickets);
                     }
                     return json.data;
                 },

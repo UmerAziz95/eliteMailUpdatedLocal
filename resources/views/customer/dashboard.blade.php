@@ -976,6 +976,16 @@
 
             // Initialize orders DataTable
             const ordersTable = $('#ordersTable').DataTable({
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                return 'Order Details';
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                    }
+                },
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -1027,7 +1037,16 @@
                 const table = $table.DataTable({
                     processing: true,
                     serverSide: true,
-                    responsive: true,
+                    responsive: {
+                        details: {
+                            display: $.fn.dataTable.Responsive.display.modal({
+                                header: function(row) {
+                                    return 'Activity Details';
+                                }
+                            }),
+                            renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                        }
+                    },
                     autoWidth: false,
                     dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
                     ajax: {
@@ -1063,7 +1082,7 @@
                         { data: 'performed_by', name: 'performed_by' },
                         { data: 'performed_on', name: 'performed_on' },
                         { data: 'extra_data', name: 'extra_data' },
-                        { data: 'action', name: 'action', orderable: false, searchable: false }
+                        // { data: 'action', name: 'action', orderable: false, searchable: false }
                     ],
                     columnDefs: [
                         { width: '10%', targets: 0 },
@@ -1071,7 +1090,7 @@
                         { width: '15%', targets: 2 },
                         { width: '25%', targets: 3 },
                         { width: '15%', targets: 4 },
-                        { width: '15%', targets: 5 }
+                        // { width: '15%', targets: 5 }
                     ],
                     order: [[1, 'desc']],
                     drawCallback: function (settings) {

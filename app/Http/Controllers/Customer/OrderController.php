@@ -232,7 +232,10 @@ class OrderController extends Controller
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
         // Retrieve subscription metadata if available
-        $subscriptionMeta = json_decode($order->subscription->meta, true);
+        $subscriptionMeta = [];
+        if ($order->subscription) {
+            $subscriptionMeta = json_decode($order->subscription->meta ?? '{}', true);
+        }
         $nextBillingInfo = [];
         
         if ($order->subscription) {
