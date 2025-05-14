@@ -78,6 +78,13 @@ class AppLogController extends Controller
                 ->addColumn('performed_by', function ($log) {
                     return $log->user ? $log->user->name : 'System';
                 })
+                // performed_on_type
+                ->addColumn('performed_on_type', function ($log) {
+                    if ($log->performedOn) {
+                        return class_basename($log->performed_on_type);
+                    }
+                    return 'N/A';
+                })
                 ->addColumn('performed_on', function ($log) {
                     if ($log->performedOn) {
                         return class_basename($log->performed_on_type) . ' (ID #' . $log->performed_on_id . ')';
@@ -129,9 +136,15 @@ class AppLogController extends Controller
                 ->addColumn('description', function ($log) {
                     return $log->description ?? 'N/A';
                 })
+                ->addColumn('performed_on_type', function ($log) {
+                    if ($log->performedOn) {
+                        return class_basename($log->performed_on_type);
+                    }
+                    return 'N/A';
+                })
                 ->addColumn('performed_on', function ($log) {
                     if ($log->performedOn) {
-                        return class_basename($log->performed_on_type) . ' #' . $log->performed_on_id;
+                        return $log->performed_on_id;
                     }
                     return 'N/A';
                 })
