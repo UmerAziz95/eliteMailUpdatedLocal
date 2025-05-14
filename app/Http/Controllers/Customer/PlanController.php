@@ -169,8 +169,6 @@ class PlanController extends Controller
                         "zip" => "12345", // Default value
                         "country" => "US" // Default value
                     ],
-                    "allow_plan_change" => true,
-                    'item_family_id' => 'cbdemo_omnisupport-solutions',
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);
