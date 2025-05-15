@@ -31,7 +31,9 @@
                 <li><a class="dropdown-item" href="#">German</a></li>
             </ul>
         </div>
-
+        <div class="">
+            <a href="{{ url('customer/pricing') }}" class="btn btn-primary btn-sm me-2">Buy More Inboxes</a>
+        </div>
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-moon-stars fs-5"></i>
@@ -44,16 +46,7 @@
             </ul>
         </div>
 
-        <!-- <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="ti ti-category fs-5"></i>
-            </div>
-            {{-- <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Action</a></li>
-                <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><a class="dropdown-item" href="#">Something else here</a></li> 
-            </ul> --}} 
-        </div> -->
+        
 
         <div class="dropdown notification-dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationDropdownToggle">

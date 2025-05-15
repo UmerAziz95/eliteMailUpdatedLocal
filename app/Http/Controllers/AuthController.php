@@ -164,11 +164,11 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6|confirmed',
             'role' => 'required|in:admin,customer,contractor',
-            'phone' => 'required|regex:/^\+?[0-9]{7,15}$/',
+            // 'phone' => 'required|regex:/^\+?[0-9]{7,15}$/',
         ],
         [
-            'phone.regex' => 'The phone number must be a valid format (7 to 15 digits).',
-            'phone.required' => 'The phone number is required.',
+            // 'phone.regex' => 'The phone number must be a valid format (7 to 15 digits).',
+            // 'phone.required' => 'The phone number is required.',
         ]);
     
         switch ($data['role']) {
@@ -190,7 +190,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role_id' => $data['role'],
-            'phone' => $data['phone'],
+            // 'phone' => $data['phone'],
         ]);
     
         // Log the user registration activity

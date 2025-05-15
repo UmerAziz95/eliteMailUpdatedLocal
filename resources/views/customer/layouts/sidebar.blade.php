@@ -33,7 +33,7 @@
 
 
         <!-- Orders -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
                 href="{{ url('customer/pricing') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -41,7 +41,7 @@
                     <div class="text">Plan</div>
                 </div>
             </a>
-        </li>
+        </li> -->
 
         <!-- pricing -->
         <li class="nav-item">
