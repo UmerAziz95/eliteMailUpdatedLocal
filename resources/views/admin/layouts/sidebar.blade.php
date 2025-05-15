@@ -1,12 +1,12 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2">
-        <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
-        <h4 class="text fs-5 mb-0">Mailboxes</h4>
+        <img src="https://cdn.prod.website-files.com/680f5aabe088c7bbcd389903/681b21577e8b6e172787ecb7_Project%20Inbox.svg"
+            width="140" alt="">
     </div>
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 33px">
         <input class="form-check-input"
-            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
-            value="" id="checkDefault">
+            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox" value=""
+            id="checkDefault">
     </div>
 
     <ul class="nav flex-column list-unstyled">
@@ -16,7 +16,7 @@
 
         @can('Dashboard')
         <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.dashboard') ? 'active' : '' }}"
                 href="{{ route('admin.dashboard') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-home fs-5"></i></div>
@@ -48,12 +48,12 @@
         <!-- Users -->
         {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/customer') ? 'active' : '' }}"
-        href="{{ url('admin/customer') }}">
-        <div class="d-flex align-items-center" style="gap: 13px">
-            <div class="icons"><i class="ti ti-headphones fs-5"></i></div>
-            <div class="text">Customers</div>
-        </div>
-        </a>
+                href="{{ url('admin/customer') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-headphones fs-5"></i></div>
+                    <div class="text">Customers</div>
+                </div>
+            </a>
         </li>
 
         <li class="nav-item">
@@ -92,23 +92,23 @@
         <!-- Roles -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('/admin/role') ? 'active' : '' }}"
-        href="{{ url('/admin/role') }}">
-        <div class="d-flex align-items-center" style="gap: 13px">
-            <div class="icons"><i class="ti ti-circles fs-5"></i></div>
-            <div class="text">Roles</div>
-        </div>
-        </a>
+                href="{{ url('/admin/role') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-circles fs-5"></i></div>
+                    <div class="text">Roles</div>
+                </div>
+            </a>
         </li> --}}
 
         <!-- Permissions -->
         {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('permissions') ? 'active' : '' }}"
-        href="{{ url('permissions') }}">
-        <div class="d-flex align-items-center" style="gap: 13px">
-            <div class="icons"><i class="ti ti-pointer-pause fs-5"></i></div>
-            <div class="text">Permissions</div>
-        </div>
-        </a>
+                href="{{ url('permissions') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-pointer-pause fs-5"></i></div>
+                    <div class="text">Permissions</div>
+                </div>
+            </a>
         </li> --}}
 
         {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Website settings</p> --}}
@@ -123,19 +123,19 @@
                 <i class="fa-solid fa-chevron-right rotate-icon"></i>
             </a>
             <ul class="collapse list-unstyled" id="pages">
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                        href="{{ url('/') }}"><span class="circle"></span> Faq</a></li>
-        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                href="{{ url('/') }}"><span class="circle"></span> Pricing</a></li>
-        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                href="{{ url('/') }}"><span class="circle"></span> Teams</a></li>
-        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                href="{{ url('/') }}"><span class="circle"></span> Projects</a></li>
-    </ul>
-    </li> --}}
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Faq</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Pricing</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Teams</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
+                            class="circle"></span> Projects</a></li>
+            </ul>
+        </li> --}}
 
-    <!-- Front Pages -->
-    {{-- <li class="nav-item">
+        <!-- Front Pages -->
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
                 data-bs-toggle="collapse" href="#front_pages" role="button" aria-expanded="false">
                 <div class="d-flex align-items-center" style="gap: 13px">
@@ -146,65 +146,65 @@
             </a>
             <ul class="collapse list-unstyled" id="front_pages">
                 <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-        class="circle"></span> Home</a></li>
-    <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                class="circle"></span> Why Us</a></li>
-    <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                class="circle"></span> Pricing</a></li>
-    <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                class="circle"></span> Contact</a></li>
-    <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                class="circle"></span> Testimonials</a></li>
-    </ul>
-    </li> --}}
+                            class="circle"></span> Home</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
+                            class="circle"></span> Why Us</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
+                            class="circle"></span> Pricing</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
+                            class="circle"></span> Contact</a></li>
+                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
+                            class="circle"></span> Testimonials</a></li>
+            </ul>
+        </li> --}}
 
-    {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
+        {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
         <!-- Pricing -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
-    href="{{ url('admin/pricing') }}">
-    <div class="d-flex align-items-center" style="gap: 13px">
-        <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-        <div class="text">Plans</div>
-    </div>
-    </a>
-    </li> --}}
+                href="{{ url('admin/pricing') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
+                    <div class="text">Plans</div>
+                </div>
+            </a>
+        </li> --}}
 
-    <!-- Payments -->
-    {{-- <li class="nav-item">
+        <!-- Payments -->
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('payments') ? 'active' : '' }}"
-    href="{{ url('payments') }}">
-    <div class="d-flex align-items-center" style="gap: 13px">
-        <div class="icons"><i class="ti ti-wallet fs-5"></i></div>
-        <div class="text">Payments</div>
-    </div>
-    </a>
-    </li> --}}
+                href="{{ url('payments') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-wallet fs-5"></i></div>
+                    <div class="text">Payments</div>
+                </div>
+            </a>
+        </li> --}}
 
-    {{-- <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/orders') ? 'active' : '' }}"
-    href="{{ url('admin/orders') }}">
-    <div class="d-flex align-items-center" style="gap: 13px">
-        <div class="icons"><i class="ti ti-box fs-5"></i></div>
-        <div class="text">Orders</div>
-    </div>
-    </a>
-    </li> --}}
+                href="{{ url('admin/orders') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-box fs-5"></i></div>
+                    <div class="text">Orders</div>
+                </div>
+            </a>
+        </li> --}}
 
-    <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
-    <!-- Support -->
- 
+        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
+        <!-- Support -->
 
-    <!-- Support -->
-    <li class="nav-item">
-        <a class="nav-link px-3 d-flex align-items-center {{ request()->is('support') ? 'active' : '' }}"
-            href="{{ url('admin/support') }}">
-            <div class="d-flex align-items-center" style="gap: 13px">
-                <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
-                <div class="text">Support</div>
-            </div>
-        </a>
-    </li>
+
+        <!-- Support -->
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.support') ? 'active' : '' }}"
+                href="{{ url('admin/support') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                    <div class="text">Support</div>
+                </div>
+            </a>
+        </li>
     </ul>
 </aside>
 

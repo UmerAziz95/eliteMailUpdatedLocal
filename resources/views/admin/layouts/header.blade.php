@@ -62,7 +62,7 @@
                 </div>
                 <div class="position-sticky bottom-0 py-2 px-3" style="background-color: var(--secondary-color)">
                     <a href="/admin/settings"
-                        class="m-btn py-2 px-4 w-100 border-0 rounded-2d-flex align-items-center justify-content-center">View
+                        class="m-btn py-2 px-4 w-100 border-0 rounded-2 d-flex align-items-center justify-content-center">View
                         All Notifications</a>
                 </div>
             </ul>
@@ -120,173 +120,6 @@
         </div>
     </div>
 </header>
-
-
-<!-- Search Popup -->
-<div class="modal fade" id="search" tabindex="-1" aria-labelledby="searchLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header d-flex align-items-start border-0">
-                <div class="input-group mb-3">
-                    <span class="input-group-text pe-0 bg-transparent border-0" id="basic-addon1"><i
-                            class="fa-solid fa-magnifying-glass fs-5"></i></span>
-                    <input type="search" class="form-control bg-transparent border-0" placeholder="Search"
-                        aria-label="Search" aria-describedby="basic-addon1">
-                </div>
-                <div type="button" data-bs-dismiss="modal" aria-label="Close">
-                    <i class="fa-solid fa-xmark fs-5"></i>
-                </div>
-            </div>
-            <div class="modal-body">
-                <div class="row px-4">
-                    <div class="col-6">
-                        <small class="opacity-50 text-uppercase">POPULAR SEARCHES</small>
-                        <a class="nav-link d-flex align-items-center mb-3 mt-2 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="col-6">
-                        <small class="opacity-50 text-uppercase">Apps & Pages</small>
-                        <a class="nav-link d-flex align-items-center mb-3 mt-2 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="col-6">
-                        <small class="opacity-50 text-uppercase">User Interface</small>
-                        <a class="nav-link d-flex align-items-center mb-3 mt-2 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="col-6">
-                        <small class="opacity-50 text-uppercase">Forms & Charts</small>
-                        <a class="nav-link d-flex align-items-center mb-3 mt-2 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-
-                        <a class="nav-link d-flex align-items-center mb-3 {{ request()->is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="icons"><i class="fa-solid fa-house"></i></div>
-                                <div>Dashboard</div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 
@@ -519,24 +352,18 @@
     document.addEventListener("DOMContentLoaded", () => {
         const lightThemeBtn = document.getElementById("light-theme");
         const darkThemeBtn = document.getElementById("dark-theme");
-        const currentTheme = localStorage.getItem("theme");
-
-        // Set default theme as dark if no preference is stored
-        if (!currentTheme || currentTheme === "dark") {
-            document.body.classList.add("dark-theme");
-        } else {
-            document.body.classList.remove("light-theme");
-        }
 
         // Light theme click
         lightThemeBtn.addEventListener("click", () => {
-            document.body.classList.add("light-theme");
+            document.documentElement.classList.add("light-theme");
+            document.documentElement.classList.remove("dark-theme");
             localStorage.setItem("theme", "light");
         });
 
         // Dark theme click
         darkThemeBtn.addEventListener("click", () => {
-            document.body.classList.remove("light-theme");
+            document.documentElement.classList.add("dark-theme");
+            document.documentElement.classList.remove("light-theme");
             localStorage.setItem("theme", "dark");
         });
 

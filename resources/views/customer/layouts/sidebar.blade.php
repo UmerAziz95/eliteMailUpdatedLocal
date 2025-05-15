@@ -5,11 +5,12 @@
     </div>
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
         <input class="form-check-input"
-            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
-            value="" id="checkDefault">
+            style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox" value=""
+            id="checkDefault">
     </div>
     <ul class="nav flex-column list-unstyled">
-        {{-- <!-- Dashboard -->
+        {{--
+        <!-- Dashboard -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
                 href="{{ route('customer.dashboard') }}">
