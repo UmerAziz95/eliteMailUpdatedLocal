@@ -1,5 +1,5 @@
 <div class="table-responsive">
-    <table id="myTable" class="display">
+    <table id="myTable" class="">
         <thead>
             <tr>
                 <th>ID</th>
