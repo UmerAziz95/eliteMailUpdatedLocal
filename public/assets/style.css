@@ -122,7 +122,8 @@ textarea::placeholder {
     color: var(--light-color) !important;
 }
 
-input:focus,textarea:focus {
+input:focus,
+textarea:focus {
     box-shadow: none !important;
 }
 
@@ -150,7 +151,8 @@ input:focus,textarea:focus {
     background-color: var(--second-primary);
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
     white-space: nowrap;
 }
 
@@ -374,7 +376,8 @@ footer {
     text-align: start !important;
 }
 
-.dataTables_info, .dataTables_paginate {
+.dataTables_info,
+.dataTables_paginate {
     text-align: end !important;
 }
 
@@ -474,26 +477,26 @@ select option {
 }
 
 .bg-label-primary {
-    background-color:
-        color-mix(in sRGB, #2f3349 84%, var(--second-primary)) !important;
+    background-color: rgba(73, 73, 255, 0.238) !important;
+    backdrop-filter: blur(10px);
 }
 
 .bg-label-danger {
-    background-color:
-        color-mix(in sRGB, #2f3349 84%, red) !important;
+    background-color: rgba(255, 73, 73, 0.238) !important;
+    backdrop-filter: blur(10px);
     color: red !important;
 }
 
 .bg-label-warning {
-    background-color:
-        color-mix(in sRGB, #2f3349 84%, rgb(255, 150, 22)) !important;
-    color: rgb(255, 150, 22) !important;
+    background-color: rgba(255, 170, 73, 0.238) !important;
+    backdrop-filter: blur(10px);
+    color: orange !important;
 }
 
 .bg-label-success {
-    background-color:
-        color-mix(in sRGB, #2f3349 84%, rgb(16, 186, 16)) !important;
-    color: rgb(16, 186, 16) !important;
+    background-color: rgba(0, 255, 0, 0.238) !important;
+    backdrop-filter: blur(10px);
+    color: rgb(0, 222, 0) !important;
 }
 
 .inactive_status {
@@ -569,15 +572,15 @@ footer {
 /* apex charts */
 .apexcharts-legend {
     display: none !important;
-  }
+}
 
 
-  /* ================tabs============== */
+/* ================tabs============== */
 
-  .nav-tabs .nav-link {
+.nav-tabs .nav-link {
     font-size: 13px;
     padding: .4rem .7rem !important;
-  }
+}
 
 .order_view .nav-link {
     background-color: transparent;
@@ -593,9 +596,11 @@ footer {
     color: var(--white-color);
     border-bottom: 2px solid var(--second-primary);
 }
+
 a.dropdown-item.status-change {
     margin-bottom: 5px;
 }
+
 .is-invalid {
     border-color: #dc3545 !important;
 }
@@ -609,9 +614,9 @@ a.dropdown-item.status-change {
     color: #dc3545;
 }
 
-.is-invalid ~ .invalid-feedback,
-.is-invalid + .invalid-feedback,
-.was-validated :invalid ~ .invalid-feedback {
+.is-invalid~.invalid-feedback,
+.is-invalid+.invalid-feedback,
+.was-validated :invalid~.invalid-feedback {
     display: block !important;
 }
 
@@ -660,19 +665,20 @@ a.dropdown-item.status-change {
 .ql-snow .ql-picker {
     color: var(--light-color);
 }
+
 /* default preview icon */
-/* table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
-table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before,
+table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
     content: "\f067";
     margin-right: 0.5em;
     color: #007bff;
     display: inline-block;
-} 
-// for expand closed icon
-table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
-table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+}
+
+/* // for expand closed icon */
+table.dataTable.dtr-inline.collapsed>tbody>tr.parent>td.dtr-control:before,
+table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
     content: "\f068";
 }
-*/

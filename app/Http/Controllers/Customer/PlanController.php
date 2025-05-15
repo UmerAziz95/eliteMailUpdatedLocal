@@ -123,6 +123,7 @@ class PlanController extends Controller
 
                 // Create hosted page for subscription
                 $result = HostedPage::checkoutNewForItems([
+                  
                     "subscription_items" => [
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
@@ -169,6 +170,7 @@ class PlanController extends Controller
                         "zip" => "12345", // Default value
                         "country" => "US" // Default value
                     ],
+                      "allow_plan_change" => true ,
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);
