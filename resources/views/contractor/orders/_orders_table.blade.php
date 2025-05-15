@@ -62,7 +62,7 @@
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
                                     value="{{ ucfirst($status) }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
-                                    {{ $status }}
+                                    {{ ucfirst($status) }}
                                 </label>
                             </div>
                             @endforeach
