@@ -57,12 +57,15 @@
                         </div>
                         <label class="form-label">Select Status *</label>
                         <div class="d-flex flex-wrap gap-2">
-                            @foreach($statuses as $status)
+                            @php
+                            $statuses1 = \App\Models\Status::get();
+                            @endphp
+                            @foreach($statuses1 as $status)
                             <div class="form-check me-3">
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                    value="{{ $status->name }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label" for="status_{{ $loop->index }}">
-                                    {{ $status }}
+                                    {{ $status->name }}
                                 </label>
                             </div>
                             @endforeach
