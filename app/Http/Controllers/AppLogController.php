@@ -43,6 +43,14 @@ class AppLogController extends Controller
                 ->addColumn('extra_data', function ($log) {
                     return json_encode($log->data ?? []);
                 })
+                // IP
+                ->addColumn('ip', function ($log) {
+                    return $log->data['ip'] ?? 'N/A';
+                })
+                // User Agent
+                ->addColumn('user_agent', function ($log) {
+                    return $log->data['user_agent'] ?? 'N/A';
+                })
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="d-flex align-items-center gap-2">
@@ -98,6 +106,14 @@ class AppLogController extends Controller
                     } else {
                         return 'N/A';
                     }
+                })
+                // IP
+                ->addColumn('ip', function ($log) {
+                    return $log->data['ip'] ?? 'N/A';
+                })
+                // User Agent
+                ->addColumn('user_agent', function ($log) {
+                    return $log->data['user_agent'] ?? 'N/A';
                 })
                 ->addColumn('extra_data', function ($log) {
                     return json_encode($log->data ?? []);
@@ -157,6 +173,14 @@ class AppLogController extends Controller
                     } else {
                         return 'N/A';
                     }
+                })
+                // IP
+                ->addColumn('ip', function ($log) {
+                    return $log->data['ip'] ?? 'N/A';
+                })
+                // User Agent
+                ->addColumn('user_agent', function ($log) {
+                    return $log->data['user_agent'] ?? 'N/A';
                 })
                 ->addColumn('extra_data', function ($log) {
                     return json_encode($log->data ?? []);

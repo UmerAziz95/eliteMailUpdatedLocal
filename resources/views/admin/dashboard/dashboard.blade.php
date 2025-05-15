@@ -391,7 +391,8 @@
                                 <th>Performed By</th>
                                 <th>Performed On Type</th>
                                 <th>Performed On Id</th>
-                                <th>Extra</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -669,22 +670,25 @@
                     }
                 },
                 columns: [
-                    {data: 'id', name: 'id'},
-                    {data: 'action_type', name: 'action_type'},
-                    {data: 'description', name: 'description'},
-                    {data: 'performed_by', name: 'performed_by'}, 
-                    {data: 'performed_on_type', name: 'performed_on_type'},
-                    {data: 'performed_on', name: 'performed_on'},
-                    {data: 'extra_data', name: 'extra_data'}
+                    { data: 'id', name: 'id' },
+                    { data: 'action_type', name: 'action_type' },
+                    { data: 'description', name: 'description' },
+                    { data: 'performed_by', name: 'performed_by' },
+                    { data: 'performed_on_type', name: 'performed_on_type' },
+                    { data: 'performed_on', name: 'performed_on' },
+                    { data: 'ip', name: 'ip' },
+                    { data: 'user_agent', name: 'user_agent' },
+                    // { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 columnDefs: [
                     { width: '10%', targets: 0 },  // ID
                     { width: '15%', targets: 1 },  // Action Type
                     { width: '20%', targets: 2 },  // Description 
-                    { width: '15%', targets: 3 },  // Performed By
-                    { width: '15%', targets: 4 },  // Performed On Type
-                    { width: '10%', targets: 5 },  // Performed On
-                    { width: '15%', targets: 6 }   // Extra Data
+                    { width: '10%', targets: 3 },  // Performed By
+                    { width: '10%', targets: 4 },  // Performed On Type
+                    { width: '10%', targets: 5 },  // Performed On Id
+                    { width: '15%', targets: 6 },  // Extra Data
+                    { width: '10%', targets: 7 }   // User Agent
                 ],
                 order: [[0, 'desc']],
                 drawCallback: function(settings) {
