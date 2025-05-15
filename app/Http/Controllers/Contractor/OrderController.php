@@ -72,6 +72,7 @@ class OrderController extends Controller
             : 0;
 
         $statuses = $this->statuses;
+        $plans = [];
         return view('contractor.orders.orders', compact(
             'plans', 
             'totalOrders', 

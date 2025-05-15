@@ -80,6 +80,7 @@ class OrderController extends Controller
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
         $statuses = $this->statuses;
+        $plans = [];
         return view('customer.orders.orders', compact(
             'plans', 
             'totalOrders', 

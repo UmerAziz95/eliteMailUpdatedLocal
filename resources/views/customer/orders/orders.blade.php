@@ -245,7 +245,8 @@
     </div>
 
     <div class="card py-3 px-4">
-        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
+        <h2 class="mb-3">Orders</h2>
+        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist" style="display: none;">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
                     type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">All Orders</button>
@@ -328,6 +329,7 @@
                     }
                 },
                 autoWidth: false,
+                dom: '<"top"f>rt<"bottom"lip><"clear">',
                 columnDefs: [{
                         width: '10%',
                         targets: 0
