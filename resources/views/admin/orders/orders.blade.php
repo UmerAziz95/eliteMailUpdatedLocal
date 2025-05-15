@@ -686,7 +686,7 @@
     //handle the reason field on status change
     $('.marked_status').on('change', function() {
         const selected = $(this).val();
-        if (selected === 'Reject') {
+        if (selected === 'reject') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').attr('required', true);
         } else {
