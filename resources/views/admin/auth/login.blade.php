@@ -83,7 +83,7 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Welcome to Elite Mailboxes 👋</h5>
+                            <h5 class="fw-bold">Welcome to Project Inboxes 👋</h5>
                             <p>
                                 Please sign-in to your account and start the adventure
                             </p>

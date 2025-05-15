@@ -1,10 +1,12 @@
 <div class="card h-100">
-    <div class="d-flex align-items-start">
-        <div class="border-0 px-3 pt-3 pb-0">
-            <h6 class="mb-2 ">Average Daily Sales</h6>
-            <p class="mb-0">Total Sales This Month</p>
-            <h4 class="mb-0">$28,450</h4>
-            <ul class="mt-4 px-3">
+    <div class="d-flex flex-column flex-sm-row align-items-start">
+        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 px-3 pt-3 pb-0">
+            <div>
+                <h6 class="mb-2 ">Average Daily Sales</h6>
+                <p class="mb-3 small">Total Sales This Month</p>
+                <h4 class="mb-0">$28,450</h4>
+            </div>
+            <ul class="mt-sm-4 px-3">
                 <li class="custom-dot">Total Orders</li>
                 <li class="custom-dot">Total Orders</li>
                 <li class="custom-dot">Total Orders</li>
@@ -23,18 +25,19 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
 <script>
     var options = {
         series: [44, 4, 41, 4, 17, 4, 15, 4, 10, 4, 20, 4, 30, 4],
         chart: {
-            width: 380,
+            width: 330,
             type: 'donut',
             dropShadow: {
                 enabled: true,
-                color: '#000',
+                color: 'var(--second-primary)',
                 top: -1,
                 left: 3,
-                blur: 10,
+                blur: 5,
                 opacity: 1
             }
         },
@@ -57,8 +60,8 @@
         labels: ["Comedy", "Action", "SciFi", "Drama", "Horror"],
         dataLabels: {
             dropShadow: {
-                blur: 1,
-                opacity: 0
+                blur: 2,
+                opacity: 1
             }
         },
         fill: {
@@ -98,7 +101,7 @@
             breakpoint: 480,
             options: {
                 chart: {
-                    width: 200
+                    width: 300
                 },
                 legend: {
                     position: 'bottom'

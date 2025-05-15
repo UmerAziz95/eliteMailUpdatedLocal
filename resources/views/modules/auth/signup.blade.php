@@ -119,18 +119,19 @@
                                     </span>
                                 </div>
                                 {{-- Phone --}}
-                                <div class="input-group">
+                                <!-- <div class="input-group">
                                     <label for="phone">Phone</label>
                                     <input type="text" name="phone" id="phone" placeholder="Phone" required>
-                                </div>
+                                </div> -->
                                 {{-- role customer, contractor radio button --}}
-                                <div class="form-check">
+                                <input type="hidden" name="role" id="role" value="customer">
+                                <!-- <div class="form-check">
                                     <input class="form-check-input" type="radio" name="role" id="radioDefault1"
                                         value="customer">
                                     <label class="form-check-label" for="radioDefault1">
                                         Customer
                                     </label>
-                                </div>
+                                </div> -->
                                 {{-- <div class="form-check">
                                     <input class="form-check-input" type="radio" name="role" id="radioDefault2"
                                         value="contractor">

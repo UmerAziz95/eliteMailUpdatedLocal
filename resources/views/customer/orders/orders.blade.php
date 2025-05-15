@@ -149,46 +149,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Approved Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($approvedOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Approved orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-thumb-up"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Approval Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($inApprovalOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Under review</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-file-check"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
+        
         <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
@@ -231,7 +193,7 @@
         </div>
     </div>
 
-    <div class="row mb-4">
+    <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">

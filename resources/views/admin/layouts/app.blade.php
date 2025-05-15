@@ -35,6 +35,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 
     @stack('styles')
+
+    <script>
+        (function () {
+    const theme = localStorage.getItem("theme");
+    if (theme === "light") {
+      document.documentElement.classList.add("light-theme");
+    } else {
+      document.documentElement.classList.add("dark-theme");
+    }
+  })();
+    </script>
 </head>
 
 <body>

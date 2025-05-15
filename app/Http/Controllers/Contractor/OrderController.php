@@ -57,8 +57,6 @@ class OrderController extends Controller
         $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
         $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
-        $approvedOrders = $orders->clone()->where('status_manage_by_admin', 'approved')->count();
-        $inApprovalOrders = $orders->clone()->where('status_manage_by_admin', 'in-approval')->count();
         $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
         $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
 
@@ -82,8 +80,6 @@ class OrderController extends Controller
             'percentageChange',
             'statuses',
             'expiredOrders',
-            'approvedOrders',
-            'inApprovalOrders',
             'rejectOrders',
             'cancelledOrders'
         ));
@@ -779,8 +775,6 @@ class OrderController extends Controller
             'completedOrders' => $orders->clone()->where('status_manage_by_admin', 'completed')->count(),
             'inProgressOrders' => $orders->clone()->where('status_manage_by_admin', 'in-progress')->count(),
             'expiredOrders' => $orders->clone()->where('status_manage_by_admin', 'expired')->count(),
-            'approvedOrders' => $orders->clone()->where('status_manage_by_admin', 'approved')->count(),
-            'inApprovalOrders' => $orders->clone()->where('status_manage_by_admin', 'in-approval')->count(),
             'rejectOrders' => $orders->clone()->where('status_manage_by_admin', 'reject')->count(),
             'cancelledOrders' => $orders->clone()->where('status_manage_by_admin', 'cancelled')->count(),
         ];

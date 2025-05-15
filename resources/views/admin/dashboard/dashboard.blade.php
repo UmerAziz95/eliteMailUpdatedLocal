@@ -22,6 +22,7 @@
         border-radius: 50%;
     }
 
+    /* 
     .bg-soft-primary {
         background-color: rgba(115, 103, 240, 0.12);
     }
@@ -32,7 +33,7 @@
 
     .bg-soft-warning {
         background-color: rgba(255, 159, 67, 0.12);
-    }
+    } */
 </style>
 @endpush
 
@@ -76,13 +77,13 @@
         background-color: #fff !important;
     }
 
-    .bg-label-info {
+    /* .bg-label-info {
         background-color: rgba(0, 255, 255, 0.143);
     }
 
     .bg-label-primary {
         background-color: rgba(79, 0, 128, 0.203);
-    }
+    } */
 
     .divider.divider-vertical {
         position: relative;
@@ -169,7 +170,7 @@
         color: var(--second-primary);
     }
 
-    .bg-label-primary {
+    /* .bg-label-primary {
         background-color:
             color-mix(in sRGB, #2f3349 84%, var(--second-primary)) !important;
     }
@@ -190,11 +191,12 @@
         background-color:
             color-mix(in sRGB, #2f3349 84%, rgb(16, 186, 16)) !important;
         color: rgb(143, 255, 143) !important;
-    }
+    } */
 
     .nav-pills .nav-link {
         background-color: transparent;
-        color: var(--extra-light)
+        color: var(--extra-light);
+        font-size: 12px
     }
 
     .nav-pills .nav-link.active {
@@ -208,16 +210,16 @@
 <section class="py-3 overflow-hidden">
     <div class="row gy-4">
 
-        <div class="col-md-6">
+        <div class="col-md-6 order-1">
             @include('admin.dashboard.slider')
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-6 order-1">
             @include('admin.dashboard.counter')
         </div>
 
         <!-- Recent Orders -->
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-3 col-md-4 col-sm-6 order-1">
             <div class="card h-100">
                 <div class="card-body">
                     <h6 class="mb-3 fw-semibold">Recent Orders</h6>
@@ -239,12 +241,12 @@
             </div>
         </div>
 
-        <div class="col-xl-6 col-sm-6">
+        <div class="col-xxl-6 col-md-8 col-sm-12 order-3 order-md-2">
             @include('admin.dashboard.pie_chart')
         </div>
 
 
-        <div class="col-xxl-3 col-md-6">
+        <div class="col-xxl-3 col-md-4 col-sm-6 order-2 order-md-3">
             @include('admin.dashboard.sales_by')
         </div>
 
@@ -302,13 +304,13 @@
 
 
         {{-- revenue overview graph --}}
-        <div class="col-md-6">
+        <div class="col-md-8 col-lg-6 order-4">
             @include('admin.dashboard.revenue_graph')
         </div>
 
 
         {{-- subscription overview graph --}}
-        <div class="col-md-6">
+        <div class="col-md-8 col-lg-6 order-4">
             @include('admin.dashboard.subscription_graph')
         </div>
 
@@ -379,7 +381,7 @@
 
 
 
-        <div class="col-12">
+        <div class="col-12 order-5">
             <div class="card p-3">
                 <div class="table-responsive">
                     <table id="myTable" class="display">
@@ -387,11 +389,12 @@
                             <tr>
                                 <th class="text-start">ID</th>
                                 <th>Action Type</th>
+                                <th>Description</th>
                                 <th>Performed By</th>
                                 <th>Performed On Type</th>
                                 <th>Performed On Id</th>
-                                <th>Description</th>
-                                <th>Data</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -655,16 +658,6 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                         'Accept': 'application/json'
                     },
-                    data: function(d) {
-                        d.plan_id = planId;
-                        d.user_name = $('#user_name_filter').val();
-                        d.email = $('#email_filter').val();
-                        d.status = $('#status_filter').val();
-                    },
-                    dataSrc: function(json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
                     error: function(xhr, error, thrown) {
                         console.error('DataTables error:', error);
                         console.error('Server response:', xhr.responseText);
@@ -678,65 +671,28 @@
                         }
                     }
                 },
-                columns: [{
-                        data: 'id',
-                        name: 'id'
-                    },
-                    {
-                        data: 'action_type',
-                        name: 'action_type'
-                    },
-                    {
-                        data: 'description',
-                        name: 'description'
-                    },
-                    {
-                        data: 'performed_by',
-                        name: 'performed_by'
-                    },
-                    {
-                        data: 'performed_on',
-                        name: 'performed_on'
-                    },
-                    {
-                        data: 'extra_data',
-                        name: 'extra_data'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
+                columns: [
+                    { data: 'id', name: 'id' },
+                    { data: 'action_type', name: 'action_type' },
+                    { data: 'description', name: 'description' },
+                    { data: 'performed_by', name: 'performed_by' },
+                    { data: 'performed_on_type', name: 'performed_on_type' },
+                    { data: 'performed_on', name: 'performed_on' },
+                    { data: 'ip', name: 'ip' },
+                    { data: 'user_agent', name: 'user_agent' },
+                    // { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
-                columnDefs: [{
-                        width: '10%',
-                        targets: 0
-                    },
-                    {
-                        width: '20%',
-                        targets: 1
-                    },
-                    {
-                        width: '15%',
-                        targets: 2
-                    },
-                    {
-                        width: '25%',
-                        targets: 3
-                    },
-                    {
-                        width: '15%',
-                        targets: 4
-                    },
-                    {
-                        width: '15%',
-                        targets: 5
-                    }
+                columnDefs: [
+                    { width: '10%', targets: 0 },  // ID
+                    { width: '15%', targets: 1 },  // Action Type
+                    { width: '20%', targets: 2 },  // Description 
+                    { width: '10%', targets: 3 },  // Performed By
+                    { width: '10%', targets: 4 },  // Performed On Type
+                    { width: '10%', targets: 5 },  // Performed On Id
+                    { width: '15%', targets: 6 },  // Extra Data
+                    { width: '10%', targets: 7 }   // User Agent
                 ],
-                order: [
-                    [1, 'desc']
-                ],
+                order: [[0, 'desc']],
                 drawCallback: function(settings) {
                     const counters = settings.json?.counters;
 

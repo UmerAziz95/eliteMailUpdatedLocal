@@ -31,7 +31,7 @@ class OrderController extends Controller
 
     public function __construct()
     {
-        $this->statuses = Status::get();
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
     }
   public function index()
 {
@@ -43,8 +43,6 @@ class OrderController extends Controller
     $totalOrders = $orders->count();
 
     $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
-    $inApprovalOrders = $orders->where('status_manage_by_admin', 'in-approval')->count();
-    $approvedOrders = $orders->where('status_manage_by_admin', 'approved')->count();
     $rejectOrders = $orders->where('status_manage_by_admin', 'reject')->count();
     $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
     $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
@@ -66,8 +64,6 @@ class OrderController extends Controller
         'plans', 
         'totalOrders', 
         'pendingOrders', 
-        'inApprovalOrders',
-        'approvedOrders',
         'rejectOrders',
         'inProgressOrders',
         'cancelledOrders',

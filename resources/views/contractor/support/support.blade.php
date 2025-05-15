@@ -188,10 +188,10 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-end">
                             <div class="role-heading">
-                                <h1 class="mb-0 text-success" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                                <h1 class="mb-0 text-danger" id="completedTicketsCount">{{ $completedTickets }}</h1>
                             </div>
-                            <div class="bg-label-success rounded-1 px-1">
-                                <i class="ti ti-ticket fs-2 text-success"></i>
+                            <div class="bg-label-danger rounded-1 px-1">
+                                <i class="ti ti-ticket fs-2 text-danger"></i>
                             </div>
                         </div>
                     </div>

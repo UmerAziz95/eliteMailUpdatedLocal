@@ -76,7 +76,7 @@
                             </div>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
+                            <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-brand-booking"></i>
                             </span>
                         </div>
@@ -96,7 +96,7 @@
                             </div>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-warning">
+                            <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-brand-booking"></i>
                             </span>
                         </div>

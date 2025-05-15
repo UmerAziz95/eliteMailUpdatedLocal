@@ -47,7 +47,7 @@
         </div>
     </div>
     
-    <div class="row mb-4">
+    <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">

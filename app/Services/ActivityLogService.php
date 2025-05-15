@@ -18,6 +18,20 @@ class ActivityLogService
  */
     public static function log($actionType, $description = null, $performedOn = null, $data = [], $performed_by = null)
     {
+        $request = request(); // This is an instance of Illuminate\Http\Request
+        $userAgent = $request->userAgent();
+        $ip = $request->ip();
+        $url = $request->fullUrl();
+        // browser
+        $browser = $request->header('User-Agent');
+        // append ip, user agent and url to data
+        $data = array_merge($data, [
+            'ip' => $ip,
+            'user_agent' => $userAgent,
+            'url' => $url,
+            'browser' => $browser,
+        ]);
+
         $performed_by = $performed_by ?? (Auth::check() ? Auth::id() : null);
         return Log::create([
             'action_type'      => $actionType,                    // Example: 'User Created'
