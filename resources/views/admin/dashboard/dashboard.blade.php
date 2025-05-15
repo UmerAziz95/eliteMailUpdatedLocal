@@ -387,11 +387,11 @@
                             <tr>
                                 <th class="text-start">ID</th>
                                 <th>Action Type</th>
+                                <th>Description</th>
                                 <th>Performed By</th>
                                 <th>Performed On Type</th>
                                 <th>Performed On Id</th>
-                                <th>Description</th>
-                                <th>Data</th>
+                                <th>Extra</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -655,16 +655,6 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                         'Accept': 'application/json'
                     },
-                    data: function(d) {
-                        d.plan_id = planId;
-                        d.user_name = $('#user_name_filter').val();
-                        d.email = $('#email_filter').val();
-                        d.status = $('#status_filter').val();
-                    },
-                    dataSrc: function(json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
                     error: function(xhr, error, thrown) {
                         console.error('DataTables error:', error);
                         console.error('Server response:', xhr.responseText);
@@ -678,65 +668,25 @@
                         }
                     }
                 },
-                columns: [{
-                        data: 'id',
-                        name: 'id'
-                    },
-                    {
-                        data: 'action_type',
-                        name: 'action_type'
-                    },
-                    {
-                        data: 'description',
-                        name: 'description'
-                    },
-                    {
-                        data: 'performed_by',
-                        name: 'performed_by'
-                    },
-                    {
-                        data: 'performed_on',
-                        name: 'performed_on'
-                    },
-                    {
-                        data: 'extra_data',
-                        name: 'extra_data'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
+                columns: [
+                    {data: 'id', name: 'id'},
+                    {data: 'action_type', name: 'action_type'},
+                    {data: 'description', name: 'description'},
+                    {data: 'performed_by', name: 'performed_by'}, 
+                    {data: 'performed_on_type', name: 'performed_on_type'},
+                    {data: 'performed_on', name: 'performed_on'},
+                    {data: 'extra_data', name: 'extra_data'}
                 ],
-                columnDefs: [{
-                        width: '10%',
-                        targets: 0
-                    },
-                    {
-                        width: '20%',
-                        targets: 1
-                    },
-                    {
-                        width: '15%',
-                        targets: 2
-                    },
-                    {
-                        width: '25%',
-                        targets: 3
-                    },
-                    {
-                        width: '15%',
-                        targets: 4
-                    },
-                    {
-                        width: '15%',
-                        targets: 5
-                    }
+                columnDefs: [
+                    { width: '10%', targets: 0 },  // ID
+                    { width: '15%', targets: 1 },  // Action Type
+                    { width: '20%', targets: 2 },  // Description 
+                    { width: '15%', targets: 3 },  // Performed By
+                    { width: '15%', targets: 4 },  // Performed On Type
+                    { width: '10%', targets: 5 },  // Performed On
+                    { width: '15%', targets: 6 }   // Extra Data
                 ],
-                order: [
-                    [1, 'desc']
-                ],
+                order: [[0, 'desc']],
                 drawCallback: function(settings) {
                     const counters = settings.json?.counters;
 

@@ -585,12 +585,13 @@
                         <table id="activityTable" class="display w-100">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Action</th>
+                                    <th class="text-start">ID</th>
+                                    <th>Action Type</th>
                                     <th>Description</th>
-                                    <th>Performed On</th>
-                                    <th>Data</th>
-                                    <th>Date</th>
+                                    <th>Performed By</th>
+                                    <th>Performed On Type</th>
+                                    <th>Performed On Id</th>
+                                    <th>Extra</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -776,18 +777,22 @@
                     url: "{{ route('contractor.activity.data') }}"
                 },
                 columns: [
-                    {data: 'id', name: 'logs.id'},
-                    {data: 'action_type', name: 'logs.action_type', render: function(data) {
-                        return `<span class="badge bg-label-primary">${data.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>`;
-                    }},
-                    {data: 'description', name: 'logs.description'},
-                    {data: 'performed_on', name: 'performed_on', render: function(data, type, row) {
-                        return `${row.performed_on_type.split('\\').pop()} #${row.performed_on_id}`;
-                    }},
-                    {data: 'data', name: 'logs.data', render: function(data) {
-                        return data ? JSON.stringify(data) : '-';
-                    }},
-                    {data: 'created_at', name: 'logs.created_at'}
+                    {data: 'id', name: 'id'},
+                    {data: 'action_type', name: 'action_type'},
+                    {data: 'description', name: 'description'},
+                    {data: 'performed_by', name: 'performed_by'}, 
+                    {data: 'performed_on_type', name: 'performed_on_type'},
+                    {data: 'performed_on', name: 'performed_on'},
+                    {data: 'extra_data', name: 'extra_data'}
+                ],
+                columnDefs: [
+                    { width: '10%', targets: 0 },  // ID
+                    { width: '15%', targets: 1 },  // Action Type
+                    { width: '20%', targets: 2 },  // Description 
+                    { width: '15%', targets: 3 },  // Performed By
+                    { width: '15%', targets: 4 },  // Performed On Type
+                    { width: '10%', targets: 5 },  // Performed On
+                    { width: '15%', targets: 6 }   // Extra Data
                 ],
                 order: [[0, 'desc']]
             });

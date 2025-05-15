@@ -26,6 +26,13 @@ class AppLogController extends Controller
                 ->addColumn('performed_by', function ($log) {
                     return $log->user ? $log->user->name : 'System';
                 })
+                // performed_on_type
+                ->addColumn('performed_on_type', function ($log) {
+                    if ($log->performedOn) {
+                        return class_basename($log->performed_on_type);
+                    }
+                    return 'N/A';
+                })
                 ->addColumn('performed_on', function ($log) {
                     if ($log->performedOn) {
                         return class_basename($log->performed_on_type) . ' (ID #' . $log->performed_on_id . ')';
@@ -125,9 +132,7 @@ class AppLogController extends Controller
     public function getContractorActivity(Request $request)
     {
         if ($request->ajax()) {
-            $logs = Log::with(['user', 'performedOn'])
-                ->where('performed_by', Auth::id())
-                ->latest();
+            $logs = Log::with(['user', 'performedOn'])->where('performed_by', Auth::id())->latest();
 
             return DataTables::of($logs)
                 ->addColumn('action_type', function ($log) {
@@ -136,6 +141,10 @@ class AppLogController extends Controller
                 ->addColumn('description', function ($log) {
                     return $log->description ?? 'N/A';
                 })
+                ->addColumn('performed_by', function ($log) {
+                    return $log->user ? $log->user->name : 'System';
+                })
+                // performed_on_type
                 ->addColumn('performed_on_type', function ($log) {
                     if ($log->performedOn) {
                         return class_basename($log->performed_on_type);
@@ -144,18 +153,38 @@ class AppLogController extends Controller
                 })
                 ->addColumn('performed_on', function ($log) {
                     if ($log->performedOn) {
-                        return $log->performed_on_id;
+                        return class_basename($log->performed_on_type) . ' (ID #' . $log->performed_on_id . ')';
+                    } else {
+                        return 'N/A';
                     }
-                    return 'N/A';
                 })
-                ->addColumn('data', function ($log) {
-                    return $log->data ?? null;
+                ->addColumn('extra_data', function ($log) {
+                    return json_encode($log->data ?? []);
                 })
-                ->editColumn('created_at', function ($log) {
-                    return $log->created_at->format('Y-m-d H:i:s');
+                ->addColumn('action', function ($row) {
+                    return '
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
+                                <i class="fa-regular fa-trash-can text-danger"></i>
+                            </button>
+                            <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                            <div class="dropdown">
+                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    ';
                 })
-                ->rawColumns(['action_type'])
+                ->rawColumns(['action'])
                 ->make(true);
         }
+        
+        return response()->json(['error' => 'Not an AJAX request'], 400);
     }
 }
