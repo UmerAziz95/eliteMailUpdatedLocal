@@ -9,10 +9,12 @@ class StatusesTableSeeder extends Seeder
 {
     public function run()
     {
+        // in-approval, approved
+        // delete these two statuses
+        $deleteStatuses = ['in-approval', 'approved'];
+        Status::whereIn('name', $deleteStatuses)->delete();
         $statuses = [
             ['name' => 'pending', 'badge' => 'warning'],
-            ['name' => 'in-approval', 'badge' => 'info'],
-            ['name' => 'approved', 'badge' => 'light'],
             ['name' => 'reject', 'badge' => 'secondary'],
             ['name' => 'in-progress', 'badge' => 'primary'],
             ['name' => 'cancelled', 'badge' => 'danger'],

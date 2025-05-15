@@ -169,26 +169,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Approved Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($approvedOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Approved orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
-                                <i class="ti ti-thumb-up"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
         <div class="col-sm-6 col-xl-4">
             <div class="card p-2">
                 <div class="card-body">
@@ -199,26 +180,6 @@
                                 <h4 class="mb-0 me-2">{{ number_format($rejectOrders) }}</h4>
                             </div>
                             <small class="mb-0">Rejected orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
-                                <i class="ti ti-thumb-up"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Approval Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($inApprovalOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">In-Approval orders</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-info">
