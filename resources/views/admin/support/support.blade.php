@@ -14,159 +14,175 @@
 
 @section('content')
 <section class="py-3">
-    <div class="row gy-4 mb-4">
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
+
+    <div class="row">
+        <div class="counters col-lg-6">
+            <div class="card p-2 counter_1">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Total tickets</p>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h1 class="mb-0 text-primary" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Total Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h1 class="mb-0" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
                         </div>
-                        <div class="bg-label-primary rounded-1 px-1">
-                            <i class="ti ti-ticket fs-2 text-primary"></i>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="50"
+                                style="border-radius: 50px" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-2 counter_2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Active Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                                <p class="text-danger mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-user-check"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="50"
+                                style="border-radius: 50px" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-2 counter_2">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">InActive Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h1 class="mb-0 " id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                                <p class=" mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                                style="border-radius: 50px" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-2 counter_1">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">InActive Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                                <p class=" mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Open</p>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h1 class="mb-0 text-warning" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
-                        </div>
-                        <div class="bg-label-warning rounded-1 px-1">
-                            <i class="ti ti-ticket fs-2 text-warning"></i>
-                        </div>
-                    </div>
+        <div class="col-lg-6">
+            <div class="card p-4 h-100 filter">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-2 text-white">Filters</h5>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">In Progress</p>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h1 class="mb-0 text-info" id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                <div class="d-flex align-items-start gap-4">
+                    <div class="row gy-3">
+                        <div class="col-md-4">
+                            {{-- <label for="ticketNumberFilter" class="form-label">Ticket #</label> --}}
+                            <input type="text" id="ticketNumberFilter" class="form-control"
+                                placeholder="Search by ticket number">
                         </div>
-                        <div class="bg-label-info rounded-1 px-1">
-                            <i class="ti ti-ticket fs-2 text-info"></i>
+                        <div class="col-md-4">
+                            {{-- <label for="subjectFilter" class="form-label">Subject</label> --}}
+                            <input type="text" id="subjectFilter" class="form-control" placeholder="Search by subject">
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="customerFilter" class="form-label">Customer</label> --}}
+                            <input type="text" id="customerFilter" class="form-control"
+                                placeholder="Search by customer name">
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="categoryFilter" class="form-label">Category</label> --}}
+                            <select id="categoryFilter" class="form-select">
+                                <option value="">All Categories</option>
+                                <option value="technical">Technical Issue</option>
+                                <option value="billing">Billing Issue</option>
+                                <option value="account">Account Issue</option>
+                                <option value="order">Order Issue</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="priorityFilter" class="form-label">Priority</label> --}}
+                            <select id="priorityFilter" class="form-select">
+                                <option value="">All Priorities</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="statusFilter" class="form-label">Status</label> --}}
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="startDate" class="form-label">Start Date</label> --}}
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            {{-- <label for="endDate" class="form-label">End Date</label> --}}
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                        <div class="d-flex align-items-center justify-content-end">
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="fw-normal mb-0">Closed</p>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="role-heading">
-                            <h1 class="mb-0 text-success" id="completedTicketsCount">{{ $completedTickets }}</h1>
-                        </div>
-                        <div class="bg-label-success rounded-1 px-1">
-                            <i class="ti ti-ticket fs-2 text-success"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
-                        <h5 class="mb-0">Filters</h5>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png" width="30" alt="">
-                    </div>
-                    <div class="collapse" id="collapseExample">
-                        <div class="row gy-3">
-                            <div class="col-md-3">
-                                <label for="ticketNumberFilter" class="form-label">Ticket #</label>
-                                <input type="text" id="ticketNumberFilter" class="form-control" placeholder="Search by ticket number">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="subjectFilter" class="form-label">Subject</label>
-                                <input type="text" id="subjectFilter" class="form-control" placeholder="Search by subject">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="customerFilter" class="form-label">Customer</label>
-                                <input type="text" id="customerFilter" class="form-control" placeholder="Search by customer name">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="categoryFilter" class="form-label">Category</label>
-                                <select id="categoryFilter" class="form-select">
-                                    <option value="">All Categories</option>
-                                    <option value="technical">Technical Issue</option>
-                                    <option value="billing">Billing Issue</option>
-                                    <option value="account">Account Issue</option>
-                                    <option value="order">Order Issue</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="priorityFilter" class="form-label">Priority</label>
-                                <select id="priorityFilter" class="form-select">
-                                    <option value="">All Priorities</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="statusFilter" class="form-label">Status</label>
-                                <select id="statusFilter" class="form-select">
-                                    <option value="">All Statuses</option>
-                                    <option value="open">Open</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="closed">Closed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="startDate" class="form-label">Start Date</label>
-                                <input type="date" id="startDate" class="form-control">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="endDate" class="form-label">End Date</label>
-                                <input type="date" id="endDate" class="form-control">
-                            </div>
-                            <div class="d-flex align-items-center justify-content-end">
-                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
-                        </div>
-                    </div>
+                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" alt="">
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card p-3">
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center gap-3">
-                <h5 class="card-title mb-0">Support Tickets</h5>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table id="ticketsTable" class="display w-100">
+        <div>
+            <table id="ticketsTable">
                 <thead>
                     <tr>
                         <th>Ticket #</th>
@@ -201,6 +217,7 @@
             },
             processing: true,
             serverSide: true,
+            dom: '<"top"f>rt<"bottom"lip><"clear">',
             ajax: {
                 url: "{{ route('admin.support.tickets') }}",
                 dataSrc: function(json) {
