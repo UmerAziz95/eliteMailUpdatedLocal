@@ -83,43 +83,47 @@
             their assigned role.</p>
     </div>
 
-    <div class="row gy-4">
+    <div class="row g-0">
 
-         @foreach ($roles as $role)
-    <div class="col-xl-4 col-lg-6 col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <p class="fw-normal mb-0">Total {{ $role->users->count() }} users</p>
-                    <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
-                        @foreach ($role->users as $user)
-                            @php
+        <div class="counters">
+            @foreach ($roles as $role)
+            <div class="">
+                <div class="card counter_1">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <p class="fw-normal mb-0 text-dark">Total {{ $role->users->count() }} users</p>
+                            <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
+                                @foreach ($role->users as $user)
+                                @php
                                 $image = $user->profile_image
-                                    ? asset('storage/profile_images/' . $user->profile_image)
-                                    : asset('storage/profile_images/default.jpg');
-                            @endphp
-                            <li class="avatar pull-up" data-bs-toggle="tooltip" title="{{ $user->name ?? 'User' }}">
-                                <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <div class="role-heading">
-                        <h5 class="mb-1">{{ $role->name }}</h5>
-                        {{-- <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Add Role</a> --}}
+                                ? asset('storage/profile_images/' . $user->profile_image)
+                                : asset('storage/profile_images/default.jpg');
+                                @endphp
+                                <li class="avatar pull-up" data-bs-toggle="tooltip" title="{{ $user->name ?? 'User' }}">
+                                    <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div class="role-heading">
+                                <h5 class="mb-1 text-capitalize">{{ $role->name }}</h5>
+                                {{-- <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#addRoleModal">Add
+                                    Role</a> --}}
+                            </div>
+                            <a href="javascript:void(0);">
+                                <i class="icon-base ti tabler-copy icon-md text-heading"></i>
+                            </a>
+                        </div>
                     </div>
-                    <a href="javascript:void(0);">
-                        <i class="icon-base ti tabler-copy icon-md text-heading"></i>
-                    </a>
                 </div>
             </div>
+            @endforeach
         </div>
-    </div>
-@endforeach
 
 
-        {{-- <!-- Manager Role -->
+        {{--
+        <!-- Manager Role -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -248,13 +252,13 @@
                         <div class="card-body text-sm-end text-center ps-sm-0">
                             @if (!auth()->user()->hasPermissionTo('Mod'))
                             <button data-bs-target="#addRoleModal" data-bs-toggle="modal"
-                                    class="text-nowrap m-btn py-1 px-3 mb-3 rounded-2 border-0">
+                                class="text-nowrap m-btn py-1 px-3 mb-3 rounded-2 border-0">
                                 Add New Role
                             </button>
-                        @endif
-                        
+                            @endif
+
                             <p class="mb-0">
-                             
+
                             </p>
                         </div>
                     </div>
@@ -269,15 +273,15 @@
                 <strong class="text-danger">There were some problems with your input.</strong>
                 <ul class="mb-0">
                     @foreach ($errors->all() as $error)
-                        <li class="text-danger" style="list-style: none">{{ $error }}</li>
+                    <li class="text-danger" style="list-style: none">{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
-        @endif
+            @endif
         </div>
-        
-    @include('admin.roles.listing')
-    
+
+        @include('admin.roles.listing')
+
 
     </div>
 
@@ -293,7 +297,7 @@
                         <h4 class="role-title">Manage Role</h4>
                         <p>Set role permissions</p>
                     </div>
-                  
+
 
                     @include('admin.roles.add_new_form')
                 </div>
@@ -497,7 +501,7 @@ function initDataTable(planId = '') {
     });
 </script>
 <script>
- $('#addRoleModal').on('shown.bs.modal', function () {
+    $('#addRoleModal').on('shown.bs.modal', function () {
     $('#permissions').select2({
         placeholder: "Select permissions",
         width: '100%',

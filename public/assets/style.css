@@ -1,7 +1,7 @@
 :root {
     --primary-color: #212433;
     --secondary-color: #2f3349;
-    --second-primary: #685cf1;
+    --second-primary: #7367ef;
     --light-color: #ffffffbb;
     --white-color: #fff;
     --box-shadow: rgba(104, 104, 141, 0.214) 0px 2px 5px 0px,
@@ -64,13 +64,14 @@ a {
 
 .counters {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
 .counter_1 {
     background: linear-gradient(334deg, rgba(115, 103, 239, 1) 0%, rgba(255, 255, 255, 1) 73%);
     color: #000 !important;
+    cursor: pointer
 }
 
 .counter_2 {
@@ -86,14 +87,24 @@ a {
     background: linear-gradient(128deg, rgb(97, 82, 255) 0%, rgba(255, 255, 255, 1) 65%);
 }
 
+.filter img {
+    opacity: .7;
+}
+
+.filter h5 {
+    color: #000 !important;
+    font-size: 16px;
+}
+
 .filter input,
 .filter select {
-    border: 1px solid var(--white-color) !important;
+    border: 1px solid #000 !important;
+    color: #000 !important;
 }
 
 .filter input::placeholder,
 .filter select::placeholder {
-    color: var(--white-color) !important;
+    color: #000 !important;
     opacity: 1 !important;
 }
 
@@ -311,7 +322,7 @@ footer {
     }
 
     .nav-link.active {
-        background: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+        background: linear-gradient(270deg, rgba(114, 103, 240, 0.451) 0%, #8177ec 100%);
         border-radius: 4px;
         color: #fff;
         box-shadow: 0 .125rem .375rem 0 rgba(115, 103, 240, 0.7)
@@ -380,6 +391,12 @@ footer {
         transform: rotate(90deg);
     }
 
+}
+
+.nav-pills .nav-link.active,
+.nav-tabs .nav-link.active {
+    background: linear-gradient(334deg, rgba(115, 103, 239, 1) 0%, rgba(255, 255, 255, 1) 73%);
+    color: #000 !important;
 }
 
 .card {

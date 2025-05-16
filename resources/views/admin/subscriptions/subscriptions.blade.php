@@ -45,61 +45,92 @@
 
 @section('content')
 <section class="py-3">
-    <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Total Subscriptions</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="total_counter">0</h4>
-                            </div>
+    <div class="counters mb-4">
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Total Subscriptions</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                            <p class="text-success mb-0"></p>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0"></small>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Active Subscriptions</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="active_counter">0</h4>
-                            </div>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
-                        </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-warning">
+                            <i class="ti ti-user-search"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Cancelled Subscriptions</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="inactive_counter">0</h4>
-                            </div>
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Active Subscriptions</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                            <p class="text-danger mb-0"></p>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-success">
+                            <i class="ti ti-user-check"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Cancel Subscriptions</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                            <p class="text-success mb-0"></p>
                         </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Subscriptions Ammount</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                            <p class="text-success mb-0"></p>
+                        </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
@@ -124,52 +155,67 @@
 
             <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
                 tabindex="0">
-                <div class="row gy-3 py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="mb-2">Filters</h5>
+                <div class="row gy-3 mt-0">
+                    <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                        href="#filter_1" role="button" aria-expanded="false" aria-controls="filter_1">
                         <div>
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 applyFilters">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm clearFilters">Clear</button>
+                            <div class="d-flex gap-2 align-items-center">
+                                <h5 class="text-uppercase fs-6 mb-0">Filters</h5>
+                                <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                                    width="30" alt="">
+                            </div>
+                            <small>Click here to open advance search for a table</small>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <input type="text" id="user_name_filter" class="form-control" placeholder="Enter name">
+                    <div class="row collapse" id="filter_1">
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="user_name_filter" class="form-control" placeholder="Enter name">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="amount_filter" class="form-control" placeholder="Enter amount">
+                        </div>
+                        <div class="d-flex justify-content-end my-3">
+                            <button id="applyFilters"
+                                class="btn btn-primary btn-sm me-2 px-4 applyFilters">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4 clearFilters">Clear</button>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" id="amount_filter" class="form-control" placeholder="Enter amount">
-                    </div>
-
-                    {{-- <div class="col-md-3">
-                        <select id="status_filter" class="form-select">
-                            <option value="">Select Status</option>
-                            <option value="1">active</option>
-                            <option value="0">inactive</option>
-
-                        </select>
-                    </div> --}}
                 </div>
                 @include('admin.subscriptions._subscriptions_table')
             </div>
             <div class="tab-pane fade" id="cancel-tab-pane" role="tabpanel" aria-labelledby="cancel-tab" tabindex="0">
                 <div class="row gy-3 py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="mb-2">Filters</h5>
+                    <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                        href="#filter_2" role="button" aria-expanded="false" aria-controls="filter_2">
                         <div>
-                            <button id="applyFilters2"  class="btn btn-primary btn-sm me-2 applyFilters">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm clearFilters">Clear</button>
+                            <div class="d-flex gap-2 align-items-center">
+                                <h5 class="text-uppercase fs-6 mb-0">Filters</h5>
+                                <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                                    width="30" alt="">
+                            </div>
+                            <small>Click here to open advance search for a table</small>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <input type="text" id="user_name_filter2" class="form-control" placeholder="Enter name">
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" id="email_filter2" class="form-control" placeholder="Enter email">
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" id="amount_filter2" class="form-control" placeholder="Enter amount">
+
+                    <div class="row collapse" id="filter_2">
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="user_name_filter2" class="form-control" placeholder="Enter name">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="email_filter2" class="form-control" placeholder="Enter email">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <input type="text" id="amount_filter2" class="form-control" placeholder="Enter amount">
+                        </div>
+
+                        <div class="d-flex justify-content-end my-3">
+                            <button id="applyFilters2"
+                                class="btn btn-primary btn-sm me-2 px-4 applyFilters">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4 clearFilters">Clear</button>
+                        </div>
                     </div>
 
                     {{-- <div class="col-md-3">
@@ -233,14 +279,15 @@
         serverSide: true,
         responsive: true,
         autoWidth: false,
+        dom: '<"top"f>rt<"bottom"lip><"clear">',
         columnDefs: [
-    { width: '10%', targets: 0 }, // ID
-    { width: '15%', targets: 1 }, // Date
-    { width: '10%', targets: 2 }, // Amount
-    { width: '10%', targets: 2 }, // Name
-    { width: '30%', targets: 3 }, // Email
-    { width: '15%', targets: 4 }, // Status
-    { width: '20%', targets: 5 }  // Actions
+        { width: '10%', targets: 0 }, // ID
+        { width: '15%', targets: 1 }, // Date
+        { width: '10%', targets: 2 }, // Amount
+        { width: '10%', targets: 2 }, // Name
+        { width: '30%', targets: 3 }, // Email
+        { width: '15%', targets: 4 }, // Status
+        { width: '20%', targets: 5 }  // Actions
     ],
         ajax: {
             url: "{{ route('admin.subs.view') }}",
@@ -344,6 +391,7 @@
         serverSide: true,
         responsive: true,
         autoWidth: false,
+        dom: '<"top"f>rt<"bottom"lip><"clear">',
        columns: [
             { data: 'id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
             { data: 'created_at', name: 'subscriptions.created_at' }, // Date

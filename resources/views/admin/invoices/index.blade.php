@@ -8,114 +8,167 @@
 
 @section('content')
 <section class="py-3">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-2">Total Invoices</h6>
-                            <h3 class="card-title mb-0" id="totalInvoices">0</h3>
+    <div class="row gy-3 mb-4">
+        <div class="counters col-lg-6">
+            <div class="card p-2 counter_1">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Total Invoices</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="totalInvoices">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-2">Paid Invoices</h6>
-                            <h3 class="card-title mb-0 text-success" id="paidInvoices">0</h3>
+            </div>
+
+            <div class="card p-2 counter_2">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Active Users</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="paidInvoices">0</h4>
+                                <p class="text-danger mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-user-check"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-2">Pending Invoices</h6>
-                            <h3 class="card-title mb-0 text-warning" id="pendingInvoices">0</h3>
+            </div>
+
+            <div class="card p-2 counter_2">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Inactive Invoices</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="pendingInvoices">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-2">Failed Invoices</h6>
-                            <h3 class="card-title mb-0 text-danger" id="failedInvoices">0</h3>
+            </div>
+
+            <div class="card p-2 counter_1">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Failed Invoices</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="failedInvoices">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-2" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
-                        <h5 class="mb-0">Filters</h5>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png" width="30" alt="">
-                    </div>
-                    <div class="collapse" id="collapseExample">
-                        <div class="row gy-3">
-                            <div class="col-md-3">
-                                <label for="statusFilter" class="form-label">Invoice Status</label>
-                                <select id="statusFilter" class="form-select">
-                                    <option value="">All Statuses</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="failed">Failed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="orderIdFilter" class="form-label">Order ID</label>
-                                <input type="text" id="orderIdFilter" class="form-control" placeholder="Enter Order ID">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="orderStatusFilter" class="form-label">Order Status</label>
-                                <select id="orderStatusFilter" class="form-select">
-                                    <option value="">All Order Statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="expired">Expired</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="startDate" class="form-label">Start Date</label>
-                                <input type="date" id="startDate" class="form-control" placeholder="Start Date">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="endDate" class="form-label">End Date</label>
-                                <input type="date" id="endDate" class="form-control" placeholder="End Date">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="priceRange" class="form-label">Price Range</label>
-                                <select id="priceRange" class="form-select">
-                                    <option value="">All Prices</option>
-                                    <option value="0-100">$0 - $100</option>
-                                    <option value="101-500">$101 - $500</option>
-                                    <option value="501-1000">$501 - $1000</option>
-                                    <option value="1001+">$1000+</option>
-                                </select>
-                            </div>
+        <div class="col-lg-6">
+            <div class="card p-4 h-100 filter">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-2 text-white">Filters</h5>
+                </div>
 
-                            <div class="d-flex align-items-center justify-content-end">
-                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
+                <div class="d-flex align-items-start gap-4">
+                    <div class="row gy-3">
+
+                        <div class="col-md-6">
+                            {{-- <label for="statusFilter" class="form-label">Invoice Status</label> --}}
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="paid">Paid</option>
+                                <option value="pending">Pending</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            {{-- <label for="orderIdFilter" class="form-label">Order ID</label> --}}
+                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Enter Order ID">
+                        </div>
+                        <div class="col-md-6">
+                            {{-- <label for="orderStatusFilter" class="form-label">Order Status</label> --}}
+                            <select id="orderStatusFilter" class="form-select">
+                                <option value="">All Order Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="completed">Completed</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            {{-- <label for="startDate" class="form-label">Start Date</label> --}}
+                            <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+                        </div>
+                        <div class="col-md-6">
+                            {{-- <label for="endDate" class="form-label">End Date</label> --}}
+                            <input type="date" id="endDate" class="form-control" placeholder="End Date">
+                        </div>
+                        <div class="col-md-6">
+                            {{-- <label for="priceRange" class="form-label">Price Range</label> --}}
+                            <select id="priceRange" class="form-select">
+                                <option value="">All Prices</option>
+                                <option value="0-100">$0 - $100</option>
+                                <option value="101-500">$101 - $500</option>
+                                <option value="501-1000">$501 - $1000</option>
+                                <option value="1001+">$1000+</option>
+                            </select>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-end">
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
+
+                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" class="d-none d-sm-block" alt="">
                 </div>
+
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">My Invoices</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
+        <div class="card-body overflow-hidden">
+            <div class="">
                 <table id="invoicesTable">
                     <thead>
                         <tr>
@@ -147,6 +200,7 @@
             responsive: true,
             processing: true,
             serverSide: true,
+            dom: '<"top"f>rt<"bottom"lip><"clear">',
             ajax: {
                 url: "{{ route('admin.invoices.index') }}",
                 type: "GET",

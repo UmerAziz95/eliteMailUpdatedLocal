@@ -5,7 +5,7 @@
 
 <div class="card py-3 px-4">
     <div class="table-responsive">
-        <table id="myTable" class="display">
+        <table id="myTable">
             <thead>
                 <tr>
                     <th>Id</th>
@@ -13,23 +13,22 @@
                     <th>Permissions</th>
                     <th>Created at</th>
                     <th>Action</th>
-                 
+
                 </tr>
             </thead>
             <tbody>
-              
+
             </tbody>
         </table>
     </div>
 </div>
 
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-    aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+    aria-modal="true" role="dialog">
     <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
         <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">Add User</h5>
-        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
-            aria-label="Close"></button>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
         @include('modules.admins.add_new_form')
