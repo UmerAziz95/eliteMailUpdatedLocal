@@ -18,6 +18,8 @@ use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Log as ModelLog;
 use App\Models\Status;
+use App\Mail\OrderStatusChangeMail;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -421,11 +423,42 @@ class OrderController extends Controller
     
             if ($order) {
                 $oldStatus = $order->status_manage_by_admin;
-    
+                $newStatus = $request->marked_status;
                 $order->update([
                     'status_manage_by_admin' => $request->marked_status,
                     'reason' => $request->reason ? $request->reason . " (Reason given by " . Auth::user()->name . ")" : null,
                 ]);
+                $reason =$request->reason;
+                // Get user details and send email
+                $user = $order->user;
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+
+                    // Only send email to admin
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                    Log::info('Order status change email sent', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $order->assigned_to
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                }
     
                 // Log the activity
                 ActivityLogService::log(
