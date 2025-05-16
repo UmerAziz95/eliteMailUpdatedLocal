@@ -93,16 +93,29 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <p class="fw-normal mb-0 text-dark">Total {{ $role->users->count() }} users</p>
                             <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
-                                @foreach ($role->users as $user)
+                                @php $maxDisplay = 3; @endphp
+                                @foreach ($role->users->take($maxDisplay) as $user)
                                 @php
-                                $image = $user->profile_image
-                                ? asset('storage/profile_images/' . $user->profile_image)
-                                : asset('storage/profile_images/default.jpg');
+                                $hasProfileImage = $user->profile_image && file_exists(storage_path('app/public/profile_images/' . $user->profile_image));
+                                $image = $hasProfileImage 
+                                    ? asset('storage/profile_images/' . $user->profile_image)
+                                    : asset('storage/profile_images/default.jpg');
                                 @endphp
                                 <li class="avatar pull-up" data-bs-toggle="tooltip" title="{{ $user->name ?? 'User' }}">
-                                    <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
+                                    @if($hasProfileImage || file_exists(storage_path('app/public/profile_images/default.jpg')))
+                                        <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
+                                    @else
+                                        <div class="avatar-initial">{{ substr($user->name ?? 'U', 0, 1) }}</div>
+                                    @endif
                                 </li>
                                 @endforeach
+                                
+                                @php $remainingCount = $role->users->count() - $maxDisplay; @endphp
+                                @if($remainingCount > 0)
+                                <li class="avatar">
+                                    <span class="avatar-initial pull-up" data-bs-toggle="tooltip" title="{{ $remainingCount }} more">+{{ $remainingCount }}</span>
+                                </li>
+                                @endif
                             </ul>
                         </div>
                         <div class="d-flex justify-content-between align-items-end">
