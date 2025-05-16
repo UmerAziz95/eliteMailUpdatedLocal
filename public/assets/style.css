@@ -84,7 +84,7 @@ a {
 }
 
 .filter {
-    background: linear-gradient(128deg, rgb(97, 82, 255) 0%, rgba(255, 255, 255, 1) 65%);
+    background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%);
 }
 
 .filter img {
@@ -435,6 +435,14 @@ th {
     padding-right: 10px;
 }
 
+.dataTables_length {
+    display: none;
+}
+
+.dataTables_info {
+    display: none;
+}
+
 .dt-length label {
     display: none;
 }
@@ -496,6 +504,10 @@ label,
 .form-label {
     font-weight: 100 !important;
     font-size: 14px;
+}
+
+filter .form-label {
+    color: #000 !important
 }
 
 .form-control:focus {

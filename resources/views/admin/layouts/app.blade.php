@@ -38,13 +38,13 @@
 
     <script>
         (function () {
-    const theme = localStorage.getItem("theme");
-    if (theme === "light") {
-      document.documentElement.classList.add("light-theme");
-    } else {
-      document.documentElement.classList.add("dark-theme");
-    }
-  })();
+            const theme = localStorage.getItem("theme");
+            if (theme === "light") {
+            document.documentElement.classList.add("light-theme");
+            } else {
+            document.documentElement.classList.add("dark-theme");
+            }
+        })();
     </script>
 </head>
 
@@ -62,10 +62,10 @@
                 @include('admin.layouts.header')
                 <!-- Include Header -->
                 @yield('content')
-                <!-- Main Page Content -->
-                @include('admin.layouts.footer')
-                <!-- Include Footer (Optional) -->
             </div>
+            <!-- Main Page Content -->
+            @include('admin.layouts.footer')
+            <!-- Include Footer (Optional) -->
         </div>
     </div>
 

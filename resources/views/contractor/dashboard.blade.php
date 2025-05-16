@@ -3,138 +3,138 @@
 @section('title', 'Dashboard')
 
 @push('styles')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <style>
-        .swiper {
-            width: 100%;
-            max-width: 600px;
-        }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<style>
+    .swiper {
+        width: 100%;
+        max-width: 600px;
+    }
 
-        .swiper-slide {
-            background-color: var(--second-primary);
-            border-radius: 6px;
-            color: #fff
-        }
+    .swiper-slide {
+        background-color: var(--second-primary);
+        border-radius: 6px;
+        color: #fff
+    }
 
-        .swiper-slide img {
-            max-width: 100%;
-            height: auto;
-        }
+    .swiper-slide img {
+        max-width: 100%;
+        height: auto;
+    }
 
-        span {
-            font-size: 13px;
-        }
+    span {
+        font-size: 13px;
+    }
 
-        h5 {
-            font-weight: 600
-        }
+    h5 {
+        font-weight: 600
+    }
 
-        .slider_span_bg {
-            background-color: #33333332;
-        }
+    .slider_span_bg {
+        background-color: #33333332;
+    }
 
-        .swiper-pagination {
-            top: 10px !important;
-            left: 260px !important
-        }
+    .swiper-pagination {
+        top: 10px !important;
+        left: 260px !important
+    }
 
-        .swiper-pagination-bullet-active {
-            background-color: #fff !important;
-        }
+    .swiper-pagination-bullet-active {
+        background-color: #fff !important;
+    }
 
-        .bg-label-info {
-            background-color: rgba(0, 255, 255, 0.143);
-        }
+    .bg-label-info {
+        background-color: rgba(0, 255, 255, 0.143);
+    }
 
-        .bg-label-primary {
-            background-color: rgba(79, 0, 128, 0.203);
-        }
+    .bg-label-primary {
+        background-color: rgba(79, 0, 128, 0.203);
+    }
 
-        .divider.divider-vertical {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: unset;
-            block-size: 100%;
-        }
+    .divider.divider-vertical {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: unset;
+        block-size: 100%;
+    }
 
-        .divider {
-            --bs-divider-color: #ffffff30;
-            display: block;
-            overflow: hidden;
-            margin-block: 1rem;
-            margin-inline: 0;
-            text-align: center;
-            white-space: nowrap;
-        }
+    .divider {
+        --bs-divider-color: #ffffff30;
+        display: block;
+        overflow: hidden;
+        margin-block: 1rem;
+        margin-inline: 0;
+        text-align: center;
+        white-space: nowrap;
+    }
 
-        .divider.divider-vertical:has(.badge-divider-bg)::before {
-            inset-inline-start: 49%;
-        }
+    .divider.divider-vertical:has(.badge-divider-bg)::before {
+        inset-inline-start: 49%;
+    }
 
-        .divider.divider-vertical::before {
-            inset-block: 0 50%;
-        }
+    .divider.divider-vertical::before {
+        inset-block: 0 50%;
+    }
 
-        .divider.divider-vertical::before,
-        .divider.divider-vertical::after {
-            position: absolute;
-            border-inline-start: 1px solid var(--bs-divider-color);
-            content: "";
-            inset-inline-start: 50%;
-        }
+    .divider.divider-vertical::before,
+    .divider.divider-vertical::after {
+        position: absolute;
+        border-inline-start: 1px solid var(--bs-divider-color);
+        content: "";
+        inset-inline-start: 50%;
+    }
 
-        .divider.divider-vertical:has(.badge-divider-bg)::after,
-        .divider.divider-vertical:has(.badge-divider-bg)::before {
-            inset-inline-start: 49%;
-        }
+    .divider.divider-vertical:has(.badge-divider-bg)::after,
+    .divider.divider-vertical:has(.badge-divider-bg)::before {
+        inset-inline-start: 49%;
+    }
 
-        .divider.divider-vertical::after {
-            inset-block: 50% 0;
-        }
+    .divider.divider-vertical::after {
+        inset-block: 50% 0;
+    }
 
-        .divider.divider-vertical::before,
-        .divider.divider-vertical::after {
-            position: absolute;
-            border-inline-start: 1px solid var(--bs-divider-color);
-            content: "";
-            inset-inline-start: 50%;
-        }
+    .divider.divider-vertical::before,
+    .divider.divider-vertical::after {
+        position: absolute;
+        border-inline-start: 1px solid var(--bs-divider-color);
+        content: "";
+        inset-inline-start: 50%;
+    }
 
-        .divider.divider-vertical .divider-text {
-            z-index: 1;
-            padding: .5125rem;
-            background-color: var(--secondary-color);
-        }
+    .divider.divider-vertical .divider-text {
+        z-index: 1;
+        padding: .5125rem;
+        background-color: var(--secondary-color);
+    }
 
-        .divider .divider-text {
-            position: relative;
-            display: inline-block;
-            font-size: .9375rem;
-            padding-block: 0;
-            padding-inline: 1rem;
-        }
+    .divider .divider-text {
+        position: relative;
+        display: inline-block;
+        font-size: .9375rem;
+        padding-block: 0;
+        padding-inline: 1rem;
+    }
 
-        .divider.divider-vertical .divider-text .badge-divider-bg {
-            border-radius: 50%;
-            background-color: #8c8c8c47;
-            color: var(--extra-light);
-            /* color: var(--bs-secondary-color); */
-            font-size: .75rem;
-            padding-block: .313rem;
-            padding-inline: .252rem;
-        }
-    </style>
+    .divider.divider-vertical .divider-text .badge-divider-bg {
+        border-radius: 50%;
+        background-color: #8c8c8c47;
+        color: var(--extra-light);
+        /* color: var(--bs-secondary-color); */
+        font-size: .75rem;
+        padding-block: .313rem;
+        padding-inline: .252rem;
+    }
+</style>
 @endpush
 
 @section('content')
-    <section class="py-3 overflow-hidden">
-        <div class="row gy-4">
+<section class="py-3 overflow-hidden">
+    <div class="row gy-4">
 
 
 
-            <!-- <div class="col-md-6">
+        <!-- <div class="col-md-6">
                 <div class="swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
@@ -266,7 +266,7 @@
 
 
 
-            <!-- <div class="col-xl-3 col-sm-6">
+        <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-2 ">Average Daily Sales</h6>
@@ -334,7 +334,7 @@
 
 
 
-            <!-- <div class="col-md-6">
+        <!-- <div class="col-md-6">
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -414,86 +414,86 @@
                     </div>
                 </div>
             </div> -->
-            <div class="col-xxl-6">
-                <div class="card h-100 p-2">
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Orders Overview</h5>
-                            <p>Distribution of orders by status</p>
-                        </div>
+        <div class="col-xxl-6">
+            <div class="card h-100 p-2">
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Orders Overview</h5>
+                        <p>Distribution of orders by status</p>
                     </div>
-                    <div class="card-body row">
-                        <div class="col-12 col-sm-4">
-                            <div class="mt-lg-4 mt-lg-2 mb-lg-4 mb-2">
-                                <h1 class="mb-0">{{ $totalOrders ?? 0 }}</h1>
-                                <p class="mb-0">Total Orders</p>
-                            </div>
-                            <ul class="p-0 m-0">
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-primary mt-1">
-                                        <i class="ti ti-clock-play fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Pending Orders</h6>
-                                        <p class="small opacity-75">{{ $pendingOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-warning mt-1">
-                                        <i class="ti ti-loader fs-4 text-warning"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">In Progress</h6>
-                                        <p class="small opacity-75">{{ $inProgressOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-success mt-1">
-                                        <i class="ti ti-check fs-4 text-success"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Completed</h6>
-                                        <p class="small opacity-75">{{ $completedOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-info mt-1">
-                                        <i class="ti ti-thumb-up fs-4 text-info"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Approved</h6>
-                                        <p class="small opacity-75">{{ $approvedOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start">
-                                    <div class="badge rounded bg-label-danger mt-1">
-                                        <i class="ti ti-alert-circle fs-4 text-danger"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Cancelled</h6>
-                                        <p class="small opacity-75">{{ $expiredOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                            </ul>
+                </div>
+                <div class="card-body row">
+                    <div class="col-12 col-sm-4">
+                        <div class="mt-lg-4 mt-lg-2 mb-lg-4 mb-2">
+                            <h1 class="mb-0">{{ $totalOrders ?? 0 }}</h1>
+                            <p class="mb-0">Total Orders</p>
                         </div>
-                        <div class="col-12 col-sm-8">
-                            <div id="orderStatusChart"></div>
-                        </div>
+                        <ul class="p-0 m-0">
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-primary mt-1">
+                                    <i class="ti ti-clock-play fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Pending Orders</h6>
+                                    <p class="small opacity-75">{{ $pendingOrders ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-warning mt-1">
+                                    <i class="ti ti-loader fs-4 text-warning"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">In Progress</h6>
+                                    <p class="small opacity-75">{{ $inProgressOrders ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-success mt-1">
+                                    <i class="ti ti-check fs-4 text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Completed</h6>
+                                    <p class="small opacity-75">{{ $completedOrders ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-info mt-1">
+                                    <i class="ti ti-thumb-up fs-4 text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Approved</h6>
+                                    <p class="small opacity-75">{{ $approvedOrders ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start">
+                                <div class="badge rounded bg-label-danger mt-1">
+                                    <i class="ti ti-alert-circle fs-4 text-danger"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Cancelled</h6>
+                                    <p class="small opacity-75">{{ $expiredOrders ?? 0 }}</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-sm-8">
+                        <div id="orderStatusChart"></div>
                     </div>
                 </div>
             </div>
+        </div>
 
 
-            
 
-            <div class="col-12 col-md-6">
-                <div class="card h-100 p-2">
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Support Tracker</h5>
-                            <p>Assigned Tickets Overview</p>
-                        </div>
-                        <!-- <div class="dropdown">
+
+        <div class="col-12 col-md-6">
+            <div class="card h-100 p-2">
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Support Tracker</h5>
+                        <p>Assigned Tickets Overview</p>
+                    </div>
+                    <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -502,117 +502,118 @@
                                 <a class="dropdown-item" href="javascript:void(0);">View All</a>
                             </div>
                         </div> -->
+                </div>
+                <div class="card-body row pt-0">
+                    <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
+                        <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
+                            <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
+                            <p class="mb-0">Total Tickets</p>
+                        </div>
+                        <ul class="p-0 m-0">
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-primary mt-1">
+                                    <i class="ti ti-ticket theme-text fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Open Tickets</h6>
+                                    <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-info mt-1">
+                                    <i class="ti ti-clock fs-4 text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">In Progress</h6>
+                                    <p class="small opacity-75">{{ $inProgressTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start pb-1">
+                                <div class="badge rounded bg-label-success mt-1">
+                                    <i class="ti ti-check fs-4 text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Closed</h6>
+                                    <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="card-body row pt-0">
-                        <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
-                            <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
-                                <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
-                                <p class="mb-0">Total Tickets</p>
-                            </div>
-                            <ul class="p-0 m-0">
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-primary mt-1">
-                                        <i class="ti ti-ticket theme-text fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                                        <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-info mt-1">
-                                        <i class="ti ti-clock fs-4 text-info"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">In Progress</h6>
-                                        <p class="small opacity-75">{{ $inProgressTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start pb-1">
-                                    <div class="badge rounded bg-label-success mt-1">
-                                        <i class="ti ti-check fs-4 text-success"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Closed</h6>
-                                        <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-12 col-md-8">
-                            <div id="ticketPieChart"></div>
-                        </div>
+                    <div class="col-12 col-md-8">
+                        <div id="ticketPieChart"></div>
                     </div>
                 </div>
             </div>
-            <div class="col-12">
-                <div class="card p-3">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <!-- History -->
-                            <h5 class="mb-1">Orders History</h5>
-                            <p>History of orders</p>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="ordersTable" class="display">  <!-- Changed from myTable to ordersTable -->
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Plan</th>
-                                    <th>Total Inboxes</th>
-                                    <th>Status</th>
-                                    <th>Created At</th>
-                                    <!-- <th>Actions</th> -->
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="card p-3">
-                    <!-- heading  -->
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Recent Activity</h5>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="activityTable" class="display w-100">
-                            <thead>
-                                <tr>
-                                    <th class="text-start">ID</th>
-                                    <th>Action Type</th>
-                                    <th>Description</th>
-                                    <th>Performed By</th>
-                                    <th>Performed On Type</th>
-                                    <th>Performed On Id</th>
-                                    <th>IP</th>
-                                    <th>User Agent</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            
-
-            
-
         </div>
-    </section>
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="card-header border-0 pb-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <!-- History -->
+                        <h5 class="mb-1">Orders History</h5>
+                        <p>History of orders</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="ordersTable" class="display">
+                        <!-- Changed from myTable to ordersTable -->
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Plan</th>
+                                <th>Total Inboxes</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <!-- <th>Actions</th> -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card p-3">
+                <!-- heading  -->
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Recent Activity</h5>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="activityTable" class="display w-100">
+                        <thead>
+                            <tr>
+                                <th class="text-start">ID</th>
+                                <th>Action Type</th>
+                                <th>Description</th>
+                                <th>Performed By</th>
+                                <th>Performed On Type</th>
+                                <th>Performed On Id</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+    </div>
+</section>
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
             var swiper = new Swiper(".swiper", {
                 loop: true,
                 speed: 1000,
@@ -693,13 +694,52 @@
 
             // Order Status Chart configuration
             const orderStatusOptions = {
-                series: [{{ $pendingOrders ?? 0 }}, {{ $inProgressOrders ?? 0 }}, {{ $completedOrders ?? 0 }}, {{ $approvedOrders ?? 0 }}, {{ $expiredOrders ?? 0 }}],
+                series: [{{ $pendingOrders ?? 0 }},  {{ $inProgressOrders ?? 0 }}, {{ $completedOrders ?? 0 }}, {{ $approvedOrders ?? 0 }}, {{ $expiredOrders ?? 0 }}],
                 chart: {
-                    type: 'pie',
-                    height: 350
+                    type: 'donut',
+                    height: 350,
+                    dropShadow: {
+                        enabled: true,
+                        color: 'var(--second-primary)',
+                        top: -1,
+                        left: 3,
+                        blur: 5,
+                        opacity: 0.4
+                    }
                 },
                 labels: ['Pending', 'In Progress', 'Completed', 'Approved', 'Expired'],
-                colors: ['#7367f0', '#ff9f43', '#28c76f', '#00cfe8', '#ea5455'],
+                colors: ['#7367f0', '#ff9f43', '#28c76f', '#00cfe8', '#ea5455'], // base colors
+                fill: {
+                    type: 'pattern',
+                    opacity: 1,
+                    pattern: {
+                        enabled: false,
+                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles','slantedLines', 'circles', 'horizontalLines', 'slantedLines', 'verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles', 'horizontalLines'],
+                    },
+                },
+                stroke: {
+                    width: 0,
+                },
+                colors: [
+                    '#7367ef',  // base purple
+                    'transparent',  // base purple
+                    '#7367ef',  // lighter tint
+                    'transparent',  // lighter tint
+                    '#7367ef',  // dark shade
+                    'transparent',  // dark shade
+                    '#7367ef',  // pastel
+                    'transparent',  // pastel
+                    '#7367ef',  // bold deep
+                    'transparent',   // bold deep
+                    '#7367ef',  // bold deep
+                    'transparent',  // bold deep
+                ],
+                 dataLabels: {
+                    dropShadow: {
+                        blur: 2,
+                        opacity: 1
+                    }
+                },
                 legend: {
                     position: 'bottom',
                     labels: {
@@ -714,7 +754,7 @@
                                 total: {
                                     show: true,
                                     label: 'Total Orders',
-                                    formatter: function() {
+                                    formatter: function () {
                                         return {{ $totalOrders ?? 0 }};
                                     }
                                 }
@@ -723,6 +763,7 @@
                     }
                 }
             };
+
 
             // Initialize order status chart
             const orderStatusChart = new ApexCharts(document.querySelector("#orderStatusChart"), orderStatusOptions);
@@ -805,6 +846,7 @@
                 series: [{
                     data: [0, 40, 35, 70, 60, 80, 50]
                 }],
+                
                 chart: {
                     type: 'area',
                     height: 135,
@@ -885,6 +927,7 @@
 
             // Only initialize weekBarChart if the element exists
             const weekBarElement = document.querySelector("#weekBarChart");
+            
             if (weekBarElement) {
                 var options = {
                     series: [{
@@ -1007,5 +1050,5 @@
             }
 
         });
-    </script>
+</script>
 @endpush

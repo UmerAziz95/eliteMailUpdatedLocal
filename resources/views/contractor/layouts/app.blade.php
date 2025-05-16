@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">   
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'EliteMailBoxes')</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -25,21 +25,36 @@
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.css" rel="stylesheet">
     @stack('styles')
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme");
+            if (theme === "light") {
+            document.documentElement.classList.add("light-theme");
+            } else {
+            document.documentElement.classList.add("dark-theme");
+            }
+        })();
+    </script>
 </head>
 
 <body>
 
     <div class="d-flex w-100 h-100 overflow-hidden">
         <div>
-            @include('contractor.layouts.sidebar') <!-- Include Sidennnbar -->
+            @include('contractor.layouts.sidebar')
+            <!-- Include Sidennnbar -->
         </div>
 
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
-                @include('contractor.layouts.header') <!-- Include Header -->
-                @yield('content') <!-- Main Page Content -->
+                @include('contractor.layouts.header')
+                <!-- Include Header -->
+                @yield('content')
+                <!-- Main Page Content -->
             </div>
-            @include('contractor.layouts.footer') <!-- Include Footer (Optional) -->
+            @include('contractor.layouts.footer')
+            <!-- Include Footer (Optional) -->
         </div>
     </div>
     <!-- jQuery Latest        -->
@@ -55,9 +70,9 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script>
-     <!-- sweeetalert2 -->
-     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <!-- sweeetalert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
     <script>
         function updateNotificationCount() {
@@ -144,4 +159,5 @@
 
     </script>
 </body>
+
 </html>

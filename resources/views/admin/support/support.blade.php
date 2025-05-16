@@ -15,13 +15,13 @@
 @section('content')
 <section class="py-3">
 
-    <div class="row">
+    <div class="row mb-4">
         <div class="counters col-lg-6">
             <div class="card p-2 counter_1">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Total Users</h6>
+                            <h6 class="text-heading">Total Tickets</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h1 class="mb-0" id="totalTicketsCount">{{ $totalTickets }}</h1>
                                 <p class="text-success mb-0"></p>
@@ -32,7 +32,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -43,7 +43,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Active Users</h6>
+                            <h6 class="text-heading">Open Tickets</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
                                 <p class="text-danger mb-0"></p>
@@ -54,7 +54,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -66,7 +66,7 @@
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">InActive Users</h6>
+                            <h6 class="text-heading">In-Progress</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h1 class="mb-0 " id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
                                 <p class=" mb-0"></p>
@@ -77,7 +77,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -89,7 +89,7 @@
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">InActive Users</h6>
+                            <h6 class="text-heading">Closed Tickets</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
                                 <p class=" mb-0"></p>
@@ -100,7 +100,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>

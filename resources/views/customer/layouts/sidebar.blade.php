@@ -1,4 +1,4 @@
-<aside class="sidebar px-2 py-4 overflow-y-auto" style="scrollbar-width: none">
+<aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2">
         <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
         <h4 class="text fs-5 mb-0">Mailboxes</h4>
@@ -70,7 +70,7 @@
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.subscriptions.view') ? 'active' : '' }}"
                 href="{{ route('customer.subscriptions.view') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                    <div class="icons"><i class="ti ti-file-description fs-5"></i></i></div>
                     <div class="text">Subscriptions</div>
                 </div>
             </a>
@@ -80,7 +80,7 @@
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.invoices.index') ? 'active' : '' }}"
                 href="{{ route('customer.invoices.index') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                    <div class="icons"><i class="ti ti-invoice fs-5"></i></div>
                     <div class="text">Invoices</div>
                 </div>
             </a>

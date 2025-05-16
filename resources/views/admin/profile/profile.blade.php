@@ -75,69 +75,66 @@
 
 @section('content')
 <section class="py-4">
-    <div class="row">
+    {{-- <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="user-profile-header-banner">
                     <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/pages/profile-banner.png"
                         width="100%" alt="Banner image" class="rounded-top">
                 </div>
-                <div class="d-flex flex-column flex-lg-row align-items-stretch text-sm-start text-center mb-3">
-                    <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
 
-                        <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                            style="inline-size: 160px" alt="user image"
-                            class="d-block h-auto ms-0 ms-sm-3 rounded user-profile-img">
-                    </div>
-                    <div class="flex-grow-1 mt-3">
-                        <div
-                            class="d-flex align-items-md-end align-items-sm-start align-items-center justify-content-md-between justify-content-start mx-3 flex-md-row flex-column gap-4">
-                            <div class="user-profile-info">
-                                <h4 class="mb-2">{{Auth::user()->name}}</h4>
-                                <ul
-                                    class="list-inline mb-0 d-flex align-items-center flex-wrap justify-content-sm-start justify-content-center gap-4 my-2">
-                                    {{-- <li class="opacity-75 d-flex gap-2 align-items-center">
-                                        <i class="ti ti-palette fs-5"></i><span class="fw-semibold">UX
-                                            Designer</span>
-                                    </li>
-                                    <li class="opacity-75 d-flex gap-2 align-items-center"><i
-                                            class="ti ti-map-pin fs-5"></i>
-                                        <span class="fw-semibold">Vatican City</span>
-                                    </li> --}}
-                                    <li class="opacity-75 d-flex gap-2 align-items-center">
-                                        <i class="ti ti-calendar fs-5"></i>
-                                        <span class="fw-semibold">Joined {{
-                                            \Carbon\Carbon::parse(Auth::user()->created_at)->format('d M Y') }}</span>
-                                    </li>
-                                </ul>
-                            </div>
-                            {{-- <a href="javascript:void(0)"
-                                class="m-btn rounded-2 border-0 py-2 px-4 text-decoration-none fs-6">
-                                <i class="ti ti-user-check fs-6 me-2"></i>Connected </a> --}}
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <div class="row mt-4">
         <div class="col-xl-4 col-lg-5 col-md-5">
             <!-- About User -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <p class="card-text text-uppercase opacity-75 fw-lighter">About</p>
-                    <ul class="list-unstyled my-3 py-1">
-                        <li class="d-flex align-items-center mb-4"><i class="ti ti-user"></i><span
-                                class="fw-semibold mx-2">Full Name:</span> <span>{{Auth::user()->name}}</span></li>
+                    {{-- <p class="card-text text-uppercase opacity-75 fw-lighter">About</p> --}}
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
+
+                            <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                                style="inline-size: 160px; border-radius: 50%" alt="user image"
+                                class="d-block user-profile-img">
+                        </div>
+                        <div class="flex-grow-1 mt-3">
+                            <div
+                                class="d-flex align-items-md-end align-items-sm-start align-items-center justify-content-md-between justify-content-start mx-3 flex-md-row flex-column gap-4">
+                                <div class="user-profile-info">
+                                    <h4 class="mb-2">{{Auth::user()->name}}</h4>
+                                    <ul
+                                        class="list-inline mb-0 d-flex align-items-center flex-wrap justify-content-sm-start justify-content-center gap-4 my-2">
+                                        <li class="opacity-75 d-flex gap-2 align-items-center">
+                                            <i class="ti ti-calendar fs-5"></i>
+                                            <span class="fw-semibold">Joined {{
+                                                \Carbon\Carbon::parse(Auth::user()->created_at)->format('d M Y')
+                                                }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                {{-- <a href="javascript:void(0)"
+                                    class="m-btn rounded-2 border-0 py-2 px-4 text-decoration-none fs-6">
+                                    <i class="ti ti-user-check fs-6 me-2"></i>Connected </a> --}}
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled my-3 py-1 border rounded-2 px-2 pt-3">
+                        <li class="d-flex align-items-center mb-4"><i class="ti ti-user opacity-100"></i><span
+                                class="fw-semibold mx-2 opacity-100">Full Name:</span>
+                            <span>{{Auth::user()->name}}</span>
+                        </li>
                         <li class="d-flex align-items-center mb-4">
-                            <i class="ti ti-check"></i>
-                            <span class="fw-semibold mx-2">Status:</span> <span>{{Auth::user()->status == '1' ? 'Active'
+                            <i class="ti ti-check opacity-100"></i>
+                            <span class="fw-semibold mx-2 opacity-100">Status:</span> <span>{{Auth::user()->status ==
+                                '1' ? 'Active'
                                 : 'In-Active'}}</span>
                         </li>
                         <li class="d-flex align-items-center mb-4">
-                            <i class="ti ti-crown"></i>
-                            <span class="fw-semibold mx-2">Role:</span>
+                            <i class="ti ti-crown opacity-100"></i>
+                            <span class="fw-semibold mx-2 opacity-100">Role:</span>
                             <span>{{Auth::user()->role->name}}</span>
                         </li>
                         {{-- <li class="d-flex align-items-center mb-4">
@@ -152,8 +149,8 @@
                     <p class="card-text text-uppercase opacity-75 fw-lighter">Contacts</p>
                     <ul class="list-unstyled my-3 py-1">
                         <li class="d-flex align-items-center mb-4">
-                            <i class="ti ti-phone-call"></i>
-                            <span class="fw-semibold mx-2">Contact:</span>
+                            <i class="ti ti-phone-call opacity-100"></i>
+                            <span class="fw-semibold mx-2 opacity-100">Contact:</span>
                             <span>{{Auth::user()->phone}}</span>
                         </li>
                         {{--<li class="d-flex align-items-center mb-4">
@@ -161,8 +158,8 @@
                             <span>john.doe</span>
                         </li>--}}
                         <li class="d-flex align-items-center mb-4">
-                            <i class="ti ti-mail"></i>
-                            <span class="fw-semibold mx-2">Email:</span>
+                            <i class="ti ti-mail opacity-100"></i>
+                            <span class="fw-semibold mx-2 opacity-100">Email:</span>
                             <span>{{Auth::user()->email}}</span>
                         </li>
                     </ul>
@@ -177,10 +174,11 @@
             </div>
             <!--/ About User -->
         </div>
+
         <div class="col-xl-8 col-lg-7 col-md-7">
             <!-- Activity Timeline -->
 
-            <div class="card p-2 mb-4">
+            <div class="card p-2 mb-4 overflow-auto" style="max-height: 36rem">
                 <div class="card-header border-0">
                     <h5 class="card-action-title mb-0">
                         <i class="ti ti-chart-bar opacity-100 me-2 fs-3"></i>Activity Timeline
