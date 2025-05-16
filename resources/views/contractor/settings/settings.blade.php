@@ -989,16 +989,24 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
-                    // Update the status badge
-                    button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
-                    // Remove the mark as read button
-                    button.remove();
-                    // Show success message
-                    toastr.success('Notification marked as read');
+                    if (response.success) {
+                        // Update the status badge
+                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                        // Remove the mark as read button
+                        button.remove();
+                        // Show success message
+                        toastr.success(response.message || 'Notification marked as read');
+                    } else {
+                        toastr.error(response.message || 'Failed to mark notification as read');
+                    }
                 },
                 error: function(xhr) {
-                    toastr.error('Error marking notification as read');
-                    console.error(xhr.responseText);
+                    console.error('Error marking notification as read:', xhr);
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.error(xhr.responseJSON.message);
+                    } else {
+                        toastr.error('Failed to mark notification as read. Please try again.');
+                    }
                 }
             });
         });
