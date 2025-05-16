@@ -126,11 +126,10 @@
                         <div class="col-md-6">
                             {{-- <label for="orderStatusFilter" class="form-label">Order Status</label> --}}
                             <select id="orderStatusFilter" class="form-select">
-                                <option value="">All Order Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
-                                <option value="completed">Completed</option>
-                                <option value="expired">Expired</option>
+                                <option value="" class="text-light">All Order Statuses</option>
+                                @foreach($statuses as $key => $status)
+                                <option value="{{ $key }}" class="text-{{$status}}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
