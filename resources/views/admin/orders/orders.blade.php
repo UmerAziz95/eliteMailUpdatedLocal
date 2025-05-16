@@ -58,23 +58,6 @@
         pointer-events: none;
         opacity: 0.6;
     }
-
-    .counters {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 20px;
-    }
-
-    .counter_1 {
-        background: linear-gradient(334deg, rgba(115, 103, 239, 1) 0%, rgba(255, 255, 255, 1) 73%);
-        color: #000 !important;
-        cursor: pointer
-    }
-
-    .counter_2 {
-        background: linear-gradient(334deg, rgba(0, 0, 0, 0.54) 0%, rgba(255, 255, 255, 1) 79%);
-        color: #000 !important;
-    }
 </style>
 @endpush
 
@@ -82,7 +65,7 @@
 <section class="py-3">
 
     <div class="row gy-3 mb-4">
-        <div class="counters col-lg-8">
+        <div class="counters col-lg-6">
             <div class="card p-2 counter_1">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -196,8 +179,6 @@
                 </div>
             </div>
 
-            
-
             <div class="card p-2 counter_1">
                 <div class="card-body">
                     <!-- {{-- //card body --}} -->
@@ -220,12 +201,9 @@
                     </div>
                 </div>
             </div>
-
-            
-
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="card p-4 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
@@ -234,11 +212,11 @@
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
                         <div class="col-md-6">
-                            {{-- <label for="orderIdFilter" class="form-label">Order ID</label> --}}
+                            <label for="orderIdFilter" class="form-label text-dark">Order ID</label>
                             <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="statusFilter" class="form-label">Status</label> --}}
+                            <label for="statusFilter" class="form-label text-dark">Status</label>
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 @foreach($statuses as $key => $status)
@@ -247,24 +225,24 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="emailFilter" class="form-label">Email</label> --}}
+                            <label for="emailFilter" class="form-label text-dark">Email</label>
                             <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="domainFilter" class="form-label">Domain URL</label> --}}
+                            <label for="domainFilter" class="form-label text-dark">Domain URL</label>
                             <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="totalInboxesFilter" class="form-label">Total Inboxes</label> --}}
+                            <label for="totalInboxesFilter" class="form-label text-dark">Total Inboxes</label>
                             <input type="number" id="totalInboxesFilter" class="form-control"
                                 placeholder="Search by total inboxes" min="1">
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="startDate" class="form-label">Start Date</label> --}}
+                            <label for="startDate" class="form-label text-dark">Start Date</label>
                             <input type="date" id="startDate" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            {{-- <label for="endDate" class="form-label">End Date</label> --}}
+                            <label for="endDate" class="form-label text-dark">End Date</label>
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
@@ -273,8 +251,8 @@
                         </div>
                     </div>
 
-                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" class="d-none d-sm-block" alt=""> --}}
+                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" class="d-none d-sm-block" alt="">
                 </div>
 
             </div>
@@ -285,8 +263,8 @@
     <div class="card py-3 px-4">
         <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
             <div class="dropdown">
-                <button class="btn btn-primary shadow dropdown-toggle" type="button" id="plansDropdown"
-                    data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-primary shadow dropdown-toggle" style="width: fit-content" type="button"
+                    id="plansDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Select Plan
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="plansDropdown">

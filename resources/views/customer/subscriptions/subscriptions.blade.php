@@ -45,68 +45,143 @@
 
 @section('content')
 <section class="py-3">
-    <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
+    <div class="row mb-4">
+        <div class="counters col-lg-6">
+            <div class="card p-2 counter_1">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="total_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                                <p class="text-success mb-0"></p>
                             </div>
+                            <small class="mb-0"></small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
+                            {{-- <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
+
+            <div class="card p-2 counter_2">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Active Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                                <p class="text-danger mb-0"></p>
                             </div>
+                            <small class="mb-0"></small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
+                            {{-- <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-user-check"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="50"
+                                style="border-radius: 50px" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-2 counter_1">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Cancel Subscriptions</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="50"
+                                style="border-radius: 50px" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-2 counter_2">
+                <div class="card-body">
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Subscriptions Ammount</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            {{-- <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-user-plus"></i>
+                            </span> --}}
+                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                                style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Cancelled Subscriptions</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="inactive_counter">0</h4>
-                            </div>
+        <div class="col-lg-6">
+            <div class="card p-4 h-100 filter">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-2 text-white">Filters</h5>
+                </div>
+
+                <div class="d-flex align-items-start gap-4">
+                    <div class="row gy-3">
+                        <div class="col-md-6">
+                            <label for="subscriptionIdFilter" class="form-label text-dark">Subscription ID</label>
+                            <input type="text" id="subscriptionIdFilter" class="form-control"
+                                placeholder="Search by ID">
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-brand-booking"></i>
-                            </span>
+                        <div class="col-md-6">
+                            <label for="subscriptionStatusFilter" class="form-label text-dark">Status</label>
+                            <select id="subscriptionStatusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="startDate" class="form-label text-dark">Start Date</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endDate" class="form-label text-dark">End Date</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+
+                        <div>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
+
+                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" class="d-none d-sm-block"
+                        width="30%" style="border-radius: 50%" alt="">
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
+    {{-- <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
@@ -120,7 +195,8 @@
                         </div>
                         <div class="col-md-3">
                             <label for="subscriptionIdFilter" class="form-label">Subscription ID</label>
-                            <input type="text" id="subscriptionIdFilter" class="form-control" placeholder="Search by ID">
+                            <input type="text" id="subscriptionIdFilter" class="form-control"
+                                placeholder="Search by ID">
                         </div>
                         <div class="col-md-3">
                             <label for="subscriptionStatusFilter" class="form-label">Status</label>
@@ -142,22 +218,25 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <div class="card py-3 px-4">
         <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
-                    type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">Active Subscriptions</button>
+                    type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">Active
+                    Subscriptions</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="cancel-tab" data-bs-toggle="tab" data-bs-target="#cancel-tab-pane"
-                    type="button" role="tab" aria-controls="cancel-tab-pane" aria-selected="false">Cancelled Subscriptions</button>
+                    type="button" role="tab" aria-controls="cancel-tab-pane" aria-selected="false">Cancelled
+                    Subscriptions</button>
             </li>
         </ul>
 
         <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
+            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
+                tabindex="0">
                 @include('customer.subscriptions._subscriptions_table')
             </div>
             <div class="tab-pane fade" id="cancel-tab-pane" role="tabpanel" aria-labelledby="cancel-tab" tabindex="0">
@@ -167,8 +246,8 @@
     </div>
 
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-        aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+        aria-modal="true" role="dialog">
         <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
             <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">View Detail</h5>
             <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i

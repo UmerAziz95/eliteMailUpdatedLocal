@@ -32,26 +32,42 @@
             background-color: #dc3545;
             position: absolute;
         }
+
         .ti-bell {
             position: relative;
         }
     </style>
     @stack('styles')
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme");
+            if (theme === "light") {
+            document.documentElement.classList.add("light-theme");
+            } else {
+            document.documentElement.classList.add("dark-theme");
+            }
+        })();
+    </script>
 </head>
 
 <body>
 
     <div class="d-flex w-100 h-100 overflow-hidden">
         <div>
-            @include('customer.layouts.sidebar') <!-- Include Sidebar -->
+            @include('customer.layouts.sidebar')
+            <!-- Include Sidebar -->
         </div>
 
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
-                @include('customer.layouts.header') <!-- Include Header -->
-                @yield('content') <!-- Main Page Content -->
+                @include('customer.layouts.header')
+                <!-- Include Header -->
+                @yield('content')
+                <!-- Main Page Content -->
             </div>
-            @include('customer.layouts.footer') <!-- Include Footer (Optional) -->
+            @include('customer.layouts.footer')
+            <!-- Include Footer (Optional) -->
         </div>
     </div>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
@@ -72,14 +88,14 @@
     <!-- sweeetalert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    
+
     <!-- Include the Quill library -->
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    
+
     <!-- Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
+
     @stack('scripts')
 
     <script>
