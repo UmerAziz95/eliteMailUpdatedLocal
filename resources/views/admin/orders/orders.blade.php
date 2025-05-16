@@ -196,28 +196,7 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Approved Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($approvedOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10826/10826774.gif" width="50"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
 
             <div class="card p-2 counter_1">
                 <div class="card-body">
@@ -242,28 +221,7 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Approval Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($inApprovalOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="50"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
 
         </div>
 
