@@ -48,7 +48,7 @@
 
     @else
     <button type="submit" id="submit_btn" class="btn btn-primary px-4 btn-sm">Submit</button>
-    <button class="btn btn-secondary px-4 btn-sm">close</button>
+    <button class="btn btn-secondary px-4 btn-sm"  type="button" data-bs-dismiss="offcanvas" aria-label="Close">close</button>
     @endif
 </form>
 

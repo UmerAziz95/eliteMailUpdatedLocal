@@ -169,7 +169,7 @@
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
         aria-modal="true" role="dialog">
         <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
-            <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">Add User</h5>
+            <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">Add Contractor</h5>
             <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
                     class="fa-solid fa-xmark fs-5"></i></button>
         </div>
