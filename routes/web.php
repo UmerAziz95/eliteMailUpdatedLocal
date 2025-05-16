@@ -113,6 +113,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
         //customer
         Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
+        Route::post('/customer/toggle-status', [CustomerController::class, 'toggleStatus'])->name('customer.toggleStatus');
         //orders
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');

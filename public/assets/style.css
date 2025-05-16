@@ -761,3 +761,28 @@ table.dataTable.dtr-inline.collapsed>tbody>tr.parent>td.dtr-control:before,
 table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
     content: "\f068";
 }
+/* Custom styles for toggle switches */
+.form-check-input.status-toggle {
+    width: 2em;
+    height: 1em;
+    margin-top: 0.1em;
+    cursor: pointer;
+}
+
+.form-check-input.status-toggle.bg-success:checked {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+}
+
+.form-check-input.status-toggle.bg-danger:not(:checked) {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}

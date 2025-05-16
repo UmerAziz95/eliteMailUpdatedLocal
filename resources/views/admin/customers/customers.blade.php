@@ -23,6 +23,8 @@
         inset: 0;
         text-transform: uppercase;
     }
+    
+
 </style>
 @endpush
 
@@ -269,15 +271,15 @@
                 { data: 'role', name: 'role', orderable: false, searchable: false },
                 { data: 'email', name: 'email' },
                 { data: 'status', name: 'status', orderable: false, searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
+                // { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
             columnDefs: [
                 { width: '10%', targets: 0 }, // ID
                 { width: '20%', targets: 1 }, // Name
-                { width: '15%', targets: 2 }, // Role
-                { width: '25%', targets: 3 }, // Email
-                { width: '15%', targets: 4 }, // Status
-                { width: '15%', targets: 5 }  // Action
+                { width: '20%', targets: 2 }, // Role
+                { width: '30%', targets: 3 }, // Email
+                { width: '20%', targets: 4 }, // Status
+                // { width: '15%', targets: 5 }  // Action
             ],
             order: [[1, 'desc']],
             drawCallback: function(settings) {
@@ -460,6 +462,62 @@
                     toastr.error(errorMessages);
                 } else {
                     toastr.error('Something went wrong.');
+                }
+            }
+        });
+    });
+</script>
+<script>
+    // Handle status toggle buttons
+    $(document).on('change', '.status-toggle', function() {
+        const userId = $(this).data('id');
+        const isChecked = $(this).prop('checked');
+        const $toggle = $(this);
+        const $statusText = $toggle.siblings('span');
+        
+        // Save original state in case we need to revert
+        const originalChecked = !isChecked;
+        
+        $.ajax({
+            url: "{{ route('admin.customer.toggleStatus') }}",
+            method: "POST",
+            data: {
+                user_id: userId,
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update status text and colors
+                    $statusText.text(response.status_text);
+                    
+                    if (response.status == 1) {
+                        $toggle.removeClass('bg-danger').addClass('bg-success');
+                        $statusText.removeClass('text-danger').addClass('text-success');
+                    } else {
+                        $toggle.removeClass('bg-success').addClass('bg-danger');
+                        $statusText.removeClass('text-success').addClass('text-danger');
+                    }
+                    
+                    toastr.success(response.message);
+                    
+                    // Refresh counters
+                    if (window.orderTables && window.orderTables.all) {
+                        window.orderTables.all.ajax.reload(null, false);
+                    }
+                } else {
+                    // Revert the checkbox if there was an error
+                    $toggle.prop('checked', originalChecked);
+                    toastr.error(response.message);
+                }
+            },
+            error: function(xhr) {
+                // Revert the checkbox
+                $toggle.prop('checked', originalChecked);
+                
+                if (xhr.responseJSON?.message) {
+                    toastr.error(xhr.responseJSON.message);
+                } else {
+                    toastr.error('An error occurred while updating status.');
                 }
             }
         });
