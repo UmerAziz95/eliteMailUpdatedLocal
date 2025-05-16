@@ -798,35 +798,68 @@
 
             // Ticket distribution pie chart
             const ticketOptions = {
-                series: [{{ $newTickets ?? 0 }}, {{ $pendingTickets ?? 0 }}, {{ $resolvedTickets ?? 0 }}],
+                series: [
+                    {{ $newTickets ?? 0 }}, 1, 
+                    {{ $pendingTickets ?? 0 }}, 1, 
+                    {{ $resolvedTickets ?? 0 }}, 1
+                ],
                 chart: {
-                    type: 'pie',
-                    height: 300,
-                },
-                labels: ['Open', 'In-Progress', 'Closed'],
-                colors: ['#9b86e4', '#dc3545', '#df7040'],
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        colors: '#a3a9bd'
+                    width: 330,
+                    type: 'donut',
+                    dropShadow: {
+                        enabled: true,
+                        color: 'var(--second-primary)',
+                        top: -1,
+                        left: 3,
+                        blur: 5,
+                        opacity: 1
                     }
                 },
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            labels: {
-                                show: false,
-                                total: {
-                                    show: true,
-                                    label: 'Total Tickets',
-                                    formatter: function (w) {
-                                        return {{ $totalTickets ?? 0 }};
-                                    }
-                                }
-                            }
+                stroke: {
+                    width: 0,
+                },
+                labels: ["Open", "", "In-Progress", "", "Closed", ""],
+                dataLabels: {
+                    dropShadow: {
+                        blur: 2,
+                        opacity: 1
+                    }
+                },
+                fill: {
+                    type: 'pattern',
+                    opacity: 1,
+                    pattern: {
+                        enabled: false,
+                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles'],
+                    },
+                },
+                colors: [
+                    '#7367ef',  // Open tickets
+                    'transparent',
+                    '#7367ef',  // In-Progress tickets
+                    'transparent',
+                    '#7367ef',  // Closed tickets
+                    'transparent'
+                ],
+                states: {
+                    hover: {
+                        filter: 'none'
+                    }
+                },
+                theme: {
+                    palette: 'palette2'
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                            width: 300
+                        },
+                        legend: {
+                            position: 'bottom'
                         }
                     }
-                }
+                }]
             };
 
             // Sales chart options
