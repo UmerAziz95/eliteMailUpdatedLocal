@@ -20,7 +20,7 @@ use App\Models\Log as ModelLog;
 use App\Models\Status;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Support\Facades\Mail;
-
+use App\Models\Notification;
 class OrderController extends Controller
 {
     private $statuses;
@@ -476,6 +476,20 @@ class OrderController extends Controller
                     ],
                     Auth::id() // Performed By
                 );
+                // Notification for customer
+                Notification::create([
+                    'user_id' => $order->user_id,
+                    'type' => 'order_status_change',
+                    'title' => 'Order Status Changed',
+                    'message' => 'Your order #' . $order->id . ' status has been changed to ' . $newStatus,
+                    'data' => [
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'reason' => $reason,
+                        'assigned_to' => $order->assigned_to
+                    ]
+                ]);
             }
     
             return response()->json([
