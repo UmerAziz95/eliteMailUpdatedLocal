@@ -264,9 +264,27 @@ function initDataTable(planId = '') {
             },
             columns: [
                 { data: 'id', name: 'id' },
-                { data: 'name', name: 'name' },
+                { 
+                    data: 'name', name: 'name' ,
+                    render: function(data, type, row) {
+                        return `
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <span>${data}</span>
+                        `;
+                    }
+                },
                 { data: 'role', name: 'role', orderable: false, searchable: false },
-                { data: 'email', name: 'email' },
+                { 
+                    data: 'email', name: 'email' ,
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex align-items-center gap-1">
+                                    <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                    <span style= "color: #00BBFF";>${data}</span>    
+                                </div>
+                            `;
+                    }
+                },
                 { data: 'status', name: 'status', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
