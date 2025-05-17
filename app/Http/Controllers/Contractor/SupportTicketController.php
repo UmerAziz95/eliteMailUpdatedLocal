@@ -169,7 +169,6 @@ class SupportTicketController extends Controller
             $ticket = $ticket->fresh();
             
             // Send email notification to the user
-            $ticket->user->email= "muhammad.farooq.raaj@gmail.com";
             Mail::to($ticket->user->email)
                 ->queue(new \App\Mail\TicketStatusMail(
                     $ticket,
