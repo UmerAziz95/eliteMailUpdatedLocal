@@ -3,182 +3,182 @@
 @section('title', 'Dashboard')
 
 @push('styles')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <style>
-        .swiper {
-            width: 100%;
-            max-width: 600px;
-        }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<style>
+    .swiper {
+        width: 100%;
+        max-width: 600px;
+    }
 
-        .swiper-slide {
-            background-color: var(--second-primary);
-            border-radius: 6px;
-            color: #fff
-        }
+    .swiper-slide {
+        background-color: var(--second-primary);
+        border-radius: 6px;
+        color: #fff
+    }
 
-        .swiper-slide img {
-            max-width: 100%;
-            height: auto;
-        }
+    .swiper-slide img {
+        max-width: 100%;
+        height: auto;
+    }
 
-        span {
-            font-size: 13px;
-        }
+    span {
+        font-size: 13px;
+    }
 
-        h5 {
-            font-weight: 600
-        }
+    h5 {
+        font-weight: 600
+    }
 
-        .slider_span_bg {
-            background-color: #33333332;
-        }
+    .slider_span_bg {
+        background-color: #33333332;
+    }
 
-        .swiper-pagination {
-            top: 10px !important;
-            left: 260px !important
-        }
+    .swiper-pagination {
+        top: 10px !important;
+        left: 260px !important
+    }
 
-        .swiper-pagination-bullet-active {
-            background-color: #fff !important;
-        }
+    .swiper-pagination-bullet-active {
+        background-color: #fff !important;
+    }
 
-        .bg-label-info {
-            background-color: rgba(0, 255, 255, 0.143);
-        }
+    .bg-label-info {
+        background-color: rgba(0, 255, 255, 0.143);
+    }
 
-        .bg-label-primary {
-            background-color: rgba(79, 0, 128, 0.203);
-        }
+    .bg-label-primary {
+        background-color: rgba(79, 0, 128, 0.203);
+    }
 
-        .divider.divider-vertical {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: unset;
-            block-size: 100%;
-        }
+    .divider.divider-vertical {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: unset;
+        block-size: 100%;
+    }
 
-        .divider {
-            --bs-divider-color: #ffffff30;
-            display: block;
-            overflow: hidden;
-            margin-block: 1rem;
-            margin-inline: 0;
-            text-align: center;
-            white-space: nowrap;
-        }
+    .divider {
+        --bs-divider-color: #ffffff30;
+        display: block;
+        overflow: hidden;
+        margin-block: 1rem;
+        margin-inline: 0;
+        text-align: center;
+        white-space: nowrap;
+    }
 
-        .divider.divider-vertical:has(.badge-divider-bg)::before {
-            inset-inline-start: 49%;
-        }
+    .divider.divider-vertical:has(.badge-divider-bg)::before {
+        inset-inline-start: 49%;
+    }
 
-        .divider.divider-vertical::before {
-            inset-block: 0 50%;
-        }
+    .divider.divider-vertical::before {
+        inset-block: 0 50%;
+    }
 
-        .divider.divider-vertical::before,
-        .divider.divider-vertical::after {
-            position: absolute;
-            border-inline-start: 1px solid var(--bs-divider-color);
-            content: "";
-            inset-inline-start: 50%;
-        }
+    .divider.divider-vertical::before,
+    .divider.divider-vertical::after {
+        position: absolute;
+        border-inline-start: 1px solid var(--bs-divider-color);
+        content: "";
+        inset-inline-start: 50%;
+    }
 
-        .divider.divider-vertical:has(.badge-divider-bg)::after,
-        .divider.divider-vertical:has(.badge-divider-bg)::before {
-            inset-inline-start: 49%;
-        }
+    .divider.divider-vertical:has(.badge-divider-bg)::after,
+    .divider.divider-vertical:has(.badge-divider-bg)::before {
+        inset-inline-start: 49%;
+    }
 
-        .divider.divider-vertical::after {
-            inset-block: 50% 0;
-        }
+    .divider.divider-vertical::after {
+        inset-block: 50% 0;
+    }
 
-        .divider.divider-vertical::before,
-        .divider.divider-vertical::after {
-            position: absolute;
-            border-inline-start: 1px solid var(--bs-divider-color);
-            content: "";
-            inset-inline-start: 50%;
-        }
+    .divider.divider-vertical::before,
+    .divider.divider-vertical::after {
+        position: absolute;
+        border-inline-start: 1px solid var(--bs-divider-color);
+        content: "";
+        inset-inline-start: 50%;
+    }
 
-        .divider.divider-vertical .divider-text {
-            z-index: 1;
-            padding: .5125rem;
-            background-color: var(--secondary-color);
-        }
+    .divider.divider-vertical .divider-text {
+        z-index: 1;
+        padding: .5125rem;
+        background-color: var(--secondary-color);
+    }
 
-        .divider .divider-text {
-            position: relative;
-            display: inline-block;
-            font-size: .9375rem;
-            padding-block: 0;
-            padding-inline: 1rem;
-        }
+    .divider .divider-text {
+        position: relative;
+        display: inline-block;
+        font-size: .9375rem;
+        padding-block: 0;
+        padding-inline: 1rem;
+    }
 
-        .divider.divider-vertical .divider-text .badge-divider-bg {
-            border-radius: 50%;
-            background-color: #8c8c8c47;
-            color: var(--extra-light);
-            /* color: var(--bs-secondary-color); */
-            font-size: .75rem;
-            padding-block: .313rem;
-            padding-inline: .252rem;
-        }
-    </style>
+    .divider.divider-vertical .divider-text .badge-divider-bg {
+        border-radius: 50%;
+        background-color: #8c8c8c47;
+        color: var(--extra-light);
+        /* color: var(--bs-secondary-color); */
+        font-size: .75rem;
+        padding-block: .313rem;
+        padding-inline: .252rem;
+    }
+</style>
 @endpush
 
 @section('content')
-    <section class="py-3 overflow-hidden">
-        <div class="row gy-4">
-            <!-- Inbox Statistics -->
-            <div class="col-xl-6 col-sm-6">
-                <div class="card overflow-hidden" style="background: linear-gradient(45deg, #4776E6, #8E54E9);">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
-                                    <i class="ti ti-inbox fs-4 text-white"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5 class="text-white mb-1">Inbox Status</h5>
-                            </div>
+<section class="py-3 overflow-hidden">
+    <div class="row gy-4">
+        <!-- Inbox Statistics -->
+        <div class="col-xl-6 col-sm-6">
+            <div class="card overflow-hidden" style="background: linear-gradient(45deg, #4776E6, #8E54E9);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
+                                <i class="ti ti-inbox fs-4 text-white"></i>
+                            </span>
                         </div>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="text-white mb-1">Inbox Status</h5>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-white">
+                                <span class="d-block opacity-75">Total Inboxes</span>
+                                <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
+                            </div>
+                            <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
+                                <i class="ti ti-inbox-off me-1"></i> Total
+                            </span>
+                        </div>
+                        <div class="progress bg-white bg-opacity-25" style="height: 2px;">
+                            <div class="progress-bar bg-white" style="width: 100%"></div>
+                        </div>
+                        <div class="row g-0 mt-1">
+                            <div class="col-6">
                                 <div class="text-white">
-                                    <span class="d-block opacity-75">Total Inboxes</span>
-                                    <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
+                                    <span class="d-block opacity-75">Active</span>
+                                    <h4 class="mb-0">{{ $activeInboxes ?? 0 }}</h4>
                                 </div>
-                                <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
-                                    <i class="ti ti-inbox-off me-1"></i> Total
-                                </span>
                             </div>
-                            <div class="progress bg-white bg-opacity-25" style="height: 2px;">
-                                <div class="progress-bar bg-white" style="width: 100%"></div>
-                            </div>
-                            <div class="row g-0 mt-1">
-                                <div class="col-6">
-                                    <div class="text-white">
-                                        <span class="d-block opacity-75">Active</span>
-                                        <h4 class="mb-0">{{ $activeInboxes ?? 0 }}</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-white text-end">
-                                        <span class="d-block opacity-75">Pending/Issue</span>
-                                        <h4 class="mb-0">{{ $pendingInboxes ?? 0 }}</h4>
-                                    </div>
+                            <div class="col-6">
+                                <div class="text-white text-end">
+                                    <span class="d-block opacity-75">Pending/Issue</span>
+                                    <h4 class="mb-0">{{ $pendingInboxes ?? 0 }}</h4>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Subscription Info -->
-            <!-- <div class="col-xl-3 col-sm-6">
+        <!-- Subscription Info -->
+        <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #11998e, #38ef7d);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -226,8 +226,8 @@
                 </div>
             </div> -->
 
-            <!-- Order Statistics -->
-            <!-- <div class="col-xl-3 col-sm-6">
+        <!-- Order Statistics -->
+        <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #FF512F, #F09819);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -272,8 +272,8 @@
                 </div>
             </div> -->
 
-            <!-- Support Tickets -->
-            <!-- <div class="col-xl-3 col-sm-6">
+        <!-- Support Tickets -->
+        <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card overflow-hidden" style="background: linear-gradient(45deg, #834d9b, #d04ed6);">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center mb-3">
@@ -318,7 +318,7 @@
                 </div>
             </div> -->
 
-            <!-- <div class="col-md-6">
+        <!-- <div class="col-md-6">
                 <div class="swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
@@ -450,42 +450,46 @@
 
 
 
-            <div class="col-xl-6 col-sm-6">
-                <div class="card h-100">
-                    <div class="card-header border-0 px-3 pt-3 pb-0">
-                        <h6 class="mb-2">Orders Overview</h6>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <p class="mb-0">All Time Orders</p>
-                            <span class="badge bg-label-primary">
-                                <i class="ti ti-shopping-cart fs-5"></i>
-                            </span>
-                        </div>
-                        <h4 class="mb-0 mt-2">{{ $totalOrders ?? 0 }}</h4>
+        <div class="col-xl-6 col-sm-6">
+            <div class="card h-100">
+                <div class="card-header border-0 px-3 pt-3 pb-0">
+                    <h6 class="mb-2">Orders Overview</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="mb-0">All Time Orders</p>
+                        <span class="badge bg-label-primary">
+                            <i class="ti ti-shopping-cart fs-5"></i>
+                        </span>
                     </div>
-                    <div class="card-body px-3 pt-0">
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <p class="mb-0">Pending Orders</p>
-                                <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-primary" style="width: {{ ($totalOrders > 0 ? ($pendingOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
-                            </div>
+                    <h4 class="mb-0 mt-2">{{ $totalOrders ?? 0 }}</h4>
+                </div>
+                <div class="card-body px-3 pt-0">
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <p class="mb-0">Pending Orders</p>
+                            <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
                         </div>
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <p class="mb-0">Completed Orders</p>
-                                <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-success" style="width: {{ ($totalOrders > 0 ? ($completedOrders / $totalOrders * 100) : 0) }}%" role="progressbar"></div>
-                            </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary"
+                                style="width: {{ ($totalOrders > 0 ? ($pendingOrders / $totalOrders * 100) : 0) }}%"
+                                role="progressbar"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <p class="mb-0">Completed Orders</p>
+                            <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success"
+                                style="width: {{ ($totalOrders > 0 ? ($completedOrders / $totalOrders * 100) : 0) }}%"
+                                role="progressbar"></div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- <div class="col-xl-3 col-sm-6">
+        <!-- <div class="col-xl-3 col-sm-6">
                 <div class="card h-100 p-2">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
@@ -527,73 +531,77 @@
                     </div>
                 </div>
             </div> -->
-            
 
-            <div class="col-12 col-md-6">
-                <div class="card h-100 p-2">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Current Subscription Overview</h5>
-                            <p>Subscription and billing details</p>
-                        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card h-100 p-2">
+                <div class="card-header border-0 pb-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Current Subscription Overview</h5>
+                        <p>Subscription and billing details</p>
                     </div>
-                    <div class="card-body pt-0">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                    <h2 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h2>
-                                    @if(isset($subscription) && $subscription->status === 'active')
-                                        <div class="badge rounded bg-label-success">Active</div>
-                                    @else
-                                        <div class="badge rounded bg-label-warning">No Active Plan</div>
-                                    @endif
-                                </div>
-                                <div class="d-flex flex-column gap-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="theme-text">Next Billing Date</span>
-                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->next_billing_date ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="theme-text">Last Billing Date</span>
-                                        <h6 class="mb-0">{{ isset($subscription) && $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y') : 'N/A' }}</h6>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="theme-text">Billing Period</span>
-                                        <h6 class="mb-0">Monthly</h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <hr class="my-3">
-                                <h6 class="mb-3">Plan Features</h6>
-                                @if(isset($subscription) && $subscription->plan && $subscription->plan->features)
-                                    <ul class="p-0 m-0">
-                                        @foreach($subscription->plan->features as $feature)
-                                        <li class="d-flex align-items-center gap-2 mb-2">
-                                            <i class="ti ti-check text-success"></i>
-                                            <span>{{ $feature->title }} {{ $feature->pivot->value }}</span>
-                                        </li>
-                                        @endforeach
-                                    </ul>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+                                <h2 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h2>
+                                @if(isset($subscription) && $subscription->status === 'active')
+                                <div class="badge rounded bg-label-success">Active</div>
                                 @else
-                                    <p class="text-muted mb-0">No active plan features</p>
+                                <div class="badge rounded bg-label-warning">No Active Plan</div>
                                 @endif
                             </div>
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="theme-text">Next Billing Date</span>
+                                    <h6 class="mb-0">{{ isset($subscription) && $subscription->next_billing_date ?
+                                        \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y') :
+                                        'N/A' }}</h6>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="theme-text">Last Billing Date</span>
+                                    <h6 class="mb-0">{{ isset($subscription) && $subscription->last_billing_date ?
+                                        \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y') :
+                                        'N/A' }}</h6>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="theme-text">Billing Period</span>
+                                    <h6 class="mb-0">Monthly</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <h6 class="mb-3">Plan Features</h6>
+                            @if(isset($subscription) && $subscription->plan && $subscription->plan->features)
+                            <ul class="p-0 m-0">
+                                @foreach($subscription->plan->features as $feature)
+                                <li class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="ti ti-check text-success"></i>
+                                    <span>{{ $feature->title }} {{ $feature->pivot->value }}</span>
+                                </li>
+                                @endforeach
+                            </ul>
+                            @else
+                            <p class="opacity-75 mb-0">No active plan features</p>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
 
 
-            <div class="col-12 col-md-6">
-                <div class="card h-100 p-2">
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Support Tracker</h5>
-                            <!-- <p>Last 7 Days</p> -->
-                        </div>
-                        <!-- <div class="dropdown">
+        <div class="col-12 col-md-6">
+            <div class="card h-100 p-2">
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Support Tracker</h5>
+                        <!-- <p>Last 7 Days</p> -->
+                    </div>
+                    <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
@@ -604,53 +612,53 @@
                                 <a class="dropdown-item" href="javascript:void(0);">Delete</a>
                             </div>
                         </div> -->
+                </div>
+                <div class="card-body row pt-0">
+                    <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
+                        <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
+                            <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
+                            <p class="mb-0">Total Tickets</p>
+                        </div>
+                        <ul class="p-0 m-0">
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-primary mt-1">
+                                    <i class="ti ti-ticket theme-text fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Open Tickets</h6>
+                                    <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start mb-2">
+                                <div class="badge rounded bg-label-info mt-1">
+                                    <i class="ti ti-circle-check fs-4 text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">In-Progress Tickets</h6>
+                                    <p class="small opacity-75">{{ $pendingTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                            <li class="d-flex gap-3 align-items-start pb-1">
+                                <div class="badge rounded bg-label-success mt-1">
+                                    <i class="ti ti-check fs-4 text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-nowrap">Closed Tickets</h6>
+                                    <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="card-body row pt-0">
-                        <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
-                            <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
-                                <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
-                                <p class="mb-0">Total Tickets</p>
-                            </div>
-                            <ul class="p-0 m-0">
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-primary mt-1">
-                                        <i class="ti ti-ticket theme-text fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                                        <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start mb-2">
-                                    <div class="badge rounded bg-label-info mt-1">
-                                        <i class="ti ti-circle-check fs-4 text-info"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">In-Progress Tickets</h6>
-                                        <p class="small opacity-75">{{ $pendingTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li class="d-flex gap-3 align-items-start pb-1">
-                                    <div class="badge rounded bg-label-success mt-1">
-                                        <i class="ti ti-check fs-4 text-success"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap">Closed Tickets</h6>
-                                        <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-12 col-md-8">
-                            <div id="ticketPieChart"></div>
-                        </div>
+                    <div class="col-12 col-md-8">
+                        <div id="ticketPieChart"></div>
                     </div>
                 </div>
             </div>
+        </div>
 
 
 
-            <!-- <div class="col-xxl-4 col-md-6">
+        <!-- <div class="col-xxl-4 col-md-6">
                 <div class="card h-100 p-2">
                     <div class="card-header border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -697,70 +705,70 @@
                 </div>
             </div> -->
 
-            <div class="col-12">
-                <div class="card p-3">
-                    <!-- heading  -->
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Recent Activity</h5>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="myTable" class="display w-100 nowrap">
-                            <thead>
-                                <tr>
-                                    <th class="text-start">ID</th>
-                                    <th>Action Type</th>
-                                    <th>Description</th>
-                                    <th>Performed By</th>
-                                    <th>Performed On Type</th>
-                                    <th>Performed On Id</th>
-                                    <th>IP</th>
-                                    <th>User Agent</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
+        <!-- Order History -->
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Order History</h5>
+                        <p>Your orders and their current status</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Order History -->
-            <div class="col-12">
-                <div class="card p-3">
-                    <div class="card-header border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h5 class="mb-1">Order History</h5>
-                            <p>Your orders and their current status</p>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="ordersTable" class="display w-100">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Date</th>
-                                    <th>Plan</th>
-                                    <th>Domain Url</th>
-                                    <th>Total Inboxes</th>
-                                    <th>Status</th>
-                                    <!-- <th>Actions</th> -->
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table id="ordersTable" class=" w-100">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Plan</th>
+                                <th>Domain Url</th>
+                                <th>Total Inboxes</th>
+                                <th>Status</th>
+                                <!-- <th>Actions</th> -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </section>
+
+        <div class="col-12">
+            <div class="card p-3">
+                <!-- heading  -->
+                <div class="card-header border-0 d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Recent Activity</h5>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="myTable" class=" w-100 nowrap">
+                        <thead>
+                            <tr>
+                                <th class="text-start">ID</th>
+                                <th>Action Type</th>
+                                <th>Description</th>
+                                <th>Performed By</th>
+                                <th>Performed On Type</th>
+                                <th>Performed On Id</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
             // Initialize Swiper
             var swiper = new Swiper(".swiper", {
                 loop: true,
@@ -798,35 +806,68 @@
 
             // Ticket distribution pie chart
             const ticketOptions = {
-                series: [{{ $newTickets ?? 0 }}, {{ $pendingTickets ?? 0 }}, {{ $resolvedTickets ?? 0 }}],
+                series: [
+                    {{ $newTickets ?? 0 }}, 1, 
+                    {{ $pendingTickets ?? 0 }}, 1, 
+                    {{ $resolvedTickets ?? 0 }}, 1
+                ],
                 chart: {
-                    type: 'pie',
-                    height: 300,
-                },
-                labels: ['Open', 'In-Progress', 'Closed'],
-                colors: ['#9b86e4', '#dc3545', '#df7040'],
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        colors: '#a3a9bd'
+                    width: 330,
+                    type: 'donut',
+                    dropShadow: {
+                        enabled: true,
+                        color: 'var(--second-primary)',
+                        top: -1,
+                        left: 3,
+                        blur: 5,
+                        opacity: 1
                     }
                 },
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            labels: {
-                                show: false,
-                                total: {
-                                    show: true,
-                                    label: 'Total Tickets',
-                                    formatter: function (w) {
-                                        return {{ $totalTickets ?? 0 }};
-                                    }
-                                }
-                            }
+                stroke: {
+                    width: 0,
+                },
+                labels: ["Open", "", "In-Progress", "", "Closed", ""],
+                dataLabels: {
+                    dropShadow: {
+                        blur: 2,
+                        opacity: 1
+                    }
+                },
+                fill: {
+                    type: 'pattern',
+                    opacity: 1,
+                    pattern: {
+                        enabled: false,
+                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles'],
+                    },
+                },
+                colors: [
+                    '#7367ef',  // Open tickets
+                    'transparent',
+                    '#7367ef',  // In-Progress tickets
+                    'transparent',
+                    '#7367ef',  // Closed tickets
+                    'transparent'
+                ],
+                states: {
+                    hover: {
+                        filter: 'none'
+                    }
+                },
+                theme: {
+                    palette: 'palette2'
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                            width: 300
+                        },
+                        legend: {
+                            position: 'bottom'
                         }
                     }
-                }
+                }]
             };
 
             // Sales chart options
@@ -1138,5 +1179,5 @@
             }
 
         }                initDataTable();
-    </script>
+</script>
 @endpush

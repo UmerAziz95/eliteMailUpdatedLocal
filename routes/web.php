@@ -113,6 +113,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
         //customer
         Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
+        Route::post('/customer/toggle-status', [CustomerController::class, 'toggleStatus'])->name('customer.toggleStatus');
         //orders
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
@@ -354,10 +355,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
     Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
-    Route::post('/notifications/{notification}/mark-as-read', function(\App\Models\Notification $notification) {
-        $notification->update(['is_read' => true]);
-        return response()->json(['message' => 'success']);
-    })->middleware('auth');
+    // Removing duplicate route that conflicts with notifications/{id}/mark-read
+    // Route::post('/notifications/{notification}/mark-as-read', function(\App\Models\Notification $notification) {
+    //     $notification->update(['is_read' => true]);
+    //     return response()->json(['message' => 'success']);
+    // })->middleware('auth');
     Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
     Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
 });

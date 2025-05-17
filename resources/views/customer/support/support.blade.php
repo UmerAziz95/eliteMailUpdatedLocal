@@ -53,14 +53,14 @@
         cursor: pointer;
         color: var(--second-primary);
     }
-    
+
     .ticket-attachments {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 10px;
     }
-    
+
     .attachment-preview {
         position: relative;
         width: 100px;
@@ -69,18 +69,18 @@
         border-radius: 4px;
         overflow: hidden;
     }
-    
+
     .attachment-preview img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
-    
+
     .remove-attachment {
         position: absolute;
         top: 5px;
         right: 5px;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         border: none;
         color: white;
         border-radius: 50%;
@@ -91,6 +91,7 @@
         justify-content: center;
         cursor: pointer;
     }
+
     .attachments-area {
         display: flex;
         flex-wrap: wrap;
@@ -150,7 +151,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         font-size: 10px;
         padding: 2px 5px;
@@ -164,28 +165,28 @@
         min-height: 120px;
         color: var(--light-color);
     }
-    
+
     .ql-toolbar.ql-snow {
         border-color: var(--input-border);
         border-top-left-radius: 6px;
         border-top-right-radius: 6px;
     }
-    
+
     .ql-container.ql-snow {
         border-color: var(--input-border);
         border-bottom-left-radius: 6px;
         border-bottom-right-radius: 6px;
         background: transparent;
     }
-    
+
     .ql-snow .ql-stroke {
         stroke: var(--light-color);
     }
-    
+
     .ql-snow .ql-fill {
         fill: var(--light-color);
     }
-    
+
     .ql-snow .ql-picker {
         color: var(--light-color);
     }
@@ -198,29 +199,29 @@
         height: auto;
         padding: .4rem;
     }
-    
+
     .select2-container {
         width: 100% !important;
     }
-    
+
     .select2-container--default .select2-selection--single .select2-selection__rendered {
         color: var(--light-color);
         padding-left: 0;
         opacity: .7;
         font-size: 14px;
     }
-    
+
     .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 100%;
         right: 8px;
     }
-    
+
     .select2-dropdown {
         background-color: var(--primary-color);
         border: 1px solid var(--input-border);
         z-index: 9999;
     }
-    
+
     .select2-search--dropdown .select2-search__field {
         background-color: var(--primary-color);
         color: var(--light-color);
@@ -228,19 +229,19 @@
         border-radius: 6px;
         padding: .4rem;
     }
-    
+
     .select2-container--default .select2-results__option {
         padding: .5rem;
         font-size: 14px;
         opacity: .7;
     }
-    
+
     .select2-container--default .select2-results__option--highlighted[aria-selected] {
         background-color: var(--second-primary);
         color: var(--white-color);
         opacity: 1;
     }
-    
+
     .select2-container--default .select2-selection--single:focus {
         border: 2px solid var(--second-primary) !important;
         box-shadow: rgba(159, 93, 209, 0.814) 0px 0px 4px !important;
@@ -250,7 +251,100 @@
 
 @section('content')
 <section class="py-3">
-    <div class="row mb-4">
+
+    <div class="counters mb-4">
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Total Tickets</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <p class="mb-0"></p>
+                        </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-warning">
+                            <i class="ti ti-user-search"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Open Tickets</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <p class="mb-0"></p>
+                        </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-success">
+                            <i class="ti ti-user-check"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">In-Progress Tickets</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <p class="mb-0"></p>
+                        </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Open Tickets</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                            <p class="mb-0"></p>
+                        </div>
+                        <small class="mb-0"></small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-success">
+                            <i class="ti ti-user-check"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    {{-- <div class="row mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -286,6 +380,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -303,6 +398,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -320,19 +416,8 @@
                 </div>
             </div>
         </div>
+    </div> --}}
 
-        
-
-        <!-- <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card h-100">
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    <button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal" data-bs-target="#createTicketModal">
-                        <i class="fa-solid fa-plus me-2"></i>Create New Ticket
-                    </button>
-                </div>
-            </div>
-        </div> -->
-    </div>
     <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
@@ -347,7 +432,8 @@
                         </div>
                         <div class="col-md-3">
                             <label for="ticketNumberFilter" class="form-label">Ticket #</label>
-                            <input type="text" id="ticketNumberFilter" class="form-control" placeholder="Search by ticket number">
+                            <input type="text" id="ticketNumberFilter" class="form-control"
+                                placeholder="Search by ticket number">
                         </div>
                         <div class="col-md-3">
                             <label for="subjectFilter" class="form-label">Subject</label>
@@ -415,7 +501,8 @@
 </section>
 
 <!-- Create Ticket Modal -->
-<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -428,7 +515,7 @@
                         <label for="subject" class="form-label">Subject</label>
                         <input type="text" class="form-control" id="subject" name="subject" required>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="category" class="form-label">Category</label>
                         <select class="form-select" id="category" name="category" required>
@@ -440,14 +527,14 @@
                             <option value="other">Other</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3" id="orderSelection" style="display: none;">
                         <label for="order_id" class="form-label">Select Order</label>
                         <select class="form-select" id="order_id" name="order_id">
                             <option value="">Select Order</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="priority" class="form-label">Priority</label>
                         <select class="form-select" id="priority" name="priority" required>
@@ -457,12 +544,12 @@
                             <option value="high">High</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <div id="description-editor"></div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label d-block">Attachments</label>
                         <label for="attachments" class="file-upload-label">
@@ -538,6 +625,7 @@ $(document).ready(function() {
         },
         processing: true,
         serverSide: true,
+        dom: '<"top"f>rt<"bottom"lip><"clear">',
         ajax: {
             url: "{{ route('customer.support.tickets') }}",
             data: function(d) {

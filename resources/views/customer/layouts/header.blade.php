@@ -15,7 +15,11 @@
     }
 </style>
 
-<header class="d-flex align-items-center justify-content-end py-2 px-4 rounded-3">
+<header class="d-flex align-items-center justify-content-between justify-content-xl-end py-2 px-4 rounded-3">
+    <div class="d-xl-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
+        aria-controls="offcanvasExample">
+        <i class="fa-solid fa-bars"></i>
+    </div>
     {{-- <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
         data-bs-target="#search">
         <i class="fa-solid fa-magnifying-glass fs-5"></i> Search
@@ -47,7 +51,7 @@
             </ul>
         </div>
 
-        
+
 
         <div class="dropdown notification-dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"
@@ -112,30 +116,22 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Existing theme code
         const lightThemeBtn = document.getElementById("light-theme");
         const darkThemeBtn = document.getElementById("dark-theme");
-        const currentTheme = localStorage.getItem("theme");
-
-        // Set default theme as dark if no preference is stored
-        if (!currentTheme || currentTheme === "dark") {
-            document.body.classList.add("dark-theme");
-        } else {
-            document.body.classList.remove("light-theme");
-        }
 
         // Light theme click
         lightThemeBtn.addEventListener("click", () => {
-            document.body.classList.add("light-theme");
+            document.documentElement.classList.add("light-theme");
+            document.documentElement.classList.remove("dark-theme");
             localStorage.setItem("theme", "light");
         });
 
         // Dark theme click
         darkThemeBtn.addEventListener("click", () => {
-            document.body.classList.remove("light-theme");
+            document.documentElement.classList.add("dark-theme");
+            document.documentElement.classList.remove("light-theme");
             localStorage.setItem("theme", "dark");
         });
-
         // Add notification dropdown event listener
         const notificationDropdownEl = document.querySelector('.notification-dropdown');
         notificationDropdownEl.addEventListener('show.bs.dropdown', function () {

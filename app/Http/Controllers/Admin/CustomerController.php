@@ -48,33 +48,39 @@ class CustomerController extends Controller
                     return '<i class="ti ti-contract me-2 text-primary"></i>Customer';
                 })
                 ->addColumn('status', function ($row) {
+                    $checked = $row->status == 1 ? 'checked' : '';
                     $statusText = $row->status == 1 ? 'active' : 'inactive';
-                    $statusClass = $row->status == 1 ? 'active_status' : 'inactive_status';
-                    return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
+                    $toggleClass = $row->status == 1 ? 'bg-success' : 'bg-danger';
+                    return '<div class="form-check form-switch">
+                        <input class="form-check-input status-toggle ' . $toggleClass . '" type="checkbox" role="switch" 
+                            data-id="' . $row->id . '" ' . $checked . '>
+                       
+                    </div>';
                 })
-                ->addColumn('action', function ($row) {
-                    $user = auth()->user();
+                //  <span class="ms-2 ' . ($row->status == 1 ? 'text-success' : 'text-danger') . '">' . ucfirst($statusText) . '</span>
+                // ->addColumn('action', function ($row) {
+                //     $user = auth()->user();
                 
-                    // If the user has 'Mod' permission, hide the action buttons
-                    if ($user->hasPermissionTo('Mod')) {
-                        return ' <button class="bg-transparent p-0 border-0 mx-2 view-btn" data-id="' . $row->id . '">
-                                <i class="fa-regular fa-eye"></i>'; // or return only view icon if needed
-                    }
+                //     // If the user has 'Mod' permission, hide the action buttons
+                //     if ($user->hasPermissionTo('Mod')) {
+                //         return ' <button class="bg-transparent p-0 border-0 mx-2 view-btn" data-id="' . $row->id . '">
+                //                 <i class="fa-regular fa-eye"></i>'; // or return only view icon if needed
+                //     }
                 
-                    return '
-                        <div class="d-flex align-items-center gap-2">
+                //     return '
+                //         <div class="d-flex align-items-center gap-2">
 
-                            <div class="dropdown">
-                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">View</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    ';
-                })
+                //             <div class="dropdown">
+                //                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                //                     <i class="fa-solid fa-ellipsis-vertical"></i>
+                //                 </button>
+                //                 <ul class="dropdown-menu">
+                //                     <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">View</a></li>
+                //                 </ul>
+                //             </div>
+                //         </div>
+                //     ';
+                // })
                 
                 ->rawColumns(['role', 'status', 'action'])
                 ->with([
@@ -90,4 +96,31 @@ class CustomerController extends Controller
         $roles=Role::all();
         return view('admin.customers.customers',["roles"=>$roles]);
       }
+
+    /**
+     * Toggle customer status (active/inactive)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function toggleStatus(Request $request)
+    {
+        try {
+            $user = User::findOrFail($request->user_id);
+            $user->status = $user->status == 1 ? 0 : 1;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer status updated successfully',
+                'status' => $user->status,
+                'status_text' => $user->status == 1 ? 'Active' : 'Inactive'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating customer status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

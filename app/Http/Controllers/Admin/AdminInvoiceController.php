@@ -8,18 +8,13 @@ use App\Models\Invoice;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use App\Models\Status;
+use App\Models\Order;
+
 
 class AdminInvoiceController extends Controller
 {
-    //
-    private $statuses = [
-        "Pending" => "warning",
-        "Approve" => "success",
-        "Cancel" => "danger",
-        "Expired" => "secondary",
-        "In-Progress" => "primary",
-        "Completed" => "success"
-    ];
+    private $statuses;
     // payment-status
     private $paymentStatuses = [
         "Pending" => "warning",
@@ -27,6 +22,10 @@ class AdminInvoiceController extends Controller
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
+    public function __construct()
+    {
+        $this->statuses = Status::pluck('badge', 'name')->toArray();
+    }
     // index to load table
     public function index(Request $request)
     {
@@ -99,15 +98,11 @@ class AdminInvoiceController extends Controller
                         ucfirst($row->status) . '</span>';
                 })
                 ->editColumn('status_manage_by_admin', function ($row) {
-                    $statusClass = match ($row->order->status_manage_by_admin ?? 'N/A') {
-                        'active' => 'success',
-                        'expired' => 'danger',
-                        'pending' => 'warning',
-                        'completed' => 'primary',
-                        default => 'secondary',
-                    };
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' .
-                        ucfirst($row->order->status_manage_by_admin ?? 'N/A') . '</span>';
+                    $status = strtolower($row->order->status_manage_by_admin ?? 'n/a');
+                    $statusKey = $status;
+                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($status) . '</span>';
                 })
                 // Add customer name filter and sorting support
                 ->orderColumn('customer_name', function ($query, $direction) {
@@ -142,8 +137,8 @@ class AdminInvoiceController extends Controller
                 ])
                 ->make(true);
         }
-    
-        return view('admin.invoices.index');
+        $statuses = $this->statuses;
+        return view('admin.invoices.index', compact('statuses'));
     }
     
 

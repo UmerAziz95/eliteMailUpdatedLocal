@@ -1,39 +1,40 @@
 <form id="addNewUserForm">
     @csrf
 
- 
+
     <div class="mb-3">
         <label for="full_name" class="form-label">Full Name</label>
         <input type="text" class="form-control" id="full_name" name="full_name" required>
     </div>
-        <input type="hidden" class="form-control" id="user_id" name="user_id">
+    <input type="hidden" class="form-control" id="user_id" name="user_id">
 
     <div class="mb-3">
         <label for="email" class="form-label">Email address</label>
         <input type="email" class="form-control" id="email" name="email" required>
     </div>
 
- <!-- Password Field with Eye Toggle -->
- <div class="mb-3 position-relative">
-    <label for="password" class="form-label">Password</label>
-    <div class="input-group">
-        <input type="password" class="form-control" id="password" name="password">
-        <span class="input-group-text toggle-password " toggle="#password" style="cursor: pointer; color:#2f3349">
-            <i class="fas fa-eye-slash"></i>
-        </span>
+    <!-- Password Field with Eye Toggle -->
+    <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-group">
+            <input type="password" class="form-control" id="password" name="password">
+            <span class="input-group-text toggle-password " toggle="#password" style="cursor: pointer; color:#2f3349">
+                <i class="fas fa-eye-slash"></i>
+            </span>
+        </div>
     </div>
-</div>
 
-<!-- Confirm Password Field with Eye Toggle -->
-<div class="mb-3 position-relative">
-    <label for="confirm_password" class="form-label">Confirm Password</label>
-    <div class="input-group">
-        <input type="password" class="form-control" id="confirm_password" name="password_confirmation">
-        <span class="input-group-text toggle-password" toggle="#confirm_password" style="cursor: pointer; color:#2f3349">
-            <i class="fas fa-eye-slash"></i>
-        </span>
+    <!-- Confirm Password Field with Eye Toggle -->
+    <div class="mb-3 position-relative">
+        <label for="confirm_password" class="form-label">Confirm Password</label>
+        <div class="input-group">
+            <input type="password" class="form-control" id="confirm_password" name="password_confirmation">
+            <span class="input-group-text toggle-password" toggle="#confirm_password"
+                style="cursor: pointer; color:#2f3349">
+                <i class="fas fa-eye-slash"></i>
+            </span>
+        </div>
     </div>
-</div>
 
     <div class="mb-3">
         <label for="status" class="form-label">Status</label>
@@ -43,10 +44,11 @@
         </select>
     </div>
 
-    @if (Auth::user()->hasPermissionTo('Mod')) 
+    @if (Auth::user()->hasPermissionTo('Mod'))
 
-    @else   
-     <button type="submit" id="submit_btn" class="btn btn-primary">Submit</button>
+    @else
+    <button type="submit" id="submit_btn" class="btn btn-primary px-4 btn-sm">Submit</button>
+    <button class="btn btn-secondary px-4 btn-sm"  type="button" data-bs-dismiss="offcanvas" aria-label="Close">close</button>
     @endif
 </form>
 

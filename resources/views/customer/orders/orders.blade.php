@@ -46,147 +46,153 @@
 @section('content')
 <section class="py-3">
 
-    <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Total Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
-                                <!-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> -->
-                            </div>
-                            <small class="mb-0">Total orders placed</small>
-                            <!-- <small class="mb-0">Last week vs previous week</small> -->
+    <div class="counters mb-4">
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Total Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($totalOrders) }}</h4>
+                            <!-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> -->
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-shopping-cart"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Total orders placed</small>
+                        <!-- <small class="mb-0">Last week vs previous week</small> -->
+                    </div>
+                    <div class="avatar">
+                        <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Pending Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Awaiting admin review</small>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Pending Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($pendingOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-clock"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Awaiting admin review</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-success">
+                            <i class="ti ti-user-check"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Completed Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Fully processed orders</small>
+
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Completed Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($completedOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-check"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Fully processed orders</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Progress Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Currently processing</small>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">In-Progress Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($inProgressOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-loader"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Currently processing</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4" style="display: none;">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Expired Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Expired orders</small>
+
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Expired Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($expiredOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-secondary">
-                                <i class="ti ti-alert-circle"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Expired orders</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        
-        
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Rejected Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($rejectOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Not approved</small>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Rejected Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($rejectOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-x"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Not approved</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Cancelled Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($cancelledOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Orders cancelled</small>
+
+        <div class="card p-2 counter_1">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Cancelled Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($cancelledOrders) }}</h4>
                         </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-trash"></i>
-                            </span>
-                        </div>
+                        <small class="mb-0">Orders cancelled</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-danger">
+                            <i class="ti ti-user-plus"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="50"
+                            style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
@@ -228,7 +234,8 @@
                         </div>
                         <div class="col-md-3">
                             <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
-                            <input type="number" id="totalInboxesFilter" class="form-control" placeholder="Search by total inboxes" min="1">
+                            <input type="number" id="totalInboxesFilter" class="form-control"
+                                placeholder="Search by total inboxes" min="1">
                         </div>
                         <div class="col-md-3">
                             <label for="startDate" class="form-label">Start Date</label>
@@ -245,7 +252,8 @@
     </div>
 
     <div class="card py-3 px-4">
-        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist">
+        {{-- <h2 class="mb-3">Orders</h2> --}}
+        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist" style="display: none;">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
                     type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">All Orders</button>
@@ -260,7 +268,8 @@
         </ul>
 
         <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
+            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
+                tabindex="0">
                 @include('customer.orders._orders_table')
             </div>
             @foreach($plans as $plan)
@@ -272,8 +281,8 @@
         </div>
     </div>
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin"
-        aria-labelledby="offcanvasAddAdminLabel" aria-modal="true" role="dialog">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
+        aria-modal="true" role="dialog">
         <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
             <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">View Detail</h5>
             <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
@@ -328,6 +337,7 @@
                     }
                 },
                 autoWidth: false,
+                dom: '<"top"f>rt<"bottom"lip><"clear">',
                 columnDefs: [{
                         width: '10%',
                         targets: 0
