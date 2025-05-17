@@ -456,6 +456,22 @@ class OrderController extends Controller
                         'order_id' => $order->id,
                         'assigned_to' => $order->assigned_to
                     ]);
+
+                    // send email to assigned contractor
+                    if($order->assigned_to){
+                        $assignedUser = User::find($order->assigned_to);
+                        if ($assignedUser) {
+                            Mail::to($assignedUser->email)
+                                ->queue(new OrderStatusChangeMail(
+                                    $order,
+                                    $user,
+                                    $oldStatus,
+                                    $newStatus,
+                                    $reason,
+                                    true
+                                ));
+                        }
+                    }
                 } catch (\Exception $e) {
                     Log::error('Failed to send order status change emails: ' . $e->getMessage());
                 }
