@@ -786,7 +786,7 @@
                     prevEl: ".swiper-button-prev",
                 },
             });
-
+            
             // Initialize all charts with error handling
             function initializeChart(selector, options) {
                 const element = document.querySelector(selector);

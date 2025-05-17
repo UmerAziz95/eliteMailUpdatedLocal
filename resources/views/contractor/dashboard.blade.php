@@ -655,51 +655,49 @@
                     return null;
                 }
             }
-
             // Ticket distribution pie chart
             const ticketOptions = {
+                
                 series: [
-                    {{ $newTickets ?? 0 }}, 1, 
-                    {{ $inProgressTickets  ?? 0 }}, 1, 
-                    {{ $resolvedTickets  ?? 0 }}, 1
+                    {{ $newTickets ?? 0 }},
+                    {{ $inProgressTickets ?? 0 }},
+                    {{ $resolvedTickets ?? 0 }}
                 ],
                 chart: {
                     width: 330,
-                    type: 'donut',
+                    type: 'pie',
                     dropShadow: {
-                        enabled: true,
-                        color: 'var(--second-primary)',
-                        top: -1,
-                        left: 3,
-                        blur: 5,
-                        opacity: 1
+                        // enabled: true,
+                        // color: 'var(--second-primary)',
+                        // top: -1,
+                        // left: 3,
+                        // blur: 5,
+                        // opacity: 1
                     }
                 },
                 stroke: {
                     width: 0,
                 },
-                labels: ["Open", "", "In-Progress", "", "Closed", ""],
-                dataLabels: {
-                    dropShadow: {
-                        blur: 2,
-                        opacity: 1
-                    }
-                },
-                fill: {
-                    type: 'pattern',
-                    opacity: 1,
-                    pattern: {
-                        enabled: false,
-                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles'],
-                    },
-                },
+                labels: ["Open", "In-Progress", "Closed"],
+                // dataLabels: {
+                //     dropShadow: {
+                //         blur: 2,
+                //         opacity: 1
+                //     },
+                //     distance: 20
+                // },
+                // fill: {
+                //     type: 'pattern',
+                //     opacity: 1,
+                //     pattern: {
+                //         enabled: false,
+                //         style: ['verticalLines', 'squares', 'horizontalLines'],
+                //     },
+                // },
                 colors: [
                     '#7367ef',  // Open tickets
-                    'transparent',
-                    '#7367ef',  // In-Progress tickets
-                    'transparent',
-                    '#7367ef',  // Closed tickets
-                    'transparent',
+                    '#00cfe8',  // In-Progress tickets
+                    '#28c76f',  // Closed tickets
                 ],
                 states: {
                     hover: {
@@ -727,9 +725,15 @@
 
             // Order Status Chart configuration
             const orderStatusOptions = {
-                series: [{{ $pendingOrders ?? 0 }},  {{ $inProgressOrders ?? 0 }}, {{ $completedOrders ?? 0 }}, {{ $approvedOrders ?? 0 }}, {{ $expiredOrders ?? 0 }}],
+                series: [
+                    {{ $pendingOrders ?? 0 }},
+                    {{ $inProgressOrders ?? 0 }},
+                    {{ $completedOrders ?? 0 }},
+                    {{ $approvedOrders ?? 0 }},
+                    {{ $expiredOrders ?? 0 }}
+                ],
                 chart: {
-                    type: 'donut',
+                    type: 'pie',
                     height: 350,
                     dropShadow: {
                         enabled: true,
@@ -741,37 +745,30 @@
                     }
                 },
                 labels: ['Pending', 'In Progress', 'Completed', 'Approved', 'Expired'],
-                colors: ['#7367f0', '#ff9f43', '#28c76f', '#00cfe8', '#ea5455'], // base colors
+                colors: [
+                    '#7367f0',  // Pending
+                    '#ff9f43',  // In Progress 
+                    '#28c76f',  // Completed
+                    '#00cfe8',  // Approved
+                    '#ea5455'   // Expired
+                ],
                 fill: {
                     type: 'pattern',
                     opacity: 1,
                     pattern: {
                         enabled: false,
-                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles','slantedLines', 'circles', 'horizontalLines', 'slantedLines', 'verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles', 'horizontalLines'],
+                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines'],
                     },
                 },
                 stroke: {
                     width: 0,
                 },
-                colors: [
-                    '#7367ef',  // base purple
-                    'transparent',  // base purple
-                    '#7367ef',  // lighter tint
-                    'transparent',  // lighter tint
-                    '#7367ef',  // dark shade
-                    'transparent',  // dark shade
-                    '#7367ef',  // pastel
-                    'transparent',  // pastel
-                    '#7367ef',  // bold deep
-                    'transparent',   // bold deep
-                    '#7367ef',  // bold deep
-                    'transparent',  // bold deep
-                ],
-                 dataLabels: {
+                dataLabels: {
                     dropShadow: {
                         blur: 2,
                         opacity: 1
-                    }
+                    },
+                    distance: 20
                 },
                 legend: {
                     position: 'bottom',
