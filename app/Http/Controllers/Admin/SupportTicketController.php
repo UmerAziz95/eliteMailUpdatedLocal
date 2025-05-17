@@ -9,6 +9,8 @@ use App\Models\TicketReply;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Models\Notification;
 
 class SupportTicketController extends Controller
 {
@@ -181,10 +183,39 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:open,in_progress,closed'
         ]);
-
+         
         $ticket = SupportTicket::findOrFail($id);
+        $oldStatus = $ticket->status;
+        $newStatus = $validated['status'];
         $ticket->update(['status' => $validated['status']]);
+        
+        // Only send notification if status has actually changed
+        if ($oldStatus !== $newStatus) {
+            // Send email notification to the user
+            Mail::to($ticket->user->email)
+                ->queue(new \App\Mail\TicketStatusMail(
+                    $ticket,
+                    Auth::user(),
+                    $oldStatus,
+                    $newStatus
+                ));
 
+            // Create notification for the user
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'type' => 'support_ticket_status',
+                'title' => 'Ticket Status Updated',
+                'message' => "The status of your support ticket #{$ticket->ticket_number} has been updated to " . ucfirst(str_replace('_', ' ', $newStatus)),
+                'data' => [
+                    'ticket_id' => $ticket->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_by' => Auth::id(),
+                    'created_at' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            ]);
+        }
         return response()->json([
             'success' => true,
             'message' => 'Ticket status updated successfully'

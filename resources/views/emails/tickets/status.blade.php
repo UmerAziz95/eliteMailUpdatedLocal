@@ -12,10 +12,17 @@
             --second-primary: #7367ef;
             --text-primary: #ffffff;
             --text-secondary: rgba(255, 255, 255, 0.95);
-            --white-color: #ffffff;
+            --light-color: #ffffffbb;
+            --white-color: #fff;
             --box-shadow: rgba(104, 104, 141, 0.214) 0px 2px 5px 0px,
                 rgba(148, 148, 148, 0.443) 0px 1px 3px 0px;
             --input-border: rgba(255, 255, 255, 0.3);
+            --priority-high: rgba(255, 0, 0, 0.2);
+            --priority-medium: rgba(255, 166, 0, 0.293);
+            --priority-low: rgba(108, 255, 108, 0.302);
+            --status-open: rgba(108, 255, 108, 0.302);
+            --status-in-progress: rgba(255, 166, 0, 0.293);
+            --status-closed: rgba(200, 200, 200, 0.2);
             --gradient-1: linear-gradient(135deg, #7367ef 0%, #8f84ff 100%);
             --gradient-2: linear-gradient(45deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
             --gradient-3: linear-gradient(to right, #7367ef 0%, #6254e8 100%);
@@ -148,6 +155,26 @@
             font-weight: 600;
             font-size: 14px;
         }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: capitalize;
+        }
+        .status-open {
+            background-color: var(--status-open);
+            color: #22c55e;
+        }
+        .status-in-progress {
+            background-color: var(--status-in-progress);
+            color: #f59e0b;
+        }
+        .status-closed {
+            background-color: var(--status-closed);
+            color: #94a3b8;
+        }
         .btn-primary {
             display: inline-block;
             background: var(--gradient-3);
@@ -178,6 +205,7 @@
             position: relative;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             animation: fadeIn 0.8s ease-out forwards;
+            width: 100% !important;
         }
         .footer::before {
             content: '';
@@ -208,11 +236,6 @@
                 border-radius: 0;
                 min-height: 100vh;
             }
-            .btn-primary {
-                width: 100%;
-                text-align: center;
-                padding: 18px 24px;
-            }
             .welcome-header {
                 padding: 30px 20px;
             }
@@ -233,40 +256,53 @@
 <body>
     <div class="container">
         <div class="welcome-header">
-            <h2>New Order Created</h2>
+            <h2>Ticket Status Updated</h2>
         </div>
         
         <div class="content">
-            <p>Dear {{ $user->name }},</p>
-            <!-- isAdminNotification -->
-            @if($isAdminNotification)
-                <p>A new order has been created.</p>
-            @else
-                <p>Thank you for your order! Your order has been successfully created.</p>
-            @endif
+            <p>Dear {{ $ticket->user->name }},</p>
+            <p>The status of your support ticket has been updated.</p>
 
             <div class="detail-card">
                 <div class="detail-row">
-                    <span class="detail-label">Order Number:</span>
-                    <span class="detail-value">#{{ $order->id }}</span>
+                    <span class="detail-label">Ticket ID:</span>
+                    <span class="detail-value">#{{ $ticket->ticket_number }}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Plan:</span>
-                    <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
+                    <span class="detail-label">Subject:</span>
+                    <span class="detail-value">{{ $ticket->subject }}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Amount:</span>
-                    <span class="detail-value">${{ number_format($order->amount, 2) }}</span>
+                    <span class="detail-label">Previous Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{ str_replace('_', '-', $oldStatus) }}">
+                            {{ str_replace('_', ' ', ucfirst($oldStatus)) }}
+                        </span>
+                    </span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Status:</span>
-                    <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
+                    <span class="detail-label">New Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{ str_replace('_', '-', $newStatus) }}">
+                            {{ str_replace('_', ' ', ucfirst($newStatus)) }}
+                        </span>
+                    </span>
                 </div>
             </div>
+
+            <p style="margin-top: 20px;">
+                @if($newStatus == 'in_progress')
+                    Your ticket is now being actively worked on by our support team.
+                @elseif($newStatus == 'closed')
+                    This ticket has been marked as resolved. If you still need assistance or have further questions, please reopen the ticket or create a new one.
+                @else
+                    Our team will review your ticket and respond as soon as possible.
+                @endif
+            </p>
         </div>
 
         <div class="footer">
-            <p>If you have any questions about your order, please don't hesitate to contact our support team.</p>
+            <p>Thank you for your patience.</p>
             <p>Best regards,<br>The <span class="highlight-text">{{ config('app.name') }}</span> Team</p>
         </div>
     </div>

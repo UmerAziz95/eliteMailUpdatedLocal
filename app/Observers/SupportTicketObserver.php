@@ -60,15 +60,22 @@ class SupportTicketObserver
 
         // ticket category is not order send mail admin
         if ($ticket->category !== 'order') {
-            $admins = User::where('role_id', '1')->get();
-            foreach ($admins as $admin) {
-                Mail::to($admin->email)
-                    ->queue(new TicketCreatedMail(
-                        $ticket,
-                        $ticket->user,
-                        $admin
-                    ));
-            }
+            // $admins = User::where('role_id', '1')->get();
+            // foreach ($admins as $admin) {
+            //     Mail::to($admin->email)
+            //         ->queue(new TicketCreatedMail(
+            //             $ticket,
+            //             $ticket->user,
+            //             $admin
+            //         ));
+            // }
+            // Send email to env admin
+            Mail::to(config('mail.admin_address', 'admin@example.com'))
+                ->queue(new TicketCreatedMail(
+                    $ticket,
+                    $ticket->user,
+                    null
+                ));
         }
     }
 

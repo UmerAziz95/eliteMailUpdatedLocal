@@ -222,7 +222,9 @@
                 { data: 'order_id', name: 'order_id' },
                 { data: 'created_at', name: 'created_at' },
                 { data: 'created_at', name: 'created_at' },
-                { data: 'amount', name: 'amount' },
+                { 
+                    data: 'amount', name: 'amount'
+                },
                 { data: 'paid_at', name: 'paid_at' },
                 { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
                 { data: 'status', name: 'status' },

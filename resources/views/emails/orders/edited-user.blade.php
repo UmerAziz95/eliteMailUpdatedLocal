@@ -178,6 +178,7 @@
             position: relative;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             animation: fadeIn 0.8s ease-out forwards;
+            width: 100%;
         }
         .footer::before {
             content: '';
@@ -233,40 +234,53 @@
 <body>
     <div class="container">
         <div class="welcome-header">
-            <h2>New Order Created</h2>
+            <h2>Order Edit Confirmation</h2>
         </div>
         
         <div class="content">
             <p>Dear {{ $user->name }},</p>
-            <!-- isAdminNotification -->
-            @if($isAdminNotification)
-                <p>A new order has been created.</p>
-            @else
-                <p>Thank you for your order! Your order has been successfully created.</p>
-            @endif
+            <p>Your order has been updated successfully. The order is now pending review by our team.</p>
 
             <div class="detail-card">
                 <div class="detail-row">
-                    <span class="detail-label">Order Number:</span>
+                    <span class="detail-label">Order ID:</span>
                     <span class="detail-value">#{{ $order->id }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Plan:</span>
-                    <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Amount:</span>
-                    <span class="detail-value">${{ number_format($order->amount, 2) }}</span>
+                    <span class="detail-value">{{ $order->plan->name ?? 'N/A' }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Status:</span>
-                    <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
+                    <span class="detail-value highlight-text">{{ ucfirst($order->status_manage_by_admin ?? 'pending') }}</span>
                 </div>
             </div>
+
+            <div class="detail-card">
+                <h3 style="margin-bottom: 15px; color: var(--text-primary);">Updated Information:</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Forwarding URL:</span>
+                    <span class="detail-value">{{ $reorderInfo->forwarding_url }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Hosting Platform:</span>
+                    <span class="detail-value">{{ $reorderInfo->hosting_platform }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Domains:</span>
+                    <span class="detail-value">{{ str_replace(',', ', ', $reorderInfo->domains) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Inboxes:</span>
+                    <span class="detail-value">{{ $reorderInfo->total_inboxes }}</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 20px;">Our team will review your updated order information and will contact you if we need any further information.</p>
         </div>
 
         <div class="footer">
-            <p>If you have any questions about your order, please don't hesitate to contact our support team.</p>
+            <p>Thank you for choosing <span class="highlight-text">{{ config('app.name') }}</span>!</p>
             <p>Best regards,<br>The <span class="highlight-text">{{ config('app.name') }}</span> Team</p>
         </div>
     </div>

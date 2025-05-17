@@ -216,7 +216,7 @@
             animation: fadeIn 0.8s ease-out forwards;
             animation-delay: 0.8s;
             border-radius: 15px;
-            width: fit-content !important;
+            width: 100% !important;
         }
         .footer::before {
             content: '';
