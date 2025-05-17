@@ -184,7 +184,6 @@ class SupportTicketController extends Controller
             'status' => 'required|in:open,in_progress,closed'
         ]);
          
-        
         $ticket = SupportTicket::findOrFail($id);
         $oldStatus = $ticket->status;
         $newStatus = $validated['status'];
