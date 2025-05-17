@@ -517,11 +517,32 @@ class PlanController extends Controller
                         $user,
                         true
                     ));
+                
+                
+
             } catch (\Exception $e) {
                 \Log::error('Failed to send order creation emails: ' . $e->getMessage());
                 // Continue execution since the order was already created
             }
-
+            
+            // Send email to all contractors if order is not assigned
+            if (is_null($order->assigned_to)) {
+                $contractors = User::where('role_id', '4')->get();
+                if ($contractors->count() > 0) {
+                    foreach ($contractors as $contractor) {
+                        try {
+                            Mail::to($contractor->email)
+                                ->queue(new OrderCreatedMail(
+                                    $order,
+                                    $contractor,
+                                    true
+                                ));
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send order notification to contractor: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
             // Redirect to success page with subscription details
             return view('customer.plans.subscription-success', [
                 'subscription_id' => $subscription->id,

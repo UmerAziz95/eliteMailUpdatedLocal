@@ -238,13 +238,17 @@
         
         <div class="content">
             <p>Dear {{ $user->name }},</p>
-            
-            <p>Thank you for your order! We're excited to process it for you.</p>
+            <!-- isAdminNotification -->
+            @if($isAdminNotification)
+                <p>A new order has been created.</p>
+            @else
+                <p>Thank you for your order! Your order has been successfully created.</p>
+            @endif
 
             <div class="detail-card">
                 <div class="detail-row">
                     <span class="detail-label">Order Number:</span>
-                    <span class="detail-value">#{{ $order->order_number }}</span>
+                    <span class="detail-value">#{{ $order->id }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Plan:</span>
