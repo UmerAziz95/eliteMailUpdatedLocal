@@ -1120,9 +1120,39 @@
                     columns: [
                         { data: 'id', name: 'id' },
                         { data: 'action_type', name: 'action_type' },
-                        { data: 'description', name: 'description' },
-                        { data: 'performed_by', name: 'performed_by' },
-                        { data: 'performed_on_type', name: 'performed_on_type' },
+                        { 
+                            data: 'description', 
+                            name: 'description', 
+                            render: function(data, type, row) {
+                                return `
+                                    <div class="d-flex align-items-center text-nowrap">
+                                        <div class="me-1 rounded-1 d-flex align-items-center justify-content-center" style="background-color: rgba(85, 255, 78, 0.4); height: 20px; width: 20px">
+                                            <i style="color: #A6FF00" class="ti ti-file-description fs-6"></i>
+                                        </div>
+                                        <span>${data}</span>
+                                    </div>
+                                `;
+                            }
+                        },   
+                        { 
+                            data: 'performed_by', name: 'performed_by', 
+                            render: function(data, type, row) {
+                                return `
+                                    <div class="d-flex align-items-center text-nowrap px-2 py-1 rounded-2" style= "border: 1px solid #00F2FF">
+                                        <span style="color: #00F2FF">${data}</span>
+                                    </div>
+                                `;
+                            }
+                        },
+                        { 
+                            data: 'performed_on_type', name: 'performed_on_type' ,
+                            render: function(data, type, row) {
+                                return `
+                                    <img src="https://cdn-icons-png.flaticon.com/128/3641/3641988.png" style="width: 25px" alt="">
+                                    <span>${data}</span>
+                                `;
+                            }
+                        },
                         { data: 'performed_on', name: 'performed_on' },
                         { data: 'ip', name: 'ip' },
                         { data: 'user_agent', name: 'user_agent' },

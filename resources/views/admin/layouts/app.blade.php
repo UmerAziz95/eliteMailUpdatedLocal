@@ -59,13 +59,15 @@
         <div
             class="h-100 w-100 p-2 px-md-4 py-md-3 d-flex flex-column justify-content-between overflow-y-auto overflow-x-hidden">
             <div>
-                @include('admin.layouts.header')
-                <!-- Include Header -->
-                @yield('content')
+                <div>
+                    @include('admin.layouts.header')
+                    <!-- Include Header -->
+                    @yield('content')
+                </div>
+                <!-- Main Page Content -->
+                @include('admin.layouts.footer')
+                <!-- Include Footer (Optional) -->
             </div>
-            <!-- Main Page Content -->
-            @include('admin.layouts.footer')
-            <!-- Include Footer (Optional) -->
         </div>
     </div>
 

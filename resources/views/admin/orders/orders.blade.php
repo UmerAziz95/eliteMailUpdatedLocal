@@ -439,15 +439,36 @@
                     },
                     {
                         data: 'created_at',
-                        name: 'orders.created_at'
+                        name: 'orders.created_at',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex align-items-center gap-1 text-nowrap">
+                                    <i class="ti ti-calendar-month fs-5"></i>
+                                    <span>${data}</span>
+                                </div>
+                            `;
+                        }
                     },
-                    {
-                        data: 'name',
-                        name: 'users.name'
+
+                    { 
+                        data: 'name', name: 'name' ,
+                        render: function(data, type, row) {
+                            return `
+                                <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                <span>${data}</span>
+                            `;
+                        }
                     },
-                    {
-                        data: 'email',
-                        name: 'users.email'
+                    { 
+                        data: 'email', name: 'email' ,
+                            render: function(data, type, row) {
+                                return `
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                        <span style= "color: #00BBFF";>${data}</span>    
+                                    </div>
+                                `;
+                            }
                     },
                     ...(planId ? [] : [{
                         data: 'plan_name',
