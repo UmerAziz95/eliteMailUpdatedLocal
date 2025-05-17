@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\Status;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
+use App\Mail\OrderEditedMail;
+use Illuminate\Support\Facades\Mail;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -574,6 +576,39 @@ class OrderController extends Controller
                             'additional_info' => $request->additional_info,
                         ]
                     );
+                }
+
+                // Send email to admin and customer when order is edited
+                try {
+                    // Get user information
+                    $user = User::findOrFail($request->user_id);
+                    $reorderInfo = $order->reorderInfo->first();
+                    
+                    // Send notification to the customer
+                    Mail::to($user->email)
+                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], false));
+                    // dd(config('mail.admin_address', 'admin@example.com'));
+                    // Send notification to admin
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    
+                    // Check if the order has an assigned contractor
+                    if ($order->assigned_to ) {
+                        // Get the assigned contractor
+                        $contractor = User::find($order->assigned_to);
+                        // dd($contractor);
+                        // Send notification to the assigned contractor if found
+                        if ($contractor) {
+                            Mail::to($contractor->email)
+                                ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                        }
+                    } else {
+                        // No assigned contractor, log this information
+                        Log::info('No contractor assigned to order #' . $order->id . ' for edit notification');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to send order edit notification emails: ' . $e->getMessage());
+                    // Continue execution - don't let email failure stop the process
                 }
             }
             
