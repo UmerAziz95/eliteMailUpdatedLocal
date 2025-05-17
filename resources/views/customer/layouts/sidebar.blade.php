@@ -1,7 +1,7 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2">
-        <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
-        <h4 class="text fs-5 mb-0">Mailboxes</h4>
+        <img src="https://cdn.prod.website-files.com/680f5aabe088c7bbcd389903/681b21577e8b6e172787ecb7_Project%20Inbox.svg"
+            width="140" alt="">
     </div>
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
         <input class="form-check-input"
@@ -85,8 +85,15 @@
                 </div>
             </a>
         </li>
-
     </ul>
+
+    <div class="counter_1 p-4 rounded-3 mt-5">
+        <div class="d-flex flex-column">
+            <h6 class="mb-1">Do you want to buy more inboxes from here?</h6>
+            <small>Click here to buy more inboxes</small>
+        </div>
+        <button class="m-btn mt-3 border-0 py-2 px-4">Buy Now</button>
+    </div>
 </aside>
 
 <script>
@@ -115,7 +122,7 @@
 
 <style>
     aside {
-        width: 270px;
+        width: 220px;
         transition: width 1s ease;
     }
 
@@ -133,7 +140,7 @@
     }
 
     aside.collapsed:hover {
-        width: 270px;
+        width: 220px;
     }
 
     aside.collapsed .nav-link.active {

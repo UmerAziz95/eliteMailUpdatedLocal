@@ -128,7 +128,8 @@
                             <select id="orderStatusFilter" class="form-select">
                                 <option value="" class="text-light">All Order Statuses</option>
                                 @foreach($statuses as $key => $status)
-                                <option value="{{ $key }}" class="text-{{$status}}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
+                                <option value="{{ $key }}" class="text-{{$status}}">{{ ucfirst(str_replace('_', ' ',
+                                    $key)) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -227,23 +228,57 @@
                 },
                 {
                     data: 'created_at',
-                    name: 'created_at'
+                    name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="ti ti-calendar-month fs-5"></i>
+                                <span>${data}</span>
+                            </div>
+                        `;
+                    }
                 },
+
                 {
                     data: 'created_at',
-                    name: 'created_at'
+                    name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="ti ti-calendar-month fs-5"></i>
+                                <span>${data}</span>
+                            </div>
+                        `;
+                    }
                 },
+
                 {
                     data: 'amount',
-                    name: 'amount'
+                    name: 'amount',
+                    render: function(data, type, row) {
+                        return `
+                            <span class="text-warning">${data}</span>
+                        `;
+                    }
                 },
                 {
                     data: 'customer_name',
-                    name: 'customer_name'
+                    name: 'customer_name',
+                    render: function(data, type, row) {
+                        return `
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <span>${data}</span>
+                        `;
+                    }
                 },
                 {
                     data: 'paid_at',
-                    name: 'paid_at'
+                    name: 'paid_at',
+                    render: function(data, type, row) {
+                        return `
+                            <span style="color: #00FF77">${data}</span>
+                        `;
+                    }
                 },
                 {
                     data: 'chargebee_subscription_id',

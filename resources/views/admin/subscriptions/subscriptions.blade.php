@@ -322,12 +322,85 @@
         },
         columns: [
             { data: 'chargebee_subscription_id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
-            { data: 'amount', name: 'amount' }, // Date
-            { data: 'name', name: 'users.name' }, // Date
-            { data: 'email', name: 'users.email' }, // From addColumn() in controller
-            { data: 'status', name: 'subscriptions.status' }, // Subscription status
-            { data: 'last_billing_date', name: 'last_billing_date' }, // Subscription status
-            { data: 'next_billing_date', name: 'next_billing_date' }, // Subscription status
+            { 
+                data: 'amount', name: 'amount' ,
+                render: function(data, type, row) {
+                    return `
+                        <i class="ti ti-currency-dollar text-warning"></i>
+                        <span class="text-warning">${data}</span>
+                    `;
+                }
+            },
+            { 
+                data: 'name', name: 'name' ,
+                render: function(data, type, row) {
+                    return `
+                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                        <span>${data}</span>
+                    `;
+                }
+            },
+            {
+                data: 'email', name: 'users.email' ,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                <span style= "color: #00BBFF";>${data}</span>    
+                            </div>
+                        `;
+                    }
+            },
+            {
+                data: 'status',
+                name: 'subscriptions.status',
+                render: function(data, type, row) {
+                    let statusClass = '';
+
+                    switch (data.toLowerCase()) {
+                        case 'active':
+                            statusClass = 'active_status';
+                            break;
+                        case 'inactive':
+                            statusClass = 'inactive_status';
+                            break;
+                        case 'pending':
+                            statusClass = 'pending_status';
+                            break;
+                        default:
+                            statusClass = '';
+                            break;
+                    }
+
+                    return `<span class="${statusClass} text-capitalize">${data}</span>`;
+                }
+            },
+
+            {
+                data: 'last_billing_date',
+                name: 'last_billing_date',
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex align-items-center gap-1">
+                            <i class="ti ti-calendar-month fs-5"></i>
+                            <span>${data}</span>
+                        </div>
+                    `;
+                }
+            },
+            {
+                data: 'next_billing_date',
+                name: 'next_billing_date',
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex align-items-center gap-1">
+                            <i class="ti ti-calendar-month fs-5"></i>
+                            <span>${data}</span>
+                        </div>
+                    `;
+                }
+            },
+
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
         order: [[1, 'desc']],
@@ -435,10 +508,62 @@
         columns: [
             { data: 'chargebee_subscription_id', name: 'subscriptions.chargebee_susbscription_id' }, // Subscription ID
             { data: 'created_at', name: 'subscriptions.created_at' }, // Date
-            { data: 'amount', name: 'subscriptions.amount' }, // Date
-            { data: 'name', name: 'users.name' }, // name
-            { data: 'email', name: 'users.email' }, // From addColumn() in controller
-            { data: 'status', name: 'subscriptions.status' }, // Subscription status
+            { 
+                data: 'amount', name: 'amount' ,
+                render: function(data, type, row) {
+                    return `
+                        <i class="ti ti-currency-dollar text-warning"></i>
+                        <span class="text-warning">${data}</span>
+                    `;
+                }
+            },
+            { 
+                data: 'name', name: 'name' ,
+                render: function(data, type, row) {
+                    return `
+                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                        <span>${data}</span>
+                    `;
+                }
+            },
+            {
+                data: 'email', name: 'users.email' ,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                <span style= "color: #00BBFF";>${data}</span>    
+                            </div>
+                        `;
+                    }
+            },
+            {
+                data: 'status',
+                name: 'subscriptions.status',
+                render: function(data, type, row) {
+                    let statusClass = '';
+
+                    switch (data.toLowerCase()) {
+                        case 'active':
+                            statusClass = 'active_status';
+                            break;
+                        case 'inactive':
+                            statusClass = 'inactive_status';
+                            break;
+                        case 'pending':
+                            statusClass = 'pending_status';
+                            break;
+                         case 'cancelled':
+                            statusClass = 'cancel-btn py-1 px-2 rounded-2';
+                            break;
+                        default:
+                            statusClass = '';
+                            break;
+                    }
+
+                    return `<span class="${statusClass} text-capitalize">${data}</span>`;
+                }
+            },
             { data: 'cancellation_at', name: 'cancellation_at' }, // Subscription status
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
