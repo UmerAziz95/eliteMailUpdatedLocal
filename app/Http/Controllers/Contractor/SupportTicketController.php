@@ -106,6 +106,7 @@ class SupportTicketController extends Controller
         // if (!($validated['is_internal'] ?? false)) {
             // Send email to customer
             Mail::to($ticket->user->email)
+            
                 ->queue(new \App\Mail\TicketReplyMail(
                     $ticket,
                     $reply,
@@ -136,7 +137,7 @@ class SupportTicketController extends Controller
             'reply' => $reply->load('user')
         ]);
     }
-
+    
     public function updateStatus(Request $request, $ticketId)
     {
         $validated = $request->validate([
@@ -148,14 +149,50 @@ class SupportTicketController extends Controller
                   ->orWhereNull('assigned_to');
         })->findOrFail($ticketId);
 
+        // Store the old status before updating
+        $oldStatus = $ticket->status;
+        $newStatus = $validated['status'];
+
         // Auto-assign ticket if unassigned
         if (!$ticket->assigned_to) {
             $ticket->update([
                 'assigned_to' => Auth::id(),
-                'status' => $validated['status']
+                'status' => $newStatus
             ]);
         } else {
-            $ticket->update(['status' => $validated['status']]);
+            $ticket->update(['status' => $newStatus]);
+        }
+
+        // Only send notification if status has actually changed
+        if ($oldStatus !== $newStatus) {
+            // Refresh the ticket data
+            $ticket = $ticket->fresh();
+            
+            // Send email notification to the user
+            $ticket->user->email= "muhammad.farooq.raaj@gmail.com";
+            Mail::to($ticket->user->email)
+                ->queue(new \App\Mail\TicketStatusMail(
+                    $ticket,
+                    Auth::user(),
+                    $oldStatus,
+                    $newStatus
+                ));
+
+            // Create notification for the user
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'type' => 'support_ticket_status',
+                'title' => 'Ticket Status Updated',
+                'message' => "The status of your support ticket #{$ticket->ticket_number} has been updated to " . ucfirst(str_replace('_', ' ', $newStatus)),
+                'data' => [
+                    'ticket_id' => $ticket->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_by' => Auth::id(),
+                    'created_at' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            ]);
         }
 
         return response()->json([
