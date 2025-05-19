@@ -665,7 +665,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 300,
+                    height: 400,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -673,6 +673,19 @@
                         left: 3,
                         blur: 5,
                         opacity: 0.1
+                    },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                            enabled: true,
+                            delay: 150
+                        },
+                        dynamicAnimation: {
+                            enabled: true,
+                            speed: 350
+                        }
                     }
                 },
                 labels: ["Open", "In-Progress", "Closed"],
@@ -694,7 +707,7 @@
                     }
                 },
                 stroke: {
-                    width: 0 // Removing white lines between slices
+                    width: 0, // Removing white lines between slices
                 },
                 states: {
                     hover: {
@@ -708,7 +721,7 @@
                     pie: {
                         expandOnClick: false,
                         donut: {
-                            size: '0%'
+                            size: '10%'
                         },
                         offsetX: 0,
                         offsetY: 0,
@@ -716,9 +729,10 @@
                         startAngle: 0,
                         endAngle: 360,
                         hover: {
+                            enabled: true,
                             offsetX: 0,
                             offsetY: 0,
-                            size: '20%' // Increased from 10% to 20% for more gap on hover
+                            size: '35%' // Increased for more dramatic separation on hover
                         }
                     }
                 },
@@ -747,7 +761,6 @@
 
             // Initialize ticket chart
             initializeChart("#ticketPieChart", ticketOptions);
-
             // Order Status Chart configuration
             const orderStatusOptions = {
                 series: [
@@ -759,7 +772,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 300,
+                    height: 400,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -767,6 +780,19 @@
                         left: 3,
                         blur: 5,
                         opacity: 0.2
+                    },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                            enabled: true,
+                            delay: 150
+                        },
+                        dynamicAnimation: {
+                            enabled: true,
+                            speed: 350
+                        }
                     }
                 },
                 labels: ['Pending', 'In Progress', 'Completed', 'Reject', 'Cancelled'],
@@ -816,9 +842,10 @@
                         startAngle: 0,
                         endAngle: 360,
                         hover: {
+                            enabled: true,
                             offsetX: 0,
                             offsetY: 0,
-                            size: '10%' // Creates separation effect on hover
+                            size: '35%' // Increased for more dramatic separation on hover
                         }
                     }
                 },
