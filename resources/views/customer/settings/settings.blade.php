@@ -266,10 +266,13 @@
                                 {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay()->format('M d, Y') : 'N/A' }}
                             </span>
                         </div>
+                        <!-- remaining days and next billing date check deeply and analyzed -->
                         <div class="progress mb-1 bg-label-primary" style="height: 6px;">
                             @php
                                 $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
-                                $endDate = $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date) : now();
+                                $endDate = $latestOrder->subscription->next_billing_date 
+                                    ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay()
+                                    : now()->subDay();
                                 $totalDays = $startDate->diffInDays($endDate);
                                 $now = now();
                                 
@@ -284,9 +287,10 @@
                                     $progress = 100;
                                 } else {
                                     // Current date is within subscription period
-                                    $daysRemaining = $now->diffInDays($endDate);
+                                    // Use diffInDays with false parameter to get positive number when endDate is in the future
+                                    $daysRemaining = $now->diffInDays($endDate, false);
                                     $daysElapsed = $startDate->diffInDays($now);
-                                    $progress = $totalDays > 0 ? ($daysElapsed / $totalDays) * 100 : 0;
+                                    $progress = $totalDays > 0 ? min(100, max(0, ($daysElapsed / $totalDays) * 100)) : 0;
                                 }
                             @endphp
                             <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -588,6 +592,34 @@
                                     <div class="mb-4">
                                         <h6 class="mb-1">Active until {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->format('M d, Y') : 'N/A' }}</h6>
                                         <p>We will send you a notification upon Subscription expiration</p>
+                                        
+                                        @php
+                                            $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
+                                            $endDate = $latestOrder->subscription->next_billing_date 
+                                                ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay()
+                                                : now()->subDay();
+                                            $totalDays = $startDate->diffInDays($endDate);
+                                            $now = now();
+                                            
+                                            // Calculate days remaining and progress consistently
+                                            if ($now->lt($startDate)) {
+                                                $tabDaysRemaining = $totalDays;
+                                                $tabProgress = 0;
+                                            } elseif ($now->gt($endDate)) {
+                                                $tabDaysRemaining = 0;
+                                                $tabProgress = 100;
+                                            } else {
+                                                $tabDaysRemaining = $now->diffInDays($endDate, false);
+                                                $daysElapsed = $startDate->diffInDays($now);
+                                                $tabProgress = $totalDays > 0 ? min(100, max(0, ($daysElapsed / $totalDays) * 100)) : 0;
+                                            }
+                                        @endphp
+                                        
+                                        <!-- <div class="progress mb-1 bg-label-primary mt-2" style="height: 6px;">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ $tabProgress }}%;" 
+                                                 aria-valuenow="{{ $tabProgress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small>{{ $tabDaysRemaining }} days remaining</small> -->
                                     </div>
                                     <div class="mb-xl-6">
                                         <h6 class="mb-1">
@@ -616,10 +648,25 @@
                                             <div class="plan-statistics">
                                                 @php
                                                     $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
-                                                    $endDate = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date);
+                                                    $endDate = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay();
                                                     $totalDays = $startDate->diffInDays($endDate);
-                                                    $daysLeft = now()->diffInDays($endDate, false);
-                                                    $progress = max(0, min(100, (($totalDays - $daysLeft) / $totalDays) * 100));
+                                                    $now = now();
+                                                    
+                                                    // Ensure days left is calculated correctly - make consistent with sidebar section
+                                                    if ($now->lt($startDate)) {
+                                                        // Current date is before subscription period
+                                                        $daysLeft = $totalDays;
+                                                        $progress = 0;
+                                                    } elseif ($now->gt($endDate)) {
+                                                        // If current date is after end date, no days left
+                                                        $daysLeft = 0;
+                                                        $progress = 100;
+                                                    } else {
+                                                        // Calculate days left with false parameter to ensure positive value
+                                                        $daysLeft = $now->diffInDays($endDate, false);
+                                                        $daysElapsed = $startDate->diffInDays($now);
+                                                        $progress = $totalDays > 0 ? min(100, max(0, ($daysElapsed / $totalDays) * 100)) : 0;
+                                                    }
                                                 @endphp
                                                 <div class="d-flex justify-content-between">
                                                     <h6 class="mb-1">Days</h6>
