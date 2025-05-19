@@ -26,7 +26,7 @@
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.orders') ? 'active' : '' }}"
                 href="{{ route('contractor.orders') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-details"></i></div>
+                    <div class="icons"><i class="ti ti-box fs-5"></i></div>
                     <div class="text">Orders</div>
                 </div>
             </a>
