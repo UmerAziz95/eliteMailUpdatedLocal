@@ -807,61 +807,84 @@
             // Ticket distribution pie chart
             const ticketOptions = {
                 series: [
-                    {{ $newTickets ?? 0 }}, 1, 
-                    {{ $pendingTickets ?? 0 }}, 1, 
-                    {{ $resolvedTickets ?? 0 }}, 1
+                    {{ $newTickets ?? 0 }}, 
+                    {{ $pendingTickets ?? 0 }}, 
+                    {{ $resolvedTickets ?? 0 }}
                 ],
                 chart: {
-                    width: 330,
-                    type: 'donut',
+                    type: 'pie',
+                    height: 300,
                     dropShadow: {
                         enabled: true,
-                        color: 'var(--second-primary)',
+                        color: '#000',
                         top: -1,
                         left: 3,
                         blur: 5,
-                        opacity: 1
+                        opacity: 0.2
+                    }
+                },
+                labels: ["Open", "In-Progress", "Closed"],
+                colors: ['#7367ef', '#00CFE8', '#28C76F'],
+                legend: {
+                    position: 'bottom',
+                    fontSize: '14px'
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        return opts.w.config.series[opts.seriesIndex];
+                    },
+                    style: {
+                        fontSize: '14px'
+                    },
+                    dropShadow: {
+                        enabled: false
                     }
                 },
                 stroke: {
-                    width: 0,
+                    width: 0 // Removing white lines between slices
                 },
-                labels: ["Open", "", "In-Progress", "", "Closed", ""],
-                dataLabels: {
-                    dropShadow: {
-                        blur: 2,
-                        opacity: 1
+                states: {
+                    hover: {
+                        filter: {
+                            type: 'darken',
+                            value: 0.15
+                        }
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                        expandOnClick: false,
+                        donut: {
+                            size: '0%'
+                        },
+                        offsetX: 0,
+                        offsetY: 0,
+                        customScale: 0.95,
+                        startAngle: 0,
+                        endAngle: 360,
+                        hover: {
+                            offsetX: 0,
+                            offsetY: 0,
+                            size: '10%' // This creates the separation effect on hover
+                        }
                     }
                 },
                 fill: {
-                    type: 'pattern',
-                    opacity: 1,
-                    pattern: {
-                        enabled: false,
-                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines', 'circles'],
-                    },
+                    type: 'gradient'
                 },
-                colors: [
-                    '#7367ef',  // Open tickets
-                    'transparent',
-                    '#7367ef',  // In-Progress tickets
-                    'transparent',
-                    '#7367ef',  // Closed tickets
-                    'transparent'
-                ],
-                states: {
-                    hover: {
-                        filter: 'none'
+                tooltip: {
+                    enabled: true,
+                    theme: 'dark',
+                    style: {
+                        fontSize: '14px'
                     }
-                },
-                theme: {
-                    palette: 'palette2'
                 },
                 responsive: [{
                     breakpoint: 480,
                     options: {
                         chart: {
-                            width: 300
+                            height: 250
                         },
                         legend: {
                             position: 'bottom'

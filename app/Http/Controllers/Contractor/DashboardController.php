@@ -37,6 +37,7 @@ class DashboardController extends Controller
         $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
         $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
+        $rejectedOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
         $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
         
         // Calculate percentage changes (last week vs previous week)
@@ -77,6 +78,7 @@ class DashboardController extends Controller
             'pendingOrders',
             'inProgressOrders',
             'completedOrders',
+            'rejectedOrders',
             'cancelledOrders',
             'percentageChange'
         ));

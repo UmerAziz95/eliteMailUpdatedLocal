@@ -458,20 +458,21 @@
                             </li>
                             <li class="d-flex gap-3 align-items-start mb-2">
                                 <div class="badge rounded bg-label-info mt-1">
-                                    <i class="ti ti-thumb-up fs-4 text-info"></i>
+                                    <i class="ti ti-ban fs-4 text-danger"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Approved</h6>
-                                    <p class="small opacity-75">{{ $approvedOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap">Reject</h6>
+                                    <p class="small opacity-75">{{ $rejectedOrders ?? 0 }}</p>
                                 </div>
                             </li>
+                            
                             <li class="d-flex gap-3 align-items-start">
                                 <div class="badge rounded bg-label-danger mt-1">
-                                    <i class="ti ti-alert-circle fs-4 text-danger"></i>
+                                    <i class="ti ti-x fs-4 text-secondary"></i>
                                 </div>
                                 <div>
                                     <h6 class="mb-0 text-nowrap">Cancelled</h6>
-                                    <p class="small opacity-75">{{ $expiredOrders ?? 0 }}</p>
+                                    <p class="small opacity-75">{{ $cancelledOrders ?? 0 }}</p>
                                 </div>
                             </li>
                         </ul>
@@ -639,7 +640,7 @@
                 );
             });
 
-            // Initialize ticket chart with proper error handling
+                // Initialize ticket chart with proper error handling
             function initializeChart(selector, options) {
                 const element = document.querySelector(selector);
                 if (!element) {
@@ -657,61 +658,85 @@
             }
             // Ticket distribution pie chart
             const ticketOptions = {
-                
                 series: [
                     {{ $newTickets ?? 0 }},
                     {{ $inProgressTickets ?? 0 }},
                     {{ $resolvedTickets ?? 0 }}
                 ],
                 chart: {
-                    width: 330,
                     type: 'pie',
+                    height: 300,
                     dropShadow: {
-                        // enabled: true,
-                        // color: 'var(--second-primary)',
-                        // top: -1,
-                        // left: 3,
-                        // blur: 5,
-                        // opacity: 1
+                        enabled: true,
+                        color: '#000',
+                        top: -1,
+                        left: 3,
+                        blur: 5,
+                        opacity: 0.1
+                    }
+                },
+                labels: ["Open", "In-Progress", "Closed"],
+                colors: ['#7367ef', '#00CFE8', '#28C76F'],
+                legend: {
+                    position: 'bottom',
+                    fontSize: '14px'
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        return opts.w.config.series[opts.seriesIndex];
+                    },
+                    style: {
+                        fontSize: '14px'
+                    },
+                    dropShadow: {
+                        enabled: false
                     }
                 },
                 stroke: {
-                    width: 0,
+                    width: 0 // Removing white lines between slices
                 },
-                labels: ["Open", "In-Progress", "Closed"],
-                // dataLabels: {
-                //     dropShadow: {
-                //         blur: 2,
-                //         opacity: 1
-                //     },
-                //     distance: 20
-                // },
-                // fill: {
-                //     type: 'pattern',
-                //     opacity: 1,
-                //     pattern: {
-                //         enabled: false,
-                //         style: ['verticalLines', 'squares', 'horizontalLines'],
-                //     },
-                // },
-                colors: [
-                    '#7367ef',  // Open tickets
-                    '#00cfe8',  // In-Progress tickets
-                    '#28c76f',  // Closed tickets
-                ],
                 states: {
                     hover: {
-                        filter: 'none'
+                        filter: {
+                            type: 'darken',
+                            value: 0.15
+                        }
                     }
                 },
-                theme: {
-                    palette: 'palette2'
+                plotOptions: {
+                    pie: {
+                        expandOnClick: false,
+                        donut: {
+                            size: '0%'
+                        },
+                        offsetX: 0,
+                        offsetY: 0,
+                        customScale: 0.95,
+                        startAngle: 0,
+                        endAngle: 360,
+                        hover: {
+                            offsetX: 0,
+                            offsetY: 0,
+                            size: '20%' // Increased from 10% to 20% for more gap on hover
+                        }
+                    }
+                },
+                fill: {
+                    type: 'gradient'
+                },
+                tooltip: {
+                    enabled: true,
+                    theme: 'dark',
+                    style: {
+                        fontSize: '14px'
+                    }
                 },
                 responsive: [{
                     breakpoint: 480,
                     options: {
                         chart: {
-                            width: 300
+                            height: 250
                         },
                         legend: {
                             position: 'bottom'
@@ -729,69 +754,95 @@
                     {{ $pendingOrders ?? 0 }},
                     {{ $inProgressOrders ?? 0 }},
                     {{ $completedOrders ?? 0 }},
-                    {{ $approvedOrders ?? 0 }},
-                    {{ $expiredOrders ?? 0 }}
+                    {{ $rejectedOrders ?? 0 }},
+                    {{ $cancelledOrders ?? 0 }}
                 ],
                 chart: {
                     type: 'pie',
-                    height: 350,
+                    height: 300,
                     dropShadow: {
                         enabled: true,
-                        color: 'var(--second-primary)',
+                        color: '#000',
                         top: -1,
                         left: 3,
                         blur: 5,
-                        opacity: 0.4
+                        opacity: 0.2
                     }
                 },
-                labels: ['Pending', 'In Progress', 'Completed', 'Approved', 'Expired'],
+                labels: ['Pending', 'In Progress', 'Completed', 'Reject', 'Cancelled'],
                 colors: [
                     '#7367f0',  // Pending
                     '#ff9f43',  // In Progress 
                     '#28c76f',  // Completed
-                    '#00cfe8',  // Approved
-                    '#ea5455'   // Expired
+                    '#ea5455',  // Reject
+                    '#82868b'   // Cancelled
                 ],
-                fill: {
-                    type: 'pattern',
-                    opacity: 1,
-                    pattern: {
-                        enabled: false,
-                        style: ['verticalLines', 'squares', 'horizontalLines', 'circles', 'slantedLines'],
-                    },
-                },
-                stroke: {
-                    width: 0,
-                },
-                dataLabels: {
-                    dropShadow: {
-                        blur: 2,
-                        opacity: 1
-                    },
-                    distance: 20
-                },
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        colors: '#a3a9bd'
+                    fontSize: '14px'
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        return opts.w.config.series[opts.seriesIndex];
+                    },
+                    style: {
+                        fontSize: '14px'
+                    },
+                    dropShadow: {
+                        enabled: false
+                    }
+                },
+                stroke: {
+                    width: 0 // Removing white lines between slices
+                },
+                states: {
+                    hover: {
+                        filter: {
+                            type: 'darken',
+                            value: 0.15
+                        }
                     }
                 },
                 plotOptions: {
                     pie: {
+                        expandOnClick: false,
                         donut: {
-                            labels: {
-                                show: false,
-                                total: {
-                                    show: true,
-                                    label: 'Total Orders',
-                                    formatter: function () {
-                                        return {{ $totalOrders ?? 0 }};
-                                    }
-                                }
-                            }
+                            size: '0%'
+                        },
+                        offsetX: 0,
+                        offsetY: 0,
+                        customScale: 0.95,
+                        startAngle: 0,
+                        endAngle: 360,
+                        hover: {
+                            offsetX: 0,
+                            offsetY: 0,
+                            size: '10%' // Creates separation effect on hover
                         }
                     }
-                }
+                },
+                fill: {
+                    type: 'gradient'
+                },
+                tooltip: {
+                    enabled: true,
+                    theme: 'dark',
+                    style: {
+                        fontSize: '14px'
+                    }
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                            height: 250
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }]
             };
 
 
