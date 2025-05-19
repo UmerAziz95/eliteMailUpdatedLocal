@@ -227,6 +227,9 @@
                             ->latest()
                             ->first();
                     @endphp
+                    @php
+                        $latestOrder->subscription->next_billing_date = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay();
+                    @endphp
                     <div class="d-flex justify-content-between align-items-start">
                         @if($latestOrder && $latestOrder->plan)
                             <span class="badge bg-label-primary">{{ $latestOrder->plan->name }}</span>
