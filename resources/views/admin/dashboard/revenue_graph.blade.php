@@ -325,7 +325,7 @@
                         distributed: true
                     }
                 },
-                // colors not changed
+                
                 colors: Array(24).fill('#3D3D66'),
                 dataLabels: {
                     enabled: false
@@ -371,6 +371,14 @@
                         }
                     }
                 }
+                // states: {
+                //     hover: {
+                //         filter: {
+                //             type: 'darken',
+                //             value: 0.9
+                //         }
+                //     }
+                // }
             });
             revenue_day_chart.render();
             console.log("Day chart initialized");
@@ -444,6 +452,14 @@
                         }
                     }
                 }
+                // states: {
+                //     hover: {
+                //         filter: {
+                //             type: 'darken',
+                //             value: 0.9
+                //         }
+                //     }
+                // }
             });
             revenue_week_chart.render();
             console.log("Week chart initialized");
@@ -588,8 +604,12 @@
                     console.log(`Skipping stats update because updateStats=${updateStats}`);
                 }
                 
+                // Convert series data to numbers to ensure proper handling
+                const numericSeriesData = Array.isArray(data.series) ? 
+                    data.series.map(val => Number(val) || 0) : [];
+                
                 // Update chart with the data
-                updateRevenueChart(type, data.series, data.categories);
+                updateRevenueChart(type, numericSeriesData, data.categories);
                 showRevenueLoading(false);
             })
             .catch(error => {
@@ -607,7 +627,11 @@
                     console.log(`Skipping stats update from fallback data because updateStats=${updateStats}`);
                 }
                 
-                updateRevenueChart(type, fallbackData.series, fallbackData.categories);
+                // Convert fallback data to numbers
+                const numericFallbackData = Array.isArray(fallbackData.series) ? 
+                    fallbackData.series.map(val => Number(val) || 0) : [];
+                
+                updateRevenueChart(type, numericFallbackData, fallbackData.categories);
                 showRevenueLoading(false);
             });
     }
@@ -635,10 +659,17 @@
         }
         
         try {
-            // Prepare the chart data object with proper name field
+            // Prepare the chart data object with proper name field that matches the initialization
+            let seriesName = 'Revenue';
+            if (type === 'day') {
+                seriesName = 'Today Revenue';
+            } else if (type === 'week') {
+                seriesName = 'This Week Revenue';
+            }
+            
             const chartData = {
                 series: [{
-                    name: 'Revenue',
+                    name: seriesName,
                     data: seriesData
                 }]
             };
@@ -820,12 +851,21 @@
             return Array(defaultSize).fill('#3D3D66');
         }
         
+        // Convert any string values to numbers first
+        const numericData = data.map(val => Number(val) || 0);
+        
         // Find the maximum value
-        const maxValue = Math.max(...data);
+        const maxValue = Math.max(...numericData);
         console.log(`Max value for ${revenue_current_period} chart: ${maxValue}`);
         
         // Create an array of colors, highlighting the maximum value(s)
-        return data.map(value => value === maxValue && maxValue > 0 ? '#7F6CFF' : '#3D3D66');
+        const colors = numericData.map(value => {
+            // Use strict equality with the maximum value, but only if max is > 0
+            return (value === maxValue && maxValue > 0) ? '#7F6CFF' : '#3D3D66';
+        });
+        
+        console.log(`Generated colors for ${revenue_current_period} chart:`, colors);
+        return colors;
     }
     
     // Helper function to format currency values
