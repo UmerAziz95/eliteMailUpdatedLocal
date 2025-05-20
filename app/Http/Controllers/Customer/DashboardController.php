@@ -60,7 +60,6 @@ class DashboardController extends Controller
                 'amount' => $latestOrder->amount ?? '0.00'
             ];
         }
-
         // Get order statistics
         $totalOrders = $user->orders()->count();
         $pendingOrders = $user->orders()

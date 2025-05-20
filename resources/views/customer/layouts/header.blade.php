@@ -37,7 +37,10 @@
             </ul>
         </div>
         <div class="">
-            <a href="{{ url('customer/pricing') }}" class="btn btn-primary btn-sm me-2">Buy More Inboxes</a>
+            <a href="{{ url('customer/pricing') }}"
+                class="btn btn-primary animate-gradient btn-sm me-2 d-flex align-items-center gap-1"><i
+                    class="ti ti-building-store"></i>
+                Buy More Inboxes</a>
         </div>
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -69,7 +72,7 @@
                     <!-- Notifications will be loaded here dynamically -->
                 </div>
                 <div class="position-sticky bottom-0 py-2 px-3 w-100" style="background-color: var(--secondary-color)">
-                    <a href="/customer/dashboard"
+                    <a href="/customer/settings"
                         class="m-btn py-2 px-4 w-100 border-0 rounded-2 d-flex align-items-center justify-content-center">View
                         All Notifications</a>
                 </div>

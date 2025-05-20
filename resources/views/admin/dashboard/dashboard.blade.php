@@ -380,7 +380,7 @@
 
         <div class="col-12 order-5">
             <div class="card p-3">
-                <div class="table-responsive">
+                <div>
                     <table id="myTable">
                         <thead>
                             <tr>

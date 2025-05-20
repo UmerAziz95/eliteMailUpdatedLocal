@@ -96,24 +96,27 @@
                                 @php $maxDisplay = 3; @endphp
                                 @foreach ($role->users->take($maxDisplay) as $user)
                                 @php
-                                $hasProfileImage = $user->profile_image && file_exists(storage_path('app/public/profile_images/' . $user->profile_image));
-                                $image = $hasProfileImage 
-                                    ? asset('storage/profile_images/' . $user->profile_image)
-                                    : asset('storage/profile_images/default.jpg');
+                                $hasProfileImage = $user->profile_image &&
+                                file_exists(storage_path('app/public/profile_images/' . $user->profile_image));
+                                $image = $hasProfileImage
+                                ? asset('storage/profile_images/' . $user->profile_image)
+                                : asset('storage/profile_images/default.jpg');
                                 @endphp
                                 <li class="avatar pull-up" data-bs-toggle="tooltip" title="{{ $user->name ?? 'User' }}">
-                                    @if($hasProfileImage || file_exists(storage_path('app/public/profile_images/default.jpg')))
-                                        <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
+                                    @if($hasProfileImage ||
+                                    file_exists(storage_path('app/public/profile_images/default.jpg')))
+                                    <img class="rounded-circle" src="{{ $image }}" alt="Avatar" height="40" width="40">
                                     @else
-                                        <div class="avatar-initial">{{ substr($user->name ?? 'U', 0, 1) }}</div>
+                                    <div class="avatar-initial">{{ substr($user->name ?? 'U', 0, 1) }}</div>
                                     @endif
                                 </li>
                                 @endforeach
-                                
+
                                 @php $remainingCount = $role->users->count() - $maxDisplay; @endphp
                                 @if($remainingCount > 0)
                                 <li class="avatar">
-                                    <span class="avatar-initial pull-up" data-bs-toggle="tooltip" title="{{ $remainingCount }} more">+{{ $remainingCount }}</span>
+                                    <span class="avatar-initial pull-up" data-bs-toggle="tooltip"
+                                        title="{{ $remainingCount }} more">+{{ $remainingCount }}</span>
                                 </li>
                                 @endif
                             </ul>
@@ -393,9 +396,31 @@ function initDataTable(planId = '') {
         },
         columns: [
             { data: 'id', name: 'id' },
-            { data: 'name', name: 'name' },
+            { 
+                data: 'name', name: 'name' ,
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <div>
+                                <img src="https://cdn-icons-png.flaticon.com/128/9402/9402405.png" style="width: 35px" alt="">
+                            </div>
+                            <span>${data}</span>    
+                        </div>
+                    `;
+                }
+            },
             { data: 'permissions', name: 'permissions' },
-            { data: 'created_at', name: 'created_at' },
+            { 
+                data: 'created_at', name: 'created_at', 
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center opacity-50">
+                            <i class="ti ti-calendar-month"></i>
+                            <span>${data}</span>    
+                        </div>
+                    `;
+                }
+            },
             { data: 'action', name: 'action' },
           
        

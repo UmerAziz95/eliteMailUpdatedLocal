@@ -308,13 +308,26 @@
                     },
                     {
                         data: 'created_at',
-                        name: 'subscriptions.created_at'
+                        name: 'subscriptions.created_at',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'amount',
                         name: 'orders.amount',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `
+                                <span class="text-warning">${data}</span>    
+                            `;
+                        }
                     },
                     {
                         data: 'chargebee_subscription_id',
@@ -322,11 +335,27 @@
                     },
                     {
                         data: 'last_billing',
-                        name: 'subscriptions.start_date'
+                        name: 'subscriptions.start_date',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'next_billing',
-                        name: 'subscriptions.end_date'
+                        name: 'subscriptions.end_date',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'order_id',
@@ -445,13 +474,26 @@
                     },
                     {
                         data: 'created_at',
-                        name: 'subscriptions.created_at'
+                        name: 'subscriptions.created_at',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'amount',
                         name: 'orders.amount',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `
+                                <span class="text-warning">${data}</span>    
+                            `;
+                        }
                     },
                     {
                         data: 'chargebee_subscription_id',
@@ -459,11 +501,27 @@
                     },
                     {
                         data: 'last_billing',
-                        name: 'subscriptions.start_date'
+                        name: 'subscriptions.start_date',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'order_id',
-                        name: 'subscriptions.order_id'
+                        name: 'subscriptions.order_id',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'status',

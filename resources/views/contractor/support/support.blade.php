@@ -435,7 +435,7 @@
         </div>
 
         <div class="table-responsive">
-            <table id="ticketsTable" class="display w-100">
+            <table id="ticketsTable" class=" w-100">
                 <thead>
                     <tr>
                         <th>Ticket #</th>
@@ -529,12 +529,32 @@
                 },
                 columns: [
                     { data: 'ticket_number', name: 'ticket_number' },
-                    { data: 'user.name', name: 'user.name' },
+                    { 
+                        data: 'user.name', name: 'user.name',
+                        render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                }
+                    },
                     { data: 'subject', name: 'subject' },
                     { data: 'category', name: 'category' },
                     { data: 'priority', name: 'priority' },
                     { data: 'status', name: 'status' },
-                    { data: 'created_at', name: 'created_at' },
+                    { 
+                        data: 'created_at', name: 'created_at',
+                        render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="ti ti-calendar-month fs-5"></i>
+                                <span class="text-nowrap">${data}</span>    
+                            </div>
+                        `;
+                }
+                    },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[6, 'desc']] // Sort by created_at by default

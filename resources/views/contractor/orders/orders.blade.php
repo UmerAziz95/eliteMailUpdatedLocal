@@ -646,15 +646,41 @@
                     },
                     {
                         data: 'created_at',
-                        name: 'orders.created_at'
+                        name: 'orders.created_at',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'name',
-                        name: 'users.name'
+                        name: 'users.name',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">    
+                                    </div>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     {
                         data: 'email',
-                        name: 'users.email'
+                        name: 'users.email',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center">
+                                    <i class="ti ti-mail"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     ...(planId ? [] : [{
                         data: 'plan_name',

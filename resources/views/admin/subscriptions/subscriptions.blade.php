@@ -326,8 +326,10 @@
                 data: 'amount', name: 'amount' ,
                 render: function(data, type, row) {
                     return `
-                        <i class="ti ti-currency-dollar text-warning"></i>
-                        <span class="text-warning">${data}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            <i class="ti ti-currency-dollar text-warning"></i>
+                            <span class="text-warning text-nowrap">${data}</span>    
+                        </div>
                     `;
                 }
             },
@@ -335,8 +337,10 @@
                 data: 'name', name: 'name' ,
                 render: function(data, type, row) {
                     return `
-                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
-                        <span>${data}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <span>${data}</span>    
+                        </div>
                     `;
                 }
             },
@@ -521,8 +525,10 @@
                 data: 'name', name: 'name' ,
                 render: function(data, type, row) {
                     return `
-                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
-                        <span>${data}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <span>${data}</span>    
+                        </div>
                     `;
                 }
             },

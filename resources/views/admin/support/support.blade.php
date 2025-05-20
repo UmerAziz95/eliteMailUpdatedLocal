@@ -240,13 +240,24 @@
                     d.end_date = $('#endDate').val();
                 }
             },
-            columns: [{
+            columns: [
+                {
                     data: 'ticket_number',
                     name: 'ticket_number'
                 },
                 {
                     data: 'user.name',
-                    name: 'user.name'
+                    name: 'user.name',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-1">
+                                <div>
+                                    <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                </div>
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
                 },
                 {
                     data: 'subject',

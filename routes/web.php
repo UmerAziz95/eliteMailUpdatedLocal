@@ -153,7 +153,14 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/support/tickets/{id}', [App\Http\Controllers\Admin\SupportTicketController::class, 'show'])->name('support.tickets.show');
         Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Admin\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
         Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Admin\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
-    
+        // /subscription-stats?type=${type} Admin/DashboardController
+        Route::get('/subscription-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getSubscriptionStats'])->name('subscription.stats');
+        // /revenue-stats?type=${type} Admin/DashboardController
+        Route::get('/revenue-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueStats'])->name('revenue.stats');
+        // /ticket-stats?period=${period} Admin/DashboardController
+        Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
+        // /revenue-totals Admin/DashboardController
+        Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
     }); 
 
 });
