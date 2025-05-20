@@ -53,6 +53,18 @@ html {
 
 }
 
+table {
+    border-collapse: separate !important;
+    border-spacing: 0px 15px !important;
+    padding: 10px;
+}
+
+tr {
+    box-shadow: rgba(0, 0, 0, 0.286) 0px 4px 12px;
+    border-radius: 50px;
+}
+
+
 a {
     text-decoration: none;
     color: var(--light-color);
@@ -231,10 +243,42 @@ textarea:focus {
 }
 
 .dropdown button {
-    height: 40px;
-    width: 40px;
+    height: 30px;
+    width: 30px;
     border-radius: 50px;
 }
+
+.animate-gradient {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.093), rgba(255, 255, 255, 0.794), rgba(255, 255, 255, 0.08));
+    background-size: 200% 100%;
+    background-position: -100% 0;
+    animation: shine 3s infinite linear;
+    transition: background-position 0.3s;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-primary {
+    height: fit-content !important;
+}
+
+/* Optional: prevent icon from shifting text during animation */
+.animate-gradient i {
+    z-index: 2;
+    position: relative;
+}
+
+
+@keyframes shine {
+    0% {
+        background-position: -100% 0;
+    }
+
+    100% {
+        background-position: 100% 0;
+    }
+}
+
 
 .dropdown button:hover {
     background-color: #97979735 !important;
@@ -416,9 +460,10 @@ footer {
 
 /* ===========data table============ */
 
-thead {
+thead tr {
     background-color: var(--table-header);
     border: none !important;
+    box-shadow: none !important;
 }
 
 th {

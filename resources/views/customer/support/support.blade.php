@@ -483,7 +483,7 @@
     </div>
     <div class="card p-3">
         <div class="table-responsive">
-            <table id="ticketsTable" class="display w-100">
+            <table id="ticketsTable" class=" w-100">
                 <thead>
                     <tr>
                         <th>Ticket #</th>
@@ -651,7 +651,19 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'ticket_number', name: 'ticket_number' },
-            { data: 'subject', name: 'subject' },
+            { 
+                data: 'subject', name: 'subject',
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <div>
+                                <img src="https://cdn-icons-png.flaticon.com/128/17720/17720968.png" width="35px" alt=""/>
+                            </div>
+                            <span>${data}</span>    
+                        </div>
+                    `;
+                }
+            },
             { data: 'category', name: 'category' },
             { data: 'priority', name: 'priority' },
             { data: 'status', name: 'status' },

@@ -454,8 +454,12 @@
                         data: 'name', name: 'name' ,
                         render: function(data, type, row) {
                             return `
-                                <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
-                                <span>${data}</span>
+                                <div class="d-flex gap-1">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                    </div>
+                                    <span>${data}</span>    
+                                </div>
                             `;
                         }
                     },
@@ -472,7 +476,17 @@
                     },
                     ...(planId ? [] : [{
                         data: 'plan_name',
-                        name: 'plans.name'
+                        name: 'plans.name',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/7756/7756169.png" style="width: 25px" alt="">
+                                    </div>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     }]),
                     {
                         data: 'domain_forwarding_url',

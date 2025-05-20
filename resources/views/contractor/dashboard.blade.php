@@ -555,7 +555,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table id="ordersTable" class="display">
+                    <table id="ordersTable" class="">
                         <!-- Changed from myTable to ordersTable -->
                         <thead>
                             <tr>
@@ -583,7 +583,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table id="activityTable" class="display w-100">
+                    <table id="activityTable" class="w-100">
                         <thead>
                             <tr>
                                 <th class="text-start">ID</th>
@@ -791,7 +791,17 @@
                 },
                 columns: [
                     {data: 'id', name: 'orders.id'},
-                    {data: 'name', name: 'users.name'},
+                    {
+                        data: 'name', name: 'users.name',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center">
+                                    <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
+                    },
                     {data: 'plan_name', name: 'plans.name'},
                     {data: 'total_inboxes', name: 'total_inboxes'},
                     {data: 'status', name: 'orders.status'},

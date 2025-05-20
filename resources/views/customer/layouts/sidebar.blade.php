@@ -92,7 +92,7 @@
             <h6 class="mb-1">Do you want to buy more inboxes from here?</h6>
             <small>Click here to buy more inboxes</small>
         </div>
-        <button class="m-btn mt-3 border-0 py-2 px-4">Buy Now</button>
+        <button class="m-btn mt-3 border-0 py-2 px-4 animate-gradient btn-primary">Buy Now</button>
     </div>
 </aside>
 

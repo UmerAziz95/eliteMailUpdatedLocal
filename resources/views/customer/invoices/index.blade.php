@@ -161,7 +161,7 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table id="invoicesTable" class="display w-100">
+                <table id="invoicesTable" class="w-100">
                     <thead>
                         <tr>
                             <th>Invoice #</th>
@@ -220,10 +220,47 @@
             columns: [
                 { data: 'chargebee_invoice_id', name: 'chargebee_invoice_id' },
                 { data: 'order_id', name: 'order_id' },
-                { data: 'created_at', name: 'created_at' },
-                { data: 'created_at', name: 'created_at' },
-                { data: 'amount', name: 'amount' },
-                { data: 'paid_at', name: 'paid_at' },
+                { 
+                    data: 'created_at', name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center opacity-50">
+                                <i class="ti ti-calendar-month"></i>
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
+                },
+                { 
+                    data: 'created_at', name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center opacity-50">
+                                <i class="ti ti-calendar-month"></i>
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
+                },
+                { 
+                    data: 'amount', name: 'amount',
+                    render: function(data, type, row) {
+                        return `
+                            <span class="text-warning">${data}</span>    
+                        `;
+                    } 
+                },
+                { 
+                    data: 'paid_at', name: 'paid_at',   
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center opacity-50">
+                                <i class="ti ti-calendar-month"></i>
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
+                },
                 { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
                 { data: 'status', name: 'status' },
                 { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
