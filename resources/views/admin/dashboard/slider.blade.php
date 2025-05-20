@@ -1,11 +1,13 @@
 <div class="swiper w-100 h-100">
     <div class="swiper-wrapper w-100">
+        @forelse($recentOrders ?? [] as $order)
         <div class="swiper-slide w-100 d-flex align-items-start p-4 justify-content-between">
             <div class="w-100">
-                <h6 class="mb-0 fw-bold">Websites Analyticss</h6>
-                <small>Total 28.5% conversation rate</small>
+                <h6 class="mb-0 fw-bold">#{{ $order->id ?? 'N/A' }}</h6>
+                <!-- plan name -->
+                <small>{{ $order->plan->name }}</small>
                 <div class="mt-5">
-                    <h6 class="fw-bold">Spending</h6>
+                    <h6 class="fw-bold">{{ $order->user->name ?? 'N/A' }}</h6>
                     <div class="row gy-4">
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2">
@@ -41,8 +43,10 @@
             <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-1.png"
                 width="160" class="d-none d-sm-block" alt="Slide 1">
         </div>
-
-        <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
+        @empty
+        <p class="text-muted mb-0">No recent orders</p>
+        @endforelse
+        <!-- <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
             <div class="w-100">
                 <h6 class="mb-0 fw-bold">Websites Analyticss</h6>
                 <small>Total 28.5% conversation rate</small>
@@ -82,7 +86,7 @@
             <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-2.png"
                 width="160" class="d-none d-sm-block" alt="Slide 1">
         </div>
-
+        
         <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
             <div class="w-100">
                 <h6 class="mb-0 fw-bold">Websites Analyticss</h6>
@@ -122,7 +126,7 @@
             </div>
             <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-3.png"
                 width="160" class="d-none d-sm-block" alt="Slide 1">
-        </div>
+        </div> -->
     </div>
     <div class="swiper-pagination"></div>
 </div>

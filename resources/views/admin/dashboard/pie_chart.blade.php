@@ -1,6 +1,6 @@
 <div class="card h-100">
-    <div class="d-flex flex-column flex-sm-row align-items-start">
-        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 px-3 pb-0">
+    <div class="d-flex flex-column flex-sm-row align-items-start px-3">
+        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 pb-0">
             <div class="mt-lg-4 mb-lg-6 mb-2">
                 <h5 class="mb-0">Total Tickets</h5>
                 <p class="mb-0" id="totalTicketCount">{{ ($newTickets ?? 0) + ($inProgressTickets ?? 0) + ($resolvedTickets ?? 0) }}</p>
@@ -44,8 +44,9 @@
                 </li>
             </ul>
         </div>
-        <div class="">
-            <ul class="nav nav-pills mb-3 d-flex align-items-center mt-2" id="tickets-pills-tab" role="tablist">
+
+        <div class="mt-lg-4 mb-lg-6 mb-2">
+            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="tickets-pills-tab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="tickets-pills-month-tab" data-bs-toggle="pill"
                             data-bs-target="#tickets-pills-month" type="button" role="tab" aria-controls="tickets-pills-month"

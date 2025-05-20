@@ -119,7 +119,7 @@ class AdminController extends Controller
             ->sum('reorder_infos.total_inboxes');
 
         // Get recent orders with their status from status_manage_by_admin column
-        $recentOrders = \App\Models\Order::latest()
+        $recentOrders = \App\Models\Order::with(['plan','reorderInfo','user'])->latest()
             ->take(3)
             ->get()
             ->map(function($order) {
