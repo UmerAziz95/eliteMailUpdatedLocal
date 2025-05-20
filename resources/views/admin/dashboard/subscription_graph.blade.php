@@ -1,7 +1,7 @@
 <div class="card h-100 p-2">
     <div class="card-header border-0 pb-0 d-flex justify-content-between">
-        <div class="card-title mb-0">
-            <h5 class="mb-1">Subscriptions Overview</h5>
+        <div class="card-title mb-0 Subscriptions-title">
+            <h5 class="mb-1 ">Subscriptions Overview</h5>
         </div>
         <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="subscriptions-pills-tab"
                     role="tablist">
@@ -520,7 +520,7 @@
         growth = Number(growth) || 0;
         
         // Update period title based on current tab
-        const titleElement = document.querySelector('.card-title h5');
+        const titleElement = document.querySelector('.Subscriptions-title h5');
         if (titleElement) {
             let periodTitle = 'Subscriptions Overview';
             switch(subscriptions_current_period) {
