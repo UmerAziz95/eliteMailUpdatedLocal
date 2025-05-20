@@ -155,6 +155,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Admin\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
         // /subscription-stats?type=${type} Admin/DashboardController
         Route::get('/subscription-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getSubscriptionStats'])->name('subscription.stats');
+        // /revenue-stats?type=${type} Admin/DashboardController
+        Route::get('/revenue-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueStats'])->name('revenue.stats');
+        // /revenue-totals Admin/DashboardController
+        Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
     }); 
 
 });

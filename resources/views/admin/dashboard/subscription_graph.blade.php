@@ -29,7 +29,7 @@
                     <h1 class="mb-2" id="subscriptions_count_display">0</h1>
                     <div class="badge rounded bg-label-success" id="subscriptions_growth_badge" style="display: none !important;">+0%</div>
                 </div>
-                <small id="subscriptions_comparison_text">Compared to previous period</small>
+                <small id="subscriptions_comparison_text" style="display:none !important;">Compared to previous period</small>
                 <div id="subscriptions_loading_indicator" class="mt-2" style="display: none;">
                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -301,7 +301,18 @@
                     show: false
                 },
                 tooltip: {
-                    enabled: true
+                    enabled: true,
+                    shared: true,
+                    followCursor: true,
+                    intersect: false,
+                    hideEmptySeries: true,
+                    theme: true,
+                    x: {
+                        show: true
+                    },
+                    marker: {
+                        show: true
+                    }
                 }
             });
             subscriptions_day_chart.render();
@@ -357,8 +368,22 @@
                 grid: {
                     show: false
                 },
+                // tooltip: {
+                //     enabled: true
+                // }
                 tooltip: {
-                    enabled: true
+                    enabled: true,
+                    shared: true,
+                    followCursor: true,
+                    intersect: false,
+                    hideEmptySeries: true,
+                    theme: true,
+                    x: {
+                        show: true
+                    },
+                    marker: {
+                        show: true
+                    }
                 }
             });
             subscriptions_week_chart.render();
@@ -568,7 +593,7 @@
                     periodText = 'last month';
                     break;
             }
-            comparisonText.textContent = `Compared to ${periodText}`;
+            // comparisonText.textContent = `Compared to ${periodText}`;
         }
     }
     
