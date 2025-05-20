@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Subscription;
 use App\Models\Order;
+use App\Models\SupportTicket;
 
 class DashboardController extends Controller
 {
@@ -368,6 +369,86 @@ class DashboardController extends Controller
                 'week' => 0,
                 'month' => 0,
                 'error' => 'An error occurred while fetching revenue totals'
+            ], 500);
+        }
+    }
+    
+    public function getTicketStats(Request $request)
+    {
+        try {
+            $period = $request->query('period', 'month'); // 'today', 'week', or 'month'
+            // dd($period);
+            $monthNo = $request->query('month', date('m')); // Numeric month (01-12)
+            $now = Carbon::now();
+            
+            // Initialize stats
+            $openTickets = 0;
+            $inProgressTickets = 0;
+            $closedTickets = 0;
+            $total = 0;
+            
+            switch ($period) {
+                case 'today':
+                    $start = $now->copy()->startOfDay();
+                    $end = $now->copy()->endOfDay();
+                    break;
+                
+                case 'week':
+                    $start = $now->copy()->startOfWeek();
+                    $end = $now->copy()->endOfWeek();
+                    break;
+                
+                case 'month':
+                    $start = $now->copy()->startOfMonth();
+                    $end = $now->copy()->endOfMonth();
+                    break;
+                default:
+                    $start = $now->copy()->startOfMonth();
+                    $end = $now->copy()->endOfMonth();
+                    break;
+            }
+            // dd($start, $end);
+            // Get tickets by status within the date range
+            $openTickets = SupportTicket::whereBetween('created_at', [$start, $end])
+                ->where(function($query) {
+                    $query->where('status', 'new')
+                          ->orWhere('status', 'open');
+                })
+                ->count();
+                
+            $inProgressTickets = SupportTicket::whereBetween('created_at', [$start, $end])
+                ->where(function($query) {
+                    $query->where('status', 'in_progress')
+                          ->orWhere('status', 'pending');
+                })
+                ->count();
+                
+            $closedTickets = SupportTicket::whereBetween('created_at', [$start, $end])
+                ->where(function($query) {
+                    $query->where('status', 'resolved')
+                          ->orWhere('status', 'closed')
+                          ->orWhere('status', 'completed');
+                })
+                ->count();
+            
+            // Calculate total
+            $total = $openTickets + $inProgressTickets + $closedTickets;
+            
+            return response()->json([
+                'open' => $openTickets,
+                'inProgress' => $inProgressTickets,
+                'closed' => $closedTickets,
+                'total' => $total,
+                'period' => $period
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getTicketStats: ' . $e->getMessage());
+            return response()->json([
+                'open' => 0,
+                'inProgress' => 0,
+                'closed' => 0,
+                'total' => 0,
+                'error' => 'An error occurred while fetching ticket data'
             ], 500);
         }
     }

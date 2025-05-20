@@ -157,6 +157,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/subscription-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getSubscriptionStats'])->name('subscription.stats');
         // /revenue-stats?type=${type} Admin/DashboardController
         Route::get('/revenue-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueStats'])->name('revenue.stats');
+        // /ticket-stats?period=${period} Admin/DashboardController
+        Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         // /revenue-totals Admin/DashboardController
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
     }); 
