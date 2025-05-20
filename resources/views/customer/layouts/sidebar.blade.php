@@ -93,7 +93,7 @@
             <small>Click here to buy more inboxes</small>
         </div>
         <br>
-        <a class="m-btn mt-3 border-0 py-2 px-4" href="{{ route('customer.pricing') }}">Buy Now</a>
+        <a class="m-btn mt-3 border-0 py-2 px-4 animate-gradient btn-primary" href="{{ route('customer.pricing') }}">Buy Now</a>
     </div>
 </aside>
 

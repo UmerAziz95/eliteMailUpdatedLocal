@@ -29,8 +29,12 @@
         position: relative;
     }
 
+    .message-content p {
+        color: var(--white-color)
+    }
+
     .sent .message-content {
-        background-color: var(--second-primary);
+        background-color: #7267ef6c;
         color: white;
     }
 
@@ -42,7 +46,7 @@
     .message-meta {
         font-size: 12px;
         margin-top: 5px;
-        color: #666;
+        color: #929292;
     }
 
     .sent .message-meta {
@@ -108,7 +112,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         font-size: 10px;
         padding: 2px 5px;
@@ -134,7 +138,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="card-title">{{ $ticket->subject }}</h5>
-                        <span class="badge bg-{{ $ticket->status === 'open' ? 'success' : ($ticket->status === 'in_progress' ? 'warning' : 'secondary') }}">
+                        <span
+                            class="badge bg-{{ $ticket->status === 'open' ? 'success' : ($ticket->status === 'in_progress' ? 'warning' : 'secondary') }}">
                             {{ ucfirst(str_replace('_', ' ', $ticket->status)) }}
                         </span>
                     </div>
@@ -151,7 +156,8 @@
                                 <label for="attachments" class="attachment-icon">
                                     <i class="fas fa-paperclip"></i> Add Attachments
                                 </label>
-                                <input type="file" id="attachments" name="attachments[]" multiple style="display: none;">
+                                <input type="file" id="attachments" name="attachments[]" multiple
+                                    style="display: none;">
                                 <div class="attachments-area" id="attachmentPreviews"></div>
                             </div>
                             <button type="submit" class="btn btn-primary">Send Reply</button>
@@ -177,22 +183,24 @@
                             <div class="attachments-area">
                                 @foreach($reply->attachments as $attachment)
                                 @php
-                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
-                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
-                                    $fileName = basename($attachment);
+                                $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                $fileName = basename($attachment);
                                 @endphp
                                 <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
                                     @if($isImage)
-                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
                                     @else
-                                        <i class="fas {{ 
+                                    <i class="fas {{ 
                                             in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
                                             (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
                                             (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
                                         }}"></i>
                                     @endif
                                     <div class="attachment-name">{{ $fileName }}</div>
-                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                    <a href="{{ Storage::url($attachment) }}"
+                                        class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2"
+                                        target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>
@@ -215,22 +223,24 @@
                             <div class="attachments-area">
                                 @foreach($ticket->attachments as $attachment)
                                 @php
-                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
-                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
-                                    $fileName = basename($attachment);
+                                $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                $fileName = basename($attachment);
                                 @endphp
                                 <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
                                     @if($isImage)
-                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
                                     @else
-                                        <i class="fas {{ 
+                                    <i class="fas {{ 
                                             in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
                                             (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
                                             (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
                                         }}"></i>
                                     @endif
                                     <div class="attachment-name">{{ $fileName }}</div>
-                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                    <a href="{{ Storage::url($attachment) }}"
+                                        class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2"
+                                        target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>
@@ -248,31 +258,33 @@
                 <div class="card-body">
                     <h6 class="card-title">Ticket Information</h6>
                     <div class="mb-3">
-                        <small class="text-muted">Category</small>
+                        <small class="opacity-50">Category</small>
                         <p>{{ ucfirst($ticket->category) }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Priority</small>
+                        <small class="opacity-50">Priority</small>
                         <p>
-                            <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'success') }}">
+                            <span
+                                class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'success') }}">
                                 {{ ucfirst($ticket->priority) }}
                             </span>
                         </p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Status</small>
+                        <small class="opacity-50">Status</small>
                         <p>
-                            <span class="badge bg-{{ $ticket->status === 'open' ? 'success' : ($ticket->status === 'in_progress' ? 'warning' : 'secondary') }}">
+                            <span
+                                class="badge bg-{{ $ticket->status === 'open' ? 'success' : ($ticket->status === 'in_progress' ? 'warning' : 'secondary') }}">
                                 {{ ucfirst(str_replace('_', ' ', $ticket->status)) }}
                             </span>
                         </p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Created</small>
+                        <small class="opacity-50">Created</small>
                         <p>{{ $ticket->created_at->format('M d, Y H:i') }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Last Updated</small>
+                        <small class="opacity-50">Last Updated</small>
                         <p>{{ $ticket->updated_at->format('M d, Y H:i') }}</p>
                     </div>
                 </div>
@@ -284,7 +296,7 @@
 
 @push('scripts')
 <script>
-const quill = new Quill('#message', {
+    const quill = new Quill('#message', {
     theme: 'snow',
     modules: {
         toolbar: [
@@ -298,7 +310,7 @@ const quill = new Quill('#message', {
 });
 </script>
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
     const chatContainer = document.getElementById('chatContainer');
     
     // Handle file input change

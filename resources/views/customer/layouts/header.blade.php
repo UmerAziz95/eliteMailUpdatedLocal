@@ -37,7 +37,10 @@
             </ul>
         </div>
         <div class="">
-            <a href="{{ url('customer/pricing') }}" class="btn btn-primary btn-sm me-2">Buy More Inboxes</a>
+            <a href="{{ url('customer/pricing') }}"
+                class="btn btn-primary animate-gradient btn-sm me-2 d-flex align-items-center gap-1"><i
+                    class="ti ti-building-store"></i>
+                Buy More Inboxes</a>
         </div>
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">

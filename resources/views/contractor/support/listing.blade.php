@@ -5,7 +5,7 @@
 
 <div class="card py-3 px-4">
     <div class="table-responsive">
-        <table id="myTable" class="display">
+        <table id="myTable" class="">
             <thead>
                 <tr>
                     <th>Ticket Id</th>

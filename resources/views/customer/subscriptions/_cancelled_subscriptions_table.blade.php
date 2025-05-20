@@ -1,5 +1,5 @@
 <div class="table-responsive">
-    <table id="cancelled_subs_table" class="display w-100">
+    <table id="cancelled_subs_table" class="w-100">
         <thead>
             <tr>
                 <th>ID</th>

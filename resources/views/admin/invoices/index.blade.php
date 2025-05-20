@@ -233,7 +233,7 @@
                         return `
                             <div class="d-flex align-items-center gap-1">
                                 <i class="ti ti-calendar-month fs-5"></i>
-                                <span>${data}</span>
+                                <span class="text-nowrap">${data}</span>
                             </div>
                         `;
                     }
@@ -246,7 +246,7 @@
                         return `
                             <div class="d-flex align-items-center gap-1">
                                 <i class="ti ti-calendar-month fs-5"></i>
-                                <span>${data}</span>
+                                <span class="text-nowrap">${data}</span>
                             </div>
                         `;
                     }
@@ -266,8 +266,10 @@
                     name: 'customer_name',
                     render: function(data, type, row) {
                         return `
-                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
-                            <span>${data}</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                <span>${data}</span>    
+                            </div>
                         `;
                     }
                 },

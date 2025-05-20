@@ -227,6 +227,14 @@
             </a>
         </li> --}}
     </ul>
+
+    {{-- <div class="counter_1 p-4 rounded-3 mt-5">
+        <div class="d-flex flex-column">
+            <h6 class="mb-1">Do you want to buy more inboxes from here?</h6>
+            <small>Click here to buy more inboxes</small>
+        </div>
+        <button class="m-btn mt-3 border-0 py-2 px-4">Buy Now</button>
+    </div> --}}
 </aside>
 
 <script>

@@ -397,11 +397,27 @@
                     },
                     {
                         data: 'created_at',
-                        name: 'orders.created_at'
+                        name: 'orders.created_at',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center opacity-50">
+                                    <i class="ti ti-calendar-month"></i>
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     },
                     ...(planId ? [] : [{
                         data: 'plan_name',
-                        name: 'plans.name'
+                        name: 'plans.name',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex gap-1 align-items-center">
+                                    <img src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 20px" alt="">
+                                    <span>${data}</span>    
+                                </div>
+                            `;
+                        }
                     }]),
                     {
                         data: 'domain_forwarding_url',
