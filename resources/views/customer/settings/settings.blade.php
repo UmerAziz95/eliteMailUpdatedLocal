@@ -226,9 +226,11 @@
                             ->with(['plan', 'reorderInfo','subscription'])
                             ->latest()
                             ->first();
-                    @endphp
-                    @php
-                        $latestOrder->subscription->next_billing_date = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay();
+                            
+                        // Only manipulate the date if $latestOrder and its subscription exist
+                        if ($latestOrder && $latestOrder->subscription && $latestOrder->subscription->next_billing_date) {
+                            $latestOrder->subscription->next_billing_date = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay();
+                        }
                     @endphp
                     <div class="d-flex justify-content-between align-items-start">
                         @if($latestOrder && $latestOrder->plan)

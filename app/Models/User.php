@@ -26,6 +26,7 @@ class User extends Authenticatable
         'status',
         'phone',
         'profile_image',
+        'chargebee_customer_id',
         'billing_company',
         'billing_address',
         'billing_address2',

@@ -357,7 +357,7 @@ Route::get('/delete-order', [App\Http\Controllers\Customer\OrderController::clas
 Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\OrderController::class, 'updateOrderStatusToLowerCase'])->name('updateOrderStatusToLowerCase');
 
 // Notification routes
-Route::middleware('auth')->group(function () {
+// Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
@@ -369,4 +369,4 @@ Route::middleware('auth')->group(function () {
     // })->middleware('auth');
     Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
     Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
-});
+// });

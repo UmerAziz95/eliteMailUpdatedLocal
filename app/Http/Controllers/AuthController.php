@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserWelcomeMail;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
+use ChargeBee\ChargeBee\Models\Customer;
 class AuthController extends Controller
 {
     // testAdmin
@@ -171,18 +172,21 @@ class AuthController extends Controller
             // 'phone.required' => 'The phone number is required.',
         ]);
     
+        $isCustomer = false;
         switch ($data['role']) {
             case 'admin':
                 $data['role'] = 1;
                 break;
             case 'customer':
                 $data['role'] = 3;
+                $isCustomer = true;
                 break;
             case 'contractor':
                 $data['role'] = 4;
                 break;
             default:
                 $data['role'] = 3;
+                $isCustomer = true;
         }
     
         $user = User::create([
@@ -192,6 +196,30 @@ class AuthController extends Controller
             'role_id' => $data['role'],
             // 'phone' => $data['phone'],
         ]);
+        
+        // Create Chargebee customer for user with customer role
+        if ($isCustomer) {
+            try {
+                $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                    'firstName' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'autoCollection' => 'on',
+                ]);
+                
+                $customer = $result->customer();
+                $user->update(['chargebee_customer_id' => $customer->id]);
+                
+                Log::info('Chargebee customer created for user', [
+                    'user_id' => $user->id,
+                    'chargebee_customer_id' => $customer->id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                    'user_id' => $user->id
+                ]);
+            }
+        }
     
         // Log the user registration activity
         ActivityLogService::log(
@@ -203,6 +231,7 @@ class AuthController extends Controller
                 'role_id' => $user->role_id,
                 'ip' => $request->ip(),
                 'user_agent' => $request->header('User-Agent'),
+                'chargebee_customer_id' => $user->chargebee_customer_id,
             ],
             $user->id // Performed by
         );
