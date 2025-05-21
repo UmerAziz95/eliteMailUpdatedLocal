@@ -11,22 +11,10 @@
                     </h6>
                     <div>
                         @php
-                            $statusColor = 'bg-label-info';
-                            switch(strtolower($order->status_manage_by_admin ?? 'pending')) {
-                                case 'active':
-                                case 'paid':
-                                    $statusColor = 'bg-label-success';
-                                    break;
-                                case 'pending':
-                                    $statusColor = 'bg-label-warning';
-                                    break;
-                                case 'cancelled':
-                                case 'failed':
-                                    $statusColor = 'bg-label-danger';
-                                    break;
-                                default:
-                                    $statusColor = 'bg-label-info';
-                            }
+                            $statusName = strtolower($order->status_manage_by_admin ?? 'pending');
+                            $status = \App\Models\Status::where('name', $statusName)->first();
+                            $statusClass = $status ? $status->badge : 'info';
+                            $statusColor = 'bg-label-' . $statusClass;
                         @endphp
                         <!-- <span class="badge {{ $statusColor }} rounded-pill px-3">{{ ucfirst($order->status ?? 'Pending') }}</span> -->
                     </div>
@@ -96,8 +84,17 @@
                                     <i class="ti ti-refresh text-white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                                 </div>
                                 <div>
+                                    
                                     <small class="d-block text-white-50" style="font-weight: 500;">Status</small>
-                                    <span class="fw-semibold text-white text-capitalize" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ $order->status ?? 'Pending' }}</span>
+                                    @php
+                                        $statusName = $order->status_manage_by_admin ?? 'pending';
+                                        $statusName = strtolower($statusName);
+                                        $status = \App\Models\Status::where('name', $statusName)->first();
+                                        $statusClass = $status ? $status->badge : 'secondary';
+                                    @endphp
+                                    <span class="py-1 px-2 text-{{ $statusClass }} border border-{{ $statusClass }} rounded-2 bg-transparent">
+                                        {{ ucfirst($statusName) }}
+                                    </span>
                                 </div>
                             </div>
                         </div>

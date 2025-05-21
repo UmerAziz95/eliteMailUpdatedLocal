@@ -312,6 +312,11 @@
                     },
                     marker: {
                         show: true
+                    },
+                    y: {
+                        formatter: function(value) {
+                            return formatValue(value);
+                        }
                     }
                 }
             });
@@ -383,6 +388,11 @@
                     },
                     marker: {
                         show: true
+                    },
+                    y: {
+                        formatter: function(value) {
+                            return formatValue(value);
+                        }
                     }
                 }
             });
@@ -437,12 +447,24 @@
                     },
                     marker: {
                         show: true
+                    },
+                    y: {
+                        formatter: function(value) {
+                            return formatValue(value);
+                        }
                     }
                 }
             });
             subscriptions_month_chart.render();
             console.log("Month chart initialized");
         }
+    }
+    // Helper function to format currency values
+    function formatValue(value) {
+        // Convert to number first to handle different input types
+        const num = parseInt(value) || 0;
+        // Format with 2 decimal places
+        return "No# " + num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
     
     // Load subscription data from the server
