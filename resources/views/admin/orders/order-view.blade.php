@@ -215,6 +215,17 @@
                                         <span>{{ trim($domain) }}</span>
                                     @endforeach
                                 </div>
+                                @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
+                                <div class="d-flex flex-column mb-3 mt-3">
+                                    <span class="opacity-50">Backup Codes</span>
+                                    @php
+                                    $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
+                                    @endphp
+                                    @foreach($backupCodes as $backupCode)
+                                    <span>{{ trim($backupCode) }}</span>
+                                    @endforeach
+                                </div>
+                                @endif
                             @else
                                 <div class="text-muted">No configuration information available</div>
                             @endif
