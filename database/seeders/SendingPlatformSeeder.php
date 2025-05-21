@@ -15,12 +15,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'instantly',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -31,12 +31,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'prospi',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -48,12 +48,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'smartlead',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -65,12 +65,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'lemlist',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -82,12 +82,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'pipl',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -99,12 +99,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'replyio',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -116,12 +116,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'hothawk',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -133,12 +133,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'other',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -159,12 +159,12 @@ class SendingPlatformSeeder extends Seeder
                         'required' => true
                     ],
                     'sequencer_login' => [
-                        'label' => 'Sequencer Login',
+                        'label' => 'Sending plateform Sequencer - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sequencer Password',
+                        'label' => 'Sending plateform Sequencer - Password',
                         'type' => 'password',
                         'required' => true
                     ]
