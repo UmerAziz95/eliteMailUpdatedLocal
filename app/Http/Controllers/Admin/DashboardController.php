@@ -399,8 +399,13 @@ class DashboardController extends Controller
                     break;
                 
                 case 'month':
-                    $start = $now->copy()->startOfMonth();
-                    $end = $now->copy()->endOfMonth();
+                    $MonthNumber = (int)$monthNo;
+                    if ($MonthNumber < 1 || $MonthNumber > 12) {
+                        $MonthNumber = (int)date('m'); // Fallback to current month if invalid
+                    }
+                    $start = Carbon::create($now->year, $MonthNumber, 1)->startOfDay();
+                    $end = Carbon::create($now->year, $MonthNumber, 1)->endOfMonth()->endOfDay();
+                    // dd($start, $end);
                     break;
                 default:
                     $start = $now->copy()->startOfMonth();

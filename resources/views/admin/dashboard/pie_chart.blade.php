@@ -1,25 +1,9 @@
 <div class="card h-100">
-    <div class="d-flex flex-column flex-sm-row align-items-start">
-        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 px-3 pb-0">
+    <div class="d-flex flex-column flex-sm-row align-items-start px-3">
+        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 pb-0">
             <div class="mt-lg-4 mb-lg-6 mb-2">
                 <h5 class="mb-0">Total Tickets</h5>
                 <p class="mb-0" id="totalTicketCount">{{ ($newTickets ?? 0) + ($inProgressTickets ?? 0) + ($resolvedTickets ?? 0) }}</p>
-                
-                <ul class="nav nav-pills mb-3 d-flex align-items-center mt-2" id="tickets-pills-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="tickets-pills-month-tab" data-bs-toggle="pill"
-                            data-bs-target="#tickets-pills-month" type="button" role="tab" aria-controls="tickets-pills-month"
-                            aria-selected="true">Month</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tickets-pills-week-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-week"
-                            type="button" role="tab" aria-controls="tickets-pills-week" aria-selected="false">Week</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tickets-pills-today-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-today"
-                            type="button" role="tab" aria-controls="tickets-pills-today" aria-selected="false">Today</button>
-                    </li>
-                </ul>
                 
                 <div id="tickets_loading_indicator" class="mt-2" style="display: none;">
                     <div class="spinner-border spinner-border-sm text-primary" role="status">
@@ -60,7 +44,23 @@
                 </li>
             </ul>
         </div>
-        <div class="">
+
+        <div class="mt-lg-4 mb-lg-6 mb-2">
+            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="tickets-pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tickets-pills-month-tab" data-bs-toggle="pill"
+                            data-bs-target="#tickets-pills-month" type="button" role="tab" aria-controls="tickets-pills-month"
+                            aria-selected="true">Month</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tickets-pills-week-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-week"
+                            type="button" role="tab" aria-controls="tickets-pills-week" aria-selected="false">Week</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tickets-pills-today-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-today"
+                            type="button" role="tab" aria-controls="tickets-pills-today" aria-selected="false">Today</button>
+                    </li>
+                </ul>
             <div class="tab-content" id="tickets-pills-tabContent">
                 <!-- Month Tab -->
                 <div class="tab-pane fade show active" id="tickets-pills-month" role="tabpanel"
