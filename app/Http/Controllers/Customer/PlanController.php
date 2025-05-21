@@ -128,7 +128,7 @@ class PlanController extends Controller
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
                             "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1,
-                            "quantity_editable" => false
+                            "quantity_editable" => true,
                         ]
                     ],
                     "customer" => [
@@ -146,6 +146,7 @@ class PlanController extends Controller
                         // "zip" => "12345", // Default value
                         // "country" => "US" // Default value
                     ],
+                    "allow_plan_change" => true,
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);
@@ -170,7 +171,7 @@ class PlanController extends Controller
                         "zip" => "12345", // Default value
                         "country" => "US" // Default value
                     ],
-                      "allow_plan_change" => true ,
+                    "allow_plan_change" => true,
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel')
                 ]);

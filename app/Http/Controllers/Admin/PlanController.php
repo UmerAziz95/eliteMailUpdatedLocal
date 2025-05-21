@@ -85,7 +85,10 @@ public function store(Request $request)
             'price' => $request->price,
             'period' => $request->duration,
             'period_unit' => 1,
-            'currency_code' => $currencyCode
+            'currency_code' => $currencyCode,
+            'min_usage' => $min,
+            'max_usage' => $max,
+            'item_family_id' => 'cbdemo_omnisupport-solutions',
         ]);
 
         if (!$chargeBeePlan['success']) {
@@ -167,6 +170,10 @@ public function store(Request $request)
                     'status' => 'active',
                     'channel' => 'web'
                 ];
+                // $priceParams['metadata'] = [
+                //     'min_usage' => $data['min_usage'] ?? 0,
+                //     'max_usage' => $data['max_usage'] ?? null // null means no upper limit
+                // ];
 
                 $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::create($priceParams);
 
