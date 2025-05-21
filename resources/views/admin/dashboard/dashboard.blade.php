@@ -219,7 +219,7 @@
         </div>
 
         <!-- Recent Orders -->
-        <div class="col-xl-3 col-md-4 col-sm-6 order-1">
+        <!-- <div class="col-xl-3 col-md-4 col-sm-6 order-1">
             <div class="card h-100">
                 <div class="card-body">
                     <h6 class="mb-3 fw-semibold">Recent Orders</h6>
@@ -239,68 +239,17 @@
                     @endforelse
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <div class="col-xxl-6 col-md-8 col-sm-12 order-3 order-md-2">
             @include('admin.dashboard.pie_chart')
         </div>
 
 
-        <div class="col-xxl-3 col-md-4 col-sm-6 order-2 order-md-3">
+        <!-- <div class="col-xxl-3 col-md-4 col-sm-6 order-2 order-md-3">
             @include('admin.dashboard.sales_by')
-        </div>
+        </div> -->
 
-
-        {{-- <div class="col-xl-3 col-sm-6">
-            <div class="card h-100 p-2">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between">
-                        <p class="mb-0 small">Sales Overview</p>
-                        <p class="card-text fw-medium text-success">+18.2%</p>
-                    </div>
-                    <h4 class="card-title mb-1">$42.5k</h4>
-                </div>
-                <div class="card-body d-flex flex-column justify-content-between gap-3">
-                    <div class="row">
-                        <div class="col-4">
-                            <div class="d-flex gap-2 align-items-center mb-2">
-                                <span class="badge bg-label-info p-1 rounded">
-                                    <i class="ti ti-shopping-cart text-info fs-5"></i>
-                                </span>
-                                <p class="mb-0">Order</p>
-                            </div>
-                            <h5 class="mb-0 pt-1">62.2%</h5>
-                            <small class="opacity-50 fw-light">6,440</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="divider divider-vertical">
-                                <div class="divider-text">
-                                    <span class="badge-divider-bg bg-label-secondary">VS</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-4 text-end">
-                            <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-                                <p class="mb-0">Visits</p>
-                                <span class="badge bg-label-primary p-1 rounded">
-                                    <i class="ti ti-link theme-text fs-5"></i>
-                                </span>
-                            </div>
-                            <h5 class="mb-0 pt-1">25.5%</h5>
-                            <small class="opacity-50 fw-light">12,749</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center mt-6">
-                        <div class="progress w-100" style="height: 10px;">
-                            <div class="progress-bar bg-info" style="width: 70%" role="progressbar" aria-valuenow="70"
-                                aria-valuemin="0" aria-valuemax="100"></div>
-                            <div class="progress-bar" role="progressbar" style="width: 30%" aria-valuenow="30"
-                                aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
 
 
         {{-- revenue overview graph --}}
@@ -310,72 +259,10 @@
 
 
         {{-- subscription overview graph --}}
-        <div class="col-md-8 col-lg-6 order-4">
+        <div class="col-md-12 col-lg-12 order-4">
             @include('admin.dashboard.subscription_graph')
         </div>
 
-
-        {{-- <div class="col-12 col-md-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 d-flex justify-content-between">
-                    <div class="card-title mb-0">
-                        <h5 class="mb-1">Support Tracker</h5>
-                        <p>Last 7 Days</p>
-                    </div>
-                    <div class="dropdown">
-                        <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                            <a class="dropdown-item" href="javascript:void(0);">View
-                                More</a>
-                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body row pt-0">
-                    <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
-                        <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
-                            <h1 class="mb-0">164</h1>
-                            <p class="mb-0">Total Tickets</p>
-                        </div>
-                        <ul class="p-0 m-0">
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-primary mt-1">
-                                    <i class="ti ti-ticket theme-text fs-4"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 text-nowrap">New Tickets</h6>
-                                    <p class="small opacity-75">142</p>
-                                </div>
-                            </li>
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-info mt-1">
-                                    <i class="ti ti-circle-check fs-4 text-info"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                                    <p class="small opacity-75">28</p>
-                                </div>
-                            </li>
-                            <li class="d-flex gap-3 align-items-start pb-1">
-                                <div class="badge rounded bg-label-warning mt-1">
-                                    <i class="ti ti-clock-hour-10 fs-4 text-danger"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 text-nowrap">Response Time</h6>
-                                    <p class="small"> opacity-751 Day</p>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-12 col-sm-8">
-                        <div id="taskGaugeChart"></div>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
 
 
         <div class="col-12 order-5">
