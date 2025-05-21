@@ -61,7 +61,7 @@
                                 </div>
                                 <div>
                                     <small class="d-block text-white-50" style="font-weight: 500;">Total Inboxes</small>
-                                    <span class="fw-semibold text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ $order->plan->max_inbox ?? 0 }}</span>
+                                    <span class="fw-semibold text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{  optional($order->reorderInfo->first())->total_inboxes ?? 0 }}</span>
                                 </div>
                             </div>
                         </div>
