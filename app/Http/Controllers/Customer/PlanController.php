@@ -113,17 +113,15 @@ class PlanController extends Controller
         $plan = Plan::findOrFail($planId);
         try {
             $user = auth()->user();
-            $charge_customer_id = null;
-            if ($request->has('order_id')) {
+            // get charge_customer_id from user
+            $charge_customer_id = $user->chargebee_customer_id ?? null;
+            if ($request->has('order_id') && $charge_customer_id == null) {
                 $order = Order::findOrFail($request->order_id);
                 $charge_customer_id = $order->chargebee_customer_id ?? null;
             }
-            // dd($charge_customer_id);
             if ($charge_customer_id == null) {
-
                 // Create hosted page for subscription
                 $result = HostedPage::checkoutNewForItems([
-                  
                     "subscription_items" => [
                         [
                             "item_price_id" => $plan->chargebee_plan_id,
