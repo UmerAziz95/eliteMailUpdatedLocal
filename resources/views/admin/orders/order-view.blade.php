@@ -198,10 +198,14 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Sequencer Login</span>
+                                    <span class="opacity-50">Sending plateform Sequencer - Login</span>
                                     <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
                                 </div>
-
+                                <!-- Sending plateform Sequencer - Password  -->
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Sending plateform Sequencer - Password </span>
+                                    <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
+                                </div>
                                 <div class="d-flex flex-column">
                                     <span class="opacity-50">Domains</span>
                                     @php
