@@ -777,6 +777,17 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card p-3 mb-4">
+                        <div class="card-body">
+                            <div class="">
+                                <h5>Credit Card</h5>
+                                <div id="card-details">Loading card details...</div>
+                                <div class="mt-3" id="card-button-container">
+                                    <!-- Button will be dynamically added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1404,5 +1415,155 @@
                 }
             });
         });
+        function loadCardDetails() {
+            $.ajax({
+                url: '{{ route("customer.plans.card-details") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    order_id: '{{ $order->id ?? '' }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const card = response.card;
+                        if (response.payment_sources && response.payment_sources.length > 0) {
+                            let cardHtml = '';
+                            response.payment_sources.forEach(source => {
+                                if (source.type === 'card' && source.status === 'valid' && source.card) {
+                                    cardHtml += `
+                                        <div class="mb-2 d-flex justify-content-between align-items-center">
+                                            <span class="opacity-50">
+                                                <strong>Card</strong> **** **** **** ${source.card.last4} – Expires ${source.card.expiry_month}/${source.card.expiry_year}
+                                            </span>
+                                            <button type="button" class="cancel-btn py-2 px-2 rounded-2 border-0" onclick="deletePaymentMethod('${source.id}')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            });
+                            
+                            if (cardHtml) {
+                                $('#card-details').html(cardHtml);
+                                // Show Change Card button when cards are available
+                                $('#card-button-container').html(`
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="updatePaymentMethod()">
+                                        <i class="fa-solid fa-credit-card"></i> Change Card
+                                    </button>
+                                `);
+                            } else {
+                                $('#card-details').html('<span class="opacity-50">No valid card details available</span>');
+                                // Show Add Card button when no valid cards
+                                $('#card-button-container').html(`
+                                    <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                        <i class="fa-solid fa-plus"></i> Add Card
+                                    </button>
+                                `);
+                            }
+                        } else {
+                            $('#card-details').html('<span class="opacity-50">No card details available</span>');
+                            // Show Add Card button when no cards
+                            $('#card-button-container').html(`
+                                <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                    <i class="fa-solid fa-plus"></i> Add Card
+                                </button>
+                            `);
+                        }
+                    } else {
+                        $('#card-details').html(
+                            '<span class="opacity-50">No card details available</span>'
+                        );
+                        // Show Add Card button when no cards
+                        $('#card-button-container').html(`
+                            <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                <i class="fa-solid fa-plus"></i> Add Card
+                            </button>
+                        `);
+                    }
+                },
+                error: function(xhr) {
+                    $('#card-details').html(
+                        '<span class="opacity-50">Failed to load card details</span>'
+                    );
+                }
+            });
+        }
+        // Load card details when page loads
+        if($('#card-details').length) {
+            loadCardDetails();
+        }
+        function deletePaymentMethod(paymentSourceId) {
+            if (!confirm('Are you sure you want to delete this payment method?')) {
+                return;
+            }
+            
+            $.ajax({
+                url: '{{ route("customer.plans.delete-payment-method") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    payment_source_id: paymentSourceId,
+                    order_id: '{{ $order->id ?? '' }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success('Payment method deleted successfully');
+                        // Reload card details to update the UI
+                        loadCardDetails();
+                    } else {
+                        toastr.error(response.message || 'Failed to delete payment method');
+                    }
+                },
+                error: function(xhr) {
+                    // Handle specific error for primary/only payment method
+                    if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.message) {
+                        toastr.warning(xhr.responseJSON.message);
+                    } else {
+                        toastr.error(xhr.responseJSON?.message || 'Failed to delete payment method');
+                    }
+                }
+            });
+        }
+        
+        function updatePaymentMethod() {
+            $.ajax({
+                url: '{{ route("customer.plans.update-payment-method") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    order_id: '{{ $order->id ?? '' }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Open the payment page in a popup window
+                        const popupWidth = 500;
+                        const popupHeight = 700;
+                        const left = (window.innerWidth - popupWidth) / 2;
+                        const top = (window.innerHeight - popupHeight) / 2;
+                        
+                        const popup = window.open(
+                            response.hosted_page_url,
+                            'payment_method_update',
+                            `width=${popupWidth},height=${popupHeight},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                        );
+                        
+                        // Check when popup is closed
+                        const checkPopup = setInterval(function() {
+                            if (popup.closed) {
+                                clearInterval(checkPopup);
+                                // Reload card details without refreshing page
+                                loadCardDetails();
+                                toastr.success('Payment method updated successfully');
+                            }
+                        }, 500);
+                    } else {
+                        alert(response.message || 'Failed to initiate payment method update');
+                    }
+                },
+                error: function(xhr) {
+                    alert(xhr.responseJSON?.message || 'Failed to initiate payment method update');
+                }
+            });
+        }
     </script>
 @endpush

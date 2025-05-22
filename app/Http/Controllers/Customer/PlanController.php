@@ -813,19 +813,30 @@ class PlanController extends Controller
     {
         try {
             $charge_customer_id = null;
-            if ($request->has('order_id')) {
+            $user = auth()->user();
+            
+            if($request->has('order_id') && !empty($request->order_id)){
+                // If order_id is provided, get chargebee_customer_id from that order
                 $order = Order::findOrFail($request->order_id);
                 $charge_customer_id = $order->chargebee_customer_id ?? null;
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Missing order ID in request.'
-                ]);
+            }else{
+                // If order_id is not provided or empty, try to get from user
+                $charge_customer_id = $user->chargebee_customer_id ?? null;
+                
+                // If user doesn't have chargebee_customer_id, get from latest order
+                if(is_null($charge_customer_id)){
+                    $latestOrder = Order::where('user_id', $user->id)
+                        ->whereNotNull('chargebee_customer_id')
+                        ->latest()
+                        ->first();
+                    $charge_customer_id = $latestOrder->chargebee_customer_id ?? null;
+                }
             }
-            if (is_null($charge_customer_id)) {
+            
+            if(is_null($charge_customer_id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Missing chargebee customer ID in request.'
+                    'message' => 'No valid payment information found for this account.'
                 ]);
             }
 
@@ -856,20 +867,30 @@ class PlanController extends Controller
     {
         try {
             $charge_customer_id = null;
-            if($request->has('order_id')){
+            $user = auth()->user();
+            
+            if($request->has('order_id') && !empty($request->order_id)){
+                // If order_id is provided, get chargebee_customer_id from that order
                 $order = Order::findOrFail($request->order_id);
                 $charge_customer_id = $order->chargebee_customer_id ?? null;
             }else{
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Missing order ID in request.'
-                ]);
+                // If order_id is not provided or empty, try to get from user
+                $charge_customer_id = $user->chargebee_customer_id ?? null;
+                
+                // If user doesn't have chargebee_customer_id, get from latest order
+                if(is_null($charge_customer_id)){
+                    $latestOrder = Order::where('user_id', $user->id)
+                        ->whereNotNull('chargebee_customer_id')
+                        ->latest()
+                        ->first();
+                    $charge_customer_id = $latestOrder->chargebee_customer_id ?? null;
+                }
             }
             
             if(is_null($charge_customer_id)){
                 return response()->json([
                     'success' => false,
-                    'message' => 'Missing chargebee customer ID in request.'
+                    'message' => 'No valid payment information found for this account.'
                 ]);
             }
 
@@ -909,6 +930,59 @@ class PlanController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve card details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function deletePaymentMethod(Request $request)
+    {
+        try {
+            $request->validate([
+                'payment_source_id' => 'required|string'
+            ]);
+
+            $charge_customer_id = null;
+            $user = auth()->user();
+            
+            if($request->has('order_id') && !empty($request->order_id)){
+                $order = Order::findOrFail($request->order_id);
+                $charge_customer_id = $order->chargebee_customer_id ?? null;
+            } else{
+                $charge_customer_id = $user->chargebee_customer_id ?? null;
+                
+                if(is_null($charge_customer_id)){
+                    $latestOrder = Order::where('user_id', $user->id)
+                        ->whereNotNull('chargebee_customer_id')
+                        ->latest()
+                        ->first();
+                    $charge_customer_id = $latestOrder->chargebee_customer_id ?? null;
+                }
+            }
+            
+            if(is_null($charge_customer_id)){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid payment information found for this account.'
+                ]);
+            }
+
+            // Delete the payment source
+            $result = \ChargeBee\ChargeBee\Models\PaymentSource::delete($request->payment_source_id);
+
+            if ($result && $result->paymentSource()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment method deleted successfully.'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete payment method.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
             ], 500);
         }
     }

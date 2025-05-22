@@ -199,6 +199,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/subscription/cancel-current', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.current.cancel');
     Route::post('/plans/update-payment-method', [CustomerPlanController::class, 'updatePaymentMethod'])->name('plans.update-payment-method');
     Route::post('/plans/card-details', [CustomerPlanController::class, 'getCardDetails'])->name('plans.card-details');
+    Route::post('/plans/delete-payment-method', [CustomerPlanController::class, 'deletePaymentMethod'])->name('plans.delete-payment-method');
     
     // Subscription handling routes
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
