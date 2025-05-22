@@ -26,12 +26,17 @@ class CustomRolePermissionController extends Controller
                 ->addColumn('created_at', function ($role) {
                     return $role->created_at ? $role->created_at->format('D_F_Y') : 'N/A';
                 })
-                ->addColumn('action', function ($role) {
-                    return '<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary" onclick="editRole(' . $role->id . ')">Edit</button>
-                              
-                            </div>';
+              ->addColumn('action', function ($role) {
+                    $actions = '<div class="d-flex gap-2">';
+
+                    if (!auth()->user()->hasPermissionTo('Mod')) {
+                        $actions .= '<button class="btn btn-sm btn-primary" onclick="editRole(' . $role->id . ')">Edit</button>';
+                    }
+
+                    $actions .= '</div>';
+                    return $actions;
                 })
+
                 ->make(true);
         }
     

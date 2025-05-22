@@ -316,16 +316,28 @@ class OrderController extends Controller
                     }
 
                     return '<div class="dropdown">
-                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="' . route('admin.orders.view', $order->id) . '">
-                                        <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
-                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
-                                </ul>
-                            </div>';
+                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="' . route('admin.orders.view', $order->id) . '">
+                                <i class="fa-solid fa-eye"></i> &nbsp;View
+                            </a>
+                        </li>'
+                        . (auth()->user()->hasPermissionTo('Mod') ? '' : '
+                        <li>
+                            <a href="#" class="dropdown-item markStatus" id="markStatus"
+                                data-id="' . $order->chargebee_subscription_id . '"
+                                data-status="' . $order->status_manage_by_admin . '"
+                                data-reason="' . $order->reason . '">
+                                <i class="fa-solid fa-flag"></i> &nbsp;Mark Status
+                            </a>
+                        </li>') .
+                    '</ul>
+                </div>';
+
                 })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';

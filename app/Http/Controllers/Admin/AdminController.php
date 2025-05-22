@@ -273,8 +273,12 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        return response()->json($user); // Used to populate the form
+        // Include roles
+        $user->roles = $user->getRoleNames(); // Returns a collection of role names
+
+        return response()->json($user);
     }
+
     public function userEdit($id)
     {
         $user = User::findOrFail($id);
