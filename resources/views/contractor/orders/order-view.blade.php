@@ -167,10 +167,31 @@
                         <div class="d-flex flex-column">
                             <span class="opacity-50">Domains</span>
                             @php
-                            $domains = explode(',', $order->reorderInfo->first()->domains);
+                                // Get the domains string from the order
+                                $domainsString = $order->reorderInfo->first()->domains;
+                                
+                                // Split by both newlines and commas
+                                $domainsArray = [];
+                                
+                                // First split by newlines
+                                $lines = preg_split('/\r\n|\r|\n/', $domainsString);
+                                
+                                // Then process each line
+                                foreach ($lines as $line) {
+                                    if (trim($line)) {
+                                        // Split line by commas and add to domains array
+                                        $lineItems = explode(',', $line);
+                                        foreach ($lineItems as $item) {
+                                            if (trim($item)) {
+                                                $domainsArray[] = trim($item);
+                                            }
+                                        }
+                                    }
+                                }
                             @endphp
-                            @foreach($domains as $domain)
-                            <span>{{ trim($domain) }}</span>
+
+                            @foreach ($domainsArray as $domain)
+                                <span class="d-block">{{ $domain }}</span>
                             @endforeach
                         </div>
                         @if($order->reorderInfo->first()->hosting_platform == 'namecheap')

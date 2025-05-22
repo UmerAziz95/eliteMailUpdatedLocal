@@ -398,6 +398,11 @@
     // Initial setup
     updatePlatformFields();
     initializePasswordToggles();
+    
+    // Load card details when page loads
+    if($('#card-details').length) {
+        loadCardDetails();
+    }
 
     // Handle platform changes
     $('#hosting').on('change', updatePlatformFields);
