@@ -1070,8 +1070,18 @@
                         }
                     },
                     error: function(xhr) {
+                        if(xhr.status === 422) {
+                            var errors = xhr.responseJSON.errors;
+                            Object.keys(errors).forEach(function(key) {
+                                toastr.error(errors[key][0]);
+                            });
+                        } else if (xhr.status === 400) {
+                            toastr.error(xhr.responseJSON.message);
+                        } else {
+                            toastr.error(xhr.responseJSON.message);
+                        }
                         // Show error message
-                        toastr.error('Error updating profile');
+                        // toastr.error('Error updating profile');
                         console.log(xhr.responseText);
                     }
                 });
