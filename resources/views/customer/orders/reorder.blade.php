@@ -933,39 +933,90 @@ function loadCardDetails() {
     });
 }
 function deletePaymentMethod(paymentSourceId) {
-    if (!confirm('Are you sure you want to delete this payment method?')) {
-        return;
-    }
-    
-    $.ajax({
-        url: '{{ route("customer.plans.delete-payment-method") }}',
-        type: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            payment_source_id: paymentSourceId,
-            order_id: '{{ $order->id ?? '' }}'
-        },
-        success: function(response) {
-            if (response.success) {
-                toastr.success('Payment method deleted successfully');
-                // Reload card details to update the UI
-                loadCardDetails();
-            } else {
-                toastr.error(response.message || 'Failed to delete payment method');
-            }
-        },
-        error: function(xhr) {
-            // Handle specific error for primary/only payment method
-            if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.message) {
-                toastr.warning(xhr.responseJSON.message);
-            } else {
-                toastr.error(xhr.responseJSON?.message || 'Failed to delete payment method');
-            }
+    // Use SweetAlert for confirmation
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You are about to delete this payment method.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Deleting...',
+                text: 'Please wait while we delete your payment method.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: '{{ route("customer.plans.delete-payment-method") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    payment_source_id: paymentSourceId,
+                    order_id: '{{ $order->id ?? '' }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Your payment method has been deleted successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#3085d6'
+                        });
+                        // Reload card details to update the UI
+                        loadCardDetails();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message || 'Failed to delete payment method',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    // Handle specific error for primary/only payment method
+                    if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire({
+                            title: 'Warning!',
+                            text: xhr.responseJSON.message,
+                            icon: 'warning',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: xhr.responseJSON?.message || 'Failed to delete payment method',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                }
+            });
         }
     });
 }
 
 function updatePaymentMethod() {
+    // Show loading state
+    Swal.fire({
+        title: 'Loading...',
+        text: 'Please wait while we prepare the payment form.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     $.ajax({
         url: '{{ route("customer.plans.update-payment-method") }}',
         type: 'POST',
@@ -975,6 +1026,9 @@ function updatePaymentMethod() {
         },
         success: function(response) {
             if (response.success) {
+                // Close the loading dialog
+                Swal.close();
+                
                 // Open the payment page in a popup window
                 const popupWidth = 500;
                 const popupHeight = 700;
@@ -993,15 +1047,30 @@ function updatePaymentMethod() {
                         clearInterval(checkPopup);
                         // Reload card details without refreshing page
                         loadCardDetails();
-                        toastr.success('Payment method updated successfully');
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Your payment method has been updated successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#3085d6'
+                        });
                     }
                 }, 500);
             } else {
-                alert(response.message || 'Failed to initiate payment method update');
+                Swal.fire({
+                    title: 'Error!',
+                    text: response.message || 'Failed to initiate payment method update',
+                    icon: 'error',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         },
         error: function(xhr) {
-            alert(xhr.responseJSON?.message || 'Failed to initiate payment method update');
+            Swal.fire({
+                title: 'Error!',
+                text: xhr.responseJSON?.message || 'Failed to initiate payment method update',
+                icon: 'error',
+                confirmButtonColor: '#3085d6'
+            });
         }
     });
 }
