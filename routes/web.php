@@ -17,7 +17,7 @@ use App\Http\Controllers\Customer\PlanController as CustomerPlanController;
 use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\FeatureController;
-use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;
+use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;           
 
 // Contractor
 use App\Http\Controllers\Contractor\OrderController as ContractorOrderController;
