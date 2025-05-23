@@ -22,6 +22,7 @@ use App\Models\ReorderInfo;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Models\Notification;
+use App\Mail\UserWelcomeMail;
 class PlanController extends Controller
 {
     public function index()
@@ -1207,6 +1208,422 @@ class PlanController extends Controller
                 return $eventType === 'invoice_payment_failed' ? 'failed' : 'pending';
             default:
                 return 'pending';
+        }
+    }
+    // handlePaymentWebhook 
+    public function handlePaymentWebhook(Request $request)
+    {
+        try {
+            // Log the incoming webhook data for debugging
+            Log::info('Payment webhook received', ['data' => $request->all()]);
+            
+            // Verify webhook data integrity
+            $webhookData = $request->all();
+            $eventType = $webhookData['event_type'] ?? null;
+            $content = $webhookData['content'] ?? null;
+            
+            // Log complete webhook payload for debugging
+            Log::debug('Complete webhook payload structure', [
+                'event_type' => $eventType,
+                'content_structure' => array_keys($content ?? []),
+                'subscription_keys' => isset($content['subscription']) ? array_keys($content['subscription']) : 'No subscription data',
+                'invoice_keys' => isset($content['invoice']) ? array_keys($content['invoice']) : 'No invoice data',
+                'line_items' => isset($content['invoice']['line_items']) ? $content['invoice']['line_items'] : 'No line items'
+            ]);
+            
+            if (!$eventType || !$content) {
+                throw new \Exception('Invalid webhook data received');
+            }
+            // Process different payment event types
+            switch ($eventType) {
+                // case 'payment_succeeded':
+                case 'payment_failed':
+                case 'subscription_created':
+                case 'subscription_activated':
+                case 'customer_created':
+                case 'payment_succeeded':
+                    // Extract important data from webhook content
+                    $customerData = $content['customer'] ?? null;
+                    $paymentData = $content['payment'] ?? null;
+                    $subscriptionData = $content['subscription'] ?? null;
+                    $hostedPageData = $content['hosted_page'] ?? null;
+                    $invoiceData = $content['invoice'] ?? null;
+                    $meta_json = json_encode([
+                        'customer' => $customerData,
+                        'payment' => $paymentData,
+                        'subscription' => $subscriptionData,
+                        'hosted_page' => $hostedPageData,
+                        'invoice' => $invoiceData
+                    ]);
+                    // return response()->json([
+                    //     'success' => true,
+                    //     'message' => 'Webhook processed successfully',
+                    //     'eventType'=> $eventType,
+                    //     'customerData'=> $customerData,
+                    //     'paymentData'=> $paymentData,
+                    //     'subscriptionData'=> $subscriptionData,
+                    //     'invoiceData'=> $invoiceData,
+                    //     'hostedPageData'=> $hostedPageData,
+
+                    // ]);
+                    // Process customer data - find or create user
+                    if ($customerData) {
+                        $email = $customerData['email'] ?? null;
+                        $chargebeeCustomerId = $customerData['id'] ?? null;
+                        
+                        if ($email && $chargebeeCustomerId) {
+                            // Try to find user by email
+                            $user = User::where('email', $email)->first();
+                            
+                            if (!$user) {
+                                // Generate a secure random password
+                                $password = \Illuminate\Support\Str::random(12);
+                                
+                                // Create new user with details from Chargebee
+                                $user = User::create([
+                                    'name' => $customerData['first_name'] ?? 'Customer',
+                                    'email' => $email,
+                                    'phone' => $customerData['phone'] ?? null,
+                                    'password' => bcrypt($password),
+                                    'role_id' => 3, // Assuming 3 is the customer role
+                                    'chargebee_customer_id' => $chargebeeCustomerId,
+                                    'email_verified_at' => now(),
+                                ]);
+                                
+                                Log::info('New user created from payment webhook', [
+                                    'user_id' => $user->id,
+                                    'email' => $email,
+                                    'chargebee_customer_id' => $chargebeeCustomerId
+                                ]);
+                                
+                                // Send welcome email with password to the new user
+                                try {
+                                    Mail::to($email)->queue(new UserWelcomeMail($user, $password));
+                                    
+                                    // Create notification for the user
+                                    Notification::create([
+                                        'user_id' => $user->id,
+                                        'type' => 'account_created',
+                                        'title' => 'Account Created',
+                                        'message' => 'Your account has been created successfully.',
+                                        'data' => [
+                                            'user_id' => $user->id
+                                        ]
+                                    ]);
+                                } catch (\Exception $e) {
+                                    Log::error('Failed to send welcome email: ' . $e->getMessage());
+                                }
+                            } 
+                            // Update existing user if they don't have chargebee_customer_id
+                            elseif (!$user->chargebee_customer_id) {
+                                $user->update(['chargebee_customer_id' => $chargebeeCustomerId]);
+                            }
+                            
+                            // Process subscription data if available
+                            if ($subscriptionData) {
+                                $subscriptionId = $subscriptionData['id'] ?? null;
+                                
+                                // Try to get plan ID from different possible keys in Chargebee's data structure
+                                // First check if plan ID is in subscription items array (new Chargebee structure)
+                                $planId = null;
+                                
+                                // Check for subscription_items array which may contain the item_price_id
+                                if (isset($subscriptionData['subscription_items']) && is_array($subscriptionData['subscription_items']) && !empty($subscriptionData['subscription_items'])) {
+                                    foreach ($subscriptionData['subscription_items'] as $item) {
+                                        if (isset($item['item_price_id'])) {
+                                            $planId = $item['item_price_id'];
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // If not found in subscription_items, try direct keys
+                                if (!$planId) {
+                                    $planId = $subscriptionData['item_price_id'] ?? $subscriptionData['plan_id'] ?? null;
+                                }
+                                
+                                // Log the plan ID for debugging
+                                Log::info('Subscription plan details', [
+                                    'subscription_id' => $subscriptionId,
+                                    'chargebee_plan_id' => $planId,
+                                    'raw_subscription_data' => $subscriptionData
+                                ]);
+                                
+                                $status = $subscriptionData['status'] ?? 'active';
+                                
+                                // Find corresponding plan in our database
+                                $plan = Plan::where('chargebee_plan_id', $planId)->first();
+                                
+                                // If plan not found, try to extract from metadata if available
+                                if (!$plan && isset($subscriptionData['meta_data']) && is_array($subscriptionData['meta_data'])) {
+                                    if (isset($subscriptionData['meta_data']['plan_id'])) {
+                                        $alternatePlanId = $subscriptionData['meta_data']['plan_id'];
+                                        $plan = Plan::where('chargebee_plan_id', $alternatePlanId)->first();
+                                        
+                                        if ($plan) {
+                                            Log::info('Found plan using meta_data', [
+                                                'meta_data_plan_id' => $alternatePlanId,
+                                                'subscription_id' => $subscriptionId
+                                            ]);
+                                        }
+                                    }
+                                }
+                                
+                                // If still no plan found, try looking for any active plan as a last resort
+                                if (!$plan) {
+                                    Log::warning('Could not find plan with ID: ' . $planId . ', trying to find active plans');
+                                    // Get all active plans in the system
+                                    $activePlans = Plan::where('is_active', true)->get();
+                                    
+                                    if ($activePlans->count() > 0) {
+                                        // Use the first active plan as fallback
+                                        $plan = $activePlans->first();
+                                        Log::info('Using fallback plan', [
+                                            'fallback_plan_id' => $plan->id,
+                                            'fallback_plan_name' => $plan->name
+                                        ]);
+                                    }
+                                }
+                                $localPlanId = $plan ? $plan->id : null;
+                                
+                                // Create order first to ensure we have an order_id for the invoice
+                                if ($subscriptionId) {
+                                    // Create or update order
+                                    $order = Order::updateOrCreate(
+                                        ['chargebee_subscription_id' => $subscriptionId],
+                                        [
+                                            'user_id' => $user->id,
+                                            'chargebee_customer_id' => $chargebeeCustomerId,
+                                            'plan_id' => $localPlanId ?? 1,
+                                            'status_manage_by_admin' => 'new',
+                                            'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0,
+                                            'payment_status' => ($eventType === 'payment_succeeded') ? 'paid' : 'pending',
+                                            'paid_at' => Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString(),
+                                            'meta' => $meta_json,
+                                        ]);
+                                    
+                                    Log::info('Fallback order created via webhook without subscription ID', [
+                                        'order_id' => $order->id,
+                                        'user_id' => $user->id
+                                    ]);
+                                }
+                                
+                                if ($subscriptionId && $localPlanId) {
+                                    // Create or update subscription
+                                    $subscription = UserSubscription::updateOrCreate(
+                                        ['chargebee_subscription_id' => $subscriptionId],
+                                        [
+                                            'user_id' => $user->id,
+                                            'plan_id' => $localPlanId,
+                                            'status' => $status,
+                                            'start_date' => isset($subscriptionData['current_term_start']) 
+                                                ? Carbon::createFromTimestamp($subscriptionData['current_term_start'])->toDateTimeString() 
+                                                : now()->toDateTimeString(),
+                                            'end_date' => isset($subscriptionData['current_term_end']) 
+                                                ? Carbon::createFromTimestamp($subscriptionData['current_term_end'])->toDateTimeString() 
+                                                : null,
+                                            'next_billing_date' => isset($subscriptionData['next_billing_at']) 
+                                                ? Carbon::createFromTimestamp($subscriptionData['next_billing_at'])->toDateTimeString() 
+                                                : null,
+                                            'order_id' => $order->id // Link subscription to order
+                                        ]
+                                    );
+                                    
+                                    // Update user's subscription info
+                                    $user->update([
+                                        'subscription_id' => $subscriptionId,
+                                        'subscription_status' => $status,
+                                        'plan_id' => $localPlanId
+                                    ]);
+                                    
+                                    // Log activity for subscription
+                                    ActivityLogService::log(
+                                        'webhook-subscription-processed',
+                                        'Subscription processed via webhook: ' . $subscriptionId,
+                                        $subscription,
+                                        [
+                                            'user_id' => $user->id,
+                                            'subscription_id' => $subscriptionId,
+                                            'plan_id' => $localPlanId,
+                                            'status' => $status,
+                                            'event_type' => $eventType
+                                        ],
+                                        $user->id
+                                    );
+                                    
+                                    // Create notification for the user
+                                    Notification::create([
+                                        'user_id' => $user->id,
+                                        'type' => 'subscription_created',
+                                        'title' => 'Subscription Created',
+                                        'message' => "Your subscription #{$subscriptionId} has been created successfully",
+                                        'data' => [
+                                            'subscription_id' => $subscriptionId,
+                                            'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0
+                                        ]
+                                    ]);
+                                }
+                            }
+                            
+                            // Process invoice data if available
+                            if ($invoiceData) {
+                                $invoiceId = $invoiceData['id'] ?? null;
+                                $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
+                                
+                                // Try to extract plan ID from invoice line items if not already found
+                                if (!isset($localPlanId) || !$localPlanId) {
+                                    if (isset($invoiceData['line_items']) && is_array($invoiceData['line_items']) && !empty($invoiceData['line_items'])) {
+                                        foreach ($invoiceData['line_items'] as $lineItem) {
+                                            // Check for entity_id which could be the item price ID
+                                            if (isset($lineItem['entity_id'])) {
+                                                $itemPriceId = $lineItem['entity_id'];
+                                                
+                                                // Look up the plan in our database
+                                                $plan = Plan::where('chargebee_plan_id', $itemPriceId)->first();
+                                                if ($plan) {
+                                                    $localPlanId = $plan->id;
+                                                    
+                                                    Log::info('Plan ID extracted from invoice line items', [
+                                                        'item_price_id' => $itemPriceId,
+                                                        'local_plan_id' => $localPlanId,
+                                                        'invoice_id' => $invoiceId
+                                                    ]);
+                                                    
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if ($invoiceId) {
+                                    try {
+                                        // Ensure we have a valid order_id before creating the invoice
+                                        if (!isset($order) || !$order) {
+                                            // If no order exists at this point, create one as fallback
+                                            $order = Order::create([
+                                                'user_id' => $user->id,
+                                                'chargebee_customer_id' => $chargebeeCustomerId,
+                                                'chargebee_subscription_id' => $subscriptionData['id'] ?? null,
+                                                'plan_id' => $localPlanId ?? 1,
+                                                'status_manage_by_admin' => 'new',
+                                                'amount' => $amount,
+                                                'payment_status' => ($eventType === 'payment_succeeded') ? 'paid' : 'pending'
+                                            ]);
+                                            
+                                            Log::info('Emergency fallback order created for invoice', [
+                                                'order_id' => $order->id,
+                                                'invoice_id' => $invoiceId
+                                            ]);
+                                        }
+                                        
+                                        // Verify the order exists and has an ID
+                                        if (!$order->id) {
+                                            Log::error('Order ID is missing despite order object existing', [
+                                                'order' => $order,
+                                                'invoice_id' => $invoiceId
+                                            ]);
+                                            throw new \Exception('Invalid order ID when processing invoice');
+                                        }
+                                        
+                                        // Create or update invoice with explicit order_id
+                                        $invoice = Invoice::updateOrCreate(
+                                            ['chargebee_invoice_id' => $invoiceId],
+                                            [
+                                                'user_id' => $user->id,
+                                                'chargebee_customer_id' => $chargebeeCustomerId,
+                                                'chargebee_subscription_id' => $subscriptionData['id'] ?? null,
+                                                'order_id' => $order->id, // Ensure this is not null
+                                                'plan_id' => $localPlanId ?? $order->plan_id,
+                                                'amount' => $amount,
+                                                'status' => ($eventType === 'payment_succeeded') ? 'paid' : 'pending',
+                                                'paid_at' => ($eventType === 'payment_succeeded') ? now()->toDateTimeString() : null,
+                                                'metadata' => json_encode([
+                                                    'invoice' => $invoiceData,
+                                                    'subscription' => $subscriptionData
+                                                ])
+                                            ]
+                                        );
+                                        
+                                        // Log successful invoice creation
+                                        Log::info('Invoice created/updated via webhook', [
+                                            'invoice_id' => $invoice->id, 
+                                            'chargebee_invoice_id' => $invoiceId,
+                                            'order_id' => $order->id
+                                        ]);
+                                    } catch (\Exception $e) {
+                                        Log::error('Error creating invoice: ' . $e->getMessage(), [
+                                            'chargebee_invoice_id' => $invoiceId,
+                                            'order' => isset($order) ? $order->id : 'No order',
+                                            'exception' => $e->getMessage()
+                                        ]);
+                                        throw $e; // Re-throw to be caught by the outer try/catch
+                                    }
+                                    
+                                    // Log activity for invoice
+                                    ActivityLogService::log(
+                                        'webhook-invoice-processed',
+                                        'Invoice processed via webhook: ' . $invoiceId,
+                                        $invoice,
+                                        [
+                                            'user_id' => $user->id,
+                                            'invoice_id' => $invoiceId,
+                                            'amount' => $amount,
+                                            'status' => $invoice->status,
+                                            'event_type' => $eventType
+                                        ],
+                                        $user->id
+                                    );
+                                    
+                                    // Send invoice notification email if payment succeeded
+                                    if ($eventType === 'payment_succeeded') {
+                                        try {
+                                            Mail::to($user->email)
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $invoice,
+                                                    $user,
+                                                    false
+                                                ));
+                                                
+                                            // Send to admin as well
+                                            Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $invoice,
+                                                    $user,
+                                                    true
+                                                ));
+                                        } catch (\Exception $e) {
+                                            Log::error('Failed to send invoice emails: ' . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Log::warning('Missing customer email or ID in webhook data');
+                        }
+                    } else {
+                        Log::warning('No customer data found in webhook payload', ['event_type' => $eventType]);
+                    }
+                    
+                    break;
+                    
+                default:
+                    Log::info('Unhandled payment event type', ['event_type' => $eventType]);
+                    break;
+            }
+
+            return response()->json(['success' => true, 'message' => 'Webhook processed successfully']);
+            
+        } catch (\Exception $e) {
+            Log::error('Error processing payment webhook: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing webhook: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

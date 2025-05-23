@@ -380,6 +380,12 @@
                     <li style="background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1);">
                         <span style="color: var(--second-primary); font-weight: 500; margin-right: 8px;">Email:</span> {{ $user->email }}
                     </li>
+                    <!-- password -->
+                    @if(isset($password))
+                    <li style="background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="color: var(--second-primary); font-weight: 500; margin-right: 8px;">Password:</span> {{ $user->password }}
+                    </li>
+                    @endif
                 </ul>
             </div>
 

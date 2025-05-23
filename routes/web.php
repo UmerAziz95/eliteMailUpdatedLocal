@@ -345,6 +345,8 @@ Route::get('/chargebee/webhook', function () {
 });
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
+// https://1c24-2407-aa80-314-d317-c9e3-2893-ed60-51c0.ngrok-free.app/webhook/payment/done
+Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
 Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
 
 
