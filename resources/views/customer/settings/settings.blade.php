@@ -746,8 +746,8 @@
                             
                             <div class="card-action-element">
                                 <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
-                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
-                                    address</button>
+                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit Address
+                                </button>
                             </div>
                         </div>
                         <div class="card-body">
