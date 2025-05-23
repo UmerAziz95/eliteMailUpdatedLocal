@@ -522,7 +522,7 @@ function initDataTable(planId = '') {
                 $('#full_name').val(data.name);
                 $('#email').val(data.email);
                 $('#status').val(data.status);
-                $('#role').val(data.roles[0].name);
+                $('#role').val(data?.roles[0]?.id ?? '');
 
                 // Do not set password fields for editing
 
@@ -536,8 +536,8 @@ function initDataTable(planId = '') {
             }
         });
     });
-</script>
-<script>
+    </script>
+    <script>
     $(document).on('click', '.delete-btn', function (e) {
     e.preventDefault();
     let userId = $(this).data('id');
@@ -561,14 +561,14 @@ function initDataTable(planId = '') {
         });
     }
 });
-</script>
+    </script>
 
-<script>
-    $(document).ready(function() {
-        $('#permissions').select2({
-            placeholder: 'Select permissions',
-            width: '100%'
+    <script>
+        $(document).ready(function() {
+            $('#permissions').select2({
+                placeholder: 'Select permissions',
+                width: '100%'
+            });
         });
-    });
-</script>
+    </script>
 @endpush
