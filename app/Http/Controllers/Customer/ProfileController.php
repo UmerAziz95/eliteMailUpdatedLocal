@@ -296,6 +296,7 @@ class ProfileController extends Controller
             }
             
             return response()->json(array_merge([
+                "billing_address_syn" => $user->billing_address_syn,
                 'success' => true,
                 'message' => 'Billing address updated successfully in both local database and payment gateway'
             ], $debugInfo));

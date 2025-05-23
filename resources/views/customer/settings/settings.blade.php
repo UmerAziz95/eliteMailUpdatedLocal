@@ -733,13 +733,15 @@
                     <div class="card p-3 mb-4">
                         <div class="card-header d-flex align-items-center justify-content-between gap-2">
                             <h5 class="card-action-title mb-0">Billing Address
-                                @if(isset(Auth::user()->billing_address_syn))
-                                    @if(Auth::user()->billing_address_syn)
-                                        <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
-                                    @else
-                                        <span class="badge bg-label-warning ms-1">Not synced with Chargebee</span>
+                                <span id="syn-label">
+                                    @if(isset(Auth::user()->billing_address_syn))
+                                        @if(Auth::user()->billing_address_syn)
+                                            <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                        @else
+                                            <span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>
+                                        @endif
                                     @endif
-                                @endif
+                                </span>
                             </h5>
                             
                             <div class="card-action-element">
@@ -753,34 +755,36 @@
                                 <div class="col-xl-7 col-12">
                                     <div class="row mb-0 gx-2">
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Company Name:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_company ?? 'Not set' }}</div>
+                                        <div id="billing-company-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_company ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Billing Email:</div>
                                         <div class="col-sm-8 opacity-50 small">{{ Auth::user()->email }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading mb-0">Billing Address:</div>
-                                        <div class="col-sm-8 opacity-50 small mb-0">
-                                            {{ Auth::user()->billing_address ?? 'Not set' }}<br>
-                                            @if(Auth::user()->billing_address2)
-                                                {{ Auth::user()->billing_address2 }}<br>
-                                            @endif
-                                            @if(Auth::user()->billing_landmark)
-                                                {{ Auth::user()->billing_landmark }}<br>
-                                            @endif
-                                            {{ Auth::user()->billing_city ?? 'Not set' }}
+                                        <div id="billing-address-container" class="col-sm-8 opacity-50 small mb-0">
+                                            <span id="billing-address1-display">{{ Auth::user()->billing_address ?? 'Not set' }}</span><br>
+                                            <span id="billing-address2-display" class="{{ Auth::user()->billing_address2 ? '' : 'd-none' }}">
+                                                {{ Auth::user()->billing_address2 }}
+                                                <br>
+                                            </span>
+                                            <span id="billing-landmark-display" class="{{ Auth::user()->billing_landmark ? '' : 'd-none' }}">
+                                                {{ Auth::user()->billing_landmark }}
+                                                <br>
+                                            </span>
+                                            <span id="billing-city-display">{{ Auth::user()->billing_city ?? 'Not set' }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-xl-5 col-12">
                                     <div class="row mb-0 gx-2">
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Country:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_country ?? 'Not set' }}</div>
+                                        <div id="billing-country-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_country ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">State:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_state ?? 'Not set' }}</div>
+                                        <div id="billing-state-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_state ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Zipcode:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_zip ?? 'Not set' }}</div>
+                                        <div id="billing-zip-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_zip ?? 'Not set' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -814,13 +818,15 @@
                     <div class="text-center mb-6">
                         <h4 class="address-title mb-2">
                             Edit Address
-                            @if(isset(Auth::user()->billing_address_syn))
-                                @if(Auth::user()->billing_address_syn)
-                                    <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
-                                @else
-                                    <span class="badge bg-label-warning ms-1">Not synced with Chargebee</span>
+                            <span id="syn-edit-label">
+                                @if(isset(Auth::user()->billing_address_syn))
+                                    @if(Auth::user()->billing_address_syn)
+                                        <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                    @else
+                                        <span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>
+                                    @endif
                                 @endif
-                            @endif
+                            </span>
                         </h4>
                         <p class="address-subtitle">Edit your current address</p>
                         <!--  -->
@@ -1442,11 +1448,10 @@
                         
                         // Show success message
                         toastr.success('Billing address updated successfully');
-
-                        // Reload page to reflect changes
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 1500);
+                        
+                        // Update billing address section without reloading the page
+                        // Include the sync status from the response
+                        updateBillingAddress(response.billing_address_syn);
                     }
                 },
                 error: function(xhr) {
@@ -1681,6 +1686,55 @@
                     });
                 }
             });
+        }
+
+        // Function to update billing address section without page reload
+        function updateBillingAddress(isSynced) {
+            // Get values from the form
+            const company = $('#modalAddressCompany').val() || 'Not set';
+            const address1 = $('#modalAddressAddress1').val() || 'Not set';
+            const address2 = $('#modalAddressAddress2').val();
+            const landmark = $('#modalAddressLandmark').val();
+            const city = $('#modalAddressCity').val() || 'Not set';
+            const state = $('#modalAddressState').val() || 'Not set';
+            const zipCode = $('#modalAddressZipCode').val() || 'Not set';
+            const country = $('#modalcountry').val() || 'Not set';
+            
+            // Update display elements
+            $('#billing-company-display').text(company);
+            $('#billing-address1-display').text(address1);
+            
+            // Handle optional fields
+            if (address2 && address2.trim() !== '') {
+                $('#billing-address2-display').text(address2).removeClass('d-none');
+            } else {
+                $('#billing-address2-display').addClass('d-none');
+            }
+            
+            if (landmark && landmark.trim() !== '') {
+                $('#billing-landmark-display').text(landmark).removeClass('d-none');
+            } else {
+                $('#billing-landmark-display').addClass('d-none');
+            }
+            
+            $('#billing-city-display').text(city);
+            $('#billing-country-display').text(country);
+            $('#billing-state-display').text(state);
+            $('#billing-zip-display').text(zipCode);
+            
+            // Update Chargebee sync badge if available
+            if (typeof isSynced !== 'undefined') {
+                // Convert to boolean to ensure consistent behavior
+                isSynced = isSynced === true || isSynced === 1 || isSynced === "1" || isSynced === "true";
+                
+                if (isSynced) {
+                    $('#syn-label').html('<span class="badge bg-label-success ms-1">Synced with Chargebee</span>');
+                    $('#syn-edit-label').html('<span class="badge bg-label-success ms-1">Synced with Chargebee</span>');
+                } else {
+                    $('#syn-edit-label').html('<span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>');
+                    $('#syn-label').html('<span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>');
+                }
+            }
         }
     </script>
 @endpush
