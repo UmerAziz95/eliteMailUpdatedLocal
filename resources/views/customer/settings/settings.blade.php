@@ -732,7 +732,16 @@
                     <!-- Customer Billing Address -->
                     <div class="card p-3 mb-4">
                         <div class="card-header d-flex align-items-center justify-content-between gap-2">
-                            <h5 class="card-action-title mb-0">Billing Address</h5>
+                            <h5 class="card-action-title mb-0">Billing Address
+                                @if(isset(Auth::user()->billing_address_syn))
+                                    @if(Auth::user()->billing_address_syn)
+                                        <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                    @else
+                                        <span class="badge bg-label-warning ms-1">Not synced with Chargebee</span>
+                                    @endif
+                                @endif
+                            </h5>
+                            
                             <div class="card-action-element">
                                 <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
                                     data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
@@ -803,8 +812,18 @@
                     <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-6">
-                        <h4 class="address-title mb-2">Edit Address</h4>
+                        <h4 class="address-title mb-2">
+                            Edit Address
+                            @if(isset(Auth::user()->billing_address_syn))
+                                @if(Auth::user()->billing_address_syn)
+                                    <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                @else
+                                    <span class="badge bg-label-warning ms-1">Not synced with Chargebee</span>
+                                @endif
+                            @endif
+                        </h4>
                         <p class="address-subtitle">Edit your current address</p>
+                        <!--  -->
                     </div>
                     <form id="addNewAddressForm" class="row g-6">
                     <!-- billing_company -->
@@ -1088,6 +1107,7 @@
             });
 
         });
+        // 
         $(document).ready(function() {
             $('#formChangePassword').on('submit', function(e) {
                 e.preventDefault();
@@ -1393,6 +1413,18 @@
         $('#addNewAddressForm').on('submit', function(e) {
             e.preventDefault();
 
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Updating your billing address',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             $.ajax({
                 url: "{{ route('customer.address.update') }}",
                 type: "POST",
@@ -1401,6 +1433,9 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
+                    // Close loading indicator
+                    Swal.close();
+                    
                     if (response.success) {
                         // Close modal
                         $('#addRoleModal').modal('hide');
@@ -1415,6 +1450,9 @@
                     }
                 },
                 error: function(xhr) {
+                    // Close loading indicator
+                    Swal.close();
+                    
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
                         Object.values(xhr.responseJSON.errors).forEach(function(error) {
                             toastr.error(error[0]);

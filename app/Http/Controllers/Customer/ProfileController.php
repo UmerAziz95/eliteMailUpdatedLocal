@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use ChargeBee\ChargeBee\Models\Customer;
 use ChargeBee\ChargeBee\Exceptions\APIError;
-
+// Notification
+use App\Models\Notification;
 class ProfileController extends Controller
 { 
     public function updateAddress(Request $request)
@@ -69,8 +70,7 @@ class ProfileController extends Controller
             if ($chargebee_customer_id) {
                 // Update existing customer in ChargeBee
                 try {
-                    // Structure according to ChargeBee API documentation for updating billing info
-                    // https://apidocs.chargebee.com/docs/api/customers#update_billing_info_for_a_customer
+
                     $updateData = [
                         "billing_address" => [
                             "first_name" => $user->name,
@@ -85,10 +85,10 @@ class ProfileController extends Controller
                     ];
                     
                     // Log the address being sent to ChargeBee for debugging
-                    Log::info("Sending billing address update to ChargeBee", [
-                        'customer_id' => $chargebee_customer_id,
-                        'update_data' => $updateData
-                    ]);
+                    // Log::info("Sending billing address update to ChargeBee", [
+                    //     'customer_id' => $chargebee_customer_id,
+                    //     'update_data' => $updateData
+                    // ]);
                     
                     // Use the specific updateBillingInfo method as per documentation
                     // This is the correct method for updating billing address
@@ -110,11 +110,11 @@ class ProfileController extends Controller
                     
                     // Log the ChargeBee response with proper values extraction
                     $customerResult = $result->customer();
-                    Log::info("ChargeBee update response", [
-                        'customer_id' => $customerResult->id,
-                        'first_name' => $customerResult->firstName,
-                        'values' => $customerResult->getValues()
-                    ]);
+                    // Log::info("ChargeBee update response", [
+                    //     'customer_id' => $customerResult->id,
+                    //     'first_name' => $customerResult->firstName,
+                    //     'values' => $customerResult->getValues()
+                    // ]);
                     // If successful, ensure user's chargebee_customer_id is set
                     if (!$user->chargebee_customer_id) {
                         $user->update(['chargebee_customer_id' => $chargebee_customer_id]);
@@ -127,7 +127,21 @@ class ProfileController extends Controller
                     // The billing address data is available in the values directly
                     $customerValues = $updatedCustomer->getValues();
                     $updatedBillingAddress = $customerValues['billing_address'] ?? null;
-                    
+                    if(!$updatedBillingAddress) {
+                        Log::info("ChargeBee customer billing address not saved", [
+                            'user_id' => $user->id,
+                            'chargebee_customer_id' => $chargebee_customer_id,
+                            'customer_values' => $customerValues
+                        ]);
+                        $user->update(['billing_address_syn' => false]);
+                    }else{
+                        Log::info("ChargeBee customer billing address saved", [
+                            'user_id' => $user->id,
+                            'chargebee_customer_id' => $chargebee_customer_id,
+                            'customer_values' => $customerValues
+                        ]);
+                        $user->update(['billing_address_syn' => true]);
+                    }
                     Log::info("ChargeBee customer billing address updated", [
                         'user_id' => $user->id,
                         'chargebee_customer_id' => $chargebee_customer_id,
@@ -135,6 +149,17 @@ class ProfileController extends Controller
                         'customer_values' => $customerValues
                     ]);
                 } catch (\ChargeBee\ChargeBee\Exceptions\APIError $e) {
+                    $user->update(['billing_address_syn' => false]);
+                    Notification::create([
+                        'user_id' => $user->id,
+                        'type' => 'billing_address_syn',
+                        'title' => 'Billing Address Sync Failed',
+                        'message' => "Failed to sync billing address with ChargeBee for user ID {$user->id}",
+                        'data' => [
+                            'error_message' => $e->getMessage(),
+                            'ip_address' => request()->ip()
+                        ]
+                    ]);
                     // Specifically handle ChargeBee API errors
                     Log::error('ChargeBee API Error updating billing address: ' . $e->getMessage(), [
                         'user_id' => $user->id,
@@ -143,6 +168,17 @@ class ProfileController extends Controller
                         'http_status_code' => $e->getHttpStatusCode()
                     ]);
                 } catch (\Exception $e) {
+                    $user->update(['billing_address_syn' => false]);
+                    Notification::create([
+                        'user_id' => $user->id,
+                        'type' => 'billing_address_syn',
+                        'title' => 'Billing Address Sync Failed',
+                        'message' => "Failed to sync billing address with ChargeBee for user ID {$user->id}",
+                        'data' => [
+                            'error_message' => $e->getMessage(),
+                            'ip_address' => request()->ip()
+                        ]
+                    ]);
                     // Log general error but don't fail the whole request
                     Log::error('ChargeBee customer billing address update failed: ' . $e->getMessage(), [
                         'user_id' => $user->id,
@@ -173,21 +209,37 @@ class ProfileController extends Controller
                     ];
                     
                     // Log the customer data being sent to ChargeBee
-                    Log::info("Creating new ChargeBee customer with data", [
-                        'customer_data' => $customerData
-                    ]);
+                    // Log::info("Creating new ChargeBee customer with data", [
+                    //     'customer_data' => $customerData
+                    // ]);
                     
                     $result = Customer::create($customerData);
                     
                     if ($result && $result->customer()) {
                         $customer = $result->customer();
                         $customerId = $customer->id;
-                        
+                        $customerValues = $customer->getValues();
+                        // $customerValues['billing_address'] ?? null is null then create flag for billing address not saved
+                        if(!$customerValues['billing_address']) {
+                            Log::info("ChargeBee customer billing address not saved", [
+                                'user_id' => $user->id,
+                                'chargebee_customer_id' => $customerId,
+                                'customer_data' => $customerValues
+                            ]);
+                            $user->update(['billing_address_syn' => false]);
+                        }else{
+                            Log::info("ChargeBee customer billing address saved", [
+                                'user_id' => $user->id,
+                                'chargebee_customer_id' => $customerId,
+                                'customer_data' => $customerValues
+                            ]);
+                            $user->update(['billing_address_syn' => true]);
+                        }
                         // Save the new ChargeBee customer ID to the user
                         $user->update(['chargebee_customer_id' => $customerId]);
                         
                         // Log with detailed billing address information
-                        $customerValues = $customer->getValues();
+                        
                         Log::info("New ChargeBee customer created with billing address", [
                             'user_id' => $user->id,
                             'chargebee_customer_id' => $customerId,
@@ -196,6 +248,17 @@ class ProfileController extends Controller
                         ]);
                     }
                 } catch (\ChargeBee\ChargeBee\Exceptions\APIError $e) {
+                    $user->update(['billing_address_syn' => false]);
+                    Notification::create([
+                        'user_id' => $user->id,
+                        'type' => 'billing_address_syn',
+                        'title' => 'Billing Address Sync Failed',
+                        'message' => "Failed to sync billing address with ChargeBee for user ID {$user->id}",
+                        'data' => [
+                            'error_message' => $e->getMessage(),
+                            'ip_address' => request()->ip()
+                        ]
+                    ]);
                     // Specifically handle ChargeBee API errors
                     Log::error('ChargeBee API Error creating customer: ' . $e->getMessage(), [
                         'user_id' => $user->id,
@@ -203,6 +266,18 @@ class ProfileController extends Controller
                         'http_status_code' => $e->getHttpStatusCode()
                     ]);
                 } catch (\Exception $e) {
+                    $user->update(['billing_address_syn' => false]);
+                    // billing_address_syn failed
+                    Notification::create([
+                        'user_id' => $user->id,
+                        'type' => 'billing_address_syn',
+                        'title' => 'Billing Address Sync Failed',
+                        'message' => "Failed to sync billing address with ChargeBee for user ID {$user->id}",
+                        'data' => [
+                            'error_message' => $e->getMessage(),
+                            'ip_address' => request()->ip()
+                        ]
+                    ]);
                     // Log ChargeBee creation error but don't fail the whole request
                     Log::error('ChargeBee customer creation failed: ' . $e->getMessage(), [
                         'user_id' => $user->id,

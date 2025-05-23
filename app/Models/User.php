@@ -34,7 +34,8 @@ class User extends Authenticatable
         'billing_state',
         'billing_country',
         'billing_zip',
-        'billing_landmark'
+        'billing_landmark',
+        'billing_address_syn',
     ];
 
     /**
