@@ -294,12 +294,23 @@ class PlanController extends Controller
 
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
+                $quantity = $subscription->subscriptionItems[0]->quantity ?? 1;
+                
+                // Find plan based on quantity range instead of chargebee_plan_id
+                $plan = Plan::where('is_active', 1)
+                    ->where('min_inbox', '<=', $quantity)
+                    ->where(function ($query) use ($quantity) {
+                        $query->where('max_inbox', '>=', $quantity)
+                              ->orWhere('max_inbox', 0); // 0 means unlimited
+                    })
+                    ->orderBy('min_inbox', 'desc') // Get the most specific plan first
+                    ->first();
+                    
+                if ($plan) {
+                    $plan_id = $plan->id;
+                }
             }
-            $plan = Plan::where('chargebee_plan_id', $charge_plan_id)->first();
-            if ($plan) {
-                $plan_id = $plan->id;
-            }
-
+            // dd($subscription, $customer, $invoice, $plan_id, $charge_plan_id);
             $user = auth()->user();
 
             if (!$subscription || !$customer || !$invoice) {
