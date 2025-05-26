@@ -70,7 +70,6 @@ $(document).ready(function() {
             type: 'POST',
             data: {
                 _token: '{{ csrf_token() }}',
-                'order_id': '{{ $order->id ?? 0 }}'
             },
             success: function(response) {
                 if (response.success) {

@@ -37,7 +37,7 @@ class OrderController extends Controller
 
     public function __construct()
     {
-        $this->statuses = Status::pluck('badge', 'name')->toArray();
+        $this->statuses = Status::where('name', '!=', 'draft')->pluck('badge', 'name')->toArray();
     }
 
     public function index()
@@ -212,6 +212,7 @@ class OrderController extends Controller
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+                ->where('status_manage_by_admin', '!=', 'draft')
                 ->where(function($query) {
                     $query->whereNull('assigned_to')
                           ->orWhere('assigned_to', auth()->id());

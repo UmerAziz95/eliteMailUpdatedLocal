@@ -19,6 +19,7 @@ class StatusesTableSeeder extends Seeder
             ['name' => 'in-progress', 'badge' => 'primary'],
             ['name' => 'cancelled', 'badge' => 'danger'],
             ['name' => 'completed', 'badge' => 'success'],
+            ['name' => 'draft', 'badge' => 'info']
         ];
 
         foreach ($statuses as $status) {

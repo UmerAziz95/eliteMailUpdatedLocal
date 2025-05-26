@@ -482,16 +482,16 @@ class OrderController extends Controller
 
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
-
-            // Verify plan can support the total inboxes
-            $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
+            
+            // // Verify plan can support the total inboxes
+            // $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
                         
-            if (!$canHandle) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
-                ], 422);
-            }
+            // if (!$canHandle) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
+            //     ], 422);
+            // }
 
             // Store session data if validation passes
             $request->session()->put('order_info', $request->all());
@@ -501,6 +501,14 @@ class OrderController extends Controller
             
             // for edit order
             if($request->edit_id && $request->order_id){
+                $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
+                $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
+                if($plan && $calculatedTotalInboxes > $TOTAL_INBOXES){
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
+                    ], 422);
+                }
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 $order->update([
                     'status_manage_by_admin' => 'pending',
@@ -527,7 +535,7 @@ class OrderController extends Controller
                         'sending_platform' => $request->sending_platform,
                         'sequencer_login' => $request->sequencer_login,
                         'sequencer_password' => $request->sequencer_password,
-                        'total_inboxes' => $calculatedTotalInboxes,
+                        // 'total_inboxes' => $calculatedTotalInboxes,
                         'inboxes_per_domain' => $request->inboxes_per_domain,
                         'first_name' => $request->first_name,
                         'last_name' => $request->last_name,

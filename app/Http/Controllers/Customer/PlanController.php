@@ -295,7 +295,6 @@ class PlanController extends Controller
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
             }
-
             $plan = Plan::where('chargebee_plan_id', $charge_plan_id)->first();
             if ($plan) {
                 $plan_id = $plan->id;

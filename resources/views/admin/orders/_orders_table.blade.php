@@ -58,7 +58,7 @@
                         <label class="form-label">Select Status *</label>
                         <div class="d-flex flex-wrap gap-2">
                             @php
-                            $statuses1 = \App\Models\Status::get();
+                            $statuses1 = \App\Models\Status::where('name', '!=', 'draft')->get();
                             @endphp
                             @foreach($statuses1 as $status)
                             <div class="form-check me-3">
