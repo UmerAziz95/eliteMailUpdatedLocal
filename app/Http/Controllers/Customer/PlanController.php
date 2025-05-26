@@ -367,6 +367,44 @@ class PlanController extends Controller
                     'master_inbox_email' => $order_info['master_inbox_email'] ?? null,
                     'additional_info' => $order_info['additional_info'] ?? null,
                 ]);
+            }else{
+                // status_manage_by_admin
+                $order->update([
+                    'status_manage_by_admin' => 'draft',
+                ]);
+                // get total per unit qty from chargebee
+                $total_inboxes = $subscription->subscriptionItems[0]->quantity ?? 1;
+                // dd($total_inboxes);
+                // save data on reorder_info table
+                $order->reorderInfo()->create([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan_id,
+                    'forwarding_url' => null,
+                    'other_platform' => null,
+                    'tutorial_section' => null,
+                    'hosting_platform' => null,
+                    'backup_codes' => null,
+                    'bison_url' => null,
+                    'bison_workspace' => null,
+                    'platform_login' => null,
+                    'platform_password' => null,
+                    'domains' => null,
+                    'sending_platform' => null,
+                    'sequencer_login' => null,
+                    'sequencer_password' => null,
+                    'total_inboxes' => $total_inboxes, // Use the quantity from subscription
+                    'inboxes_per_domain' => 1, // Default value
+                    'first_name' => $user->name, // Use user's name
+                    'last_name' => '', // Default value
+                    'prefix_variant_1' => '', // Default value
+                    'prefix_variant_2' => '', // Default value
+                    'persona_password' => "123", // Default value
+                    'profile_picture_link' => null, // Default value
+                    'email_persona_password' => null, // Default value
+                    'email_persona_picture_link' => null, // Default value
+                    'master_inbox_email' => null, // Default value
+                    'additional_info' => null, // Default value
+                ]);
             }
         
             // Create or update invoice

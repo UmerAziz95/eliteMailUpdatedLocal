@@ -153,9 +153,9 @@ class OrderController extends Controller
         //     'additional_info' => '',
         //     'coupon_code' => ''
         // ]);
-        // return view('customer.orders.open-chargebee', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        return view('customer.orders.open-chargebee', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
         
-        return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        // return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     public function reorder(Request $request, $order_id)
     {
@@ -335,7 +335,7 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> View</a></li>
-                                    ' . (strtolower($order->status_manage_by_admin ?? 'n/a') === 'reject' ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                    ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['reject', 'draft']) ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
                                 </ul>
                             </div>';
