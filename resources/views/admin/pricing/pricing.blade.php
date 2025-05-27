@@ -1122,7 +1122,8 @@ $(document).on('click', '.delete-plan-btn', function () {
                 max_inbox: data.max_inbox || '',
                 price: data.price || '',
                 duration: data.duration || 'monthly',
-                features: data.features || []
+                features: data.features || [],
+                feature_values: data.feature_values || []
             } : {
                 name: '',
                 description: '',
@@ -1130,7 +1131,8 @@ $(document).on('click', '.delete-plan-btn', function () {
                 max_inbox: '',
                 price: '',
                 duration: 'monthly',
-                features: []
+                features: [],
+                feature_values: []
             };
 
             const itemHtml = `
@@ -1235,7 +1237,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             updateTierNumbers();
             
             // Load available features for this volume item
-            loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features);
+            loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
         }
 
         // Add input validation to prevent NaN values
@@ -1375,7 +1377,7 @@ $(document).on('click', '.delete-plan-btn', function () {
         }
 
         // Load features for a specific volume item
-        function loadFeaturesForVolumeItem(itemIndex, selectedFeatures = []) {
+        function loadFeaturesForVolumeItem(itemIndex, selectedFeatures = [], selectedValues = []) {
             $.get('{{ route('admin.features.list') }}')
                 .done(function(response) {
                     if (response.success && response.features) {
@@ -1397,12 +1399,13 @@ $(document).on('click', '.delete-plan-btn', function () {
                             }
                         });
                         
-                        // Display already selected features (only for initial load)
+                        // Display already selected features with their values (only for initial load)
                         if (selectedFeatures.length > 0) {
-                            selectedFeatures.forEach(function(featureId) {
+                            selectedFeatures.forEach(function(featureId, index) {
                                 const feature = response.features.find(f => f.id == featureId);
                                 if (feature) {
-                                    addFeatureToList(itemIndex, feature.id, feature.title);
+                                    const featureValue = selectedValues[index] || '';
+                                    addFeatureToList(itemIndex, feature.id, feature.title, featureValue);
                                 }
                             });
                         }
@@ -1418,7 +1421,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             $('#volumeItemsContainer .volume-item').each(function() {
                 const index = $(this).data('index');
                 if (index !== undefined) {
-                    loadFeaturesForVolumeItem(index, []);
+                    loadFeaturesForVolumeItem(index, [], []);
                 }
             });
         }
@@ -1471,7 +1474,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             $(this).val('');
             
             // Refresh the dropdown to remove the selected feature from options
-            loadFeaturesForVolumeItem(itemIndex, []);
+            loadFeaturesForVolumeItem(itemIndex, [], []);
         });
 
         $(document).on('click', '.remove-feature-btn', function() {
@@ -1480,7 +1483,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             
             // Refresh the dropdown to add the removed feature back to options
             if (itemIndex !== undefined) {
-                loadFeaturesForVolumeItem(itemIndex, []);
+                loadFeaturesForVolumeItem(itemIndex, [], []);
             }
         });
 

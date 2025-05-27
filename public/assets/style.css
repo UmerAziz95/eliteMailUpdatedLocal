@@ -844,3 +844,17 @@ table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
 .text-danger {
     color: #dc3545 !important;
 }
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #9a9ca6;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #2f3349;
+    border: var(--bs-border-width) solid #5a5d6f;
+    border-radius: var(--bs-border-radius);
+}

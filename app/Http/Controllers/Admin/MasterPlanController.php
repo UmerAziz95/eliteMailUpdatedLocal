@@ -27,8 +27,7 @@ class MasterPlanController extends Controller
      * Create or update the master plan with volume items
      */
     public function store(Request $request)
-    {
-        $request->validate([
+    {        $request->validate([
             'external_name' => 'required|string|max:255',
             'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
             'description' => 'required|string|max:1000',
@@ -37,7 +36,9 @@ class MasterPlanController extends Controller
             'volume_items.*.max_inbox' => 'required|integer|min:0',
             'volume_items.*.price' => 'required|numeric|min:0',
             'volume_items.*.features' => 'sometimes|array',
-            'volume_items.*.features.*' => 'integer|exists:features,id'
+            'volume_items.*.features.*' => 'integer|exists:features,id',
+            'volume_items.*.feature_values' => 'sometimes|array',
+            'volume_items.*.feature_values.*' => 'nullable|string|max:255'
         ], [
             'internal_name.regex' => 'Internal name can only contain lowercase letters, numbers, and underscores.',
             'volume_items.required' => 'At least one volume item is required.',
@@ -48,9 +49,7 @@ class MasterPlanController extends Controller
             'volume_items.*.price.required' => 'Price is required for all volume items.',
             'volume_items.*.price.numeric' => 'Price must be a valid number.',
             'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
-        ]);
-
-        // Additional validation and cleaning of volume items data
+        ]);        // Additional validation and cleaning of volume items data
         $volumeItems = collect($request->volume_items)->map(function ($item) {
             return [
                 'name' => trim($item['name'] ?? ''),
@@ -59,7 +58,8 @@ class MasterPlanController extends Controller
                 'max_inbox' => is_numeric($item['max_inbox']) ? (int)$item['max_inbox'] : 0,
                 'price' => is_numeric($item['price']) ? (float)$item['price'] : 0,
                 'duration' => $item['duration'] ?? 'monthly',
-                'features' => $item['features'] ?? []
+                'features' => $item['features'] ?? [],
+                'feature_values' => $item['feature_values'] ?? []
             ];
         })->toArray();
 
@@ -102,11 +102,18 @@ class MasterPlanController extends Controller
                     'min_inbox' => $volumeItem['min_inbox'],
                     'max_inbox' => $volumeItem['max_inbox'],
                     'is_active' => true,
-                ]);
-
-                // Attach features to this volume tier if any
+                ]);                // Attach features to this volume tier if any
                 if (!empty($volumeItem['features'])) {
-                    $plan->features()->attach($volumeItem['features']);
+                    $featureData = [];
+                    $featureValues = $volumeItem['feature_values'] ?? [];
+                    
+                    foreach ($volumeItem['features'] as $index => $featureId) {
+                        $featureData[$featureId] = [
+                            'value' => $featureValues[$index] ?? ''
+                        ];
+                    }
+                    
+                    $plan->features()->attach($featureData);
                 }
             }// Create or update on Chargebee
             $this->syncWithChargebee($masterPlan, $volumeItems);
@@ -258,9 +265,7 @@ class MasterPlanController extends Controller
                     'success' => false,
                     'message' => 'No master plan found'
                 ]);
-            }
-
-            $volumeItems = $masterPlan->volumeItems()->with('features')->get()->map(function ($item) {
+            }            $volumeItems = $masterPlan->volumeItems()->with('features')->get()->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
@@ -269,7 +274,8 @@ class MasterPlanController extends Controller
                     'max_inbox' => $item->max_inbox,
                     'price' => $item->price,
                     'duration' => $item->duration,
-                    'features' => $item->features->pluck('id')->toArray()
+                    'features' => $item->features->pluck('id')->toArray(),
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
                 ];
             });
 
