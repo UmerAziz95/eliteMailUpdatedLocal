@@ -58,10 +58,11 @@
 
     .remove-feature-btn {
         position: absolute;
-        top: -8px;
-        right: -8px;
+        top: 17px;
+        right: 14px;
         font-size: 8px;
         padding: 2px 5px;
+        z-index: 1;
     }
 
     select option {
@@ -78,11 +79,56 @@
         margin-top: 10px;
         border: 1px dashed rgba(255, 255, 255, 0.2);
     }
+    .features-container .feature-item {
+        /* background-color: #f8f9fa; */
+        border: 1px solid #dee2e6;
+    }
+    .features-container .feature-item:hover {
+        /* background-color: #e9ecef; */
+    }
+
+    .volume-item {
+        border: 1px solid #dee2e6 !important;
+        /* background-color: #f8f9fa; */
+    }
+
+    .selected-features-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3">
+    <!-- Master Plan Section -->
+    <div class="container-fluid mb-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="masterPlanContainer">
+                            <!-- Master plan content will be loaded here -->
+                        </div>
+                        @if (!auth()->user()->hasPermissionTo('Mod'))
+                        @if (auth()->user()->role_id != 5)
+                        <button id="createMasterPlan" class="btn btn-warning">
+                            <i class="fa-solid fa-plus"></i> Create/Edit Master Plan
+                        </button>
+                        @endif
+                        @endif
+                        <!--   -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="d-flex flex-column align-items-center justify-content-center">
         <h2 class="text-center fw-bold">Manage Plans</h2>
         <p class="text-center">Create and manage subscription plans</p>
@@ -94,7 +140,7 @@
         @endif
         @endif
     </div>
-
+    
     <div class="row mt-4" id="plans-container">
         @foreach ($plans as $plan)
         <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
@@ -468,6 +514,9 @@
 
                     dropdown.html(options);
                 });
+                
+                // Also refresh volume item dropdowns
+                loadAllVolumeItemFeatures();
             }
         },
         error: function(xhr) {
@@ -880,6 +929,756 @@ $(document).on('click', '.delete-plan-btn', function () {
             const toast = new bootstrap.Toast(document.getElementById('errorToast'));
             toast.show();
         }
+
+        function showWarningToast(message) {
+            // For simplicity, using error toast for warnings
+            showErrorToast(message);
+        }
+
+        // Master Plan Functions
+        function loadMasterPlan() {
+            $.get('{{ route('admin.master-plan.show') }}')
+                .done(function(response) {
+                    if (response && response.id) {
+                        const masterPlan = response;
+                        const volumeItemsCount = masterPlan.volume_items ? masterPlan.volume_items.length : 
+                                               (masterPlan.volumeItems ? masterPlan.volumeItems.length : 0);
+                        
+                        $('#masterPlanContainer').html(`
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Plan Name:</strong> ${masterPlan.external_name || 'N/A'}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Chargebee ID:</strong> ${masterPlan.chargebee_plan_id || 'Not synced'}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Volume Items:</strong> ${volumeItemsCount} tiers
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <strong>Description:</strong> ${masterPlan.description || 'N/A'}
+                                </div>
+                            </div>
+                        `);
+                        $('#createMasterPlan').text('Edit Master Plan');
+                    } else {
+                        $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
+                        $('#createMasterPlan').text('Create Master Plan');
+                    }
+                })
+                .fail(function() {
+                    $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
+                    $('#createMasterPlan').text('Create Master Plan');
+                });
+        }
+
+        // Load master plan on page load
+        loadMasterPlan();
+
+        // Create/Edit Master Plan
+        $('#createMasterPlan').click(function() {
+            // Load existing data if available
+            $.get('{{ route('admin.master-plan.show') }}')
+                .done(function(response) {
+                    if (response && response.id) {
+                        $('#masterPlanExternalName').val(response.name || '');
+                        $('#masterPlanInternalName').val(response.chargebee_plan_id || response.name || '');
+                        $('#masterPlanDescription').val(response.description || '');
+                    }
+                })
+                .always(function() {
+                    $('#masterPlanModal').modal('show');
+                });
+        });
+
+        // Save Master Plan
+        $('#saveMasterPlan').click(function() {
+            const button = $(this);
+            button.prop('disabled', true).text('Saving...');
+
+            // Collect form data
+            const formData = {
+                external_name: $('#masterPlanExternalName').val(),
+                internal_name: $('#masterPlanInternalName').val(),
+                description: $('#masterPlanDescription').val(),
+                volume_items: collectVolumeItems(),
+                _token: '{{ csrf_token() }}'
+            };
+
+            // Validate volume items
+            if (formData.volume_items.length === 0) {
+                showErrorToast('At least one volume tier is required.');
+                button.prop('disabled', false).text('Save Master Plan');
+                return;
+            }
+
+            // Validate each volume item for valid data
+            for (let i = 0; i < formData.volume_items.length; i++) {
+                const item = formData.volume_items[i];
+                
+                // Check for NaN or invalid values
+                if (isNaN(item.min_inbox) || isNaN(item.max_inbox) || isNaN(item.price)) {
+                    showErrorToast(`Invalid numeric values in tier ${i + 1}. Please check min inbox, max inbox, and price fields.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Check for negative values
+                if (item.min_inbox < 0 || item.max_inbox < 0 || item.price < 0) {
+                    showErrorToast(`Negative values not allowed in tier ${i + 1}.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Check for empty required fields
+                if (!item.name || !item.name.trim()) {
+                    showErrorToast(`Tier ${i + 1} name is required.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+            }
+
+            // Validate and fix range sequences
+            const sortedItems = formData.volume_items.sort((a, b) => a.min_inbox - b.min_inbox);
+            
+            // Validate range continuity and fix gaps
+            for (let i = 0; i < sortedItems.length; i++) {
+                const current = sortedItems[i];
+                const next = sortedItems[i + 1];
+                
+                // Validate current tier
+                if (current.min_inbox < 0 || (current.max_inbox < current.min_inbox && current.max_inbox !== 0)) {
+                    showErrorToast(`Invalid range in tier ${i + 1}: min_inbox cannot be greater than max_inbox`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Check for gaps or overlaps with next tier
+                if (next) {
+                    if (current.max_inbox === 0) {
+                        showErrorToast(`Tier ${i + 1} has unlimited range (max_inbox = 0) but is not the last tier. Only the last tier can be unlimited.`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
+                    
+                    // Auto-fix: ensure next tier starts where current ends + 1
+                    const expectedNextMin = current.max_inbox + 1;
+                    if (next.min_inbox !== expectedNextMin) {
+                        showErrorToast(`Gap or overlap detected: Tier ${i + 2} should start at ${expectedNextMin} (current tier ends at ${current.max_inbox})`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
+                }
+            }
+
+            $.ajax({
+                url: '{{ route('admin.master-plan.store') }}',
+                method: 'POST',
+                data: formData,
+                dataType: 'json'
+            })
+                .done(function(response) {
+                    if (response.success) {
+                        $('#masterPlanModal').modal('hide');
+                        showSuccessToast('Master plan saved successfully!');
+                        // Optionally reload the page or update UI
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showErrorToast(response.message);
+                    }
+                })
+                .fail(function(xhr) {
+                    let message = 'An error occurred while saving the master plan.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        // Handle validation errors
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        message = errors.join('<br>');
+                    }
+                    showErrorToast(message);
+                })
+                .always(function() {
+                    // Re-enable button
+                    button.prop('disabled', false).text('Save Master Plan');
+                });
+        });
+
+        // Volume item management
+        let volumeItemIndex = 0;
+
+        // Add volume item
+        $('#addVolumeItem').on('click', function() {
+            addVolumeItem();
+        });
+
+        function addVolumeItem(data = null) {
+            const item = data ? {
+                name: data.name || '',
+                description: data.description || '',
+                min_inbox: data.min_inbox || '',
+                max_inbox: data.max_inbox || '',
+                price: data.price || '',
+                duration: data.duration || 'monthly',
+                features: data.features || []
+            } : {
+                name: '',
+                description: '',
+                min_inbox: '',
+                max_inbox: '',
+                price: '',
+                duration: 'monthly',
+                features: []
+            };
+
+            const itemHtml = `
+                <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Tier ${volumeItemIndex + 1}</h6>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-volume-item">
+                            <i class="fa-solid fa-trash"></i> Remove
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Tier Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control volume-name" name="volume_items[${volumeItemIndex}][name]" value="${item.name}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Duration <span class="text-danger">*</span></label>
+                                <select class="form-control volume-duration" name="volume_items[${volumeItemIndex}][duration]" required>
+                                    <option value="monthly" ${item.duration === 'monthly' ? 'selected' : ''}>Monthly</option>
+                                    <option value="yearly" ${item.duration === 'yearly' ? 'selected' : ''}>Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Min Inboxes <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control volume-min-inbox" name="volume_items[${volumeItemIndex}][min_inbox]" value="${item.min_inbox}" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Max Inboxes <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox}" min="0">
+                                <small class="text-muted">Set to 0 for unlimited</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Price per Inbox <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control volume-price" name="volume_items[${volumeItemIndex}][price]" value="${item.price}" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control volume-description" name="volume_items[${volumeItemIndex}][description]" rows="2">${item.description}</textarea>
+                    </div>
+                    
+                    <!-- Features Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Features</label>
+                        <div class="features-container" id="featuresContainer${volumeItemIndex}">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <select class="form-control feature-select volume-feature-dropdown" id="featureSelect${volumeItemIndex}" data-index="${volumeItemIndex}">
+                                        <option value="">Select a feature to add</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5" style="text-align: right;">
+                                    <button type="button" class="btn btn-sm btn-primary toggle-new-feature-form-volume" data-index="${volumeItemIndex}">
+                                        <i class="fa-solid fa-plus"></i> New
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- New Feature Form for Volume Items -->
+                            <div class="new-feature-form mt-3" id="newFeatureFormVolume${volumeItemIndex}" style="display: none;">
+                                <h6>New Feature</h6>
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-title-volume" placeholder="Feature Title">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-value-volume" placeholder="Feature Value">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary add-new-feature-btn-volume" data-index="${volumeItemIndex}">
+                                            <i class="fa-solid fa-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="selected-features-list mt-2" id="selectedFeaturesList${volumeItemIndex}">
+                                <!-- Selected features will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#volumeItemsContainer').append(itemHtml);
+            volumeItemIndex++;
+            updateTierNumbers();
+            
+            // Load available features for this volume item
+            loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features);
+        }
+
+        // Add input validation to prevent NaN values
+        $(document).on('input', '.volume-min-inbox, .volume-max-inbox', function() {
+            let value = $(this).val();
+            if (value === '' || isNaN(value) || value < 0) {
+                $(this).val('');
+            } else {
+                $(this).val(parseInt(value) || '');
+            }
+        });
+
+        $(document).on('input', '.volume-price', function() {
+            let value = $(this).val();
+            if (value === '' || isNaN(value) || value < 0) {
+                $(this).val('');
+            } else {
+                // Ensure it's a valid decimal with max 2 decimal places
+                let numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                    $(this).val(numValue.toFixed(2));
+                }
+            }
+        });
+
+        // Remove volume item
+        $(document).on('click', '.remove-volume-item', function() {
+            $(this).closest('.volume-item').remove();
+            updateTierNumbers();
+        });
+
+        // Update tier numbers
+        function updateTierNumbers() {
+            $('#volumeItemsContainer .volume-item').each(function(index) {
+                $(this).find('h6').text(`Tier ${index + 1}`);
+            });
+        }
+
+        // Auto-fix range sequences
+        function autoFixRanges() {
+            const items = [];
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const $item = $(this);
+                items.push({
+                    element: $item,
+                    min_inbox: parseInt($item.find('.volume-min-inbox').val()) || 0,
+                    max_inbox: parseInt($item.find('.volume-max-inbox').val()) || 0
+                });
+            });
+
+            // Sort by min_inbox
+            items.sort((a, b) => a.min_inbox - b.min_inbox);
+
+            // Auto-fix ranges to be continuous
+            let nextMin = items[0]?.min_inbox || 1;
+            items.forEach((item, index) => {
+                const isLast = index === items.length - 1;
+                
+                // Set min_inbox for current tier
+                item.element.find('.volume-min-inbox').val(nextMin);
+                
+                if (isLast) {
+                    // Last tier can be unlimited (0) or have a specific max
+                    const currentMax = item.max_inbox;
+                    if (currentMax === 0) {
+                        item.element.find('.volume-max-inbox').val(0);
+                    } else {
+                        // Keep the specified max for last tier
+                        item.element.find('.volume-max-inbox').val(currentMax);
+                    }
+                } else {
+                    // For non-last tiers, calculate max based on next tier's intended start
+                    const nextItem = items[index + 1];
+                    let maxForCurrent;
+                    
+                    if (nextItem.min_inbox > nextMin) {
+                        maxForCurrent = nextItem.min_inbox - 1;
+                    } else {
+                        // Default range of 10 if not specified
+                        maxForCurrent = nextMin + 9;
+                    }
+                    
+                    item.element.find('.volume-max-inbox').val(maxForCurrent);
+                    nextMin = maxForCurrent + 1;
+                }
+            });
+            
+            updateTierNumbers();
+            showSuccessToast('Ranges have been auto-fixed to be continuous');
+        }
+
+        // Add auto-fix button functionality
+        $(document).on('click', '#autoFixRanges', function() {
+            if ($('#volumeItemsContainer .volume-item').length > 0) {
+                autoFixRanges();
+            } else {
+                showErrorToast('No volume tiers to fix');
+            }
+        });
+
+        // Collect volume items data
+        function collectVolumeItems() {
+            const items = [];
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const $item = $(this);
+                
+                // Get values with proper validation
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInboxVal = $item.find('.volume-max-inbox').val();
+                const maxInbox = maxInboxVal === '' || maxInboxVal === null ? 0 : (parseInt(maxInboxVal) || 0);
+                const price = parseFloat($item.find('.volume-price').val()) || 0;
+                
+                // Collect selected features with values for this volume item
+                const features = [];
+                const featureValues = [];
+                $item.find('.selected-features-list .feature-item').each(function() {
+                    const featureId = $(this).data('feature-id');
+                    const featureValue = $(this).find('.feature-value-input').val() || '';
+                    if (featureId) {
+                        features.push(featureId);
+                        featureValues.push(featureValue);
+                    }
+                });
+                
+                items.push({
+                    name: $item.find('.volume-name').val() || '',
+                    description: $item.find('.volume-description').val() || '',
+                    min_inbox: minInbox,
+                    max_inbox: maxInbox,
+                    price: price,
+                    duration: $item.find('.volume-duration').val() || 'monthly',
+                    features: features,
+                    feature_values: featureValues
+                });
+            });
+            return items;
+        }
+
+        // Load features for a specific volume item
+        function loadFeaturesForVolumeItem(itemIndex, selectedFeatures = []) {
+            $.get('{{ route('admin.features.list') }}')
+                .done(function(response) {
+                    if (response.success && response.features) {
+                        const $select = $(`#featureSelect${itemIndex}`);
+                        const $featuresList = $(`#selectedFeaturesList${itemIndex}`);
+                        
+                        // Get all currently added feature IDs for this volume item
+                        const addedFeatureIds = [];
+                        $featuresList.find('.feature-item').each(function() {
+                            addedFeatureIds.push($(this).data('feature-id').toString());
+                        });
+                        
+                        // Clear and populate feature dropdown with filtering
+                        $select.empty().append('<option value="">Select a feature to add</option>');
+                        response.features.forEach(function(feature) {
+                            // Only add feature to dropdown if it's not already selected
+                            if (!addedFeatureIds.includes(feature.id.toString())) {
+                                $select.append(`<option value="${feature.id}" data-title="${feature.title}">${feature.title}</option>`);
+                            }
+                        });
+                        
+                        // Display already selected features (only for initial load)
+                        if (selectedFeatures.length > 0) {
+                            selectedFeatures.forEach(function(featureId) {
+                                const feature = response.features.find(f => f.id == featureId);
+                                if (feature) {
+                                    addFeatureToList(itemIndex, feature.id, feature.title);
+                                }
+                            });
+                        }
+                    }
+                })
+                .fail(function() {
+                    showErrorToast('Failed to load features');
+                });
+        }
+
+        // Load features for all volume items (similar to loadFeatures for plan modals)
+        function loadAllVolumeItemFeatures() {
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const index = $(this).data('index');
+                if (index !== undefined) {
+                    loadFeaturesForVolumeItem(index, []);
+                }
+            });
+        }
+
+        // Add feature to the selected list
+        function addFeatureToList(itemIndex, featureId, featureTitle, featureValue = '') {
+            const $featuresList = $(`#selectedFeaturesList${itemIndex}`);
+            
+            // Check if feature is already added
+            if ($featuresList.find(`[data-feature-id="${featureId}"]`).length > 0) {
+                showWarningToast('Feature already added to this tier');
+                return;
+            }
+            
+            const featureHtml = `
+                <div class="feature-item" data-feature-id="${featureId}">
+                    <button type="button" class="btn btn-sm btn-danger remove-feature-btn" data-index="${itemIndex}" data-feature-id="${featureId}">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <strong>${featureTitle}</strong>
+                            <input type="hidden" name="volume_items[${itemIndex}][feature_ids][]" value="${featureId}">
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" class="form-control form-control-sm feature-value-input" name="volume_items[${itemIndex}][feature_values][]" value="${featureValue}" placeholder="Value">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            $featuresList.append(featureHtml);
+        }
+
+        // Automatic feature selection on dropdown change for volume items
+        $(document).on('change', '.volume-feature-dropdown', function() {
+            const itemIndex = $(this).data('index');
+            const selectedOption = $(this).find('option:selected');
+            const selectedFeatureId = selectedOption.val();
+            const selectedFeatureTitle = selectedOption.data('title');
+            
+            if (!selectedFeatureId) {
+                return; // No feature selected
+            }
+            
+            // Add feature to the list automatically
+            addFeatureToList(itemIndex, selectedFeatureId, selectedFeatureTitle);
+            
+            // Reset dropdown selection
+            $(this).val('');
+            
+            // Refresh the dropdown to remove the selected feature from options
+            loadFeaturesForVolumeItem(itemIndex, []);
+        });
+
+        $(document).on('click', '.remove-feature-btn', function() {
+            const itemIndex = $(this).data('index');
+            $(this).closest('.feature-item').remove();
+            
+            // Refresh the dropdown to add the removed feature back to options
+            if (itemIndex !== undefined) {
+                loadFeaturesForVolumeItem(itemIndex, []);
+            }
+        });
+
+        // Update feature value in real-time for volume items
+        $(document).on('input', '.selected-features-list .feature-value-input', function() {
+            // Real-time value updates - no additional action needed as data is collected during form submission
+        });
+
+        // Toggle new feature form visibility for volume items
+        $(document).on('click', '.toggle-new-feature-form-volume', function() {
+            const itemIndex = $(this).data('index');
+            const formContainer = $(`#newFeatureFormVolume${itemIndex}`);
+            
+            // Toggle form visibility
+            formContainer.slideToggle(300);
+        });
+
+        // Add new feature for volume items
+        $(document).on('click', '.add-new-feature-btn-volume', function() {
+            const itemIndex = $(this).data('index');
+            const formContainer = $(`#newFeatureFormVolume${itemIndex}`);
+            const titleInput = formContainer.find('.new-feature-title-volume');
+            const valueInput = formContainer.find('.new-feature-value-volume');
+
+            const title = titleInput.val().trim();
+            const value = valueInput.val().trim();
+
+            if (!title) {
+                showErrorToast('Please enter a feature title');
+                return;
+            }
+
+            // Create new feature via AJAX
+            $.ajax({
+                url: "{{ route('admin.features.store') }}",
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    title: title,
+                    is_active: true
+                },
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        const featureId = response.feature.id;
+                        
+                        // Add the new feature to the volume item's feature list with value
+                        addFeatureToList(itemIndex, featureId, title, value);
+
+                        // Clear inputs
+                        titleInput.val('');
+                        valueInput.val('');
+
+                        // Hide the form
+                        formContainer.slideUp(300);
+
+                        // Reload features for all volume items
+                        loadAllVolumeItemFeatures();
+
+                        showSuccessToast('New feature added successfully');
+                    } else {
+                        showErrorToast(response.message || 'Failed to add feature');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorToast('Failed to add feature');
+                }
+            });
+        });
+
+        // Load existing master plan data if editing
+        function loadMasterPlanData() {
+            $.get('{{ route('admin.master-plan.data') }}')
+                .done(function(response) {
+                    if (response.success && response.data) {
+                        const plan = response.data;
+                        
+                        // Fill basic information with safe fallbacks
+                        $('#masterPlanExternalName').val(plan.external_name || '');
+                        $('#masterPlanInternalName').val(plan.chargebee_plan_id || plan.internal_name || '');
+                        $('#masterPlanDescription').val(plan.description || '');
+                        
+                        // Clear and add volume items
+                        $('#volumeItemsContainer').empty();
+                        volumeItemIndex = 0;
+                        
+                        if (plan.volume_items && plan.volume_items.length > 0) {
+                            plan.volume_items.forEach(function(item) {
+                                addVolumeItem(item);
+                            });
+                        } else {
+                            // Add one default tier if no volume items exist
+                            addVolumeItem();
+                        }
+                    } else {
+                        // No existing master plan, add one default tier
+                        addVolumeItem();
+                    }
+                })
+                .fail(function() {
+                    // Error loading data, add one default tier
+                    addVolumeItem();
+                });
+        }
+
+        // Clear form when modal is hidden
+        $('#masterPlanModal').on('hidden.bs.modal', function() {
+            $('#masterPlanForm')[0].reset();
+            $('#volumeItemsContainer').empty();
+            volumeItemIndex = 0;
+        });
+
+        // Load data when modal is shown
+        $('#masterPlanModal').on('show.bs.modal', function() {
+            loadMasterPlanData();
+        });
     });
 </script>
+
+<!-- Master Plan Modal -->
+<div class="modal fade" id="masterPlanModal" tabindex="-1" aria-labelledby="masterPlanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="masterPlanModalLabel">
+                    <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="masterPlanForm">
+                    <!-- Basic Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="masterPlanExternalName" class="form-label">External Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="masterPlanExternalName" required>
+                                        <small class="text-muted">This will be shown to customers</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="masterPlanInternalName" class="form-label">Internal Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="masterPlanInternalName" required>
+                                        <small class="text-muted">Used for internal references and Chargebee</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="masterPlanDescription" class="form-label">Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="masterPlanDescription" rows="3" required></textarea>
+                                <small class="text-muted">Describe the master plan features and benefits</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Volume Items -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fa-solid fa-layer-group me-2"></i>Volume Pricing Tiers</h6>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-info me-2" id="autoFixRanges">
+                                    <i class="fa-solid fa-magic"></i> Auto-Fix Ranges
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success" id="addVolumeItem">
+                                    <i class="fa-solid fa-plus"></i> Add Tier
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="volumeItemsContainer">
+                                <!-- Volume items will be added here -->
+                            </div>
+                            <div class="alert alert-info mt-3">
+                                <i class="fa-solid fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Volume pricing allows different rates based on inbox quantity. Set max_inbox to 0 for unlimited.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This plan will be created on Chargebee with volume pricing type. Only one master plan is allowed in the system.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveMasterPlan">
+                    <i class="fa-solid fa-save me-2"></i>Save Master Plan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endpush

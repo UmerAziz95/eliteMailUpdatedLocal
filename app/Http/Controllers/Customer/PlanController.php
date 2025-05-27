@@ -112,6 +112,7 @@ class PlanController extends Controller
     public function initiateSubscription(Request $request, $planId)
     {
         $plan = Plan::findOrFail($planId);
+        // dd($plan);
         try {
             $user = auth()->user();
             // get charge_customer_id from user

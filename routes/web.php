@@ -49,7 +49,6 @@ use App\Http\Controllers\NotificationController;
 // test section
 
 
-
 //logs for application
 Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
@@ -100,6 +99,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Plans routes
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
+        
+        // Master Plan routes
+        Route::get('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
+        Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
+        Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
+        Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
     
         // Features routes
         Route::get('features/list', [FeatureController::class, 'list'])->name('features.list');
