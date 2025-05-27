@@ -84,6 +84,7 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
 });
 
+Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/profile', [AdminController::class, 'pr ofile'])->name('profile');
@@ -206,7 +207,6 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     // Plans and pricing routes 
     Route::get('/plans/{id}', [CustomerPlanController::class, 'show'])->name('plans.show');
     Route::get('/plans/{id}/details', [CustomerPlanController::class, 'getPlanDetails'])->name('plans.details');
-    Route::post('/plans/{id}/subscribe', [CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
     Route::post('/plans/{id}/upgrade', [CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
     Route::post('/subscription/cancel-current', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.current.cancel');
     Route::post('/plans/update-payment-method', [CustomerPlanController::class, 'updatePaymentMethod'])->name('plans.update-payment-method');

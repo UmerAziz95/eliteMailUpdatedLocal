@@ -381,7 +381,7 @@ class AuthController extends Controller
                 $decrypted = Crypt::decryptString($request->encrypted);
                 [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
 
-                $user = User::where('email', $email)->first();
+                 $user = User::where('email', $email)->first();
 
                 if (!$user) {
                     return back()->withErrors(['email' => 'User not found.']);

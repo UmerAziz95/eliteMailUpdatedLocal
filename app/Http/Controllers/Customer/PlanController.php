@@ -23,6 +23,9 @@ use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Models\Notification;
 use App\Mail\UserWelcomeMail;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 class PlanController extends Controller
 {
     public function index()
@@ -109,12 +112,34 @@ class PlanController extends Controller
     //     }
     // }
     
-    public function initiateSubscription(Request $request, $planId)
+    public function initiateSubscription(Request $request, $planId,$encrypted=null)
     {
-        $plan = Plan::findOrFail($planId);
-        // dd($plan);
+        if(!$planId ){
+            abort(404);
+        }
+        
+       
+
+       
+
         try {
-            $user = auth()->user();
+          $plan = Plan::findOrFail($planId);
+
+            $decrypted = Crypt::decryptString($request->encrypted);
+            [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+
+            // Check if user is already logged in or fetch by email
+            $user = Auth::check() ? auth()->user() : User::where('email', $email)->first();
+
+            if (!$user) {
+                abort(404, 'User not found.');
+            }
+            $user->status=1;
+            $user->save();
+            // Login and create session
+        
+            Auth::login($user);
+          
             // get charge_customer_id from user
             $charge_customer_id = $user->chargebee_customer_id ?? null;
             if ($request->has('order_id') && $charge_customer_id == null) {

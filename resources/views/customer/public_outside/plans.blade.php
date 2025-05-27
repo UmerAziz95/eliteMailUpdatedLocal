@@ -105,11 +105,11 @@
                             @endforeach
                         </ul>
                         <div class="text-center mt-4">
-                           
+
                             <button class="btn btn-primary subscribe-btn" data-plan-id="{{ $plan->id }}">
                                 Subscribe Now
                             </button>
-                          
+
                         </div>
                     </div>
                 </div>
@@ -121,20 +121,34 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        $('.subscribe-btn').click(function() {
+    $(document).ready(function () {
+        $('.subscribe-btn').click(function () {
             const planId = $(this).data('plan-id');
-            const encrypted = @json($encrypted); // Safely converts PHP to JS
+            const encrypted = @json($encrypted);
+            const token = $('meta[name="csrf-token"]').attr('content');
 
-            // Construct the URL with or without the encrypted part
-            const url = encrypted 
-                ? `/customer/orders/new-order/${planId}/${encrypted}` 
-                : `/customer/orders/new-order/${planId}`;
+            const url =`/customer/plans/${planId}/subscribe/${encrypted}`
+                
 
-            window.location.href = url;
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token
+                },
+                success: function (response) {
+                   window.location.href = response.hosted_page_url; // optional
+                },
+                error: function (xhr) {
+                    // Handle error
+                    console.error(xhr.responseText);
+                    alert('Subscription failed. Please try again.');
+                }
+            });
         });
     });
 </script>
+
 
 @endpush
 @endsection
