@@ -754,8 +754,10 @@
                         // Close modal
                         $('#addPlan').modal('hide');
 
-                        // Refresh the page to show updated plans
-                        location.reload();
+                        // Refresh the plans section to show the new plan
+                        refreshPlansSection();
+                        
+                        showSuccessToast('Plan created successfully');
                     } else {
                         showErrorToast(response.message || 'Failed to create plan');
                         submitBtn.prop('disabled', false).html('Create Plan');
@@ -799,10 +801,10 @@
                         // Update the plan card
                         updatePlanCard(response.plan);
 
+                        // Refresh the plans section to show any changes
+                        refreshPlansSection();
+
                         showSuccessToast('Plan updated successfully');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 2000);
                     } else {
                         showErrorToast(response.message || 'Failed to update plan');
                         submitBtn.prop('disabled', false).html('Update Plan');
@@ -863,8 +865,11 @@ $(document).on('click', '.delete-plan-btn', function () {
                         $(`#plan-${planId}`).fadeOut(300, function () {
                             $(this).remove();
                         });
+                        
+                        // Refresh the plans section to ensure consistency
+                        refreshPlansSection();
+                        
                         showSuccessToast('Plan deleted successfully');
-                        location.reload();
                     } else {
                         showErrorToast(response.message || 'Failed to delete plan');
                         $btn.prop('disabled', false).html('Delete');
@@ -935,40 +940,123 @@ $(document).on('click', '.delete-plan-btn', function () {
             showErrorToast(message);
         }
 
+        // Function to update master plan display dynamically
+        function updateMasterPlanDisplay(masterPlan) {
+            const $container = $('#masterPlanContainer');
+            
+            // Add fade effect for smooth transition
+            $container.fadeOut(200, function() {
+                if (masterPlan && masterPlan.id) {
+                    const volumeItemsCount = masterPlan.volume_items ? masterPlan.volume_items.length : 0;
+                    const chargebeeStatus = masterPlan.chargebee_plan_id ? 
+                        `<span class="text-success"><i class="fa-solid fa-check-circle"></i> ${masterPlan.chargebee_plan_id}</span>` : 
+                        '<span class="text-warning"><i class="fa-solid fa-exclamation-triangle"></i> Not synced</span>';
+                    
+                    $container.html(`
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Plan Name:</strong> ${masterPlan.external_name || 'N/A'}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Chargebee Status:</strong> ${chargebeeStatus}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Volume Tiers:</strong> ${volumeItemsCount} tiers
+                            </div>
+                            <div class="col-12 mt-2">
+                                <strong>Description:</strong> ${masterPlan.description || 'N/A'}
+                            </div>
+                        </div>
+                    `);
+                    $('#createMasterPlan').text('Edit Master Plan');
+                } else {
+                    $container.html('<p class="text-muted">No master plan created yet.</p>');
+                    $('#createMasterPlan').text('Create Master Plan');
+                }
+                // Fade back in
+                $container.fadeIn(200);
+            });
+        }
+
+        // Function to refresh the simple plans section
+        function refreshPlansSection() {
+            $.get('{{ route('admin.plans.with.features') }}')
+                .done(function(plans) {
+                    // Instead of regenerating HTML, just update existing plan data if the structure hasn't changed much
+                    // For a complete refresh with modals, we'll use a partial page reload approach
+                    updateExistingPlans(plans);
+                })
+                .fail(function() {
+                    showErrorToast('Failed to refresh plans section');
+                });
+        }
+        // Update existing plan cards with new data
+        function updateExistingPlans(plans) {
+            const $container = $('#plans-container');
+            
+            // Check if we need to add/remove plans by comparing counts
+            const currentPlanCount = $container.find('.col-sm-6').length;
+            const newPlanCount = plans.filter(p => p.is_active).length;
+            
+            if (currentPlanCount !== newPlanCount) {
+                // If plan count changed, we need to reload to get proper modals
+                showSuccessToast('Plans updated - refreshing page...');
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+                return;
+            }
+
+            // Update existing plan cards
+            plans.forEach(function(plan) {
+                console.log(plan);
+                if (plan.is_active) {
+                    const $planCard = $(`#plan-${plan.id}`);
+                    if ($planCard.length > 0) {
+                        // Update plan name
+                        $planCard.find('.plan-name').text(plan.name);
+                        
+                        // Update plan price
+                        $planCard.find('.plan-price').html(
+                            `$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span>`
+                        );
+                        
+                        // Update plan description
+                        $planCard.find('.plan-description').text(plan.description);
+                        
+                        // Update inbox range
+                        const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
+                        $planCard.find('.mb-2').html(`${inboxRange} <strong>Inboxes</strong>`);
+                        
+                        // Update features
+                        const featuresHtml = plan.features.map(feature => 
+                            `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title} ${feature.pivot.value || ''}</li>`
+                        ).join('');
+                        $planCard.find('.features-list').html(featuresHtml);
+                        
+                        // Update popular status
+                        const mostlyUsedId = {{ $getMostlyUsed ? $getMostlyUsed->id : 'null' }};
+                        const isPopular = mostlyUsedId === plan.id;
+                        if (isPopular) {
+                            $planCard.find('.pricing-card').addClass('popular');
+                        } else {
+                            $planCard.find('.pricing-card').removeClass('popular');
+                        }
+                    }
+                }
+            });
+            
+            showSuccessToast('Plans section updated successfully!');
+        }
+
         // Master Plan Functions
         function loadMasterPlan() {
             $.get('{{ route('admin.master-plan.show') }}')
                 .done(function(response) {
-                    if (response && response.id) {
-                        const masterPlan = response;
-                        const volumeItemsCount = masterPlan.volume_items ? masterPlan.volume_items.length : 
-                                               (masterPlan.volumeItems ? masterPlan.volumeItems.length : 0);
-                        
-                        $('#masterPlanContainer').html(`
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Plan Name:</strong> ${masterPlan.external_name || 'N/A'}
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>Chargebee ID:</strong> ${masterPlan.chargebee_plan_id || 'Not synced'}
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>Volume Items:</strong> ${volumeItemsCount} tiers
-                                </div>
-                                <div class="col-12 mt-2">
-                                    <strong>Description:</strong> ${masterPlan.description || 'N/A'}
-                                </div>
-                            </div>
-                        `);
-                        $('#createMasterPlan').text('Edit Master Plan');
-                    } else {
-                        $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
-                        $('#createMasterPlan').text('Create Master Plan');
-                    }
+                    updateMasterPlanDisplay(response);
                 })
                 .fail(function() {
-                    $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
-                    $('#createMasterPlan').text('Create Master Plan');
+                    updateMasterPlanDisplay(null);
                 });
         }
 
@@ -1080,28 +1168,46 @@ $(document).on('click', '.delete-plan-btn', function () {
                 .done(function(response) {
                     if (response.success) {
                         $('#masterPlanModal').modal('hide');
-                        showSuccessToast('Master plan saved successfully!');
-                        // Optionally reload the page or update UI
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                        
+                        // Show different success messages based on Chargebee sync status
+                        const successMessage = response.message || 'Master plan saved successfully!';
+                        showSuccessToast(successMessage);
+                        
+                        // Update the master plan display with new data
+                        updateMasterPlanDisplay(response.data);
+                        
+                        // Refresh the simple plans section to reflect any changes
+                        setTimeout(function() {
+                            refreshPlansSection();
+                        }, 500);
+                        
+                        // Clear the form for next time
+                        $('#masterPlanForm')[0].reset();
+                        $('#volumeItemsContainer').empty();
+                        volumeItemIndex = 0;
                     } else {
-                        showErrorToast(response.message);
+                        showErrorToast(response.message || 'Failed to save master plan');
                     }
                 })
                 .fail(function(xhr) {
-                    let message = 'An error occurred while saving the master plan.';
+                    let errorMessage = 'Failed to save master plan';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
-                        message = xhr.responseJSON.message;
+                        errorMessage = xhr.responseJSON.message;
                     } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                         // Handle validation errors
                         const errors = Object.values(xhr.responseJSON.errors).flat();
-                        message = errors.join('<br>');
+                        errorMessage = errors.join('<br>');
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMessage = response.message || errorMessage;
+                        } catch (e) {
+                            // Use default error message
+                        }
                     }
-                    showErrorToast(message);
+                    showErrorToast(errorMessage);
                 })
                 .always(function() {
-                    // Re-enable button
                     button.prop('disabled', false).text('Save Master Plan');
                 });
         });
@@ -1113,7 +1219,6 @@ $(document).on('click', '.delete-plan-btn', function () {
         $('#addVolumeItem').on('click', function() {
             addVolumeItem();
         });
-
         function addVolumeItem(data = null) {
             const item = data ? {
                 name: data.name || '',

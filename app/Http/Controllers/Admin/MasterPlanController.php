@@ -18,11 +18,36 @@ class MasterPlanController extends Controller
     {
         $masterPlan = MasterPlan::getSingle();
         
-        if ($masterPlan) {
-            $masterPlan->load('volumeItems');
+        if (!$masterPlan) {
+            return response()->json(null);
         }
         
-        return response()->json($masterPlan);
+        // Load volume items with features to match the format used in store method
+        $masterPlan->load('volumeItems.features');
+        
+        // Format the response to match frontend expectations (same as store method)
+        $formattedData = [
+            'id' => $masterPlan->id,
+            'external_name' => $masterPlan->external_name,
+            'internal_name' => $masterPlan->internal_name,
+            'description' => $masterPlan->description,
+            'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
+            'volume_items' => $masterPlan->volumeItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'min_inbox' => $item->min_inbox,
+                    'max_inbox' => $item->max_inbox,
+                    'price' => $item->price,
+                    'duration' => $item->duration,
+                    'features' => $item->features->pluck('id')->toArray(),
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                ];
+            })->toArray()
+        ];
+        
+        return response()->json($formattedData);
     }    /**
      * Create or update the master plan with volume items
      */
@@ -115,18 +140,50 @@ class MasterPlanController extends Controller
                     
                     $plan->features()->attach($featureData);
                 }
-            }// Create or update on Chargebee
-            $this->syncWithChargebee($masterPlan, $volumeItems);
+            }            // Create or update on Chargebee
+            $chargebeeSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
+            
+            if (!$chargebeeSuccess) {
+                // Log warning but don't fail the operation
+                Log::warning('Master plan saved locally but Chargebee sync failed', [
+                    'master_plan_id' => $masterPlan->id
+                ]);
+                $message .= ' (Note: Chargebee synchronization failed, please try again)';
+            } else {
+                $message .= ' and synchronized with Chargebee successfully';
+            }
 
             DB::commit();
 
-            // Reload with volume items
-            $masterPlan->load('volumeItems');
+            // Reload with volume items and format response
+            $masterPlan->load('volumeItems.features');
+            
+            // Format the response to match frontend expectations
+            $formattedData = [
+                'id' => $masterPlan->id,
+                'external_name' => $masterPlan->external_name,
+                'internal_name' => $masterPlan->internal_name,
+                'description' => $masterPlan->description,
+                'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
+                'volume_items' => $masterPlan->volumeItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'description' => $item->description,
+                        'min_inbox' => $item->min_inbox,
+                        'max_inbox' => $item->max_inbox,
+                        'price' => $item->price,
+                        'duration' => $item->duration,
+                        'features' => $item->features->pluck('id')->toArray(),
+                        'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                    ];
+                })->toArray()
+            ];
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'data' => $masterPlan
+                'data' => $formattedData
             ]);
 
         } catch (\Exception $e) {
@@ -163,14 +220,59 @@ class MasterPlanController extends Controller
     private function updateChargebeePlan($masterPlan, $volumeItems)
     {
         try {
-            // For updates, we'll just log and skip ChargeBee update for now
-            // In a full implementation, you'd update the existing item and price
             Log::info('Updating existing master plan on ChargeBee: ' . $masterPlan->chargebee_plan_id);
             
-            // TODO: Implement ChargeBee item and price update logic here
-            // For now, just skip to avoid duplicate errors
+            // Update the item in ChargeBee
+            $itemResult = \ChargeBee\ChargeBee\Models\Item::update($masterPlan->chargebee_plan_id, [
+                'name' => $masterPlan->external_name,
+                'description' => $masterPlan->description,
+                'status' => 'active'
+            ]);
+
+            if (!$itemResult || !$itemResult->item()) {
+                throw new \Exception('Failed to update item in ChargeBee');
+            }
+
+            // Find and update the existing price with new volume tiers
+            $priceId = $masterPlan->chargebee_plan_id . '_price';
             
-            return true;
+            // Prepare new tiers for volume pricing
+            $tiers = [];
+            foreach ($volumeItems as $index => $item) {
+                $tier = [
+                    'starting_unit' => (int)$item['min_inbox'],
+                    'price' => (int)($item['price'] * 100) // Convert to cents
+                ];
+                
+                // For unlimited tiers (max_inbox = 0), don't include ending_unit
+                // For limited tiers, include ending_unit as integer
+                if ($item['max_inbox'] > 0) {
+                    $tier['ending_unit'] = (int)$item['max_inbox'];
+                }
+                
+                $tiers[] = $tier;
+            }
+
+            // Update the price with new tiers
+            $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::update($priceId, [
+                'name' => $masterPlan->external_name . ' Volume Price',
+                'tiers' => $tiers,
+                'status' => 'active'
+            ]);
+
+            if ($priceResult && $priceResult->itemPrice()) {
+                // Update volume items (plans) with the updated ChargeBee price ID
+                $masterPlan->volumeItems()->update([
+                    'chargebee_plan_id' => $priceResult->itemPrice()->id,
+                    'is_chargebee_synced' => true
+                ]);
+                
+                Log::info('Master plan updated successfully on Chargebee: ' . $masterPlan->chargebee_plan_id);
+                Log::info('Volume items updated with ChargeBee price ID: ' . $priceResult->itemPrice()->id);
+                return true;
+            }
+
+            throw new \Exception('Failed to update price in ChargeBee');
 
         } catch (\ChargeBee\ChargeBee\Exceptions\APIError $e) {
             Log::error('ChargeBee API Error (update): ' . $e->getMessage());
@@ -235,7 +337,10 @@ class MasterPlanController extends Controller
                     
                     // Update volume items (plans) with ChargeBee price ID  
                     $priceId = $priceResult->itemPrice()->id;
-                    $masterPlan->volumeItems()->update(['chargebee_plan_id' => $priceId]);
+                    $masterPlan->volumeItems()->update([
+                        'chargebee_plan_id' => $priceId,
+                        'is_chargebee_synced' => true
+                    ]);
                     
                     Log::info('Master plan created successfully on Chargebee: ' . $result->item()->id);
                     Log::info('Volume items updated with ChargeBee price ID: ' . $priceId);
@@ -275,7 +380,9 @@ class MasterPlanController extends Controller
                     'price' => $item->price,
                     'duration' => $item->duration,
                     'features' => $item->features->pluck('id')->toArray(),
-                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray(),
+                    'chargebee_synced' => !empty($item->chargebee_plan_id),
+                    'chargebee_plan_id' => $item->chargebee_plan_id
                 ];
             });
 
@@ -304,5 +411,126 @@ class MasterPlanController extends Controller
     public function exists()
     {
         return response()->json(['exists' => MasterPlan::exists()]);
+    }
+
+    /**
+     * Handle Chargebee webhook for master plan and volume tier updates
+     */
+    public function handleChargebeeWebhook(Request $request)
+    {
+        try {
+            $eventData = $request->all();
+            $eventType = $eventData['event_type'] ?? '';
+
+            Log::info('Chargebee webhook received', [
+                'event_type' => $eventType,
+                'event_id' => $eventData['id'] ?? null
+            ]);
+
+            switch ($eventType) {
+                case 'item_price_updated':
+                case 'item_price_created':
+                    $this->handleVolumeTierUpdate($eventData);
+                    break;
+                case 'item_updated':
+                case 'item_created':
+                    $this->handleMasterPlanUpdate($eventData);
+                    break;
+                default:
+                    Log::info('Unhandled webhook event type: ' . $eventType);
+            }
+
+            return response()->json(['status' => 'success']);
+
+        } catch (\Exception $e) {
+            Log::error('Chargebee webhook processing error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Handle master plan updates from Chargebee
+     */
+    private function handleMasterPlanUpdate($eventData)
+    {
+        $item = $eventData['content']['item'] ?? null;
+        if (!$item) return;
+
+        $chargebeeId = $item['id'];
+        $masterPlan = MasterPlan::where('chargebee_plan_id', $chargebeeId)->first();
+        
+        if ($masterPlan) {
+            $masterPlan->update([
+                'external_name' => $item['name'] ?? $masterPlan->external_name,
+                'description' => $item['description'] ?? $masterPlan->description
+            ]);
+            
+            Log::info('Master plan updated from Chargebee', ['plan_id' => $masterPlan->id]);
+        }
+    }
+
+    /**
+     * Handle volume tier updates from Chargebee
+     */
+    private function handleVolumeTierUpdate($eventData)
+    {
+        $itemPrice = $eventData['content']['item_price'] ?? null;
+        if (!$itemPrice) return;
+
+        $chargebeePriceId = $itemPrice['id'];
+        $volumeItems = Plan::where('chargebee_plan_id', $chargebeePriceId)->get();
+        
+        foreach ($volumeItems as $item) {
+            // Update pricing information if needed
+            $tiers = $itemPrice['tiers'] ?? [];
+            // Process tier updates based on Chargebee data
+            
+            Log::info('Volume tier updated from Chargebee', ['item_id' => $item->id]);
+        }
+    }
+
+    /**
+     * Force sync master plan with Chargebee
+     */
+    public function forceSync()
+    {
+        try {
+            $masterPlan = MasterPlan::getSingle();
+            if (!$masterPlan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No master plan found to sync'
+                ]);
+            }
+
+            $volumeItems = $masterPlan->volumeItems->map(function($item) {
+                return [
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'min_inbox' => $item->min_inbox,
+                    'max_inbox' => $item->max_inbox,
+                    'price' => $item->price,
+                    'duration' => $item->duration,
+                    'features' => $item->features->pluck('id')->toArray(),
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                ];
+            })->toArray();
+
+            $syncSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
+
+            return response()->json([
+                'success' => $syncSuccess,
+                'message' => $syncSuccess ? 
+                    'Master plan synchronized with Chargebee successfully' : 
+                    'Failed to synchronize with Chargebee'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Force sync error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
