@@ -33,7 +33,7 @@
                     <div class="text">Orders</div>
                 </div>
         </button>
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
+       
         @php
         $allowedItems = ['Plans', 'Orders', 'Subscriptions', 'Invoices'];
         @endphp
@@ -55,7 +55,7 @@
             @endif
             @endforeach
         </div>
-
+      <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
         @php
         $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices'];

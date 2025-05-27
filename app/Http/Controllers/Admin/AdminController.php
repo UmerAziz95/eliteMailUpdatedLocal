@@ -286,28 +286,47 @@ class AdminController extends Controller
         return response()->json($user); // Used to populate the form
     }
 
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
+   public function update(Request $request, $id)
+{
+    $user = User::findOrFail($id);
 
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => 'nullable|min:6|confirmed',
-            'status' => 'required|in:0,1',
-        ]);
+    $validated = $request->validate([
+        'full_name' => 'required|string|max:255',
+        'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+        'password' => 'nullable|string|min:6|confirmed',
+        'status' => 'required|in:0,1',
+        'role_id' => 'required|exists:roles,id',
+    ]);
 
-        $user->name = $validated['full_name'];
-        $user->email = $validated['email'];
-        $user->status = $validated['status'];
-        if (!empty($validated['password'])) {
-            $user->password = Hash::make($validated['password']);
-        }
+    $user->name = $validated['full_name'];
+    $user->email = $validated['email'];
+    $user->status = $validated['status'];
 
-        $user->save();
-
-        return response()->json(['message' => 'User updated successfully']);
+    if (!empty($validated['password'])) {
+        $user->password = Hash::make($validated['password']);
     }
+
+    $user->save();
+
+    // Update role (remove all and assign new)
+    $newRole = Role::findById($validated['role_id']);
+    if ($newRole) {
+        $user->syncRoles([$newRole->name]); // remove existing and assign new
+
+        ActivityLogService::log(
+            'role_updated',
+            'User role updated',
+            $user,
+            [
+                'new_role' => $newRole->name,
+                'assigned_by' => Auth::id()
+            ],
+            Auth::id()
+        );
+    }
+
+    return response()->json(['message' => 'User updated successfully']);
+}
 
 
 

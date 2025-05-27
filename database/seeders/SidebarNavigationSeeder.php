@@ -124,5 +124,13 @@ class SidebarNavigationSeeder extends Seeder
                 ]
             );
         }
+          DB::table('permissions')->updateOrInsert(
+              [
+                    'name' =>"Mod",
+                    'guard_name' => 'web',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]
+            );
     }
 }

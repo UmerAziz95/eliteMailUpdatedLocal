@@ -74,6 +74,12 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
 Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
+//verfiy email address
+Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
+Route::post('/verify-email', [AuthController::class, 'VerifyEmailNow'])->name('verify.email.code');
+//public plans
+Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
+
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
@@ -81,12 +87,13 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
 
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
+    Route::get('/profile', [AdminController::class, 'pr ofile'])->name('profile');
+    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
        Route::middleware('view.only')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
         
-        Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
-        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         //create admin 
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
@@ -171,10 +178,10 @@ Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::cl
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 
+Route::get('/customer/orders/new-order/{id}/{encrypted?}', [CustomerOrderController::class, 'newOrder'])->name('customer.orders.new.order');
 Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [CustomerPlanController::class, 'index'])->name('pricing');
     Route::get('/dashboard', [App\Http\Controllers\Customer\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/orders/new-order/{id}', [CustomerOrderController::class, 'newOrder'])->name('orders.new.order');
     Route::get('/orders/reorder/{order_id}', [CustomerOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/reorder', [CustomerOrderController::class, 'store'])->name('orders.reorder.store');
     Route::get('/orders/{id}/view', [CustomerOrderController::class, 'view'])->name('orders.view');
@@ -217,7 +224,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'download'])->name('invoices.download');
     Route::get('/invoices/{invoiceId}', [CustomerInvoiceController::class, 'show'])->name('invoices.show');
 
-    // Order Email routes
+    // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
