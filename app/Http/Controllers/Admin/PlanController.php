@@ -569,7 +569,12 @@ public function store(Request $request)
     
     public function getPlansWithFeatures()
     {
-        $plans = Plan::with('features')->get();
-        return response()->json($plans);
+        $plans = Plan::with('features')->where('is_active', 1)->get();
+        $mostlyUsed = Plan::getMostlyUsed();
+        
+        return response()->json([
+            'plans' => $plans,
+            'mostlyUsed' => $mostlyUsed
+        ]);
     }
 }

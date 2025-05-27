@@ -96,6 +96,44 @@
         max-height: 200px;
         overflow-y: auto;
     }
+
+    .plan-updated {
+        animation: planUpdate 0.5s ease-in-out;
+    }
+
+    @keyframes planUpdate {
+        0% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+        50% {
+            transform: scale(1.02);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+        100% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+    }
+
+    #refresh-loading {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes planUpdate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); box-shadow: 0 8px 25px rgba(167, 124, 252, 0.3); }
+        100% { transform: scale(1); }
+    }
 </style>
 @endpush
 
@@ -727,7 +765,6 @@
                 featuresList.append('<li class="mb-2 text-muted">No features added yet</li>');
             }
         }
-
         // Submit new plan form
         $('#addPlanForm').submit(function(e) {
             e.preventDefault();
@@ -743,7 +780,6 @@
                     if (response.success) {
                         // Refresh features dropdown before closing modal
                         loadFeatures();
-
                         // Clear the form
                         $('#addPlanForm').trigger('reset');
                         $('#newPlanFeatures').empty();
@@ -980,73 +1016,192 @@ $(document).on('click', '.delete-plan-btn', function () {
 
         // Function to refresh the simple plans section
         function refreshPlansSection() {
+            console.log('Refreshing plans section...');
+            
+            // Add loading indicator
+            const plansContainer = $('#plans-container');
+            const originalContent = plansContainer.html();
+            
+            // Show loading state
+            plansContainer.append('<div id="refresh-loading" class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Updating plans...</div>');
+            
             $.get('{{ route('admin.plans.with.features') }}')
-                .done(function(plans) {
-                    // Instead of regenerating HTML, just update existing plan data if the structure hasn't changed much
-                    // For a complete refresh with modals, we'll use a partial page reload approach
-                    updateExistingPlans(plans);
+                .done(function(response) {
+                    console.log('Received response:', response);
+                    
+                    // Handle both old format (direct plans array) and new format (object with plans and mostlyUsed)
+                    const plans = response.plans || response;
+                    const mostlyUsed = response.mostlyUsed || null;
+                    
+                    console.log('Received plans data:', plans);
+                    console.log('Most popular plan:', mostlyUsed);
+                    
+                    // Remove loading indicator
+                    $('#refresh-loading').remove();
+                    
+                    // Check if plan count changed or if we have new plans
+                    const currentPlanCount = $('#plans-container .col-sm-6').length;
+                    const newPlanCount = plans.length;
+                    
+                    console.log(`Current plan count: ${currentPlanCount}, New plan count: ${newPlanCount}`);
+                    
+                    // Handle plan count changes dynamically
+                    if (currentPlanCount !== newPlanCount) {
+                        console.log('Plan count changed, rebuilding plans section...');
+                        rebuildPlansSection(plans, mostlyUsed);
+                        return;
+                    }
+                    
+                    // Update existing plan cards with new data
+                    updateExistingPlans(plans, mostlyUsed);
                 })
-                .fail(function() {
+                .fail(function(xhr) {
+                    console.error('Failed to refresh plans section:', xhr);
+                    $('#refresh-loading').remove();
                     showErrorToast('Failed to refresh plans section');
                 });
         }
         // Update existing plan cards with new data
-        function updateExistingPlans(plans) {
-            const $container = $('#plans-container');
+        function updateExistingPlans(plans, mostlyUsed = null) {
+            console.log('Updating existing plans:', plans);
+            console.log('Most popular plan:', mostlyUsed);
             
-            // Check if we need to add/remove plans by comparing counts
-            const currentPlanCount = $container.find('.col-sm-6').length;
-            const newPlanCount = plans.filter(p => p.is_active).length;
+            // Get current plan IDs on the page
+            const currentPlanIds = [];
+            $('#plans-container .col-sm-6').each(function() {
+                const planId = $(this).attr('id').replace('plan-', '');
+                currentPlanIds.push(parseInt(planId));
+            });
             
-            if (currentPlanCount !== newPlanCount) {
-                // If plan count changed, we need to reload to get proper modals
-                showSuccessToast('Plans updated - refreshing page...');
-                setTimeout(function() {
-                    location.reload();
-                }, 1000);
+            // Get new plan IDs from API
+            const newPlanIds = plans.map(plan => plan.id);
+            
+            console.log('Current plan IDs:', currentPlanIds);
+            console.log('New plan IDs:', newPlanIds);
+            
+            // Check if we have new plans or removed plans
+            const hasNewPlans = newPlanIds.some(id => !currentPlanIds.includes(id));
+            const hasRemovedPlans = currentPlanIds.some(id => !newPlanIds.includes(id));
+            
+            if (hasNewPlans || hasRemovedPlans) {
+                console.log('Plan structure changed, rebuilding plans section...');
+                rebuildPlansSection(plans, mostlyUsed);
                 return;
             }
-
+            
             // Update existing plan cards
             plans.forEach(function(plan) {
-                console.log(plan);
-                if (plan.is_active) {
-                    const $planCard = $(`#plan-${plan.id}`);
-                    if ($planCard.length > 0) {
-                        // Update plan name
-                        $planCard.find('.plan-name').text(plan.name);
-                        
-                        // Update plan price
-                        $planCard.find('.plan-price').html(
-                            `$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span>`
-                        );
-                        
-                        // Update plan description
-                        $planCard.find('.plan-description').text(plan.description);
-                        
-                        // Update inbox range
-                        const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
-                        $planCard.find('.mb-2').html(`${inboxRange} <strong>Inboxes</strong>`);
-                        
-                        // Update features
-                        const featuresHtml = plan.features.map(feature => 
-                            `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title} ${feature.pivot.value || ''}</li>`
-                        ).join('');
-                        $planCard.find('.features-list').html(featuresHtml);
-                        
-                        // Update popular status
-                        const mostlyUsedId = {{ $getMostlyUsed ? $getMostlyUsed->id : 'null' }};
-                        const isPopular = mostlyUsedId === plan.id;
-                        if (isPopular) {
-                            $planCard.find('.pricing-card').addClass('popular');
-                        } else {
-                            $planCard.find('.pricing-card').removeClass('popular');
-                        }
+                console.log('Updating plan:', plan);
+                const $planCard = $(`#plan-${plan.id}`);
+                if ($planCard.length > 0) {
+                    console.log('Found plan card for plan ID:', plan.id);
+                    
+                    // Update plan name
+                    $planCard.find('.plan-name').text(plan.name);
+                    
+                    // Update plan price
+                    $planCard.find('.plan-price').html(
+                        `$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span>`
+                    );
+                    
+                    // Update plan description
+                    $planCard.find('.plan-description').text(plan.description);
+                    
+                    // Update inbox range - fix selector to match actual HTML structure
+                    const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
+                    $planCard.find('.mb-2').html(`${inboxRange} <strong>Inboxes</strong>`);
+                    
+                    // Update features
+                    let featuresHtml = '';
+                    if (plan.features && plan.features.length > 0) {
+                        featuresHtml = plan.features.map(feature => {
+                            const featureValue = feature.pivot && feature.pivot.value ? ' ' + feature.pivot.value : '';
+                            return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                        }).join('');
+                    } else {
+                        featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
                     }
+                    $planCard.find('.features-list').html(featuresHtml);
+                    
+                    // Update popular status using dynamic mostlyUsed data
+                    const mostlyUsedId = mostlyUsed ? mostlyUsed.id : null;
+                    const isPopular = mostlyUsedId === plan.id;
+                    
+                    console.log(`Plan ${plan.id}: mostlyUsedId=${mostlyUsedId}, isPopular=${isPopular}`);
+                    
+                    if (isPopular) {
+                        $planCard.find('.pricing-card').addClass('popular');
+                        console.log(`Added 'popular' class to plan ${plan.id}`);
+                    } else {
+                        $planCard.find('.pricing-card').removeClass('popular');
+                        console.log(`Removed 'popular' class from plan ${plan.id}`);
+                    }
+                    
+                    // Add subtle animation to show the card was updated
+                    $planCard.addClass('plan-updated');
+                    setTimeout(function() {
+                        $planCard.removeClass('plan-updated');
+                    }, 2000);
+                } else {
+                    console.log('Plan card not found for plan ID:', plan.id);
                 }
             });
             
-            showSuccessToast('Plans section updated successfully!');
+            console.log('Plans update completed successfully');
+            showSuccessToast('Plans updated successfully!');
+        }
+
+        // Rebuild plans section when plan count changes
+        function rebuildPlansSection(plans, mostlyUsed = null) {
+            console.log('Rebuilding plans section with new data:', plans);
+            console.log('Most popular plan data:', mostlyUsed);
+            
+            const plansContainer = $('#plans-container');
+            const mostlyUsedId = mostlyUsed ? mostlyUsed.id : null;
+            
+            // Build new HTML for all plans
+            let plansHtml = '';
+            
+            plans.forEach(function(plan) {
+                const isPopular = mostlyUsedId === plan.id;
+                const popularClass = isPopular ? 'popular' : '';
+                const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
+                
+                let featuresHtml = '';
+                if (plan.features && plan.features.length > 0) {
+                    featuresHtml = plan.features.map(feature => {
+                        const featureValue = feature.pivot && feature.pivot.value ? ' ' + feature.pivot.value : '';
+                        return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                    }).join('');
+                } else {
+                    featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
+                }
+                
+                plansHtml += `
+                <div class="col-sm-6 col-lg-4 mb-5" id="plan-${plan.id}">
+                    <div class="pricing-card d-flex flex-column justify-content-between ${popularClass}">
+                        <div>
+                            <h4 class="fw-bold plan-name text-capitalize fs-5">${plan.name}</h4>
+                            <h2 class="fw-bold plan-price fs-3">$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span></h2>
+                            <p class="plan-description text-capitalize">${plan.description}</p>
+                            <hr>
+                            <div class="mb-2">
+                                ${inboxRange} <strong>Inboxes</strong>
+                            </div>
+                            <ul class="list-unstyled features-list">
+                                ${featuresHtml}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            // Fade out, replace content, then fade in
+            plansContainer.fadeOut(300, function() {
+                plansContainer.html(plansHtml);
+                plansContainer.fadeIn(300);
+                showSuccessToast('Plans section rebuilt successfully!');
+            });
         }
 
         // Master Plan Functions
@@ -1178,6 +1333,7 @@ $(document).on('click', '.delete-plan-btn', function () {
                         
                         // Refresh the simple plans section to reflect any changes
                         setTimeout(function() {
+                            console.log('Master plan saved, refreshing plans section...');
                             refreshPlansSection();
                         }, 500);
                         
