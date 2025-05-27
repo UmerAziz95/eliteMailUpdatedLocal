@@ -12,7 +12,10 @@
                     <th>Role</th>
                     <th>Permissions</th>
                     <th>Created at</th>
+                    @if (!auth()->user()->hasPermissionTo('Mod')) {
                     <th>Action</th>
+                    }
+                    @endif
 
                 </tr>
             </thead>

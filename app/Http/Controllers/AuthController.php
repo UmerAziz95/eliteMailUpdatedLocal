@@ -10,9 +10,13 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserWelcomeMail;
+use App\Mail\EmailVerificationMail;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
 use ChargeBee\ChargeBee\Models\Customer;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
+use App\Models\Plan;
 class AuthController extends Controller
 {
     // testAdmin
@@ -194,6 +198,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role_id' => $data['role'],
+            'status'=>0
             // 'phone' => $data['phone'],
         ]);
         
@@ -236,16 +241,36 @@ class AuthController extends Controller
             $user->id // Performed by
         );
     
+        //send email verification code now 
+        // Generate 4-digit random code
+    $verificationCode = rand(1000, 9999);
+
+    // Store the code in the user table
+    $user->email_verification_code = $verificationCode;
+    $user->save();
+
+       // Create encrypted payload
+       $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+       $encrypted = Crypt::encryptString($payload);
+
+         // Create the full verification link
+         $verificationLink = url('/email_verification/' . $encrypted);
+        try {
+            Mail::to($user->email)->queue(new EmailVerificationMail($user,$verificationLink));
+        } catch (\Exception $e) {
+            Log::error('Failed to send email verification code to : '.$user->email . $e->getMessage());
+        }
+        //send welcome mail
         try {
             Mail::to($user->email)->queue(new UserWelcomeMail($user));
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email: ' . $e->getMessage());
         }
     
-        Auth::login($user);
+        //Auth::login($user);
     
         return response()->json([
-            'message' => 'User registered successfully!',
+            'message' => 'User registered successfully! We have sent you a verification email please verify you email address for smooth login.',
             'redirect' => $this->redirectTo($user),
             'user' => $user,
         ], 200);
@@ -332,4 +357,63 @@ class AuthController extends Controller
             'message' => 'Password changed successfully'
         ]);
     }
+
+    public function showVerifyEmailForm(Request $request,$encrypted){
+
+       return view('modules.auth.verify_email', [
+            'encrypted' => $encrypted
+        ]);
+    }
+
+   // Handle the form submission and verification
+        public function VerifyEmailNow(Request $request)
+        {
+            $request->validate([
+                'code' => 'required|array',
+                'encrypted' => 'required|string'
+            ]);
+            if(!$request->encrypted){
+                abort(404); 
+            }
+
+            try {
+                
+                $decrypted = Crypt::decryptString($request->encrypted);
+                [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+
+                $user = User::where('email', $email)->first();
+
+                if (!$user) {
+                    return back()->withErrors(['email' => 'User not found.']);
+                }
+
+                $inputCode = implode('', $request->code);
+
+                if ($inputCode !== $expectedCode || $inputCode !== $user->email_verification_code) {
+                    return back()->withErrors(['code' => 'Invalid verification code.']);
+                }
+
+                // Mark user as verified
+                $user->email_verified_at = now();
+                $user->email_verification_code = null;
+                $user->save();
+                $encryptedData=$request->encrypted;
+                
+
+            return redirect()->to('/plans/public/' . $encryptedData)
+                 ->with('success', 'Your email has been verified!');
+            } catch (\Exception $e) { 
+                Log::error('Failed to verify email: ' . $e->getMessage());
+                return back()->withErrors(['error' => 'Verification failed.'. $e->getMessage()]);
+            }
+        }
+
+
+        public function viewPublicPlans(Request $request,$encrypted){
+         
+            $getMostlyUsed = Plan::getMostlyUsed();
+            $plans = Plan::with('features')->where('is_active', true)->get();
+            $publicPage=true;
+            return view('customer.public_outside.plans', compact('plans', 'getMostlyUsed','publicPage','encrypted'));
+        }
 }

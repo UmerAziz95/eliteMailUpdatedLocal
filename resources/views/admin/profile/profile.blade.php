@@ -135,7 +135,7 @@
                         <li class="d-flex align-items-center mb-4">
                             <i class="ti ti-crown opacity-100"></i>
                             <span class="fw-semibold mx-2 opacity-100">Role:</span>
-                            <span>{{Auth::user()->role->name}}</span>
+                            <span>{{Auth::user()->getRoleNames()[0] ?? '';}}</span>
                         </li>
                         {{-- <li class="d-flex align-items-center mb-4">
                             <i class="ti ti-flag"></i>

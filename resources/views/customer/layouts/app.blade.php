@@ -54,19 +54,23 @@
 <body>
 
     <div class="d-flex w-100 h-100 overflow-hidden">
+         @unless($publicPage ?? false)
         <div>
             @include('customer.layouts.sidebar')
-            <!-- Include Sidebar -->
         </div>
-
+    @endunless
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
+            @unless($publicPage ?? false)
                 @include('customer.layouts.header')
+            @endunless
                 <!-- Include Header -->
                 @yield('content')
                 <!-- Main Page Content -->
             </div>
+            @unless($publicPage ?? false)
             @include('customer.layouts.footer')
+        @endunless
             <!-- Include Footer (Optional) -->
         </div>
     </div>

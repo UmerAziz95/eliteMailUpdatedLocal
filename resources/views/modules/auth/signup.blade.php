@@ -215,8 +215,9 @@
                 data: $(this).serialize(),
                 success: function(response) {
                     toastr.success('Registration successful! Redirecting...', 'Success');
-                    console.log(response);
-                    setTimeout(() => window.location.href = response.redirect, 2000);
+                    toastr.info(response.message || "We have send you a verification email please verify your email address for smooth login.thanks")
+                  
+                   // setTimeout(() => window.location.href = response.redirect, 2000);
                 },
                 error: function(xhr) {
                     submitBtn.prop("disabled", false).text("Register");

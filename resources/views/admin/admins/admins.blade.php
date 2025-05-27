@@ -210,12 +210,7 @@
 <script>
     // Debug AJAX calls  
     $(document).ajaxSend(function(event, jqXHR, settings) {
-        console.log('AJAX Request:', {
-            url: settings.url,
-            type: settings.type,
-            data: settings.data,
-            headers: jqXHR.headers
-        });
+
     });
 
 
@@ -245,12 +240,12 @@
     
 
 function initDataTable(planId = '') {
-    console.log('Initializing DataTable for planId:', planId);
+ 
     const tableId = '#myTable';
     const $table = $(tableId);
 
     if (!$table.length) {
-        console.error('Table not found with selector:', tableId);
+    
         return null;
     }
 
@@ -275,13 +270,10 @@ function initDataTable(planId = '') {
                 d.status = $('#status_filter').val();
             },
             dataSrc: function(json) {
-                console.log('Server response:', json);
+              
                 return json.data;
             },
             error: function(xhr, error, thrown) {
-                console.error('DataTables error:', error);
-                console.error('Server response:', xhr.responseText);
-
                 if (xhr.status === 401) {
                     window.location.href = "{{ route('login') }}";
                 } else if (xhr.status === 403) {
@@ -340,7 +332,6 @@ function initDataTable(planId = '') {
             this.api().responsive?.recalc();
         },
         initComplete: function() {
-    console.log('Table initialization complete');
     this.api().columns.adjust();
     this.api().responsive?.recalc();
 
@@ -379,7 +370,7 @@ function initDataTable(planId = '') {
 
     return table;
 } catch (error) {
-    console.error('Error initializing DataTable:', error);
+   
     toastr.error('Error initializing table. Please refresh the page.');
 }
 
@@ -387,7 +378,7 @@ function initDataTable(planId = '') {
 
     $(document).ready(function() {
         try {
-            console.log('Document ready, initializing tables');
+           
             window.orderTables = {};
             // Initialize table for all Subscriptions
             window.orderTables.all = initDataTable();
@@ -395,7 +386,7 @@ function initDataTable(planId = '') {
             // Handle tab changes
             $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
                 const tabId = $(e.target).attr('id');
-                console.log('Tab changed to:', tabId);
+               
                 
                 // Force recalculation of column widths for visible tables
                 setTimeout(function() {
@@ -403,7 +394,7 @@ function initDataTable(planId = '') {
                         if ($(table.table().node()).is(':visible')) {
                             table.columns.adjust();
                             table.responsive.recalc();
-                            console.log('Adjusting columns for table:', table.table().node().id);
+                            
                         }
                     });
                 }, 10);
@@ -415,13 +406,13 @@ function initDataTable(planId = '') {
                 if (activeTable) {
                     activeTable.columns.adjust();
                     activeTable.responsive.recalc();
-                    console.log('Initial column adjustment for active table');
+                    
                 }
             }, 10);
 
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {
-                console.error('AJAX Error:', error);
+              
                 if (xhr.status === 401) {
                     window.location.href = "{{ route('login') }}";
                 } else if (xhr.status === 403) {
@@ -429,7 +420,7 @@ function initDataTable(planId = '') {
                 }
             });
         } catch (error) {
-            console.error('Error in document ready:', error);
+            
         }
     });
 </script>
@@ -526,12 +517,12 @@ function initDataTable(planId = '') {
             url: "{{ url('admin/') }}/" + userId + "/edit",
             method: "GET",
             success: function (data) {
-                console.log(data);
                 // Populate the form fields
                 $('#user_id').val(data.id);
                 $('#full_name').val(data.name);
                 $('#email').val(data.email);
                 $('#status').val(data.status);
+                $('#role').val(data?.roles[0]?.id ?? '');
 
                 // Do not set password fields for editing
 
@@ -545,8 +536,8 @@ function initDataTable(planId = '') {
             }
         });
     });
-</script>
-<script>
+    </script>
+    <script>
     $(document).on('click', '.delete-btn', function (e) {
     e.preventDefault();
     let userId = $(this).data('id');
@@ -570,14 +561,14 @@ function initDataTable(planId = '') {
         });
     }
 });
-</script>
+    </script>
 
-<script>
-    $(document).ready(function() {
-        $('#permissions').select2({
-            placeholder: 'Select permissions',
-            width: '100%'
+    <script>
+        $(document).ready(function() {
+            $('#permissions').select2({
+                placeholder: 'Select permissions',
+                width: '100%'
+            });
         });
-    });
-</script>
+    </script>
 @endpush
