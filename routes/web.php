@@ -76,6 +76,9 @@ Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPerm
 //verfiy email address
 Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
 Route::post('/verify-email', [AuthController::class, 'VerifyEmailNow'])->name('verify.email.code');
+Route::get('/onboarding/{encrypted}', [AuthController::class, 'companyOnBoarding'])->name('company.onboarding');
+Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore'])->name('company.onboarding.store');
+
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
 
