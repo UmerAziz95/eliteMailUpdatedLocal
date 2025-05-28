@@ -192,7 +192,8 @@ class MasterPlanController extends Controller
                     
                     $plan->features()->attach($featureData);
                 }
-            }            // Create or update on Chargebee
+            }            
+            // Create or update on Chargebee
             $chargebeeSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
             
             if (!$chargebeeSuccess) {
@@ -339,7 +340,8 @@ class MasterPlanController extends Controller
      * Create plan on Chargebee with volume pricing and tiers
      */
     private function createChargebeePlan($masterPlan, $volumeItems)
-    {        try {
+    {        
+        try {
             // Generate unique ID for the master plan - include random string to ensure uniqueness
             $uniqueId = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $masterPlan->external_name)) . '_' . time() . '_' . uniqid();
 
@@ -369,7 +371,8 @@ class MasterPlanController extends Controller
                     }
                     
                     $tiers[] = $tier;
-                }                // Create item price for the master plan with volume pricing and tiers
+                }                
+                // Create item price for the master plan with volume pricing and tiers
                 $priceParams = [
                     'id' => $uniqueId . '_price',
                     'name' => $masterPlan->external_name . ' Volume Price',
