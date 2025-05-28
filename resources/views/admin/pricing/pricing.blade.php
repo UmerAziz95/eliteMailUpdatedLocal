@@ -975,7 +975,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             // For simplicity, using error toast for warnings
             showErrorToast(message);
         }
-
+        // autofixing volume tier plan range start like [10-20, 0-9, 21-0] don't miss the range same functionality perform like chagebee side handle not skip range
         // Function to update master plan display dynamically
         function updateMasterPlanDisplay(masterPlan) {
             const $container = $('#masterPlanContainer');
@@ -1110,7 +1110,6 @@ $(document).on('click', '.delete-plan-btn', function () {
                     // Update inbox range - fix selector to match actual HTML structure
                     const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
                     $planCard.find('.mb-2').html(`${inboxRange} <strong>Inboxes</strong>`);
-                    
                     // Update features
                     let featuresHtml = '';
                     if (plan.features && plan.features.length > 0) {
@@ -1255,7 +1254,7 @@ $(document).on('click', '.delete-plan-btn', function () {
                 return;
             }
 
-            // Validate each volume item for valid data
+            // Validate each volume item for valid data and ranges
             for (let i = 0; i < formData.volume_items.length; i++) {
                 const item = formData.volume_items[i];
                 
@@ -1273,6 +1272,13 @@ $(document).on('click', '.delete-plan-btn', function () {
                     return;
                 }
                 
+                // Check range validity: min should not be greater than max (unless max is 0 for unlimited)
+                if (item.max_inbox !== 0 && item.min_inbox > item.max_inbox) {
+                    showErrorToast(`Invalid range in tier ${i + 1}: Min inboxes (${item.min_inbox}) cannot be greater than max inboxes (${item.max_inbox}). Set max to 0 for unlimited or adjust the values.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
                 // Check for empty required fields
                 if (!item.name || !item.name.trim()) {
                     showErrorToast(`Tier ${i + 1} name is required.`);
@@ -1281,38 +1287,99 @@ $(document).on('click', '.delete-plan-btn', function () {
                 }
             }
 
-            // Validate and fix range sequences
+            // Enhanced volume tier range validation and gap detection
             const sortedItems = formData.volume_items.sort((a, b) => a.min_inbox - b.min_inbox);
             
-            // Validate range continuity and fix gaps
+            // Volume tier range validation
+            // Ensure at least one tier exists
+            if (sortedItems.length === 0) {
+                showErrorToast('At least one volume tier is required.');
+                button.prop('disabled', false).text('Save Master Plan');
+                return;
+            }
+            
+            // Ensure first tier starts from 1 or higher (1-based ranges)
+            const firstTier = sortedItems[0];
+            if (firstTier.min_inbox < 1) {
+                showErrorToast(`First tier must start from 1 or higher for proper ranges. Currently starts at ${firstTier.min_inbox}.`);
+                button.prop('disabled', false).text('Save Master Plan');
+                return;
+            }
+            
+            // If first tier doesn't start from 0, add a note for ChargeBee compatibility
+            if (firstTier.min_inbox > 1) {
+                console.warn(`⚠️ Note: First tier starts at ${firstTier.min_inbox}, not 1. Consider using Auto-Fix to ensure continuous ranges.`);
+            }
+            
             for (let i = 0; i < sortedItems.length; i++) {
                 const current = sortedItems[i];
                 const next = sortedItems[i + 1];
+                const tierNumber = i + 1;
                 
-                // Validate current tier
-                if (current.min_inbox < 0 || (current.max_inbox < current.min_inbox && current.max_inbox !== 0)) {
-                    showErrorToast(`Invalid range in tier ${i + 1}: min_inbox cannot be greater than max_inbox`);
+                // Basic validation
+                if (current.min_inbox < 0) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Min inboxes cannot be negative, got ${current.min_inbox}.`);
                     button.prop('disabled', false).text('Save Master Plan');
                     return;
                 }
                 
-                // Check for gaps or overlaps with next tier
-                if (next) {
-                    if (current.max_inbox === 0) {
-                        showErrorToast(`Tier ${i + 1} has unlimited range (max_inbox = 0) but is not the last tier. Only the last tier can be unlimited.`);
+                if (current.max_inbox < 0) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Max inboxes cannot be negative, got ${current.max_inbox}. Use 0 for unlimited.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                if (current.max_inbox !== 0 && current.min_inbox > current.max_inbox) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Invalid range [${current.min_inbox}-${current.max_inbox}]. Min cannot be greater than max unless max is 0 (unlimited).`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Check for duplicate ranges
+                for (let j = i + 1; j < sortedItems.length; j++) {
+                    const other = sortedItems[j];
+                    if (current.min_inbox === other.min_inbox) {
+                        showErrorToast(`Duplicate min inbox value: Tier ${tierNumber} and Tier ${j + 1} both start at ${current.min_inbox}. Each tier must have unique ranges.`);
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
                     }
+                }
+                
+                // Validate unlimited tier placement
+                if (current.max_inbox === 0 && next) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Unlimited range (max_inbox = 0) can only be used in the last tier. Found ${sortedItems.length - i - 1} tier(s) after it.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Critical ChargeBee requirement: Check for gaps that would cause "Tier information is missing after X"
+                if (next) {
+                    const currentEnd = current.max_inbox;
+                    const nextStart = next.min_inbox;
                     
-                    // Auto-fix: ensure next tier starts where current ends + 1
-                    const expectedNextMin = current.max_inbox + 1;
-                    if (next.min_inbox !== expectedNextMin) {
-                        showErrorToast(`Gap or overlap detected: Tier ${i + 2} should start at ${expectedNextMin} (current tier ends at ${current.max_inbox})`);
+                    if (currentEnd === 0) {
+                        // Already handled above - unlimited tier not at end
+                        continue;
+                    }
+                    
+                    // ChargeBee requires EXACT continuity - next tier must start immediately after current ends
+                    const expectedNextStart = currentEnd + 1;
+                    if (nextStart !== expectedNextStart) {
+                        if (nextStart > expectedNextStart) {
+                            showErrorToast(`ChargeBee API Error: Tier information is missing after ${currentEnd}. Tier ${tierNumber + 1} should start at ${expectedNextStart}, not ${nextStart}. Gap detected: [${expectedNextStart}-${nextStart - 1}] is not covered.`);
+                        } else {
+                            showErrorToast(`ChargeBee API Error: Overlap detected between Tier ${tierNumber} and Tier ${tierNumber + 1}. Tier ${tierNumber} ends at ${currentEnd}, but Tier ${tierNumber + 1} starts at ${nextStart}. Next tier must start at ${expectedNextStart}.`);
+                        }
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
                     }
                 }
             }
+            
+            // Final ChargeBee compatibility check
+            console.log('✅ ChargeBee compatibility validated - continuous ranges with no gaps detected');
+            
+            console.log('✅ All volume tier ranges validated successfully - no gaps or overlaps detected');
 
             $.ajax({
                 url: '{{ route('admin.master-plan.store') }}',
@@ -1501,15 +1568,89 @@ $(document).on('click', '.delete-plan-btn', function () {
             loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
         }
 
-        // Add input validation to prevent NaN values
+        // Add input validation to prevent invalid values and validate range logic (ChargeBee compatible)
         $(document).on('input', '.volume-min-inbox, .volume-max-inbox', function() {
             let value = $(this).val();
-            if (value === '' || isNaN(value) || value < 0) {
-                $(this).val('');
-            } else {
-                $(this).val(parseInt(value) || '');
+            
+            // Allow empty values during editing
+            if (value === '') {
+                return;
             }
+            
+            // Convert to integer and validate
+            let intValue = parseInt(value);
+            
+            // Check for invalid numbers or negative values (min values should be 1 or higher)
+            if (isNaN(intValue) || intValue < 0) {
+                $(this).val('');
+                return;
+            }
+            
+            // Set the cleaned value
+            $(this).val(intValue);
+            
+            // Validate range after input
+            validateVolumeItemRange($(this).closest('.volume-item'));
         });
+
+        // Validate individual volume item range with enhanced feedback (ChargeBee compatible)
+        function validateVolumeItemRange($item) {
+            const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+            const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+            const $minField = $item.find('.volume-min-inbox');
+            const $maxField = $item.find('.volume-max-inbox');
+            const tierName = $item.find('.volume-name').val() || 'Unnamed tier';
+            
+            // Remove existing validation styles
+            $minField.removeClass('is-invalid');
+            $maxField.removeClass('is-invalid');
+            $item.find('.range-error').remove();
+            
+            let isValid = true;
+            let errorMessages = [];
+            
+            // Check for negative values (ranges should start from 1 or higher)
+            if (minInbox < 0) {
+                $minField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes cannot be negative (${minInbox}). Use 1 or higher.`);
+                isValid = false;
+            }
+            
+            // Check for min values less than 1 (enforce 1-based ranges)
+            if (minInbox === 0) {
+                $minField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes should start from 1, not 0. Use Auto-Fix for proper ranges.`);
+                isValid = false;
+            }
+            
+            if (maxInbox < 0) {
+                $maxField.addClass('is-invalid');
+                errorMessages.push(`Max inboxes cannot be negative (${maxInbox}). Use 0 for unlimited.`);
+                isValid = false;
+            }
+            
+            // Check if min > max (when max is not 0 for unlimited)
+            if (maxInbox !== 0 && minInbox > maxInbox) {
+                $minField.addClass('is-invalid');
+                $maxField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes (${minInbox}) cannot be greater than max inboxes (${maxInbox})`);
+                isValid = false;
+            }
+            
+            // Display errors if any
+            if (errorMessages.length > 0) {
+                const errorHtml = `<div class="range-error text-danger small mt-1">
+                    <i class="fa-solid fa-exclamation-triangle"></i> 
+                    ${errorMessages.join('<br>')}
+                    <div class="mt-1">
+                        <small>Tip: Min should start from 1 or higher. Set max to 0 for unlimited or use Auto-Fix button.</small>
+                    </div>
+                </div>`;
+                $item.append(errorHtml);
+            }
+            
+            return isValid;
+        }
 
         $(document).on('input', '.volume-price', function() {
             let value = $(this).val();
@@ -1537,66 +1678,253 @@ $(document).on('click', '.delete-plan-btn', function () {
             });
         }
 
-        // Auto-fix range sequences
+        // Auto-fix range sequences with improved logic like Chargebee
         function autoFixRanges() {
             const items = [];
+            let hasErrors = false;
+            
+            // Collect all volume items with their current data
             $('#volumeItemsContainer .volume-item').each(function() {
                 const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                const name = $item.find('.volume-name').val() || '';
+                
+                // Basic validation - check for obviously invalid data
+                if (minInbox < 1) {
+                    hasErrors = true;
+                    showErrorToast(`Invalid min value (${minInbox}) in tier "${name}". Must be >= 1.`);
+                    return;
+                }
+                
+                if (maxInbox < 0) {
+                    hasErrors = true;
+                    showErrorToast(`Invalid max value (${maxInbox}) in tier "${name}". Must be >= 0 (0 = unlimited).`);
+                    return;
+                }
+                
                 items.push({
                     element: $item,
-                    min_inbox: parseInt($item.find('.volume-min-inbox').val()) || 0,
-                    max_inbox: parseInt($item.find('.volume-max-inbox').val()) || 0
+                    name: name || `Tier ${items.length + 1}`,
+                    min_inbox: minInbox,
+                    max_inbox: maxInbox,
+                    originalMin: minInbox,
+                    originalMax: maxInbox,
+                    index: items.length
                 });
             });
 
-            // Sort by min_inbox
-            items.sort((a, b) => a.min_inbox - b.min_inbox);
+            if (hasErrors) {
+                return; // Don't proceed if there are validation errors
+            }
 
-            // Auto-fix ranges to be continuous
-            let nextMin = items[0]?.min_inbox || 1;
-            items.forEach((item, index) => {
-                const isLast = index === items.length - 1;
+            if (items.length === 0) {
+                showErrorToast('No volume tiers to fix');
+                return;
+            }
+
+            if (items.length === 1) {
+                // Single tier - ensure it starts from a reasonable min (1 or higher)
+                const singleItem = items[0];
+                const currentMin = singleItem.min_inbox;
+                const startMin = currentMin > 0 ? currentMin : 1; // Start from 1 if min is 0
                 
-                // Set min_inbox for current tier
-                item.element.find('.volume-min-inbox').val(nextMin);
+                singleItem.element.find('.volume-min-inbox').val(startMin);
                 
-                if (isLast) {
-                    // Last tier can be unlimited (0) or have a specific max
-                    const currentMax = item.max_inbox;
-                    if (currentMax === 0) {
-                        item.element.find('.volume-max-inbox').val(0);
-                    } else {
-                        // Keep the specified max for last tier
-                        item.element.find('.volume-max-inbox').val(currentMax);
-                    }
+                // For single tier, if max is 0 keep it unlimited, otherwise ensure max >= min
+                if (singleItem.max_inbox !== 0 && singleItem.max_inbox < startMin) {
+                    singleItem.element.find('.volume-max-inbox').val(0); // Make unlimited
+                    showSuccessToast('Single tier range fixed - set to unlimited');
                 } else {
-                    // For non-last tiers, calculate max based on next tier's intended start
-                    const nextItem = items[index + 1];
-                    let maxForCurrent;
-                    
-                    if (nextItem.min_inbox > nextMin) {
-                        maxForCurrent = nextItem.min_inbox - 1;
-                    } else {
-                        // Default range of 10 if not specified
-                        maxForCurrent = nextMin + 9;
-                    }
-                    
-                    item.element.find('.volume-max-inbox').val(maxForCurrent);
-                    nextMin = maxForCurrent + 1;
+                    showSuccessToast('Single tier range validated');
+                }
+                return;
+            }
+
+            // Multiple tiers - sort by original min values first to preserve intent
+            items.sort((a, b) => {
+                // Priority: min_inbox first, then max_inbox (unlimited last)
+                if (a.min_inbox !== b.min_inbox) {
+                    return a.min_inbox - b.min_inbox;
+                }
+                // If same min, unlimited (0) goes last
+                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
+                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                return a.max_inbox - b.max_inbox;
+            });
+            // Chargebee-style auto-fix: create continuous non-overlapping ranges
+            // Start from 1 for user-friendly 1-based ranges (updated per user request)
+            let currentStart = 1; // Start ranges from 1 instead of 0 for better user experience
+            let fixedRanges = [];
+            
+            items.forEach((item, index) => {
+                const isLastTier = index === items.length - 1;
+                const tierName = item.name || `Tier ${index + 1}`;
+                
+                // Calculate range size preference
+                let preferredRangeSize = 10; // Default range size
+                if (item.originalMax > item.originalMin && item.originalMax !== 0) {
+                    preferredRangeSize = item.originalMax - item.originalMin + 1;
+                }
+                
+                // Ensure minimum range size of 1
+                preferredRangeSize = Math.max(preferredRangeSize, 1);
+                
+                let tierMin = currentStart;
+                let tierMax = 0;
+                
+                if (isLastTier) {
+                    // Last tier: can be unlimited or have a specific end
+                    tierMax = item.originalMax === 0 ? 0 : Math.max(tierMin + preferredRangeSize - 1, tierMin);
+                } else {
+                    // Non-last tier: must have a definite end to ensure no gaps
+                    tierMax = tierMin + preferredRangeSize - 1;
+                }
+                
+                // Store the fixed range
+                fixedRanges.push({
+                    element: item.element,
+                    name: tierName,
+                    min: tierMin,
+                    max: tierMax,
+                    originalMin: item.originalMin,
+                    originalMax: item.originalMax
+                });
+                
+                // Next tier starts where this one ends + 1 (ChargeBee requirement for continuity)
+                if (tierMax !== 0) {
+                    currentStart = tierMax + 1;
+                }
+            });
+
+            // Apply the fixed ranges to the form
+            let changesMessage = 'Ranges auto-fixed:\n';
+            fixedRanges.forEach((range, index) => {
+                const beforeMin = range.originalMin;
+                const beforeMax = range.originalMax === 0 ? '∞' : range.originalMax;
+                const afterMin = range.min;
+                const afterMax = range.max === 0 ? '∞' : range.max;
+                
+                range.element.find('.volume-min-inbox').val(range.min);
+                range.element.find('.volume-max-inbox').val(range.max);
+                
+                // Track changes for user feedback
+                if (beforeMin !== afterMin || range.originalMax !== range.max) {
+                    changesMessage += `• ${range.name}: [${beforeMin}-${beforeMax}] → [${afterMin}-${afterMax}]\n`;
+                }
+            });
+
+            // Validate all ranges after auto-fix
+            let validationPassed = true;
+            $('#volumeItemsContainer .volume-item').each(function() {
+                if (!validateVolumeItemRange($(this))) {
+                    validationPassed = false;
                 }
             });
             
+            // Update tier numbers
             updateTierNumbers();
-            showSuccessToast('Ranges have been auto-fixed to be continuous');
+            
+            // Show success message with details
+            if (validationPassed) {
+                console.log(changesMessage);
+                showSuccessToast('Volume tier ranges auto-fixed successfully! Check console for details.');
+            } else {
+                showWarningToast('Ranges were adjusted but some validation issues remain. Please review.');
+            }
         }
 
-        // Add auto-fix button functionality
+        // Add auto-fix button functionality with enhanced validation for ChargeBee
         $(document).on('click', '#autoFixRanges', function() {
-            if ($('#volumeItemsContainer .volume-item').length > 0) {
-                autoFixRanges();
-            } else {
-                showErrorToast('No volume tiers to fix');
+            const $button = $(this);
+            const originalText = $button.text();
+            
+            // Ensure at least one tier exists
+            if ($('#volumeItemsContainer .volume-item').length === 0) {
+                if (confirm('No volume tiers found. Add a default tier starting from 1?')) {
+                    addVolumeItem({
+                        name: 'Default Tier',
+                        description: 'Default volume tier',
+                        min_inbox: 1,
+                        max_inbox: 0, // Unlimited
+                        price: 0,
+                        duration: 'monthly',
+                        features: [],
+                        feature_values: []
+                    });
+                    showSuccessToast('Added default tier (1-∞)');
+                } else {
+                    showErrorToast('At least one volume tier is required');
+                }
+                return;
             }
+            
+            // Collect current issues for user confirmation
+            const issues = [];
+            const items = [];
+            
+            $('#volumeItemsContainer .volume-item').each(function(index) {
+                const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                const name = $item.find('.volume-name').val() || `Tier ${index + 1}`;
+                
+                items.push({ element: $item, name, min_inbox: minInbox, max_inbox: maxInbox });
+                
+                // Check for basic issues (using 1-based ranges)
+                if (minInbox < 1) issues.push(`${name}: Invalid min value (${minInbox}) - must be 1 or higher`);
+                if (maxInbox < 0) issues.push(`${name}: Invalid max value (${maxInbox}) - use 0 for unlimited`);
+                if (maxInbox !== 0 && minInbox > maxInbox) issues.push(`${name}: Min > Max (${minInbox} > ${maxInbox})`);
+            });
+            
+            // Check for ChargeBee-specific gaps/overlaps
+            const sortedItems = items.sort((a, b) => a.min_inbox - b.min_inbox);
+            
+            // Best practice: first tier should start from 1
+            if (sortedItems.length > 0 && sortedItems[0].min_inbox !== 1) {
+                issues.push(`First tier should start from 1, currently starts from ${sortedItems[0].min_inbox}`);
+            }
+            
+            for (let i = 0; i < sortedItems.length - 1; i++) {
+                const current = sortedItems[i];
+                const next = sortedItems[i + 1];
+                
+                if (current.max_inbox !== 0 && next.min_inbox !== current.max_inbox + 1) {
+                    if (next.min_inbox > current.max_inbox + 1) {
+                        issues.push(`ChargeBee API Error: Missing tier info after ${current.max_inbox} (${current.name} → ${next.name})`);
+                    } else {
+                        issues.push(`Overlap: ${current.name} ends at ${current.max_inbox}, ${next.name} starts at ${next.min_inbox}`);
+                    }
+                }
+            }
+            
+            if (issues.length === 0) {
+                showSuccessToast('All ranges are ChargeBee-compatible! No fixes needed.');
+                return;
+            }
+            
+            // Show confirmation with issues
+            const issuesText = issues.slice(0, 5).join('\n• '); // Show max 5 issues
+            const moreText = issues.length > 5 ? `\n...and ${issues.length - 5} more issues` : '';
+            Swal.fire({
+                title: 'ChargeBee Compatibility Issues',
+                html: `• ${issuesText}${moreText}<br><br>Would you like to auto-fix for ChargeBee compatibility?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, auto-fix ranges',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $button.prop('disabled', true).text('Fixing for ChargeBee...');
+                    
+                    setTimeout(() => {
+                        autoFixRanges();
+                        $button.prop('disabled', false).text(originalText);
+                    }, 300);
+                }
+            });
         });
 
         // Collect volume items data

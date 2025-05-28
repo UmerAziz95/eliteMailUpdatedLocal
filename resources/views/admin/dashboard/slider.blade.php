@@ -22,7 +22,7 @@
                 
                 <!-- Plan Name with Animation -->
                 <div class="plan-badge mb-4">
-                    <span class="badge bg-primary bg-opacity-15 text-light fw-semibold" style="text-shadow: 0 1px 2px rgba(0,0,0,0.2); border-left: 3px solid #7367ef; padding-left: 10px;">{{ $order->plan->name }}</span>
+                    <span class="badge bg-primary bg-opacity-15 text-light fw-semibold" style="text-shadow: 0 1px 2px rgba(0,0,0,0.2); border-left: 3px solid #7367ef; padding-left: 10px;">{{ $order->plan->name ?? '' }}</span>
                     <small class="d-block mt-2 text-white-50" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">
                         <i class="ti ti-calendar me-1 text-white-50"></i> {{ \Carbon\Carbon::parse($order->created_at)->format('M d, Y') }}
                     </small>

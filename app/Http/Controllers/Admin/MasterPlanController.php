@@ -88,6 +88,58 @@ class MasterPlanController extends Controller
             ];
         })->toArray();
 
+        // Custom validation for range logic
+        foreach ($volumeItems as $index => $item) {
+            // Check if min_inbox > max_inbox (when max_inbox is not 0 for unlimited)
+            if ($item['max_inbox'] !== 0 && $item['min_inbox'] > $item['max_inbox']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Invalid range in tier " . ($index + 1) . ": Min inboxes ({$item['min_inbox']}) cannot be greater than max inboxes ({$item['max_inbox']}). Set max to 0 for unlimited or adjust the values."
+                ], 422);
+            }
+            
+            // Check for negative values
+            if ($item['min_inbox'] < 0 || $item['max_inbox'] < 0 || $item['price'] < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Negative values not allowed in tier " . ($index + 1) . "."
+                ], 422);
+            }
+            
+            // Check for empty name
+            if (empty(trim($item['name']))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tier " . ($index + 1) . " name is required."
+                ], 422);
+            }
+        }
+
+        // Sort items by min_inbox for range validation
+        $sortedItems = collect($volumeItems)->sortBy('min_inbox')->values()->toArray();
+        
+        // Validate for overlapping ranges
+        for ($i = 0; $i < count($sortedItems) - 1; $i++) {
+            $current = $sortedItems[$i];
+            $next = $sortedItems[$i + 1];
+            
+            // If current tier has unlimited (max_inbox = 0) and it's not the last tier
+            if ($current['max_inbox'] === 0 && $i < count($sortedItems) - 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
+                ], 422);
+            }
+            
+            // Check for overlapping ranges
+            if ($current['max_inbox'] !== 0 && $next['min_inbox'] <= $current['max_inbox']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
+                ], 422);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
