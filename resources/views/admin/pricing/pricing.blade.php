@@ -1472,13 +1472,13 @@ $(document).on('click', '.delete-plan-btn', function () {
                         </button>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label">Tier Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control volume-name" name="volume_items[${volumeItemIndex}][name]" value="${item.name}" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6" style="display:none;">
                             <div class="mb-3">
                                 <label class="form-label">Duration <span class="text-danger">*</span></label>
                                 <select class="form-control volume-duration" name="volume_items[${volumeItemIndex}][duration]" required>
@@ -1671,10 +1671,85 @@ $(document).on('click', '.delete-plan-btn', function () {
             updateTierNumbers();
         });
 
+        // Function to ensure unlimited tier exists
+        function ensureUnlimitedTierExists() {
+            let hasUnlimitedTier = false;
+            let highestMax = 0;
+            
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                if (maxInbox === 0) {
+                    hasUnlimitedTier = true;
+                } else if (maxInbox > highestMax) {
+                    highestMax = maxInbox;
+                }
+            });
+            
+            if (!hasUnlimitedTier) {
+                const nextMin = highestMax > 0 ? highestMax + 1 : 1;
+                
+                // Auto-create unlimited tier
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier for higher quantities',
+                    min_inbox: nextMin,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                
+                showSuccessToast(`Created unlimited tier starting from ${nextMin}`);
+                return true;
+            }
+            
+            return false;
+        }
+
+        // Enhanced tier ordering function
+        function orderTiersByRange() {
+            const container = $('#volumeItemsContainer');
+            const items = [];
+            
+            // Collect all tier elements with their range data
+            container.find('.volume-item').each(function() {
+                const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                
+                items.push({
+                    element: $item.clone(true), // Clone with events
+                    min: minInbox,
+                    max: maxInbox
+                });
+            });
+            
+            // Sort items: unlimited tiers (max = 0) go last, others by min value
+            items.sort((a, b) => {
+                // Unlimited tiers go last
+                if (a.max === 0 && b.max !== 0) return 1;
+                if (b.max === 0 && a.max !== 0) return -1;
+                
+                // Sort by min value
+                return a.min - b.min;
+            });
+            
+            // Clear container and re-add in correct order
+            container.empty();
+            items.forEach(item => {
+                container.append(item.element);
+            });
+            
+            // Update tier numbers
+            updateTierNumbers();
+        }
+
         // Update tier numbers
         function updateTierNumbers() {
             $('#volumeItemsContainer .volume-item').each(function(index) {
                 $(this).find('h6').text(`Tier ${index + 1}`);
+                $(this).data('index', index);
             });
         }
 
@@ -1742,16 +1817,21 @@ $(document).on('click', '.delete-plan-btn', function () {
             }
 
             // Multiple tiers - sort by original min values first to preserve intent
+            // Then sort unlimited tiers (max_inbox = 0) to the end
             items.sort((a, b) => {
-                // Priority: min_inbox first, then max_inbox (unlimited last)
+                // First priority: unlimited tiers go last
+                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
+                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                
+                // Second priority: sort by min_inbox
                 if (a.min_inbox !== b.min_inbox) {
                     return a.min_inbox - b.min_inbox;
                 }
-                // If same min, unlimited (0) goes last
-                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
-                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                
+                // Third priority: sort by max_inbox (unlimited last among same min)
                 return a.max_inbox - b.max_inbox;
             });
+            
             // Chargebee-style auto-fix: create continuous non-overlapping ranges
             // Start from 1 for user-friendly 1-based ranges (updated per user request)
             let currentStart = 1; // Start ranges from 1 instead of 0 for better user experience
@@ -1773,8 +1853,11 @@ $(document).on('click', '.delete-plan-btn', function () {
                 let tierMin = currentStart;
                 let tierMax = 0;
                 
-                if (isLastTier) {
-                    // Last tier: can be unlimited or have a specific end
+                if (isLastTier && item.originalMax === 0) {
+                    // Last tier and originally unlimited: keep unlimited
+                    tierMax = 0;
+                } else if (isLastTier) {
+                    // Last tier but was not originally unlimited: can be unlimited or have a specific end
                     tierMax = item.originalMax === 0 ? 0 : Math.max(tierMin + preferredRangeSize - 1, tierMin);
                 } else {
                     // Non-last tier: must have a definite end to ensure no gaps
@@ -1797,8 +1880,10 @@ $(document).on('click', '.delete-plan-btn', function () {
                 }
             });
 
-            // Apply the fixed ranges to the form
-            let changesMessage = 'Ranges auto-fixed:\n';
+            // Apply the fixed ranges to the form and reorder DOM elements
+            let changesMessage = 'Ranges auto-fixed and ordered by ranges:\n';
+            const container = $('#volumeItemsContainer');
+            
             fixedRanges.forEach((range, index) => {
                 const beforeMin = range.originalMin;
                 const beforeMax = range.originalMax === 0 ? '∞' : range.originalMax;
@@ -1807,6 +1892,9 @@ $(document).on('click', '.delete-plan-btn', function () {
                 
                 range.element.find('.volume-min-inbox').val(range.min);
                 range.element.find('.volume-max-inbox').val(range.max);
+                
+                // Reorder elements in DOM according to new order
+                container.append(range.element);
                 
                 // Track changes for user feedback
                 if (beforeMin !== afterMin || range.originalMax !== range.max) {
@@ -1828,7 +1916,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             // Show success message with details
             if (validationPassed) {
                 console.log(changesMessage);
-                showSuccessToast('Volume tier ranges auto-fixed successfully! Check console for details.');
+                showSuccessToast('Volume tier ranges auto-fixed and ordered successfully! Check console for details.');
             } else {
                 showWarningToast('Ranges were adjusted but some validation issues remain. Please review.');
             }
@@ -1841,28 +1929,62 @@ $(document).on('click', '.delete-plan-btn', function () {
             
             // Ensure at least one tier exists
             if ($('#volumeItemsContainer .volume-item').length === 0) {
-                if (confirm('No volume tiers found. Add a default tier starting from 1?')) {
-                    addVolumeItem({
-                        name: 'Default Tier',
-                        description: 'Default volume tier',
-                        min_inbox: 1,
-                        max_inbox: 0, // Unlimited
-                        price: 0,
-                        duration: 'monthly',
-                        features: [],
-                        feature_values: []
-                    });
-                    showSuccessToast('Added default tier (1-∞)');
-                } else {
-                    showErrorToast('At least one volume tier is required');
-                }
+                // Auto-create default unlimited tier without confirmation
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier',
+                    min_inbox: 1,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                showSuccessToast('Added default unlimited tier (1-∞)');
                 return;
+            }
+            
+            // First, ensure unlimited tier exists and order tiers by range
+            ensureUnlimitedTierExists();
+            orderTiersByRange();
+            
+            // Check if unlimited tier exists
+            let hasUnlimitedTier = false;
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                if (maxInbox === 0) {
+                    hasUnlimitedTier = true;
+                    return false; // break
+                }
+            });
+            
+            // If no unlimited tier exists, create one
+            if (!hasUnlimitedTier) {
+                // Find the highest max_inbox value to determine start of unlimited tier
+                let highestMax = 0;
+                $('#volumeItemsContainer .volume-item').each(function() {
+                    const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                    if (maxInbox > highestMax) {
+                        highestMax = maxInbox;
+                    }
+                });
+                
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier',
+                    min_inbox: highestMax + 1,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                showSuccessToast(`Added unlimited tier starting from ${highestMax + 1}`);
             }
             
             // Collect current issues for user confirmation
             const issues = [];
             const items = [];
-            
             $('#volumeItemsContainer .volume-item').each(function(index) {
                 const $item = $(this);
                 const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
@@ -1877,8 +1999,14 @@ $(document).on('click', '.delete-plan-btn', function () {
                 if (maxInbox !== 0 && minInbox > maxInbox) issues.push(`${name}: Min > Max (${minInbox} > ${maxInbox})`);
             });
             
-            // Check for ChargeBee-specific gaps/overlaps
-            const sortedItems = items.sort((a, b) => a.min_inbox - b.min_inbox);
+            // Check for ChargeBee-specific gaps/overlaps - sort by min_inbox, unlimited last
+            const sortedItems = items.sort((a, b) => {
+                // Unlimited tiers go last
+                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
+                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                // Sort by min_inbox
+                return a.min_inbox - b.min_inbox;
+            });
             
             // Best practice: first tier should start from 1
             if (sortedItems.length > 0 && sortedItems[0].min_inbox !== 1) {
@@ -1889,7 +2017,10 @@ $(document).on('click', '.delete-plan-btn', function () {
                 const current = sortedItems[i];
                 const next = sortedItems[i + 1];
                 
-                if (current.max_inbox !== 0 && next.min_inbox !== current.max_inbox + 1) {
+                // Skip gap checking if current tier is unlimited (should be last anyway)
+                if (current.max_inbox === 0) continue;
+                
+                if (next.min_inbox !== current.max_inbox + 1) {
                     if (next.min_inbox > current.max_inbox + 1) {
                         issues.push(`ChargeBee API Error: Missing tier info after ${current.max_inbox} (${current.name} → ${next.name})`);
                     } else {
@@ -1897,34 +2028,19 @@ $(document).on('click', '.delete-plan-btn', function () {
                     }
                 }
             }
-            
+
             if (issues.length === 0) {
-                showSuccessToast('All ranges are ChargeBee-compatible! No fixes needed.');
+                showSuccessToast('All ranges are ChargeBee-compatible and ordered properly! No fixes needed.');
                 return;
             }
             
-            // Show confirmation with issues
-            const issuesText = issues.slice(0, 5).join('\n• '); // Show max 5 issues
-            const moreText = issues.length > 5 ? `\n...and ${issues.length - 5} more issues` : '';
-            Swal.fire({
-                title: 'ChargeBee Compatibility Issues',
-                html: `• ${issuesText}${moreText}<br><br>Would you like to auto-fix for ChargeBee compatibility?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, auto-fix ranges',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $button.prop('disabled', true).text('Fixing for ChargeBee...');
-                    
-                    setTimeout(() => {
-                        autoFixRanges();
-                        $button.prop('disabled', false).text(originalText);
-                    }, 300);
-                }
-            });
+            // Auto-fix without confirmation for better UX
+            $button.prop('disabled', true).text('Fixing & Ordering...');
+            
+            setTimeout(() => {
+                autoFixRanges();
+                $button.prop('disabled', false).text(originalText);
+            }, 300);
         });
 
         // Collect volume items data
