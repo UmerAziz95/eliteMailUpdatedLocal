@@ -146,7 +146,7 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                            <i class="fa-solid fa-crown me-2"></i>Plan Management
                         </h5>
                     </div>
                     <div class="card-body">
@@ -155,8 +155,8 @@
                         </div>
                         @if (!auth()->user()->hasPermissionTo('Mod'))
                         @if (auth()->user()->role_id != 5)
-                        <button id="createMasterPlan" class="btn btn-warning">
-                            <i class="fa-solid fa-plus"></i> Create/Edit Master Plan
+                        <button id="createMasterPlan" class="btn btn-warning mt-3">
+                            <i class="fa-solid fa-plus"></i> Create/Edit Plan
                         </button>
                         @endif
                         @endif
@@ -167,7 +167,7 @@
         </div>
     </div>
     
-    <div class="d-flex flex-column align-items-center justify-content-center">
+    <!-- <div class="d-flex flex-column align-items-center justify-content-center">
         <h2 class="text-center fw-bold">Manage Plans</h2>
         <p class="text-center">Create and manage subscription plans</p>
         @if (!auth()->user()->hasPermissionTo('Mod'))
@@ -177,9 +177,9 @@
         </button>
         @endif
         @endif
-    </div>
+    </div> -->
     
-    <div class="row mt-4" id="plans-container">
+    <div class="row mt-5" id="plans-container">
         @foreach ($plans as $plan)
         <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
             <div class="pricing-card d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
@@ -204,7 +204,7 @@
                         @endforeach
                     </ul>
                 </div>
-                @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
+                <!-- @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
                 <div class="d-flex gap-2">
                     <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
                         class="{{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'grey-btn' : 'm-btn' }} rounded-1 border-0 py-2 px-4 w-100">
@@ -215,7 +215,7 @@
                         <i class="fa-regular fa-trash-can"></i> Delete
                     </button>
                 </div>
-                @endif
+                @endif -->
 
             </div>
         </div>
@@ -1004,7 +1004,7 @@ $(document).on('click', '.delete-plan-btn', function () {
                             </div>
                         </div>
                     `);
-                    $('#createMasterPlan').text('Edit Master Plan');
+                    $('#createMasterPlan').text('Edit Plan');
                 } else {
                     $container.html('<p class="text-muted">No master plan created yet.</p>');
                     $('#createMasterPlan').text('Create Master Plan');
@@ -2314,7 +2314,7 @@ $(document).on('click', '.delete-plan-btn', function () {
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="masterPlanModalLabel">
-                    <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                    <i class="fa-solid fa-crown me-2"></i>Plan Management
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -2349,7 +2349,87 @@ $(document).on('click', '.delete-plan-btn', function () {
                             </div>
                         </div>
                     </div>
+                    <!-- Tier Creation Instructions -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6><i class="fa-solid fa-layer-group me-2 text-primary"></i>Understanding Volume Tiers</h6>
+                                            <p class="mb-3">Volume pricing allows you to offer different rates based on the number of inboxes. Each tier covers a specific range of inbox quantities.</p>
+                                            
+                                            <h6><i class="fa-solid fa-chart-line me-2 text-success"></i>Step-by-Step Guide</h6>
+                                            <ol class="mb-3">
+                                                <li><strong>Click "Add Tier"</strong> to create a new pricing tier</li>
+                                                <li><strong>Set Min Inbox:</strong> The starting number of inboxes for this tier (e.g., 1, 11, 51)</li>
+                                                <li><strong>Set Max Inbox:</strong> The ending number of inboxes (e.g., 10, 50, 100) or 0 for unlimited</li>
+                                                <li><strong>Set Price:</strong> The monthly price per inbox for this tier</li>
+                                                <li><strong>Add Features:</strong> Select specific features available in this tier</li>
+                                                <li><strong>Use Auto-Fix:</strong> Automatically order tiers and fix any range issues</li>
+                                            </ol>
 
+                                            <h6><i class="fa-solid fa-lightbulb me-2 text-warning"></i>Best Practices</h6>
+                                            <ul class="mb-0">
+                                                <li><strong>Start from 1:</strong> First tier should start from 1 inbox</li>
+                                                <li><strong>No Gaps:</strong> Ensure continuous coverage (e.g., 1-10, 11-50, 51-∞)</li>
+                                                <li><strong>Unlimited Tier:</strong> Always include one tier with max_inbox = 0 for unlimited</li>
+                                                <li><strong>Price Scaling:</strong> Generally, price per inbox decreases as volume increases</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="bg-primary text-white p-3 rounded">
+                                                <h6 class="text-warning"><i class="fa-solid fa-calculator"></i>Example Tiers</h6>
+                                                <div class="small">
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 1: Starter</strong><br>
+                                                        <span class="text-warning">Range:</span> 1-10 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $5.00/inbox/month
+                                                    </div>
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 2: Business</strong><br>
+                                                        <span class="text-warning">Range:</span> 11-50 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $4.00/inbox/month
+                                                    </div>
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 3: Enterprise</strong><br>
+                                                        <span class="text-warning">Range:</span> 51-100 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $3.00/inbox/month
+                                                    </div>
+                                                    <div>
+                                                        <strong>Tier 4: Unlimited</strong><br>
+                                                        <span class="text-warning">Range:</span> 101-∞ inboxes<br>
+                                                        <span class="text-warning">Price:</span> $2.50/inbox/month
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-primary text-white p-3 rounded mt-3">
+                                                <h6><i class="fa-solid fa-magic me-2"></i>Auto-Fix Features</h6>
+                                                <ul class="small mb-0 ps-3">
+                                                    <li>Creates unlimited tier if missing</li>
+                                                    <li>Orders tiers by range automatically</li>
+                                                    <li>Fixes gaps and overlaps</li>
+                                                    <li>Ensures ChargeBee compatibility</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info mt-3 mb-0">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <strong><i class="fa-solid fa-info-circle me-2"></i>Range Rules:</strong>
+                                                Ranges must be continuous with no gaps. For example: 1-10, 11-50, 51-∞. 
+                                                The last tier should always be unlimited (max = 0) to handle any quantity.
+                                            </div>
+                                            <!-- <div class="col-md-4 text-end">
+                                                <small class="text-muted">
+                                                    <i class="fa-solid fa-clock me-1"></i>Auto-saves every change
+                                                </small>
+                                            </div> -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                     <!-- Volume Items -->
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
@@ -2374,6 +2454,8 @@ $(document).on('click', '.delete-plan-btn', function () {
                         </div>
                     </div>
 
+                    
+
                     <div class="alert alert-warning mt-3">
                         <i class="fa-solid fa-exclamation-triangle me-2"></i>
                         <strong>Note:</strong> This plan will be created on Chargebee with volume pricing type. Only one master plan is allowed in the system.
@@ -2383,7 +2465,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveMasterPlan">
-                    <i class="fa-solid fa-save me-2"></i>Save Master Plan
+                    <i class="fa-solid fa-save me-2"></i>Save Plan
                 </button>
             </div>
         </div>
