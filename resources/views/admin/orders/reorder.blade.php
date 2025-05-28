@@ -22,7 +22,47 @@
         color: #6c757d;
     }
     .invalid-feedback {
-        display: block;
+        d    // Calculate total inboxes whenever domains or inboxes per domain changes
+    $('#domains, #inboxes_per_domain').on('input change', calculateTotalInboxes);
+
+    // Dynamic prefix variant fields functionality
+    function generatePrefixVariantFields(count) {
+        const container = $('#prefix-variants-container');
+        container.empty();
+        
+        // Get existing prefix variant values from old fields or database
+        const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
+        
+        for (let i = 1; i <= count; i++) {
+            const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+                                (i === 1 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
+                                (i === 2 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+            
+            const fieldHtml = `
+                <div class="col-md-6">
+                    <label>Prefix Variant ${i}</label>
+                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                           value="${existingValue}" ${i === 1 ? 'required' : ''}>
+                    <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                    <p class="note">(Prefix variant ${i} for email persona)</p>
+                </div>
+            `;
+            container.append(fieldHtml);
+        }
+    }
+
+    // Handle inboxes per domain change event
+    $('#inboxes_per_domain').on('change', function() {
+        const inboxesPerDomain = parseInt($(this).val()) || 1;
+        generatePrefixVariantFields(inboxesPerDomain);
+        
+        // Recalculate total inboxes when inboxes per domain changes
+        calculateTotalInboxes();
+    });
+
+    // Initialize prefix variant fields on page load
+    const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    generatePrefixVariantFields(initialInboxesPerDomain);play: block;
         color: #dc3545;
         font-size: 0.875em;
         margin-top: 0.25rem;
@@ -173,16 +213,22 @@
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Hidden original prefix variant fields -->
+                <div class="col-md-6" style="display: none;">
                     <label>Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required 
+                    <input type="text" name="prefix_variant_1" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required 
+                    <input type="text" name="prefix_variant_2" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
+                </div>
+
+                <!-- Dynamic prefix variants container -->
+                <div id="prefix-variants-container">
+                    <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
                 <!-- <div class="col-md-6">

@@ -196,16 +196,22 @@
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Hidden original prefix variant fields -->
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required>
+                    <input type="text" name="prefix_variant_1" class="form-control">
                     <div class="invalid-feedback" id="prefix_variant_1-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required>
+                    <input type="text" name="prefix_variant_2" class="form-control">
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
+                </div>
+
+                <!-- Dynamic prefix variants container -->
+                <div id="prefix-variants-container" class="row g-3 mt-4">
+                    <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
                 <!-- <div class="col-md-6">
@@ -1081,6 +1087,38 @@ $(document).ready(function() {
             validateField(this);
         }
     });
+
+    // Dynamic prefix variant fields functionality
+    function generatePrefixVariantFields(count) {
+        const container = $('#prefix-variants-container');
+        container.empty();
+        
+        for (let i = 1; i <= count; i++) {
+            const fieldHtml = `
+                <div class="col-md-6">
+                    <label>Email Persona - Prefix Variant ${i}</label>
+                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                           ${i === 1 ? 'required' : ''}>
+                    <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                    <p class="note">(Prefix variant ${i} for email persona)</p>
+                </div>
+            `;
+            container.append(fieldHtml);
+        }
+    }
+
+    // Handle inboxes per domain change event
+    $('#inboxes_per_domain').on('change', function() {
+        const inboxesPerDomain = parseInt($(this).val()) || 1;
+        generatePrefixVariantFields(inboxesPerDomain);
+        
+        // Recalculate total inboxes when inboxes per domain changes
+        calculateTotalInboxes();
+    });
+
+    // Initialize prefix variant fields on page load
+    const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    generatePrefixVariantFields(initialInboxesPerDomain);
 
 });
 </script>

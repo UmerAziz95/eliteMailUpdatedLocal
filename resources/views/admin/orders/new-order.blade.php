@@ -153,14 +153,20 @@
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Hidden original prefix variant fields for backward compatibility -->
+                <div class="col-md-6" style="display: none;">
                     <label>Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required>
+                    <input type="text" name="prefix_variant_1" class="form-control">
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required>
+                    <input type="text" name="prefix_variant_2" class="form-control">
+                </div>
+
+                <!-- Dynamic prefix variants container -->
+                <div id="prefix-variants-container" class="col-md-12">
+                    <!-- Dynamic prefix variant fields will be generated here -->
                 </div>
 
                 <!-- <div class="col-md-6">
@@ -339,7 +345,15 @@ $(document).ready(function() {
         const backupCodesValid = validateField(document.getElementById('backup-codes'), 'backup codes');
         const domainsValid = validateField(document.getElementById('domains'), 'domains');
         
-        if (!backupCodesValid || !domainsValid) {
+        // Validate prefix variants
+        let prefixVariantsValid = true;
+        $('.prefix-variant-field').each(function() {
+            if (!validatePrefixVariant(this)) {
+                prefixVariantsValid = false;
+            }
+        });
+        
+        if (!backupCodesValid || !domainsValid || !prefixVariantsValid) {
             return;
         }
 
@@ -432,7 +446,61 @@ $(document).ready(function() {
     }
 
     // Calculate total inboxes whenever domains or inboxes per domain changes
-    $('#domains, #inboxes_per_domain').on('input change', calculateTotalInboxes);
+    $('#domains, #inboxes_per_domain').on('input change', function() {
+        calculateTotalInboxes();
+        
+        // Also regenerate prefix variant fields based on inboxes per domain
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        generatePrefixVariantFields(inboxesPerDomain);
+    });
+
+    // Function to generate dynamic prefix variant fields
+    function generatePrefixVariantFields(count) {
+        const container = $('#prefix-variants-container');
+        container.empty();
+        
+        // Create a row for the prefix variant fields
+        const row = $('<div class="row g-3"></div>');
+        
+        for (let i = 1; i <= count; i++) {
+            const fieldHtml = `
+                <div class="col-md-6">
+                    <label>Prefix Variant ${i} ${i === 1 ? '*' : ''}</label>
+                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control prefix-variant-field" ${i === 1 ? 'required' : ''} 
+                           pattern="[a-zA-Z0-9._-]+" title="Only letters, numbers, dots, underscores, and hyphens are allowed">
+                    <div class="invalid-feedback prefix-variant-error"></div>
+                </div>
+            `;
+            row.append(fieldHtml);
+        }
+        
+        container.append(row);
+        
+        // Add validation for prefix variant fields
+        $('.prefix-variant-field').on('input', function() {
+            validatePrefixVariant(this);
+        });
+    }
+
+    // Function to validate prefix variant format
+    function validatePrefixVariant(field) {
+        const value = field.value.trim();
+        const regex = /^[a-zA-Z0-9._-]+$/;
+        const errorDiv = $(field).next('.invalid-feedback');
+        
+        if (value && !regex.test(value)) {
+            $(field).addClass('is-invalid');
+            errorDiv.text('Only letters, numbers, dots, underscores, and hyphens are allowed');
+            return false;
+        } else {
+            $(field).removeClass('is-invalid');
+            errorDiv.text('');
+            return true;
+        }
+    }
+
+    // Initial generation of prefix variant fields
+    generatePrefixVariantFields(1);
 
     // Initial calculation
     calculateTotalInboxes();

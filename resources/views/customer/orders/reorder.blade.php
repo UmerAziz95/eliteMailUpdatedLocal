@@ -194,18 +194,24 @@
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Hidden original prefix variant fields -->
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required 
+                    <input type="text" name="prefix_variant_1" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_1-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required 
+                    <input type="text" name="prefix_variant_2" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
+                </div>
+
+                <!-- Dynamic prefix variants container -->
+                <div id="prefix-variants-container" class="row g-3 mt-4">
+                    <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
                 <!-- <div class="col-md-6">
@@ -508,6 +514,43 @@
                 }
             }
         });
+
+        // Validate dynamic prefix variants
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        let firstErrorField = null;
+        
+        for (let i = 1; i <= inboxesPerDomain; i++) {
+            const prefixField = $(`input[name="prefix_variants[prefix_variant_${i}]"]`);
+            const value = prefixField.val()?.trim();
+            
+            if (i === 1 && !value) {
+                // First prefix variant is required
+                isValid = false;
+                prefixField.addClass('is-invalid');
+                prefixField.siblings('.invalid-feedback').text('This field is required');
+                
+                if (!firstErrorField) {
+                    firstErrorField = prefixField;
+                }
+            } else if (value) {
+                // Validate prefix variant format (alphanumeric and basic characters only)
+                const prefixRegex = /^[a-zA-Z0-9._-]+$/;
+                if (!prefixRegex.test(value)) {
+                    isValid = false;
+                    prefixField.addClass('is-invalid');
+                    prefixField.siblings('.invalid-feedback').text('Only letters, numbers, dots, hyphens and underscores are allowed');
+                    
+                    if (!firstErrorField) {
+                        firstErrorField = prefixField;
+                    }
+                }
+            }
+        }
+
+        // Focus on first error field if validation failed
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+        }
 
         return isValid;
     }
@@ -1074,6 +1117,45 @@ function updatePaymentMethod() {
         }
     });
 }
+
+    // Dynamic prefix variant fields functionality
+    function generatePrefixVariantFields(count) {
+        const container = $('#prefix-variants-container');
+        container.empty();
+        
+        // Get existing prefix variant values from old fields or database
+        const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
+        
+        for (let i = 1; i <= count; i++) {
+            const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+                                (i === 1 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
+                                (i === 2 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+            
+            const fieldHtml = `
+                <div class="col-md-6">
+                    <label>Email Persona - Prefix Variant ${i}</label>
+                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                           value="${existingValue}" ${i === 1 ? 'required' : ''}>
+                    <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                    <p class="note">(Prefix variant ${i} for email persona)</p>
+                </div>
+            `;
+            container.append(fieldHtml);
+        }
+    }
+
+    // Handle inboxes per domain change event
+    $('#inboxes_per_domain').on('change', function() {
+        const inboxesPerDomain = parseInt($(this).val()) || 1;
+        generatePrefixVariantFields(inboxesPerDomain);
+        
+        // Recalculate total inboxes when inboxes per domain changes
+        calculateTotalInboxes();
+    });
+
+    // Initialize prefix variant fields on page load
+    const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    generatePrefixVariantFields(initialInboxesPerDomain);
 
 // subscribe plan function
 function subscribePlan(planId) {

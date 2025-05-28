@@ -86,9 +86,30 @@
                                 <hr>
                                 <div class="d-flex flex-column">
                                     <span class="opacity-50">Prefix Variants</span>
-                                    <span>{{ $order->reorderInfo->first()->prefix_variant_1 ?? 'N/A' }},
-                                        {{ $order->reorderInfo->first()->prefix_variant_2 ?? 'N/A' }}</span>
-                                    {{-- <span>Variant 2: {{ $order->reorderInfo->first()->prefix_variant_2 ?? 'N/A' }}</span> --}}
+                                    @php
+                                        // Check if new prefix_variants JSON column exists and has data
+                                        $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
+                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+                                        
+                                        // If new format doesn't exist, fallback to old individual fields
+                                        if (empty($prefixVariants)) {
+                                            $prefixVariants = [];
+                                            if ($order->reorderInfo->first()->prefix_variant_1) {
+                                                $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
+                                            }
+                                            if ($order->reorderInfo->first()->prefix_variant_2) {
+                                                $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    @for($i = 1; $i <= $inboxesPerDomain; $i++)
+                                        @php
+                                            $variantKey = "prefix_variant_$i";
+                                            $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
+                                        @endphp
+                                        <span>Variant {{ $i }}: {{ $variantValue }}</span>
+                                    @endfor
                                 </div>
                                 <div class="d-flex flex-column mt-3">
                                     <span class="opacity-50">Profile Picture URL</span>
