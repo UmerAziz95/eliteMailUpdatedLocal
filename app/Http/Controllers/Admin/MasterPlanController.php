@@ -393,7 +393,7 @@ class MasterPlanController extends Controller
                     // Update volume items (plans) with ChargeBee price ID  
                     $priceId = $priceResult->itemPrice()->id;
                     $masterPlan->volumeItems()->update([
-                        'chargebee_plan_id' => $priceId,
+                        'chargebee_plan_id' => $uniqueId . '_price',
                         'is_chargebee_synced' => true
                     ]);
                     
