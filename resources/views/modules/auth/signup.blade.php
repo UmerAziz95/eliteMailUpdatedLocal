@@ -100,7 +100,7 @@
                                     <label for="email">Email</label>
                                     <input type="email" name="email" id="email" placeholder="Email" required>
                                 </div>
-                                <div class="input-group">
+                                {{-- <div class="input-group">
                                     <label for="password">Password</label>
                                     <input type="password" name="password" id="password" placeholder="Password"
                                         required>
@@ -117,7 +117,7 @@
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
                                     </span>
-                                </div>
+                                </div> --}}
                                 {{-- Phone --}}
                                 <!-- <div class="input-group">
                                     <label for="phone">Phone</label>
@@ -171,32 +171,32 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordField = document.getElementById('password');
-            const icon = this.querySelector('i');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            } else {
-                passwordField.type = 'password';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        });
-        document.getElementById('togglePasswordConfirmation').addEventListener('click', function() {
-            const passwordField = document.getElementById('password_');
-            const icon = this.querySelector('i');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            } else {
-                passwordField.type = 'password';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        });
+        // document.getElementById('togglePassword').addEventListener('click', function() {
+        //     const passwordField = document.getElementById('password');
+        //     const icon = this.querySelector('i');
+        //     if (passwordField.type === 'password') {
+        //         passwordField.type = 'text';
+        //         icon.classList.remove('fa-eye-slash');
+        //         icon.classList.add('fa-eye');
+        //     } else {
+        //         passwordField.type = 'password';
+        //         icon.classList.remove('fa-eye');
+        //         icon.classList.add('fa-eye-slash');
+        //     }
+        // });
+        // document.getElementById('togglePasswordConfirmation').addEventListener('click', function() {
+        //     const passwordField = document.getElementById('password_');
+        //     const icon = this.querySelector('i');
+        //     if (passwordField.type === 'password') {
+        //         passwordField.type = 'text';
+        //         icon.classList.remove('fa-eye-slash');
+        //         icon.classList.add('fa-eye');
+        //     } else {
+        //         passwordField.type = 'password';
+        //         icon.classList.remove('fa-eye');
+        //         icon.classList.add('fa-eye-slash');
+        //     }
+        // });
     </script>
     <script>
         $(document).ready(function() { 
@@ -214,10 +214,10 @@
                 type: "POST",
                 data: $(this).serialize(),
                 success: function(response) {
-                    toastr.success('Registration successful! Redirecting...', 'Success');
-                    toastr.info(response.message || "We have send you a verification email please verify your email address for smooth login.thanks")
-                  
-                   // setTimeout(() => window.location.href = response.redirect, 2000);
+                    toastr.info(response.message || "We have send you a verification email please verify your email address for smooth login, Thanks")
+                     submitBtn.prop("disabled", false).text("Submitted");
+                        //  console.log(response)
+                        // setTimeout(() => window.location.href = response.redirect, 2000);
                 },
                 error: function(xhr) {
                     submitBtn.prop("disabled", false).text("Register");
