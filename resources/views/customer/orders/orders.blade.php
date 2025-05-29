@@ -131,7 +131,6 @@
                 </div>
             </div>
         </div>
-
         <div class="card p-2 counter_1">
             <div class="card-body">
                 <!-- {{-- //card body --}} -->
@@ -192,6 +191,28 @@
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
                         <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="50"
+                            style="border-radius: 50px" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-2 counter_2">
+            <div class="card-body">
+                <!-- {{-- //card body --}} -->
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="content-left">
+                        <h6 class="text-heading">Draft Orders</h6>
+                        <div class="d-flex align-items-center my-1">
+                            <h4 class="mb-0 me-2">{{ number_format($draftOrders) }}</h4>
+                        </div>
+                        <small class="mb-0">Orders in draft</small>
+                    </div>
+                    <div class="avatar">
+                        {{-- <span class="avatar-initial rounded bg-label-warning">
+                            <i class="ti ti-edit"></i>
+                        </span> --}}
+                        <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="50"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>

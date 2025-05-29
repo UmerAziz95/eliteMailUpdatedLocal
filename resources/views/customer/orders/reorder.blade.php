@@ -163,7 +163,7 @@
                 
 
                 <div class="col-md-6">
-                    <label>Inboxes per Domain</label>
+                    <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
                         <option value="1" {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->inboxes_per_domain == 1) ? 'selected' : '' }}>1</option>
                         <option value="2" {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->inboxes_per_domain == 2) ? 'selected' : '' }}>2</option>
@@ -177,7 +177,21 @@
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
-
+                <!-- Remaining Inboxes Progress Bar -->
+                <div class="col-md-12" style="display: none;">
+                    <div class="mb-3">
+                        <label>Remaining Inboxes</label>
+                        <div class="progress" style="height: 25px; background-color: #2a2a2a;">
+                            <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar" 
+                                 style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="remaining-inboxes-text">0 / 0 inboxes used</span>
+                            </div>
+                        </div>
+                        <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
+                    </div>
+                </div>
+                <!-- reorder form auto trim if  -->
                 <div class="col-md-6">
                     <label>First Name</label>
                     <input type="text" name="first_name" class="form-control" required 
@@ -268,7 +282,6 @@
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control" value="">
                 </div>
-
 
                 <!-- Price display section -->
                 <div class="price-display-section">
@@ -675,12 +688,26 @@
             return false;
         }
 
+        // Show loading state
+        Swal.fire({
+            title: 'Processing Order...',
+            text: 'Please wait while we process your reorder.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         // Submit form via AJAX if all validations pass
         $.ajax({
             url: '{{ route("customer.orders.reorder.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
+                // Close the loading dialog
+                Swal.close();
+                
                 if (response.success) {
                     toastr.success('Order submitted successfully');
                     subscribePlan(response.plan_id);
@@ -690,6 +717,8 @@
                 }
             },
             error: function(xhr) {
+                // Close the loading dialog
+                Swal.close();
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors
                     let firstErrorField = null;
@@ -761,6 +790,56 @@
             }
         }
     });
+
+    // Update remaining inboxes progress bar
+    function updateRemainingInboxes() {
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        
+        if (!orderInfo) {
+            return;
+        }
+        // Get max limit from reorder_info table
+        const maxInboxes = orderInfo.total_inboxes || 0;
+        
+        // Get current limit from domains calculation
+        const domainsText = $('#domains').val() || '';
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+        
+        // Calculate current inboxes from form inputs
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        const uniqueDomains = [...new Set(domains)];
+        const currentInboxes = uniqueDomains.length * inboxesPerDomain;
+        
+        // Calculate percentage used
+        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+        
+        // Update progress bar
+        const progressBar = $('#remaining-inboxes-bar');
+        const progressText = $('#remaining-inboxes-text');
+        const progressNote = $('#remaining-inboxes-note');
+        
+        // Set width and aria values
+        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+        progressBar.attr('aria-valuemax', 100);
+        
+        // Update text display
+        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        
+        // Update color based on usage
+        if (percentageUsed >= 90) {
+            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+            progressNote.html('(Warning: Nearly at limit)');
+        } else if (percentageUsed >= 75) {
+            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+            progressNote.html('(Approaching limit)');
+        } else {
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            progressNote.html('(Current usage)');
+        }
+    }
 
     // Rest of your existing code (calculateTotalInboxes, etc.)
     function calculateTotalInboxes() {
@@ -846,6 +925,9 @@
             `;
         }
         
+        // Update remaining inboxes progress bar
+        updateRemainingInboxes();
+        
         // Update displayed price
         $('.price-display-section').html(priceHtml);
         
@@ -860,6 +942,9 @@
 
     // Initial calculation
     calculateTotalInboxes();
+    
+    // Initialize remaining inboxes progress bar on page load
+    updateRemainingInboxes();
 
 
 // Add real-time domain validation

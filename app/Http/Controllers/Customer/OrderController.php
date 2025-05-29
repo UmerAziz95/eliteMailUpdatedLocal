@@ -65,6 +65,10 @@ class OrderController extends Controller
         $cancelledOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'cancelled')
             ->count();
+
+        $draftOrders = Order::where('user_id', $userId)
+            ->where('status_manage_by_admin', 'draft')
+            ->count();
             
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
@@ -93,7 +97,8 @@ class OrderController extends Controller
             'statuses',
             'expiredOrders',
             'rejectOrders',
-            'cancelledOrders'
+            'cancelledOrders',
+            'draftOrders'
         ));
     }
     // edit
@@ -725,7 +730,8 @@ class OrderController extends Controller
             'inProgressOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'in-progress')->count(),
             'expiredOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'expired')->count(),
             'rejectOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'reject')->count(), 
-            'cancelledOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'cancelled')->count()
+            'cancelledOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'cancelled')->count(),
+            'draftOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'draft')->count()
         ];
     }
 }

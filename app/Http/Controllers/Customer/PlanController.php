@@ -379,6 +379,7 @@ class PlanController extends Controller
             $order_info = $request->session()->get('order_info');
             // first check if order_info is not null
             if (!is_null($order_info)) {
+                $prefixVariants = $order_info['prefix_variants'] ?? [];
                 // save data on reorder_info table
                 $order->reorderInfo()->create([
                     'user_id' => $user->id,
@@ -403,6 +404,7 @@ class PlanController extends Controller
                     'inboxes_per_domain' => $order_info['inboxes_per_domain'],
                     'first_name' => $order_info['first_name'],
                     'last_name' => $order_info['last_name'],
+                    'prefix_variants' => $order_info['prefix_variants'],
                     'prefix_variant_1' => $order_info['prefix_variant_1'],
                     'prefix_variant_2' => $order_info['prefix_variant_2'],
                     'persona_password' => $order_info['persona_password']??"123",
