@@ -17,7 +17,7 @@ use App\Http\Controllers\Customer\PlanController as CustomerPlanController;
 use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\FeatureController;
-use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;
+use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;           
 
 // Contractor
 use App\Http\Controllers\Contractor\OrderController as ContractorOrderController;
@@ -49,7 +49,6 @@ use App\Http\Controllers\NotificationController;
 // test section
 
 
-
 //logs for application
 Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
@@ -74,19 +73,33 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
 Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
+//verfiy email address
+Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
+Route::post('/verify-email', [AuthController::class, 'VerifyEmailNow'])->name('verify.email.code');
+Route::get('/onboarding/{encrypted}', [AuthController::class, 'companyOnBoarding'])->name('company.onboarding');
+Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore'])->name('company.onboarding.store');
+
+//public plans
+Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
+
+// Chargebee webhooks (no auth required)
+Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
+
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
 });
 
+Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
+    Route::get('/profile', [AdminController::class, 'pr ofile'])->name('profile');
+    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
        Route::middleware('view.only')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
         
-        Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
-        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         //create admin 
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
@@ -100,6 +113,13 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Plans routes
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
+        
+        // Master Plan routes
+        Route::get('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
+        Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
+        Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
+        Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
+        Route::post('master-plan/force-sync', [App\Http\Controllers\Admin\MasterPlanController::class, 'forceSync'])->name('master-plan.force-sync');
     
         // Features routes
         Route::get('features/list', [FeatureController::class, 'list'])->name('features.list');
@@ -171,10 +191,10 @@ Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::cl
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 
+Route::get('/customer/orders/new-order/{id}/{encrypted?}', [CustomerOrderController::class, 'newOrder'])->name('customer.orders.new.order');
 Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [CustomerPlanController::class, 'index'])->name('pricing');
     Route::get('/dashboard', [App\Http\Controllers\Customer\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/orders/new-order/{id}', [CustomerOrderController::class, 'newOrder'])->name('orders.new.order');
     Route::get('/orders/reorder/{order_id}', [CustomerOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/reorder', [CustomerOrderController::class, 'store'])->name('orders.reorder.store');
     Route::get('/orders/{id}/view', [CustomerOrderController::class, 'view'])->name('orders.view');
@@ -194,11 +214,11 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     // Plans and pricing routes 
     Route::get('/plans/{id}', [CustomerPlanController::class, 'show'])->name('plans.show');
     Route::get('/plans/{id}/details', [CustomerPlanController::class, 'getPlanDetails'])->name('plans.details');
-    Route::post('/plans/{id}/subscribe', [CustomerPlanController::class, 'initiateSubscription'])->name('plans.subscribe');
     Route::post('/plans/{id}/upgrade', [CustomerPlanController::class, 'upgradePlan'])->name('plans.upgrade');
     Route::post('/subscription/cancel-current', [CustomerPlanController::class, 'cancelCurrentSubscription'])->name('subscription.current.cancel');
     Route::post('/plans/update-payment-method', [CustomerPlanController::class, 'updatePaymentMethod'])->name('plans.update-payment-method');
     Route::post('/plans/card-details', [CustomerPlanController::class, 'getCardDetails'])->name('plans.card-details');
+    Route::post('/plans/delete-payment-method', [CustomerPlanController::class, 'deletePaymentMethod'])->name('plans.delete-payment-method');
     
     // Subscription handling routes
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
@@ -217,7 +237,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'download'])->name('invoices.download');
     Route::get('/invoices/{invoiceId}', [CustomerInvoiceController::class, 'show'])->name('invoices.show');
 
-    // Order Email routes
+    // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
@@ -344,6 +364,8 @@ Route::get('/chargebee/webhook', function () {
 });
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
+// https://1c24-2407-aa80-314-d317-c9e3-2893-ed60-51c0.ngrok-free.app/webhook/payment/done
+Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
 Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
 
 

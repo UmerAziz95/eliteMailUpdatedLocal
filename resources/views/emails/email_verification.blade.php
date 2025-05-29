@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -361,45 +363,40 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="welcome-header">
-            <h2>Welcome to {{ config('app.name') }}! 👋</h2>
+<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+    <div class="container" style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px;">
+        <div class="welcome-header" style="text-align: center;">
+            <h2 style="color: #333;">Verify Your Email Address</h2>
         </div>
-        <div class="content">
+
+        <div class="content" style="margin-top: 20px; color: #555;">
             <p>Dear {{ $user->name }},</p>
             
-            <p>Thank you for joining <span class="highlight-text">{{ config('app.name') }}</span>! We're excited to have you on board.</p>
-            
-            <p>Your account has been successfully created with the following details:</p>
-            <div class="detail-list">
-                <ul style="list-style: none; padding: 0; margin: 20px 0;">
-                    <li style="background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="color: var(--second-primary); font-weight: 500; margin-right: 8px;">Name:</span> {{ $user->name }}
-                    </li>
-                    <li style="background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="color: var(--second-primary); font-weight: 500; margin-right: 8px;">Email:</span> {{ $user->email }}
-                    </li>
-                    <!-- password -->
-                    @if(isset($password))
-                    <li style="background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="color: var(--second-primary); font-weight: 500; margin-right: 8px;">Password:</span> {{ $user->password }}
-                    </li>
-                    @endif
-                </ul>
+            <p>Thank you for registering with <strong>{{ config('app.name') }}</strong>! To complete your sign-up, please verify your email address by clicking the link below or entering the verification code.</p>
+
+            <div style="margin: 20px 0;">
+                <p style="font-size: 16px;">🔐 <strong>Your 4-digit verification code is:</strong></p>
+                <p style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 15px; border-radius: 8px; text-align: center; color: #2a2a2a;">
+                    {{ $user->email_verification_code }}
+                </p>
             </div>
 
-            <p>You can now log in to your account and start exploring our services. Click the button below to access your dashboard:</p>
-            
-            <a href="{{ route('login') }}" class="btn-primary">Access Dashboard</a>
+            <p>Alternatively, you can verify your email using the following secure link:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ $verificationLink }}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
+                    Verify Email
+                </a>
+            </div>
+
+            <p>If you didn’t request this verification, you can safely ignore this email.</p>
         </div>
 
-        <div class="footer">
-            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-            
-            <p>Best regards,<br>
-            The <span class="highlight-text">{{ config('app.name') }}</span> Team</p>
+        <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+            <p>If you have any questions or need help, feel free to contact our support team.</p>
+            <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
         </div>
     </div>
 </body>
 </html>
+

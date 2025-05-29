@@ -13,10 +13,12 @@ class UserWelcomeMail extends Mailable
 
     public $user;
 
-    public function __construct(User $user)
+    public function __construct(User $user, $password = null)
     {
         $this->user = $user;
+        $this->password = $password;
     }
+    
 
     public function build()
     {

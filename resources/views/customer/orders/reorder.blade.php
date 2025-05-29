@@ -74,10 +74,8 @@
         <div class="card mb-3 p-3">
             <h5>Credit Card</h5>
             <div id="card-details">Loading card details...</div>
-            <div class="mt-3">
-                <button type="button" class="c-btn" onclick="updatePaymentMethod()">
-                    <i class="fa-solid fa-credit-card"></i> Change Card
-                </button>
+            <div class="mt-3" id="card-button-container">
+                <!-- Button will be dynamically added here -->
             </div>
         </div>
         @endif
@@ -196,18 +194,24 @@
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Hidden original prefix variant fields -->
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" required 
+                    <input type="text" name="prefix_variant_1" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_1-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" required 
+                    <input type="text" name="prefix_variant_2" class="form-control" 
                         value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
+                </div>
+
+                <!-- Dynamic prefix variants container -->
+                <div id="prefix-variants-container" class="row g-3 mt-4">
+                    <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
                 <!-- <div class="col-md-6">
@@ -398,6 +402,11 @@
     // Initial setup
     updatePlatformFields();
     initializePasswordToggles();
+    
+    // Load card details when page loads
+    if($('#card-details').length) {
+        loadCardDetails();
+    }
 
     // Handle platform changes
     $('#hosting').on('change', updatePlatformFields);
@@ -505,6 +514,43 @@
                 }
             }
         });
+
+        // Validate dynamic prefix variants
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        let firstErrorField = null;
+        
+        for (let i = 1; i <= inboxesPerDomain; i++) {
+            const prefixField = $(`input[name="prefix_variants[prefix_variant_${i}]"]`);
+            const value = prefixField.val()?.trim();
+            
+            if (i === 1 && !value) {
+                // First prefix variant is required
+                isValid = false;
+                prefixField.addClass('is-invalid');
+                prefixField.siblings('.invalid-feedback').text('This field is required');
+                
+                if (!firstErrorField) {
+                    firstErrorField = prefixField;
+                }
+            } else if (value) {
+                // Validate prefix variant format (alphanumeric and basic characters only)
+                const prefixRegex = /^[a-zA-Z0-9._-]+$/;
+                if (!prefixRegex.test(value)) {
+                    isValid = false;
+                    prefixField.addClass('is-invalid');
+                    prefixField.siblings('.invalid-feedback').text('Only letters, numbers, dots, hyphens and underscores are allowed');
+                    
+                    if (!firstErrorField) {
+                        firstErrorField = prefixField;
+                    }
+                }
+            }
+        }
+
+        // Focus on first error field if validation failed
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+        }
 
         return isValid;
     }
@@ -872,10 +918,13 @@ function loadCardDetails() {
                     response.payment_sources.forEach(source => {
                         if (source.type === 'card' && source.status === 'valid' && source.card) {
                             cardHtml += `
-                                <div class="mb-2">
+                                <div class="mb-2 d-flex justify-content-between align-items-center">
                                     <span class="opacity-50">
                                         <strong>Card</strong> **** **** **** ${source.card.last4} – Expires ${source.card.expiry_month}/${source.card.expiry_year}
                                     </span>
+                                    <button type="button" class="cancel-btn py-2 px-2 rounded-2 border-0" onclick="deletePaymentMethod('${source.id}')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
                                 </div>
                             `;
                         }
@@ -883,16 +932,40 @@ function loadCardDetails() {
                     
                     if (cardHtml) {
                         $('#card-details').html(cardHtml);
+                        // Show Change Card button when cards are available
+                        $('#card-button-container').html(`
+                            <button type="button" class="c-btn" onclick="updatePaymentMethod()">
+                                <i class="fa-solid fa-credit-card"></i> Change Card
+                            </button>
+                        `);
                     } else {
                         $('#card-details').html('<span class="opacity-50">No valid card details available</span>');
+                        // Show Add Card button when no valid cards
+                        $('#card-button-container').html(`
+                            <button type="button" class="c-btn btn-success" onclick="updatePaymentMethod()">
+                                <i class="fa-solid fa-plus"></i> Add Card
+                            </button>
+                        `);
                     }
                 } else {
                     $('#card-details').html('<span class="opacity-50">No card details available</span>');
+                    // Show Add Card button when no cards
+                    $('#card-button-container').html(`
+                        <button type="button" class="c-btn btn-success" onclick="updatePaymentMethod()">
+                            <i class="fa-solid fa-plus"></i> Add Card
+                        </button>
+                    `);
                 }
             } else {
                 $('#card-details').html(
                     '<span class="opacity-50">No card details available</span>'
                 );
+                // Show Add Card button when no cards
+                $('#card-button-container').html(`
+                    <button type="button" class="c-btn btn-success" onclick="updatePaymentMethod()">
+                        <i class="fa-solid fa-plus"></i> Add Card
+                    </button>
+                `);
             }
         },
         error: function(xhr) {
@@ -902,8 +975,91 @@ function loadCardDetails() {
         }
     });
 }
+function deletePaymentMethod(paymentSourceId) {
+    // Use SweetAlert for confirmation
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You are about to delete this payment method.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Deleting...',
+                text: 'Please wait while we delete your payment method.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: '{{ route("customer.plans.delete-payment-method") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    payment_source_id: paymentSourceId,
+                    order_id: '{{ $order->id ?? '' }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Your payment method has been deleted successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#3085d6'
+                        });
+                        // Reload card details to update the UI
+                        loadCardDetails();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message || 'Failed to delete payment method',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    // Handle specific error for primary/only payment method
+                    if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire({
+                            title: 'Warning!',
+                            text: xhr.responseJSON.message,
+                            icon: 'warning',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: xhr.responseJSON?.message || 'Failed to delete payment method',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                }
+            });
+        }
+    });
+}
 
 function updatePaymentMethod() {
+    // Show loading state
+    Swal.fire({
+        title: 'Loading...',
+        text: 'Please wait while we prepare the payment form.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     $.ajax({
         url: '{{ route("customer.plans.update-payment-method") }}',
         type: 'POST',
@@ -913,6 +1069,9 @@ function updatePaymentMethod() {
         },
         success: function(response) {
             if (response.success) {
+                // Close the loading dialog
+                Swal.close();
+                
                 // Open the payment page in a popup window
                 const popupWidth = 500;
                 const popupHeight = 700;
@@ -931,18 +1090,72 @@ function updatePaymentMethod() {
                         clearInterval(checkPopup);
                         // Reload card details without refreshing page
                         loadCardDetails();
-                        toastr.success('Payment method updated successfully');
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Your payment method has been updated successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#3085d6'
+                        });
                     }
                 }, 500);
             } else {
-                alert(response.message || 'Failed to initiate payment method update');
+                Swal.fire({
+                    title: 'Error!',
+                    text: response.message || 'Failed to initiate payment method update',
+                    icon: 'error',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         },
         error: function(xhr) {
-            alert(xhr.responseJSON?.message || 'Failed to initiate payment method update');
+            Swal.fire({
+                title: 'Error!',
+                text: xhr.responseJSON?.message || 'Failed to initiate payment method update',
+                icon: 'error',
+                confirmButtonColor: '#3085d6'
+            });
         }
     });
 }
+
+    // Dynamic prefix variant fields functionality
+    function generatePrefixVariantFields(count) {
+        const container = $('#prefix-variants-container');
+        container.empty();
+        
+        // Get existing prefix variant values from old fields or database
+        const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
+        
+        for (let i = 1; i <= count; i++) {
+            const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+                                (i === 1 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
+                                (i === 2 ? '{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+            
+            const fieldHtml = `
+                <div class="col-md-6">
+                    <label>Email Persona - Prefix Variant ${i}</label>
+                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                           value="${existingValue}" ${i === 1 ? 'required' : ''}>
+                    <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                    <p class="note">(Prefix variant ${i} for email persona)</p>
+                </div>
+            `;
+            container.append(fieldHtml);
+        }
+    }
+
+    // Handle inboxes per domain change event
+    $('#inboxes_per_domain').on('change', function() {
+        const inboxesPerDomain = parseInt($(this).val()) || 1;
+        generatePrefixVariantFields(inboxesPerDomain);
+        
+        // Recalculate total inboxes when inboxes per domain changes
+        calculateTotalInboxes();
+    });
+
+    // Initialize prefix variant fields on page load
+    const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    generatePrefixVariantFields(initialInboxesPerDomain);
 
 // subscribe plan function
 function subscribePlan(planId) {

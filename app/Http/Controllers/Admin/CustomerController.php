@@ -49,14 +49,17 @@ class CustomerController extends Controller
                 })
                 ->addColumn('status', function ($row) {
                     $checked = $row->status == 1 ? 'checked' : '';
-                    $statusText = $row->status == 1 ? 'active' : 'inactive';
                     $toggleClass = $row->status == 1 ? 'bg-success' : 'bg-danger';
+
+                    // Check if the authenticated user has the 'Mod' role
+                    $disabled =auth()->user()->hasPermissionTo('Mod') ? 'disabled' : '';
+
                     return '<div class="form-check form-switch">
-                        <input class="form-check-input status-toggle ' . $toggleClass . '" type="checkbox" role="switch" 
-                            data-id="' . $row->id . '" ' . $checked . '>
-                       
+                        <input class="form-check-input status-toggle ' . $toggleClass . '" type="checkbox" role="switch"
+                            data-id="' . $row->id . '" ' . $checked . ' ' . $disabled . '>
                     </div>';
                 })
+
                 //  <span class="ms-2 ' . ($row->status == 1 ? 'text-success' : 'text-danger') . '">' . ucfirst($statusText) . '</span>
                 // ->addColumn('action', function ($row) {
                 //     $user = auth()->user();

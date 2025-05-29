@@ -86,9 +86,30 @@
                                 <hr>
                                 <div class="d-flex flex-column">
                                     <span class="opacity-50">Prefix Variants</span>
-                                    <span>{{ $order->reorderInfo->first()->prefix_variant_1 ?? 'N/A' }},
-                                        {{ $order->reorderInfo->first()->prefix_variant_2 ?? 'N/A' }}</span>
-                                    {{-- <span>Variant 2: {{ $order->reorderInfo->first()->prefix_variant_2 ?? 'N/A' }}</span> --}}
+                                    @php
+                                        // Check if new prefix_variants JSON column exists and has data
+                                        $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
+                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+                                        
+                                        // If new format doesn't exist, fallback to old individual fields
+                                        if (empty($prefixVariants)) {
+                                            $prefixVariants = [];
+                                            if ($order->reorderInfo->first()->prefix_variant_1) {
+                                                $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
+                                            }
+                                            if ($order->reorderInfo->first()->prefix_variant_2) {
+                                                $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    @for($i = 1; $i <= $inboxesPerDomain; $i++)
+                                        @php
+                                            $variantKey = "prefix_variant_$i";
+                                            $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
+                                        @endphp
+                                        <span>Variant {{ $i }}: {{ $variantValue }}</span>
+                                    @endfor
                                 </div>
                                 <div class="d-flex flex-column mt-3">
                                     <span class="opacity-50">Profile Picture URL</span>
@@ -198,19 +219,55 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Sequencer Login</span>
+                                    <span class="opacity-50">Sending plateform Sequencer - Login</span>
                                     <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
                                 </div>
-
+                                <!-- Sending plateform Sequencer - Password  -->
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Sending plateform Sequencer - Password </span>
+                                    <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
+                                </div>
                                 <div class="d-flex flex-column">
                                     <span class="opacity-50">Domains</span>
                                     @php
-                                        $domains = explode(',', $order->reorderInfo->first()->domains);
+                                        // Get the domains string from the order
+                                        $domainsString = $order->reorderInfo->first()->domains;
+                                        
+                                        // Split by both newlines and commas
+                                        $domainsArray = [];
+                                        
+                                        // First split by newlines
+                                        $lines = preg_split('/\r\n|\r|\n/', $domainsString);
+                                        
+                                        // Then process each line
+                                        foreach ($lines as $line) {
+                                            if (trim($line)) {
+                                                // Split line by commas and add to domains array
+                                                $lineItems = explode(',', $line);
+                                                foreach ($lineItems as $item) {
+                                                    if (trim($item)) {
+                                                        $domainsArray[] = trim($item);
+                                                    }
+                                                }
+                                            }
+                                        }
                                     @endphp
-                                    @foreach ($domains as $domain)
-                                        <span>{{ trim($domain) }}</span>
+
+                                    @foreach ($domainsArray as $domain)
+                                        <span class="d-block">{{ $domain }}</span>
                                     @endforeach
                                 </div>
+                                @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
+                                <div class="d-flex flex-column mb-3 mt-3">
+                                    <span class="opacity-50">Backup Codes</span>
+                                    @php
+                                    $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
+                                    @endphp
+                                    @foreach($backupCodes as $backupCode)
+                                    <span>{{ trim($backupCode) }}</span>
+                                    @endforeach
+                                </div>
+                                @endif
                             @else
                                 <div class="text-muted">No configuration information available</div>
                             @endif

@@ -14,7 +14,8 @@ class Plan extends Model
         'duration',
         'is_active',
         'min_inbox',
-        'max_inbox'
+        'max_inbox',
+        'master_plan_id'
     ];
 
     protected $casts = [
@@ -35,6 +36,44 @@ class Plan extends Model
 
     public function subscriptions(){
         return $this->hasMany(Subscription::class);
+    }
+
+    // Master plan relationships
+    public function masterPlan()
+    {
+        return $this->belongsTo(MasterPlan::class, 'master_plan_id');
+    }
+
+    // Scopes
+    public function scopeVolumeItems($query)
+    {
+        return $query->whereNotNull('master_plan_id');
+    }
+
+    public function scopeMasterPlans($query)
+    {
+        return $query->whereNull('master_plan_id')->where('name', 'LIKE', '%master%');
+    }
+
+    // Helper methods
+    public static function getMasterPlan()
+    {
+        return self::whereNull('master_plan_id')->where('name', 'LIKE', '%master%')->first();
+    }
+
+    public static function masterPlanExists()
+    {
+        return self::whereNull('master_plan_id')->where('name', 'LIKE', '%master%')->exists();
+    }
+
+    public function isMasterPlan()
+    {
+        return is_null($this->master_plan_id) && stripos($this->name, 'master') !== false;
+    }
+
+    public function isVolumeItem()
+    {
+        return !is_null($this->master_plan_id);
     }
 
     // get mostly used plan

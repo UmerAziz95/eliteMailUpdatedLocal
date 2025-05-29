@@ -732,11 +732,22 @@
                     <!-- Customer Billing Address -->
                     <div class="card p-3 mb-4">
                         <div class="card-header d-flex align-items-center justify-content-between gap-2">
-                            <h5 class="card-action-title mb-0">Billing Address</h5>
+                            <h5 class="card-action-title mb-0">Billing Address
+                                <span id="syn-label">
+                                    @if(isset(Auth::user()->billing_address_syn))
+                                        @if(Auth::user()->billing_address_syn)
+                                            <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                        @else
+                                            <span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>
+                                        @endif
+                                    @endif
+                                </span>
+                            </h5>
+                            
                             <div class="card-action-element">
                                 <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
-                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
-                                    address</button>
+                                    data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit Address
+                                </button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -744,35 +755,48 @@
                                 <div class="col-xl-7 col-12">
                                     <div class="row mb-0 gx-2">
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Company Name:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_company ?? 'Not set' }}</div>
+                                        <div id="billing-company-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_company ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Billing Email:</div>
                                         <div class="col-sm-8 opacity-50 small">{{ Auth::user()->email }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading mb-0">Billing Address:</div>
-                                        <div class="col-sm-8 opacity-50 small mb-0">
-                                            {{ Auth::user()->billing_address ?? 'Not set' }}<br>
-                                            @if(Auth::user()->billing_address2)
-                                                {{ Auth::user()->billing_address2 }}<br>
-                                            @endif
-                                            @if(Auth::user()->billing_landmark)
-                                                {{ Auth::user()->billing_landmark }}<br>
-                                            @endif
-                                            {{ Auth::user()->billing_city ?? 'Not set' }}
+                                        <div id="billing-address-container" class="col-sm-8 opacity-50 small mb-0">
+                                            <span id="billing-address1-display">{{ Auth::user()->billing_address ?? 'Not set' }}</span><br>
+                                            <span id="billing-address2-display" class="{{ Auth::user()->billing_address2 ? '' : 'd-none' }}">
+                                                {{ Auth::user()->billing_address2 }}
+                                                <br>
+                                            </span>
+                                            <span id="billing-landmark-display" class="{{ Auth::user()->billing_landmark ? '' : 'd-none' }}">
+                                                {{ Auth::user()->billing_landmark }}
+                                                <br>
+                                            </span>
+                                            <span id="billing-city-display">{{ Auth::user()->billing_city ?? 'Not set' }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-xl-5 col-12">
                                     <div class="row mb-0 gx-2">
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Country:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_country ?? 'Not set' }}</div>
+                                        <div id="billing-country-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_country ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">State:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_state ?? 'Not set' }}</div>
+                                        <div id="billing-state-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_state ?? 'Not set' }}</div>
 
                                         <div class="col-sm-4 mb-sm-2 text-nowrap fw-medium text-heading">Zipcode:</div>
-                                        <div class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_zip ?? 'Not set' }}</div>
+                                        <div id="billing-zip-display" class="col-sm-8 opacity-50 small">{{ Auth::user()->billing_zip ?? 'Not set' }}</div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-3 mb-4">
+                        <div class="card-body">
+                            <div class="">
+                                <h5>Credit Card</h5>
+                                <div id="card-details">Loading card details...</div>
+                                <div class="mt-3" id="card-button-container">
+                                    <!-- Button will be dynamically added here -->
                                 </div>
                             </div>
                         </div>
@@ -792,8 +816,20 @@
                     <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-6">
-                        <h4 class="address-title mb-2">Edit Address</h4>
+                        <h4 class="address-title mb-2">
+                            Edit Address
+                            <span id="syn-edit-label">
+                                @if(isset(Auth::user()->billing_address_syn))
+                                    @if(Auth::user()->billing_address_syn)
+                                        <span class="badge bg-label-success ms-1">Synced with Chargebee</span>
+                                    @else
+                                        <span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>
+                                    @endif
+                                @endif
+                            </span>
+                        </h4>
                         <p class="address-subtitle">Edit your current address</p>
+                        <!--  -->
                     </div>
                     <form id="addNewAddressForm" class="row g-6">
                     <!-- billing_company -->
@@ -1059,14 +1095,25 @@
                         }
                     },
                     error: function(xhr) {
+                        if(xhr.status === 422) {
+                            var errors = xhr.responseJSON.errors;
+                            Object.keys(errors).forEach(function(key) {
+                                toastr.error(errors[key][0]);
+                            });
+                        } else if (xhr.status === 400) {
+                            toastr.error(xhr.responseJSON.message);
+                        } else {
+                            toastr.error(xhr.responseJSON.message);
+                        }
                         // Show error message
-                        toastr.error('Error updating profile');
+                        // toastr.error('Error updating profile');
                         console.log(xhr.responseText);
                     }
                 });
             });
 
         });
+        // 
         $(document).ready(function() {
             $('#formChangePassword').on('submit', function(e) {
                 e.preventDefault();
@@ -1372,6 +1419,18 @@
         $('#addNewAddressForm').on('submit', function(e) {
             e.preventDefault();
 
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Updating your billing address',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             $.ajax({
                 url: "{{ route('customer.address.update') }}",
                 type: "POST",
@@ -1380,20 +1439,25 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
+                    // Close loading indicator
+                    Swal.close();
+                    
                     if (response.success) {
                         // Close modal
                         $('#addRoleModal').modal('hide');
                         
                         // Show success message
                         toastr.success('Billing address updated successfully');
-
-                        // Reload page to reflect changes
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 1500);
+                        
+                        // Update billing address section without reloading the page
+                        // Include the sync status from the response
+                        updateBillingAddress(response.billing_address_syn);
                     }
                 },
                 error: function(xhr) {
+                    // Close loading indicator
+                    Swal.close();
+                    
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
                         Object.values(xhr.responseJSON.errors).forEach(function(error) {
                             toastr.error(error[0]);
@@ -1404,5 +1468,273 @@
                 }
             });
         });
+        function loadCardDetails() {
+            $.ajax({
+                url: '{{ route("customer.plans.card-details") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    order_id: ''
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const card = response.card;
+                        if (response.payment_sources && response.payment_sources.length > 0) {
+                            let cardHtml = '';
+                            response.payment_sources.forEach(source => {
+                                if (source.type === 'card' && source.status === 'valid' && source.card) {
+                                    cardHtml += `
+                                        <div class="mb-2 d-flex justify-content-between align-items-center">
+                                            <span class="opacity-50">
+                                                <strong>Card</strong> **** **** **** ${source.card.last4} – Expires ${source.card.expiry_month}/${source.card.expiry_year}
+                                            </span>
+                                            <button type="button" class="cancel-btn py-2 px-2 rounded-2 border-0" onclick="deletePaymentMethod('${source.id}')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            });
+                            
+                            if (cardHtml) {
+                                $('#card-details').html(cardHtml);
+                                // Show Change Card button when cards are available
+                                $('#card-button-container').html(`
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="updatePaymentMethod()">
+                                        <i class="fa-solid fa-credit-card"></i> Change Card
+                                    </button>
+                                `);
+                            } else {
+                                $('#card-details').html('<span class="opacity-50">No valid card details available</span>');
+                                // Show Add Card button when no valid cards
+                                $('#card-button-container').html(`
+                                    <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                        <i class="fa-solid fa-plus"></i> Add Card
+                                    </button>
+                                `);
+                            }
+                        } else {
+                            $('#card-details').html('<span class="opacity-50">No card details available</span>');
+                            // Show Add Card button when no cards
+                            $('#card-button-container').html(`
+                                <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                    <i class="fa-solid fa-plus"></i> Add Card
+                                </button>
+                            `);
+                        }
+                    } else {
+                        $('#card-details').html(
+                            '<span class="opacity-50">No card details available</span>'
+                        );
+                        // Show Add Card button when no cards
+                        $('#card-button-container').html(`
+                            <button type="button" class="btn btn-sm btn-success" onclick="updatePaymentMethod()">
+                                <i class="fa-solid fa-plus"></i> Add Card
+                            </button>
+                        `);
+                    }
+                },
+                error: function(xhr) {
+                    $('#card-details').html(
+                        '<span class="opacity-50">Failed to load card details</span>'
+                    );
+                }
+            });
+        }
+        // Load card details when page loads
+        if($('#card-details').length) {
+            loadCardDetails();
+        }
+        function deletePaymentMethod(paymentSourceId) {
+            // Use SweetAlert for confirmation
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You are about to delete this payment method.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Deleting...',
+                        text: 'Please wait while we delete your payment method.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    $.ajax({
+                        url: '{{ route("customer.plans.delete-payment-method") }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            payment_source_id: paymentSourceId,
+                            order_id: ''
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'Your payment method has been deleted successfully.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                                // Reload card details to update the UI
+                                loadCardDetails();
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: response.message || 'Failed to delete payment method',
+                                    icon: 'error',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            // Handle specific error for primary/only payment method
+                            if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.message) {
+                                Swal.fire({
+                                    title: 'Warning!',
+                                    text: xhr.responseJSON.message,
+                                    icon: 'warning',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: xhr.responseJSON?.message || 'Failed to delete payment method',
+                                    icon: 'error',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        
+        function updatePaymentMethod() {
+            // Show loading state
+            Swal.fire({
+                title: 'Loading...',
+                text: 'Please wait while we prepare the payment form.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: '{{ route("customer.plans.update-payment-method") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    order_id: ''
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Close the loading dialog
+                        Swal.close();
+                        
+                        // Open the payment page in a popup window
+                        const popupWidth = 500;
+                        const popupHeight = 700;
+                        const left = (window.innerWidth - popupWidth) / 2;
+                        const top = (window.innerHeight - popupHeight) / 2;
+                        
+                        const popup = window.open(
+                            response.hosted_page_url,
+                            'payment_method_update',
+                            `width=${popupWidth},height=${popupHeight},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                        );
+                        
+                        // Check when popup is closed
+                        const checkPopup = setInterval(function() {
+                            if (popup.closed) {
+                                clearInterval(checkPopup);
+                                // Reload card details without refreshing page
+                                loadCardDetails();
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Your payment method has been updated successfully.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        }, 500);
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message || 'Failed to initiate payment method update',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: xhr.responseJSON?.message || 'Failed to initiate payment method update',
+                        icon: 'error',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            });
+        }
+
+        // Function to update billing address section without page reload
+        function updateBillingAddress(isSynced) {
+            // Get values from the form
+            const company = $('#modalAddressCompany').val() || 'Not set';
+            const address1 = $('#modalAddressAddress1').val() || 'Not set';
+            const address2 = $('#modalAddressAddress2').val();
+            const landmark = $('#modalAddressLandmark').val();
+            const city = $('#modalAddressCity').val() || 'Not set';
+            const state = $('#modalAddressState').val() || 'Not set';
+            const zipCode = $('#modalAddressZipCode').val() || 'Not set';
+            const country = $('#modalcountry').val() || 'Not set';
+            
+            // Update display elements
+            $('#billing-company-display').text(company);
+            $('#billing-address1-display').text(address1);
+            
+            // Handle optional fields
+            if (address2 && address2.trim() !== '') {
+                $('#billing-address2-display').text(address2).removeClass('d-none');
+            } else {
+                $('#billing-address2-display').addClass('d-none');
+            }
+            
+            if (landmark && landmark.trim() !== '') {
+                $('#billing-landmark-display').text(landmark).removeClass('d-none');
+            } else {
+                $('#billing-landmark-display').addClass('d-none');
+            }
+            
+            $('#billing-city-display').text(city);
+            $('#billing-country-display').text(country);
+            $('#billing-state-display').text(state);
+            $('#billing-zip-display').text(zipCode);
+            
+            // Update Chargebee sync badge if available
+            if (typeof isSynced !== 'undefined') {
+                // Convert to boolean to ensure consistent behavior
+                isSynced = isSynced === true || isSynced === 1 || isSynced === "1" || isSynced === "true";
+                
+                if (isSynced) {
+                    $('#syn-label').html('<span class="badge bg-label-success ms-1">Synced with Chargebee</span>');
+                    $('#syn-edit-label').html('<span class="badge bg-label-success ms-1">Synced with Chargebee</span>');
+                } else {
+                    $('#syn-edit-label').html('<span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>');
+                    $('#syn-label').html('<span class="badge bg-label-danger ms-1">Not synced with Chargebee</span>');
+                }
+            }
+        }
     </script>
 @endpush
