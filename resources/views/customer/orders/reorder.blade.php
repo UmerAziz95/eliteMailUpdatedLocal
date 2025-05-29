@@ -163,7 +163,7 @@
                 
 
                 <div class="col-md-6">
-                    <label>Inboxes per Domain</label>
+                    <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
                         <option value="1" {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->inboxes_per_domain == 1) ? 'selected' : '' }}>1</option>
                         <option value="2" {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->inboxes_per_domain == 2) ? 'selected' : '' }}>2</option>
