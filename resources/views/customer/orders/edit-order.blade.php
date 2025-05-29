@@ -305,7 +305,11 @@
                     @endif
                 </div>
 
-                <div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="c-btn py-1 px-3 rounded-2 border-0" id="orderImportBtn">
+                        <i class="fa-solid fa-file-import"></i>
+                        Import Order
+                    </button>
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0">
                         <i class="fa-solid fa-cart-shopping"></i>
                         Purchase Accounts
@@ -315,10 +319,476 @@
         </div>
     </section>
 </form>
+
+<!-- Order Import Modal -->
+<div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="background-color: #1e1e1e; border: 1px solid #444;">
+            <div class="modal-header" style="border-bottom: 1px solid #444;">
+                <h5 class="modal-title" id="orderImportModalLabel">
+                    <i class="fa-solid fa-file-import me-2"></i>
+                    Import Order Data
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="text-light">Select an order from the table below to import its data into the current form. This will populate all fields with the selected order's information.</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="ordersImportTable" class="table table-dark table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Plan</th>
+                                <th>Domains</th>
+                                <th>Total Inboxes</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #444;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-times me-1"></i>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+// Global function for calculating total inboxes - accessible from import functionality
+function calculateTotalInboxes() {
+    const domainsText = $('#domains').val();
+    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    
+    if (!domainsText) {
+        $('#total_inboxes').val(0);
+        updateRemainingInboxesBar(0);
+        return 0;
+    }
+    
+    // Split domains by newlines and filter out empty entries
+    const domains = domainsText.split(/[\n,]+/)
+        .map(domain => domain.trim())
+        .filter(domain => domain.length > 0);
+        
+    const uniqueDomains = [...new Set(domains)];
+    const totalInboxes = uniqueDomains.length * inboxesPerDomain;
+    
+    $('#total_inboxes').val(totalInboxes);
+    
+    // Update progress bar with current values
+    updateRemainingInboxesBar(totalInboxes);
+    
+    return totalInboxes;
+}
+
+// Global function for updating remaining inboxes progress bar
+function updateRemainingInboxesBar(currentInboxes = null) {
+    // Get current inboxes if not provided
+    if (currentInboxes === null) {
+        const domainsText = $('#domains').val() || '';
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        const uniqueDomains = [...new Set(domains)];
+        currentInboxes = uniqueDomains.length * inboxesPerDomain;
+    }
+    
+    // Get max limit - try to get from current order first, then from plan
+    const orderInfo = @json(optional($order)->reorderInfo->first());
+    const planInfo = @json($plan ?? null);
+    let maxInboxes = 0;
+    
+    if (orderInfo && orderInfo.total_inboxes) {
+        maxInboxes = orderInfo.total_inboxes;
+    } else if (planInfo && planInfo.max_inbox) {
+        maxInboxes = planInfo.max_inbox;
+    }
+    
+    // Calculate percentage used
+    const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+    
+    // Update progress bar elements
+    const progressBar = $('#remaining-inboxes-bar');
+    const progressText = $('#remaining-inboxes-text');
+    const progressNote = $('#remaining-inboxes-note');
+    
+    if (progressBar.length === 0) {
+        return; // Progress bar not found, exit gracefully
+    }
+    
+    // Set width and aria values
+    progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+    progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+    progressBar.attr('aria-valuemax', 100);
+    
+    // Update text display
+    progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+    
+    // Update color and note based on usage
+    if (percentageUsed >= 100) {
+        progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+        progressNote.html('(Limit reached)');
+    } else if (percentageUsed >= 90) {
+        progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
+        progressNote.html('(Critical: Nearly at limit)');
+    } else if (percentageUsed >= 75) {
+        progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+        progressNote.html('(Warning: Approaching limit)');
+    } else if (percentageUsed >= 50) {
+        progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
+        progressNote.html('(Moderate usage)');
+    } else {
+        progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+        progressNote.html('(Current usage)');
+    }
+}
+
+$(document).ready(function() {
+    let ordersImportTable;
+    
+    // Initialize Order Import Modal
+    $('#orderImportBtn').on('click', function() {
+        $('#orderImportModal').modal('show');
+        initializeOrdersImportTable();
+    });
+    
+    // Add event listeners for automatic progress bar updates
+    $(document).on('input change', '#domains, #inboxes_per_domain', function() {
+        if (typeof calculateTotalInboxes === 'function') {
+            calculateTotalInboxes();
+        }
+    });
+    
+    // Initial progress bar update on page load
+    setTimeout(() => {
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar();
+        }
+    }, 1000);
+    
+    function initializeOrdersImportTable() {
+        if (ordersImportTable) {
+            ordersImportTable.destroy();
+        }
+        
+        ordersImportTable = $('#ordersImportTable').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            pageLength: 10,
+            ajax: {
+                url: "{{ route('customer.orders.import.data') }}",
+                type: "GET",
+                data: function(d) {
+                    d.for_import = true; // Flag to indicate this is for import
+                    d.exclude_current = "{{ isset($order) ? $order->id : '' }}"; // Exclude current order
+                }
+            },
+            columns: [
+                { 
+                    data: 'id', 
+                    name: 'id',
+                    width: '10%'
+                },
+                { 
+                    data: 'plan.name', 
+                    name: 'plan.name',
+                    width: '15%',
+                    defaultContent: 'N/A'
+                },
+                { 
+                    data: 'domains_preview', 
+                    name: 'domains_preview',
+                    width: '25%',
+                    orderable: false,
+                    render: function(data, type, row) {
+                        if (!data || data === 'N/A') return 'N/A';
+                        const domains = data.split('\n').filter(d => d.trim());
+                        if (domains.length <= 2) {
+                            return domains.join('<br>');
+                        }
+                        return domains.slice(0, 2).join('<br>') + '<br><small class="text-muted">+' + (domains.length - 2) + ' more...</small>';
+                    }
+                },
+                { 
+                    data: 'total_inboxes', 
+                    name: 'total_inboxes',
+                    width: '10%',
+                    defaultContent: '0'
+                },
+                { 
+                    data: 'status_badge', 
+                    name: 'status_manage_by_admin',
+                    width: '15%',
+                    orderable: false
+                },
+                { 
+                    data: 'created_at_formatted', 
+                    name: 'created_at',
+                    width: '15%'
+                },
+                { 
+                    data: 'action', 
+                    name: 'action', 
+                    orderable: false, 
+                    searchable: false,
+                    width: '10%'
+                }
+            ],
+            order: [[0, 'desc']],
+            language: {
+                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+                emptyTable: "No orders available for import",
+                zeroRecords: "No matching orders found"
+            }
+        });
+    }
+    
+    // Handle order import
+    $(document).on('click', '.import-order-btn', function() {
+        const orderId = $(this).data('order-id');
+        
+        Swal.fire({
+            title: 'Import Order Data?',
+            text: 'This will replace all current form data with the selected order\'s information. Are you sure?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Import Data',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                importOrderData(orderId);
+            }
+        });
+    });
+    
+    function importOrderData(orderId) {
+        // Show loading
+        Swal.fire({
+            title: 'Importing Order Data...',
+            text: 'Please wait while we import the order data.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        $.ajax({
+            url: "{{ route('customer.orders.import-data', ':id') }}".replace(':id', orderId),
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.data) {
+                    populateFormWithOrderData(response.data);
+                    $('#orderImportModal').modal('hide');
+                    
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order data has been imported successfully.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message || 'Failed to import order data.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                let errorMessage = 'An error occurred while importing order data.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+    
+    function populateFormWithOrderData(orderData) {
+        // Clear any existing validation errors
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        const reorderInfo = orderData.reorder_info;
+        if (!reorderInfo) {
+            toastr.warning('No detailed information available for this order.');
+            return;
+        }
+        
+        // Populate basic fields
+        if (reorderInfo.forwarding_url) $('#forwarding').val(reorderInfo.forwarding_url);
+        if (reorderInfo.hosting_platform) $('#hosting').val(reorderInfo.hosting_platform).trigger('change');
+        if (reorderInfo.domains) $('#domains').val(reorderInfo.domains);
+        if (reorderInfo.sending_platform) $('#sending_platform').val(reorderInfo.sending_platform).trigger('change');
+        if (reorderInfo.inboxes_per_domain) $('#inboxes_per_domain').val(reorderInfo.inboxes_per_domain).trigger('change');
+        
+        // Populate email account information
+        if (reorderInfo.first_name) $('input[name="first_name"]').val(reorderInfo.first_name);
+        if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
+        if (reorderInfo.email_persona_password) $('input[name="email_persona_password"]').val(reorderInfo.email_persona_password);
+        if (reorderInfo.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(reorderInfo.email_persona_picture_link);
+        if (reorderInfo.master_inbox_email) $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
+        if (reorderInfo.additional_info) $('textarea[name="additional_info"]').val(reorderInfo.additional_info);
+        
+        // Populate prefix variants if available
+        if (reorderInfo.prefix_variants) {
+            try {
+                const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                    ? JSON.parse(reorderInfo.prefix_variants) 
+                    : reorderInfo.prefix_variants;
+                
+                Object.keys(prefixVariants).forEach(key => {
+                    const input = $(`input[name="prefix_variants[${key}]"]`);
+                    if (input.length && prefixVariants[key]) {
+                        input.val(prefixVariants[key]);
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not parse prefix variants:', e);
+            }
+        }
+        
+        // Populate dynamic platform fields
+        setTimeout(() => {
+            populateDynamicFields(reorderInfo);
+        }, 500);
+        
+        // Recalculate totals and check domain limits with a slight delay to ensure all fields are populated
+        setTimeout(() => {
+            if (typeof calculateTotalInboxes === 'function') {
+                calculateTotalInboxes();
+            }
+            
+            // Check domain cutting if needed
+            checkDomainCutting();
+            
+            // Force update progress bar one more time to ensure it's correct
+            setTimeout(() => {
+                if (typeof updateRemainingInboxesBar === 'function') {
+                    updateRemainingInboxesBar();
+                }
+            }, 200);
+        }, 600);
+        
+        toastr.success('Order data imported successfully!');
+    }
+    
+    function populateDynamicFields(reorderInfo) {
+        // Populate hosting platform fields
+        const hostingFields = [
+            'backup_codes', 'bison_url', 'bison_workspace', 
+            'platform_login', 'platform_password'
+        ];
+        
+        hostingFields.forEach(field => {
+            if (reorderInfo[field]) {
+                const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                if (input.length) {
+                    input.val(reorderInfo[field]);
+                }
+            }
+        });
+        
+        // Populate sending platform fields
+        const sendingFields = [
+            'sequencer_login', 'sequencer_password'
+        ];
+        
+        sendingFields.forEach(field => {
+            if (reorderInfo[field]) {
+                const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                if (input.length) {
+                    input.val(reorderInfo[field]);
+                }
+            }
+        });
+    }
+    
+    function checkDomainCutting() {
+        const domainsText = $('#domains').val();
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        if (!domainsText) return;
+        
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        const totalInboxes = domains.length * inboxesPerDomain;
+        
+        // Get current order's total inboxes limit from reorder_info or plan
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        const planInfo = @json($plan ?? null);
+        let TOTAL_INBOXES = 0;
+        
+        if (orderInfo && orderInfo.total_inboxes) {
+            TOTAL_INBOXES = orderInfo.total_inboxes;
+        } else if (planInfo && planInfo.max_inbox) {
+            TOTAL_INBOXES = planInfo.max_inbox;
+        }
+        
+        if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+            // Automatically trim domains to fit within plan limit
+            const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+            const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+            const removedCount = domains.length - maxDomainsAllowed;
+            
+            $('#domains').val(trimmedDomains.join('\n'));
+            
+            // Recalculate totals after trimming
+            if (typeof calculateTotalInboxes === 'function') {
+                calculateTotalInboxes();
+            }
+            
+            // Show notification about the automatic trimming
+            Swal.fire({
+                title: 'Domains Automatically Trimmed',
+                html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
+                       Original domains: <strong>${domains.length}</strong><br>
+                       Kept domains: <strong>${maxDomainsAllowed}</strong><br>
+                       Removed domains: <strong>${removedCount}</strong>`,
+                icon: 'info',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+    }
+    
+});  // Close the first $(document).ready() block
+
+// Second document ready block for existing functionality
 $(document).ready(function() {
     function generateField(name, field, existingValue = '') {
         const fieldId = `${name}`;
@@ -461,65 +931,16 @@ $(document).ready(function() {
             initializePasswordToggles();
         }
     }
-
     // Initial sending platform setup
     updateSendingPlatformFields();
 
     // Handle sending platform changes
     $('#sending_platform').on('change', updateSendingPlatformFields);
-    // Update remaining inboxes progress bar
+    // Update remaining inboxes progress bar (legacy function for existing code)
     function updateRemainingInboxes() {
-        const orderInfo = @json(optional($order)->reorderInfo->first());
-        
-        if (!orderInfo) {
-            return;
-        }
-        // Get max limit from reorder_info table
-        const maxInboxes = orderInfo.total_inboxes || 0;
-        
-        // Get current limit from domains calculation
-        const domainsText = $('#domains').val() || '';
-        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-        
-        // Calculate current inboxes from form inputs
-        const domains = domainsText.split(/[\n,]+/)
-            .map(domain => domain.trim())
-            .filter(domain => domain.length > 0);
-        const uniqueDomains = [...new Set(domains)];
-        const currentInboxes = uniqueDomains.length * inboxesPerDomain;
-        
-        // Calculate percentage used
-        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
-        
-        // Update progress bar
-        const progressBar = $('#remaining-inboxes-bar');
-        const progressText = $('#remaining-inboxes-text');
-        const progressNote = $('#remaining-inboxes-note');
-        
-        // Set width and aria values
-        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
-        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
-        progressBar.attr('aria-valuemax', 100);
-        
-        // Update text display
-        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
-        
-        // Update color based on usage
-        if (percentageUsed >= 100) {
-            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-            progressNote.html('(Limit reached)');
-        } else if (percentageUsed >= 90) {
-            progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
-            progressNote.html('(Critical: Nearly at limit)');
-        } else if (percentageUsed >= 75) {
-            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
-            progressNote.html('(Warning: Approaching limit)');
-        } else if (percentageUsed >= 50) {
-            progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
-            progressNote.html('(Moderate usage)');
-        } else {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            progressNote.html('(Current usage)');
+        // Use the global function instead
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar();
         }
     }
 
@@ -545,8 +966,10 @@ $(document).ready(function() {
         console.log(orderInfo);
         const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
         
-        // Update remaining inboxes progress bar
-        updateRemainingInboxes();
+        // Update remaining inboxes progress bar using global function
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar(totalInboxes);
+        }
         let priceHtml = '';
         
         if (!totalInboxes) {
@@ -684,14 +1107,15 @@ $(document).ready(function() {
         calculateTotalInboxes();
     });
 
-    // Calculate total inboxes whenever domains or inboxes per domain changes
-    $('#domains, #inboxes_per_domain').on('input change', calculateTotalInboxes);
+    // Note: Event listeners for domains and inboxes_per_domain are already set up in the first document.ready block
 
     // Initial calculation
     calculateTotalInboxes();
     
     // Initial remaining inboxes progress bar update
-    updateRemainingInboxes();
+    if (typeof updateRemainingInboxesBar === 'function') {
+        updateRemainingInboxesBar();
+    }
     
     // Initial URL validation
     $('#forwarding').trigger('blur');
@@ -986,7 +1410,7 @@ $(document).ready(function() {
     generatePrefixVariantFields(initialInboxesPerDomain);
     
     // Initialize remaining inboxes progress bar on page load
-    updateRemainingInboxes();
+    updateRemainingInboxesBar();
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();

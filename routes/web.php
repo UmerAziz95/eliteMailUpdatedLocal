@@ -207,6 +207,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/orders/{id}/edit', [CustomerOrderController::class, 'edit'])->name('order.edit');
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [CustomerOrderController::class, 'getOrders'])->name('orders.data');
+    // Route::get('/orders/import/{id}', [CustomerOrderController::class, 'getOrderImportData'])->name('orders.import');
   
    
     Route::get('/profile', function () {
@@ -247,6 +248,10 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
     Route::get('/orders/emails/{id}/export', [CustomerOrderEmailController::class, 'exportCsv'])->name('orders.email.exportCsv');
+    
+    // Order Import routes
+    Route::get('/orders/import/data', [CustomerOrderController::class, 'getOrdersForImport'])->name('orders.import.data');
+    Route::get('/orders/import-data/{id}', [CustomerOrderController::class, 'importOrderData'])->name('orders.import-data');
     //support 
     Route::get('/support', [App\Http\Controllers\Customer\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Customer\SupportTicketController::class, 'getTickets'])->name('support.tickets');
