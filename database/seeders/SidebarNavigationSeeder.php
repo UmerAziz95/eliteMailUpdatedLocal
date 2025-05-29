@@ -80,7 +80,13 @@ class SidebarNavigationSeeder extends Seeder
                         "name" => "Invoices",
                         "icon" => "ti ti-file-invoice fs-5",
                         "route" => "admin.invoices.index",
-                        "permission" => "admin.invoices.index"
+                        "permission" => "Invoices"
+                    ],
+                    [
+                        "name" => "Panels",
+                        "icon" => "ti ti-file-invoice fs-5",
+                        "route" => "admin.panels.index",
+                        "permission" => "Panels"
                     ]
                 ]
             ],
@@ -97,6 +103,13 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.role.index',
                 'permission' => 'Roles',
                 'sub_menu' => []
+            ],
+            [
+                        "name" => "Panels",
+                        "icon" => "ti ti-file-invoice fs-5",
+                        "route" => "admin.panels.index",
+                        "permission" => "Panels",
+                        'sub_menu' => []
             ]
         ];
 
@@ -124,13 +137,19 @@ class SidebarNavigationSeeder extends Seeder
                 ]
             );
         }
-          DB::table('permissions')->updateOrInsert(
-              [
-                    'name' =>"Mod",
-                    'guard_name' => 'web',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]
-            );
-    }
-}
+
+        $extraPermissions=["Mod","Panels"];
+        foreach($extraPermissions as $permission){
+         DB::table('permissions')->updateOrInsert(
+            [
+                'name' => $permission,
+                'guard_name' => 'web'
+            ],
+            [
+                'created_at' => now(),
+                'updated_at' => now()
+            ]
+        );
+       }
+      } 
+}  

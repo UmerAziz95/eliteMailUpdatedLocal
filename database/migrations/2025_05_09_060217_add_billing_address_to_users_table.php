@@ -29,13 +29,13 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             //
-            $this->dropColumn('billing_company');
-            $this->dropColumn('billing_address2');
-            $this->dropColumn('billing_city');
-            $this->dropColumn('billing_state');
-            $this->dropColumn('billing_country');
-            $this->dropColumn('billing_zip');
-            $this->dropColumn('billing_landmark');
+           $table->dropColumn('billing_company');
+           $table->dropColumn('billing_address2');
+           $table->dropColumn('billing_city');
+            $table->dropColumn('billing_state');
+            $table->dropColumn('billing_country');
+            $table->dropColumn('billing_zip');
+            $table->dropColumn('billing_landmark');
         });
 
     }

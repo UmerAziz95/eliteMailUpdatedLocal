@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Validation\Rule;
 class CustomRolePermissionController extends Controller
 {
@@ -165,19 +165,4 @@ class CustomRolePermissionController extends Controller
         return "done";
     }
 
-
-    public function addPermissionMod(){
-    
-     $permission=   Permission::create([
-            'name' => "Mod",
-            'guard_name' => "web",
-            'created_at' => Carbon::parse('2025-05-02 10:21:17'),
-            'updated_at' => Carbon::parse('2025-05-02 10:21:17'),
-        ]);
-        if($permission){
-            return "done";
-        }else{
-            return "false";
-        }
-    }
 }

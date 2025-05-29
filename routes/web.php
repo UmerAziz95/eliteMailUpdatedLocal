@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
+use App\Http\Controllers\Admin\PanelController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
 use App\Http\Controllers\AppLogController;
@@ -93,7 +94,7 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
-    Route::get('/profile', [AdminController::class, 'pr ofile'])->name('profile');
+    Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
@@ -181,6 +182,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         // /revenue-totals Admin/DashboardController
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
+        //panels
+         Route::get('/panels/dashoard',[PanelController::class,'index'])->name('panels.index');
+
+        
     }); 
 
 });
