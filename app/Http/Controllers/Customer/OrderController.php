@@ -454,8 +454,10 @@ class OrderController extends Controller
                 'inboxes_per_domain' => 'required|integer|min:1|max:3',
                 'first_name' => 'required|string|max:50',
                 'last_name' => 'required|string|max:50',
-                'prefix_variant_1' => 'required|string|max:50',
-                'prefix_variant_2' => 'required|string|max:50',
+                'prefix_variants' => 'required|array|min:1',
+                'prefix_variants.prefix_variant_1' => 'required|string|max:50',
+                'prefix_variants.prefix_variant_2' => 'nullable|string|max:50',
+                'prefix_variants.prefix_variant_3' => 'nullable|string|max:50',
                 // 'persona_password' => 'required|string|min:3',
                 'profile_picture_link' => 'nullable|url|max:255',
                 'email_persona_password' => 'required|string|min:3',
@@ -473,6 +475,32 @@ class OrderController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
+            
+            // Additional validation for prefix variants based on inboxes_per_domain
+            $inboxesPerDomain = (int) $request->inboxes_per_domain;
+            $prefixVariants = $request->prefix_variants ?? [];
+            
+            // Validate required prefix variants based on inboxes_per_domain
+            for ($i = 1; $i <= $inboxesPerDomain; $i++) {
+                $prefixKey = "prefix_variant_{$i}";
+                if ($i === 1 && empty($prefixVariants[$prefixKey])) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => ['prefix_variants.prefix_variant_1' => ['The first prefix variant is required.']]
+                    ], 422);
+                }
+                
+                // Validate format if value exists
+                if (!empty($prefixVariants[$prefixKey])) {
+                    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $prefixVariants[$prefixKey])) {
+                        return response()->json([
+                            'success' => false,
+                            'errors' => ["prefix_variants.{$prefixKey}" => ['Only letters, numbers, dots, hyphens and underscores are allowed.']]
+                        ], 422);
+                    }
+                }
+            }
+            
             // persona_password set 123
             $request->persona_password = '123';
             // Calculate number of domains and total inboxes
@@ -539,8 +567,7 @@ class OrderController extends Controller
                         'inboxes_per_domain' => $request->inboxes_per_domain,
                         'first_name' => $request->first_name,
                         'last_name' => $request->last_name,
-                        'prefix_variant_1' => $request->prefix_variant_1,
-                        'prefix_variant_2' => $request->prefix_variant_2,
+                        'prefix_variants' => $request->prefix_variants,
                         'persona_password' => $request->persona_password,
                         'profile_picture_link' => $request->profile_picture_link,
                         'email_persona_password' => $request->email_persona_password,
@@ -574,8 +601,7 @@ class OrderController extends Controller
                             'inboxes_per_domain' => $request->inboxes_per_domain,
                             'first_name' => $request->first_name,
                             'last_name' => $request->last_name,
-                            'prefix_variant_1' => $request->prefix_variant_1,
-                            'prefix_variant_2' => $request->prefix_variant_2,
+                            'prefix_variants' => $request->prefix_variants,
                             'persona_password' => $request->persona_password,
                             'profile_picture_link' => $request->profile_picture_link,
                             'email_persona_password' => $request->email_persona_password,

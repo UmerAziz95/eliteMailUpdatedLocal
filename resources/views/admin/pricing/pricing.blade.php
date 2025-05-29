@@ -96,6 +96,44 @@
         max-height: 200px;
         overflow-y: auto;
     }
+
+    .plan-updated {
+        animation: planUpdate 0.5s ease-in-out;
+    }
+
+    @keyframes planUpdate {
+        0% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+        50% {
+            transform: scale(1.02);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+        100% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+    }
+
+    #refresh-loading {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes planUpdate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); box-shadow: 0 8px 25px rgba(167, 124, 252, 0.3); }
+        100% { transform: scale(1); }
+    }
 </style>
 @endpush
 
@@ -108,7 +146,7 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                            <i class="fa-solid fa-crown me-2"></i>Plan Management
                         </h5>
                     </div>
                     <div class="card-body">
@@ -117,8 +155,8 @@
                         </div>
                         @if (!auth()->user()->hasPermissionTo('Mod'))
                         @if (auth()->user()->role_id != 5)
-                        <button id="createMasterPlan" class="btn btn-warning">
-                            <i class="fa-solid fa-plus"></i> Create/Edit Master Plan
+                        <button id="createMasterPlan" class="btn btn-warning mt-3">
+                            <i class="fa-solid fa-plus"></i> Create/Edit Plan
                         </button>
                         @endif
                         @endif
@@ -129,7 +167,7 @@
         </div>
     </div>
     
-    <div class="d-flex flex-column align-items-center justify-content-center">
+    <!-- <div class="d-flex flex-column align-items-center justify-content-center">
         <h2 class="text-center fw-bold">Manage Plans</h2>
         <p class="text-center">Create and manage subscription plans</p>
         @if (!auth()->user()->hasPermissionTo('Mod'))
@@ -139,9 +177,9 @@
         </button>
         @endif
         @endif
-    </div>
+    </div> -->
     
-    <div class="row mt-4" id="plans-container">
+    <div class="row mt-5" id="plans-container">
         @foreach ($plans as $plan)
         <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
             <div class="pricing-card d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
@@ -166,7 +204,7 @@
                         @endforeach
                     </ul>
                 </div>
-                @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
+                <!-- @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
                 <div class="d-flex gap-2">
                     <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
                         class="{{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'grey-btn' : 'm-btn' }} rounded-1 border-0 py-2 px-4 w-100">
@@ -177,7 +215,7 @@
                         <i class="fa-regular fa-trash-can"></i> Delete
                     </button>
                 </div>
-                @endif
+                @endif -->
 
             </div>
         </div>
@@ -727,7 +765,6 @@
                 featuresList.append('<li class="mb-2 text-muted">No features added yet</li>');
             }
         }
-
         // Submit new plan form
         $('#addPlanForm').submit(function(e) {
             e.preventDefault();
@@ -743,7 +780,6 @@
                     if (response.success) {
                         // Refresh features dropdown before closing modal
                         loadFeatures();
-
                         // Clear the form
                         $('#addPlanForm').trigger('reset');
                         $('#newPlanFeatures').empty();
@@ -754,8 +790,10 @@
                         // Close modal
                         $('#addPlan').modal('hide');
 
-                        // Refresh the page to show updated plans
-                        location.reload();
+                        // Refresh the plans section to show the new plan
+                        refreshPlansSection();
+                        
+                        showSuccessToast('Plan created successfully');
                     } else {
                         showErrorToast(response.message || 'Failed to create plan');
                         submitBtn.prop('disabled', false).html('Create Plan');
@@ -799,10 +837,10 @@
                         // Update the plan card
                         updatePlanCard(response.plan);
 
+                        // Refresh the plans section to show any changes
+                        refreshPlansSection();
+
                         showSuccessToast('Plan updated successfully');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 2000);
                     } else {
                         showErrorToast(response.message || 'Failed to update plan');
                         submitBtn.prop('disabled', false).html('Update Plan');
@@ -863,8 +901,11 @@ $(document).on('click', '.delete-plan-btn', function () {
                         $(`#plan-${planId}`).fadeOut(300, function () {
                             $(this).remove();
                         });
+                        
+                        // Refresh the plans section to ensure consistency
+                        refreshPlansSection();
+                        
                         showSuccessToast('Plan deleted successfully');
-                        location.reload();
                     } else {
                         showErrorToast(response.message || 'Failed to delete plan');
                         $btn.prop('disabled', false).html('Delete');
@@ -934,41 +975,242 @@ $(document).on('click', '.delete-plan-btn', function () {
             // For simplicity, using error toast for warnings
             showErrorToast(message);
         }
+        // autofixing volume tier plan range start like [10-20, 0-9, 21-0] don't miss the range same functionality perform like chagebee side handle not skip range
+        // Function to update master plan display dynamically
+        function updateMasterPlanDisplay(masterPlan) {
+            const $container = $('#masterPlanContainer');
+            
+            // Add fade effect for smooth transition
+            $container.fadeOut(200, function() {
+                if (masterPlan && masterPlan.id) {
+                    const volumeItemsCount = masterPlan.volume_items ? masterPlan.volume_items.length : 0;
+                    const chargebeeStatus = masterPlan.chargebee_plan_id ? 
+                        `<span class="text-success"><i class="fa-solid fa-check-circle"></i> ${masterPlan.chargebee_plan_id}</span>` : 
+                        '<span class="text-warning"><i class="fa-solid fa-exclamation-triangle"></i> Not synced</span>';
+                    
+                    $container.html(`
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Plan Name:</strong> ${masterPlan.external_name || 'N/A'}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Chargebee Status:</strong> ${chargebeeStatus}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Volume Tiers:</strong> ${volumeItemsCount} tiers
+                            </div>
+                            <div class="col-12 mt-2">
+                                <strong>Description:</strong> ${masterPlan.description || 'N/A'}
+                            </div>
+                        </div>
+                    `);
+                    $('#createMasterPlan').text('Edit Plan');
+                } else {
+                    $container.html('<p class="text-muted">No master plan created yet.</p>');
+                    $('#createMasterPlan').text('Create Master Plan');
+                }
+                // Fade back in
+                $container.fadeIn(200);
+            });
+        }
+
+        // Function to refresh the simple plans section
+        function refreshPlansSection() {
+            console.log('Refreshing plans section...');
+            
+            // Add loading indicator
+            const plansContainer = $('#plans-container');
+            const originalContent = plansContainer.html();
+            
+            // Show loading state
+            plansContainer.append('<div id="refresh-loading" class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Updating plans...</div>');
+            
+            $.get('{{ route('admin.plans.with.features') }}')
+                .done(function(response) {
+                    console.log('Received response:', response);
+                    
+                    // Handle both old format (direct plans array) and new format (object with plans and mostlyUsed)
+                    const plans = response.plans || response;
+                    const mostlyUsed = response.mostlyUsed || null;
+                    
+                    console.log('Received plans data:', plans);
+                    console.log('Most popular plan:', mostlyUsed);
+                    
+                    // Remove loading indicator
+                    $('#refresh-loading').remove();
+                    
+                    // Check if plan count changed or if we have new plans
+                    const currentPlanCount = $('#plans-container .col-sm-6').length;
+                    const newPlanCount = plans.length;
+                    
+                    console.log(`Current plan count: ${currentPlanCount}, New plan count: ${newPlanCount}`);
+                    
+                    // Handle plan count changes dynamically
+                    if (currentPlanCount !== newPlanCount) {
+                        console.log('Plan count changed, rebuilding plans section...');
+                        rebuildPlansSection(plans, mostlyUsed);
+                        return;
+                    }
+                    
+                    // Update existing plan cards with new data
+                    updateExistingPlans(plans, mostlyUsed);
+                })
+                .fail(function(xhr) {
+                    console.error('Failed to refresh plans section:', xhr);
+                    $('#refresh-loading').remove();
+                    showErrorToast('Failed to refresh plans section');
+                });
+        }
+        // Update existing plan cards with new data
+        function updateExistingPlans(plans, mostlyUsed = null) {
+            console.log('Updating existing plans:', plans);
+            console.log('Most popular plan:', mostlyUsed);
+            
+            // Get current plan IDs on the page
+            const currentPlanIds = [];
+            $('#plans-container .col-sm-6').each(function() {
+                const planId = $(this).attr('id').replace('plan-', '');
+                currentPlanIds.push(parseInt(planId));
+            });
+            
+            // Get new plan IDs from API
+            const newPlanIds = plans.map(plan => plan.id);
+            
+            console.log('Current plan IDs:', currentPlanIds);
+            console.log('New plan IDs:', newPlanIds);
+            
+            // Check if we have new plans or removed plans
+            const hasNewPlans = newPlanIds.some(id => !currentPlanIds.includes(id));
+            const hasRemovedPlans = currentPlanIds.some(id => !newPlanIds.includes(id));
+            
+            if (hasNewPlans || hasRemovedPlans) {
+                console.log('Plan structure changed, rebuilding plans section...');
+                rebuildPlansSection(plans, mostlyUsed);
+                return;
+            }
+            
+            // Update existing plan cards
+            plans.forEach(function(plan) {
+                console.log('Updating plan:', plan);
+                const $planCard = $(`#plan-${plan.id}`);
+                if ($planCard.length > 0) {
+                    console.log('Found plan card for plan ID:', plan.id);
+                    
+                    // Update plan name
+                    $planCard.find('.plan-name').text(plan.name);
+                    
+                    // Update plan price
+                    $planCard.find('.plan-price').html(
+                        `$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span>`
+                    );
+                    
+                    // Update plan description
+                    $planCard.find('.plan-description').text(plan.description);
+                    
+                    // Update inbox range - fix selector to match actual HTML structure
+                    const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
+                    $planCard.find('.mb-2').html(`${inboxRange} <strong>Inboxes</strong>`);
+                    // Update features
+                    let featuresHtml = '';
+                    if (plan.features && plan.features.length > 0) {
+                        featuresHtml = plan.features.map(feature => {
+                            const featureValue = feature.pivot && feature.pivot.value ? ' ' + feature.pivot.value : '';
+                            return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                        }).join('');
+                    } else {
+                        featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
+                    }
+                    $planCard.find('.features-list').html(featuresHtml);
+                    
+                    // Update popular status using dynamic mostlyUsed data
+                    const mostlyUsedId = mostlyUsed ? mostlyUsed.id : null;
+                    const isPopular = mostlyUsedId === plan.id;
+                    
+                    console.log(`Plan ${plan.id}: mostlyUsedId=${mostlyUsedId}, isPopular=${isPopular}`);
+                    
+                    if (isPopular) {
+                        $planCard.find('.pricing-card').addClass('popular');
+                        console.log(`Added 'popular' class to plan ${plan.id}`);
+                    } else {
+                        $planCard.find('.pricing-card').removeClass('popular');
+                        console.log(`Removed 'popular' class from plan ${plan.id}`);
+                    }
+                    
+                    // Add subtle animation to show the card was updated
+                    $planCard.addClass('plan-updated');
+                    setTimeout(function() {
+                        $planCard.removeClass('plan-updated');
+                    }, 2000);
+                } else {
+                    console.log('Plan card not found for plan ID:', plan.id);
+                }
+            });
+            
+            console.log('Plans update completed successfully');
+            showSuccessToast('Plans updated successfully!');
+        }
+
+        // Rebuild plans section when plan count changes
+        function rebuildPlansSection(plans, mostlyUsed = null) {
+            console.log('Rebuilding plans section with new data:', plans);
+            console.log('Most popular plan data:', mostlyUsed);
+            
+            const plansContainer = $('#plans-container');
+            const mostlyUsedId = mostlyUsed ? mostlyUsed.id : null;
+            
+            // Build new HTML for all plans
+            let plansHtml = '';
+            
+            plans.forEach(function(plan) {
+                const isPopular = mostlyUsedId === plan.id;
+                const popularClass = isPopular ? 'popular' : '';
+                const inboxRange = plan.max_inbox == 0 ? `${plan.min_inbox}+` : `${plan.min_inbox} - ${plan.max_inbox}`;
+                
+                let featuresHtml = '';
+                if (plan.features && plan.features.length > 0) {
+                    featuresHtml = plan.features.map(feature => {
+                        const featureValue = feature.pivot && feature.pivot.value ? ' ' + feature.pivot.value : '';
+                        return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                    }).join('');
+                } else {
+                    featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
+                }
+                
+                plansHtml += `
+                <div class="col-sm-6 col-lg-4 mb-5" id="plan-${plan.id}">
+                    <div class="pricing-card d-flex flex-column justify-content-between ${popularClass}">
+                        <div>
+                            <h4 class="fw-bold plan-name text-capitalize fs-5">${plan.name}</h4>
+                            <h2 class="fw-bold plan-price fs-3">$${Number(plan.price).toFixed(2)} <span class="fs-6 fw-normal">/${plan.duration == 'monthly' ? 'mo' : plan.duration} per inboxes</span></h2>
+                            <p class="plan-description text-capitalize">${plan.description}</p>
+                            <hr>
+                            <div class="mb-2">
+                                ${inboxRange} <strong>Inboxes</strong>
+                            </div>
+                            <ul class="list-unstyled features-list">
+                                ${featuresHtml}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            // Fade out, replace content, then fade in
+            plansContainer.fadeOut(300, function() {
+                plansContainer.html(plansHtml);
+                plansContainer.fadeIn(300);
+                showSuccessToast('Plans section rebuilt successfully!');
+            });
+        }
 
         // Master Plan Functions
         function loadMasterPlan() {
             $.get('{{ route('admin.master-plan.show') }}')
                 .done(function(response) {
-                    if (response && response.id) {
-                        const masterPlan = response;
-                        const volumeItemsCount = masterPlan.volume_items ? masterPlan.volume_items.length : 
-                                               (masterPlan.volumeItems ? masterPlan.volumeItems.length : 0);
-                        
-                        $('#masterPlanContainer').html(`
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Plan Name:</strong> ${masterPlan.external_name || 'N/A'}
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>Chargebee ID:</strong> ${masterPlan.chargebee_plan_id || 'Not synced'}
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>Volume Items:</strong> ${volumeItemsCount} tiers
-                                </div>
-                                <div class="col-12 mt-2">
-                                    <strong>Description:</strong> ${masterPlan.description || 'N/A'}
-                                </div>
-                            </div>
-                        `);
-                        $('#createMasterPlan').text('Edit Master Plan');
-                    } else {
-                        $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
-                        $('#createMasterPlan').text('Create Master Plan');
-                    }
+                    updateMasterPlanDisplay(response);
                 })
                 .fail(function() {
-                    $('#masterPlanContainer').html('<p class="text-muted">No master plan created yet.</p>');
-                    $('#createMasterPlan').text('Create Master Plan');
+                    updateMasterPlanDisplay(null);
                 });
         }
 
@@ -1012,7 +1254,7 @@ $(document).on('click', '.delete-plan-btn', function () {
                 return;
             }
 
-            // Validate each volume item for valid data
+            // Validate each volume item for valid data and ranges
             for (let i = 0; i < formData.volume_items.length; i++) {
                 const item = formData.volume_items[i];
                 
@@ -1030,6 +1272,13 @@ $(document).on('click', '.delete-plan-btn', function () {
                     return;
                 }
                 
+                // Check range validity: min should not be greater than max (unless max is 0 for unlimited)
+                if (item.max_inbox !== 0 && item.min_inbox > item.max_inbox) {
+                    showErrorToast(`Invalid range in tier ${i + 1}: Min inboxes (${item.min_inbox}) cannot be greater than max inboxes (${item.max_inbox}). Set max to 0 for unlimited or adjust the values.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
                 // Check for empty required fields
                 if (!item.name || !item.name.trim()) {
                     showErrorToast(`Tier ${i + 1} name is required.`);
@@ -1038,38 +1287,99 @@ $(document).on('click', '.delete-plan-btn', function () {
                 }
             }
 
-            // Validate and fix range sequences
+            // Enhanced volume tier range validation and gap detection
             const sortedItems = formData.volume_items.sort((a, b) => a.min_inbox - b.min_inbox);
             
-            // Validate range continuity and fix gaps
+            // Volume tier range validation
+            // Ensure at least one tier exists
+            if (sortedItems.length === 0) {
+                showErrorToast('At least one volume tier is required.');
+                button.prop('disabled', false).text('Save Master Plan');
+                return;
+            }
+            
+            // Ensure first tier starts from 1 or higher (1-based ranges)
+            const firstTier = sortedItems[0];
+            if (firstTier.min_inbox < 1) {
+                showErrorToast(`First tier must start from 1 or higher for proper ranges. Currently starts at ${firstTier.min_inbox}.`);
+                button.prop('disabled', false).text('Save Master Plan');
+                return;
+            }
+            
+            // If first tier doesn't start from 0, add a note for ChargeBee compatibility
+            if (firstTier.min_inbox > 1) {
+                console.warn(`⚠️ Note: First tier starts at ${firstTier.min_inbox}, not 1. Consider using Auto-Fix to ensure continuous ranges.`);
+            }
+            
             for (let i = 0; i < sortedItems.length; i++) {
                 const current = sortedItems[i];
                 const next = sortedItems[i + 1];
+                const tierNumber = i + 1;
                 
-                // Validate current tier
-                if (current.min_inbox < 0 || (current.max_inbox < current.min_inbox && current.max_inbox !== 0)) {
-                    showErrorToast(`Invalid range in tier ${i + 1}: min_inbox cannot be greater than max_inbox`);
+                // Basic validation
+                if (current.min_inbox < 0) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Min inboxes cannot be negative, got ${current.min_inbox}.`);
                     button.prop('disabled', false).text('Save Master Plan');
                     return;
                 }
                 
-                // Check for gaps or overlaps with next tier
-                if (next) {
-                    if (current.max_inbox === 0) {
-                        showErrorToast(`Tier ${i + 1} has unlimited range (max_inbox = 0) but is not the last tier. Only the last tier can be unlimited.`);
+                if (current.max_inbox < 0) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Max inboxes cannot be negative, got ${current.max_inbox}. Use 0 for unlimited.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                if (current.max_inbox !== 0 && current.min_inbox > current.max_inbox) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Invalid range [${current.min_inbox}-${current.max_inbox}]. Min cannot be greater than max unless max is 0 (unlimited).`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Check for duplicate ranges
+                for (let j = i + 1; j < sortedItems.length; j++) {
+                    const other = sortedItems[j];
+                    if (current.min_inbox === other.min_inbox) {
+                        showErrorToast(`Duplicate min inbox value: Tier ${tierNumber} and Tier ${j + 1} both start at ${current.min_inbox}. Each tier must have unique ranges.`);
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
                     }
+                }
+                
+                // Validate unlimited tier placement
+                if (current.max_inbox === 0 && next) {
+                    showErrorToast(`Tier ${tierNumber} (${current.name}): Unlimited range (max_inbox = 0) can only be used in the last tier. Found ${sortedItems.length - i - 1} tier(s) after it.`);
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+                
+                // Critical ChargeBee requirement: Check for gaps that would cause "Tier information is missing after X"
+                if (next) {
+                    const currentEnd = current.max_inbox;
+                    const nextStart = next.min_inbox;
                     
-                    // Auto-fix: ensure next tier starts where current ends + 1
-                    const expectedNextMin = current.max_inbox + 1;
-                    if (next.min_inbox !== expectedNextMin) {
-                        showErrorToast(`Gap or overlap detected: Tier ${i + 2} should start at ${expectedNextMin} (current tier ends at ${current.max_inbox})`);
+                    if (currentEnd === 0) {
+                        // Already handled above - unlimited tier not at end
+                        continue;
+                    }
+                    
+                    // ChargeBee requires EXACT continuity - next tier must start immediately after current ends
+                    const expectedNextStart = currentEnd + 1;
+                    if (nextStart !== expectedNextStart) {
+                        if (nextStart > expectedNextStart) {
+                            showErrorToast(`ChargeBee API Error: Tier information is missing after ${currentEnd}. Tier ${tierNumber + 1} should start at ${expectedNextStart}, not ${nextStart}. Gap detected: [${expectedNextStart}-${nextStart - 1}] is not covered.`);
+                        } else {
+                            showErrorToast(`ChargeBee API Error: Overlap detected between Tier ${tierNumber} and Tier ${tierNumber + 1}. Tier ${tierNumber} ends at ${currentEnd}, but Tier ${tierNumber + 1} starts at ${nextStart}. Next tier must start at ${expectedNextStart}.`);
+                        }
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
                     }
                 }
             }
+            
+            // Final ChargeBee compatibility check
+            console.log('✅ ChargeBee compatibility validated - continuous ranges with no gaps detected');
+            
+            console.log('✅ All volume tier ranges validated successfully - no gaps or overlaps detected');
 
             $.ajax({
                 url: '{{ route('admin.master-plan.store') }}',
@@ -1080,28 +1390,47 @@ $(document).on('click', '.delete-plan-btn', function () {
                 .done(function(response) {
                     if (response.success) {
                         $('#masterPlanModal').modal('hide');
-                        showSuccessToast('Master plan saved successfully!');
-                        // Optionally reload the page or update UI
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                        
+                        // Show different success messages based on Chargebee sync status
+                        const successMessage = response.message || 'Master plan saved successfully!';
+                        showSuccessToast(successMessage);
+                        
+                        // Update the master plan display with new data
+                        updateMasterPlanDisplay(response.data);
+                        
+                        // Refresh the simple plans section to reflect any changes
+                        setTimeout(function() {
+                            console.log('Master plan saved, refreshing plans section...');
+                            refreshPlansSection();
+                        }, 500);
+                        
+                        // Clear the form for next time
+                        $('#masterPlanForm')[0].reset();
+                        $('#volumeItemsContainer').empty();
+                        volumeItemIndex = 0;
                     } else {
-                        showErrorToast(response.message);
+                        showErrorToast(response.message || 'Failed to save master plan');
                     }
                 })
                 .fail(function(xhr) {
-                    let message = 'An error occurred while saving the master plan.';
+                    let errorMessage = 'Failed to save master plan';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
-                        message = xhr.responseJSON.message;
+                        errorMessage = xhr.responseJSON.message;
                     } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                         // Handle validation errors
                         const errors = Object.values(xhr.responseJSON.errors).flat();
-                        message = errors.join('<br>');
+                        errorMessage = errors.join('<br>');
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMessage = response.message || errorMessage;
+                        } catch (e) {
+                            // Use default error message
+                        }
                     }
-                    showErrorToast(message);
+                    showErrorToast(errorMessage);
                 })
                 .always(function() {
-                    // Re-enable button
                     button.prop('disabled', false).text('Save Master Plan');
                 });
         });
@@ -1113,7 +1442,6 @@ $(document).on('click', '.delete-plan-btn', function () {
         $('#addVolumeItem').on('click', function() {
             addVolumeItem();
         });
-
         function addVolumeItem(data = null) {
             const item = data ? {
                 name: data.name || '',
@@ -1144,13 +1472,13 @@ $(document).on('click', '.delete-plan-btn', function () {
                         </button>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label">Tier Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control volume-name" name="volume_items[${volumeItemIndex}][name]" value="${item.name}" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6" style="display:none;">
                             <div class="mb-3">
                                 <label class="form-label">Duration <span class="text-danger">*</span></label>
                                 <select class="form-control volume-duration" name="volume_items[${volumeItemIndex}][duration]" required>
@@ -1240,15 +1568,89 @@ $(document).on('click', '.delete-plan-btn', function () {
             loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
         }
 
-        // Add input validation to prevent NaN values
+        // Add input validation to prevent invalid values and validate range logic (ChargeBee compatible)
         $(document).on('input', '.volume-min-inbox, .volume-max-inbox', function() {
             let value = $(this).val();
-            if (value === '' || isNaN(value) || value < 0) {
-                $(this).val('');
-            } else {
-                $(this).val(parseInt(value) || '');
+            
+            // Allow empty values during editing
+            if (value === '') {
+                return;
             }
+            
+            // Convert to integer and validate
+            let intValue = parseInt(value);
+            
+            // Check for invalid numbers or negative values (min values should be 1 or higher)
+            if (isNaN(intValue) || intValue < 0) {
+                $(this).val('');
+                return;
+            }
+            
+            // Set the cleaned value
+            $(this).val(intValue);
+            
+            // Validate range after input
+            validateVolumeItemRange($(this).closest('.volume-item'));
         });
+
+        // Validate individual volume item range with enhanced feedback (ChargeBee compatible)
+        function validateVolumeItemRange($item) {
+            const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+            const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+            const $minField = $item.find('.volume-min-inbox');
+            const $maxField = $item.find('.volume-max-inbox');
+            const tierName = $item.find('.volume-name').val() || 'Unnamed tier';
+            
+            // Remove existing validation styles
+            $minField.removeClass('is-invalid');
+            $maxField.removeClass('is-invalid');
+            $item.find('.range-error').remove();
+            
+            let isValid = true;
+            let errorMessages = [];
+            
+            // Check for negative values (ranges should start from 1 or higher)
+            if (minInbox < 0) {
+                $minField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes cannot be negative (${minInbox}). Use 1 or higher.`);
+                isValid = false;
+            }
+            
+            // Check for min values less than 1 (enforce 1-based ranges)
+            if (minInbox === 0) {
+                $minField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes should start from 1, not 0. Use Auto-Fix for proper ranges.`);
+                isValid = false;
+            }
+            
+            if (maxInbox < 0) {
+                $maxField.addClass('is-invalid');
+                errorMessages.push(`Max inboxes cannot be negative (${maxInbox}). Use 0 for unlimited.`);
+                isValid = false;
+            }
+            
+            // Check if min > max (when max is not 0 for unlimited)
+            if (maxInbox !== 0 && minInbox > maxInbox) {
+                $minField.addClass('is-invalid');
+                $maxField.addClass('is-invalid');
+                errorMessages.push(`Min inboxes (${minInbox}) cannot be greater than max inboxes (${maxInbox})`);
+                isValid = false;
+            }
+            
+            // Display errors if any
+            if (errorMessages.length > 0) {
+                const errorHtml = `<div class="range-error text-danger small mt-1">
+                    <i class="fa-solid fa-exclamation-triangle"></i> 
+                    ${errorMessages.join('<br>')}
+                    <div class="mt-1">
+                        <small>Tip: Min should start from 1 or higher. Set max to 0 for unlimited or use Auto-Fix button.</small>
+                    </div>
+                </div>`;
+                $item.append(errorHtml);
+            }
+            
+            return isValid;
+        }
 
         $(document).on('input', '.volume-price', function() {
             let value = $(this).val();
@@ -1269,73 +1671,376 @@ $(document).on('click', '.delete-plan-btn', function () {
             updateTierNumbers();
         });
 
+        // Function to ensure unlimited tier exists
+        function ensureUnlimitedTierExists() {
+            let hasUnlimitedTier = false;
+            let highestMax = 0;
+            
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                if (maxInbox === 0) {
+                    hasUnlimitedTier = true;
+                } else if (maxInbox > highestMax) {
+                    highestMax = maxInbox;
+                }
+            });
+            
+            if (!hasUnlimitedTier) {
+                const nextMin = highestMax > 0 ? highestMax + 1 : 1;
+                
+                // Auto-create unlimited tier
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier for higher quantities',
+                    min_inbox: nextMin,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                
+                showSuccessToast(`Created unlimited tier starting from ${nextMin}`);
+                return true;
+            }
+            
+            return false;
+        }
+
+        // Enhanced tier ordering function
+        function orderTiersByRange() {
+            const container = $('#volumeItemsContainer');
+            const items = [];
+            
+            // Collect all tier elements with their range data
+            container.find('.volume-item').each(function() {
+                const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                
+                items.push({
+                    element: $item.clone(true), // Clone with events
+                    min: minInbox,
+                    max: maxInbox
+                });
+            });
+            
+            // Sort items: unlimited tiers (max = 0) go last, others by min value
+            items.sort((a, b) => {
+                // Unlimited tiers go last
+                if (a.max === 0 && b.max !== 0) return 1;
+                if (b.max === 0 && a.max !== 0) return -1;
+                
+                // Sort by min value
+                return a.min - b.min;
+            });
+            
+            // Clear container and re-add in correct order
+            container.empty();
+            items.forEach(item => {
+                container.append(item.element);
+            });
+            
+            // Update tier numbers
+            updateTierNumbers();
+        }
+
         // Update tier numbers
         function updateTierNumbers() {
             $('#volumeItemsContainer .volume-item').each(function(index) {
                 $(this).find('h6').text(`Tier ${index + 1}`);
+                $(this).data('index', index);
             });
         }
 
-        // Auto-fix range sequences
+        // Auto-fix range sequences with improved logic like Chargebee
         function autoFixRanges() {
             const items = [];
+            let hasErrors = false;
+            
+            // Collect all volume items with their current data
             $('#volumeItemsContainer .volume-item').each(function() {
                 const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                const name = $item.find('.volume-name').val() || '';
+                
+                // Basic validation - check for obviously invalid data
+                if (minInbox < 1) {
+                    hasErrors = true;
+                    showErrorToast(`Invalid min value (${minInbox}) in tier "${name}". Must be >= 1.`);
+                    return;
+                }
+                
+                if (maxInbox < 0) {
+                    hasErrors = true;
+                    showErrorToast(`Invalid max value (${maxInbox}) in tier "${name}". Must be >= 0 (0 = unlimited).`);
+                    return;
+                }
+                
                 items.push({
                     element: $item,
-                    min_inbox: parseInt($item.find('.volume-min-inbox').val()) || 0,
-                    max_inbox: parseInt($item.find('.volume-max-inbox').val()) || 0
+                    name: name || `Tier ${items.length + 1}`,
+                    min_inbox: minInbox,
+                    max_inbox: maxInbox,
+                    originalMin: minInbox,
+                    originalMax: maxInbox,
+                    index: items.length
                 });
             });
 
-            // Sort by min_inbox
-            items.sort((a, b) => a.min_inbox - b.min_inbox);
+            if (hasErrors) {
+                return; // Don't proceed if there are validation errors
+            }
 
-            // Auto-fix ranges to be continuous
-            let nextMin = items[0]?.min_inbox || 1;
-            items.forEach((item, index) => {
-                const isLast = index === items.length - 1;
+            if (items.length === 0) {
+                showErrorToast('No volume tiers to fix');
+                return;
+            }
+
+            if (items.length === 1) {
+                // Single tier - ensure it starts from a reasonable min (1 or higher)
+                const singleItem = items[0];
+                const currentMin = singleItem.min_inbox;
+                const startMin = currentMin > 0 ? currentMin : 1; // Start from 1 if min is 0
                 
-                // Set min_inbox for current tier
-                item.element.find('.volume-min-inbox').val(nextMin);
+                singleItem.element.find('.volume-min-inbox').val(startMin);
                 
-                if (isLast) {
-                    // Last tier can be unlimited (0) or have a specific max
-                    const currentMax = item.max_inbox;
-                    if (currentMax === 0) {
-                        item.element.find('.volume-max-inbox').val(0);
-                    } else {
-                        // Keep the specified max for last tier
-                        item.element.find('.volume-max-inbox').val(currentMax);
-                    }
+                // For single tier, if max is 0 keep it unlimited, otherwise ensure max >= min
+                if (singleItem.max_inbox !== 0 && singleItem.max_inbox < startMin) {
+                    singleItem.element.find('.volume-max-inbox').val(0); // Make unlimited
+                    showSuccessToast('Single tier range fixed - set to unlimited');
                 } else {
-                    // For non-last tiers, calculate max based on next tier's intended start
-                    const nextItem = items[index + 1];
-                    let maxForCurrent;
-                    
-                    if (nextItem.min_inbox > nextMin) {
-                        maxForCurrent = nextItem.min_inbox - 1;
-                    } else {
-                        // Default range of 10 if not specified
-                        maxForCurrent = nextMin + 9;
-                    }
-                    
-                    item.element.find('.volume-max-inbox').val(maxForCurrent);
-                    nextMin = maxForCurrent + 1;
+                    showSuccessToast('Single tier range validated');
+                }
+                return;
+            }
+
+            // Multiple tiers - sort by original min values first to preserve intent
+            // Then sort unlimited tiers (max_inbox = 0) to the end
+            items.sort((a, b) => {
+                // First priority: unlimited tiers go last
+                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
+                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                
+                // Second priority: sort by min_inbox
+                if (a.min_inbox !== b.min_inbox) {
+                    return a.min_inbox - b.min_inbox;
+                }
+                
+                // Third priority: sort by max_inbox (unlimited last among same min)
+                return a.max_inbox - b.max_inbox;
+            });
+            
+            // Chargebee-style auto-fix: create continuous non-overlapping ranges
+            // Start from 1 for user-friendly 1-based ranges (updated per user request)
+            let currentStart = 1; // Start ranges from 1 instead of 0 for better user experience
+            let fixedRanges = [];
+            
+            items.forEach((item, index) => {
+                const isLastTier = index === items.length - 1;
+                const tierName = item.name || `Tier ${index + 1}`;
+                
+                // Calculate range size preference
+                let preferredRangeSize = 10; // Default range size
+                if (item.originalMax > item.originalMin && item.originalMax !== 0) {
+                    preferredRangeSize = item.originalMax - item.originalMin + 1;
+                }
+                
+                // Ensure minimum range size of 1
+                preferredRangeSize = Math.max(preferredRangeSize, 1);
+                
+                let tierMin = currentStart;
+                let tierMax = 0;
+                
+                if (isLastTier && item.originalMax === 0) {
+                    // Last tier and originally unlimited: keep unlimited
+                    tierMax = 0;
+                } else if (isLastTier) {
+                    // Last tier but was not originally unlimited: can be unlimited or have a specific end
+                    tierMax = item.originalMax === 0 ? 0 : Math.max(tierMin + preferredRangeSize - 1, tierMin);
+                } else {
+                    // Non-last tier: must have a definite end to ensure no gaps
+                    tierMax = tierMin + preferredRangeSize - 1;
+                }
+                
+                // Store the fixed range
+                fixedRanges.push({
+                    element: item.element,
+                    name: tierName,
+                    min: tierMin,
+                    max: tierMax,
+                    originalMin: item.originalMin,
+                    originalMax: item.originalMax
+                });
+                
+                // Next tier starts where this one ends + 1 (ChargeBee requirement for continuity)
+                if (tierMax !== 0) {
+                    currentStart = tierMax + 1;
+                }
+            });
+
+            // Apply the fixed ranges to the form and reorder DOM elements
+            let changesMessage = 'Ranges auto-fixed and ordered by ranges:\n';
+            const container = $('#volumeItemsContainer');
+            
+            fixedRanges.forEach((range, index) => {
+                const beforeMin = range.originalMin;
+                const beforeMax = range.originalMax === 0 ? '∞' : range.originalMax;
+                const afterMin = range.min;
+                const afterMax = range.max === 0 ? '∞' : range.max;
+                
+                range.element.find('.volume-min-inbox').val(range.min);
+                range.element.find('.volume-max-inbox').val(range.max);
+                
+                // Reorder elements in DOM according to new order
+                container.append(range.element);
+                
+                // Track changes for user feedback
+                if (beforeMin !== afterMin || range.originalMax !== range.max) {
+                    changesMessage += `• ${range.name}: [${beforeMin}-${beforeMax}] → [${afterMin}-${afterMax}]\n`;
+                }
+            });
+
+            // Validate all ranges after auto-fix
+            let validationPassed = true;
+            $('#volumeItemsContainer .volume-item').each(function() {
+                if (!validateVolumeItemRange($(this))) {
+                    validationPassed = false;
                 }
             });
             
+            // Update tier numbers
             updateTierNumbers();
-            showSuccessToast('Ranges have been auto-fixed to be continuous');
+            
+            // Show success message with details
+            if (validationPassed) {
+                console.log(changesMessage);
+                showSuccessToast('Volume tier ranges auto-fixed and ordered successfully! Check console for details.');
+            } else {
+                showWarningToast('Ranges were adjusted but some validation issues remain. Please review.');
+            }
         }
 
-        // Add auto-fix button functionality
+        // Add auto-fix button functionality with enhanced validation for ChargeBee
         $(document).on('click', '#autoFixRanges', function() {
-            if ($('#volumeItemsContainer .volume-item').length > 0) {
-                autoFixRanges();
-            } else {
-                showErrorToast('No volume tiers to fix');
+            const $button = $(this);
+            const originalText = $button.text();
+            
+            // Ensure at least one tier exists
+            if ($('#volumeItemsContainer .volume-item').length === 0) {
+                // Auto-create default unlimited tier without confirmation
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier',
+                    min_inbox: 1,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                showSuccessToast('Added default unlimited tier (1-∞)');
+                return;
             }
+            
+            // First, ensure unlimited tier exists and order tiers by range
+            ensureUnlimitedTierExists();
+            orderTiersByRange();
+            
+            // Check if unlimited tier exists
+            let hasUnlimitedTier = false;
+            $('#volumeItemsContainer .volume-item').each(function() {
+                const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                if (maxInbox === 0) {
+                    hasUnlimitedTier = true;
+                    return false; // break
+                }
+            });
+            
+            // If no unlimited tier exists, create one
+            if (!hasUnlimitedTier) {
+                // Find the highest max_inbox value to determine start of unlimited tier
+                let highestMax = 0;
+                $('#volumeItemsContainer .volume-item').each(function() {
+                    const maxInbox = parseInt($(this).find('.volume-max-inbox').val()) || 0;
+                    if (maxInbox > highestMax) {
+                        highestMax = maxInbox;
+                    }
+                });
+                
+                addVolumeItem({
+                    name: 'Unlimited Tier',
+                    description: 'Unlimited volume tier',
+                    min_inbox: highestMax + 1,
+                    max_inbox: 0, // Unlimited
+                    price: 0,
+                    duration: 'monthly',
+                    features: [],
+                    feature_values: []
+                });
+                showSuccessToast(`Added unlimited tier starting from ${highestMax + 1}`);
+            }
+            
+            // Collect current issues for user confirmation
+            const issues = [];
+            const items = [];
+            $('#volumeItemsContainer .volume-item').each(function(index) {
+                const $item = $(this);
+                const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                const maxInbox = parseInt($item.find('.volume-max-inbox').val()) || 0;
+                const name = $item.find('.volume-name').val() || `Tier ${index + 1}`;
+                
+                items.push({ element: $item, name, min_inbox: minInbox, max_inbox: maxInbox });
+                
+                // Check for basic issues (using 1-based ranges)
+                if (minInbox < 1) issues.push(`${name}: Invalid min value (${minInbox}) - must be 1 or higher`);
+                if (maxInbox < 0) issues.push(`${name}: Invalid max value (${maxInbox}) - use 0 for unlimited`);
+                if (maxInbox !== 0 && minInbox > maxInbox) issues.push(`${name}: Min > Max (${minInbox} > ${maxInbox})`);
+            });
+            
+            // Check for ChargeBee-specific gaps/overlaps - sort by min_inbox, unlimited last
+            const sortedItems = items.sort((a, b) => {
+                // Unlimited tiers go last
+                if (a.max_inbox === 0 && b.max_inbox !== 0) return 1;
+                if (b.max_inbox === 0 && a.max_inbox !== 0) return -1;
+                // Sort by min_inbox
+                return a.min_inbox - b.min_inbox;
+            });
+            
+            // Best practice: first tier should start from 1
+            if (sortedItems.length > 0 && sortedItems[0].min_inbox !== 1) {
+                issues.push(`First tier should start from 1, currently starts from ${sortedItems[0].min_inbox}`);
+            }
+            
+            for (let i = 0; i < sortedItems.length - 1; i++) {
+                const current = sortedItems[i];
+                const next = sortedItems[i + 1];
+                
+                // Skip gap checking if current tier is unlimited (should be last anyway)
+                if (current.max_inbox === 0) continue;
+                
+                if (next.min_inbox !== current.max_inbox + 1) {
+                    if (next.min_inbox > current.max_inbox + 1) {
+                        issues.push(`ChargeBee API Error: Missing tier info after ${current.max_inbox} (${current.name} → ${next.name})`);
+                    } else {
+                        issues.push(`Overlap: ${current.name} ends at ${current.max_inbox}, ${next.name} starts at ${next.min_inbox}`);
+                    }
+                }
+            }
+
+            if (issues.length === 0) {
+                showSuccessToast('All ranges are ChargeBee-compatible and ordered properly! No fixes needed.');
+                return;
+            }
+            
+            // Auto-fix without confirmation for better UX
+            $button.prop('disabled', true).text('Fixing & Ordering...');
+            
+            setTimeout(() => {
+                autoFixRanges();
+                $button.prop('disabled', false).text(originalText);
+            }, 300);
         });
 
         // Collect volume items data
@@ -1609,7 +2314,7 @@ $(document).on('click', '.delete-plan-btn', function () {
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="masterPlanModalLabel">
-                    <i class="fa-solid fa-crown me-2"></i>Master Plan Management
+                    <i class="fa-solid fa-crown me-2"></i>Plan Management
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -1644,7 +2349,87 @@ $(document).on('click', '.delete-plan-btn', function () {
                             </div>
                         </div>
                     </div>
+                    <!-- Tier Creation Instructions -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6><i class="fa-solid fa-layer-group me-2 text-primary"></i>Understanding Volume Tiers</h6>
+                                            <p class="mb-3">Volume pricing allows you to offer different rates based on the number of inboxes. Each tier covers a specific range of inbox quantities.</p>
+                                            
+                                            <h6><i class="fa-solid fa-chart-line me-2 text-success"></i>Step-by-Step Guide</h6>
+                                            <ol class="mb-3">
+                                                <li><strong>Click "Add Tier"</strong> to create a new pricing tier</li>
+                                                <li><strong>Set Min Inbox:</strong> The starting number of inboxes for this tier (e.g., 1, 11, 51)</li>
+                                                <li><strong>Set Max Inbox:</strong> The ending number of inboxes (e.g., 10, 50, 100) or 0 for unlimited</li>
+                                                <li><strong>Set Price:</strong> The monthly price per inbox for this tier</li>
+                                                <li><strong>Add Features:</strong> Select specific features available in this tier</li>
+                                                <li><strong>Use Auto-Fix:</strong> Automatically order tiers and fix any range issues</li>
+                                            </ol>
 
+                                            <h6><i class="fa-solid fa-lightbulb me-2 text-warning"></i>Best Practices</h6>
+                                            <ul class="mb-0">
+                                                <li><strong>Start from 1:</strong> First tier should start from 1 inbox</li>
+                                                <li><strong>No Gaps:</strong> Ensure continuous coverage (e.g., 1-10, 11-50, 51-∞)</li>
+                                                <li><strong>Unlimited Tier:</strong> Always include one tier with max_inbox = 0 for unlimited</li>
+                                                <li><strong>Price Scaling:</strong> Generally, price per inbox decreases as volume increases</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="bg-primary text-white p-3 rounded">
+                                                <h6 class="text-warning"><i class="fa-solid fa-calculator"></i>Example Tiers</h6>
+                                                <div class="small">
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 1: Starter</strong><br>
+                                                        <span class="text-warning">Range:</span> 1-10 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $5.00/inbox/month
+                                                    </div>
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 2: Business</strong><br>
+                                                        <span class="text-warning">Range:</span> 11-50 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $4.00/inbox/month
+                                                    </div>
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <strong>Tier 3: Enterprise</strong><br>
+                                                        <span class="text-warning">Range:</span> 51-100 inboxes<br>
+                                                        <span class="text-warning">Price:</span> $3.00/inbox/month
+                                                    </div>
+                                                    <div>
+                                                        <strong>Tier 4: Unlimited</strong><br>
+                                                        <span class="text-warning">Range:</span> 101-∞ inboxes<br>
+                                                        <span class="text-warning">Price:</span> $2.50/inbox/month
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-primary text-white p-3 rounded mt-3">
+                                                <h6><i class="fa-solid fa-magic me-2"></i>Auto-Fix Features</h6>
+                                                <ul class="small mb-0 ps-3">
+                                                    <li>Creates unlimited tier if missing</li>
+                                                    <li>Orders tiers by range automatically</li>
+                                                    <li>Fixes gaps and overlaps</li>
+                                                    <li>Ensures ChargeBee compatibility</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info mt-3 mb-0">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <strong><i class="fa-solid fa-info-circle me-2"></i>Range Rules:</strong>
+                                                Ranges must be continuous with no gaps. For example: 1-10, 11-50, 51-∞. 
+                                                The last tier should always be unlimited (max = 0) to handle any quantity.
+                                            </div>
+                                            <!-- <div class="col-md-4 text-end">
+                                                <small class="text-muted">
+                                                    <i class="fa-solid fa-clock me-1"></i>Auto-saves every change
+                                                </small>
+                                            </div> -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                     <!-- Volume Items -->
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
@@ -1669,6 +2454,8 @@ $(document).on('click', '.delete-plan-btn', function () {
                         </div>
                     </div>
 
+                    
+
                     <div class="alert alert-warning mt-3">
                         <i class="fa-solid fa-exclamation-triangle me-2"></i>
                         <strong>Note:</strong> This plan will be created on Chargebee with volume pricing type. Only one master plan is allowed in the system.
@@ -1678,7 +2465,7 @@ $(document).on('click', '.delete-plan-btn', function () {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveMasterPlan">
-                    <i class="fa-solid fa-save me-2"></i>Save Master Plan
+                    <i class="fa-solid fa-save me-2"></i>Save Plan
                 </button>
             </div>
         </div>

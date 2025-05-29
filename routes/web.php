@@ -83,6 +83,9 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
 
+// Chargebee webhooks (no auth required)
+Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
+
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
@@ -117,6 +120,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
         Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
         Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
+        Route::post('master-plan/force-sync', [App\Http\Controllers\Admin\MasterPlanController::class, 'forceSync'])->name('master-plan.force-sync');
     
         // Features routes
         Route::get('features/list', [FeatureController::class, 'list'])->name('features.list');
