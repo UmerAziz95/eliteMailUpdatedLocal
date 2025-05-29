@@ -187,6 +187,20 @@
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
+                <!-- Remaining Inboxes Progress Bar -->
+                <!-- <div class="col-md-12">
+                    <div class="mb-3">
+                        <label>Remaining Inboxes</label>
+                        <div class="progress" style="height: 25px; background-color: #2a2a2a;">
+                            <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar" 
+                                 style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="remaining-inboxes-text">0 / 0 inboxes used</span>
+                            </div>
+                        </div>
+                        <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
+                    </div>
+                </div> -->
 
                 <div class="col-md-6">
                     <label>First Name</label>
@@ -779,21 +793,48 @@ $(document).ready(function() {
             return false;
         }
 
+        // Show loading indicator
+        Swal.fire({
+            title: 'Updating Order...',
+            text: 'Please wait while we process your order update.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         // If validation passes, submit via AJAX
         $.ajax({
             url: '{{ route("customer.orders.reorder.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
+                Swal.close();
                 if (response.success) {
-                    toastr.success('Order updated successfully');
-                    // subscribePlan(response.plan_id);
-                    window.location.href = "{{ route('customer.orders') }}";
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order updated successfully',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "{{ route('customer.orders') }}";
+                    });
                 } else {
-                    toastr.error(response.message || 'An error occurred. Please try again later.');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message || 'An error occurred. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             },
             error: function(xhr) {
+                Swal.close();
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors from server
                     let firstErrorField = null;
@@ -816,7 +857,6 @@ $(document).ready(function() {
                                 feedbackEl.text(xhr.responseJSON.errors[key][0]);
                             }
                         }
-                        toastr.error(xhr.responseJSON.errors[key][0]);
                     });
                     
                     // Focus and scroll to the first error field
@@ -826,8 +866,20 @@ $(document).ready(function() {
                             firstErrorField.focus();
                         }, 500);
                     }
+                    
+                    Swal.fire({
+                        title: 'Validation Error!',
+                        text: 'Please check the form for errors and try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 } else {
-                    toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: xhr.responseJSON?.message || 'An error occurred. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             }
         });

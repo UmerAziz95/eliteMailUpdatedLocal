@@ -675,12 +675,26 @@
             return false;
         }
 
+        // Show loading state
+        Swal.fire({
+            title: 'Processing Order...',
+            text: 'Please wait while we process your reorder.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         // Submit form via AJAX if all validations pass
         $.ajax({
             url: '{{ route("customer.orders.reorder.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
+                // Close the loading dialog
+                Swal.close();
+                
                 if (response.success) {
                     toastr.success('Order submitted successfully');
                     subscribePlan(response.plan_id);
@@ -690,6 +704,9 @@
                 }
             },
             error: function(xhr) {
+                // Close the loading dialog
+                Swal.close();
+                
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors
                     let firstErrorField = null;
