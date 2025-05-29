@@ -9,10 +9,14 @@
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
-        <a href="{{ route('customer.orders.reorder', ['order_id' => $order->id]) }}" class="c-btn text-decoration-none">
+        <button class="c-btn text-decoration-none subscribe-btn">
             <i class="fa-solid fa-cart-plus"></i>
             Re-order
-        </a>
+        </button>
+        <!-- <a href="{{ route('customer.orders.reorder', ['order_id' => $order->id]) }}" class="c-btn text-decoration-none">
+            <i class="fa-solid fa-cart-plus"></i>
+            Re-order
+        </a> -->
     </div>
 
     @php
@@ -1091,11 +1095,20 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Start file download by redirecting the browser
-                    window.location.href = "{{ url('/customer/orders/emails/' . $order->id . '/export') }}";;
+                    window.location.href = "{{ url('/customer/orders/emails/' . $order->id . '/export') }}";
                 }
             });
         });
     });
 </script>
-
+<script>
+    $(document).ready(function() {
+        $('.subscribe-btn').click(function() {
+            const planId = @json($order->plan_id);
+            console.log(planId);
+            // reload to new order page
+            window.location.href = `/customer/orders/new-order/${planId}`;
+        });
+    });
+</script>
 @endpush
