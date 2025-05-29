@@ -33,9 +33,9 @@
                     <div class="text">Orders</div>
                 </div>
         </button>
-       
+
         @php
-        $allowedItems = ['Plans', 'Orders', 'Subscriptions', 'Invoices'];
+        $allowedItems = ['Plans', 'Orders',"Subscriptions","Invoices","Panels"];
         @endphp
 
         <div class="collapse" id="collapseExample">
@@ -55,10 +55,10 @@
             @endif
             @endforeach
         </div>
-      <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
+        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
         @php
-        $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices'];
+        $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices',"Panels"];
         @endphp
 
         @foreach ($navigations as $item)
