@@ -188,7 +188,7 @@
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
                 <!-- Remaining Inboxes Progress Bar -->
-                <!-- <div class="col-md-12">
+                <div class="col-md-12">
                     <div class="mb-3">
                         <label>Remaining Inboxes</label>
                         <div class="progress" style="height: 25px; background-color: #2a2a2a;">
@@ -200,7 +200,7 @@
                         </div>
                         <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
                     </div>
-                </div> -->
+                </div>
 
                 <div class="col-md-6">
                     <label>First Name</label>
@@ -467,6 +467,55 @@ $(document).ready(function() {
 
     // Handle sending platform changes
     $('#sending_platform').on('change', updateSendingPlatformFields);
+    // Update remaining inboxes progress bar
+    function updateRemainingInboxes() {
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        
+        if (!orderInfo) {
+            return;
+        }
+        // Get max limit from reorder_info table
+        const maxInboxes = orderInfo.total_inboxes || 0;
+        
+        // Get current limit from domains calculation
+        const domainsText = $('#domains').val() || '';
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+        
+        // Calculate current inboxes from form inputs
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        const uniqueDomains = [...new Set(domains)];
+        const currentInboxes = uniqueDomains.length * inboxesPerDomain;
+        
+        // Calculate percentage used
+        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+        
+        // Update progress bar
+        const progressBar = $('#remaining-inboxes-bar');
+        const progressText = $('#remaining-inboxes-text');
+        const progressNote = $('#remaining-inboxes-note');
+        
+        // Set width and aria values
+        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+        progressBar.attr('aria-valuemax', 100);
+        
+        // Update text display
+        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        
+        // Update color based on usage
+        if (percentageUsed >= 90) {
+            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+            progressNote.html('(Warning: Nearly at limit)');
+        } else if (percentageUsed >= 65) {
+            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+            progressNote.html('(Approaching limit)');
+        } else {
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            progressNote.html('(Current usage)');
+        }
+    }
 
     // Calculate total inboxes and check plan limits
     function calculateTotalInboxes() {
@@ -489,6 +538,9 @@ $(document).ready(function() {
         const orderInfo = @json(optional($order)->reorderInfo->first());
         console.log(orderInfo);
         const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
+        
+        // Update remaining inboxes progress bar
+        updateRemainingInboxes();
         let priceHtml = '';
         
         if (!totalInboxes) {
@@ -631,6 +683,9 @@ $(document).ready(function() {
 
     // Initial calculation
     calculateTotalInboxes();
+    
+    // Initial remaining inboxes progress bar update
+    updateRemainingInboxes();
     
     // Initial URL validation
     $('#forwarding').trigger('blur');
@@ -923,6 +978,9 @@ $(document).ready(function() {
     // Initialize prefix variant fields on page load
     const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
     generatePrefixVariantFields(initialInboxesPerDomain);
+    
+    // Initialize remaining inboxes progress bar on page load
+    updateRemainingInboxes();
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
