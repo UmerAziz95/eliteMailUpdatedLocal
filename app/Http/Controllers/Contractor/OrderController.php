@@ -59,6 +59,7 @@ class OrderController extends Controller
         $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
         $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
         $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
+        $draftOrders = $orders->clone()->where('status_manage_by_admin', 'draft')->count();
 
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
@@ -82,7 +83,8 @@ class OrderController extends Controller
             'statuses',
             'expiredOrders',
             'rejectOrders',
-            'cancelledOrders'
+            'cancelledOrders',
+            'draftOrders'
         ));
     }
     // neworder
@@ -779,6 +781,7 @@ class OrderController extends Controller
             'expiredOrders' => $orders->clone()->where('status_manage_by_admin', 'expired')->count(),
             'rejectOrders' => $orders->clone()->where('status_manage_by_admin', 'reject')->count(),
             'cancelledOrders' => $orders->clone()->where('status_manage_by_admin', 'cancelled')->count(),
+            'draftOrders' => $orders->clone()->where('status_manage_by_admin', 'draft')->count(),
         ];
     }
 

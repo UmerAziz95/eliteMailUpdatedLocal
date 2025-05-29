@@ -173,7 +173,7 @@
                 
 
                 <div class="col-md-6">
-                    <label>Inboxes per Domain</label>
+                    <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
                         <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 1 ? 'selected' : '' }}>1</option>
                         <option value="2" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 2 ? 'selected' : '' }}>2</option>
@@ -186,6 +186,20 @@
                     <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required 
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
+                </div>
+                <!-- Remaining Inboxes Progress Bar -->
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label>Remaining Inboxes</label>
+                        <div class="progress" style="height: 25px; background-color: #2a2a2a;">
+                            <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar" 
+                                 style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="remaining-inboxes-text">0 / 0 inboxes used</span>
+                            </div>
+                        </div>
+                        <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
+                    </div>
                 </div>
 
                 <div class="col-md-6">
@@ -453,6 +467,61 @@ $(document).ready(function() {
 
     // Handle sending platform changes
     $('#sending_platform').on('change', updateSendingPlatformFields);
+    // Update remaining inboxes progress bar
+    function updateRemainingInboxes() {
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        
+        if (!orderInfo) {
+            return;
+        }
+        // Get max limit from reorder_info table
+        const maxInboxes = orderInfo.total_inboxes || 0;
+        
+        // Get current limit from domains calculation
+        const domainsText = $('#domains').val() || '';
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+        
+        // Calculate current inboxes from form inputs
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        const uniqueDomains = [...new Set(domains)];
+        const currentInboxes = uniqueDomains.length * inboxesPerDomain;
+        
+        // Calculate percentage used
+        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+        
+        // Update progress bar
+        const progressBar = $('#remaining-inboxes-bar');
+        const progressText = $('#remaining-inboxes-text');
+        const progressNote = $('#remaining-inboxes-note');
+        
+        // Set width and aria values
+        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+        progressBar.attr('aria-valuemax', 100);
+        
+        // Update text display
+        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        
+        // Update color based on usage
+        if (percentageUsed >= 100) {
+            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+            progressNote.html('(Limit reached)');
+        } else if (percentageUsed >= 90) {
+            progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
+            progressNote.html('(Critical: Nearly at limit)');
+        } else if (percentageUsed >= 75) {
+            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+            progressNote.html('(Warning: Approaching limit)');
+        } else if (percentageUsed >= 50) {
+            progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
+            progressNote.html('(Moderate usage)');
+        } else {
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            progressNote.html('(Current usage)');
+        }
+    }
 
     // Calculate total inboxes and check plan limits
     function calculateTotalInboxes() {
@@ -475,6 +544,9 @@ $(document).ready(function() {
         const orderInfo = @json(optional($order)->reorderInfo->first());
         console.log(orderInfo);
         const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
+        
+        // Update remaining inboxes progress bar
+        updateRemainingInboxes();
         let priceHtml = '';
         
         if (!totalInboxes) {
@@ -617,6 +689,9 @@ $(document).ready(function() {
 
     // Initial calculation
     calculateTotalInboxes();
+    
+    // Initial remaining inboxes progress bar update
+    updateRemainingInboxes();
     
     // Initial URL validation
     $('#forwarding').trigger('blur');
@@ -779,21 +854,48 @@ $(document).ready(function() {
             return false;
         }
 
+        // Show loading indicator
+        Swal.fire({
+            title: 'Updating Order...',
+            text: 'Please wait while we process your order update.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         // If validation passes, submit via AJAX
         $.ajax({
             url: '{{ route("customer.orders.reorder.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
+                Swal.close();
                 if (response.success) {
-                    toastr.success('Order updated successfully');
-                    // subscribePlan(response.plan_id);
-                    window.location.href = "{{ route('customer.orders') }}";
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order updated successfully',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "{{ route('customer.orders') }}";
+                    });
                 } else {
-                    toastr.error(response.message || 'An error occurred. Please try again later.');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message || 'An error occurred. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             },
             error: function(xhr) {
+                Swal.close();
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors from server
                     let firstErrorField = null;
@@ -816,7 +918,6 @@ $(document).ready(function() {
                                 feedbackEl.text(xhr.responseJSON.errors[key][0]);
                             }
                         }
-                        toastr.error(xhr.responseJSON.errors[key][0]);
                     });
                     
                     // Focus and scroll to the first error field
@@ -826,8 +927,20 @@ $(document).ready(function() {
                             firstErrorField.focus();
                         }, 500);
                     }
+                    
+                    Swal.fire({
+                        title: 'Validation Error!',
+                        text: 'Please check the form for errors and try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 } else {
-                    toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again later.');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: xhr.responseJSON?.message || 'An error occurred. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             }
         });
@@ -871,6 +984,9 @@ $(document).ready(function() {
     // Initialize prefix variant fields on page load
     const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
     generatePrefixVariantFields(initialInboxesPerDomain);
+    
+    // Initialize remaining inboxes progress bar on page load
+    updateRemainingInboxes();
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
