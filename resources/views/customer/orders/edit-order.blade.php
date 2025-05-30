@@ -321,50 +321,399 @@
         </div>
     </section>
 </form>
-<!-- this modal not attractive please add some animations and use theme colors -->
 <!-- Order Import Modal -->
-<div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="background-color: #1e1e1e; border: 1px solid #444;">
-            <div class="modal-header" style="border-bottom: 1px solid #444;">
-                <h5 class="modal-title" id="orderImportModalLabel">
-                    <i class="fa-solid fa-file-import me-2"></i>
-                    Import Order Data
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <p class="text-light">Select an order from the table below to import its data into the current form. This will populate all fields with the selected order's information.</p>
+    <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content order-import-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderImportModalLabel">
+                        <div class="d-flex align-items-center">
+                            <div class="modal-icon-wrapper me-3">
+                                <i class="fa-solid fa-file-import"></i>
+                            </div>
+                            <div>
+                                <span class="modal-title-main">Import Order Data</span>
+                                <small class="modal-subtitle d-block">Select an existing order to populate form data</small>
+                            </div>
+                        </div>
+                    </h5>
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
                 </div>
-                
-                <div class="table-responsive">
-                    <table id="ordersImportTable" class="table w-100" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Plan</th>
-                                <!-- <th>Domains</th> -->
-                                <th>Total Inboxes</th>
-                                <th>Status</th>
-                                <th>Created Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                <div class="modal-body">
+                    <div class="import-description">
+                        <div class="d-flex align-items-start">
+                            <div class="info-icon me-3">
+                                <i class="fa-solid fa-info-circle"></i>
+                            </div>
+                            <div>
+                                <p class="mb-2"><strong>How it works:</strong></p>
+                                <ul class="import-steps">
+                                    <li>Browse your existing orders in the table below</li>
+                                    <li>Click "Import" on any order to copy its data</li>
+                                    <li>All form fields will be automatically populated</li>
+                                    <li>Review and modify the imported data as needed</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
+                                        <th><i class="fa-solid fa-package me-1"></i>Plan</th>
+                                        <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
+                                        <th><i class="fa-solid fa-signal me-1"></i>Status</th>
+                                        <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
+                                        <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer" style="border-top: 1px solid #444;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fa-solid fa-times me-1"></i>
-                    Cancel
-                </button>
+                <!-- <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-2"></i>
+                        Cancel
+                    </button>
+                </div> -->
             </div>
         </div>
     </div>
-</div>
+
+    <style>
+    /* Modal Animation and Styling */
+    .order-import-modal {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        border: 2px solid #444;
+        border-radius: 15px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+        overflow: hidden;
+        animation: modalSlideIn 0.4s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Modal Header */
+    .order-import-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: none;
+        padding: 20px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .order-import-modal .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .modal-icon-wrapper {
+        background: rgba(255, 255, 255, 0.2);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: iconPulse 2s infinite;
+    }
+
+    @keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .modal-icon-wrapper i {
+        font-size: 20px;
+        color: white;
+    }
+
+    .modal-title-main {
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .modal-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+        margin-top: 2px;
+    }
+
+    .btn-close-custom {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        color: white;
+    }
+
+    .btn-close-custom:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: rotate(90deg);
+    }
+
+    /* Modal Body */
+    .order-import-modal .modal-body {
+        padding: 30px;
+        background: #1e1e1e;
+    }
+
+    .import-description {
+        background: linear-gradient(135deg, #2d4a7c 0%, #3d5a8c 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 1px solid #4a6fa5;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .import-description::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .info-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .info-icon i {
+        color: white;
+        font-size: 16px;
+    }
+
+    .import-description p {
+        color: #e0e6ed;
+        margin-bottom: 0.5rem;
+    }
+
+    .import-steps {
+        color: #b8c5d1;
+        padding-left: 1.2rem;
+        margin: 0;
+    }
+
+    .import-steps li {
+        margin-bottom: 0.4rem;
+        position: relative;
+    }
+
+    .import-steps li::marker {
+        color: #667eea;
+    }
+
+    /* Table Container */
+    .table-container {
+        background: #252525;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #404040;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Table Styling */
+    .import-table {
+        margin: 0;
+    }
+
+    .import-table thead th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    .import-table thead th:first-child {
+        border-top-left-radius: 8px;
+    }
+
+    .import-table thead th:last-child {
+        border-top-right-radius: 8px;
+    }
+
+    .import-table tbody tr {
+        background: #2a2a2a;
+        border-bottom: 1px solid #3a3a3a;
+        transition: all 0.3s ease;
+    }
+
+    .import-table tbody tr:hover {
+        background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .import-table tbody td {
+        padding: 15px 12px;
+        color: #e0e0e0;
+        border: none;
+        vertical-align: middle;
+    }
+
+    /* Import Button */
+    .import-order-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .import-order-btn:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .import-order-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Modal Footer */
+    .order-import-modal .modal-footer {
+        background: #252525;
+        border-top: 1px solid #404040;
+        padding: 20px 30px;
+    }
+
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        color: white;
+    }
+
+    /* Status Badges Enhancement */
+    .import-table .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Loading Animation */
+    .dataTables_processing {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 20px !important;
+        font-weight: 500 !important;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .order-import-modal .modal-header {
+            padding: 15px 20px;
+        }
+        
+        .modal-title-main {
+            font-size: 1.2rem;
+        }
+        
+        .order-import-modal .modal-body {
+            padding: 20px;
+        }
+        
+        .import-description {
+            padding: 15px;
+        }
+        
+        .table-container {
+            padding: 15px;
+        }
+    }
+
+    /* Animation for table rows */
+    .import-table tbody tr {
+        animation: tableRowSlideIn 0.5s ease-out forwards;
+        opacity: 0;
+    }
+
+    @keyframes tableRowSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Stagger animation for multiple rows */
+    .import-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+    .import-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+    .import-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+    .import-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+    .import-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+    </style>
 
 @endsection
 
@@ -553,7 +902,7 @@ $(document).ready(function() {
             updateRemainingInboxesBar();
         }
     }, 1000);
-    
+
     function initializeOrdersImportTable() {
         if (ordersImportTable) {
             ordersImportTable.destroy();
@@ -631,7 +980,6 @@ $(document).ready(function() {
             }
             ],
             language: {
-            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
             emptyTable: "No orders available for import",
             zeroRecords: "No matching orders found"
             }
@@ -862,11 +1210,7 @@ $(document).ready(function() {
             // Show notification about the automatic trimming
             Swal.fire({
                 title: 'Domains Automatically Trimmed',
-                html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
-                       Original domains: <strong>${domains.length}</strong><br>
-                       Kept domains: <strong>${maxDomainsAllowed}</strong><br>
-                       Removed domains: <strong>${removedCount}</strong><br><br>
-                       <em>Price has been updated automatically.</em>`,
+                html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#3085d6'
@@ -875,7 +1219,6 @@ $(document).ready(function() {
     }
     
 });  // Close the first $(document).ready() block
-
 // Second document ready block for existing functionality
 $(document).ready(function() {
     function generateField(name, field, existingValue = '') {
@@ -1059,7 +1402,7 @@ $(document).ready(function() {
         
         return totalInboxes;
     }
-
+    // Auto Cutting domains when add domians fields import time domians auto trimed correctly but when add on directly on domain fileds then extra domains not trimed
     // Domain validation
     $('#domains').on('input', function() {
         const domainsField = $(this);
@@ -1101,7 +1444,7 @@ $(document).ready(function() {
         // Update total inboxes calculation
         calculateTotalInboxes();
     });
-
+    
     // Note: Event listeners for domains and inboxes_per_domain are already set up in the first document.ready block
 
     // Add explicit event listeners for immediate price updates
