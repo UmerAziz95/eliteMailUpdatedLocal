@@ -1298,6 +1298,14 @@ $(document).ready(function() {
                     closeButton: true,
                     progressBar: true
                 });
+                // also show swal notification
+                Swal.fire({
+                    title: 'Domains Automatically Trimmed',
+                    html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
+                    icon: 'info',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         }
         
