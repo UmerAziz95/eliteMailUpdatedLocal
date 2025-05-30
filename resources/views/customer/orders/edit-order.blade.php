@@ -365,7 +365,7 @@
                                 <thead>
                                     <tr>
                                         <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
-                                        <th><i class="fa-solid fa-package me-1"></i>Plan</th>
+                                        <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
                                         <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
                                         <th><i class="fa-solid fa-signal me-1"></i>Status</th>
                                         <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
@@ -549,9 +549,123 @@
     .table-container {
         background: #252525;
         border-radius: 12px;
-        padding: 20px;
-        border: 1px solid #404040;
+        /* padding: 20px;
+        border: 1px solid #404040; */
         box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Enhanced responsive table wrapper for horizontal scrolling */
+    .table-responsive {
+        border-radius: 8px;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #404040;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        min-height: 200px;
+        background: #252525;
+    }
+
+    /* Custom scrollbar for horizontal scrolling */
+    .table-responsive::-webkit-scrollbar {
+        height: 12px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #1a1a1a;
+        border-radius: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 6px;
+        border: 2px solid #1a1a1a;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
+    }
+
+    /* Firefox scrollbar styling */
+    .table-responsive {
+        scrollbar-width: thin;
+        scrollbar-color: #667eea #1a1a1a;
+    }
+
+    /* Table content styling for better horizontal scrolling */
+    .import-table {
+        min-width: 800px; /* Ensure minimum width to trigger horizontal scrolling */
+        white-space: nowrap; /* Prevent text wrapping in cells */
+    }
+
+    .import-table th,
+    .import-table td {
+        min-width: 120px; /* Set minimum column width */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Specific column width adjustments */
+    .import-table th:first-child,
+    .import-table td:first-child {
+        min-width: 80px; /* Order ID column */
+    }
+
+    .import-table th:nth-child(2),
+    .import-table td:nth-child(2) {
+        min-width: 150px; /* Plan column */
+    }
+
+    .import-table th:nth-child(6),
+    .import-table td:nth-child(6) {
+        min-width: 120px; /* Action column */
+    }
+
+    /* Scroll indicators for better UX */
+    .scroll-indicators {
+        position: relative;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .scroll-indicator-left,
+    .scroll-indicator-right {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: auto;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .scroll-indicator-left {
+        left: 10px;
+    }
+
+    .scroll-indicator-right {
+        right: 10px;
+    }
+
+    .scroll-indicator-left.visible,
+    .scroll-indicator-right.visible {
+        opacity: 0.8;
+    }
+
+    .scroll-indicator-left:hover,
+    .scroll-indicator-right:hover {
+        opacity: 1;
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
     }
 
     /* Table Styling */
@@ -657,14 +771,15 @@
         letter-spacing: 0.5px;
     }
 
-    /* Loading Animation */
-    .dataTables_processing {
+    /* Loading Animation for AJAX tables */
+    .table-loading {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: white !important;
         border-radius: 8px !important;
         border: none !important;
         padding: 20px !important;
         font-weight: 500 !important;
+        text-align: center;
     }
 
     /* Responsive Design */
@@ -686,6 +801,63 @@
         }
         
         .table-container {
+            /* padding: 15px; */
+        }
+
+        /* Enhanced mobile horizontal scrolling */
+        .table-responsive {
+            margin: 0 -15px; /* Extend to modal edges on mobile */
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+
+        .import-table {
+            min-width: 900px; /* Increased minimum width for mobile */
+        }
+
+        /* Make scrollbar more prominent on mobile */
+        .table-responsive::-webkit-scrollbar {
+            height: 16px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            border: 3px solid #1a1a1a;
+        }
+
+        /* Mobile-specific column adjustments */
+        .import-table th,
+        .import-table td {
+            min-width: 140px;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Add scroll hint for mobile users */
+        .table-container::after {
+            content: "← Swipe to see more →";
+            display: block;
+            text-align: center;
+            color: #667eea;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .import-table {
+            min-width: 1000px; /* Even wider on very small screens */
+        }
+
+        .import-table th,
+        .import-table td {
+            min-width: 160px;
+            padding: 10px 6px;
+            font-size: 0.85rem;
+        }
+
+        .order-import-modal .modal-body {
             padding: 15px;
         }
     }
@@ -881,7 +1053,6 @@ function updateRemainingInboxesBar(currentInboxes = null) {
 }
 
 $(document).ready(function() {
-    let ordersImportTable;
     // Initialize Order Import Modal
     $('#orderImportBtn').on('click', function() {
         initializeOrdersImportTable();
@@ -900,7 +1071,7 @@ $(document).ready(function() {
             updateRemainingInboxesBar();
         }
     }, 1000);
-
+    
     function initializeOrdersImportTable() {
         // Show loading indicator
         Swal.fire({
@@ -916,91 +1087,134 @@ $(document).ready(function() {
             }
         });
 
-        if (ordersImportTable) {
-            ordersImportTable.destroy();
-        }
-        ordersImportTable = $('#ordersImportTable').DataTable({
-            processing: true,
-            serverSide: true,
-            // responsive: {
-            //     details: {
-            //         display: $.fn.dataTable.Responsive.display.modal({
-            //             header: function(row) {
-            //                 return 'Invoice Details';
-            //             }
-            //         }),
-            //         renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-            //     }
-            // },
-            paging: false,
-            searching: false,
-            ordering: false,
-            info: false,
-            ajax: {
+        // Clear existing table content
+        $('#ordersImportTable tbody').empty();
+        
+        // AJAX call to fetch orders data
+        $.ajax({
             url: "{{ route('customer.orders.import.data') }}",
             type: "GET",
-            data: function(d) {
-                d.for_import = true; // Flag to indicate this is for import
-                d.exclude_current = "{{ isset($order) ? $order->id : '' }}"; // Exclude current order
-            }
+            data: {
+                for_import: true,
+                exclude_current: "{{ isset($order) ? $order->id : '' }}"
             },
-            columns: [
-            { 
-                data: 'id', 
-                name: 'id',
-                width: '10%'
-            },
-            { 
-                data: 'plan.name', 
-                name: 'plan.name',
-                width: '15%',
-                defaultContent: 'N/A'
-            },
-            // { 
-            //     data: 'domains_preview', 
-            //     name: 'domains_preview',
-            //     width: '25%',
-            //     render: function(data, type, row) {
-            //     if (!data || data === 'N/A') return 'N/A';
-            //     const domains = data.split('\n').filter(d => d.trim());
-            //     if (domains.length <= 2) {
-            //         return domains.join('<br>');
-            //     }
-            //     return domains.slice(0, 2).join('<br>') + '<br><small class="text-muted">+' + (domains.length - 2) + ' more...</small>';
-            //     }
-            // },
-            { 
-                data: 'total_inboxes', 
-                name: 'total_inboxes',
-                width: '10%',
-                defaultContent: '0'
-            },
-            { 
-                data: 'status_badge', 
-                name: 'status_manage_by_admin',
-                width: '15%'
-            },
-            { 
-                data: 'created_at_formatted', 
-                name: 'created_at',
-                width: '15%'
-            },
-            { 
-                data: 'action', 
-                name: 'action', 
-                width: '10%'
-            }
-            ],
-            language: {
-            emptyTable: "No orders available for import",
-            zeroRecords: "No matching orders found"
-            },
-            drawCallback: function(settings) {
-                // Close the loading indicator and show modal when table is loaded
+            success: function(response) {
+                // Close loading indicator
                 Swal.close();
+                
+                // Show modal
                 $('#orderImportModal').modal('show');
+                
+                // Populate table with data
+                populateOrdersTable(response.data || []);
+            },
+            error: function(xhr, status, error) {
+                // Close loading indicator
+                Swal.close();
+                
+                console.error('Error loading orders:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to load orders data. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         });
+    }
+    
+    function populateOrdersTable(orders) {
+        const tbody = $('#ordersImportTable tbody');
+        tbody.empty();
+        
+        if (!orders || orders.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fa-solid fa-inbox me-2"></i>
+                        No orders available for import
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        orders.forEach(function(order) {
+            const row = `
+                <tr class="table-row-hover">
+                    <td class="text-center">${order.id || 'N/A'}</td>
+                    <td title="${getPlanName(order)}">${getPlanName(order)}</td>
+                    <td class="text-center">${order.total_inboxes || '0'}</td>
+                    <td class="text-center">${order.status_badge || 'N/A'}</td>
+                    <td class="text-center" title="${order.created_at_formatted || 'N/A'}">${order.created_at_formatted || 'N/A'}</td>
+                    <td class="text-center">${getActionButton(order)}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        // Add horizontal scroll indicators for better UX
+        setTimeout(() => {
+            addScrollIndicators();
+        }, 100);
+    }
+    
+    // Function to add scroll indicators for better horizontal scrolling UX
+    function addScrollIndicators() {
+        const tableContainer = $('.table-responsive');
+        if (tableContainer.length) {
+            const scrollWidth = tableContainer[0].scrollWidth;
+            const clientWidth = tableContainer[0].clientWidth;
+            
+            // Only show indicators if table is wider than container
+            if (scrollWidth > clientWidth) {
+                // Add scroll indicators
+                if (!$('.scroll-indicator-left').length) {
+                    tableContainer.before(`
+                        <div class="scroll-indicators">
+                            <div class="scroll-indicator-left">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </div>
+                            <div class="scroll-indicator-right">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    `);
+                }
+                
+                // Handle scroll events to update indicators
+                tableContainer.on('scroll', function() {
+                    const scrollLeft = $(this).scrollLeft();
+                    const maxScroll = scrollWidth - clientWidth;
+                    
+                    $('.scroll-indicator-left').toggleClass('visible', scrollLeft > 0);
+                    $('.scroll-indicator-right').toggleClass('visible', scrollLeft < maxScroll - 5);
+                });
+                
+                // Initial state
+                $('.scroll-indicator-left').removeClass('visible');
+                $('.scroll-indicator-right').addClass('visible');
+            }
+        }
+    }
+    
+    function getPlanName(order) {
+        if (order.plan && order.plan.name) {
+            return order.plan.name;
+        }
+        return 'N/A';
+    }
+    
+    function getActionButton(order) {
+        return `
+            <button type="button" 
+                    class="import-order-btn" 
+                    data-order-id="${order.id}"
+                    title="Import this order data">
+                <i class="fa-solid fa-download me-1"></i>
+                Import
+            </button>
+        `;
     }    
     // Handle order import
     $(document).on('click', '.import-order-btn', function() {
