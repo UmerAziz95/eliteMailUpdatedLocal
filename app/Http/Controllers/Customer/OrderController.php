@@ -844,9 +844,10 @@ class OrderController extends Controller
                     return optional(optional($order->reorderInfo)->first())->total_inboxes ?? 0;
                 })
                 ->addColumn('status_badge', function ($order) {
-                    $status = $order->status_manage_by_admin;
-                    $badgeClass = $this->statuses[$status] ?? 'secondary';
-                    return '<span class="badge bg-' . $badgeClass . '">' . ucfirst($status) . '</span>';
+                    $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                    $statusClass = $this->statuses[$status] ?? 'secondary';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($status) . '</span>';
                 })
                 ->addColumn('created_at_formatted', function ($order) {
                     return $order->created_at->format('M d, Y');

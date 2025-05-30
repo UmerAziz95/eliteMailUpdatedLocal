@@ -92,7 +92,13 @@
 
     <section class="py-3 overflow-hidden">
         <div class="card p-3">
-            <h5 class="mb-4">Domains & hosting platform</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Domains & hosting platform</h5>
+                <button type="button" class="m-btn py-1 px-3 rounded-2 border-0" id="orderImportBtn">
+                    <i class="fa-solid fa-file-import"></i>
+                    Import Order
+                </button>
+            </div>
 
             <div class="mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
@@ -287,7 +293,7 @@
                 </div>
 
                 <!-- Price display section -->
-                <div class="price-display-section">
+                <div class="price-display-section" style="display: none;">
                     @if(isset($plan))
                         @php
                             $totalInboxes = 0;
@@ -306,10 +312,6 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="button" class="c-btn py-1 px-3 rounded-2 border-0" id="orderImportBtn">
-                        <i class="fa-solid fa-file-import"></i>
-                        Import Order
-                    </button>
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0">
                         <i class="fa-solid fa-cart-shopping"></i>
                         Purchase Accounts
@@ -319,7 +321,7 @@
         </div>
     </section>
 </form>
-
+<!-- this modal not attractive please add some animations and use theme colors -->
 <!-- Order Import Modal -->
 <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -337,12 +339,12 @@
                 </div>
                 
                 <div class="table-responsive">
-                    <table id="ordersImportTable" class="table table-dark table-striped" style="width:100%">
+                    <table id="ordersImportTable" class="table w-100" style="width:100%">
                         <thead>
                             <tr>
                                 <th>Order ID</th>
                                 <th>Plan</th>
-                                <th>Domains</th>
+                                <!-- <th>Domains</th> -->
                                 <th>Total Inboxes</th>
                                 <th>Status</th>
                                 <th>Created Date</th>
@@ -368,7 +370,7 @@
 
 @push('scripts')
 <script>
-// Global function for calculating total inboxes - accessible from import functionality
+// Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
     const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
@@ -376,6 +378,7 @@ function calculateTotalInboxes() {
     if (!domainsText) {
         $('#total_inboxes').val(0);
         updateRemainingInboxesBar(0);
+        updatePriceDisplay(0);
         return 0;
     }
     
@@ -392,7 +395,76 @@ function calculateTotalInboxes() {
     // Update progress bar with current values
     updateRemainingInboxesBar(totalInboxes);
     
+    // Update price display with new total
+    updatePriceDisplay(totalInboxes);
+    
     return totalInboxes;
+}
+
+// Global function for updating price display based on total inboxes
+function updatePriceDisplay(totalInboxes) {
+    const currentPlan = @json($plan);
+    const orderInfo = @json(optional($order)->reorderInfo->first());
+    const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
+    const submitButton = $('button[type="submit"]');
+    let priceHtml = '';
+    
+    if (!totalInboxes || totalInboxes === 0) {
+        priceHtml = `
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div>
+                    <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                </div>
+                <div>
+                    <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                    <br>
+                    <span>Please add domains and inboxes to calculate price</span>
+                </div>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+        `;
+    } else if (currentPlan && totalInboxes > TOTAL_INBOXES && TOTAL_INBOXES > 0) {
+        priceHtml = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Plan Limit Exceeded!</strong> Your current plan supports ${TOTAL_INBOXES} inboxes, but you're requesting ${totalInboxes} inboxes.
+                <br><small>Please upgrade your plan or reduce the number of domains.</small>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> <small>Exceeds plan limit</small></h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> <small>Please upgrade plan</small></h6>
+        `;
+        if (submitButton.length) {
+            submitButton.prop('disabled', true);
+            submitButton.hide();
+        }
+    } else if (currentPlan) {
+        const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
+        priceHtml = `
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div>
+                    <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                </div>
+                <div>
+                    <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                    <br>
+                    <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
+                </div>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
+        `;
+        if (submitButton.length) {
+            submitButton.prop('disabled', false);
+            submitButton.show();
+        }
+    }
+    
+    // Update the price display section
+    $('.price-display-section').html(priceHtml);
 }
 
 // Global function for updating remaining inboxes progress bar
@@ -486,80 +558,85 @@ $(document).ready(function() {
         if (ordersImportTable) {
             ordersImportTable.destroy();
         }
-        
         ordersImportTable = $('#ordersImportTable').DataTable({
             processing: true,
             serverSide: true,
-            responsive: true,
-            pageLength: 10,
+            // responsive: {
+            //     details: {
+            //         display: $.fn.dataTable.Responsive.display.modal({
+            //             header: function(row) {
+            //                 return 'Invoice Details';
+            //             }
+            //         }),
+            //         renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+            //     }
+            // },
+            paging: false,
+            searching: false,
+            ordering: false,
+            info: false,
             ajax: {
-                url: "{{ route('customer.orders.import.data') }}",
-                type: "GET",
-                data: function(d) {
-                    d.for_import = true; // Flag to indicate this is for import
-                    d.exclude_current = "{{ isset($order) ? $order->id : '' }}"; // Exclude current order
-                }
+            url: "{{ route('customer.orders.import.data') }}",
+            type: "GET",
+            data: function(d) {
+                d.for_import = true; // Flag to indicate this is for import
+                d.exclude_current = "{{ isset($order) ? $order->id : '' }}"; // Exclude current order
+            }
             },
             columns: [
-                { 
-                    data: 'id', 
-                    name: 'id',
-                    width: '10%'
-                },
-                { 
-                    data: 'plan.name', 
-                    name: 'plan.name',
-                    width: '15%',
-                    defaultContent: 'N/A'
-                },
-                { 
-                    data: 'domains_preview', 
-                    name: 'domains_preview',
-                    width: '25%',
-                    orderable: false,
-                    render: function(data, type, row) {
-                        if (!data || data === 'N/A') return 'N/A';
-                        const domains = data.split('\n').filter(d => d.trim());
-                        if (domains.length <= 2) {
-                            return domains.join('<br>');
-                        }
-                        return domains.slice(0, 2).join('<br>') + '<br><small class="text-muted">+' + (domains.length - 2) + ' more...</small>';
-                    }
-                },
-                { 
-                    data: 'total_inboxes', 
-                    name: 'total_inboxes',
-                    width: '10%',
-                    defaultContent: '0'
-                },
-                { 
-                    data: 'status_badge', 
-                    name: 'status_manage_by_admin',
-                    width: '15%',
-                    orderable: false
-                },
-                { 
-                    data: 'created_at_formatted', 
-                    name: 'created_at',
-                    width: '15%'
-                },
-                { 
-                    data: 'action', 
-                    name: 'action', 
-                    orderable: false, 
-                    searchable: false,
-                    width: '10%'
-                }
+            { 
+                data: 'id', 
+                name: 'id',
+                width: '10%'
+            },
+            { 
+                data: 'plan.name', 
+                name: 'plan.name',
+                width: '15%',
+                defaultContent: 'N/A'
+            },
+            // { 
+            //     data: 'domains_preview', 
+            //     name: 'domains_preview',
+            //     width: '25%',
+            //     render: function(data, type, row) {
+            //     if (!data || data === 'N/A') return 'N/A';
+            //     const domains = data.split('\n').filter(d => d.trim());
+            //     if (domains.length <= 2) {
+            //         return domains.join('<br>');
+            //     }
+            //     return domains.slice(0, 2).join('<br>') + '<br><small class="text-muted">+' + (domains.length - 2) + ' more...</small>';
+            //     }
+            // },
+            { 
+                data: 'total_inboxes', 
+                name: 'total_inboxes',
+                width: '10%',
+                defaultContent: '0'
+            },
+            { 
+                data: 'status_badge', 
+                name: 'status_manage_by_admin',
+                width: '15%'
+            },
+            { 
+                data: 'created_at_formatted', 
+                name: 'created_at',
+                width: '15%'
+            },
+            { 
+                data: 'action', 
+                name: 'action', 
+                width: '10%'
+            }
             ],
-            order: [[0, 'desc']],
             language: {
-                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
-                emptyTable: "No orders available for import",
-                zeroRecords: "No matching orders found"
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+            emptyTable: "No orders available for import",
+            zeroRecords: "No matching orders found"
             }
         });
-    }
-    
+    }    
     // Handle order import
     $(document).on('click', '.import-order-btn', function() {
         const orderId = $(this).data('order-id');
@@ -694,10 +771,13 @@ $(document).ready(function() {
             // Check domain cutting if needed
             checkDomainCutting();
             
-            // Force update progress bar one more time to ensure it's correct
+            // Force update progress bar and price one more time to ensure it's correct
             setTimeout(() => {
                 if (typeof updateRemainingInboxesBar === 'function') {
                     updateRemainingInboxesBar();
+                }
+                if (typeof calculateTotalInboxes === 'function') {
+                    calculateTotalInboxes();
                 }
             }, 200);
         }, 600);
@@ -772,13 +852,21 @@ $(document).ready(function() {
                 calculateTotalInboxes();
             }
             
+            // Force update the price display after domain trimming
+            setTimeout(() => {
+                if (typeof calculateTotalInboxes === 'function') {
+                    calculateTotalInboxes();
+                }
+            }, 100);
+            
             // Show notification about the automatic trimming
             Swal.fire({
                 title: 'Domains Automatically Trimmed',
                 html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
                        Original domains: <strong>${domains.length}</strong><br>
                        Kept domains: <strong>${maxDomainsAllowed}</strong><br>
-                       Removed domains: <strong>${removedCount}</strong>`,
+                       Removed domains: <strong>${removedCount}</strong><br><br>
+                       <em>Price has been updated automatically.</em>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#3085d6'
@@ -944,11 +1032,10 @@ $(document).ready(function() {
         }
     }
 
-    // Calculate total inboxes and check plan limits
+    // Calculate total inboxes and update pricing - enhanced for auto-domain trimming
     function calculateTotalInboxes() {
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-        const submitButton = $('button[type="submit"]');
         
         // Split domains by newlines and filter out empty entries
         const domains = domainsText.split(/[\n,]+/)
@@ -960,109 +1047,17 @@ $(document).ready(function() {
         
         $('#total_inboxes').val(totalInboxes);
         
-        // Get current plan details
-        const currentPlan = @json($plan);
-        const orderInfo = @json(optional($order)->reorderInfo->first());
-        console.log(orderInfo);
-        const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
-        
         // Update remaining inboxes progress bar using global function
         if (typeof updateRemainingInboxesBar === 'function') {
             updateRemainingInboxesBar(totalInboxes);
         }
-        let priceHtml = '';
         
-        if (!totalInboxes) {
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>Please add domains and inboxes to calculate price</span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-            `;
-        } 
-        else if (currentPlan && totalInboxes > TOTAL_INBOXES) {
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>Configuration exceeds available limits</span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> <small class="text-danger">Please contact support for a custom solution</small></h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> <small class="text-danger">Configuration exceeds available limits</small></h6>
-            `;
-            
-            // Disable submit button and show upgrade confirmation
-            submitButton.prop('disabled', true);
-            submitButton.hide();
-            
-            Swal.fire({
-                title: 'Plan Limit Exceeded',
-                html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${TOTAL_INBOXES}).<br>Would you like to upgrade your plan?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Upgrade Plan',
-                cancelButtonText: 'Cancel',
-                allowOutsideClick: false,
-                allowEscapeKey:false,
-                allowEnterKey:false,
-                backdrop: true,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = "{{ route('customer.pricing') }}";
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    // Calculate how many domains we can keep within the plan limit
-                    const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                    const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                    
-                    // Update domains field with trimmed list
-                    $('#domains').val(trimmedDomains.join('\n'));
-                    
-                    // Recalculate totals
-                    calculateTotalInboxes();
-                    
-                    // Show notification to user
-                    toastr.info(`Domains list has been trimmed to fit within your current plan limit of ${TOTAL_INBOXES} inboxes.`);
-                }
-            });
-        } else {
-            const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
-            `;
-            
-            // Enable submit button
-            submitButton.prop('disabled', false);
-            submitButton.show();
+        // Update price display using global function
+        if (typeof updatePriceDisplay === 'function') {
+            updatePriceDisplay(totalInboxes);
         }
         
-        $('.price-display-section').html(priceHtml);
+        return totalInboxes;
     }
 
     // Domain validation
@@ -1108,6 +1103,11 @@ $(document).ready(function() {
     });
 
     // Note: Event listeners for domains and inboxes_per_domain are already set up in the first document.ready block
+
+    // Add explicit event listeners for immediate price updates
+    $('#domains, #inboxes_per_domain').off('input change').on('input change', function() {
+        calculateTotalInboxes();
+    });
 
     // Initial calculation
     calculateTotalInboxes();
