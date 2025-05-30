@@ -563,9 +563,9 @@ class OrderController extends Controller
             // }
 
             // Store session data if validation passes
-            $request->session()->put('order_info', $request->all());
+            // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
-            $request->session()->put('order_info.plan_id', $request->plan_id);
+            // $request->session()->put('order_info.plan_id', $request->plan_id);
             $message = 'Order information saved successfully.';
             
             // for edit order

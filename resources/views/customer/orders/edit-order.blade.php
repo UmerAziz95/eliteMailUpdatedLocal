@@ -1315,7 +1315,7 @@ $(document).ready(function() {
                     closeButton: true,
                     progressBar: true
                 });
-                // also show swal notification
+                // swal notification
                 Swal.fire({
                     title: 'Domains Automatically Trimmed',
                     html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
