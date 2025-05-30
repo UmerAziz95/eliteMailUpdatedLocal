@@ -882,10 +882,8 @@ function updateRemainingInboxesBar(currentInboxes = null) {
 
 $(document).ready(function() {
     let ordersImportTable;
-    
     // Initialize Order Import Modal
     $('#orderImportBtn').on('click', function() {
-        $('#orderImportModal').modal('show');
         initializeOrdersImportTable();
     });
     
@@ -904,6 +902,20 @@ $(document).ready(function() {
     }, 1000);
 
     function initializeOrdersImportTable() {
+        // Show loading indicator
+        Swal.fire({
+            title: 'Loading Orders...',
+            text: 'Please wait while we fetch your orders.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         if (ordersImportTable) {
             ordersImportTable.destroy();
         }
@@ -982,6 +994,11 @@ $(document).ready(function() {
             language: {
             emptyTable: "No orders available for import",
             zeroRecords: "No matching orders found"
+            },
+            drawCallback: function(settings) {
+                // Close the loading indicator and show modal when table is loaded
+                Swal.close();
+                $('#orderImportModal').modal('show');
             }
         });
     }    
