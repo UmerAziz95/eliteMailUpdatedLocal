@@ -1221,6 +1221,52 @@ $(document).ready(function() {
 });  // Close the first $(document).ready() block
 // Second document ready block for existing functionality
 $(document).ready(function() {
+    // Function to check domain cutting for direct input (with toastr notification instead of modal)
+    function checkDomainCuttingOnInput() {
+        const domainsText = $('#domains').val();
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        if (!domainsText) return;
+        
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        const totalInboxes = domains.length * inboxesPerDomain;
+        
+        // Get current order's total inboxes limit from reorder_info or plan
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        const planInfo = @json($plan ?? null);
+        let TOTAL_INBOXES = 0;
+        
+        if (orderInfo && orderInfo.total_inboxes) {
+            TOTAL_INBOXES = orderInfo.total_inboxes;
+        } else if (planInfo && planInfo.max_inbox) {
+            TOTAL_INBOXES = planInfo.max_inbox;
+        }
+        
+        if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+            // Automatically trim domains to fit within plan limit
+            const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+            const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+            const removedCount = domains.length - maxDomainsAllowed;
+            
+            $('#domains').val(trimmedDomains.join('\n'));
+            
+            // Recalculate totals after trimming
+            if (typeof calculateTotalInboxes === 'function') {
+                calculateTotalInboxes();
+            }
+            
+            // Show toastr notification instead of modal for direct input
+            toastr.warning(`${removedCount} domains were automatically removed. Your plan limit is ${TOTAL_INBOXES} inboxes.`, 'Domains Auto-Trimmed', {
+                timeOut: 5000,
+                closeButton: true,
+                progressBar: true
+            });
+        }
+    }
+    
     function generateField(name, field, existingValue = '') {
         const fieldId = `${name}`;
         let html = `<div class="mb-3">
@@ -1402,11 +1448,10 @@ $(document).ready(function() {
         
         return totalInboxes;
     }
-    // Auto Cutting domains when add domians fields import time domians auto trimed correctly but when add on directly on domain fileds then extra domains not trimed
-    // Domain validation
+    // Domain validation with auto-trimming
     $('#domains').on('input', function() {
         const domainsField = $(this);
-        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
+        let domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
         
         // Reset validation state
         domainsField.removeClass('is-invalid');
@@ -1439,6 +1484,38 @@ $(document).ready(function() {
                 $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
                 return;
             }
+            
+            // Auto-trim domains if they exceed plan limit
+            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+            const totalInboxes = domains.length * inboxesPerDomain;
+            
+            // Get current order's total inboxes limit from reorder_info or plan
+            const orderInfo = @json(optional($order)->reorderInfo->first());
+            const planInfo = @json($plan ?? null);
+            let TOTAL_INBOXES = 0;
+            
+            if (orderInfo && orderInfo.total_inboxes) {
+                TOTAL_INBOXES = orderInfo.total_inboxes;
+            } else if (planInfo && planInfo.max_inbox) {
+                TOTAL_INBOXES = planInfo.max_inbox;
+            }
+            
+            if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                // Automatically trim domains to fit within plan limit
+                const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                const removedCount = domains.length - maxDomainsAllowed;
+                
+                // Update the field value with trimmed domains
+                domainsField.val(trimmedDomains.join('\n'));
+                
+                // Show notification about the automatic trimming
+                toastr.warning(`${removedCount} domains were automatically removed. Your plan limit is ${TOTAL_INBOXES} inboxes.`, 'Domains Auto-Trimmed', {
+                    timeOut: 5000,
+                    closeButton: true,
+                    progressBar: true
+                });
+            }
         }
         
         // Update total inboxes calculation
@@ -1447,9 +1524,22 @@ $(document).ready(function() {
     
     // Note: Event listeners for domains and inboxes_per_domain are already set up in the first document.ready block
 
-    // Add explicit event listeners for immediate price updates
+    // Add explicit event listeners for immediate price updates and domain trimming
     $('#domains, #inboxes_per_domain').off('input change').on('input change', function() {
         calculateTotalInboxes();
+        
+        // Also check for domain trimming when inboxes per domain changes
+        if ($(this).attr('id') === 'inboxes_per_domain') {
+            checkDomainCuttingOnInput();
+        }
+    });
+    
+    // Add paste event handler for domains field to handle auto-trimming
+    $('#domains').on('paste', function() {
+        // Use setTimeout to allow the paste content to be processed first
+        setTimeout(() => {
+            checkDomainCuttingOnInput();
+        }, 100);
     });
 
     // Initial calculation
