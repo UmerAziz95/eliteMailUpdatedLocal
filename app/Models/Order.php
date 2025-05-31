@@ -57,4 +57,8 @@ class Order extends Model
     {
         return $this->belongsTo(Plan::class);
     }
-}
+    public function panels()
+    {
+    return $this->belongsToMany(Panel::class, 'order_panel', 'order_id', 'panel_id')->withTimestamps();
+    }
+} 
