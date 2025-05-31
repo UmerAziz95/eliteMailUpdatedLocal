@@ -90,8 +90,8 @@
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
                     alt="">
                 <div class="d-flex flex-column gap-0">
-                    <h6 class="mb-0">Muhammad Hamza Ashfaq</h6>
-                    <small>hamzaashfaq123@gmail.com</small>
+                    <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                    <small>{{ Auth::user()->email }}</small>
                 </div>
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
