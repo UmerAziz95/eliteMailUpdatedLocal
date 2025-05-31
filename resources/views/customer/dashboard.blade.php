@@ -127,7 +127,7 @@
         }
 
         .inbox {
-            background-color: #5750bf53;
+            background-color: var(--slide-bg);
             border: 1px solid var(--second-primary);
             backdrop-filter: blur(10px);
             border-radius: 6px;
@@ -140,7 +140,7 @@
         <div class="row gy-4">
             <!-- Inbox Statistics -->
             <div class="col-4">
-                <div class="card inbox overflow-hidden h-100">
+                <div class=" inbox overflow-hidden h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-1 mb-3">
                             <span class="rounded-1 d-flex align-items-center justify-content-center">
@@ -156,7 +156,7 @@
                                     <span class="d-block opacity-75">Total Inboxes</span>
                                     <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
                                 </div>
-                                <span class=" bg-white bg-opacity-25  px-3 py-1 rounded-pill">
+                                <span class="bg-white bg-opacity-25  px-3 py-1 rounded-pill">
                                     <i class="ti ti-inbox-off me-1"></i> Total
                                 </span>
                             </div>
@@ -754,7 +754,7 @@
                         </div>
                     </div>
                     <div class="table-responsive">
-                        <table id="myTable" class=" w-100 nowrap">
+                        <table id="myTable" class="table table-striped w-100 nowrap">
                             <thead>
                                 <tr>
                                     <th class="text-start">ID</th>
