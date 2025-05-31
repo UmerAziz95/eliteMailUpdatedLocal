@@ -120,4 +120,12 @@ class User extends Authenticatable
         
         return true;
     }
+
+    public function panels()
+{
+    return $this->belongsToMany(Panel::class)
+                ->withTimestamps()
+                ->withPivot('accepted_at', 'released_at');
+}
+
 }

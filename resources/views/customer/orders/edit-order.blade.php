@@ -92,7 +92,13 @@
 
     <section class="py-3 overflow-hidden">
         <div class="card p-3">
-            <h5 class="mb-4">Domains & hosting platform</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Domains & hosting platform</h5>
+                <button type="button" class="m-btn py-1 px-3 rounded-2 border-0" id="orderImportBtn">
+                    <i class="fa-solid fa-file-import"></i>
+                    Import Order
+                </button>
+            </div>
 
             <div class="mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
@@ -287,7 +293,7 @@
                 </div>
 
                 <!-- Price display section -->
-                <div class="price-display-section">
+                <div class="price-display-section" style="display: none;">
                     @if(isset($plan))
                         @php
                             $totalInboxes = 0;
@@ -305,7 +311,7 @@
                     @endif
                 </div>
 
-                <div>
+                <div class="d-flex gap-2">
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0">
                         <i class="fa-solid fa-cart-shopping"></i>
                         Purchase Accounts
@@ -315,11 +321,1229 @@
         </div>
     </section>
 </form>
+<!-- Order Import Modal -->
+    <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content order-import-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderImportModalLabel">
+                        <div class="d-flex align-items-center">
+                            <div class="modal-icon-wrapper me-3">
+                                <i class="fa-solid fa-file-import"></i>
+                            </div>
+                            <div>
+                                <span class="modal-title-main">Import Order Data</span>
+                                <small class="modal-subtitle d-block">Select an existing order to populate form data</small>
+                            </div>
+                        </div>
+                    </h5>
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="import-description">
+                        <div class="d-flex align-items-start">
+                            <div class="info-icon me-3">
+                                <i class="fa-solid fa-info-circle"></i>
+                            </div>
+                            <div>
+                                <p class="mb-2"><strong>How it works:</strong></p>
+                                <ul class="import-steps">
+                                    <li>Browse your existing orders in the table below</li>
+                                    <li>Click "Import" on any order to copy its data</li>
+                                    <li>All form fields will be automatically populated</li>
+                                    <li>Review and modify the imported data as needed</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
+                                        <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
+                                        <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
+                                        <th><i class="fa-solid fa-signal me-1"></i>Status</th>
+                                        <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
+                                        <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-2"></i>
+                        Cancel
+                    </button>
+                </div> -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* Modal Animation and Styling */
+    .order-import-modal {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        border: 2px solid #444;
+        border-radius: 15px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+        overflow: hidden;
+        animation: modalSlideIn 0.4s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Modal Header */
+    .order-import-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: none;
+        padding: 20px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .order-import-modal .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .modal-icon-wrapper {
+        background: rgba(255, 255, 255, 0.2);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: iconPulse 2s infinite;
+    }
+
+    @keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .modal-icon-wrapper i {
+        font-size: 20px;
+        color: white;
+    }
+
+    .modal-title-main {
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .modal-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+        margin-top: 2px;
+    }
+
+    .btn-close-custom {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        color: white;
+    }
+
+    .btn-close-custom:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: rotate(90deg);
+    }
+
+    /* Modal Body */
+    .order-import-modal .modal-body {
+        padding: 30px;
+        background: #1e1e1e;
+    }
+
+    .import-description {
+        background: linear-gradient(135deg, #2d4a7c 0%, #3d5a8c 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 1px solid #4a6fa5;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .import-description::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .info-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .info-icon i {
+        color: white;
+        font-size: 16px;
+    }
+
+    .import-description p {
+        color: #e0e6ed;
+        margin-bottom: 0.5rem;
+    }
+
+    .import-steps {
+        color: #b8c5d1;
+        padding-left: 1.2rem;
+        margin: 0;
+    }
+
+    .import-steps li {
+        margin-bottom: 0.4rem;
+        position: relative;
+    }
+
+    .import-steps li::marker {
+        color: #667eea;
+    }
+
+    /* Table Container */
+    .table-container {
+        background: #252525;
+        border-radius: 12px;
+        /* padding: 20px;
+        border: 1px solid #404040; */
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Enhanced responsive table wrapper for horizontal scrolling */
+    .table-responsive {
+        border-radius: 8px;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #404040;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        min-height: 200px;
+        background: #252525;
+    }
+
+    /* Custom scrollbar for horizontal scrolling */
+    .table-responsive::-webkit-scrollbar {
+        height: 12px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #1a1a1a;
+        border-radius: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 6px;
+        border: 2px solid #1a1a1a;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
+    }
+
+    /* Firefox scrollbar styling */
+    .table-responsive {
+        scrollbar-width: thin;
+        scrollbar-color: #667eea #1a1a1a;
+    }
+
+    /* Table content styling for better horizontal scrolling */
+    .import-table {
+        min-width: 800px; /* Ensure minimum width to trigger horizontal scrolling */
+        white-space: nowrap; /* Prevent text wrapping in cells */
+    }
+
+    .import-table th,
+    .import-table td {
+        min-width: 120px; /* Set minimum column width */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Specific column width adjustments */
+    .import-table th:first-child,
+    .import-table td:first-child {
+        min-width: 80px; /* Order ID column */
+    }
+
+    .import-table th:nth-child(2),
+    .import-table td:nth-child(2) {
+        min-width: 150px; /* Plan column */
+    }
+
+    .import-table th:nth-child(6),
+    .import-table td:nth-child(6) {
+        min-width: 120px; /* Action column */
+    }
+
+    /* Scroll indicators for better UX */
+    .scroll-indicators {
+        position: relative;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .scroll-indicator-left,
+    .scroll-indicator-right {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: auto;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .scroll-indicator-left {
+        left: 10px;
+    }
+
+    .scroll-indicator-right {
+        right: 10px;
+    }
+
+    .scroll-indicator-left.visible,
+    .scroll-indicator-right.visible {
+        opacity: 0.8;
+    }
+
+    .scroll-indicator-left:hover,
+    .scroll-indicator-right:hover {
+        opacity: 1;
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
+    }
+
+    /* Table Styling */
+    .import-table {
+        margin: 0;
+    }
+
+    .import-table thead th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    .import-table thead th:first-child {
+        border-top-left-radius: 8px;
+    }
+
+    .import-table thead th:last-child {
+        border-top-right-radius: 8px;
+    }
+
+    .import-table tbody tr {
+        background: #2a2a2a;
+        border-bottom: 1px solid #3a3a3a;
+        transition: all 0.3s ease;
+    }
+
+    .import-table tbody tr:hover {
+        background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .import-table tbody td {
+        padding: 15px 12px;
+        color: #e0e0e0;
+        border: none;
+        vertical-align: middle;
+    }
+
+    /* Import Button */
+    .import-order-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .import-order-btn:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .import-order-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Modal Footer */
+    .order-import-modal .modal-footer {
+        background: #252525;
+        border-top: 1px solid #404040;
+        padding: 20px 30px;
+    }
+
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        color: white;
+    }
+
+    /* Status Badges Enhancement */
+    .import-table .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Loading Animation for AJAX tables */
+    .table-loading {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 20px !important;
+        font-weight: 500 !important;
+        text-align: center;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .order-import-modal .modal-header {
+            padding: 15px 20px;
+        }
+        
+        .modal-title-main {
+            font-size: 1.2rem;
+        }
+        
+        .order-import-modal .modal-body {
+            padding: 20px;
+        }
+        
+        .import-description {
+            padding: 15px;
+        }
+        
+        .table-container {
+            /* padding: 15px; */
+        }
+
+        /* Enhanced mobile horizontal scrolling */
+        .table-responsive {
+            margin: 0 -15px; /* Extend to modal edges on mobile */
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+
+        .import-table {
+            min-width: 900px; /* Increased minimum width for mobile */
+        }
+
+        /* Make scrollbar more prominent on mobile */
+        .table-responsive::-webkit-scrollbar {
+            height: 16px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            border: 3px solid #1a1a1a;
+        }
+
+        /* Mobile-specific column adjustments */
+        .import-table th,
+        .import-table td {
+            min-width: 140px;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Add scroll hint for mobile users */
+        .table-container::after {
+            content: "← Swipe to see more →";
+            display: block;
+            text-align: center;
+            color: #667eea;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .import-table {
+            min-width: 1000px; /* Even wider on very small screens */
+        }
+
+        .import-table th,
+        .import-table td {
+            min-width: 160px;
+            padding: 10px 6px;
+            font-size: 0.85rem;
+        }
+
+        .order-import-modal .modal-body {
+            padding: 15px;
+        }
+    }
+
+    /* Animation for table rows */
+    .import-table tbody tr {
+        animation: tableRowSlideIn 0.5s ease-out forwards;
+        opacity: 0;
+    }
+
+    @keyframes tableRowSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Stagger animation for multiple rows */
+    .import-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+    .import-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+    .import-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+    .import-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+    .import-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+    </style>
+
 @endsection
 
 @push('scripts')
 <script>
+// Global function for calculating total inboxes and updating price - accessible from import functionality
+function calculateTotalInboxes() {
+    const domainsText = $('#domains').val();
+    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    
+    if (!domainsText) {
+        $('#total_inboxes').val(0);
+        updateRemainingInboxesBar(0);
+        updatePriceDisplay(0);
+        return 0;
+    }
+    
+    // Split domains by newlines and filter out empty entries
+    const domains = domainsText.split(/[\n,]+/)
+        .map(domain => domain.trim())
+        .filter(domain => domain.length > 0);
+        
+    const uniqueDomains = [...new Set(domains)];
+    const totalInboxes = uniqueDomains.length * inboxesPerDomain;
+    
+    $('#total_inboxes').val(totalInboxes);
+    
+    // Update progress bar with current values
+    updateRemainingInboxesBar(totalInboxes);
+    
+    // Update price display with new total
+    updatePriceDisplay(totalInboxes);
+    
+    return totalInboxes;
+}
+
+// Global function for updating price display based on total inboxes
+function updatePriceDisplay(totalInboxes) {
+    const currentPlan = @json($plan);
+    const orderInfo = @json(optional($order)->reorderInfo->first());
+    const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
+    const submitButton = $('button[type="submit"]');
+    let priceHtml = '';
+    
+    if (!totalInboxes || totalInboxes === 0) {
+        priceHtml = `
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div>
+                    <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                </div>
+                <div>
+                    <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                    <br>
+                    <span>Please add domains and inboxes to calculate price</span>
+                </div>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+        `;
+    } else if (currentPlan && totalInboxes > TOTAL_INBOXES && TOTAL_INBOXES > 0) {
+        priceHtml = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Plan Limit Exceeded!</strong> Your current plan supports ${TOTAL_INBOXES} inboxes, but you're requesting ${totalInboxes} inboxes.
+                <br><small>Please upgrade your plan or reduce the number of domains.</small>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> <small>Exceeds plan limit</small></h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> <small>Please upgrade plan</small></h6>
+        `;
+        if (submitButton.length) {
+            submitButton.prop('disabled', true);
+            submitButton.hide();
+        }
+    } else if (currentPlan) {
+        const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
+        priceHtml = `
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div>
+                    <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                </div>
+                <div>
+                    <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                    <br>
+                    <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
+                </div>
+            </div>
+            <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
+            <h6><span class="theme-text">Discount:</span> 0%</h6>
+            <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
+        `;
+        if (submitButton.length) {
+            submitButton.prop('disabled', false);
+            submitButton.show();
+        }
+    }
+    
+    // Update the price display section
+    $('.price-display-section').html(priceHtml);
+}
+
+// Global function for updating remaining inboxes progress bar
+function updateRemainingInboxesBar(currentInboxes = null) {
+    // Get current inboxes if not provided
+    if (currentInboxes === null) {
+        const domainsText = $('#domains').val() || '';
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        const uniqueDomains = [...new Set(domains)];
+        currentInboxes = uniqueDomains.length * inboxesPerDomain;
+    }
+    
+    // Get max limit - try to get from current order first, then from plan
+    const orderInfo = @json(optional($order)->reorderInfo->first());
+    const planInfo = @json($plan ?? null);
+    let maxInboxes = 0;
+    
+    if (orderInfo && orderInfo.total_inboxes) {
+        maxInboxes = orderInfo.total_inboxes;
+    } else if (planInfo && planInfo.max_inbox) {
+        maxInboxes = planInfo.max_inbox;
+    }
+    
+    // Calculate percentage used
+    const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+    
+    // Update progress bar elements
+    const progressBar = $('#remaining-inboxes-bar');
+    const progressText = $('#remaining-inboxes-text');
+    const progressNote = $('#remaining-inboxes-note');
+    
+    if (progressBar.length === 0) {
+        return; // Progress bar not found, exit gracefully
+    }
+    
+    // Set width and aria values
+    progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+    progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+    progressBar.attr('aria-valuemax', 100);
+    
+    // Update text display
+    progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+    
+    // Update color and note based on usage
+    if (percentageUsed >= 100) {
+        progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+        progressNote.html('(Limit reached)');
+    } else if (percentageUsed >= 90) {
+        progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
+        progressNote.html('(Critical: Nearly at limit)');
+    } else if (percentageUsed >= 75) {
+        progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+        progressNote.html('(Warning: Approaching limit)');
+    } else if (percentageUsed >= 50) {
+        progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
+        progressNote.html('(Moderate usage)');
+    } else {
+        progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+        progressNote.html('(Current usage)');
+    }
+}
+
 $(document).ready(function() {
+    // Initialize Order Import Modal
+    $('#orderImportBtn').on('click', function() {
+        initializeOrdersImportTable();
+    });
+    
+    // Add event listeners for automatic progress bar updates
+    $(document).on('input change', '#domains, #inboxes_per_domain', function() {
+        if (typeof calculateTotalInboxes === 'function') {
+            calculateTotalInboxes();
+        }
+    });
+    
+    // Initial progress bar update on page load
+    setTimeout(() => {
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar();
+        }
+    }, 1000);
+    
+    function initializeOrdersImportTable() {
+        // Show loading indicator
+        Swal.fire({
+            title: 'Loading Orders...',
+            text: 'Please wait while we fetch your orders.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Clear existing table content
+        $('#ordersImportTable tbody').empty();
+        
+        // AJAX call to fetch orders data
+        $.ajax({
+            url: "{{ route('customer.orders.import.data') }}",
+            type: "GET",
+            data: {
+                for_import: true,
+                exclude_current: "{{ isset($order) ? $order->id : '' }}"
+            },
+            success: function(response) {
+                // Close loading indicator
+                Swal.close();
+                
+                // Show modal
+                $('#orderImportModal').modal('show');
+                
+                // Populate table with data
+                populateOrdersTable(response.data || []);
+            },
+            error: function(xhr, status, error) {
+                // Close loading indicator
+                Swal.close();
+                
+                console.error('Error loading orders:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to load orders data. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+    
+    function populateOrdersTable(orders) {
+        const tbody = $('#ordersImportTable tbody');
+        tbody.empty();
+        
+        if (!orders || orders.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fa-solid fa-inbox me-2"></i>
+                        No orders available for import
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        orders.forEach(function(order) {
+            const row = `
+                <tr class="table-row-hover">
+                    <td class="text-center">${order.id || 'N/A'}</td>
+                    <td title="${getPlanName(order)}">${getPlanName(order)}</td>
+                    <td class="text-center">${order.total_inboxes || '0'}</td>
+                    <td class="text-center">${order.status_badge || 'N/A'}</td>
+                    <td class="text-center" title="${order.created_at_formatted || 'N/A'}">${order.created_at_formatted || 'N/A'}</td>
+                    <td class="text-center">${getActionButton(order)}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        // Add horizontal scroll indicators for better UX
+        setTimeout(() => {
+            addScrollIndicators();
+        }, 100);
+    }
+    
+    // Function to add scroll indicators for better horizontal scrolling UX
+    function addScrollIndicators() {
+        const tableContainer = $('.table-responsive');
+        if (tableContainer.length) {
+            const scrollWidth = tableContainer[0].scrollWidth;
+            const clientWidth = tableContainer[0].clientWidth;
+            
+            // Only show indicators if table is wider than container
+            if (scrollWidth > clientWidth) {
+                // Add scroll indicators
+                if (!$('.scroll-indicator-left').length) {
+                    tableContainer.before(`
+                        <div class="scroll-indicators">
+                            <div class="scroll-indicator-left">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </div>
+                            <div class="scroll-indicator-right">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    `);
+                }
+                
+                // Handle scroll events to update indicators
+                tableContainer.on('scroll', function() {
+                    const scrollLeft = $(this).scrollLeft();
+                    const maxScroll = scrollWidth - clientWidth;
+                    
+                    $('.scroll-indicator-left').toggleClass('visible', scrollLeft > 0);
+                    $('.scroll-indicator-right').toggleClass('visible', scrollLeft < maxScroll - 5);
+                });
+                
+                // Initial state
+                $('.scroll-indicator-left').removeClass('visible');
+                $('.scroll-indicator-right').addClass('visible');
+            }
+        }
+    }
+    
+    function getPlanName(order) {
+        if (order.plan && order.plan.name) {
+            return order.plan.name;
+        }
+        return 'N/A';
+    }
+    
+    function getActionButton(order) {
+        return `
+            <button type="button" 
+                    class="import-order-btn" 
+                    data-order-id="${order.id}"
+                    title="Import this order data">
+                <i class="fa-solid fa-download me-1"></i>
+                Import
+            </button>
+        `;
+    }    
+    // Handle order import
+    $(document).on('click', '.import-order-btn', function() {
+        const orderId = $(this).data('order-id');
+        
+        Swal.fire({
+            title: 'Import Order Data?',
+            text: 'This will replace all current form data with the selected order\'s information. Are you sure?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Import Data',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                importOrderData(orderId);
+            }
+        });
+    });
+    
+    function importOrderData(orderId) {
+        // Show loading
+        Swal.fire({
+            title: 'Importing Order Data...',
+            text: 'Please wait while we import the order data.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            backdrop: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        $.ajax({
+            url: "{{ route('customer.orders.import-data', ':id') }}".replace(':id', orderId),
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.data) {
+                    populateFormWithOrderData(response.data);
+                    $('#orderImportModal').modal('hide');
+                    
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order data has been imported successfully.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message || 'Failed to import order data.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                let errorMessage = 'An error occurred while importing order data.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+    
+    function populateFormWithOrderData(orderData) {
+        // Clear any existing validation errors
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        const reorderInfo = orderData.reorder_info;
+        if (!reorderInfo) {
+            toastr.warning('No detailed information available for this order.');
+            return;
+        }
+        
+        // Populate basic fields
+        if (reorderInfo.forwarding_url) $('#forwarding').val(reorderInfo.forwarding_url);
+        if (reorderInfo.hosting_platform) $('#hosting').val(reorderInfo.hosting_platform).trigger('change');
+        if (reorderInfo.domains) $('#domains').val(reorderInfo.domains);
+        if (reorderInfo.sending_platform) $('#sending_platform').val(reorderInfo.sending_platform).trigger('change');
+        if (reorderInfo.inboxes_per_domain) $('#inboxes_per_domain').val(reorderInfo.inboxes_per_domain).trigger('change');
+        
+        // Populate email account information
+        if (reorderInfo.first_name) $('input[name="first_name"]').val(reorderInfo.first_name);
+        if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
+        if (reorderInfo.email_persona_password) $('input[name="email_persona_password"]').val(reorderInfo.email_persona_password);
+        if (reorderInfo.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(reorderInfo.email_persona_picture_link);
+        if (reorderInfo.master_inbox_email) $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
+        if (reorderInfo.additional_info) $('textarea[name="additional_info"]').val(reorderInfo.additional_info);
+        
+        // Populate prefix variants if available
+        if (reorderInfo.prefix_variants) {
+            try {
+                const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                    ? JSON.parse(reorderInfo.prefix_variants) 
+                    : reorderInfo.prefix_variants;
+                
+                Object.keys(prefixVariants).forEach(key => {
+                    const input = $(`input[name="prefix_variants[${key}]"]`);
+                    if (input.length && prefixVariants[key]) {
+                        input.val(prefixVariants[key]);
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not parse prefix variants:', e);
+            }
+        }
+        
+        // Populate dynamic platform fields
+        setTimeout(() => {
+            populateDynamicFields(reorderInfo);
+        }, 500);
+        
+        // Recalculate totals and check domain limits with a slight delay to ensure all fields are populated
+        setTimeout(() => {
+            if (typeof calculateTotalInboxes === 'function') {
+                calculateTotalInboxes();
+            }
+            
+            // Check domain cutting if needed
+            checkDomainCutting();
+            
+            // Force update progress bar and price one more time to ensure it's correct
+            setTimeout(() => {
+                if (typeof updateRemainingInboxesBar === 'function') {
+                    updateRemainingInboxesBar();
+                }
+                if (typeof calculateTotalInboxes === 'function') {
+                    calculateTotalInboxes();
+                }
+            }, 200);
+        }, 600);
+        
+        toastr.success('Order data imported successfully!');
+    }
+    
+    function populateDynamicFields(reorderInfo) {
+        // Populate hosting platform fields
+        const hostingFields = [
+            'backup_codes', 'bison_url', 'bison_workspace', 
+            'platform_login', 'platform_password'
+        ];
+        
+        hostingFields.forEach(field => {
+            if (reorderInfo[field]) {
+                const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                if (input.length) {
+                    input.val(reorderInfo[field]);
+                }
+            }
+        });
+        
+        // Populate sending platform fields
+        const sendingFields = [
+            'sequencer_login', 'sequencer_password'
+        ];
+        
+        sendingFields.forEach(field => {
+            if (reorderInfo[field]) {
+                const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                if (input.length) {
+                    input.val(reorderInfo[field]);
+                }
+            }
+        });
+    }
+    
+    function checkDomainCutting() {
+        const domainsText = $('#domains').val();
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        if (!domainsText) return;
+        
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        const totalInboxes = domains.length * inboxesPerDomain;
+        
+        // Get current order's total inboxes limit from reorder_info or plan
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        const planInfo = @json($plan ?? null);
+        let TOTAL_INBOXES = 0;
+        
+        if (orderInfo && orderInfo.total_inboxes) {
+            TOTAL_INBOXES = orderInfo.total_inboxes;
+        } else if (planInfo && planInfo.max_inbox) {
+            TOTAL_INBOXES = planInfo.max_inbox;
+        }
+        
+        if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+            // Automatically trim domains to fit within plan limit
+            const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+            const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+            const removedCount = domains.length - maxDomainsAllowed;
+            
+            $('#domains').val(trimmedDomains.join('\n'));
+            
+            // Recalculate totals after trimming
+            if (typeof calculateTotalInboxes === 'function') {
+                calculateTotalInboxes();
+            }
+            
+            // Force update the price display after domain trimming
+            setTimeout(() => {
+                if (typeof calculateTotalInboxes === 'function') {
+                    calculateTotalInboxes();
+                }
+            }, 100);
+            
+            // Show notification about the automatic trimming
+            Swal.fire({
+                title: 'Domains Automatically Trimmed',
+                html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
+                icon: 'info',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+    }
+    
+});  // Close the first $(document).ready() block
+// Second document ready block for existing functionality
+$(document).ready(function() {
+    // Function to validate and auto-trim domains - centralized logic
+    function validateAndTrimDomains() {
+        const domainsField = $('#domains');
+        const domainsText = domainsField.val();
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        // Reset validation state
+        domainsField.removeClass('is-invalid');
+        $('#domains-error').text('');
+        
+        if (!domainsText.trim()) {
+            calculateTotalInboxes();
+            return;
+        }
+        
+        let domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        if (domains.length > 0) {
+            // Check for duplicates
+            const seen = new Set();
+            const duplicates = domains.filter(domain => {
+                if (seen.has(domain)) {
+                    return true;
+                }
+                seen.add(domain);
+                return false;
+            });
+
+            if (duplicates.length > 0) {
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
+                calculateTotalInboxes();
+                return;
+            }
+            
+            // Updated domain format validation to handle multi-level domains
+            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+            const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+            
+            if (invalidDomains.length > 0) {
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                calculateTotalInboxes();
+                return;
+            }
+            
+            // Auto-trim domains if they exceed plan limit
+            const totalInboxes = domains.length * inboxesPerDomain;
+            
+            // Get current order's total inboxes limit from reorder_info or plan
+            const orderInfo = @json(optional($order)->reorderInfo->first());
+            const planInfo = @json($plan ?? null);
+            let TOTAL_INBOXES = 0;
+            
+            if (orderInfo && orderInfo.total_inboxes) {
+                TOTAL_INBOXES = orderInfo.total_inboxes;
+            } else if (planInfo && planInfo.max_inbox) {
+                TOTAL_INBOXES = planInfo.max_inbox;
+            }
+            
+            if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                // Automatically trim domains to fit within plan limit
+                const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                const removedCount = domains.length - maxDomainsAllowed;
+                
+                // Update the field value with trimmed domains
+                domainsField.val(trimmedDomains.join('\n'));
+                // Show notification about the automatic trimming
+                toastr.warning(`${removedCount} domains were automatically removed. Your plan limit is ${TOTAL_INBOXES} inboxes.`, 'Domains Auto-Trimmed', {
+                    timeOut: 5000,
+                    closeButton: true,
+                    progressBar: true
+                });
+                // swal notification
+                Swal.fire({
+                    title: 'Domains Automatically Trimmed',
+                    html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
+                    icon: 'info',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        }
+        
+        // Update total inboxes calculation
+        calculateTotalInboxes();
+    }
+    
     function generateField(name, field, existingValue = '') {
         const fieldId = `${name}`;
         let html = `<div class="mb-3">
@@ -461,73 +1685,23 @@ $(document).ready(function() {
             initializePasswordToggles();
         }
     }
-
     // Initial sending platform setup
     updateSendingPlatformFields();
 
     // Handle sending platform changes
     $('#sending_platform').on('change', updateSendingPlatformFields);
-    // Update remaining inboxes progress bar
+    // Update remaining inboxes progress bar (legacy function for existing code)
     function updateRemainingInboxes() {
-        const orderInfo = @json(optional($order)->reorderInfo->first());
-        
-        if (!orderInfo) {
-            return;
-        }
-        // Get max limit from reorder_info table
-        const maxInboxes = orderInfo.total_inboxes || 0;
-        
-        // Get current limit from domains calculation
-        const domainsText = $('#domains').val() || '';
-        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-        
-        // Calculate current inboxes from form inputs
-        const domains = domainsText.split(/[\n,]+/)
-            .map(domain => domain.trim())
-            .filter(domain => domain.length > 0);
-        const uniqueDomains = [...new Set(domains)];
-        const currentInboxes = uniqueDomains.length * inboxesPerDomain;
-        
-        // Calculate percentage used
-        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
-        
-        // Update progress bar
-        const progressBar = $('#remaining-inboxes-bar');
-        const progressText = $('#remaining-inboxes-text');
-        const progressNote = $('#remaining-inboxes-note');
-        
-        // Set width and aria values
-        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
-        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
-        progressBar.attr('aria-valuemax', 100);
-        
-        // Update text display
-        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
-        
-        // Update color based on usage
-        if (percentageUsed >= 100) {
-            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-            progressNote.html('(Limit reached)');
-        } else if (percentageUsed >= 90) {
-            progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
-            progressNote.html('(Critical: Nearly at limit)');
-        } else if (percentageUsed >= 75) {
-            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
-            progressNote.html('(Warning: Approaching limit)');
-        } else if (percentageUsed >= 50) {
-            progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
-            progressNote.html('(Moderate usage)');
-        } else {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            progressNote.html('(Current usage)');
+        // Use the global function instead
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar();
         }
     }
 
-    // Calculate total inboxes and check plan limits
+    // Calculate total inboxes and update pricing - enhanced for auto-domain trimming
     function calculateTotalInboxes() {
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-        const submitButton = $('button[type="submit"]');
         
         // Split domains by newlines and filter out empty entries
         const domains = domainsText.split(/[\n,]+/)
@@ -539,159 +1713,48 @@ $(document).ready(function() {
         
         $('#total_inboxes').val(totalInboxes);
         
-        // Get current plan details
-        const currentPlan = @json($plan);
-        const orderInfo = @json(optional($order)->reorderInfo->first());
-        console.log(orderInfo);
-        const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
-        
-        // Update remaining inboxes progress bar
-        updateRemainingInboxes();
-        let priceHtml = '';
-        
-        if (!totalInboxes) {
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>Please add domains and inboxes to calculate price</span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-            `;
-        } 
-        else if (currentPlan && totalInboxes > TOTAL_INBOXES) {
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>Configuration exceeds available limits</span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> <small class="text-danger">Please contact support for a custom solution</small></h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> <small class="text-danger">Configuration exceeds available limits</small></h6>
-            `;
-            
-            // Disable submit button and show upgrade confirmation
-            submitButton.prop('disabled', true);
-            submitButton.hide();
-            
-            Swal.fire({
-                title: 'Plan Limit Exceeded',
-                html: `The number of inboxes (${totalInboxes}) exceeds your current plan limit (${TOTAL_INBOXES}).<br>Would you like to upgrade your plan?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Upgrade Plan',
-                cancelButtonText: 'Cancel',
-                allowOutsideClick: false,
-                allowEscapeKey:false,
-                allowEnterKey:false,
-                backdrop: true,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = "{{ route('customer.pricing') }}";
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    // Calculate how many domains we can keep within the plan limit
-                    const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                    const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                    
-                    // Update domains field with trimmed list
-                    $('#domains').val(trimmedDomains.join('\n'));
-                    
-                    // Recalculate totals
-                    calculateTotalInboxes();
-                    
-                    // Show notification to user
-                    toastr.info(`Domains list has been trimmed to fit within your current plan limit of ${TOTAL_INBOXES} inboxes.`);
-                }
-            });
-        } else {
-            const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
-            priceHtml = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <div>
-                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                    </div>
-                    <div>
-                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                        <br>
-                        <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
-                    </div>
-                </div>
-                <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
-                <h6><span class="theme-text">Discount:</span> 0%</h6>
-                <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
-            `;
-            
-            // Enable submit button
-            submitButton.prop('disabled', false);
-            submitButton.show();
+        // Update remaining inboxes progress bar using global function
+        if (typeof updateRemainingInboxesBar === 'function') {
+            updateRemainingInboxesBar(totalInboxes);
         }
         
-        $('.price-display-section').html(priceHtml);
+        // Update price display using global function
+        if (typeof updatePriceDisplay === 'function') {
+            updatePriceDisplay(totalInboxes);
+        }
+        
+        return totalInboxes;
     }
-
-    // Domain validation
+    // Domain validation with auto-trimming - using centralized function
     $('#domains').on('input', function() {
-        const domainsField = $(this);
-        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
-        
-        // Reset validation state
-        domainsField.removeClass('is-invalid');
-        $('#domains-error').text('');
-        
-        if (domains.length > 0) {
-            // Check for duplicates
-            const seen = new Set();
-            const duplicates = domains.filter(domain => {
-                if (seen.has(domain)) {
-                    return true;
-                }
-                seen.add(domain);
-                return false;
-            });
-
-            if (duplicates.length > 0) {
-                domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
-                return;
-            }
-            
-            // Updated domain format validation to handle multi-level domains
-            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-            const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
-            
-            if (invalidDomains.length > 0) {
-                domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
-                return;
-            }
-        }
-        
-        // Update total inboxes calculation
-        calculateTotalInboxes();
+        validateAndTrimDomains();
+    });
+    
+    // Add event listener for inboxes per domain changes with domain validation
+    $('#inboxes_per_domain').on('input change', function() {
+        validateAndTrimDomains();
+    });
+    
+    // Add paste event handler for domains field to handle auto-trimming
+    $('#domains').on('paste', function() {
+        // Use setTimeout to allow the paste content to be processed first
+        setTimeout(() => {
+            validateAndTrimDomains();
+        }, 100);
+    });
+    
+    // Add change event handler for domains field to handle auto-trimming when content changes
+    $('#domains').on('change', function() {
+        validateAndTrimDomains();
     });
 
-    // Calculate total inboxes whenever domains or inboxes per domain changes
-    $('#domains, #inboxes_per_domain').on('input change', calculateTotalInboxes);
-
-    // Initial calculation
-    calculateTotalInboxes();
+    // Initial validation and calculation
+    validateAndTrimDomains();
     
     // Initial remaining inboxes progress bar update
-    updateRemainingInboxes();
+    if (typeof updateRemainingInboxesBar === 'function') {
+        updateRemainingInboxesBar();
+    }
     
     // Initial URL validation
     $('#forwarding').trigger('blur');
@@ -986,7 +2049,7 @@ $(document).ready(function() {
     generatePrefixVariantFields(initialInboxesPerDomain);
     
     // Initialize remaining inboxes progress bar on page load
-    updateRemainingInboxes();
+    updateRemainingInboxesBar();
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();

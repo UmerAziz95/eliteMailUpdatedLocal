@@ -13,7 +13,19 @@ return new class extends Migration
     {
         Schema::create('panels', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+
+            $table->string('auto_generated_id')->nullable(); // Can be filled via model event or UUID logic
+            $table->string('title')->nullable();
+            $table->string('description')->nullable();
+
+            $table->integer('limit')->default(1790); // Total capacity
+            $table->integer('remaining_limit')->default(1790); // Track real-time available space
+
+            $table->boolean('is_active')->default(true); // Panel activation state
+
+            $table->string('created_by')->nullable(); // Could store user ID or email
+
+            $table->timestamps(); // created_at, updated_at
         });
     }
 

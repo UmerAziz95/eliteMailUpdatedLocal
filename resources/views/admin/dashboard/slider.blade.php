@@ -1,13 +1,14 @@
 <div class="swiper w-100 h-100 swiper-container">
     <div class="swiper-wrapper w-100">
         @forelse($recentOrders ?? [] as $order)
-        <div class="swiper-slide d-flex align-items-start p-4 justify-content-between">
+        <div class="swiper-slide d-flex align-items-start px-4 py-3 justify-content-between">
             <div class="w-100">
-                <!-- Order Header with Status Badge -->
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2 text-white" style="text-shadow: 0 1px 2px rgba(0,0,0,0.25); animation: fadeIn 0.5s ease;">
-                        <i class="ti ti-shopping-cart text-white fs-5" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2)); animation: bounce 1s infinite alternate;"></i>
-                        <span style="background: linear-gradient(90deg, #fff, #e6e6e6); -webkit-background-clip: text; color: transparent; font-weight: 700;">#{{ $order->id ?? 'N/A' }}</span>
+                <div class="d-flex align-items-center justify-content-between gap-4">
+                    <!-- Order Header with Status Badge -->
+                <div class="d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-1" style="text-shadow: 0 1px 2px rgba(0,0,0,0.25); animation: fadeIn 0.5s ease;">
+                        <i class="ti ti-shopping-cart fs-5"></i>
+                        <span class="opacity-75">#{{ $order->id ?? 'N/A' }}</span>
                     </h6>
                     <div>
                         @php
@@ -21,22 +22,23 @@
                 </div>
                 
                 <!-- Plan Name with Animation -->
-                <div class="plan-badge mb-4">
-                    <span class="badge bg-primary bg-opacity-15 text-light fw-semibold" style="text-shadow: 0 1px 2px rgba(0,0,0,0.2); border-left: 3px solid #7367ef; padding-left: 10px;">{{ $order->plan->name ?? '' }}</span>
-                    <small class="d-block mt-2 text-white-50" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">
-                        <i class="ti ti-calendar me-1 text-white-50"></i> {{ \Carbon\Carbon::parse($order->created_at)->format('M d, Y') }}
+                <small class="fw-semibold py-1 px-2 rounded-1 text-white" style="background-color: var(--second-primary)">{{ $order->plan->name ?? '' }}</small>
+                <div class="plan-badge">
+                    <small class="d-block opacity-50" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">
+                        <i class="ti ti-calendar me-1 opacity-50"></i> {{ \Carbon\Carbon::parse($order->created_at)->format('M d, Y') }}
                     </small>
                 </div>
+                </div>
                 
-                <div class="mt-4">
+                <div class="mt-3">
                     <!-- Customer Information -->
-                    <div class="customer-info d-flex align-items-center mb-4 gap-2" style="animation: fadeInRight 0.6s ease;">
-                        <div class="avatar bg-primary bg-opacity-15 p-2 rounded-circle" style="box-shadow: 0 3px 10px rgba(0,0,0,0.1); animation: pulse 2s infinite;">
-                            <i class="ti ti-user text-light fs-4" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+                    <div class="customer-info d-flex align-items-center mb-3 gap-2" style="animation: fadeInRight 0.6s ease;">
+                        <div class="d-flex align-items-center justify-content-center" style="background-color: var(--second-primary); height: 40px; width: 40px; border-radius: 50px;">
+                            <i class="ti ti-user fs-4" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                         </div>
-                        <div>
-                            <h6 class="fw-semibold mb-0 text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.2);">{{ $order->user->name ?? 'N/A' }}</h6>
-                            <small class="text-white-50" style="font-weight: 500;">{{ $order->user->email ?? '' }}</small>
+                        <div class="d-flex flex-column gap-0">
+                            <h6 class="fw-semibold mb-0" style="text-shadow: 0 1px 1px rgba(0,0,0,0.2);">{{ $order->user->name ?? 'N/A' }}</h6>
+                            <small class="opacity-50" style="font-weight: 500;">{{ $order->user->email ?? '' }}</small>
                         </div>
                     </div>
                     
@@ -44,55 +46,54 @@
                     <div class="row gy-3">
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2 content-item" style="animation: fadeInUp 0.4s ease forwards; animation-delay: 0.1s; opacity: 0; transform: translateY(10px);">
-                                <div class="badge rounded bg-primary bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
-                                    <i class="ti ti-mail text-white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+                                <div class="badge icon rounded bg-primary bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
+                                    <i class="ti ti-mail fs-6" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                                 </div>
-                                <div>
-                                    <small class="d-block text-white-50" style="font-weight: 500;">Total Inboxes</small>
-                                    <span class="fw-semibold text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{  optional($order->reorderInfo->first())->total_inboxes ?? 0 }}</span>
+                                <div class="d-flex flex-column gap-0">
+                                    <small class="d-block opacity-50" style="font-weight: 500;">Total Inboxes</small>
+                                    <span class="fw-semibold" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{  optional($order->reorderInfo->first())->total_inboxes ?? 0 }}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2 content-item" style="animation: fadeInUp 0.4s ease forwards; animation-delay: 0.2s; opacity: 0; transform: translateY(10px);">
-                                <div class="badge rounded bg-info bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
-                                    <i class="ti ti-credit-card text-white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+                                <div class="badge rounded bg-info icon bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
+                                    <i class="ti ti-credit-card fs-6" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                                 </div>
-                                <div>
-                                    <small class="d-block text-white-50" style="font-weight: 500;">Amount</small>
-                                    <span class="fw-semibold text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ number_format($order->amount ?? 0, 2) }} {{ $order->currency ?? 'USD' }}</span>
+                                <div class="d-flex flex-column gap-0">
+                                    <small class="d-block opacity-50" style="font-weight: 500;">Amount</small>
+                                    <span class="fw-semibold" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ number_format($order->amount ?? 0, 2) }} {{ $order->currency ?? 'USD' }}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2 content-item" style="animation: fadeInUp 0.4s ease forwards; animation-delay: 0.3s; opacity: 0; transform: translateY(10px);">
-                                <div class="badge rounded bg-success bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
-                                    <i class="ti ti-calendar-stats text-white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+                                <div class="badge rounded bg-success icon bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
+                                    <i class="ti ti-calendar-stats fs-6" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                                 </div>
-                                <div>
-                                    <small class="d-block text-white-50" style="font-weight: 500;">Created</small>
-                                    <span class="fw-semibold text-white" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ $order->created_at ? \Carbon\Carbon::parse($order->created_at)->diffForHumans() : 'N/A' }}</span>
+                                <div class="d-flex flex-column gap-0">
+                                    <small class="d-block opacity-50" style="font-weight: 500;">Created</small>
+                                    <span class="fw-semibold" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">{{ $order->created_at ? \Carbon\Carbon::parse($order->created_at)->diffForHumans() : 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2 content-item" style="animation: fadeInUp 0.4s ease forwards; animation-delay: 0.4s; opacity: 0; transform: translateY(10px);">
-                                <div class="badge rounded bg-warning bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
-                                    <i class="ti ti-refresh text-white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+                                <div class="badge rounded bg-warning icon bg-opacity-20 p-2" style="box-shadow: 0 3px 6px rgba(0,0,0,0.1); transform-origin: center; transition: all 0.3s ease;">
+                                    <i class="ti ti-refresh fs-6" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
                                 </div>
-                                <div>
-                                    
-                                    <small class="d-block text-white-50" style="font-weight: 500;">Status</small>
+                                <div class="d-flex flex-column gap-0">
+                                    <small class="d-block opacity-50" style="font-weight: 500;">Status</small>
                                     @php
                                         $statusName = $order->status_manage_by_admin ?? 'pending';
                                         $statusName = strtolower($statusName);
                                         $status = \App\Models\Status::where('name', $statusName)->first();
                                         $statusClass = $status ? $status->badge : 'secondary';
                                     @endphp
-                                    <span class="py-1 px-2 text-{{ $statusClass }} border border-{{ $statusClass }} rounded-2 bg-transparent">
+                                    <span style="padding: .1rem .7rem" class="text-{{ $statusClass }} border border-{{ $statusClass }} rounded-2 bg-transparent">
                                         {{ ucfirst($statusName) }}
                                     </span>
                                 </div>
@@ -106,8 +107,8 @@
                 @php
                     $imageNumber = $loop->index % 3 + 1;
                 @endphp
-                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-{{ $imageNumber }}.png"
-                    width="160" class="slide-image" alt="Order Image" style="filter: drop-shadow(0 5px 15px rgba(0,0,0,0.15)); animation: float 3s ease-in-out infinite;">
+                {{-- <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-{{ $imageNumber }}.png"
+                    width="160" class="slide-image" alt="Order Image" style="filter: drop-shadow(0 5px 15px rgba(0,0,0,0.15)); animation: float 3s ease-in-out infinite;"> --}}
                 <!-- <div class="position-absolute top-0 start-0 mt-2 ms-2" style="animation: pulse 2s infinite;">
                     <span class="badge bg-primary bg-opacity-25 rounded-pill px-2 py-1" style="backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2);">#{{ $loop->iteration }}</span>
                 </div> -->
@@ -117,10 +118,10 @@
         <div class="swiper-slide d-flex align-items-center justify-content-center p-4">
             <div class="text-center" style="animation: fadeIn 0.6s ease;">
                 <div class="mb-3" style="animation: bounce 2s infinite alternate;">
-                    <i class="ti ti-shopping-cart-off text-white" style="font-size: 3rem; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));"></i>
+                    <i class="ti ti-shopping-cart-off" style="font-size: 3rem; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));"></i>
                 </div>
-                <h6 class="text-white" style="text-shadow: 0 1px 2px rgba(0,0,0,0.2);">No recent orders found</h6>
-                <p class="small text-white-50 mb-0" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">New orders will appear here when created</p>
+                <h6 class=" style="text-shadow: 0 1px 2px rgba(0,0,0,0.2);">No recent orders found</h6>
+                <p class="small opacity-50 mb-0" style="text-shadow: 0 1px 1px rgba(0,0,0,0.15);">New orders will appear here when created</p>
             </div>
         </div>
         @endforelse
@@ -207,7 +208,7 @@
                 width="160" class="d-none d-sm-block" alt="Slide 1">
         </div> -->
     </div>
-    <div class="swiper-pagination"></div>
+    {{-- <div class="swiper-pagination"></div> --}}
 </div>
 
 <style>
@@ -227,9 +228,9 @@
         height: auto !important; /* Maintain height */
     }
     
-    .swiper-slide:hover {
+    /* .swiper-slide:hover {
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-    }
+    } */
     
     .swiper-pagination-bullet-active {
         background-color: var(--bs-primary) !important;
@@ -246,6 +247,14 @@
     .plan-badge {
         position: relative;
         animation: fadeIn 0.5s ease;
+    }
+
+    small {
+        color: var(--light-color)
+    }
+
+    h6, span {
+        color: var(--light-color)
     }
     
     @keyframes fadeIn {
@@ -293,13 +302,12 @@
     }
     
     /* Enhanced content styles */
-    .swiper-slide {
-        /* background: linear-gradient(135deg, rgba(47, 51, 73, 0.95) 0%, rgba(41, 44, 60, 0.95) 100%); */
+    /* .swiper-slide {
         background: linear-gradient(270deg, rgba(76, 60, 255, 0.45) 0%,rgb(115, 103, 251) 100%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     }
-    
+     */
     .badge.rounded:hover {
         transform: scale(1.15);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
@@ -309,21 +317,25 @@
         transform: scale(1.1) rotate(5deg);
     }
     
-    .text-white-50 {
+     opacity-50 {
         color: rgba(255, 255, 255, 0.7) !important;
     }
+
+    .text-info {
+
+    }
     
-    .customer-info:hover {
+    /* .customer-info:hover {
         background-color: rgba(255, 255, 255, 0.1);
         border-radius: 8px;
-    }
+    } */
     
     .plan-badge .badge:hover {
         transform: translateY(-3px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
     }
     
-    .fw-semibold.text-white {
+    .fw-semibold {
         letter-spacing: 0.3px;
     }
     
@@ -353,6 +365,12 @@
         color: #7367ef !important;
     }
     
+    .text-info {
+        color: orange !important;
+        border: 1px solid orange !important;
+        font-size: 10px !important;
+    }
+
     /* Swiper Navigation Styles */
     .swiper-button-next,
     .swiper-button-prev {
