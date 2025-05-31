@@ -15,7 +15,7 @@
     }
 </style>
 
-<header class="d-flex align-items-center justify-content-between justify-content-xl-end py-2 px-4 rounded-3">
+<header class="d-flex align-items-center justify-content-between justify-content-xl-end rounded-3">
     <div class="d-xl-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
         aria-controls="offcanvasExample">
         <i class="fa-solid fa-bars"></i>
