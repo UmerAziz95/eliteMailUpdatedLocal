@@ -85,6 +85,7 @@
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover" alt="">
+                    
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">

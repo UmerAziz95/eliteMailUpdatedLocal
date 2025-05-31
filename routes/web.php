@@ -349,6 +349,9 @@ Route::get('/contact_us', function () {
     return view('admin/contact_us/contact_us');
 });
 
+Route::get('/panel', function () {
+    return view('contractor.panel.panel');
+})->name('contractor.panel');
 
 
 Route::get('/profile', function () {

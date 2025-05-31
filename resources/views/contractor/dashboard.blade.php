@@ -129,7 +129,7 @@
 @endpush
 
 @section('content')
-<section class="py-3 overflow-hidden">
+<section class="py-3">
     <div class="row gy-4">
 
 
@@ -414,65 +414,68 @@
                     </div>
                 </div>
             </div> -->
-        <div class="col-xxl-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 d-flex justify-content-between">
+        <div class="col-6">
+            <div class="card h-100 p-3">
+                <div class="border-0 d-flex justify-content-between">
                     <div class="card-title mb-0">
-                        <h5 class="mb-1">Orders Overview</h5>
-                        <p>Distribution of orders by status</p>
+                        <h6 class="mb-0">Orders Overview</h6>
+                        <span class="opacity-50">Distribution of orders by status</span>
                     </div>
                 </div>
-                <div class="card-body row">
+                <div class="row">
                     <div class="col-12 col-sm-4">
-                        <div class="mt-lg-4 mt-lg-2 mb-lg-4 mb-2">
-                            <h1 class="mb-0">{{ $totalOrders ?? 0 }}</h1>
-                            <p class="mb-0">Total Orders</p>
+                        <div class=" my-2">
+                            <h1 class="mb-0 success">{{ $totalOrders ?? 0 }}</h1>
+                            {{-- <p class="mb-0">Total Orders</p> --}}
                         </div>
                         <ul class="p-0 m-0">
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-primary mt-1">
-                                    <i class="ti ti-clock-play fs-4"></i>
+                            <li class="d-flex gap-2 align-items-center mb-2">
+                                <div class="p-1 d-flex align-items-center justify-content-center bg-label-warning rounded border border-warning">
+                                    <i class="ti ti-clock-play fs-5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Pending Orders</h6>
-                                    <p class="small opacity-75">{{ $pendingOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Pending</h6>
+                                    <p class="small opacity-75 mb-0">{{ $pendingOrders ?? 0 }}</p>
                                 </div>
                             </li>
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-warning mt-1">
-                                    <i class="ti ti-loader fs-4 text-warning"></i>
+
+                            <li class="d-flex gap-2 align-items-center mb-2">
+                                <div class="badge p-1 rounded icon">
+                                    <i class="ti ti-loader fs-5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">In Progress</h6>
-                                    <p class="small opacity-75">{{ $inProgressOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">In Progress</h6>
+                                    <p class="small opacity-75 mb-0">{{ $inProgressOrders ?? 0 }}</p>
                                 </div>
                             </li>
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-success mt-1">
-                                    <i class="ti ti-check fs-4 text-success"></i>
+
+                            <li class="d-flex gap-2 align-items-start mb-2">
+                                <div class="badge p-1 rounded bg-label-success border border-success">
+                                    <i class="ti ti-check fs-5 success"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Completed</h6>
-                                    <p class="small opacity-75">{{ $completedOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Completed</h6>
+                                    <p class="small opacity-75 mb-0">{{ $completedOrders ?? 0 }}</p>
                                 </div>
                             </li>
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-info mt-1">
-                                    <i class="ti ti-ban fs-4 text-danger"></i>
+
+                            <li class="d-flex gap-2 align-items-start mb-2">
+                                <div class="badge p-1 rounded bg-label-danger border border-danger">
+                                    <i class="ti ti-ban fs-5 text-danger"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Reject</h6>
-                                    <p class="small opacity-75">{{ $rejectedOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Reject</h6>
+                                    <p class="small opacity-75 mb-0">{{ $rejectedOrders ?? 0 }}</p>
                                 </div>
                             </li>
                             
-                            <li class="d-flex gap-3 align-items-start">
-                                <div class="badge rounded bg-label-danger mt-1">
-                                    <i class="ti ti-x fs-4 text-secondary"></i>
+                            <li class="d-flex gap-2 align-items-start">
+                                <div class="badge p-1 rounded" style="background-color: #8B8E93; border: 1px solid #d2d3d5;">
+                                    <i class="ti ti-x fs-5" style="color: #d2d3d5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Cancelled</h6>
-                                    <p class="small opacity-75">{{ $cancelledOrders ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Cancelled</h6>
+                                    <p class="small opacity-75 mb-0">{{ $cancelledOrders ?? 0 }}</p>
                                 </div>
                             </li>
                         </ul>
@@ -488,11 +491,11 @@
 
 
         <div class="col-12 col-md-6">
-            <div class="card h-100 p-2">
-                <div class="card-header border-0 d-flex justify-content-between">
+            <div class="card h-100 p-3">
+                <div class="border-0 d-flex justify-content-between">
                     <div class="card-title mb-0">
-                        <h5 class="mb-1">Support Tracker</h5>
-                        <p>Assigned Tickets Overview</p>
+                        <h6 class="mb-0">Support Tracker</h6>
+                        <span>Assigned Tickets Overview</span>
                     </div>
                     <!-- <div class="dropdown">
                             <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
@@ -504,38 +507,38 @@
                             </div>
                         </div> -->
                 </div>
-                <div class="card-body row pt-0">
-                    <div class="col-12 col-sm-4 d-flex flex-column justify-content-between">
-                        <div class="mt-lg-4 mt-lg-2 mb-lg-6 mb-2">
-                            <h1 class="mb-0">{{ $totalTickets ?? 0 }}</h1>
-                            <p class="mb-0">Total Tickets</p>
+                <div class="row pt-0">
+                    <div class="col-12 col-sm-4 d-flex flex-column gap-2">
+                        <div class="my-2">
+                            <h1 class="mb-0 success">{{ $totalTickets ?? 0 }}</h1>
+                            {{-- <p class="mb-0">Total Tickets</p> --}}
                         </div>
                         <ul class="p-0 m-0">
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-primary mt-1">
-                                    <i class="ti ti-ticket theme-text fs-4"></i>
+                            <li class="d-flex gap-2 align-items-center mb-2">
+                                <div class="badge rounded p-1 icon">
+                                    <i class="ti ti-ticket theme-text fs-5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                                    <p class="small opacity-75">{{ $newTickets ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Open Tickets</h6>
+                                    <p class="mb-0 small opacity-75">{{ $newTickets ?? 0 }}</p>
                                 </div>
                             </li>
-                            <li class="d-flex gap-3 align-items-start mb-2">
-                                <div class="badge rounded bg-label-info mt-1">
-                                    <i class="ti ti-clock fs-4 text-info"></i>
+                            <li class="d-flex gap-2 align-items-center mb-2">
+                                <div class="badge rounded p-1 bg-label-warning border border-warning">
+                                    <i class="ti ti-clock fs-5 text-warning"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">In Progress</h6>
-                                    <p class="small opacity-75">{{ $inProgressTickets ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">In Progress</h6>
+                                    <p class="mb-0 small opacity-75">{{ $inProgressTickets ?? 0 }}</p>
                                 </div>
                             </li>
-                            <li class="d-flex gap-3 align-items-start pb-1">
-                                <div class="badge rounded bg-label-success mt-1">
-                                    <i class="ti ti-check fs-4 text-success"></i>
+                            <li class="d-flex gap-2 align-items-center pb-1">
+                                <div class="badge rounded p-1 bg-label-success border border-success">
+                                    <i class="ti ti-check fs-5 success"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-nowrap">Closed</h6>
-                                    <p class="small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
+                                    <h6 class="mb-0 text-nowrap small">Closed</h6>
+                                    <p class="mb-0 small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
                                 </div>
                             </li>
                         </ul>
@@ -665,7 +668,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 400,
+                    height: 350,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -689,7 +692,7 @@
                     }
                 },
                 labels: ["Open", "In-Progress", "Closed"],
-                colors: ['#7367ef', '#00CFE8', '#28C76F'],
+                colors: ['#7367ef', '#FFAE60', '#28C76F'],
                 legend: {
                     position: 'bottom',
                     fontSize: '14px'
@@ -772,7 +775,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 400,
+                    height: 350,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -797,8 +800,8 @@
                 },
                 labels: ['Pending', 'In Progress', 'Completed', 'Reject', 'Cancelled'],
                 colors: [
-                    '#7367f0',  // Pending
-                    '#ff9f43',  // In Progress 
+                    '#ff9f43',  // Pending
+                    '#7367f0',  // In Progress 
                     '#28c76f',  // Completed
                     '#ea5455',  // Reject
                     '#82868b'   // Cancelled

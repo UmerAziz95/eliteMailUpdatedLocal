@@ -42,18 +42,31 @@
 <style>
     .swiper {
         width: 100%;
-
     }
 
     .swiper-slide {
-        background-color: var(--second-primary);
+        background-color: #5750bf34;
+        border: 1px solid var(--second-primary);
+        backdrop-filter: blur(10px);
         border-radius: 6px;
-        color: #fff
+        color: #fff;
     }
 
     .swiper-slide img {
         max-width: 100%;
         height: auto;
+    }
+
+    .form-select {
+        font-size: 12px !important
+    }
+
+    .text-success {
+        color: rgb(4, 229, 154) !important
+    }
+
+    label {
+        font-size: 12px
     }
 
     span {
@@ -207,14 +220,14 @@
 @endpush
 
 @section('content')
-<section class="py-3 overflow-hidden">
+<section class="py-3 ">
     <div class="row gy-4">
 
-        <div class="col-md-6 order-1">
+        <div class="col-md-6">
             @include('admin.dashboard.slider')
         </div>
 
-        <div class="col-md-6 order-1">
+        <div class="col-md-6">
             @include('admin.dashboard.counter')
         </div>
 
@@ -241,7 +254,7 @@
             </div>
         </div> -->
 
-        <div class="col-xxl-6 col-md-8 col-sm-12 order-3 order-md-2">
+        <div class="col-4">
             @include('admin.dashboard.pie_chart')
         </div>
 
@@ -253,19 +266,19 @@
 
 
         {{-- revenue overview graph --}}
-        <div class="col-md-8 col-lg-6 order-4">
+        <div class="col-4">
             @include('admin.dashboard.revenue_graph')
         </div>
 
 
         {{-- subscription overview graph --}}
-        <div class="col-md-12 col-lg-12 order-4">
+        <div class="col-4">
             @include('admin.dashboard.subscription_graph')
         </div>
 
 
 
-        <div class="col-12 order-5">
+        <div class="col-12">
             <div class="card p-3">
                 <div>
                     <table id="myTable">
