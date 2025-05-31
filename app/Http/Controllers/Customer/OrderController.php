@@ -652,7 +652,7 @@ class OrderController extends Controller
                         ]
                     );
                 }
-
+                // 
                 // Send email to admin and customer when order is edited
                 try {
                     // Get user information
