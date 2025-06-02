@@ -7,9 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderPanel extends Model
 {
+    protected $table = 'order_panel';
     use HasFactory;
 
-
+    protected $fillable = [
+        'panel_id',
+        'order_id',
+        'contractor_id',
+        'space_assigned',
+        'inboxes_per_domain',
+        'status',
+        'note',
+        'accepted_at',
+        'released_at',
+    ];
 
     public function panel()
     {
