@@ -10,13 +10,13 @@
 <section class="py-3">
     <div class="row gy-3 mb-4">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Invoices</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="totalInvoices">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="totalInvoices">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -25,20 +25,20 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Active Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="paidInvoices">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="paidInvoices">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -47,21 +47,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Inactive Invoices</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="pendingInvoices">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="pendingInvoices">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -70,21 +70,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Failed Invoices</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="failedInvoices">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="failedInvoices">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -93,7 +93,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -102,7 +102,7 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
                 </div>
@@ -110,8 +110,8 @@
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
 
-                        <div class="col-md-6">
-                            {{-- <label for="statusFilter" class="form-label">Invoice Status</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="statusFilter" class="form-label mb-0">Invoice Status</label>
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 <option value="paid">Paid</option>
@@ -119,12 +119,12 @@
                                 <option value="failed">Failed</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            {{-- <label for="orderIdFilter" class="form-label">Order ID</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="orderIdFilter" class="form-label mb-0">Order ID</label>
                             <input type="text" id="orderIdFilter" class="form-control" placeholder="Enter Order ID">
                         </div>
-                        <div class="col-md-6">
-                            {{-- <label for="orderStatusFilter" class="form-label">Order Status</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="orderStatusFilter" class="form-label mb-0">Order Status</label>
                             <select id="orderStatusFilter" class="form-select">
                                 <option value="" class="text-light">All Order Statuses</option>
                                 @foreach($statuses as $key => $status)
@@ -133,16 +133,16 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            {{-- <label for="startDate" class="form-label">Start Date</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="startDate" class="form-label mb-0">Start Date</label>
                             <input type="date" id="startDate" class="form-control" placeholder="Start Date">
                         </div>
-                        <div class="col-md-6">
-                            {{-- <label for="endDate" class="form-label">End Date</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="endDate" class="form-label mb-0">End Date</label>
                             <input type="date" id="endDate" class="form-control" placeholder="End Date">
                         </div>
-                        <div class="col-md-6">
-                            {{-- <label for="priceRange" class="form-label">Price Range</label> --}}
+                        <div class="col-md-6 col-lg-4">
+                            <label for="priceRange" class="form-label mb-0">Price Range</label>
                             <select id="priceRange" class="form-select">
                                 <option value="">All Prices</option>
                                 <option value="0-100">$0 - $100</option>
@@ -153,13 +153,13 @@
                         </div>
 
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 animate-gradient border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" class="d-none d-sm-block" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" class="d-none d-sm-block" alt=""> --}}
                 </div>
 
             </div>
