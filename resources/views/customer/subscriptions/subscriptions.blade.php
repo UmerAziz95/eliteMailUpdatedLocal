@@ -47,13 +47,13 @@
 <section class="py-3">
     <div class="row mb-4">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-4" id="total_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -62,20 +62,20 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Active Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-4" id="active_counter">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -84,21 +84,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Cancel Subscriptions</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-4" id="inactive_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -107,21 +107,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Subscriptions Ammount</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-4" id="inactive_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -130,7 +130,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -139,20 +139,25 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-4 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
+
+                    <div class="d-flex gap-2 justify-content-between">
+                        <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 shadow border-0 animate-gradient h-100">Filter</button>
+                        <button id="clearFilters" class="btn btn-secondary btn-sm px-4 h-100">Clear</button>
+                    </div>
                 </div>
 
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
                         <div class="col-md-6">
-                            <label for="subscriptionIdFilter" class="form-label text-dark">Subscription ID</label>
+                            <label for="subscriptionIdFilter" class="form-label mb-0">Subscription ID</label>
                             <input type="text" id="subscriptionIdFilter" class="form-control"
                                 placeholder="Search by ID">
                         </div>
                         <div class="col-md-6">
-                            <label for="subscriptionStatusFilter" class="form-label text-dark">Status</label>
+                            <label for="subscriptionStatusFilter" class="form-label mb-0">Status</label>
                             <select id="subscriptionStatusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 <option value="active">Active</option>
@@ -160,22 +165,18 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label for="startDate" class="form-label text-dark">Start Date</label>
+                            <label for="startDate" class="form-label mb-0">Start Date</label>
                             <input type="date" id="startDate" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            <label for="endDate" class="form-label text-dark">End Date</label>
+                            <label for="endDate" class="form-label mb-0">End Date</label>
                             <input type="date" id="endDate" class="form-control">
                         </div>
 
-                        <div>
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
-                        </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" class="d-none d-sm-block"
-                        width="30%" style="border-radius: 50%" alt="">
+                    {{-- <img style="mix-blend-mode: color-burn" src="https://cdn-icons-gif.flaticon.com/19004/19004071.gif" class="d-none d-sm-block"
+                        width="20%" style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>
@@ -184,7 +185,7 @@
     {{-- <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-body">
+                <div>
                     <div class="row gy-3">
                         <div class="d-flex align-items-center justify-content-between">
                             <h5 class="mb-2">Filters</h5>

@@ -113,6 +113,12 @@
         .zoom-slider {
             width: 150px;
         }
+
+        .bg-label-warning, .bg-label-secondary, .bg-label-primary {
+            padding: .5rem;
+            font-size: 10px;
+            font-weight: 400 
+        }
     </style>
 @endpush
 

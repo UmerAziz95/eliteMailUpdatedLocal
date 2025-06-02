@@ -14,18 +14,19 @@ return new class extends Migration
         Schema::create('user_order_panel_assignment', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('order_panel_id');
+            $table->unsignedBigInteger('order_panel_split_id');
             $table->unsignedBigInteger('order_id');
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('contractor_id');
 
             $table->timestamps();
         });
     }
 
-    /**
+     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
         Schema::dropIfExists('user_order_panel_assignment');
-    }
+    } 
 };

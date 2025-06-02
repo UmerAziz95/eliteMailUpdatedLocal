@@ -24,7 +24,7 @@
     --extra-light: #00000089;
     --dropdown-hover: #00000016;
     --text-color: #7c76ef;
-    --slide-bg: #726acea7;
+    --slide-bg: #726ace8f;
     /* --table-header: #ececec; */
 }
 
@@ -59,7 +59,7 @@ html {
 table {
     /* border-collapse: separate !important;
     border-spacing: 0px 15px !important; */
-    padding: 10px;
+    /* padding: 10px; */
 }
 
 /* tr {
@@ -89,11 +89,16 @@ a {
 
 .counters {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 20px;
 }
 
-.counter_1 {
+.counter_1 h6, .counter_2 h6 {
+    font-size: 14px;
+    margin-bottom: 0 !important;
+}
+
+/* .counter_1 {
     background: linear-gradient(334deg, rgba(115, 103, 239, 1) 0%, rgba(255, 255, 255, 1) 73%);
     color: #000 !important;
     cursor: pointer
@@ -102,34 +107,46 @@ a {
 .counter_2 {
     background: linear-gradient(334deg, rgba(0, 0, 0, 0.54) 0%, rgba(255, 255, 255, 1) 79%);
     color: #000 !important;
-}
+} */
 
 .card-header {
     background-color: transparent;
 }
 
 .filter {
-    background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%);
+    /* background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%); */
+    background-color: var(--second-primary) !important;
+    border-radius: 8px;
 }
 
 .filter img {
-    opacity: .7;
+    /* opacity: .7; */
 }
 
 .filter h5 {
-    color: #000 !important;
+    color: #fff !important;
     font-size: 16px;
 }
 
 .filter input,
 .filter select {
-    border: 1px solid #000 !important;
-    color: #000 !important;
+    border: 1px solid #fff !important;
+    color: #fff !important;
+}
+
+.filter label {
+    color: #fff !important;
+}
+
+.filter input:focus,
+.filter select:focus {
+    border: 1px solid #fff !important;
+    color: #fff !important;
 }
 
 .filter input::placeholder,
 .filter select::placeholder {
-    color: #000 !important;
+    color: #fff !important;
     opacity: 1 !important;
 }
 
@@ -273,7 +290,7 @@ textarea:focus {
 }
 
 .animate-gradient {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.093), rgba(255, 255, 255, 0.794), rgba(255, 255, 255, 0.08));
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.452), rgba(255, 255, 255, 0));
     background-size: 200% 100%;
     background-position: -100% 0;
     animation: shine 3s infinite linear;
@@ -534,11 +551,15 @@ th {
     text-align: end !important;
 }
 
-th,
-td {
+th {
     padding: .8rem !important;
     font-size: 14px;
     min-width: 6rem;
+}
+
+td {
+    padding: .8rem !important;
+    font-size: 12px;
 }
 
 th {

@@ -128,7 +128,7 @@
 
         .inbox {
             background-color: var(--slide-bg);
-            border: 1px solid var(--second-primary);
+            border: 1px solid #746af5;
             backdrop-filter: blur(10px);
             border-radius: 6px;
         }
@@ -156,7 +156,7 @@
                                     <span class="d-block opacity-75">Total Inboxes</span>
                                     <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
                                 </div>
-                                <span class="bg-white bg-opacity-25  px-3 py-1 rounded-pill">
+                                <span style="background-color: var(--second-primary)" class="bg-opacity-25  px-3 py-1 rounded-pill">
                                     <i class="ti ti-inbox-off me-1"></i> Total
                                 </span>
                             </div>

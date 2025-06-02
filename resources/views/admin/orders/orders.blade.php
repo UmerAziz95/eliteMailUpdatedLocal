@@ -65,14 +65,14 @@
 <section class="py-3">
 
     <div class="row gy-3 mb-4">
-        <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+        <div class="counters col-lg-6" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Orders</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($totalOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($totalOrders) }}</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -81,20 +81,20 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Pending Orders</h6>
+                            <h6 class="text-heading">Pending</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($pendingOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($pendingOrders) }}</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -103,21 +103,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
+                            <h6 class="text-heading">Complete</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($inProgressOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($inProgressOrders) }}</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -126,21 +126,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">In-Progress Orders</h6>
+                            <h6 class="text-heading">In-Progress</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($inProgressOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($inProgressOrders) }}</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -149,21 +149,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Cancelled Orders</h6>
+                            <h6 class="text-heading">Cancelled</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($cancelledOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($cancelledOrders) }}</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -172,21 +172,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Rejected Orders</h6>
+                            <h6 class="text-heading">Rejected</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($rejectOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($rejectOrders) }}</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -195,21 +195,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <h6 class="text-heading">Draft Orders</h6>
+                            <h6 class="text-heading">Draft</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1">{{ number_format($draftOrders) }}</h4>
+                                <h4 class="mb-0 me-2 fs-3">{{ number_format($draftOrders) }}</h4>
                                 <p class="text-warning mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -218,7 +218,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-edit"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -227,19 +227,19 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-2 text-white">Filters</h5>
+                    <h6 class="mb-2 text-white">Filters</h6>
                 </div>
 
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
-                        <div class="col-md-6">
-                            <label for="orderIdFilter" class="form-label text-dark">Order ID</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="orderIdFilter" class="form-label mb-0">Order ID</label>
                             <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
                         </div>
-                        <div class="col-md-6">
-                            <label for="statusFilter" class="form-label text-dark">Status</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="statusFilter" class="form-label mb-0">Status</label>
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 @foreach($statuses as $key => $status)
@@ -247,35 +247,35 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label for="emailFilter" class="form-label text-dark">Email</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="emailFilter" class="form-label mb-0">Email</label>
                             <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
                         </div>
-                        <div class="col-md-6">
-                            <label for="domainFilter" class="form-label text-dark">Domain URL</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="domainFilter" class="form-label mb-0">Domain URL</label>
                             <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
                         </div>
-                        <div class="col-md-6">
-                            <label for="totalInboxesFilter" class="form-label text-dark">Total Inboxes</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="totalInboxesFilter" class="form-label mb-0">Total Inboxes</label>
                             <input type="number" id="totalInboxesFilter" class="form-control"
                                 placeholder="Search by total inboxes" min="1">
                         </div>
-                        <div class="col-md-6">
-                            <label for="startDate" class="form-label text-dark">Start Date</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="startDate" class="form-label mb-0">Start Date</label>
                             <input type="date" id="startDate" class="form-control">
                         </div>
-                        <div class="col-md-6">
-                            <label for="endDate" class="form-label text-dark">End Date</label>
+                        <div class="col-md-6 col-lg-4">
+                            <label for="endDate" class="form-label mb-0">End Date</label>
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 animate-gradient px-4 border-0">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" class="d-none d-sm-block" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" class="d-none d-sm-block" alt=""> --}}
                 </div>
 
             </div>

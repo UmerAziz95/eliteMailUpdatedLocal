@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Models\Panel;
+
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use DataTables;
+//models
+use App\Models\Panel;
+use App\Models\Order;
+use App\Models\OrderPanel;
+use App\Models\OrderPanelSplit; 
+use App\Models\UserOrderPanelAssignment; 
+
 
 class PanelController extends Controller
 {
@@ -144,5 +151,31 @@ class PanelController extends Controller
         $panel->users()->updateExistingPivot($request->user_id, ['released_at' => now()]);
 
         return response()->json(['message' => 'User released.']);
+    }
+
+
+    public function assignPanelToUser(Request $request, $order_panel_id){
+        $request->validate([
+            'order_panel_id' => 'required|exists:order_panel,id',
+            
+        ]);
+        $user=Auth::user();
+        $order_panel = OrderPanel::where('id',$order_panel_id)->with(['panel','order.orderInfo'])->first();
+        $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)->where('order_id', $order_panel->order_id)->first();   
+        if(!$order_panel){
+            return response()->json(['message' => 'Order panel not found'], 404);
+        }else{
+            UserOrderPanelAssignment::updateOrCreate(
+                ['order_panel_id' => $order_panel->id, 'user_id' => $user->id],
+                ['order_id' => $order_panel->order_id],
+                ['contractor_id' => $user->id],
+                ['order_panel_split_id' =>$order_panel_split->id],
+            );
+            
+
+
+        }
+      
+     
     }
 }
