@@ -118,26 +118,50 @@ class MasterPlanController extends Controller
         // Sort items by min_inbox for range validation
         $sortedItems = collect($volumeItems)->sortBy('min_inbox')->values()->toArray();
         
-        // Validate for overlapping ranges
+        // Validate for overlapping ranges and gaps
         for ($i = 0; $i < count($sortedItems) - 1; $i++) {
             $current = $sortedItems[$i];
             $next = $sortedItems[$i + 1];
             
             // If current tier has unlimited (max_inbox = 0) and it's not the last tier
             if ($current['max_inbox'] === 0 && $i < count($sortedItems) - 1) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
-                ], 422);
+            return response()->json([
+                'success' => false,
+                'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
+            ], 422);
             }
             
             // Check for overlapping ranges
             if ($current['max_inbox'] !== 0 && $next['min_inbox'] <= $current['max_inbox']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
-                ], 422);
+            return response()->json([
+                'success' => false,
+                'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
+            ], 422);
             }
+            
+            // Check for gaps between consecutive tiers (ChargeBee requirement)
+            if ($current['max_inbox'] !== 0 && $next['min_inbox'] > $current['max_inbox'] + 1) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gap detected between tiers. Tier ending at {$current['max_inbox']} has a gap before the next tier starting at {$next['min_inbox']}. ChargeBee requires continuous tier ranges. Next tier should start at " . ($current['max_inbox'] + 1) . "."
+            ], 422);
+            }
+        }
+        
+        // Check if the last tier doesn't have unlimited (max_inbox = 0)
+        if (!empty($sortedItems) && $sortedItems[count($sortedItems) - 1]['max_inbox'] !== 0) {
+            return response()->json([
+            'success' => false,
+            'message' => "The last tier must have unlimited inboxes (max_inbox = 0) to handle all cases beyond the defined ranges."
+            ], 422);
+        }
+        
+        // Additional validation: First tier should start at 1 (ChargeBee requirement)
+        if (!empty($sortedItems) && $sortedItems[0]['min_inbox'] !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => "First tier must start at 1 inbox (ChargeBee requirement). Current first tier starts at {$sortedItems[0]['min_inbox']}."
+            ], 422);
         }
 
         try {
