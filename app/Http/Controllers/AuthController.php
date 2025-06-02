@@ -263,12 +263,12 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to send email verification code to : '.$user->email . $e->getMessage());
         }
-        //send welcome mail
-        try {
-            Mail::to($user->email)->queue(new UserWelcomeMail($user));
-        } catch (\Exception $e) {
-            Log::error('Failed to send welcome email: ' . $e->getMessage());
-        }
+        // //send welcome mail
+        // try {
+        //     Mail::to($user->email)->queue(new UserWelcomeMail($user));
+        // } catch (\Exception $e) {
+        //     Log::error('Failed to send welcome email: ' . $e->getMessage());
+        // }
     
         //Auth::login($user);
     
