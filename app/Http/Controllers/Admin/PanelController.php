@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Panel;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DataTables;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use DataTables;
 
 class PanelController extends Controller
 {
@@ -53,19 +54,12 @@ class PanelController extends Controller
     {
         try {
             $data = $request->validate([
-                'title' => 'nullable|string',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
-                'status' => 'nullable|integer',
-                'limit' => 'nullable|integer',
-                'max_users' => 'nullable|integer',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date',
-                'is_active' => 'boolean',
-                'created_by' => 'nullable|string',
+                'created_by' => 'nullable|string|max:255',
             ]);
 
             $panel = Panel::create($data);
-
             return response()->json(['message' => 'Panel created successfully', 'panel' => $panel], 201);
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
@@ -80,15 +74,11 @@ class PanelController extends Controller
             $panel = Panel::findOrFail($id);
 
             $data = $request->validate([
-                'title' => 'nullable|string',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
-                'status' => 'nullable|integer',
-                'limit' => 'nullable|integer',
-                'max_users' => 'nullable|integer',
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date',
+                'limit' => 'nullable|integer|min:1',
                 'is_active' => 'boolean',
-                'created_by' => 'nullable|string',
+                'created_by' => 'nullable|string|max:255',
             ]);
 
             $panel->update($data);
@@ -135,10 +125,6 @@ class PanelController extends Controller
         ]);
 
         $panel = Panel::findOrFail($panelId);
-
-        if ($panel->max_users && $panel->users()->count() >= $panel->max_users) {
-            return response()->json(['error' => 'Max users reached.'], 400);
-        }
 
         $panel->users()->syncWithoutDetaching([
             $request->user_id => ['accepted_at' => now()],

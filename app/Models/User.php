@@ -62,7 +62,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
-
+ 
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
@@ -106,9 +106,7 @@ class User extends Authenticatable
         return $this->orders()->with(['plan', 'reorderInfo', 'subscription'])->latest()->first();
     }
 
-    /**
-     * Check if user can subscribe to the given plan
-     */
+   
     public function canSubscribeToPlan(Plan $plan): bool
     {
         // If user already has an active subscription, they can't subscribe
@@ -121,11 +119,17 @@ class User extends Authenticatable
         return true;
     }
 
-    public function panels()
+ public function panels()
 {
     return $this->belongsToMany(Panel::class)
                 ->withTimestamps()
                 ->withPivot('accepted_at', 'released_at');
+}
+
+public function userOrderPanelAssignments()
+{
+    return $this->hasMany(UserOrderPanelAssignment::class);
+
 }
 
 }
