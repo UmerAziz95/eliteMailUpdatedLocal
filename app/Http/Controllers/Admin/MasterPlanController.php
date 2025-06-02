@@ -54,7 +54,7 @@ class MasterPlanController extends Controller
     public function store(Request $request)
     {        $request->validate([
             'external_name' => 'required|string|max:255',
-            'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
+            // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
             'description' => 'required|string|max:1000',
             'volume_items' => 'required|array|min:1',
             'volume_items.*.min_inbox' => 'required|integer|min:0',

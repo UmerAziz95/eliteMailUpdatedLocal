@@ -1273,9 +1273,10 @@
                     .done(function(response) {
                         if (response && response.id) {
                             $('#masterPlanExternalName').val(response.name || '');
-                            // Generate clean preview from external name (no timestamp)
-                            const cleanPreview = generateInternalName(response.name || '', true);
-                            $('#internalNamePreview').text(cleanPreview || 'plan_name_preview');
+                            // Generate internal name from external name instead of using stored value
+                            const generatedInternalName = generateInternalName(response.name || '');
+                            $('#masterPlanInternalName').val(generatedInternalName);
+                            $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
                             $('#masterPlanDescription').val(response.description || '');
                         }
                     })
@@ -1289,9 +1290,10 @@
                 const button = $(this);
                 button.prop('disabled', true).text('Saving...');
 
-                // Collect form data - let backend generate unique internal name
+                // Collect form data
                 const formData = {
                     external_name: $('#masterPlanExternalName').val(),
+                    internal_name: $('#masterPlanInternalName').val(),
                     description: $('#masterPlanDescription').val(),
                     volume_items: collectVolumeItems(),
                     _token: '{{ csrf_token() }}'
@@ -1519,34 +1521,23 @@
             });
 
             // Function to generate internal name from external name
-            function generateInternalName(externalName, forDisplay = false) {
-                const baseInternalName = externalName
+            function generateInternalName(externalName) {
+                return externalName
                     .toLowerCase()
                     .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
                     .replace(/\s+/g, '_') // Replace spaces with underscores
                     .replace(/_+/g, '_') // Replace multiple underscores with single
                     .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
-                
-                // If for display purposes (preview), don't add timestamp
-                if (forDisplay) {
-                    return baseInternalName;
-                }
-                
-                // Add timestamp to ensure uniqueness for ChargeBee API
-                const timestamp = Date.now();
-                return baseInternalName + '_' + timestamp;
             }
 
             // Auto-generate internal name when external name changes
             $(document).on('input', '#masterPlanExternalName', function() {
                 const externalName = $(this).val();
-                // Generate clean preview for display
-                const previewName = generateInternalName(externalName, true);
+                const internalName = generateInternalName(externalName);
+                $('#masterPlanInternalName').val(internalName);
                 
-                // Update preview with clean name (no timestamp)
-                $('#internalNamePreview').text(previewName || 'plan_name_preview');
-                
-                // Don't set the actual internal name value here - it will be generated with timestamp at submission time
+                // Update preview
+                $('#internalNamePreview').text(internalName || 'plan_name_preview');
             });
 
             function addVolumeItem(data = null) {
@@ -2402,9 +2393,10 @@
                             const plan = response.data;
                             // Fill basic information with safe fallbacks
                             $('#masterPlanExternalName').val(plan.external_name || '');
-                            // Generate clean preview from external name (no timestamp)
-                            const cleanPreview = generateInternalName(plan.external_name || '', true);
-                            $('#internalNamePreview').text(cleanPreview || 'plan_name_preview');
+                            // Generate internal name from external name instead of using stored value
+                            const generatedInternalName = generateInternalName(plan.external_name || '');
+                            $('#masterPlanInternalName').val(generatedInternalName);
+                            $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
                             $('#masterPlanDescription').val(plan.description || '');
 
                             // Clear and add volume items
@@ -2465,14 +2457,15 @@
                                 <h6 class="mb-0 theme-text"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
                             </div>
                             <div>
+                                <!-- add validation o -->
                                 <div class="row">                                <div class="col-md-12 mb-2">
                                     <div>
                                         <label for="masterPlanExternalName" class="form-label">Plan Name <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="masterPlanExternalName"
                                             required>
-                                        <small class="opacity-50" style="display: none !important;">This will be shown to customers</small>
-                                        <small class="text-muted d-block mt-1">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
+                                        <small class="opacity-50" style="display: none;">This will be shown to customers</small>
+                                        <small class="text-muted d-block mt-1" style="display: none !important;">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
                                     </div>
                                 </div>
                                     <div class="col-md-6 mb-2" style="display: none;">
