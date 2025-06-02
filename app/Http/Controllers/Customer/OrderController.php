@@ -689,7 +689,7 @@ class OrderController extends Controller
             
 
             // panel creation
-            // $this->pannelCreationAndOrderSplitOnPannels();
+            $this->pannelCreationAndOrderSplitOnPannels($order);
             // First check 
             return response()->json([
                 'success' => true,
@@ -713,7 +713,14 @@ class OrderController extends Controller
             ], 422);
         }
     }
-
+    // pannelCreationAndOrderSplitOnPannels
+    public function pannelCreationAndOrderSplitOnPannels($order)
+    {
+        // if new order has 1790 inboxes or greater than create new panel and order save on order_panel table and order_panel_split also manage panels table remaining_limit
+        // if order is less than 1790 then first check least panel then add it order_panel table and order_panel_split also manage panels table remaining_limit
+        // for i.e panel one only space (1) and new order 120 inboxes and per domain 2 inboxes not save data on panel 
+        // check my migrations not create any new migration only see the table relations and mange it logic
+    }
     /**
      * Get order data for import functionality
      */
