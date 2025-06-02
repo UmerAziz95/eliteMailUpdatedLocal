@@ -1,5 +1,4 @@
-<header
-    class="d-flex align-items-center justify-content-between justify-content-xl-end py-2 px-4 rounded-3 position-sticky"
+<header class="d-flex align-items-center justify-content-between justify-content-xl-end px-4 rounded-3"
     style="z-index: 100; top: -19px">
     <div class="d-xl-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
         aria-controls="offcanvasExample">
@@ -86,10 +85,14 @@
         </div>
 
         <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
                     alt="">
+                <div class="d-flex flex-column gap-0">
+                    <h6 class="mb-0">{{ Auth::user()->name ?? 'N/A' }}</h6>
+                    <small>{{ Auth::user()->email ?? 'N/A' }}</small>
+                </div>
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
@@ -100,19 +103,19 @@
                             class="object-fit-cover login-user-profile" alt="">
                     </div>
                     <div>
-                        <h6 class="mb-0">{{Auth::user()->name}}</h6>
-                        <p class="small mb-0">{{Auth::user()->role->name}}</p>
+                        <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                        <p class="small mb-0">{{ Auth::user()->role->name }}</p>
                     </div>
                 </div>
                 <hr>
 
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="{{route('admin.profile')}}"><i class="ti ti-user"></i> My Profile</a></li>
+                        href="{{ route('admin.profile') }}"><i class="ti ti-user"></i> My Profile</a></li>
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="{{route('admin.settings')}}"><i class="ti ti-settings"></i> Settings</a></li>
+                        href="{{ route('admin.settings') }}"><i class="ti ti-settings"></i> Settings</a></li>
 
 
-                <a class="logout-btn" href="{{route('logout')}}">
+                <a class="logout-btn" href="{{ route('logout') }}">
                     <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
                         Logout</button>
                 </a>
@@ -142,38 +145,38 @@
                 <!-- Dashboard -->
 
                 @can('Dashboard')
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
-                        href="{{ route('admin.dashboard') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-home fs-5"></i></div>
-                            <div class="text">Dashboard</div>
-                        </div>
-                    </a>
-                </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
+                            href="{{ route('admin.dashboard') }}">
+                            <div class="d-flex align-items-center" style="gap: 13px">
+                                <div class="icons"><i class="ti ti-home fs-5"></i></div>
+                                <div class="text">Dashboard</div>
+                            </div>
+                        </a>
+                    </li>
                 @endcan
 
 
                 <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
                 <!-- Admins -->
                 @foreach ($navigations as $item)
-                @if ($item->name == 'Dashboard')
-                @continue
-                @endif
-                @can( $item->permission)
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
-                        href="{{ route($item->route) }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="{{ $item->icon }}"></i></div>
-                            <div class="text">{{ $item->name }}</div>
-                        </div>
-                    </a>
-                </li>
-                @endcan
+                    @if ($item->name == 'Dashboard')
+                        @continue
+                    @endif
+                    @can($item->permission)
+                        <li class="nav-item">
+                            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
+                                href="{{ route($item->route) }}">
+                                <div class="d-flex align-items-center" style="gap: 13px">
+                                    <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                                    <div class="text">{{ $item->name }}</div>
+                                </div>
+                            </a>
+                        </li>
+                    @endcan
 
-                <!-- Users -->
-                {{-- <li class="nav-item">
+                    <!-- Users -->
+                    {{-- <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admin/customer') ? 'active' : '' }}"
                         href="{{ url('admin/customer') }}">
                         <div class="d-flex align-items-center" style="gap: 13px">
@@ -369,7 +372,7 @@
 
         // Add notification dropdown event listener
         const notificationDropdownEl = document.querySelector('.notification-dropdown');
-        notificationDropdownEl.addEventListener('show.bs.dropdown', function () {
+        notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
             loadNotifications();
         });
     });
@@ -422,27 +425,27 @@
     function handleNotificationRead() {
         const notificationId = this.dataset.id;
         fetch(`/notifications/${notificationId}/mark-as-read`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                // Update notification count
-                updateNotificationCount();
-                // Remove the unread badge
-                this.remove();
-                // Close the dropdown
-                const dropdownMenu = document.getElementById('notificationDropdown');
-                const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
-                if (bsDropdown) {
-                    bsDropdown.hide();
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
                 }
-            }
-        })
-        .catch(error => console.error('Error:', error));
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Update notification count
+                    updateNotificationCount();
+                    // Remove the unread badge
+                    this.remove();
+                    // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
     }
 </script>

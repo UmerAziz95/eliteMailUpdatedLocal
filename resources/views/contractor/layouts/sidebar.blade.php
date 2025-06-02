@@ -65,6 +65,17 @@
             </a>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panel') ? 'active' : '' }}"
+                href="{{ route('contractor.panel') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                    <div class="text">Panel</div>
+                </div>
+            </a>
+        </li>
+        
+
         {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
         <li class="nav-item">

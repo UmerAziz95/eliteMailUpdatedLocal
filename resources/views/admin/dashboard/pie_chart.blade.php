@@ -1,103 +1,106 @@
-<div class="card h-100">
-    <div class="d-flex flex-column flex-sm-row align-items-start px-3">
-        <div class="d-flex flex-sm-column justify-content-between w-100 border-0 pb-0">
-            <div class="mt-lg-4 mb-lg-6 mb-2">
-                <h5 class="mb-0">Total Tickets</h5>
-                <p class="mb-0" id="totalTicketCount">{{ ($newTickets ?? 0) + ($inProgressTickets ?? 0) + ($resolvedTickets ?? 0) }}</p>
-                
-                <div id="tickets_loading_indicator" class="mt-2" style="display: none;">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            </div>
-            
-            
-           <ul class="p-0 m-0">
-                <li class="d-flex gap-3 align-items-start mb-2">
-                    <div class="badge rounded bg-label-primary mt-1">
-                        <i class="ti ti-ticket theme-text fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 text-nowrap">Open Tickets</h6>
-                        <p class="small opacity-75" id="openTicketsCount">{{ $newTickets ?? 0 }}</p>
-                    </div>
-                </li>
-                
-                <li class="d-flex gap-3 align-items-start mb-2">
-                    <div class="badge rounded bg-label-info mt-1">
-                        <i class="ti ti-clock fs-4 text-info"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 text-nowrap">In Progress</h6>
-                        <p class="small opacity-75" id="inProgressTicketsCount">{{ $inProgressTickets ?? 0 }}</p>
-                    </div>
-                </li>
-                <li class="d-flex gap-3 align-items-start pb-1">
-                    <div class="badge rounded bg-label-success mt-1">
-                        <i class="ti ti-check fs-4 text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 text-nowrap">Closed</h6>
-                        <p class="small opacity-75" id="closedTicketsCount">{{ $resolvedTickets ?? 0 }}</p>
-                    </div>
-                </li>
-            </ul>
-        </div>
+<div class="card h-100 p-3 d-flex flex-column justify-content-between">
+    <div class="d-flex align-items-start justify-content-between w-100 border-0 pb-0">
+        <div class="">
+            <h6 class="mb-0">Total Tickets</h6>
+            <h5 class="mb-0 text-success mt-2" id="totalTicketCount">
+                {{ ($newTickets ?? 0) + ($inProgressTickets ?? 0) + ($resolvedTickets ?? 0) }}</h5>
 
-        <div class="mt-lg-4 mb-lg-6 mb-2">
-            <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="tickets-pills-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="tickets-pills-month-tab" data-bs-toggle="pill"
-                            data-bs-target="#tickets-pills-month" type="button" role="tab" aria-controls="tickets-pills-month"
-                            aria-selected="true">Month</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tickets-pills-week-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-week"
-                            type="button" role="tab" aria-controls="tickets-pills-week" aria-selected="false">Week</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tickets-pills-today-tab" data-bs-toggle="pill" data-bs-target="#tickets-pills-today"
-                            type="button" role="tab" aria-controls="tickets-pills-today" aria-selected="false">Today</button>
-                    </li>
-                </ul>
-            <div class="tab-content" id="tickets-pills-tabContent">
-                <!-- Month Tab -->
-                <div class="tab-pane fade show active" id="tickets-pills-month" role="tabpanel"
-                    aria-labelledby="tickets-pills-month-tab" tabindex="0">
-                    <div style="margin-bottom: 1rem;">
-                        <label for="tickets_month_selector" style="margin-right: 8px;">Select Month:</label>
-                        <select class="form-select" id="tickets_month_selector">
-                            <option value="01">January</option>
-                            <option value="02">February</option>
-                            <option value="03">March</option>
-                            <option value="04">April</option>
-                            <option value="05">May</option>
-                            <option value="06">June</option>
-                            <option value="07">July</option>
-                            <option value="08">August</option>
-                            <option value="09">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
-                        </select>
-                    </div>
-                    <div id="pieChartMonth"></div>
-                </div>
-
-                <!-- Week Tab -->
-                <div class="tab-pane fade" id="tickets-pills-week" role="tabpanel" aria-labelledby="tickets-pills-week-tab"
-                    tabindex="0">
-                    <div id="pieChartWeek"></div>
-                </div>
-
-                <!-- Today Tab -->
-                <div class="tab-pane fade" id="tickets-pills-today" role="tabpanel" aria-labelledby="tickets-pills-today-tab"
-                    tabindex="0">
-                    <div id="pieChartToday"></div>
+            <div id="tickets_loading_indicator" class="mt-2" style="display: none;">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
         </div>
+
+        <ul class="nav nav-pills mb-3 d-flex align-items-center justify-content-end" id="tickets-pills-tab"
+            role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link px-2 py-1 rounded-1 active" id="tickets-pills-month-tab" data-bs-toggle="pill"
+                    data-bs-target="#tickets-pills-month" type="button" role="tab"
+                    aria-controls="tickets-pills-month" aria-selected="true">Month</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link px-2 py-1 rounded-1" id="tickets-pills-week-tab" data-bs-toggle="pill"
+                    data-bs-target="#tickets-pills-week" type="button" role="tab"
+                    aria-controls="tickets-pills-week" aria-selected="false">Week</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link px-2 py-1 rounded-1" id="tickets-pills-today-tab" data-bs-toggle="pill"
+                    data-bs-target="#tickets-pills-today" type="button" role="tab"
+                    aria-controls="tickets-pills-today" aria-selected="false">Today</button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="mt-2">
+
+        <div class="tab-content" id="tickets-pills-tabContent">
+            <!-- Month Tab -->
+            <div class="tab-pane fade show active" id="tickets-pills-month" role="tabpanel"
+                aria-labelledby="tickets-pills-month-tab" tabindex="0">
+                <div class="mb-2">
+                    <label for="tickets_month_selector" style="font-size: 13px">Select Month:</label>
+                    <select class="form-select" style="font-size: 12px" id="tickets_month_selector">
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div id="pieChartMonth"></div>
+            </div>
+
+            <!-- Week Tab -->
+            <div class="tab-pane fade h-100" id="tickets-pills-week" role="tabpanel"
+                aria-labelledby="tickets-pills-week-tab" tabindex="0">
+                <div id="pieChartWeek"></div>
+            </div>
+
+            <!-- Today Tab -->
+            <div class="tab-pane fade" id="tickets-pills-today" role="tabpanel"
+                aria-labelledby="tickets-pills-today-tab" tabindex="0">
+                <div id="pieChartToday"></div>
+            </div>
+        </div>
+
+        <ul class="p-0 m-0 d-flex align-items-center justify-content-between gap-2">
+            <li class="d-flex gap-2 align-items-start mb-2">
+                <div class="p-1 d-flex align-items-center justify-content-center rounded icon mt-1">
+                    <i class="ti ti-ticket fs-5"></i>
+                </div>
+                <div class="d-flex flex-column gap-0">
+                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Open</h6>
+                    <small class="small opacity-75" id="openTicketsCount">{{ $newTickets ?? 0 }}</small>
+                </div>
+            </li>
+
+            <li class="d-flex gap-2 align-items-start mb-2">
+                <div class="p-1 d-flex align-items-center justify-content-center rounded bg-label-warning mt-1">
+                    <i class="ti ti-clock fs-5 text-warning"></i>
+                </div>
+                <div class="d-flex flex-column gap-0">
+                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Progress</h6>
+                    <small class="small opacity-75" id="inProgressTicketsCount">{{ $inProgressTickets ?? 0 }}</small>
+                </div>
+            </li>
+            <li class="d-flex gap-2 align-items-start pb-1">
+                <div class="p-1 d-flex align-items-center justify-content-center rounded bg-label-success mt-1">
+                    <i class="ti ti-check fs-5 text-success"></i>
+                </div>
+                <div class="d-flex flex-column gap-0">
+                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Closed</h6>
+                    <small class="small opacity-75" id="closedTicketsCount">{{ $resolvedTickets ?? 0 }}</small>
+                </div>
+            </li>
+        </ul>
     </div>
 </div>
 
@@ -108,33 +111,33 @@
     // Chart instances and period state
     let ticketChartMonth, ticketChartWeek, ticketChartToday;
     let currentPeriod = 'month';
-    
+
     // Default ticket data (used for initial render and fallback)
     const initialTicketData = {
         open: {{ $newTickets ?? 0 }},
         inProgress: {{ $inProgressTickets ?? 0 }},
         closed: {{ $resolvedTickets ?? 0 }}
     };
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Set current month as default in the selector
         const now = new Date();
         const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
-        
+
         const monthSelector = document.getElementById('tickets_month_selector');
         if (monthSelector) {
             monthSelector.value = currentMonth;
         }
-        
+
         // Initialize the charts
         initTicketCharts();
-        
+
         // Add event listeners
         setupEventListeners();
-        
+
         // Load initial data for month tab
         loadTicketData('month', currentMonth);
-        
+
         // Preload data for week and day tabs
         setTimeout(() => {
             loadTicketData('week');
@@ -143,7 +146,7 @@
             }, 300);
         }, 300);
     });
-    
+
     // Initialize the pie charts
     function initTicketCharts() {
         // Create common chart options
@@ -156,7 +159,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 400,
+                    height: 200,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -254,16 +257,16 @@
         // Initialize month chart
         ticketChartMonth = new ApexCharts(document.querySelector("#pieChartMonth"), getChartOptions());
         ticketChartMonth.render();
-        
+
         // Initialize week chart
         ticketChartWeek = new ApexCharts(document.querySelector("#pieChartWeek"), getChartOptions());
         ticketChartWeek.render();
-        
+
         // Initialize today chart
         ticketChartToday = new ApexCharts(document.querySelector("#pieChartToday"), getChartOptions());
         ticketChartToday.render();
     }
-    
+
     // Set up event listeners for period buttons and tabs
     function setupEventListeners() {
         // Month selector change event
@@ -271,64 +274,64 @@
         if (monthSelector) {
             monthSelector.addEventListener('change', function() {
                 const selectedMonth = this.value;
-                
+
                 // Ensure the month tab is selected
                 const monthTab = document.getElementById('tickets-pills-month-tab');
                 if (monthTab && !monthTab.classList.contains('active')) {
                     monthTab.click();
                 }
-                
+
                 // Load data for the selected month
                 loadTicketData('month', selectedMonth);
             });
         }
-        
+
         // Tab click events
         const monthTab = document.getElementById('tickets-pills-month-tab');
         const weekTab = document.getElementById('tickets-pills-week-tab');
         const todayTab = document.getElementById('tickets-pills-today-tab');
-        
+
         if (monthTab) {
             monthTab.addEventListener('click', function() {
                 currentPeriod = 'month';
                 const month = document.getElementById('tickets_month_selector').value;
-                
+
                 // Force refresh the data
                 showTicketLoading(true);
-                
+
                 setTimeout(() => {
                     loadTicketData('month', month);
                 }, 50);
             });
         }
-        
+
         if (weekTab) {
             weekTab.addEventListener('click', function() {
                 currentPeriod = 'week';
-                
+
                 // Force refresh the data
                 showTicketLoading(true);
-                
+
                 setTimeout(() => {
                     loadTicketData('week');
                 }, 50);
             });
         }
-        
+
         if (todayTab) {
             todayTab.addEventListener('click', function() {
                 currentPeriod = 'today';
-                
+
                 // Force refresh the data
                 showTicketLoading(true);
-                
+
                 setTimeout(() => {
                     loadTicketData('today');
                 }, 50);
             });
         }
     }
-    
+
     // Show or hide loading indicator
     function showTicketLoading(isLoading) {
         const loadingIndicator = document.getElementById('tickets_loading_indicator');
@@ -336,19 +339,19 @@
             loadingIndicator.style.display = isLoading ? 'block' : 'none';
         }
     }
-    
+
     // Load ticket data for the specified period
     function loadTicketData(period, month = '') {
         showTicketLoading(true);
-        
+
         // Prepare the URL with cache-busting
         let url = `/admin/ticket-stats/?period=${period}&_=${new Date().getTime()}`;
-        
+
         // Add month parameter if provided
         if (period === 'month' && month) {
             url += `&month=${month}`;
         }
-        
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -363,7 +366,7 @@
             })
             .catch(error => {
                 console.error(`Error fetching ${period} ticket data:`, error);
-                
+
                 // Use initial data as fallback
                 updateTicketStats({
                     open: initialTicketData.open,
@@ -371,11 +374,11 @@
                     closed: initialTicketData.closed,
                     total: initialTicketData.open + initialTicketData.inProgress + initialTicketData.closed
                 }, period);
-                
+
                 showTicketLoading(false);
             });
     }
-    
+
     // Update ticket statistics and chart
     function updateTicketStats(data, period) {
         // Default values in case data is missing
@@ -383,7 +386,7 @@
         const inProgressTickets = data.inProgress || 0;
         const closedTickets = data.closed || 0;
         const totalTickets = data.total || (openTickets + inProgressTickets + closedTickets);
-        
+
         // Only update counts in UI if this is the currently active period
         if (period === currentPeriod) {
             document.getElementById('totalTicketCount').textContent = totalTickets;
@@ -391,10 +394,10 @@
             document.getElementById('inProgressTicketsCount').textContent = inProgressTickets;
             document.getElementById('closedTicketsCount').textContent = closedTickets;
         }
-        
+
         // Update the appropriate chart based on period
         let chartToUpdate;
-        switch(period) {
+        switch (period) {
             case 'month':
                 chartToUpdate = ticketChartMonth;
                 break;
@@ -407,7 +410,7 @@
             default:
                 chartToUpdate = ticketChartMonth;
         }
-        
+
         // Update the chart
         if (openTickets === 0 && inProgressTickets === 0 && closedTickets === 0) {
             // If all values are 0, use placeholder values so chart doesn't show empty

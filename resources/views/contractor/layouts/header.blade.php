@@ -84,16 +84,20 @@
         </div>
 
         <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
                     alt="Profile Image">
+                <div>
+                    <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                    <p class="small mb-0">{{ Auth::user()->email }}</p>
+                </div>
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
                     <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                        style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
-                        alt="Profile Image">
+                        style="border-radius: 50%" height="40" width="40"
+                        class="object-fit-cover login-user-profile" alt="Profile Image">
                     <div>
                         <h6 class="mb-0">{{ Auth::user()->name }}</h6>
                         <p class="small mb-0">{{ Auth::user()->email }}</p>
@@ -110,7 +114,7 @@
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li> -->
 
                 <div class="logout-btn">
-                    <a href="{{route('logout')}}" class="btn btn-danger w-100" style="font-size: 13px"><i
+                    <a href="{{ route('logout') }}" class="btn btn-danger w-100" style="font-size: 13px"><i
                             class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
             </ul>
@@ -356,35 +360,35 @@
     function handleNotificationRead() {
         const notificationId = this.dataset.id;
         fetch(`/notifications/${notificationId}/mark-as-read`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                // Update the notification count
-                updateNotificationCount();
-                // Remove the unread badge
-                this.remove();
-                // Close the dropdown
-                const dropdownMenu = document.getElementById('notificationDropdown');
-                const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
-                if (bsDropdown) {
-                    bsDropdown.hide();
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
                 }
-            }
-        })
-        .catch(error => console.error('Error:', error));
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Update the notification count
+                    updateNotificationCount();
+                    // Remove the unread badge
+                    this.remove();
+                    // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
     }
 
     // Add event listener to load notifications when dropdown is opened
     document.addEventListener('DOMContentLoaded', function() {
         // Add event listener to notification dropdown
         const notificationDropdownEl = document.querySelector('.notification-dropdown');
-        notificationDropdownEl.addEventListener('show.bs.dropdown', function () {
+        notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
             loadNotifications();
         });
     });
