@@ -1,4 +1,4 @@
-<header class="d-flex align-items-center justify-content-between py-2 px-4 rounded-3">
+<header class="d-flex align-items-center justify-content-between px-4 rounded-3">
     <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
         data-bs-target="#search">
         <i class="fa-solid fa-magnifying-glass fs-5"></i> Search
