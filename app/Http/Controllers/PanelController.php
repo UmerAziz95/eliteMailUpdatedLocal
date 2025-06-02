@@ -161,13 +161,15 @@ class PanelController extends Controller
         ]);
         $user=Auth::user();
         $order_panel = OrderPanel::where('id',$order_panel_id)->with(['panel','order.orderInfo'])->first();
+        $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)->where('order_id', $order_panel->order_id)->first();   
         if(!$order_panel){
             return response()->json(['message' => 'Order panel not found'], 404);
         }else{
             UserOrderPanelAssignment::updateOrCreate(
                 ['order_panel_id' => $order_panel->id, 'user_id' => $user->id],
                 ['order_id' => $order_panel->order_id],
-                ['user_id' => $order_panel->user_id],
+                ['contractor_id' => $user->id],
+                ['order_panel_split_id' =>$order_panel_split->id],
             );
             
 
