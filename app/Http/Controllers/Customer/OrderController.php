@@ -869,7 +869,6 @@ class OrderController extends Controller
             // Only proceed if we can actually use this panel
             if ($actualSpaceUsed <= $availableSpace && count($domainSlice) > 0) {
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
-                
                 Log::info("Assigned to existing panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                     'space_used' => $actualSpaceUsed,
                     'domains_count' => count($domainSlice),
