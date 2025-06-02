@@ -687,6 +687,10 @@ class OrderController extends Controller
                 }
             }
             
+
+            // panel creation
+            // $this->pannelCreationAndOrderSplitOnPannels();
+            // First check 
             return response()->json([
                 'success' => true,
                 'message' => $message,
