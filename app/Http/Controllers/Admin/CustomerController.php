@@ -16,7 +16,7 @@ class CustomerController extends Controller
      public function customerList(Request $request)
      {
         if ($request->ajax()) {
-            // Start query builder
+            // Start query builder for listing
             $query = User::query()->where('role_id',3);
             if ($request->filled('user_name')) {
                 $query->where('name', 'like', '%' . $request->input('user_name') . '%');

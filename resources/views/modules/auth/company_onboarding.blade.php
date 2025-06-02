@@ -149,23 +149,24 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Inboxes tested last month</label>
+                        <label class="form-label"> Amount of inboxes used last month</label>
                         <div class="d-flex flex-wrap gap-2" data-name="inboxes_tested">
-                            <div class="btn-option">0–20</div>
-                            <div class="btn-option">21–50</div>
-                            <div class="btn-option">51–500</div>
-                            <div class="btn-option">500+</div>
+                            <div class="btn-option">0–49</div>
+                            <div class="btn-option">50-99</div>
+                            <div class="btn-option">100–499</div>
+                            <div class="btn-option">500-999</div>
+                            <div class="btn-option">1000+</div>
                         </div>
                         <input type="hidden" name="inboxes_tested">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Monthly spend in inboxes</label>
+                        <label class="form-label">Monthly spend on inboxes</label>
                         <div class="d-flex flex-wrap gap-2" data-name="monthly_spend">
-                            <div class="btn-option">0 – $99K</div>
-                            <div class="btn-option">100K – $1M</div>
-                            <div class="btn-option">1M – $5M</div>
-                            <div class="btn-option">5M+</div>
+                            <div class="btn-option">0-$99</div>
+                            <div class="btn-option">$100-$499</div>
+                            <div class="btn-option">$500-$1000</div>
+                            <div class="btn-option">$1000+</div>
                         </div>
                         <input type="hidden" name="monthly_spend">
                     </div>
