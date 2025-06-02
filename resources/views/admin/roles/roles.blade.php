@@ -88,10 +88,10 @@
         <div class="counters">
             @foreach ($roles as $role)
             <div class="">
-                <div class="card counter_1">
-                    <div class="card-body">
+                <div class="card p-3 counter_1">
+                    <div>
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <p class="fw-normal mb-0 text-dark">Total {{ $role->users->count() }} users</p>
+                            <p class="fw-normal mb-0">Total {{ $role->users->count() }} users</p>
                             <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
                                 @php $maxDisplay = 3; @endphp
                                 @foreach ($role->users->take($maxDisplay) as $user)
@@ -142,7 +142,7 @@
         <!-- Manager Role -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total 7 users</p>
                         <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
@@ -172,7 +172,7 @@
         <!-- Users Role -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total 5 users</p>
                         <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
@@ -202,7 +202,7 @@
         <!-- Support Role -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total 3 users</p>
                         <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
@@ -229,7 +229,7 @@
         <!-- Restricted Users -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total 3 users</p>
                         <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">

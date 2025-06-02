@@ -17,13 +17,13 @@
 
     <div class="row mb-4">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                                <h2 class="mb-0" id="totalTicketsCount">{{ $totalTickets }}</h2>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -32,20 +32,20 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Open Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                                <h2 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h2>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -54,21 +54,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">In-Progress</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 " id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                                <h2 class="mb-0 " id="inProgressTicketsCount">{{ $inProgressTickets }}</h2>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -77,21 +77,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Closed Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                                <h2 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h2>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -100,7 +100,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -109,9 +109,9 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-2 text-white">Filters</h5>
+                    <h6 class="mb-2 text-white">Filters</h6>
                 </div>
 
                 <div class="d-flex align-items-start gap-4">
@@ -168,13 +168,13 @@
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 animate-gradient border-0 px-4">Filter</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>

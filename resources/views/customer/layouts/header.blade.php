@@ -80,10 +80,14 @@
         </div>
 
         <div class="dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
                     alt="">
+                    <div>
+                        <h6 class="mb-0">{{ Auth::user()->name }}</h6>
+                        <p class="small mb-0">{{ Auth::user()->email }}</p>
+                    </div>
             </div>
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">

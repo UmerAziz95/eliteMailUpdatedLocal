@@ -48,6 +48,11 @@
             border-radius: 50%;
             opacity: 1
         }
+        
+        .bg-label-primary, .bg-label-warning, .bg-label-success {
+            padding: .5rem .6rem !important;
+            font-size: 10px
+        }
 
         /* .timeline .timeline-item.timeline-item-transparent .timeline-event {
                                                                                                                 background-color: rgba(0, 0, 0, 0);
@@ -535,6 +540,7 @@
                         <!-- /Notifications -->
                     </div>
                 </div>
+
                 <div class="tab-pane fade" id="activity-tab-pane" role="tabpanel" aria-labelledby="activity-tab"
                     tabindex="0">
                     <div class="card p-3">
@@ -581,6 +587,7 @@
                         <!-- /Activity -->
                     </div>
                 </div>
+                
                 <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab"
                     tabindex="0">
                     <div class="card mb-4 p-3">

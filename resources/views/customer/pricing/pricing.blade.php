@@ -80,17 +80,17 @@
 <div class="py-3">
     <div class="row justify-content-center">
         <div class="col-md-12 mt-3">
-            <h2 class="text-center mb-4">Choose Your Plan</h2>
+            {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
             <div class="row" id="plans-container">
                 @foreach($plans as $plan)
                 <div class="col-md-4 mt-4" id="plan-{{ $plan->id }}">
                     <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                        <h4 class="fw-bold plan-name text-capitalize">{{ $plan->name }}</h4>
-                        <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span class="fs-6">/{{
+                        <h4 class="fw-bold plan-name text-capitalize fs-6">{{ $plan->name }}</h4>
+                        <h2 class="fw-bold plan-price fs-3">${{ number_format($plan->price, 2) }} <span style="font-size: 13px" class="fw-light">/{{
                                 $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
                                 inboxes</span>
                         </h2>
-                        <p class="plan-description text-capitalize">{{ $plan->description }}</p>
+                        <p class="plan-description text-capitalize small">{{ $plan->description }}</p>
                         <hr>
                         <div class="mb-3">
                             {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
@@ -98,8 +98,8 @@
                         </div>
                         <ul class="list-unstyled features-list">
                             @foreach ($plan->features as $feature)
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success"></i>
+                            <li style="font-size: 13px" class="mb-2">
+                                <i class="fas fa-check success"></i>
                                 {{ $feature->title }} {{ $feature->pivot->value }}
                             </li>
                             @endforeach
