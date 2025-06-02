@@ -164,120 +164,128 @@ class AuthController extends Controller
 
     //     return redirect($this->.redirectTo($user));
     // }
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            // 'password' => 'required|min:6|confirmed',
-            'role' => 'required|in:admin,customer,contractor',
-            // 'phone' => 'required|regex:/^\+?[0-9]{7,15}$/',
-        ],
-        [
-            // 'phone.regex' => 'The phone number must be a valid format (7 to 15 digits).',
-            // 'phone.required' => 'The phone number is required.',
-        ]);
-    
-        $isCustomer = false;
-        switch ($data['role']) {
-            case 'admin':
-                $data['role'] = 1;
-                break;
-            case 'customer':
-                $data['role'] = 3;
-                $isCustomer = true;
-                break;
-            case 'contractor':
-                $data['role'] = 4;
-                break;
-            default:
-                $data['role'] = 3;
-                $isCustomer = true;
-        }
-    
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            // 'password' => Hash::make($data['password']),
-            'password' => Hash::make(Str::random(6)),
-            'role_id' => $data['role'],
-            'status'=>0
-            // 'phone' => $data['phone'],
-        ]);
-        
-        // Create Chargebee customer for user with customer role
-        if ($isCustomer) {
-            try {
-                $result = \ChargeBee\ChargeBee\Models\Customer::create([
-                    'firstName' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'autoCollection' => 'on',
-                ]);
-                
-                $customer = $result->customer();
-                $user->update(['chargebee_customer_id' => $customer->id]);
-                
-                Log::info('Chargebee customer created for user', [
-                    'user_id' => $user->id,
-                    'chargebee_customer_id' => $customer->id
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
-                    'user_id' => $user->id
-                ]);
-            }
-        }
-    
-        // Log the user registration activity
-        ActivityLogService::log(
-            'user_signup',
-            'New user registered successfully',
-            $user, // Performed on
-            [
-                'email' => $user->email,
-                'role_id' => $user->role_id,
-                'ip' => $request->ip(),
-                'user_agent' => $request->header('User-Agent'),
-                'chargebee_customer_id' => $user->chargebee_customer_id,
-            ],
-            $user->id // Performed by
-        );
-    
-        //send email verification code now 
-        // Generate 4-digit random code
-    $verificationCode = rand(1000, 9999);
+  public function register(Request $request)
+{
+    $data = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email',
+        'role' => 'required|in:admin,customer,contractor',
+    ]);
 
-    // Store the code in the user table
+    // Check if user already exists
+    $existingUser = User::where('email', $data['email'])->first();
+
+    if ($existingUser) {
+        // Generate new 4-digit verification code
+        $verificationCode = rand(1000, 9999);
+        $existingUser->email_verification_code = $verificationCode;
+        $existingUser->save();
+
+        // Create encrypted verification link
+        $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+        $encrypted = Crypt::encryptString($payload);
+        $verificationLink = url('/email_verification/' . $encrypted);
+
+        try {
+            Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+        } catch (\Exception $e) {
+            Log::error('Failed to send email verification code to existing user: '.$existingUser->email.' '.$e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'User already exists. A verification email has been sent. Please verify your email to continue.',
+            'user' => $existingUser,
+        ], 200);
+    }
+
+    // Role mapping
+    $isCustomer = false;
+    switch ($data['role']) {
+        case 'admin':
+            $data['role'] = 1;
+            break;
+        case 'customer':
+            $data['role'] = 3;
+            $isCustomer = true;
+            break;
+        case 'contractor':
+            $data['role'] = 4;
+            break;
+        default:
+            $data['role'] = 3;
+            $isCustomer = true;
+    }
+
+    // Create new user
+    $user = User::create([
+        'name' => $data['name'],
+        'email' => $data['email'],
+        'password' => Hash::make(Str::random(6)),
+        'role_id' => $data['role'],
+        'status' => 0
+    ]);
+
+    // Optional: create Chargebee customer
+    if ($isCustomer) {
+        try {
+            $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                'firstName' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'autoCollection' => 'on',
+            ]);
+
+            $customer = $result->customer();
+            $user->update(['chargebee_customer_id' => $customer->id]);
+
+            Log::info('Chargebee customer created for user', [
+                'user_id' => $user->id,
+                'chargebee_customer_id' => $customer->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
+    }
+
+    // Log activity
+    ActivityLogService::log(
+        'user_signup',
+        'New user registered successfully',
+        $user,
+        [
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+            'ip' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+            'chargebee_customer_id' => $user->chargebee_customer_id,
+        ],
+        $user->id
+    );
+
+    // Email verification code
+    $verificationCode = rand(1000, 9999);
     $user->email_verification_code = $verificationCode;
     $user->save();
 
-       // Create encrypted payload
-       $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
-       $encrypted = Crypt::encryptString($payload);
+    $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+    $encrypted = Crypt::encryptString($payload);
+    $verificationLink = url('/email_verification/' . $encrypted);
 
-         // Create the full verification link
-         $verificationLink = url('/email_verification/' . $encrypted);
-        try {
-            Mail::to($user->email)->queue(new EmailVerificationMail($user,$verificationLink));
-        } catch (\Exception $e) {
-            Log::error('Failed to send email verification code to : '.$user->email . $e->getMessage());
-        }
-        // //send welcome mail
-        // try {
-        //     Mail::to($user->email)->queue(new UserWelcomeMail($user));
-        // } catch (\Exception $e) {
-        //     Log::error('Failed to send welcome email: ' . $e->getMessage());
-        // }
-    
-        //Auth::login($user);
-    
-        return response()->json([
-            'message' => 'User registered successfully! We have sent you a verification email please verify you email address for smooth login.',
-            'redirect' => $this->redirectTo($user),
-            'user' => $user,
-        ], 200);
+    try {
+        Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
+    } catch (\Exception $e) {
+        Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
     }
+
+    return response()->json([
+        'message' => 'User registered successfully! We have sent you a verification email. Please verify your email address to proceed.',
+        'redirect' => $this->redirectTo($user),
+        'user' => $user,
+    ], 200);
+} 
+
     
 
     // Show forgot password form
