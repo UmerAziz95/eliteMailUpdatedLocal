@@ -2463,8 +2463,8 @@
                                                 class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="masterPlanExternalName"
                                             required>
-                                        <small class="opacity-50">This will be shown to customers</small>
-                                        <small class="text-muted d-block mt-1">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
+                                        <small class="opacity-50" style="display: none !important;">This will be shown to customers</small>
+                                        <small class="text-muted d-block mt-1" style="display: none !important;">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
                                     </div>
                                 </div>
                                     <div class="col-md-6 mb-2" style="display: none;">
