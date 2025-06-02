@@ -253,13 +253,13 @@
 <section class="py-3">
 
     <div class="counters mb-4">
-        <div class="card p-2 counter_1">
-            <div class="card-body">
+        <div class="card p-3 counter_1">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Total Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -268,20 +268,20 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-user-search"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_2">
-            <div class="card-body">
+        <div class="card p-3 counter_2">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Open Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -290,21 +290,21 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_1">
-            <div class="card-body">
+        <div class="card p-3 counter_1">
+            <div>
                 <!-- {{-- //card body --}} -->
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">In-Progress Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -313,20 +313,20 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_2">
-            <div class="card-body">
+        <div class="card p-3 counter_2">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Open Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                            <h4 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -335,7 +335,7 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
@@ -347,13 +347,13 @@
     {{-- <div class="row mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total tickets</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h1 class="mb-0 text-primary" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                            <h4 class="mb-0 text-primary" id="totalTicketsCount">{{ $totalTickets }}</h4>
                         </div>
                         <div class="bg-label-primary rounded-1 px-1">
                             <i class="ti ti-ticket fs-2 text-primary"></i>
@@ -365,7 +365,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Open tickets</p>
                     </div>
@@ -383,7 +383,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">In Progress tickets</p>
                     </div>
@@ -401,7 +401,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Closed tickets</p>
                     </div>
@@ -421,7 +421,7 @@
     <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-body">
+                <div>
                     <div class="row gy-3">
                         <div class="d-flex align-items-center justify-content-between">
                             <h5 class="mb-2">Filters</h5>

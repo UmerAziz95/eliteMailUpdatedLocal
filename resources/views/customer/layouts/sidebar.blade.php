@@ -87,13 +87,13 @@
         </li>
     </ul>
 
-    <div class="counter_1 p-4 rounded-3 mt-5">
+    <div style="background-color: var(--second-primary)" class="p-4 rounded-3 mt-5">
         <div class="d-flex flex-column">
-            <h6 class="mb-1">Do you want to buy more inboxes from here?</h6>
-            <small>Click here to buy more inboxes</small>
+            <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
+            <small class="text-white">Click here to buy more inboxes</small>
         </div>
         <br>
-        <a class="m-btn mt-3 border-0 py-2 px-4 animate-gradient btn-primary" href="{{ route('customer.pricing') }}">Buy Now</a>
+        <a class="m-btn mt-3 border-0 py-2 px-4 animate-gradient btn-primary text-white" href="{{ route('customer.pricing') }}">Buy Now</a>
     </div>
 </aside>
 

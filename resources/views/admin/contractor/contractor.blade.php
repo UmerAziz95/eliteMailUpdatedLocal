@@ -32,13 +32,13 @@
 
     <div class="row gy-3">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -54,13 +54,13 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Active Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -76,14 +76,14 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">InActive Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -99,8 +99,8 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between" data-bs-toggle="offcanvas"
                         data-bs-target="#offcanvasAddAdmin" aria-controls="offcanvasAddAdmin">
@@ -108,7 +108,7 @@
                             <h6 class="text-heading">Add New Record</h6>
                             <div class="d-flex align-items-center my-1">
                                 <small class="opacity-75">Click here to add a new record</small>
-                                {{-- <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4> --}}
+                                {{-- <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4> --}}
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -126,21 +126,21 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="card p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-2 text-white">Filters</h5>
+                    <h6 class="mb-2 text-white">Filters</h6>
                 </div>
 
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
                         </div>
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <select id="status_filter" class="form-select">
                                 <option value="">Select Status</option>
                                 <option value="1">Active</option>
@@ -149,13 +149,13 @@
                         </div>
 
                         <div class="d-flex align-item-center gap-2">
-                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2 animate-gradient border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary px-4 btn-sm">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>

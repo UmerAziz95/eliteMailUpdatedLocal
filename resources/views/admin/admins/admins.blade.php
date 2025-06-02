@@ -33,13 +33,13 @@
 
     <div class="row gy-3">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -48,20 +48,20 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Active Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -70,21 +70,21 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">InActive Users</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -93,15 +93,15 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between" data-bs-toggle="offcanvas"
                         data-bs-target="#offcanvasAddAdmin" aria-controls="offcanvasAddAdmin">
@@ -109,7 +109,7 @@
                             <h6 class="text-heading">Add New Record</h6>
                             <div class="d-flex align-items-center my-1">
                                 <small class="opacity-75">Click here to add a new record</small>
-                                {{-- <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4> --}}
+                                {{-- <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4> --}}
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -118,7 +118,7 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17626/17626903.gif" width="50"
+                            <img src="https://cdn-icons-gif.flaticon.com/17626/17626903.gif" width="40"
                                 style="border-radius: 50px" alt="">
                         </div>
                     </div>
@@ -127,21 +127,21 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
                 </div>
 
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <input type="text" id="user_name_filter" class="form-control" placeholder="Enter username">
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <input type="text" id="email_filter" class="form-control" placeholder="Enter email">
                         </div>
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <select id="status_filter" class="form-select">
                                 <option value="">Select Status</option>
                                 <option value="1">Active</option>
@@ -150,21 +150,21 @@
                         </div>
 
                         <div class="d-flex align-item-center gap-2">
-                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2 border-0 animate-gradient">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary px-4 btn-sm">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>
     </div>
 
     {{-- <div class="col-sm-6 col-xl-4">
-        <div class="card p-2">
-            <div class="card-body">
+        <div class="card p-3">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">InActive Users</h6>
