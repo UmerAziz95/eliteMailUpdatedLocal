@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->string('description')->nullable();
 
-            $table->integer('limit')->default(1790); // Total capacity
+            $table->integer('limit')->default(1790); // Total capacity of domain holding per panel
             $table->integer('remaining_limit')->default(1790); // Track real-time available space
 
             $table->boolean('is_active')->default(true); // Panel activation state
