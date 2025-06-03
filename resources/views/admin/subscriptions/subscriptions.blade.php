@@ -46,13 +46,13 @@
 @section('content')
 <section class="py-3">
     <div class="counters mb-4">
-        <div class="card p-2 counter_1">
-            <div class="card-body">
+        <div class="card p-3 counter_1">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Total Subscriptions</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0 me-2 fs-1" id="total_counter">0</h4>
+                            <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
                             <p class="text-success mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -61,20 +61,20 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-user-search"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_2">
-            <div class="card-body">
+        <div class="card p-3 counter_2">
+            <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Active Subscriptions</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0 me-2 fs-1" id="active_counter">0</h4>
+                            <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
                             <p class="text-danger mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -83,21 +83,21 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_1">
-            <div class="card-body">
+        <div class="card p-3 counter_1">
+            <div>
                 <!-- {{-- //card body --}} -->
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Cancel Subscriptions</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                            <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                             <p class="text-success mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -106,21 +106,21 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-2 counter_2">
-            <div class="card-body">
+        <div class="card p-3 counter_2">
+            <div>
                 <!-- {{-- //card body --}} -->
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
                         <h6 class="text-heading">Subscriptions Ammount</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0 me-2 fs-1" id="inactive_counter">0</h4>
+                            <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                             <p class="text-success mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -129,7 +129,7 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="50"
+                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
                             style="border-radius: 50px" alt="">
                     </div>
                 </div>

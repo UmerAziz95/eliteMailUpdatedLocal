@@ -10,8 +10,12 @@ use App\Models\User;
 use App\Models\Status;
 use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
+use App\Models\Panel;
+use App\Models\OrderPanel;
+use App\Models\OrderPanelSplit;
 use App\Mail\OrderEditedMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -687,6 +691,10 @@ class OrderController extends Controller
                 }
             }
             
+
+            // panel creation
+            $this->pannelCreationAndOrderSplitOnPannels($order);
+            // First check 
             return response()->json([
                 'success' => true,
                 'message' => $message,
@@ -709,7 +717,294 @@ class OrderController extends Controller
             ], 422);
         }
     }
+    // pannelCreationAndOrderSplitOnPannels
+    public function pannelCreationAndOrderSplitOnPannels($order)
+    {
+        try {
+            // Wrap everything in a database transaction for consistency
+            DB::beginTransaction();
+            
+            // Get the reorder info for this order
+            $reorderInfo = $order->reorderInfo()->first();
+            
+            if (!$reorderInfo) {
+                Log::warning("No reorder info found for order #{$order->id}");
+                DB::rollBack();
+                return;
+            }
+            
+            // Calculate total space needed
+            $domains = array_filter(preg_split('/[\r\n,]+/', $reorderInfo->domains));
+            $domainCount = count($domains);
+            $totalSpaceNeeded = $domainCount * $reorderInfo->inboxes_per_domain;
+            
+            Log::info("Panel creation started for order #{$order->id}", [
+                'total_space_needed' => $totalSpaceNeeded,
+                'domain_count' => $domainCount,
+                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain
+            ]);
+            
+            // Decision point: >= 1790 creates new panels, < 1790 tries to use existing panels
+            if ($totalSpaceNeeded >= 1790) {
+                $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);
+            } else {
+                // Try to find existing panel with sufficient space
+                $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
+                
+                if ($suitablePanel) {
+                    // Assign entire order to this panel
+                    $this->assignDomainsToPanel($suitablePanel, $order, $reorderInfo, $domains, $totalSpaceNeeded, 1);
+                    Log::info("Order #{$order->id} assigned to existing panel #{$suitablePanel->id}");
+                } else {
+                    // No single panel can fit, try intelligent splitting across available panels
+                    $this->handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded);
+                }
+            }
+            
+            DB::commit();
+            Log::info("Panel creation completed successfully for order #{$order->id}");
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Panel creation failed for order #{$order->id}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+    
+    /**
+     * Create new panel(s) for orders >= 1790 inboxes
+     */
+    private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
+    {
+        if ($spaceNeeded > 1790) {
+            // Split across multiple panels
+            $this->splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $spaceNeeded);
+        } else {
+            // Create exactly one panel
+            $panel = $this->createSinglePanel($spaceNeeded);
+            $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
+            Log::info("Created single panel #{$panel->id} for order #{$order->id}");
+        }
+    }
+    
+    /**
+     * Split large orders across multiple new panels
+    */
 
+    private function splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
+    {
+        $remainingSpace = $totalSpaceNeeded;
+        $splitNumber = 1;
+        $domainsProcessed = 0;
+        
+        while ($remainingSpace > 0 && $splitNumber <= 20) { // Safety check to prevent infinite loops
+            $spaceForThisPanel = min(1790, $remainingSpace);
+            $domainsForThisPanel = ceil($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
+            
+            // Extract domains for this panel
+            $domainsToAssign = array_slice($domains, $domainsProcessed, $domainsForThisPanel);
+            $actualSpaceUsed = count($domainsToAssign) * $reorderInfo->inboxes_per_domain;
+            
+            $panel = null;
+
+            // If remaining space is less than 1790, first try to fill existing panels
+            if ($remainingSpace < 1790) {
+                // Try to find existing panel with sufficient space
+                $existingPanel = Panel::where('is_active', true)
+                    ->where('remaining_limit', '>=', $actualSpaceUsed)
+                    ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
+                    ->first();
+                
+                if ($existingPanel) {
+                    $panel = $existingPanel;
+                    Log::info("Using existing panel #{$panel->id} for remaining space < 1790", [
+                        'remaining_space' => $remainingSpace,
+                        'space_needed' => $actualSpaceUsed,
+                        'panel_available_space' => $panel->remaining_limit
+                    ]);
+                }
+            }
+            
+            // If no suitable existing panel found or remaining space >= 1790, create new panel
+            if (!$panel) {
+                $panel = $this->createSinglePanel(1790);
+                Log::info("Created new panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                    'remaining_space' => $remainingSpace,
+                    'space_needed' => $actualSpaceUsed,
+                    'reason' => $remainingSpace >= 1790 ? 'remaining_space >= 1790' : 'no_existing_panel_available'
+                ]);
+            }
+            
+            // Assign domains to this panel
+            $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainsToAssign, $actualSpaceUsed, $splitNumber);
+            
+            Log::info("Assigned to panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                'space_used' => $actualSpaceUsed,
+                'domains_count' => count($domainsToAssign),
+                'remaining_space' => $remainingSpace - $actualSpaceUsed,
+                'panel_type' => $panel->wasRecentlyCreated ? 'new' : 'existing'
+            ]);
+            
+            $remainingSpace -= $actualSpaceUsed;
+            $domainsProcessed += count($domainsToAssign);
+            $splitNumber++;
+        }
+        
+        if ($remainingSpace > 0) {
+            Log::warning("Still have remaining space after panel creation", [
+                'order_id' => $order->id,
+                'remaining_space' => $remainingSpace
+            ]);
+        }
+    }
+    
+    /**
+     * Handle intelligent splitting across existing available panels
+     */
+    private function handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
+    {
+        // Get all panels with available space, ordered by remaining space (least first for optimal allocation)
+        $availablePanels = Panel::where('is_active', true)
+            ->where('remaining_limit', '>', 0)
+            ->orderBy('remaining_limit', 'desc')
+            ->get();
+        
+        if ($availablePanels->isEmpty()) {
+            // No available panels, create new one
+            $panel = $this->createSinglePanel(1790);
+            $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $totalSpaceNeeded, 1);
+            Log::info("No available panels found, created new panel #{$panel->id} for order #{$order->id}");
+            return;
+        }
+        
+        $remainingSpace = $totalSpaceNeeded;
+        $domainsProcessed = 0;
+        $splitNumber = 1;
+        
+        foreach ($availablePanels as $panel) {
+            if ($remainingSpace <= 0) break;
+            
+            $availableSpace = $panel->remaining_limit;
+            $spaceToUse = min($availableSpace, $remainingSpace);
+            $domainsToAssign = ceil($spaceToUse / $reorderInfo->inboxes_per_domain);
+            
+            // Extract domains for this panel
+            $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
+            $actualSpaceUsed = count($domainSlice) * $reorderInfo->inboxes_per_domain;
+            
+            // Only proceed if we can actually use this panel
+            if ($actualSpaceUsed <= $availableSpace && count($domainSlice) > 0) {
+                $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
+                Log::info("Assigned to existing panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                    'space_used' => $actualSpaceUsed,
+                    'domains_count' => count($domainSlice),
+                    'panel_remaining_before' => $availableSpace,
+                    'panel_remaining_after' => $availableSpace - $actualSpaceUsed
+                ]);
+                
+                $remainingSpace -= $actualSpaceUsed;
+                $domainsProcessed += count($domainSlice);
+                $splitNumber++;
+            }
+        }
+        
+        // If there's still remaining space, create new panel(s)
+        if ($remainingSpace > 0) {
+            $remainingDomains = array_slice($domains, $domainsProcessed);
+            if (!empty($remainingDomains)) {
+                $panel = $this->createSinglePanel(1790);
+                $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
+                Log::info("Created additional panel #{$panel->id} for remaining space in order #{$order->id}", [
+                    'remaining_space' => $remainingSpace
+                ]);
+            }
+        }
+    }
+    
+    /**
+     * Find suitable existing panel with sufficient space
+     */
+    private function findSuitablePanel($spaceNeeded)
+    {
+        return Panel::where('is_active', true)
+            ->where('remaining_limit', '>=', $spaceNeeded)
+            ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
+            ->first();
+    }
+    
+    /**
+     * Create a single panel with specified capacity
+     */
+    private function createSinglePanel($capacity = 1790)
+    {
+        $panel = Panel::create([
+            'auto_generated_id' => 'PANEL_' . strtoupper(uniqid()),
+            'title' => 'Auto Generated Panel - ' . date('Y-m-d H:i:s'),
+            'description' => 'Automatically created panel for order processing',
+            'limit' => $capacity,
+            'remaining_limit' => $capacity,
+            'is_active' => true,
+            'created_by' => 'system'
+        ]);
+        
+        Log::info("Created new panel #{$panel->id} with capacity {$capacity}");
+        return $panel;
+    }
+    
+    /**
+     * Assign domains to a specific panel and create all necessary records
+     */
+    private function assignDomainsToPanel($panel, $order, $reorderInfo, $domainsToAssign, $spaceToAssign, $splitNumber)
+    {
+        try {
+            // Create order_panel record
+            $orderPanel = OrderPanel::create([
+                'panel_id' => $panel->id,
+                'order_id' => $order->id,
+                'contractor_id' => null, // Will be assigned later
+                'space_assigned' => $spaceToAssign,
+                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                'status' => 'unallocated',
+                'note' => "Auto-assigned split #{$splitNumber} - {$spaceToAssign} inboxes across " . count($domainsToAssign) . " domains"
+            ]);
+            
+            // Create order_panel_split record
+            OrderPanelSplit::create([
+                'panel_id' => $panel->id,
+                'order_panel_id' => $orderPanel->id,
+                'order_id' => $order->id,
+                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                'domains' => $domainsToAssign
+            ]);
+            
+            // Update panel remaining capacity
+            $panel->decrement('remaining_limit', $spaceToAssign);
+            // Ensure remaining_limit never goes below 0
+            if ($panel->remaining_limit < 0) {
+                $panel->update(['remaining_limit' => 0]);
+            }
+            
+            Log::info("Successfully assigned domains to panel", [
+                'panel_id' => $panel->id,
+                'order_id' => $order->id,
+                'order_panel_id' => $orderPanel->id,
+                'space_assigned' => $spaceToAssign,
+                'domains_count' => count($domainsToAssign),
+                'panel_remaining_limit' => $panel->remaining_limit - $spaceToAssign
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to assign domains to panel", [
+                'panel_id' => $panel->id,
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
     /**
      * Get order data for import functionality
      */

@@ -10,7 +10,7 @@
                 <tr>
                     <th>Id</th>
                     <th>Role</th>
-                    <th>Permissions</th>
+                    <th style="min-width: 18rem">Permissions</th>
                     <th>Created at</th>
                     @if (!auth()->user()->hasPermissionTo('Mod')) {
                     <th>Action</th>

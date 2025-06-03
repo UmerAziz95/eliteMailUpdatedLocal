@@ -291,7 +291,7 @@
                                 <th>Performed On Type</th>
                                 <th>Performed On Id</th>
                                 <th>IP</th>
-                                <th>User Agent</th>
+                                <th style="min-width: 10rem">User Agent</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -127,13 +127,13 @@
 <section class="py-3">
     <div class="row mb-4">
         <div class="counters col-lg-6">
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="totalTicketsCount">{{ $totalTickets }}</h1>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -149,13 +149,13 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Open Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -171,14 +171,14 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_2">
-                <div class="card-body">
+            <div class="card p-3 counter_2">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">In-Progress</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 " id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -194,14 +194,14 @@
                 </div>
             </div>
 
-            <div class="card p-2 counter_1">
-                <div class="card-body">
+            <div class="card p-3 counter_1">
+                <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Closed Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="completedTicketsCount">{{ $completedTickets }}</h1>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -219,7 +219,7 @@
         </div>
 
         <div class="col-lg-6">
-            <div class="card p-4 h-100 filter">
+            <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
                 </div>
@@ -278,13 +278,13 @@
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 border-0 animate-gradient">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
 
-                    <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" alt="">
+                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
+                        style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>
@@ -292,7 +292,7 @@
     {{-- <div class="row mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Total Assigned</p>
                     </div>
@@ -310,7 +310,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Open</p>
                     </div>
@@ -328,7 +328,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">In Progress</p>
                     </div>
@@ -346,7 +346,7 @@
 
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card">
-                <div class="card-body">
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="fw-normal mb-0">Closed</p>
                     </div>
@@ -365,7 +365,7 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-body">
+                <div>
                     <div class="row gy-3">
                         <div class="d-flex align-items-center justify-content-between">
                             <h5 class="mb-2">Filters</h5>
