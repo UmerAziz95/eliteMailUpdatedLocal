@@ -158,7 +158,7 @@ class PanelController extends Controller
  {
     $user = Auth::user();
 
-    // Find the order panel with relationships of...
+    // Find the order panel with relationships of.....
     $order_panel = OrderPanel::where('id', $order_panel_id)
         ->with(['panel', 'order.orderInfo'])
         ->first();

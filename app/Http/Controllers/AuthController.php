@@ -447,7 +447,7 @@ class AuthController extends Controller
           
            
             return view('modules.auth.company_onboarding',['publicPage'=>true,'encrypted'=>$encrypted]);
-        }
+        } 
 
 
 
@@ -465,7 +465,7 @@ public function companyOnBoardingStore(Request $request)
         ]);
 
         $data = [
-            'user_id' => auth()->id() ?? 1, // Replace 1 with dynamic user if available
+            'user_id' => auth()->id() ?? 1, // Replace with dynamic user if available
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'role' => $request->input('role'),
@@ -500,7 +500,7 @@ public function resendVerificationEmail(Request $request)
 {
     
     try {
-        // Retrieve email from session
+        // Retrieve email from session of usr
         $email = session('verifyEmail');
 
         if (!$email) {
