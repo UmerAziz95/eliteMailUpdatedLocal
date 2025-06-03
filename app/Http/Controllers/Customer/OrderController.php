@@ -792,14 +792,15 @@ class OrderController extends Controller
     
     /**
      * Split large orders across multiple new panels
-     */
+    */
+
     private function splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
     {
         $remainingSpace = $totalSpaceNeeded;
         $splitNumber = 1;
         $domainsProcessed = 0;
         
-        while ($remainingSpace > 0 && $splitNumber <= 10) { // Safety check to prevent infinite loops
+        while ($remainingSpace > 0 && $splitNumber <= 20) { // Safety check to prevent infinite loops
             $spaceForThisPanel = min(1790, $remainingSpace);
             $domainsForThisPanel = ceil($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
             
@@ -808,7 +809,7 @@ class OrderController extends Controller
             $actualSpaceUsed = count($domainsToAssign) * $reorderInfo->inboxes_per_domain;
             
             $panel = null;
-            
+
             // If remaining space is less than 1790, first try to fill existing panels
             if ($remainingSpace < 1790) {
                 // Try to find existing panel with sufficient space
@@ -981,6 +982,10 @@ class OrderController extends Controller
             
             // Update panel remaining capacity
             $panel->decrement('remaining_limit', $spaceToAssign);
+            // Ensure remaining_limit never goes below 0
+            if ($panel->remaining_limit < 0) {
+                $panel->update(['remaining_limit' => 0]);
+            }
             
             Log::info("Successfully assigned domains to panel", [
                 'panel_id' => $panel->id,
