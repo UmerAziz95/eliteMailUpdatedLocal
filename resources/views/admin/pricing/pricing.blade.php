@@ -1807,6 +1807,7 @@
 
             function addVolumeItem(data = null) {
                 const item = data ? {
+                    id: data.id || null, // Include ID for existing items
                     name: data.name || '',
                     description: data.description || '',
                     min_inbox: data.min_inbox || '',
@@ -1816,6 +1817,7 @@
                     features: data.features || [],
                     feature_values: data.feature_values || []
                 } : {
+                    id: null, // New items don't have ID
                     name: '',
                     description: '',
                     min_inbox: '',
@@ -1827,7 +1829,7 @@
                 };
 
                 const itemHtml = `
-                <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}">
+                <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}" data-item-id="${item.id || ''}">
                     <div class="d-flex justify-content-between align-items-center ">
                         <h6 class="mb-0">Tier ${volumeItemIndex + 1}</h6>
                         <button type="button" class="btn btn-sm btn-outline-danger remove-volume-item">
@@ -1840,6 +1842,7 @@
                             <div class="">
                                 <label class="form-label">Tier Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control volume-name" name="volume_items[${volumeItemIndex}][name]" value="${item.name}" required>
+                                ${item.id ? `<input type="hidden" class="volume-id" name="volume_items[${volumeItemIndex}][id]" value="${item.id}">` : ''}
                             </div>
                         </div>
                         <div class="col-md-6 mb-3" style="display:none;">
@@ -2483,6 +2486,7 @@
                     const $item = $(this);
 
                     // Get values with proper validation
+                    const itemId = $item.data('item-id') || $item.find('.volume-id').val() || null;
                     const nameVal = $item.find('.volume-name').val();
                     const minInboxVal = $item.find('.volume-min-inbox').val();
                     const maxInboxVal = $item.find('.volume-max-inbox').val();
@@ -2506,7 +2510,7 @@
                         }
                     });
 
-                    items.push({
+                    const itemData = {
                         name: name,
                         description: $item.find('.volume-description').val() || '',
                         min_inbox: minInbox,
@@ -2515,7 +2519,14 @@
                         duration: $item.find('.volume-duration').val() || 'monthly',
                         features: features,
                         feature_values: featureValues
-                    });
+                    };
+
+                    // Include ID only if it exists (for existing items)
+                    if (itemId) {
+                        itemData.id = itemId;
+                    }
+
+                    items.push(itemData);
                 });
                 return items;
             }
