@@ -193,8 +193,9 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'User already exists. A verification email has been sent. Please verify your email to continue.',
+            'message' => 'User already exists. We have sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!',
             'user' => $existingUser,
+            'verificationLink'=>$verificationLink
         ], 200);
     }
 
@@ -280,9 +281,10 @@ class AuthController extends Controller
     }
 
     return response()->json([
-        'message' => 'User registered successfully! We have sent you a verification email. Please verify your email address to proceed.',
+        'message' => 'User registered successfully! We have sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!',
         'redirect' => $this->redirectTo($user),
         'user' => $user,
+        'verificationLink'=>$$verificationLink
     ], 200);
 } 
 
@@ -369,12 +371,24 @@ class AuthController extends Controller
         ]);
     }
 
-    public function showVerifyEmailForm(Request $request,$encrypted){
+   public function showVerifyEmailForm(Request $request, $encrypted)
+{
+    try {
+        $decrypted = Crypt::decryptString($encrypted);
+        [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
 
-       return view('modules.auth.verify_email', [
-            'encrypted' => $encrypted
+        $user = User::where('email', $email)->firstOrFail();
+        session(['verifyEmail' => $user->email]);
+
+        return view('modules.auth.verify_email', [
+            'encrypted' => $encrypted,
         ]);
+    } catch (\Exception $e) {
+        // Handle invalid token or user not found
+        return redirect()->route('register')->withErrors(['error' => 'Invalid or expired verification link.']);
     }
+}
+
 
    // Handle the form submission and verification
         public function VerifyEmailNow(Request $request)
@@ -421,14 +435,13 @@ class AuthController extends Controller
         }
 
 
-        public function viewPublicPlans(Request $request,$encrypted){
+            public function viewPublicPlans(Request $request,$encrypted){
          
             $getMostlyUsed = Plan::getMostlyUsed();
             $plans = Plan::with('features')->where('is_active', true)->get();
             $publicPage=true;
             return view('customer.public_outside.plans', compact('plans', 'getMostlyUsed','publicPage','encrypted'));
         } 
-
 
         public function companyOnBoarding(Request $request,$encrypted){
           
@@ -440,8 +453,6 @@ class AuthController extends Controller
 
 public function companyOnBoardingStore(Request $request)
 {
-    
-
             $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -483,5 +494,45 @@ public function companyOnBoardingStore(Request $request)
     }
    
 }
+
+
+public function resendVerificationEmail(Request $request)
+{
+    
+    try {
+        // Retrieve email from session
+        $email = session('verifyEmail');
+
+        if (!$email) {
+            return back()->withErrors(['error' => 'Verification email session not found.']);
+        }
+        
+
+        // Find user by email
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return back()->withErrors(['email' => 'User not found.']);
+        }
+        // Generate new OTP
+        $verificationCode = rand(1000, 9999);
+        $user->email_verification_code = $verificationCode;
+        $user->save();
+        $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+        $newEncrypted = Crypt::encryptString($payload); 
+    
+         try {
+        Mail::to($user->email)->queue(new EmailVerificationMail($user, ''));
+        } catch (\Exception $e) {
+            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+        }   
+        return redirect()->to(url('/email_verification/' . $newEncrypted))
+                         ->with('success', 'A new verification code has been sent to your email.');
+                         
+    } catch (\Exception $e) {
+        \Log::error('Resend verification failed: ' . $e->getMessage());
+        return back()->withErrors(['error' => 'Something went wrong while resending the verification code.']);
+    }
+}
+
 
 }

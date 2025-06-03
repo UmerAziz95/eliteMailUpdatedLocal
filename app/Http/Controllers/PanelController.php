@@ -155,7 +155,7 @@ class PanelController extends Controller
 
 
  public function assignPanelToUser(Request $request, $order_panel_id)
-{
+ {
     $user = Auth::user();
 
     // Find the order panel with relationships of...
@@ -167,7 +167,7 @@ class PanelController extends Controller
         return response()->json(['message' => 'Order panel not found.'], 404);
     }
 
-    $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)
+       $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)
         ->where('order_id', $order_panel->order_id)
         ->first();
 
@@ -203,12 +203,31 @@ class PanelController extends Controller
     $order_panel->status = 'assigned'; // or a status code like 1
     $order_panel->save();
 
-    return response()->json(['message' => 'Panel assigned successfully.'], 200);
-}
+      return response()->json(['message' => 'Panel assigned successfully.'], 200);
+    }
 
 
         public function showAssingedPanelDetail(Request $request, $assigned_panel_id ){
             $assignedPanel=UserOrderPanelAssignment::where('id',$assigned_panel_id)->first();
+            if (!$assignedPanel) {
+                return response()->json(['message' => 'Assigned panel not found.'], 404);
+            }
+            $orderPanel = OrderPanel::with(['panel', 'order.orderInfo'])
+                ->where('id', $assignedPanel->order_panel_id)
+                ->first();
+
+            if (!$orderPanel) {
+                return response()->json(['message' => 'Order panel not found.'], 404);
+            }
+
+            $orderPanelSplit = OrderPanelSplit::where('id', $assignedPanel->order_panel_split_id)
+                ->first();
+
+            if(!$orderPanelSplit){
+            return repsonse()->json(['message' => 'Order panel split not found.'], 404);
+            }else{
+                return response()->json(['orderPanelSplit'=>$orderPanelSplit],200);
+            }
 
             
         }

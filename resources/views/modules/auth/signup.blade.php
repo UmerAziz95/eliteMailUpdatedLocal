@@ -213,11 +213,15 @@
                 url: "{{ route('register') }}",
                 type: "POST",
                 data: $(this).serialize(),
-                success: function(response) {
-                    toastr.info(response.message || "We have send you a verification email please verify your email address for smooth login, Thanks")
-                     submitBtn.prop("disabled", false).text("Submitted");
-                        //  console.log(response)
-                        // setTimeout(() => window.location.href = response.redirect, 2000);
+                success: function(response) { 
+                toastr.info(response.message || "We've sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!");                     submitBtn.prop("disabled", false).text("Submitted");
+                     setTimeout(() => {
+
+                         window.location.href=response.verificationLink;
+    
+                     }, 5000);
+                    
+                     
                 },
                 error: function(xhr) {
                     submitBtn.prop("disabled", false).text("Register");

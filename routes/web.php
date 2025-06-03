@@ -76,6 +76,7 @@ Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->nam
 Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
 //verfiy email address
 Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
+Route::get('/resend-verfication-code/{encrypted}', [AuthController::class, 'resendVerificationEmail'])->name('resend.verification');
 Route::post('/verify-email', [AuthController::class, 'VerifyEmailNow'])->name('verify.email.code');
 Route::get('/onboarding/{encrypted}', [AuthController::class, 'companyOnBoarding'])->name('company.onboarding');
 Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore'])->name('company.onboarding.store');

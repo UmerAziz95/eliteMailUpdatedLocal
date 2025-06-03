@@ -1,5 +1,6 @@
 @extends('customer.layouts.app')
 @push('styles')
+
 <style>
     .pricing-card {
         background-color: var(--secondary-color);
@@ -81,6 +82,7 @@
     <div class="row justify-content-center align-items-center m-auto">
         <div class="col-md-12 mt-3  d-flex justify-content-center align-items-center">
             {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
+            @if(count($plans)>0)
             <div class="row g-5 mt-5" id="plans-container">
                 @foreach($plans as $plan)
                 <div class="col-md-4 mt-4 " id="plan-{{ $plan->id }}">
@@ -115,6 +117,20 @@
                 </div>
                 @endforeach
             </div>
+            @else
+
+            <div class="alert mt-5 p-4 text-center" style="background-color: #7367ef">
+                <p
+                    style="font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 1.6rem; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #000000; text-shadow: 1px 1px 1px rgba(0,0,0,0.1);">
+                    No plans available at the moment.
+                </p>
+                <p
+                    style="font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.1rem; margin-top: 15px; color: #000000;">
+                    Please check back later.
+                </p>
+            </div>
+
+            @endif
         </div>
     </div>
 </div>
