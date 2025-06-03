@@ -319,7 +319,7 @@
                                                 unlimited):</label>
                                             <input type="number" class="form-control mb-3"
                                                 id="max_inbox{{ $plan->id }}" name="max_inbox"
-                                                value="{{ $plan->max_inbox }}" min="0" step="1" required>
+                                                value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1" required>
                                             <small class="text-muted">Use 0 for unlimited</small>
                                         </div>
                                             </div>
@@ -1864,7 +1864,7 @@
                         <div class="col-md-4 mb-2">
                             <div class="">
                                 <label class="form-label">Max Inboxes <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox}" min="0" step="1">
+                                <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox || '0'}" min="0" step="1">
                                 <small class="opacity-75">Set to 0 for unlimited</small>
                             </div>
                         </div>

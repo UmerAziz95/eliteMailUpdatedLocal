@@ -176,7 +176,6 @@ class MasterPlanController extends Controller
                     'internal_name' => $request->internal_name,
                     'description' => $request->description,
                 ]);
-                
                 // Delete existing volume items
                 $masterPlan->volumeItems()->delete();
                 
@@ -191,19 +190,20 @@ class MasterPlanController extends Controller
                 
                 $message = 'Master plan created successfully';
             }
-
             // Create volume items in plans table
             foreach ($volumeItems as $volumeItem) {
                 $plan = Plan::create([
                     'master_plan_id' => $masterPlan->id,
-                    'name' => $request->external_name . ' (' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? '∞' : $volumeItem['max_inbox']) . ' inboxes)',
-                    'description' => 'Volume pricing tier for ' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? 'unlimited' : $volumeItem['max_inbox']) . ' inboxes',
+                    'name' => $volumeItem['name'],
+                    // 'name' => $volumeItem['name'] . ' (' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? '∞' : $volumeItem['max_inbox']) . ' inboxes)',
+                    'description' => $volumeItem['description'] . ' pricing tier for ' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? 'unlimited' : $volumeItem['max_inbox']) . ' inboxes',
                     'price' => $volumeItem['price'],
                     'duration' => 'monthly',
                     'min_inbox' => $volumeItem['min_inbox'],
                     'max_inbox' => $volumeItem['max_inbox'],
                     'is_active' => true,
-                ]);                // Attach features to this volume tier if any
+                ]);                
+                // Attach features to this volume tier if any
                 if (!empty($volumeItem['features'])) {
                     $featureData = [];
                     $featureValues = $volumeItem['feature_values'] ?? [];
@@ -332,7 +332,8 @@ class MasterPlanController extends Controller
 
             // Update the price with new tiers
             $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::update($priceId, [
-                'name' => $masterPlan->external_name . ' Volume Price',
+                'name' => $masterPlan->external_name . ' Plan',
+                'external_name' => $masterPlan->external_name,
                 'tiers' => $tiers,
                 'status' => 'active'
             ]);
@@ -399,7 +400,8 @@ class MasterPlanController extends Controller
                 // Create item price for the master plan with volume pricing and tiers
                 $priceParams = [
                     'id' => $uniqueId . '_price',
-                    'name' => $masterPlan->external_name . ' Volume Price',
+                    'name' => $masterPlan->external_name . ' Plan',
+                    'external_name' => $masterPlan->external_name,
                     'item_id' => $result->item()->id,
                     'pricing_model' => 'volume',
                     'period_unit' => 'month',
