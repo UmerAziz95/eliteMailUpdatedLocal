@@ -154,28 +154,83 @@ class PanelController extends Controller
     }
 
 
-    public function assignPanelToUser(Request $request, $order_panel_id){
-        $request->validate([
-            'order_panel_id' => 'required|exists:order_panel,id',
-            
-        ]);
-        $user=Auth::user();
-        $order_panel = OrderPanel::where('id',$order_panel_id)->with(['panel','order.orderInfo'])->first();
-        $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)->where('order_id', $order_panel->order_id)->first();   
-        if(!$order_panel){
-            return response()->json(['message' => 'Order panel not found'], 404);
-        }else{
-            UserOrderPanelAssignment::updateOrCreate(
-                ['order_panel_id' => $order_panel->id, 'user_id' => $user->id],
-                ['order_id' => $order_panel->order_id],
-                ['contractor_id' => $user->id],
-                ['order_panel_split_id' =>$order_panel_split->id],
-            );
-            
+ public function assignPanelToUser(Request $request, $order_panel_id)
+ {
+    $user = Auth::user();
 
+    // Find the order panel with relationships of...
+    $order_panel = OrderPanel::where('id', $order_panel_id)
+        ->with(['panel', 'order.orderInfo'])
+        ->first();
 
-        }
-      
-     
+    if (!$order_panel) {
+        return response()->json(['message' => 'Order panel not found.'], 404);
     }
+
+       $order_panel_split = OrderPanelSplit::where('order_panel_id', $order_panel->id)
+        ->where('order_id', $order_panel->order_id)
+        ->first();
+
+    if (!$order_panel_split) {
+        return response()->json(['message' => 'Order panel split not found.'], 404);
+    }
+
+    // Check if this panel is already assigned to another user
+    $existingAssignment = UserOrderPanelAssignment::where([
+        'order_panel_id' => $order_panel->id,
+        'order_id' => $order_panel->order_id,                       
+        'order_panel_split_id' => $order_panel_split->id,
+    ])->first();
+
+    if ($existingAssignment && $existingAssignment->user_id !== $user->id) {
+        return response()->json(['message' => 'This panel is already assigned to another user.'], 403);
+    }
+
+    // Create or update the assignment
+    UserOrderPanelAssignment::updateOrCreate(
+        [
+            'order_panel_id' => $order_panel->id,
+            'user_id' => $user->id,
+        ],
+        [
+            'order_id' => $order_panel->order_id,
+            'contractor_id' => $user->id,
+            'order_panel_split_id' => $order_panel_split->id,
+        ]
+    );
+
+    // Update the status of the order panel (example: to "assigned")
+    $order_panel->status = 'assigned'; // or a status code like 1
+    $order_panel->save();
+
+      return response()->json(['message' => 'Panel assigned successfully.'], 200);
+    }
+
+
+        public function showAssingedPanelDetail(Request $request, $assigned_panel_id ){
+            $assignedPanel=UserOrderPanelAssignment::where('id',$assigned_panel_id)->first();
+            if (!$assignedPanel) {
+                return response()->json(['message' => 'Assigned panel not found.'], 404);
+            }
+            $orderPanel = OrderPanel::with(['panel', 'order.orderInfo'])
+                ->where('id', $assignedPanel->order_panel_id)
+                ->first();
+
+            if (!$orderPanel) {
+                return response()->json(['message' => 'Order panel not found.'], 404);
+            }
+
+            $orderPanelSplit = OrderPanelSplit::where('id', $assignedPanel->order_panel_split_id)
+                ->first();
+
+            if(!$orderPanelSplit){
+            return repsonse()->json(['message' => 'Order panel split not found.'], 404);
+            }else{
+                return response()->json(['orderPanelSplit'=>$orderPanelSplit],200);
+            }
+
+            
+        }
+
+
 }
