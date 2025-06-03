@@ -807,16 +807,44 @@ class OrderController extends Controller
             $domainsToAssign = array_slice($domains, $domainsProcessed, $domainsForThisPanel);
             $actualSpaceUsed = count($domainsToAssign) * $reorderInfo->inboxes_per_domain;
             
-            // Create panel with 1790 capacity
-            $panel = $this->createSinglePanel(1790);
+            $panel = null;
+            
+            // If remaining space is less than 1790, first try to fill existing panels
+            if ($remainingSpace < 1790) {
+                // Try to find existing panel with sufficient space
+                $existingPanel = Panel::where('is_active', true)
+                    ->where('remaining_limit', '>=', $actualSpaceUsed)
+                    ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
+                    ->first();
+                
+                if ($existingPanel) {
+                    $panel = $existingPanel;
+                    Log::info("Using existing panel #{$panel->id} for remaining space < 1790", [
+                        'remaining_space' => $remainingSpace,
+                        'space_needed' => $actualSpaceUsed,
+                        'panel_available_space' => $panel->remaining_limit
+                    ]);
+                }
+            }
+            
+            // If no suitable existing panel found or remaining space >= 1790, create new panel
+            if (!$panel) {
+                $panel = $this->createSinglePanel(1790);
+                Log::info("Created new panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                    'remaining_space' => $remainingSpace,
+                    'space_needed' => $actualSpaceUsed,
+                    'reason' => $remainingSpace >= 1790 ? 'remaining_space >= 1790' : 'no_existing_panel_available'
+                ]);
+            }
             
             // Assign domains to this panel
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainsToAssign, $actualSpaceUsed, $splitNumber);
             
-            Log::info("Created panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+            Log::info("Assigned to panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                 'space_used' => $actualSpaceUsed,
                 'domains_count' => count($domainsToAssign),
-                'remaining_space' => $remainingSpace - $actualSpaceUsed
+                'remaining_space' => $remainingSpace - $actualSpaceUsed,
+                'panel_type' => $panel->wasRecentlyCreated ? 'new' : 'existing'
             ]);
             
             $remainingSpace -= $actualSpaceUsed;
@@ -840,7 +868,7 @@ class OrderController extends Controller
         // Get all panels with available space, ordered by remaining space (least first for optimal allocation)
         $availablePanels = Panel::where('is_active', true)
             ->where('remaining_limit', '>', 0)
-            ->orderBy('remaining_limit', 'asc')
+            ->orderBy('remaining_limit', 'desc')
             ->get();
         
         if ($availablePanels->isEmpty()) {
@@ -902,7 +930,7 @@ class OrderController extends Controller
     {
         return Panel::where('is_active', true)
             ->where('remaining_limit', '>=', $spaceNeeded)
-            ->orderBy('remaining_limit', 'asc') // Use panel with least available space first
+            ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
     }
     
