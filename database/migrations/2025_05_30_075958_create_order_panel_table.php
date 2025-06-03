@@ -21,6 +21,8 @@ class CreateOrderPanelTable extends Migration
 
             // Additional metadata
             $table->decimal('space_assigned', 10, 2)->nullable();
+            // inboxes_per_domain
+            $table->integer('inboxes_per_domain')->default(0);
             $table->string('status')->nullable(); // e.g., unallocated, allocated, rejected, inprogress, completed
             $table->longText('note')->nullable();
 

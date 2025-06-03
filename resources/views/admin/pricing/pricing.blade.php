@@ -4,6 +4,34 @@
 
 @push('styles')
     <style>
+        .is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .invalid-feedback, .range-error {
+            display: block !important;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+
+        .required-field::before {
+            content: "* ";
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .form-validation-summary {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
         .pricing-card {
             background-color: var(--secondary-color);
             box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px;
@@ -279,20 +307,21 @@
                                         </div>
                                         <div class="col-md-12">
                                             <h5 class="mt-2">Inbox Limits</h5>
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
-                                                    <input type="number" class="form-control mb-3"
-                                                        id="min_inbox{{ $plan->id }}" name="min_inbox"
-                                                        value="{{ $plan->min_inbox }}" min="0" required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
-                                                        unlimited):</label>
-                                                    <input type="number" class="form-control mb-3"
-                                                        id="max_inbox{{ $plan->id }}" name="max_inbox"
-                                                        value="{{ $plan->max_inbox }}" min="0" required>
-                                                </div>
+                                            <div class="row">                                        <div class="col-md-6">
+                                            <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
+                                            <input type="number" class="form-control mb-3"
+                                                id="min_inbox{{ $plan->id }}" name="min_inbox"
+                                                value="{{ $plan->min_inbox }}" min="1" step="1" required>
+                                            <small class="text-muted">Must be 1 or greater</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
+                                                unlimited):</label>
+                                            <input type="number" class="form-control mb-3"
+                                                id="max_inbox{{ $plan->id }}" name="max_inbox"
+                                                value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1" required>
+                                            <small class="text-muted">Use 0 for unlimited</small>
+                                        </div>
                                             </div>
                                         </div>
                                     </div>
@@ -425,12 +454,14 @@
                                         <div class="col-md-6">
                                             <label for="min_inbox">Min Inboxes:</label>
                                             <input type="number" class="form-control mb-3" id="min_inbox"
-                                                name="min_inbox" value="0" min="0" required>
+                                                name="min_inbox" value="1" min="1" step="1" required>
+                                            <small class="text-muted">Must be 1 or greater</small>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="max_inbox">Max Inboxes (0 for unlimited):</label>
                                             <input type="number" class="form-control mb-3" id="max_inbox"
-                                                name="max_inbox" value="0" min="0" required>
+                                                name="max_inbox" value="0" min="0" step="1" required>
+                                            <small class="text-muted">Use 0 for unlimited</small>
                                         </div>
                                     </div>
                                 </div>
@@ -592,6 +623,206 @@
                 });
             }
 
+
+            // Real-time validation for plan form inputs
+            $(document).on('input', 'input[name="price"], input[name="min_inbox"], input[name="max_inbox"]', function() {
+                const $input = $(this);
+                const value = $input.val();
+                const fieldName = $input.attr('name');
+                
+                // Remove any existing error styling
+                $input.removeClass('is-invalid');
+                $input.siblings('.invalid-feedback').remove();
+                
+                // Skip validation if field is empty (will be caught during form submission)
+                if (value === '') {
+                    return;
+                }
+                
+                // Validate based on field type
+                if (fieldName === 'price') {
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue) || numValue < 0) {
+                        $input.addClass('is-invalid');
+                        $input.after('<div class="invalid-feedback">Price must be a valid number (0 or greater)</div>');
+                    }
+                } else if (fieldName === 'min_inbox') {
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue) || numValue <= 0) {
+                        $input.addClass('is-invalid');
+                        $input.after('<div class="invalid-feedback">Min inboxes must be a whole number greater than 0</div>');
+                    }
+                } else if (fieldName === 'max_inbox') {
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue) || numValue < 0) {
+                        $input.addClass('is-invalid');
+                        $input.after('<div class="invalid-feedback">Max inboxes must be a whole number (0 for unlimited)</div>');
+                    }
+                }
+                
+                // Validate range for min/max inputs
+                validateInboxRange($input);
+            });
+
+            // Validate min/max inbox range relationship
+            function validateInboxRange($changedInput) {
+                const $form = $changedInput.closest('form');
+                const minInput = $form.find('input[name="min_inbox"]');
+                const maxInput = $form.find('input[name="max_inbox"]');
+                
+                const minVal = parseInt(minInput.val());
+                const maxVal = parseInt(maxInput.val());
+                
+                // Clear any existing range validation errors
+                minInput.siblings('.range-error').remove();
+                maxInput.siblings('.range-error').remove();
+                
+                // Only validate if both fields have valid values
+                if (!isNaN(minVal) && !isNaN(maxVal) && maxVal !== 0 && minVal > maxVal) {
+                    const errorMsg = '<div class="range-error text-danger small mt-1">Min inboxes cannot be greater than max inboxes</div>';
+                    minInput.after(errorMsg);
+                    maxInput.after(errorMsg);
+                    minInput.addClass('is-invalid');
+                    maxInput.addClass('is-invalid');
+                }
+            }
+
+            // Enhanced form validation with visual feedback
+            function validateFormCompleteness($form, formType = 'plan') {
+                let errors = [];
+                let hasEmptyFields = false;
+                
+                if (formType === 'masterplan') {
+                    // Validate master plan basic info
+                    const planName = $('#masterPlanExternalName').val().trim();
+                    const description = $('#masterPlanDescription').val().trim();
+                    
+                    if (!planName) {
+                        errors.push('Plan name is required');
+                        $('#masterPlanExternalName').addClass('is-invalid');
+                        hasEmptyFields = true;
+                    }
+                    
+                    if (!description) {
+                        errors.push('Plan description is required');
+                        $('#masterPlanDescription').addClass('is-invalid');
+                        hasEmptyFields = true;
+                    }
+                    
+                    // Validate volume tiers
+                    const volumeItems = collectVolumeItems();
+                    if (volumeItems.length === 0) {
+                        errors.push('At least one volume tier is required');
+                        hasEmptyFields = true;
+                    } else {
+                        volumeItems.forEach((item, index) => {
+                            if (!item.name || !item.name.trim()) {
+                                errors.push(`Tier ${index + 1}: Name is required`);
+                                hasEmptyFields = true;
+                            }
+                            if (item.min_inbox === null || item.min_inbox === undefined || item.min_inbox <= 0) {
+                                errors.push(`Tier ${index + 1}: Valid min inboxes is required (must be > 0)`);
+                                hasEmptyFields = true;
+                            }
+                            if (item.max_inbox === null || item.max_inbox === undefined) {
+                                errors.push(`Tier ${index + 1}: Max inboxes is required (use 0 for unlimited)`);
+                                hasEmptyFields = true;
+                            }
+                            if (item.price === null || item.price === undefined || item.price < 0) {
+                                errors.push(`Tier ${index + 1}: Valid price is required (must be ≥ 0)`);
+                                hasEmptyFields = true;
+                            }
+                        });
+                    }
+                } else {
+                    // Validate regular plan form
+                    const requiredFields = {
+                        'name': 'Plan name',
+                        'price': 'Price',
+                        'min_inbox': 'Min inboxes',
+                        'max_inbox': 'Max inboxes'
+                    };
+                    
+                    Object.keys(requiredFields).forEach(fieldName => {
+                        const $field = $form.find(`input[name="${fieldName}"], textarea[name="${fieldName}"]`);
+                        const value = $field.val();
+                        
+                        if (!value || value.trim() === '') {
+                            errors.push(`${requiredFields[fieldName]} is required`);
+                            $field.addClass('is-invalid');
+                            hasEmptyFields = true;
+                        } else if (fieldName === 'min_inbox' && parseInt(value) <= 0) {
+                            errors.push('Min inboxes must be greater than 0');
+                            $field.addClass('is-invalid');
+                            hasEmptyFields = true;
+                        } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseInt(value) < 0) {
+                            errors.push(`${requiredFields[fieldName]} cannot be negative`);
+                            $field.addClass('is-invalid');
+                            hasEmptyFields = true;
+                        }
+                    });
+                }
+                
+                if (hasEmptyFields) {
+                    const errorMessage = `<strong>Form validation failed:</strong><br>• ${errors.join('<br>• ')}`;
+                    showErrorToast(errorMessage);
+                    
+                    // Scroll to first invalid field
+                    const $firstInvalid = $('.is-invalid').first();
+                    if ($firstInvalid.length) {
+                        $firstInvalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        $firstInvalid.focus();
+                    }
+                    
+                    return false;
+                }
+                
+                return true;
+            }
+
+            // Prevent form submission with invalid inputs
+            $(document).on('submit', 'form', function(e) {
+                const $form = $(this);
+                const hasInvalidInputs = $form.find('.is-invalid').length > 0;
+                
+                if (hasInvalidInputs) {
+                    e.preventDefault();
+                    showErrorToast('Please fix all validation errors before submitting the form.');
+                    return false;
+                }
+            });
+
+            // Add visual feedback for field validation
+            $(document).on('input blur', 'input[required], textarea[required]', function() {
+                const $field = $(this);
+                const value = $field.val().trim();
+                
+                // Remove previous validation classes
+                $field.removeClass('is-invalid is-valid');
+                
+                if (value === '') {
+                    // Field is empty - show as invalid only on blur or if it was previously filled
+                    if (event.type === 'blur' || $field.data('was-filled')) {
+                        $field.addClass('is-invalid');
+                    }
+                } else {
+                    // Field has value - mark as valid and remember it was filled
+                    $field.addClass('is-valid').data('was-filled', true);
+                    
+                    // Additional validation for specific field types
+                    const fieldName = $field.attr('name');
+                    if (fieldName === 'min_inbox' && parseInt(value) <= 0) {
+                        $field.removeClass('is-valid').addClass('is-invalid');
+                    } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseFloat(value) < 0) {
+                        $field.removeClass('is-valid').addClass('is-invalid');
+                    }
+                }
+            });
+
+            // Clear validation styling when user starts typing
+            $(document).on('focus', 'input, textarea', function() {
+                $(this).siblings('.invalid-feedback, .range-error').remove();
+            });
 
             // Initial load of features
             loadFeatures();
@@ -799,6 +1030,15 @@
             // Submit new plan form
             $('#addPlanForm').submit(function(e) {
                 e.preventDefault();
+                
+                // Clear any previous validation styling
+                $(this).find('.is-invalid').removeClass('is-invalid');
+                
+                // Validate form completeness
+                if (!validateFormCompleteness($(this), 'plan')) {
+                    return;
+                }
+                
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
@@ -852,6 +1092,15 @@
             // Submit edit plan form
             $('.edit-plan-form').submit(function(e) {
                 e.preventDefault();
+                
+                // Clear any previous validation styling
+                $(this).find('.is-invalid').removeClass('is-invalid');
+                
+                // Validate form completeness
+                if (!validateFormCompleteness($(this), 'plan')) {
+                    return;
+                }
+                
                 const planId = $(this).data('id');
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
@@ -1273,8 +1522,10 @@
                     .done(function(response) {
                         if (response && response.id) {
                             $('#masterPlanExternalName').val(response.name || '');
-                            $('#masterPlanInternalName').val(response.chargebee_plan_id || response
-                                .name || '');
+                            // Generate internal name from external name instead of using stored value
+                            const generatedInternalName = generateInternalName(response.name || '');
+                            $('#masterPlanInternalName').val(generatedInternalName);
+                            $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
                             $('#masterPlanDescription').val(response.description || '');
                         }
                     })
@@ -1288,6 +1539,15 @@
                 const button = $(this);
                 button.prop('disabled', true).text('Saving...');
 
+                // Clear any previous validation styling
+                $('.is-invalid').removeClass('is-invalid');
+                
+                // Validate form completeness first
+                if (!validateFormCompleteness(null, 'masterplan')) {
+                    button.prop('disabled', false).text('Save Master Plan');
+                    return;
+                }
+
                 // Collect form data
                 const formData = {
                     external_name: $('#masterPlanExternalName').val(),
@@ -1297,16 +1557,37 @@
                     _token: '{{ csrf_token() }}'
                 };
 
-                // Validate volume items
-                if (formData.volume_items.length === 0) {
-                    showErrorToast('At least one volume tier is required.');
-                    button.prop('disabled', false).text('Save Master Plan');
-                    return;
-                }
-
                 // Validate each volume item for valid data and ranges
                 for (let i = 0; i < formData.volume_items.length; i++) {
                     const item = formData.volume_items[i];
+
+                    // Check for missing required data
+                    if (!item.name || !item.name.trim()) {
+                        showErrorToast(`Tier ${i + 1} name is required and cannot be empty.`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
+
+                    // Check for missing min_inbox value or if it's 0
+                    if (item.min_inbox === undefined || item.min_inbox === null || item.min_inbox === 0) {
+                        showErrorToast(`Tier ${i + 1} min inboxes is required and must be greater than 0.`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
+
+                    // Check for missing max_inbox value (note: 0 is valid for unlimited)
+                    if (item.max_inbox === undefined || item.max_inbox === null || item.max_inbox === '') {
+                        showErrorToast(`Tier ${i + 1} max inboxes is required. Use 0 for unlimited.`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
+
+                    // Check for missing price value or if it's negative
+                    if (item.price === undefined || item.price === null || item.price === '' || item.price < 0) {
+                        showErrorToast(`Tier ${i + 1} price is required and must be 0 or greater.`);
+                        button.prop('disabled', false).text('Save Master Plan');
+                        return;
+                    }
 
                     // Check for NaN or invalid values
                     if (isNaN(item.min_inbox) || isNaN(item.max_inbox) || isNaN(item.price)) {
@@ -1332,13 +1613,6 @@
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
                     }
-
-                    // Check for empty required fields
-                    if (!item.name || !item.name.trim()) {
-                        showErrorToast(`Tier ${i + 1} name is required.`);
-                        button.prop('disabled', false).text('Save Master Plan');
-                        return;
-                    }
                 }
 
                 // Enhanced volume tier range validation and gap detection
@@ -1352,21 +1626,14 @@
                     return;
                 }
 
-                // Ensure first tier starts from 1 or higher (1-based ranges)
+                // Ensure first tier starts from 1 (ChargeBee requirement)
                 const firstTier = sortedItems[0];
-                if (firstTier.min_inbox < 1) {
+                if (firstTier.min_inbox !== 1) {
                     showErrorToast(
-                        `First tier must start from 1 or higher for proper ranges. Currently starts at ${firstTier.min_inbox}.`
+                        `First tier must start at 1 inbox (ChargeBee requirement). Current first tier starts at ${firstTier.min_inbox}.`
                     );
                     button.prop('disabled', false).text('Save Master Plan');
                     return;
-                }
-
-                // If first tier doesn't start from 0, add a note for ChargeBee compatibility
-                if (firstTier.min_inbox > 1) {
-                    console.warn(
-                        `⚠️ Note: First tier starts at ${firstTier.min_inbox}, not 1. Consider using Auto-Fix to ensure continuous ranges.`
-                    );
                 }
 
                 for (let i = 0; i < sortedItems.length; i++) {
@@ -1435,11 +1702,11 @@
                         if (nextStart !== expectedNextStart) {
                             if (nextStart > expectedNextStart) {
                                 showErrorToast(
-                                    `ChargeBee API Error: Tier information is missing after ${currentEnd}. Tier ${tierNumber + 1} should start at ${expectedNextStart}, not ${nextStart}. Gap detected: [${expectedNextStart}-${nextStart - 1}] is not covered.`
+                                    `Gap detected between tiers. Tier ending at ${currentEnd} has a gap before the next tier starting at ${nextStart}. ChargeBee requires continuous tier ranges. Next tier should start at ${expectedNextStart}.`
                                 );
                             } else {
                                 showErrorToast(
-                                    `ChargeBee API Error: Overlap detected between Tier ${tierNumber} and Tier ${tierNumber + 1}. Tier ${tierNumber} ends at ${currentEnd}, but Tier ${tierNumber + 1} starts at ${nextStart}. Next tier must start at ${expectedNextStart}.`
+                                    `Overlapping ranges detected between tiers. Tier ending at ${currentEnd} overlaps with tier starting at ${nextStart}.`
                                 );
                             }
                             button.prop('disabled', false).text('Save Master Plan');
@@ -1518,8 +1785,29 @@
                 addVolumeItem();
             });
 
+            // Function to generate internal name from external name
+            function generateInternalName(externalName) {
+                return externalName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
+                    .replace(/\s+/g, '_') // Replace spaces with underscores
+                    .replace(/_+/g, '_') // Replace multiple underscores with single
+                    .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+            }
+
+            // Auto-generate internal name when external name changes
+            $(document).on('input', '#masterPlanExternalName', function() {
+                const externalName = $(this).val();
+                const internalName = generateInternalName(externalName);
+                $('#masterPlanInternalName').val(internalName);
+                
+                // Update preview
+                $('#internalNamePreview').text(internalName || 'plan_name_preview');
+            });
+
             function addVolumeItem(data = null) {
                 const item = data ? {
+                    id: data.id || null, // Include ID for existing items
                     name: data.name || '',
                     description: data.description || '',
                     min_inbox: data.min_inbox || '',
@@ -1529,6 +1817,7 @@
                     features: data.features || [],
                     feature_values: data.feature_values || []
                 } : {
+                    id: null, // New items don't have ID
                     name: '',
                     description: '',
                     min_inbox: '',
@@ -1540,7 +1829,7 @@
                 };
 
                 const itemHtml = `
-                <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}">
+                <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}" data-item-id="${item.id || ''}">
                     <div class="d-flex justify-content-between align-items-center ">
                         <h6 class="mb-0">Tier ${volumeItemIndex + 1}</h6>
                         <button type="button" class="btn btn-sm btn-outline-danger remove-volume-item">
@@ -1553,6 +1842,7 @@
                             <div class="">
                                 <label class="form-label">Tier Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control volume-name" name="volume_items[${volumeItemIndex}][name]" value="${item.name}" required>
+                                ${item.id ? `<input type="hidden" class="volume-id" name="volume_items[${volumeItemIndex}][id]" value="${item.id}">` : ''}
                             </div>
                         </div>
                         <div class="col-md-6 mb-3" style="display:none;">
@@ -1570,13 +1860,14 @@
                         <div class="col-md-4 mb-2">
                             <div class="">
                                 <label class="form-label">Min Inboxes <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control volume-min-inbox" name="volume_items[${volumeItemIndex}][min_inbox]" value="${item.min_inbox}" min="1" required>
+                                <input type="number" class="form-control volume-min-inbox" name="volume_items[${volumeItemIndex}][min_inbox]" value="${item.min_inbox}" min="1" step="1" required>
+                                <small class="text-muted">Must be 1 or greater</small>
                             </div>
                         </div>
                         <div class="col-md-4 mb-2">
                             <div class="">
                                 <label class="form-label">Max Inboxes <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox}" min="0">
+                                <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox || '0'}" min="0" step="1">
                                 <small class="opacity-75">Set to 0 for unlimited</small>
                             </div>
                         </div>
@@ -1587,6 +1878,7 @@
                                     <span class="input-group-text">$</span>
                                     <input type="number" class="form-control volume-price" name="volume_items[${volumeItemIndex}][price]" value="${item.price}" step="0.01" min="0" required>
                                 </div>
+                                <small class="text-muted">Must be 0 or greater</small>
                             </div>
                         </div>
                     </div>
@@ -1665,11 +1957,55 @@
                     return;
                 }
 
+                // Special validation for min_inbox - must be at least 1
+                if ($(this).hasClass('volume-min-inbox') && intValue === 0) {
+                    $(this).val('');
+                    showErrorToast('Min inboxes must be 1 or greater. Use Auto-Fix to create proper ranges.');
+                    return;
+                }
+
                 // Set the cleaned value
                 $(this).val(intValue);
 
                 // Validate range after input
                 validateVolumeItemRange($(this).closest('.volume-item'));
+            });
+
+            // Add similar validation for regular plan inputs
+            $(document).on('input', 'input[name="min_inbox"]', function() {
+                let value = $(this).val();
+                
+                if (value === '') {
+                    return;
+                }
+                
+                let intValue = parseInt(value);
+                
+                if (isNaN(intValue) || intValue <= 0) {
+                    $(this).val('');
+                    showErrorToast('Min inboxes must be 1 or greater.');
+                    return;
+                }
+                
+                $(this).val(intValue);
+            });
+
+            $(document).on('input', 'input[name="max_inbox"]', function() {
+                let value = $(this).val();
+                
+                if (value === '') {
+                    return;
+                }
+                
+                let intValue = parseInt(value);
+                
+                if (isNaN(intValue) || intValue < 0) {
+                    $(this).val('');
+                    showErrorToast('Max inboxes must be 0 or greater (0 = unlimited).');
+                    return;
+                }
+                
+                $(this).val(intValue);
             });
 
             // Validate individual volume item range with enhanced feedback (ChargeBee compatible)
@@ -2150,11 +2486,17 @@
                     const $item = $(this);
 
                     // Get values with proper validation
-                    const minInbox = parseInt($item.find('.volume-min-inbox').val()) || 0;
+                    const itemId = $item.data('item-id') || $item.find('.volume-id').val() || null;
+                    const nameVal = $item.find('.volume-name').val();
+                    const minInboxVal = $item.find('.volume-min-inbox').val();
                     const maxInboxVal = $item.find('.volume-max-inbox').val();
-                    const maxInbox = maxInboxVal === '' || maxInboxVal === null ? 0 : (parseInt(
-                        maxInboxVal) || 0);
-                    const price = parseFloat($item.find('.volume-price').val()) || 0;
+                    const priceVal = $item.find('.volume-price').val();
+                    
+                    // Parse values, treating empty strings appropriately
+                    const name = nameVal ? nameVal.trim() : '';
+                    const minInbox = minInboxVal === '' ? null : (parseInt(minInboxVal) || 0);
+                    const maxInbox = maxInboxVal === '' ? null : (parseInt(maxInboxVal) || 0);
+                    const price = priceVal === '' ? null : (parseFloat(priceVal) || 0);
 
                     // Collect selected features with values for this volume item
                     const features = [];
@@ -2168,8 +2510,8 @@
                         }
                     });
 
-                    items.push({
-                        name: $item.find('.volume-name').val() || '',
+                    const itemData = {
+                        name: name,
                         description: $item.find('.volume-description').val() || '',
                         min_inbox: minInbox,
                         max_inbox: maxInbox,
@@ -2177,7 +2519,14 @@
                         duration: $item.find('.volume-duration').val() || 'monthly',
                         features: features,
                         feature_values: featureValues
-                    });
+                    };
+
+                    // Include ID only if it exists (for existing items)
+                    if (itemId) {
+                        itemData.id = itemId;
+                    }
+
+                    items.push(itemData);
                 });
                 return items;
             }
@@ -2369,11 +2718,12 @@
                     .done(function(response) {
                         if (response.success && response.data) {
                             const plan = response.data;
-
                             // Fill basic information with safe fallbacks
                             $('#masterPlanExternalName').val(plan.external_name || '');
-                            $('#masterPlanInternalName').val(plan.chargebee_plan_id || plan.internal_name ||
-                                '');
+                            // Generate internal name from external name instead of using stored value
+                            const generatedInternalName = generateInternalName(plan.external_name || '');
+                            $('#masterPlanInternalName').val(generatedInternalName);
+                            $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
                             $('#masterPlanDescription').val(plan.description || '');
 
                             // Clear and add volume items
@@ -2403,6 +2753,7 @@
             $('#masterPlanModal').on('hidden.bs.modal', function() {
                 $('#masterPlanForm')[0].reset();
                 $('#volumeItemsContainer').empty();
+                $('#internalNamePreview').text('plan_name_preview');
                 volumeItemIndex = 0;
             });
 
@@ -2433,23 +2784,20 @@
                                 <h6 class="mb-0 theme-text"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
                             </div>
                             <div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <div>
-                                            <label for="masterPlanExternalName" class="form-label">External Name <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="masterPlanExternalName"
-                                                required>
-                                            <small class="opacity-50">This will be shown to customers</small>
-                                        </div>
+                    
+                                <div class="row">                                <div class="col-md-12 mb-2">
+                                    <div>
+                                        <label for="masterPlanExternalName" class="form-label">Plan Name <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="masterPlanExternalName"
+                                            required>
+                                        <small class="opacity-50" style="display: none;">This will be shown to customers</small>
+                                        <small class="text-muted d-block mt-1" style="display: none !important;">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
                                     </div>
-                                    <div class="col-md-6 mb-2">
+                                </div>
+                                    <div class="col-md-6 mb-2" style="display: none;">
                                         <div>
-                                            <label for="masterPlanInternalName" class="form-label">Internal Name <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="masterPlanInternalName"
-                                                required>
-                                            <small class="opacity-50">Used for internal references and Chargebee</small>
+                                            <input type="hidden" class="form-control" id="masterPlanInternalName">
                                         </div>
                                     </div>
                                     <div class="col-12">

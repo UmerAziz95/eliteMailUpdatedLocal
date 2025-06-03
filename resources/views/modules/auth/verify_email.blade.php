@@ -83,8 +83,9 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Enter Four Digits code</h5>
+                            <h5 class="fw-bold">Enter Four Digits Code</h5>
 
+                            {{-- Success Message --}}
                             @if (session('success'))
                             <div class="alert alert-success">
                                 {{ session('success') }}
@@ -94,7 +95,7 @@
                             {{-- Error Messages --}}
                             @if ($errors->any())
                             <div class="alert alert-danger">
-                                <ul style="margin: 0; padding-left: 20px;">
+                                <ul class="mb-0 ps-3">
                                     @foreach ($errors->all() as $error)
                                     <li>{{ $error }}</li>
                                     @endforeach
@@ -102,26 +103,20 @@
                             </div>
                             @endif
 
-                           
+                            {{-- Verification Code Form --}}
                             <form action="{{ route('verify.email.code') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="email" value="{{ old('email', request()->email) }}">
-                                <!-- Pass email if needed -->
-
                                 <input type="hidden" name="encrypted" value="{{ $encrypted }}">
 
                                 <div class="mb-4">
                                     <label for="code" class="form-label text-white">Enter the 4-digit code sent to your
                                         email</label>
                                     <div class="d-flex gap-2 justify-content-between">
-                                        <input type="text" name="code[]" maxlength="1" class="form-control text-center"
-                                            required oninput="moveToNext(this, 1)">
-                                        <input type="text" name="code[]" maxlength="1" class="form-control text-center"
-                                            required oninput="moveToNext(this, 2)">
-                                        <input type="text" name="code[]" maxlength="1" class="form-control text-center"
-                                            required oninput="moveToNext(this, 3)">
-                                        <input type="text" name="code[]" maxlength="1" class="form-control text-center"
-                                            required oninput="moveToNext(this, 4)">
+                                        @for ($i = 1; $i <= 4; $i++) <input type="text" name="code[]" maxlength="1"
+                                            class="form-control text-center" required
+                                            oninput="moveToNext(this, {{ $i }})">
+                                            @endfor
                                     </div>
                                 </div>
 
@@ -133,30 +128,53 @@
                                 </div>
                             </form>
 
-                            <div class="mt-3 text-center">
+                            <div class="mt-3 text-center d-flex flex-column gap-2">
                                 <a href="{{ route('login') }}" class="theme-text text-decoration-none">
                                     <i class="fa-solid fa-chevron-left"></i> Back to login
+                                </a>
+
+                                {{-- Use named route if available, fallback to url with absolute path --}}
+                                <a href="#" class="theme-text text-decoration-none resendVerification">
+                                    <i class="fa-solid fa-rotate-right"></i> Resend verification email
                                 </a>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </section>
         </div>
     </div>
 
-    <script>
-        function moveToNext(current, index) {
+
+
+
+</body>
+
+</html>
+
+<script>
+    function moveToNext(current, index) {
         if (current.value.length === 1) {
             const next = current.parentElement.querySelectorAll('input')[index];
             if (next) {
                 next.focus();
             }
         }
-    }
-    </script>
+       }
+        document.addEventListener('DOMContentLoaded', function () { 
+            const resendBtn = document.querySelector('.resendVerification');
+            if (resendBtn) {
+                resendBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // Pass the encrypted URL from Blade as a string
+                    const url = @json(url('resend-verfication-code/' . $encrypted))
+                
+                    window.location.href=url
+                });
+            }
+        });
 
 
-</body>
-
-</html>
+</script>

@@ -54,9 +54,10 @@ class MasterPlanController extends Controller
     public function store(Request $request)
     {        $request->validate([
             'external_name' => 'required|string|max:255',
-            'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
+            // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
             'description' => 'required|string|max:1000',
             'volume_items' => 'required|array|min:1',
+            'volume_items.*.id' => 'sometimes|integer|exists:plans,id',
             'volume_items.*.min_inbox' => 'required|integer|min:0',
             'volume_items.*.max_inbox' => 'required|integer|min:0',
             'volume_items.*.price' => 'required|numeric|min:0',
@@ -67,6 +68,7 @@ class MasterPlanController extends Controller
         ], [
             'internal_name.regex' => 'Internal name can only contain lowercase letters, numbers, and underscores.',
             'volume_items.required' => 'At least one volume item is required.',
+            'volume_items.*.id.exists' => 'Selected volume item does not exist.',
             'volume_items.*.min_inbox.required' => 'Min inbox is required for all volume items.',
             'volume_items.*.min_inbox.integer' => 'Min inbox must be a valid integer.',
             'volume_items.*.max_inbox.required' => 'Max inbox is required for all volume items.',
@@ -76,7 +78,7 @@ class MasterPlanController extends Controller
             'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
         ]);        // Additional validation and cleaning of volume items data
         $volumeItems = collect($request->volume_items)->map(function ($item) {
-            return [
+            $volumeItem = [
                 'name' => trim($item['name'] ?? ''),
                 'description' => trim($item['description'] ?? ''),
                 'min_inbox' => is_numeric($item['min_inbox']) ? (int)$item['min_inbox'] : 0,
@@ -86,6 +88,13 @@ class MasterPlanController extends Controller
                 'features' => $item['features'] ?? [],
                 'feature_values' => $item['feature_values'] ?? []
             ];
+            
+            // Include ID if present (for existing items)
+            if (!empty($item['id'])) {
+                $volumeItem['id'] = (int)$item['id'];
+            }
+            
+            return $volumeItem;
         })->toArray();
 
         // Custom validation for range logic
@@ -118,26 +127,50 @@ class MasterPlanController extends Controller
         // Sort items by min_inbox for range validation
         $sortedItems = collect($volumeItems)->sortBy('min_inbox')->values()->toArray();
         
-        // Validate for overlapping ranges
+        // Validate for overlapping ranges and gaps
         for ($i = 0; $i < count($sortedItems) - 1; $i++) {
             $current = $sortedItems[$i];
             $next = $sortedItems[$i + 1];
             
             // If current tier has unlimited (max_inbox = 0) and it's not the last tier
             if ($current['max_inbox'] === 0 && $i < count($sortedItems) - 1) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
-                ], 422);
+            return response()->json([
+                'success' => false,
+                'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
+            ], 422);
             }
             
             // Check for overlapping ranges
             if ($current['max_inbox'] !== 0 && $next['min_inbox'] <= $current['max_inbox']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
-                ], 422);
+            return response()->json([
+                'success' => false,
+                'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
+            ], 422);
             }
+            
+            // Check for gaps between consecutive tiers (ChargeBee requirement)
+            if ($current['max_inbox'] !== 0 && $next['min_inbox'] > $current['max_inbox'] + 1) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gap detected between tiers. Tier ending at {$current['max_inbox']} has a gap before the next tier starting at {$next['min_inbox']}. ChargeBee requires continuous tier ranges. Next tier should start at " . ($current['max_inbox'] + 1) . "."
+            ], 422);
+            }
+        }
+        
+        // Check if the last tier doesn't have unlimited (max_inbox = 0)
+        if (!empty($sortedItems) && $sortedItems[count($sortedItems) - 1]['max_inbox'] !== 0) {
+            return response()->json([
+            'success' => false,
+            'message' => "The last tier must have unlimited inboxes (max_inbox = 0) to handle all cases beyond the defined ranges."
+            ], 422);
+        }
+        
+        // Additional validation: First tier should start at 1 (ChargeBee requirement)
+        if (!empty($sortedItems) && $sortedItems[0]['min_inbox'] !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => "First tier must start at 1 inbox (ChargeBee requirement). Current first tier starts at {$sortedItems[0]['min_inbox']}."
+            ], 422);
         }
 
         try {
@@ -153,8 +186,8 @@ class MasterPlanController extends Controller
                     'description' => $request->description,
                 ]);
                 
-                // Delete existing volume items
-                $masterPlan->volumeItems()->delete();
+                // Update volume items instead of deleting and recreating
+                $this->updateVolumeItems($masterPlan, $volumeItems);
                 
                 $message = 'Master plan updated successfully';
             } else {
@@ -165,33 +198,10 @@ class MasterPlanController extends Controller
                     'description' => $request->description,
                 ]);
                 
+                // Create volume items in plans table
+                $this->createVolumeItems($masterPlan, $volumeItems);
+                
                 $message = 'Master plan created successfully';
-            }
-
-            // Create volume items in plans table
-            foreach ($volumeItems as $volumeItem) {
-                $plan = Plan::create([
-                    'master_plan_id' => $masterPlan->id,
-                    'name' => $request->external_name . ' (' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? '∞' : $volumeItem['max_inbox']) . ' inboxes)',
-                    'description' => 'Volume pricing tier for ' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? 'unlimited' : $volumeItem['max_inbox']) . ' inboxes',
-                    'price' => $volumeItem['price'],
-                    'duration' => 'monthly',
-                    'min_inbox' => $volumeItem['min_inbox'],
-                    'max_inbox' => $volumeItem['max_inbox'],
-                    'is_active' => true,
-                ]);                // Attach features to this volume tier if any
-                if (!empty($volumeItem['features'])) {
-                    $featureData = [];
-                    $featureValues = $volumeItem['feature_values'] ?? [];
-                    
-                    foreach ($volumeItem['features'] as $index => $featureId) {
-                        $featureData[$featureId] = [
-                            'value' => $featureValues[$index] ?? ''
-                        ];
-                    }
-                    
-                    $plan->features()->attach($featureData);
-                }
             }            
             // Create or update on Chargebee
             $chargebeeSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
@@ -308,7 +318,8 @@ class MasterPlanController extends Controller
 
             // Update the price with new tiers
             $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::update($priceId, [
-                'name' => $masterPlan->external_name . ' Volume Price',
+                'name' => $masterPlan->external_name . ' Plan',
+                'external_name' => $masterPlan->external_name,
                 'tiers' => $tiers,
                 'status' => 'active'
             ]);
@@ -375,7 +386,8 @@ class MasterPlanController extends Controller
                 // Create item price for the master plan with volume pricing and tiers
                 $priceParams = [
                     'id' => $uniqueId . '_price',
-                    'name' => $masterPlan->external_name . ' Volume Price',
+                    'name' => $masterPlan->external_name . ' Plan',
+                    'external_name' => $masterPlan->external_name,
                     'item_id' => $result->item()->id,
                     'pricing_model' => 'volume',
                     'period_unit' => 'month',
@@ -586,6 +598,136 @@ class MasterPlanController extends Controller
                 'success' => false,
                 'message' => 'Sync failed: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Update volume items (intelligent update instead of delete/recreate)
+     */
+    private function updateVolumeItems($masterPlan, $volumeItems)
+    {
+        // Get existing volume items
+        $existingItems = $masterPlan->volumeItems()->with('features')->get();
+        
+        // Create a map for tracking which items to keep
+        $updatedItemIds = [];
+        
+        foreach ($volumeItems as $index => $volumeItem) {
+            $existingItem = null;
+            
+            // If we have an ID, try to find by ID first
+            if (!empty($volumeItem['id'])) {
+                $existingItem = $existingItems->where('id', $volumeItem['id'])->first();
+            }
+            
+            // If no ID or no match found by ID, try other matching strategies
+            if (!$existingItem) {
+                $existingItem = $this->findMatchingVolumeItem($existingItems, $volumeItem, $index);
+            }
+            
+            if ($existingItem) {
+                // Update existing item
+                $existingItem->update([
+                    'name' => $volumeItem['name'],
+                    'description' => $volumeItem['description'] . ' pricing tier for ' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? 'unlimited' : $volumeItem['max_inbox']) . ' inboxes',
+                    'min_inbox' => $volumeItem['min_inbox'],
+                    'max_inbox' => $volumeItem['max_inbox'],
+                    'price' => $volumeItem['price'],
+                    'duration' => 'monthly',
+                    'is_active' => true,
+                ]);
+                
+                // Update features
+                $this->updateVolumeItemFeatures($existingItem, $volumeItem);
+                
+                $updatedItemIds[] = $existingItem->id;
+            } else {
+                // Create new item
+                $newItem = $this->createSingleVolumeItem($masterPlan, $volumeItem);
+                $updatedItemIds[] = $newItem->id;
+            }
+        }
+        
+        // Delete items that are no longer needed
+        $masterPlan->volumeItems()
+            ->whereNotIn('id', $updatedItemIds)
+            ->delete();
+    }
+    
+    /**
+     * Create volume items for a new master plan
+     */
+    private function createVolumeItems($masterPlan, $volumeItems)
+    {
+        foreach ($volumeItems as $volumeItem) {
+            $this->createSingleVolumeItem($masterPlan, $volumeItem);
+        }
+    }
+    
+    /**
+     * Create a single volume item
+     */
+    private function createSingleVolumeItem($masterPlan, $volumeItem)
+    {
+        $plan = Plan::create([
+            'master_plan_id' => $masterPlan->id,
+            'name' => $volumeItem['name'],
+            'description' => $volumeItem['description'] . ' pricing tier for ' . $volumeItem['min_inbox'] . '-' . ($volumeItem['max_inbox'] == 0 ? 'unlimited' : $volumeItem['max_inbox']) . ' inboxes',
+            'price' => $volumeItem['price'],
+            'duration' => 'monthly',
+            'min_inbox' => $volumeItem['min_inbox'],
+            'max_inbox' => $volumeItem['max_inbox'],
+            'is_active' => true,
+        ]);
+        
+        // Attach features if any
+        $this->updateVolumeItemFeatures($plan, $volumeItem);
+        
+        return $plan;
+    }
+    
+    /**
+     * Find a matching volume item for update
+     */
+    private function findMatchingVolumeItem($existingItems, $volumeItem, $index)
+    {
+        // First, try to match by min_inbox and max_inbox (range-based matching)
+        foreach ($existingItems as $existing) {
+            if ($existing->min_inbox == $volumeItem['min_inbox'] && 
+                $existing->max_inbox == $volumeItem['max_inbox']) {
+                return $existing;
+            }
+        }
+        
+        // If no range match, try to match by position/index if items exist
+        if ($existingItems->count() > $index) {
+            return $existingItems->get($index);
+        }
+        
+        // No match found, will create new
+        return null;
+    }
+    
+    /**
+     * Update features for a volume item
+     */
+    private function updateVolumeItemFeatures($plan, $volumeItem)
+    {
+        // Detach all existing features
+        $plan->features()->detach();
+        
+        // Attach new features if any
+        if (!empty($volumeItem['features'])) {
+            $featureData = [];
+            $featureValues = $volumeItem['feature_values'] ?? [];
+            
+            foreach ($volumeItem['features'] as $index => $featureId) {
+                $featureData[$featureId] = [
+                    'value' => $featureValues[$index] ?? ''
+                ];
+            }
+            
+            $plan->features()->attach($featureData);
         }
     }
 }

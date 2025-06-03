@@ -17,6 +17,8 @@ return new class extends Migration
             $table->unsignedBigInteger('panel_id')->nullable();
             $table->unsignedBigInteger('order_panel_id')->nullable();
             $table->unsignedBigInteger('order_id')->nullable();
+            // inboxes_per_domain
+            $table->integer('inboxes_per_domain')->default(0);
 
             $table->json('domains')->nullable(); // e.g., list of assigned domains/areas to this panel split
 
