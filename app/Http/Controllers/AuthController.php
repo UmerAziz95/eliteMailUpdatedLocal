@@ -282,11 +282,10 @@ class AuthController extends Controller
     return response()->json([
         'message' => 'User registered successfully! We have sent you a verification email. Please verify your email address to proceed.',
         'redirect' => $this->redirectTo($user),
-        'user' => $user,
+        'user' => $user
+   
     ], 200);
-} 
-
-    
+   }  
 
     // Show forgot password form
     public function showForgotPasswordForm()
@@ -425,6 +424,7 @@ class AuthController extends Controller
          
             $getMostlyUsed = Plan::getMostlyUsed();
             $plans = Plan::with('features')->where('is_active', true)->get();
+          
             $publicPage=true;
             return view('customer.public_outside.plans', compact('plans', 'getMostlyUsed','publicPage','encrypted'));
         } 
