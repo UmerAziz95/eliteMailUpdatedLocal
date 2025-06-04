@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Admin\PanelController as AdminPanelController;
+use App\Http\Controllers\Contractor\PanelController as ContractorPanelController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
 use App\Http\Controllers\AppLogController;
@@ -316,8 +317,14 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Contractor\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Contractor\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Contractor\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
-    Route::get('/panel',[PanelController::class,'Contractorindex'])->name('panel');
-});
+   //panels
+        Route::get('/panels/dashboard', [ContractorPanelController::class, 'index'])->name('panels.index');
+        Route::get('/panels/data', [ContractorPanelController::class, 'getPanelsData'])->name('panels.data');
+        Route::get('/panels/{panel}/orders', [ContractorPanelController::class, 'getPanelOrders'])->name('panels.orders');
+        Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');
+
+    
+}); 
 
 Route::get('/forget_password', function () {
     return view('admin/auth/forget_password');
