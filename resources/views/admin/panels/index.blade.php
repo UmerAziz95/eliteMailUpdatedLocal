@@ -717,15 +717,7 @@
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
                                                     <td>${formatDate(order.created_at)}</td>
                                                 </tr>
-                                                ${order.splits && order.splits.length > 0 ? order.splits.map((split, splitIndex) => `
-                                                    <tr class="table-light">
-                                                        <td></td>
-                                                        <td colspan="2">Split ${splitIndex + 1}</td>
-                                                        <td>${split.space_assigned || 'N/A'}</td>
-                                                        <td>${split.inboxes_per_domain || 'N/A'}</td>
-                                                        <td>${formatDate(split.created_at)}</td>
-                                                    </tr>
-                                                `).join('') : ''}
+                                                ${order.splits && order.splits.length > 0 ? order.splits.map((split, splitIndex) => ``).join('') : ''}
                                             </tbody>
                                         </table>
                                     </div>

@@ -26,7 +26,8 @@ class PanelController extends Controller
         }
 
         return view('contractor.panel.index');
-    }    public function getPanelsData(Request $request)
+    }    
+    public function getPanelsData(Request $request)
     {
         try {
             $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
@@ -34,7 +35,9 @@ class PanelController extends Controller
 
             // Apply filters if provided
             if ($request->filled('panel_id')) {
-                $query->where('auto_generated_id', 'like', '%' . $request->panel_id . '%');
+                // PNL-35 remove string PNL
+                $request->panel_id = str_replace('PNL-', '', $request->panel_id);
+                $query->where('id', 'like', '%' . $request->panel_id . '%');
             }
 
             if ($request->filled('min_inbox_limit')) {
@@ -127,7 +130,7 @@ class PanelController extends Controller
         try {
             $panel = Panel::findOrFail($panelId);
             
-            $orders = OrderPanel::with(['order.user', 'orderPanelSplits'])
+            $orders = OrderPanel::with(['order.user', 'order.reorderInfo', 'orderPanelSplits'])
                 ->where('panel_id', $panelId)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -135,6 +138,7 @@ class PanelController extends Controller
             $ordersData = $orders->map(function ($orderPanel) {
                 $order = $orderPanel->order;
                 $splits = $orderPanel->orderPanelSplits;
+                $reorderInfo = $order->reorderInfo->first();
                 
                 return [
                     'order_panel_id' => $orderPanel->id,
@@ -149,6 +153,36 @@ class PanelController extends Controller
                     'created_at' => $orderPanel->created_at->format('Y-m-d H:i:s'),
                     'accepted_at' => $orderPanel->accepted_at,
                     'released_at' => $orderPanel->released_at,
+                    // Add comprehensive order information
+                    'reorder_info' => $reorderInfo ? [
+                        'total_inboxes' => $reorderInfo->total_inboxes,
+                        'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                        'hosting_platform' => $reorderInfo->hosting_platform,
+                        'platform_login' => $reorderInfo->platform_login,
+                        'platform_password' => $reorderInfo->platform_password,
+                        'forwarding_url' => $reorderInfo->forwarding_url,
+                        'sending_platform' => $reorderInfo->sending_platform,
+                        'sequencer_login' => $reorderInfo->sequencer_login,
+                        'sequencer_password' => $reorderInfo->sequencer_password,
+                        'first_name' => $reorderInfo->first_name,
+                        'last_name' => $reorderInfo->last_name,
+                        'email_persona_password' => $reorderInfo->email_persona_password,
+                        'profile_picture_link' => $reorderInfo->profile_picture_link,
+                        'prefix_variants' => $reorderInfo->prefix_variants,
+                        'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                        'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                    ] : null,
+                    // Add splits with domain information
+                    'splits' => $splits->map(function ($split) {
+                        return [
+                            'id' => $split->id,
+                            'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
+                            'inboxes_per_domain' => $split->inboxes_per_domain,
+                            'domains' => $split->domains,
+                            'domains_count' => is_array($split->domains) ? count($split->domains) : 0,
+                            'created_at' => $split->created_at->format('Y-m-d H:i:s'),
+                        ];
+                    }),
                 ];
             });
 

@@ -318,10 +318,10 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Contractor\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Contractor\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
    //panels
-        Route::get('/panels/dashboard', [ContractorPanelController::class, 'index'])->name('panels.index');
-        Route::get('/panels/data', [ContractorPanelController::class, 'getPanelsData'])->name('panels.data');
-        Route::get('/panels/{panel}/orders', [ContractorPanelController::class, 'getPanelOrders'])->name('panels.orders');
-        Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');
+    Route::get('/panels/dashboard', [ContractorPanelController::class, 'index'])->name('panels.index');
+    Route::get('/panels/data', [ContractorPanelController::class, 'getPanelsData'])->name('panels.data');
+    Route::get('/panels/{panel}/orders', [ContractorPanelController::class, 'getPanelOrders'])->name('panels.orders');
+    Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');
 
     
 }); 
