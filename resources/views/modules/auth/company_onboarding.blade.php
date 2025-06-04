@@ -41,7 +41,7 @@
         .onboarding-wrapper {
             max-width: 700px;
             margin: 40px auto;
-            background-color: #1f2333;
+            background-color: #1d2239;
             color: #fff;
             padding: 2rem;
             border-radius: 10px;
@@ -64,8 +64,14 @@
         textarea,
         input::placeholder,
         textarea::placeholder {
-            color: var(--light-color) !important;
+            color: #ffffffa7 !important;
+            font-size: 12px
         }
+
+        .form-select {
+            color: #ffffff99 !important
+        }
+
 
         input:focus,
         textarea:focus {
@@ -79,10 +85,16 @@
 
         .form-select {
             background-color: transparent !important;
+            font-size: 12px
         }
 
         .form-select:focus {
             box-shadow: none !important;
+        }
+
+        .form-label {
+            color: #ffffffb1;
+            font-size: 13px
         }
 
         option {
@@ -99,18 +111,20 @@
         }
 
         .btn-option {
-            border: 1px solid #ccc;
+            border: 1px solid #afafaf;
             border-radius: 6px;
-            padding: 8px 15px;
+            padding: 8px 12px;
             cursor: pointer;
             margin-right: 10px;
             margin-bottom: 10px;
+            font-size: 12px;
+            color: #ffffff94
         }
 
         .btn-option.selected {
-            background-color: #0d6efd;
+            background-color: #5750bf;
             color: #fff;
-            border-color: #0d6efd;
+            border-color: #5750bf;
         }
 
         .form-label {
@@ -119,7 +133,14 @@
 
         .continue-btn {
             width: 100%;
-            background-color: #343a40;
+            background-color: #5750bf;
+            color: white;
+            font-size: 12px
+        }
+
+        .continue-btn:hover {
+            width: 100%;
+            background-color: #5750bf;
             color: white;
         }
     </style>
@@ -131,7 +152,7 @@
         <div class="onboarding-wrapper">
             <div class="text-center mb-4">
                 <h4>About you</h4>
-                <p>Please, fill out the form to help us offer the best product for you.</p>
+                <p class="small opacity-50">Please, fill out the form to help us offer the best product for you.</p>
             </div>
 
             <form id="onboardingForm">
@@ -214,7 +235,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn continue-btn">Continue</button>
+                <button type="submit" class="btn btn-primary continue-btn">Continue</button>
             </form>
         </div>
     </div>

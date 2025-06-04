@@ -6,7 +6,7 @@
         background-color: var(--secondary-color);
         box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px;
         border-radius: 10px;
-        padding: 30px;
+        padding: 30px 60px;
         text-align: center;
         transition: 0.3s ease-in-out;
     }
@@ -40,7 +40,7 @@
         background: #ffcc00;
         color: #000;
         padding: 5px 10px;
-        font-size: 14px;
+        font-size: 12px;
         font-weight: bold;
         border-radius: 5px;
     }
@@ -80,27 +80,30 @@
 @section('content')
 <div class="py-3 ">
     <div class="row justify-content-center align-items-center m-auto">
-        <div class="col-md-12 mt-3  d-flex justify-content-center align-items-center">
+        <div class="col-md-12 mt-3 d-flex justify-content-center align-items-center">
             {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
             @if(count($plans)>0)
             <div class="row g-5 mt-5" id="plans-container">
                 @foreach($plans as $plan)
                 <div class="col-md-4 mt-4 " id="plan-{{ $plan->id }}">
                     <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                        <h4 class="fw-bold plan-name text-capitalize">{{ $plan->name }}</h4>
-                        <h2 class="fw-bold plan-price">${{ number_format($plan->price, 2) }} <span class="fs-6">/{{
+                        <h4 class="fw-bold plan-name text-capitalize fs-6">{{ $plan->name }}</h4>
+                        <h2 class="fw-bold plan-price fs-4">${{ number_format($plan->price, 2) }} <span class="fw-light"
+                                style="font-size: 12px">/{{
                                 $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
                                 inboxes</span>
                         </h2>
-                        <p class="plan-description text-capitalize">{{ $plan->description }}</p>
+                        <small class="plan-description text-capitalize opacity-75">{{ $plan->description }}</small>
                         <hr>
                         <div class="mb-3 ">
-                            {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
-                            <strong>Inboxes</strong>
+                            <span>
+                                {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
+                                <strong>Inboxes</strong>
+                            </span>
                         </div>
                         <ul class="list-unstyled features-list">
                             @foreach ($plan->features as $feature)
-                            <li class="mb-2">
+                            <li style="font-size: 13px" class="mb-2">
                                 <i class="fas fa-check text-success"></i>
                                 {{ $feature->title }} {{ $feature->pivot->value }}
                             </li>
