@@ -142,27 +142,27 @@
             <div class="row collapse" id="filter_1">
                 <form id="filterForm">
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Panel Id</label>
                             <input type="text" name="panel_id" class="form-control" placeholder="Enter panel ID">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" style="display: none !important;">
                             <label class="form-label mb-0">Min Inbox Limit</label>
                             <input type="number" name="min_inbox_limit" class="form-control" placeholder="e.g. 10">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" style="display: none !important;">
                             <label class="form-label mb-0">Max Inbox Limit</label>
                             <input type="number" name="max_inbox_limit" class="form-control" placeholder="e.g. 100">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Min Remaining</label>
                             <input type="number" name="min_remaining" class="form-control" placeholder="e.g. 5">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Max Remaining</label>
                             <input type="number" name="max_remaining" class="form-control" placeholder="e.g. 50">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Order</label>
                             <select name="order" class="form-select">
                                 <option value="desc">Newest First</option>
