@@ -34,17 +34,59 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #12141D;
             font-family: 'Public Sans', sans-serif;
         }
 
         .onboarding-wrapper {
             max-width: 700px;
             margin: 40px auto;
-            background-color: #fff;
+            background-color: #1f2333;
+            color: #fff;
             padding: 2rem;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 0 20px rgba(218, 218, 218, 0.857);
+        }
+
+        input,
+        .form-control,
+        .form-select {
+            border: 1px solid #ffffff4c;
+            background-color: transparent;
+            color: #fff !important
+        }
+
+        input::placeholder {
+            color: #fff
+        }
+
+        input,
+        textarea,
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--light-color) !important;
+        }
+
+        input:focus,
+        textarea:focus {
+            box-shadow: none !important;
+        }
+
+        input:focus {
+            background-color: transparent !important;
+            border-color: #0d6efd
+        }
+
+        .form-select {
+            background-color: transparent !important;
+        }
+
+        .form-select:focus {
+            box-shadow: none !important;
+        }
+
+        option {
+            color: #000;
         }
 
         .form-section {

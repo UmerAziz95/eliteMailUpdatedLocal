@@ -47,15 +47,32 @@ class PanelController extends Controller
         return view('admin.panels.index');
     }
 
-    public function fetch()
+
+    public function Contractorindex(Request $request)
     {
-        try {
-            $panels = Panel::with('users')->latest()->get();
-            return response()->json($panels);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to fetch panels'], 500);
+        if ($request->ajax()) {
+            try {
+                $data = Panel::where('is_active',true)->with(['order_panels.orderPanelSplit'])->get(); 
+                return DataTables::of($data)
+                    ->addIndexColumn()
+                    ->addColumn('actions', function ($row) {
+                        return '
+                            <button data-id="'.$row->id.'" class="btn btn-sm btn-primary editBtn">Edit</button>
+                            <button data-id="'.$row->id.'" class="btn btn-sm btn-danger deleteBtn">Delete</button>
+                        ';
+                    })
+                    ->rawColumns(['actions'])
+                    ->make(true);
+            } catch (\Exception $e) {
+                Log::error('Panel DataTable Error: ' . $e->getMessage());
+                return response()->json(['message' => 'Something went wrong while fetching panels.'.$e->getMessage()], 500);
+            }
         }
+
+        return view('contractor.panels.index');
     }
+
+   
 
     public function store(Request $request)
     {
@@ -158,7 +175,7 @@ class PanelController extends Controller
  {
     $user = Auth::user();
 
-    // Find the order panel with relationships of...
+    // Find the order panel with relationships of.....
     $order_panel = OrderPanel::where('id', $order_panel_id)
         ->with(['panel', 'order.orderInfo'])
         ->first();
@@ -207,7 +224,7 @@ class PanelController extends Controller
     }
 
 
-        public function showAssingedPanelDetail(Request $request, $assigned_panel_id ){
+ public function showAssingedSplitDetail(Request $request, $assigned_panel_id ){
             $assignedPanel=UserOrderPanelAssignment::where('id',$assigned_panel_id)->first();
             if (!$assignedPanel) {
                 return response()->json(['message' => 'Assigned panel not found.'], 404);
@@ -232,5 +249,87 @@ class PanelController extends Controller
             
         }
 
+        //mark panel as completed
+ public function markOrderPanelAsStatus(Request $request, $assigned_panel_id)
+ {
+    $assignedPanel = UserOrderPanelAssignment::where('id', $assigned_panel_id)->first();
+    if (!$assignedPanel) {
+        return response()->json(['message' => 'Assigned panel not found.'], 404);
+    }
 
+    // Update the status of the order panel to 'completed'
+    $orderPanel = OrderPanel::find($assignedPanel->order_panel_id);
+    if (!$orderPanel) {
+        return response()->json(['message' => 'Order panel not found.'], 404);
+    }
+
+    $orderPanel->status = 'completed'; // or a status code like 2
+    $orderPanel->save();
+
+    return response()->json(['message' => 'Panel marked as completed successfully.'], 200);
+
+ }
+
+    public function getPanelById($id)
+    {
+        try {
+            $panel = Panel::with('users')->findOrFail($id);
+            return response()->json($panel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Panel not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve panel'], 500);
+        }
+    }
+
+    public function getOrderPanelById($id)
+    {
+        try {
+            $orderPanel = OrderPanel::with(['panel', 'order.orderInfo'])->findOrFail($id);
+            return response()->json($orderPanel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Order panel not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve order panel'], 500);
+        }
+    }
+
+    public function getOrderPanelSplitById($id)
+    {
+        try {
+            $orderPanelSplit = OrderPanelSplit::with(['orderPanel', 'orderPanel.order'])->findOrFail($id);
+            return response()->json($orderPanelSplit);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Order panel split not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve order panel split'], 500);
+        }
+    }
+    public function getUserOrderPanelAssignmentById($id)
+    {
+        try {
+            $assignment = UserOrderPanelAssignment::with(['orderPanel', 'orderPanelSplit'])->findOrFail($id);
+            return response()->json($assignment);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'User order panel assignment not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve user order panel assignment'], 500);
+        }
+    }
+
+
+    public function getAssignedPanelsByUserId($userId)
+    {
+        try {
+            $assignments = UserOrderPanelAssignment::with(['orderPanel', 'orderPanelSplit'])
+                ->where('user_id', $userId)
+                ->get();
+
+            return response()->json($assignments);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve assigned panels'], 500);
+        }
+    }
+
+    
 }
