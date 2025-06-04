@@ -199,7 +199,7 @@ class PanelController extends Controller
         'order_panel_split_id' => $order_panel_split->id,
     ])->first();
 
-    if ($existingAssignment && $existingAssignment->user_id !== $user->id) {
+    if ($existingAssignment && $existingAssignment->contractor_id !== $user->id) {
         return response()->json(['message' => 'This panel is already assigned to another user.'], 403);
     }
 
@@ -207,11 +207,10 @@ class PanelController extends Controller
     UserOrderPanelAssignment::updateOrCreate(
         [
             'order_panel_id' => $order_panel->id,
-            'user_id' => $user->id,
+            'contractor_id' => $user->id,
         ],
         [
             'order_id' => $order_panel->order_id,
-            'contractor_id' => $user->id,
             'order_panel_split_id' => $order_panel_split->id,
         ]
     );
@@ -322,7 +321,7 @@ class PanelController extends Controller
     {
         try {
             $assignments = UserOrderPanelAssignment::with(['orderPanel', 'orderPanelSplit'])
-                ->where('user_id', $userId)
+                ->where('contractor_id', $userId)
                 ->get();
 
             return response()->json($assignments);

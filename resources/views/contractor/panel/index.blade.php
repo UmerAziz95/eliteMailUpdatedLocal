@@ -503,7 +503,8 @@
                         <button style="font-size: 12px" onclick="viewPanelOrders(${panel.id})" data-bs-toggle="offcanvas" data-bs-target="#order-view"
                             aria-controls="order-view" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary">
                             View
-                        </button>                    </div>
+                        </button>                    
+                    </div>
                 </div>
             `;
         }
@@ -690,6 +691,20 @@
                                         onclick="window.location.href='{{ route('contractor.orders.view', '') }}/' + ${order.order_id}">
                                         View
                                     </button>
+                                    ${order.status === 'unallocated' ? `
+                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success ms-1"
+                                            onclick="assignOrderToMe(${order.order_panel_id}, this)">
+                                            Assign to Me
+                                        </button>
+                                    ` : order.status === 'allocated' ? `
+                                        <span class="badge bg-success ms-1" style="font-size: 10px;">
+                                            Allocated
+                                        </span>
+                                    ` : `
+                                        <span class="badge bg-info ms-1" style="font-size: 10px;">
+                                            ${order.status}
+                                        </span>
+                                    `}
                                 </div>
                             </h2>
                             <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
@@ -956,7 +971,130 @@
         });
 
         // Cleanup on page focus (in case of any lingering issues)
-        window.addEventListener('focus', cleanupOffcanvasBackdrop);        // Initialize page
+        window.addEventListener('focus', cleanupOffcanvasBackdrop);
+        // Function to assign order to logged-in contractor
+        async function assignOrderToMe(orderPanelId, buttonElement) {
+            try {
+            // First show confirmation dialog
+            const confirmResult = await Swal.fire({
+                title: 'Confirm Assignment',
+                text: 'Are you sure you want to assign this order to yourself?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Assign',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33'
+            });
+
+            // If user cancels, exit the function
+            if (!confirmResult.isConfirmed) {
+                return;
+            }
+
+            // Show loading dialog with SweetAlert
+            Swal.fire({
+                title: 'Assigning Order',
+                text: 'Please wait while we assign the order to you...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                Swal.showLoading();
+                }
+            });
+
+            const response = await fetch(`/contractor/panels/assign/${orderPanelId}`, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Close loading dialog and show success message
+                await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message || 'Order allocated successfully!',
+                confirmButtonText: 'OK'
+                });
+                
+                // Update button to show "Allocated" status
+                if (buttonElement) {
+                    buttonElement.className = 'badge bg-success ms-1';
+                    buttonElement.style.fontSize = '10px';
+                    buttonElement.textContent = 'Allocated';
+                    buttonElement.disabled = true;
+                    buttonElement.onclick = null; // Remove click handler
+                }
+                
+                // Refresh the panel orders to show updated status
+                const panelId = getCurrentPanelId();
+                if (panelId) {
+                setTimeout(() => {
+                    viewPanelOrders(panelId);
+                }, 1000);
+                }
+            } else {
+                // Show error message
+                await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: data.message || 'Failed to assign order',
+                confirmButtonText: 'OK'
+                });
+            }
+            } catch (error) {
+            console.error('Error assigning order:', error);
+            
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'An error occurred while assigning the order',
+                confirmButtonText: 'OK'
+            });
+            }
+        }
+
+        // Function to show notifications
+        function showNotification(type, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Function to get current panel ID (you might need to adjust this based on your implementation)
+        function getCurrentPanelId() {
+            // This could be extracted from the current offcanvas or stored globally
+            const offcanvasTitle = document.getElementById('order-viewLabel');
+            if (offcanvasTitle && offcanvasTitle.textContent) {
+                const match = offcanvasTitle.textContent.match(/PNL-(\d+)/);
+                return match ? match[1] : null;
+            }
+            return null;
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Clean up any existing backdrop issues on page load
             cleanupOffcanvasBackdrop();

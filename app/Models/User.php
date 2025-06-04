@@ -119,17 +119,16 @@ class User extends Authenticatable
         return true;
     }
 
- public function panels()
-{
-    return $this->belongsToMany(Panel::class)
-                ->withTimestamps()
-                ->withPivot('accepted_at', 'released_at');
-}
+    public function panels()
+    {
+        return $this->belongsToMany(Panel::class)
+                    ->withTimestamps()
+                    ->withPivot('accepted_at', 'released_at');
+    }
 
-public function userOrderPanelAssignments()
-{
-    return $this->hasMany(UserOrderPanelAssignment::class);
-
-}
+    public function userOrderPanelAssignments()
+    {
+        return $this->hasMany(UserOrderPanelAssignment::class, 'contractor_id');
+    }
 
 }

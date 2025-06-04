@@ -10,6 +10,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\UserOrderPanelAssignment; 
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -135,10 +136,25 @@ class PanelController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $ordersData = $orders->map(function ($orderPanel) {
+            $ordersData = $orders->map(function ($orderPanel) use ($request) {
                 $order = $orderPanel->order;
                 $splits = $orderPanel->orderPanelSplits;
                 $reorderInfo = $order->reorderInfo->first();
+                
+                // Check if this order is assigned to the current user
+                $isAssignedToCurrentUser = false;
+                $assignmentStatus = $orderPanel->status;
+                
+                if (auth()->check()) {
+                    $userAssignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)
+                        ->where('contractor_id', auth()->id())
+                        ->first();
+                    
+                    if ($userAssignment) {
+                        $isAssignedToCurrentUser = true;
+                        $assignmentStatus = 'assigned_to_me';
+                    }
+                }
                 
                 return [
                     'order_panel_id' => $orderPanel->id,
@@ -147,6 +163,8 @@ class PanelController extends Controller
                     'space_assigned' => $orderPanel->space_assigned,
                     'inboxes_per_domain' => $orderPanel->inboxes_per_domain,
                     'status' => $orderPanel->status,
+                    'assignment_status' => $assignmentStatus,
+                    'is_assigned_to_current_user' => $isAssignedToCurrentUser,
                     'domains_count' => $splits->sum(function ($split) {
                         return is_array($split->domains) ? count($split->domains) : 0;
                     }),
@@ -392,7 +410,7 @@ class PanelController extends Controller
         'order_panel_split_id' => $order_panel_split->id,
     ])->first();
 
-    if ($existingAssignment && $existingAssignment->user_id !== $user->id) {
+    if ($existingAssignment && $existingAssignment->contractor_id !== $user->id) {
         return response()->json(['message' => 'This panel is already assigned to another user.'], 403);
     }
 
@@ -400,11 +418,10 @@ class PanelController extends Controller
     UserOrderPanelAssignment::updateOrCreate(
         [
             'order_panel_id' => $order_panel->id,
-            'user_id' => $user->id,
+            'contractor_id' => $user->id,
         ],
         [
             'order_id' => $order_panel->order_id,
-            'contractor_id' => $user->id,
             'order_panel_split_id' => $order_panel_split->id,
         ]
     );
@@ -515,12 +532,81 @@ class PanelController extends Controller
     {
         try {
             $assignments = UserOrderPanelAssignment::with(['orderPanel', 'orderPanelSplit'])
-                ->where('user_id', $userId)
+                ->where('contractor_id', $userId)
                 ->get();
 
             return response()->json($assignments);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to retrieve assigned panels'], 500);
+        }
+    }
+
+    /**
+     * Assign an order panel to the current contractor
+     */
+    public function assignOrderToMe(Request $request, $orderPanelId)
+    {
+        try {
+            $contractorId = Auth::id();
+            
+            // Check if the order panel exists
+            $orderPanel = OrderPanel::find($orderPanelId);
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found'
+                ], 404);
+            }
+
+            // Get the order panel split - fix the query
+            $order_panel_split = OrderPanelSplit::where('order_panel_id', $orderPanelId)
+                ->where('order_id', $orderPanel->order_id)
+                ->first();
+
+            if (!$order_panel_split) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel split not found'
+                ], 404);
+            }
+
+            // Check if already assigned to someone
+            $existingAssignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanelId)->first();
+            if ($existingAssignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This order is already assigned to another contractor'
+                ], 409);
+            }
+
+            // Create the assignment using updateOrCreate for safety
+            $assignment = UserOrderPanelAssignment::updateOrCreate(
+                [
+                    'order_panel_id' => $orderPanelId,
+                    'contractor_id' => $contractorId,
+                ],
+                [
+                    'order_id' => $orderPanel->order_id,
+                    'order_panel_split_id' => $order_panel_split->id,
+                ]
+            );
+
+            // Update the order panel status to allocated
+            $orderPanel->status = 'allocated';
+            $orderPanel->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order successfully assigned to you',
+                'assignment' => $assignment
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Order assignment failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign order. Please try again.'
+            ], 500);
         }
     }
 

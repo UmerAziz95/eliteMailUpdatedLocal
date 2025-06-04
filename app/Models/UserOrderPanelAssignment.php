@@ -9,19 +9,31 @@ class UserOrderPanelAssignment extends Model
 {
     use HasFactory;
 
+    protected $table = 'user_order_panel_assignment';
 
+    protected $fillable = [
+        'order_panel_id',
+        'order_panel_split_id',
+        'order_id',
+        'contractor_id',
+    ];
 
     public function orderPanel()
     {
         return $this->belongsTo(OrderPanel::class, 'order_panel_id');
     }
 
-    public function user()
+    public function contractor()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'contractor_id');
     }
     public function order()
     {
         return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    public function orderPanelSplit()
+    {
+        return $this->belongsTo(OrderPanelSplit::class, 'order_panel_split_id');
     }
 }

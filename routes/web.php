@@ -321,6 +321,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/panels/dashboard', [ContractorPanelController::class, 'index'])->name('panels.index');
     Route::get('/panels/data', [ContractorPanelController::class, 'getPanelsData'])->name('panels.data');
     Route::get('/panels/{panel}/orders', [ContractorPanelController::class, 'getPanelOrders'])->name('panels.orders');
+    Route::post('/panels/assign/{orderPanelId}', [ContractorPanelController::class, 'assignOrderToMe'])->name('panels.assign');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');
 
     
