@@ -176,7 +176,8 @@
                     </div>
                 </form>
             </div>
-        </div>        <!-- Grid Cards (Dynamic) -->
+        </div>  
+        <!-- Grid Cards (Dynamic) -->
         <div id="panelsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
             <!-- Loading state -->
             <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
@@ -200,7 +201,11 @@
             </div>
         </div>
 
-    </section>    
+    </section> 
+    
+    
+
+
     <!-- Orders Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
@@ -724,6 +729,91 @@
                                             </tbody>
                                         </table>
                                     </div>
+
+
+
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card p-3 mb-3">
+                                                <h6 class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                        <i class="fa-regular fa-envelope"></i>
+                                                    </div>
+                                                    Email configurations
+                                                </h6>
+
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <span>Total Inboxes <br> ${order.reorder_info?.total_inboxes || 'N/A'}</span>
+                                                    <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
+                                                </div>
+                                                <hr>
+                                                <div class="d-flex flex-column">
+                                                    <span class="opacity-50">Prefix Variants</span>
+                                                    ${renderPrefixVariants(order.reorder_info)}
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Profile Picture URL</span>
+                                                    <span>${order.reorder_info?.profile_picture_link || 'N/A'}</span>
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Email Persona Password</span>
+                                                    <span>${order.reorder_info?.email_persona_password || 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                                                <h6 class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                        <i class="fa-solid fa-earth-europe"></i>
+                                                    </div>
+                                                    Domains &amp; Configuration
+                                                </h6>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Hosting Platform</span>
+                                                    <span>${order.reorder_info?.hosting_platform || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Platform Login</span>
+                                                    <span>${order.reorder_info?.platform_login || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Platform Password</span>
+                                                    <span>${order.reorder_info?.platform_password || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                                    <span>${order.reorder_info?.forwarding_url || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending Platform</span>
+                                                    <span>${order.reorder_info?.sending_platform || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending platform Sequencer - Login</span>
+                                                    <span>${order.reorder_info?.sequencer_login || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending platform Sequencer - Password</span>
+                                                    <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
+                                                </div>
+                                                
+                                                <div class="d-flex flex-column">
+                                                    <span class="opacity-50">Domains</span>
+                                                    ${renderDomains(order.splits)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -758,7 +848,66 @@
             } catch (error) {
                 return 'Invalid Date';
             }
-        }        // Handle filter form submission
+        }
+
+        // Helper function to render prefix variants
+        function renderPrefixVariants(reorderInfo) {
+            if (!reorderInfo) return '<span>N/A</span>';
+            
+            let variants = [];
+            
+            // Check if we have the new prefix_variants JSON format
+            if (reorderInfo.prefix_variants) {
+                try {
+                    const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                        ? JSON.parse(reorderInfo.prefix_variants) 
+                        : reorderInfo.prefix_variants;
+                    
+                    Object.keys(prefixVariants).forEach((key, index) => {
+                        if (prefixVariants[key]) {
+                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Could not parse prefix variants:', e);
+                }
+            }
+            
+            // Fallback to old individual fields if new format is empty
+            if (variants.length === 0) {
+                if (reorderInfo.prefix_variant_1) {
+                    variants.push(`<span>Variant 1: ${reorderInfo.prefix_variant_1}</span>`);
+                }
+                if (reorderInfo.prefix_variant_2) {
+                    variants.push(`<span>Variant 2: ${reorderInfo.prefix_variant_2}</span>`);
+                }
+            }
+            
+            return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
+        }
+
+        // Helper function to render domains from splits
+        function renderDomains(splits) {
+            if (!splits || splits.length === 0) {
+                return '<span>N/A</span>';
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains && Array.isArray(split.domains)) {
+                    allDomains = allDomains.concat(split.domains);
+                }
+            });
+            
+            if (allDomains.length === 0) {
+                return '<span>N/A</span>';
+            }
+            
+            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
+        }
+
+        // Handle filter form submission
         document.getElementById('filterForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -766,7 +915,8 @@
             
             for (let [key, value] of formData.entries()) {
                 if (value.trim() !== '') {
-                    filters[key] = value.trim();                }
+                    filters[key] = value.trim();
+                }
             }
             
             currentFilters = filters;
