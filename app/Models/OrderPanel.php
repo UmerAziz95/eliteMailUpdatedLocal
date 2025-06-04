@@ -37,9 +37,9 @@ class OrderPanel extends Model
         return $this->belongsTo(User::class , 'contractor_id');
     }
 
-    public function orderPanelSplit()
+    public function orderPanelSplits()
     {
-        return $this->hasOne(OrderPanelSplit::class);
+        return $this->hasMany(OrderPanelSplit::class);
     }
 
 }
