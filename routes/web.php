@@ -312,6 +312,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Contractor\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Contractor\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Contractor\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
+    Route::get('/panel',[PanelController::class,'Contractorindex'])->name('panel');
 });
 
 Route::get('/forget_password', function () {
@@ -355,9 +356,7 @@ Route::get('/contact_us', function () {
     return view('admin/contact_us/contact_us');
 });
 
-Route::get('/panel', function () {
-    return view('contractor.panel.panel');
-})->name('contractor.panel');
+
 
 
 Route::get('/profile', function () {
