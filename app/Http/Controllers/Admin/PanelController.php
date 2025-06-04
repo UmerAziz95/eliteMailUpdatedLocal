@@ -19,9 +19,7 @@ class PanelController extends Controller
         }
 
         return view('admin.panels.index');
-    }
-
-    public function getPanelsData(Request $request)
+    }    public function getPanelsData(Request $request)
     {
         try {
             $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
@@ -52,10 +50,15 @@ class PanelController extends Controller
             $order = $request->get('order', 'desc');
             $query->orderBy('created_at', $order);
 
-            $panels = $query->get();
+            // Pagination parameters
+            $perPage = $request->get('per_page', 12); // Default 12 panels per page
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedPanels = $query->paginate($perPage, ['*'], 'page', $page);
 
             // Format panels data for the frontend
-            $panelsData = $panels->map(function ($panel) {
+            $panelsData = $paginatedPanels->getCollection()->map(function ($panel) {
                 $used = $panel->limit - $panel->remaining_limit;
                 
                 // Get recent orders for this panel
@@ -92,7 +95,16 @@ class PanelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $panelsData
+                'data' => $panelsData,
+                'pagination' => [
+                    'current_page' => $paginatedPanels->currentPage(),
+                    'last_page' => $paginatedPanels->lastPage(),
+                    'per_page' => $paginatedPanels->perPage(),
+                    'total' => $paginatedPanels->total(),
+                    'has_more_pages' => $paginatedPanels->hasMorePages(),
+                    'from' => $paginatedPanels->firstItem(),
+                    'to' => $paginatedPanels->lastItem()
+                ]
             ]);
 
         } catch (\Exception $e) {

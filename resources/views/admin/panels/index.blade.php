@@ -171,7 +171,7 @@
                         </div>
                         <div class="col-12 text-end">
                             <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm border-0 px-3">Search</button>
                         </div>
                     </div>
                 </form>
@@ -187,7 +187,21 @@
             </div>
         </div>
 
-    </section>    <!-- Orders Offcanvas -->
+        <!-- Load More Button -->
+        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                <span id="loadMoreText">Load More</span>
+                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                    <span class="visually-hidden">Loading...</span>
+                </span>
+            </button>
+            <div id="paginationInfo" class="mt-2 text-light small">
+                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalPanels">0</span> panels
+            </div>
+        </div>
+
+    </section>    
+    <!-- Orders Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
@@ -212,13 +226,34 @@
         let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
+        let currentPage = 1;
+        let hasMorePages = false;
+        let totalPanels = 0;
+        let isLoading = false;
 
         // Load panels data
-        async function loadPanels(filters = {}) {
+        async function loadPanels(filters = {}, page = 1, append = false) {
             try {
-                console.log('Loading panels with filters:', filters);
-                showLoading();
-                const params = new URLSearchParams(filters);
+                if (isLoading) return; // Prevent concurrent requests
+                isLoading = true;
+                
+                console.log('Loading panels with filters:', filters, 'page:', page, 'append:', append);
+                
+                if (!append) {
+                    showLoading();
+                    panels = []; // Reset panels array for new search
+                }
+                
+                // Show loading state for Load More button
+                if (append) {
+                    showLoadMoreSpinner(true);
+                }
+                
+                const params = new URLSearchParams({
+                    ...filters,
+                    page: page,
+                    per_page: 12
+                });
                 const url = `/admin/panels/data?${params}`;
                 console.log('Fetching from URL:', url);
                 
@@ -237,17 +272,46 @@
                     console.error('Error response:', errorText);
                     throw new Error(`Failed to fetch panels: ${response.status} ${response.statusText}`);
                 }
-                  const data = await response.json();
+                  
+                const data = await response.json();
                 console.log('Received data:', data);
-                panels = data.data || [];
-                console.log('Panels array:', panels);
-                renderPanels();
+                
+                const newPanels = data.data || [];
+                console.log('New panels:', newPanels);
+                
+                if (append) {
+                    panels = panels.concat(newPanels);
+                } else {
+                    panels = newPanels;
+                }
+                
+                // Update pagination state
+                const pagination = data.pagination || {};
+                currentPage = pagination.current_page || 1;
+                hasMorePages = pagination.has_more_pages || false;
+                totalPanels = pagination.total || 0;
+                
+                console.log('Updated state:', { currentPage, hasMorePages, totalPanels, panelsCount: panels.length });
+                
+                renderPanels(append);
+                updatePaginationInfo();
+                updateLoadMoreButton();
                 
             } catch (error) {
                 console.error('Error loading panels:', error);
-                showError(`Failed to load panels: ${error.message}`);
+                if (!append) {
+                    showError(`Failed to load panels: ${error.message}`);
+                }
+            } finally {
+                isLoading = false;
+                if (append) {
+                    showLoadMoreSpinner(false);
+                }
+
+                // submit enabled
+                document.getElementById('submitBtn').disabled = false;
             }
-        }        
+        }
         // Show loading state        
         function showLoading() {
             const container = document.getElementById('panelsContainer');
@@ -285,7 +349,7 @@
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
             container.style.gap = '1rem';
             
-            container.innerHTML = `                <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
@@ -293,22 +357,25 @@
                 </div>
             `;
         }
-        
-        // Render panels
-        function renderPanels() {
-            hideLoading();
+          // Render panels
+        function renderPanels(append = false) {
+            if (!append) {
+                hideLoading();
+            }
+            
             const container = document.getElementById('panelsContainer');
             if (!container) {
                 console.error('panelsContainer element not found');
                 return;
             }
-              if (panels.length === 0) {
+              
+            if (panels.length === 0 && !append) {
                 // Keep grid layout but show empty state spanning full width
                 container.style.display = 'grid';
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
                 container.style.gap = '1rem';
                 
-                container.innerHTML = `                    <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                         <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
                         <h5>No Panels Found</h5>
                         <p class="mb-3">No panels match your current filters.</p>
@@ -323,16 +390,89 @@
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
             container.style.gap = '1rem';
 
-            const panelsHtml = panels.map(panel => createPanelCard(panel)).join('');
-            container.innerHTML = panelsHtml;
-            
-            // Initialize charts after DOM is updated
-            setTimeout(() => {
-                panels.forEach(panel => {
-                    initChart(panel);
-                });
-            }, 100);
+            if (append) {
+                // Only add new panels for pagination
+                const currentPanelsCount = container.children.length;
+                const newPanels = panels.slice(currentPanelsCount);
+                const newPanelsHtml = newPanels.map(panel => createPanelCard(panel)).join('');
+                container.insertAdjacentHTML('beforeend', newPanelsHtml);
+                
+                // Initialize charts for new panels only
+                setTimeout(() => {
+                    newPanels.forEach(panel => {
+                        initChart(panel);
+                    });
+                }, 100);
+            } else {
+                // Replace all content for new search
+                const panelsHtml = panels.map(panel => createPanelCard(panel)).join('');
+                container.innerHTML = panelsHtml;
+                
+                // Initialize charts after DOM is updated
+                setTimeout(() => {
+                    panels.forEach(panel => {
+                        initChart(panel);
+                    });
+                }, 100);            }
         }
+
+        // Update pagination info display
+        function updatePaginationInfo() {
+            const showingFromEl = document.getElementById('showingFrom');
+            const showingToEl = document.getElementById('showingTo');
+            const totalPanelsEl = document.getElementById('totalPanels');
+            
+            if (showingFromEl && showingToEl && totalPanelsEl) {
+                const from = panels.length > 0 ? 1 : 0;
+                const to = panels.length;
+                
+                showingFromEl.textContent = from;
+                showingToEl.textContent = to;
+                totalPanelsEl.textContent = totalPanels;
+            }
+        }
+
+        // Update Load More button visibility and state
+        function updateLoadMoreButton() {
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            if (loadMoreContainer && loadMoreBtn) {
+                if (hasMorePages && panels.length > 0) {
+                    loadMoreContainer.style.display = 'block';
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreContainer.style.display = 'none';
+                }
+            }
+        }
+
+        // Show/hide loading spinner on Load More button
+        function showLoadMoreSpinner(show) {
+            const loadMoreText = document.getElementById('loadMoreText');
+            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            if (loadMoreText && loadMoreSpinner && loadMoreBtn) {
+                if (show) {
+                    loadMoreText.textContent = 'Loading...';
+                    loadMoreSpinner.style.display = 'inline-block';
+                    loadMoreBtn.disabled = true;
+                } else {
+                    loadMoreText.textContent = 'Load More';
+                    loadMoreSpinner.style.display = 'none';
+                    loadMoreBtn.disabled = false;
+                }
+            }
+        }
+
+        // Load More button click handler
+        function loadMorePanels() {
+            if (hasMorePages && !isLoading) {
+                loadPanels(currentFilters, currentPage + 1, true);
+            }
+        }
+        
         // Create panel card HTML
         function createPanelCard(panel) {
             const used = panel.limit - panel.remaining_limit;
@@ -443,7 +583,8 @@
                     charts[panel.id].destroy();
                 }
                 
-                const chart = new ApexCharts(chartElement, options);                chart.render();
+                const chart = new ApexCharts(chartElement, options);                
+                chart.render();
                 charts[panel.id] = chart;
             } catch (error) {
                 console.error(`Error creating chart for panel ${panel.id}:`, error);
@@ -511,6 +652,7 @@
         
         // Render panel orders in offcanvas
         function renderPanelOrders(orders, panel) {
+            console.log('orders', orders);
             const container = document.getElementById('panelOrdersContainer');
             
             if (!orders || orders.length === 0) {
@@ -526,7 +668,7 @@
 
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>Panel: ${panel.title}</h6>
+                    <h6>PNL- ${panel.id}</h6>
                     <p class="text-muted small">${panel.description || 'No description'}</p>
                 </div>
                 
@@ -535,16 +677,17 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.id}" aria-expanded="false"
-                                    aria-controls="order-collapse-${order.id}">
-                                    <small>ID: #${order.order_id || order.id}</small>
+                                    data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.order_id}" aria-expanded="false"
+                                    aria-controls="order-collapse-${order.order_id}">
+                                    <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
-                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary">
+                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                        onclick="window.location.href='{{ route('admin.orders.view', '') }}/' + ${order.order_id}">
                                         View
                                     </button>
                                 </div>
                             </h2>
-                            <div id="order-collapse-${order.id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
+                            <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
                                 <div class="accordion-body">
                                     <div class="table-responsive">
                                         <table class="table table-striped table-hover">
@@ -561,7 +704,7 @@
                                             <tbody>
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
-                                                    <td>${order.order_id || order.id}</td>
+                                                    <td>${order.order_id || 0}</td>
                                                     <td>
                                                         <span class="badge ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
                                                     </td>
@@ -595,9 +738,11 @@
         function getStatusBadgeClass(status) {
             switch(status) {
                 case 'completed': return 'bg-success';
-                case 'pending': return 'bg-warning text-dark';
-                case 'processing': return 'bg-primary';
-                case 'cancelled': return 'bg-danger';                default: return 'bg-secondary';
+                case 'unallocated': return 'bg-warning text-dark';
+                case 'allocated': return 'bg-info';
+                case 'rejected': return 'bg-danger';
+                case 'in-progress': return 'bg-primary';
+                default: return 'bg-secondary';
             }
         }
         
@@ -613,9 +758,7 @@
             } catch (error) {
                 return 'Invalid Date';
             }
-        }
-
-        // Handle filter form submission
+        }        // Handle filter form submission
         document.getElementById('filterForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -627,13 +770,18 @@
             }
             
             currentFilters = filters;
+            currentPage = 1;
+            hasMorePages = false;
+            totalPanels = 0;
             loadPanels(filters);
         });
-        
-        // Reset filters
+          // Reset filters
         function resetFilters() {
             document.getElementById('filterForm').reset();
             currentFilters = {};
+            currentPage = 1;
+            hasMorePages = false;
+            totalPanels = 0;
             loadPanels();
         }
         
@@ -666,12 +814,16 @@
         });
 
         // Cleanup on page focus (in case of any lingering issues)
-        window.addEventListener('focus', cleanupOffcanvasBackdrop);
-
-        // Initialize page
+        window.addEventListener('focus', cleanupOffcanvasBackdrop);        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Clean up any existing backdrop issues on page load
             cleanupOffcanvasBackdrop();
+            
+            // Add Load More button event handler
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', loadMorePanels);
+            }
             
             // Wait for ApexCharts to be available
             if (typeof ApexCharts === 'undefined') {
