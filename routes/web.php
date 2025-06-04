@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Admin\PanelController as AdminPanelController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
 use App\Http\Controllers\AppLogController;
@@ -184,7 +185,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // /revenue-totals Admin/DashboardController
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
         //panels
-         Route::get('/panels/dashoard',[PanelController::class,'index'])->name('panels.index');
+        Route::get('/panels/dashboard', [AdminPanelController::class, 'index'])->name('panels.index');
+        Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
+        Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
+        Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
 
         
     }); 
