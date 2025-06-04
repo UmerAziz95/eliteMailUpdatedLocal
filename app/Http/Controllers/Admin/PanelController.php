@@ -19,7 +19,8 @@ class PanelController extends Controller
         }
 
         return view('admin.panels.index');
-    }    public function getPanelsData(Request $request)
+    }    
+    public function getPanelsData(Request $request)
     {
         try {
             $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
@@ -27,7 +28,9 @@ class PanelController extends Controller
 
             // Apply filters if provided
             if ($request->filled('panel_id')) {
-                $query->where('auto_generated_id', 'like', '%' . $request->panel_id . '%');
+                // PNL-35 remove string PNL
+                $request->panel_id = str_replace('PNL-', '', $request->panel_id);
+                $query->where('id', 'like', '%' . $request->panel_id . '%');
             }
 
             if ($request->filled('min_inbox_limit')) {
