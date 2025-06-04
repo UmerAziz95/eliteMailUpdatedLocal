@@ -15,7 +15,7 @@
     }
 </style>
 
-<header class="d-flex align-items-center justify-content-between justify-content-xl-end px-4 rounded-3">
+<header class="d-flex align-items-center justify-content-between justify-content-xl-end rounded-3">
     <div class="d-xl-none" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
         aria-controls="offcanvasExample">
         <i class="fa-solid fa-bars"></i>
@@ -119,6 +119,101 @@
     </div>
 </header>
 
+
+<div class="offcanvas offcanvas-start" style="width: 250px;" tabindex="-1" id="offcanvasExample"
+    aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas-header px-4 pt-5">
+        <div class="d-flex align-items-center gap-2">
+            <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
+            <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
+        </div>
+        <div data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fa-solid fa-xmark fs-5"></i>
+        </div>
+    </div>
+    <div class="offcanvas-body overflow-hidden">
+        <aside class="sidebar-mobile px-2 overflow-y-auto" style="scrollbar-width: none">
+            <ul class="nav flex-column list-unstyled">
+                {{--
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('dashboard') ? 'active' : '' }}"
+                        href="{{ route('customer.dashboard') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-home fs-5"></i></div>
+                            <div class="text">Dashboard</div>
+                        </div>
+                    </a>
+                </li> --}}
+        
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.dashboard') ? 'active' : '' }}"
+                        href="{{ route('customer.dashboard') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-home fs-5"></i></div>
+                            <div class="text">Dashboard</div>
+                        </div>
+                    </a>
+                </li>
+        
+        
+                <!-- Orders -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
+                        href="{{ url('customer/pricing') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
+                            <div class="text">Plan</div>
+                        </div>
+                    </a>
+                </li> -->
+        
+                <!-- pricing -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.orders') ? 'active' : '' }}"
+                        href="{{ route('customer.orders') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-box fs-5"></i></div>
+                            <div class="text">Orders</div>
+                        </div>
+                    </a>
+                </li>
+        
+                <!-- Support -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
+                        href="{{ route('customer.support') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                            <div class="text">Support</div>
+                        </div>
+                    </a>
+                </li>
+                <!-- Subscriptions -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.subscriptions.view') ? 'active' : '' }}"
+                        href="{{ route('customer.subscriptions.view') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-currency-dollar fs-5"></i></i></div>
+                            <div class="text">Subscriptions</div>
+                        </div>
+                    </a>
+                </li>
+                <!-- invoices -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.invoices.index') ? 'active' : '' }}"
+                        href="{{ route('customer.invoices.index') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
+                            <div class="text">Invoices</div>
+                        </div>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+    </div>
+</div>
 
 
 <script>
