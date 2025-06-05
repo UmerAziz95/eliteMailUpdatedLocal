@@ -1,8 +1,9 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center gap-2 mb-3">
-        <img src="https://cdn.prod.website-files.com/680f5aabe088c7bbcd389903/681b21577e8b6e172787ecb7_Project%20Inbox.svg"
-            width="140" alt="">
+        <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
+        <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
     </div>
+    
     <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 23px">
         <input class="form-check-input"
             style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
@@ -25,6 +26,7 @@
                 </a>
             </li>
         @endcan
+
         {{-- <button class="btn text-white  w-full" type="button" aria-expanded="false" aria-controls="collapseExample">
             <li class="nav-item">
                 <div class="d-flex align-items-center" style="gap: 13px">

@@ -130,9 +130,9 @@
 <div class="offcanvas offcanvas-start" style="width: 250px;" tabindex="-1" id="offcanvasExample"
     aria-labelledby="offcanvasExampleLabel">
     <div class="offcanvas-header px-4 pt-5">
-        <div class="d-flex align-items-center gap-2">
-            <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
-            <h4 class="text fs-5">Mailboxes</h4>
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
+            <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
         </div>
         <div data-bs-dismiss="offcanvas" aria-label="Close">
             <i class="fa-solid fa-xmark fs-5"></i>
