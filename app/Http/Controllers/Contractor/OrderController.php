@@ -19,15 +19,28 @@ use Carbon\Carbon;
 use App\Models\Invoice;
 use Illuminate\Validation\ValidationException;
 use App\Models\Subscription;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
 use App\Models\OrderEmail;
 use App\Models\Notification;
+use App\Models\UserOrderPanelAssignment;
+use App\Models\OrderPanel;
+use App\Models\OrderPanelSplit;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 class OrderController extends Controller
 {
     private $statuses;
+    // split statues
+    private $splitStatuses = [
+        'completed' => 'success',
+        // 'unallocated' => 'warning',
+        // 'allocated' => 'info',
+        'rejected' => 'danger',
+        'in-progress' => 'primary',
+        'pending' => 'secondary'
+    ];
     private $paymentStatuses = [
         "Pending" => "warning",
         "Paid" => "success",
@@ -73,6 +86,7 @@ class OrderController extends Controller
             : 0;
 
         $statuses = $this->statuses;
+        $splitStatuses = $this->splitStatuses;
         $plans = [];
         return view('contractor.orders.orders', compact(
             'plans', 
@@ -81,6 +95,7 @@ class OrderController extends Controller
             'inProgressOrders',
             'percentageChange',
             'statuses',
+            'splitStatuses',
             'expiredOrders',
             'rejectOrders',
             'cancelledOrders',
@@ -168,7 +183,17 @@ class OrderController extends Controller
 
     public function view($id)
     {
-        $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo','plan'])->findOrFail($id);
+        $order = Order::with([
+            'subscription', 
+            'user', 
+            'invoice', 
+            'reorderInfo',
+            'plan',
+            'orderPanels.userOrderPanelAssignments' => function($query) {
+                $query->with(['orderPanel', 'orderPanelSplit'])
+                      ->where('contractor_id', auth()->id());
+            }
+        ])->findOrFail($id);
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
         
@@ -205,65 +230,98 @@ class OrderController extends Controller
     
         return view('contractor.orders.order-view', compact('order', 'nextBillingInfo'));
     }
+    public function splitView($id)
+    {
+        $order = Order::with([
+            'user', 
+            'reorderInfo',
+            'plan',
+            'orderPanels.userOrderPanelAssignments' => function($query) {
+                $query->with(['orderPanel', 'orderPanelSplit'])
+                      ->where('contractor_id', auth()->id());
+            }
+        ])->findOrFail($id);
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+    
+        return view('contractor.orders.split-view', compact('order'));
+    }
 
     public function getOrders(Request $request)
     {
         try {
-            $orders = Order::query()
-                ->with(['user', 'plan', 'reorderInfo'])
-                ->select('orders.*')
-                ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
-                ->leftJoin('users', 'orders.user_id', '=', 'users.id')
-                ->where('status_manage_by_admin', '!=', 'draft')
-                ->where(function($query) {
-                    $query->whereNull('assigned_to')
-                          ->orWhere('assigned_to', auth()->id());
-                });
+            $contractorId = auth()->id();
+            
+            // Determine if we need to join users table
+            $needsUserJoin = ($request->has('email') && $request->email != '') || 
+                           ($request->has('name') && $request->name != '');
+            
+            // Query from user_order_panel_assignment as main table to get assignments for logged-in contractor
+            $assignments = UserOrderPanelAssignment::query()
+                ->select('user_order_panel_assignment.*')
+                ->join('orders', 'user_order_panel_assignment.order_id', '=', 'orders.id');
+            
+            // Join users table if needed for email/name filters
+            if ($needsUserJoin) {
+                $assignments->join('users', 'orders.user_id', '=', 'users.id');
+            }
+            
+            $assignments = $assignments->with([
+                    'order.user',
+                    'order.plan', 
+                    'order.reorderInfo',
+                    'orderPanel.panel',
+                    'orderPanelSplit'
+                ])
+                ->where('user_order_panel_assignment.contractor_id', $contractorId)
+                ->where('orders.status_manage_by_admin', '!=', 'draft')
+                ->orderBy('orders.created_at', 'desc');
 
             // Apply plan filter if provided
             if ($request->has('plan_id') && $request->plan_id != '') {
-                $orders->where('orders.plan_id', $request->plan_id);
+                $assignments->where('orders.plan_id', $request->plan_id);
             }
 
             // Apply filters
             if ($request->has('orderId') && $request->orderId != '') {
-                $orders->where('orders.id', 'like', "%{$request->orderId}%");
+                $assignments->where('orders.id', 'like', "%{$request->orderId}%");
             }
 
             if ($request->has('status') && $request->status != '') {
-                $orders->where('orders.status_manage_by_admin', $request->status);
+                $assignments->where('orders.status_manage_by_admin', $request->status);
             }
 
             if ($request->has('email') && $request->email != '') {
-                $orders->where('users.email', 'like', "%{$request->email}%");
+                $assignments->where('users.email', 'like', "%{$request->email}%");
             }
 
             if ($request->has('name') && $request->name != '') {
-                $orders->where('users.name', 'like', "%{$request->name}%");
+                $assignments->where('users.name', 'like', "%{$request->name}%");
             }
 
             if ($request->has('domain') && $request->domain != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $assignments->whereHas('order.reorderInfo', function($query) use ($request) {
                     $query->where('forwarding_url', 'like', "%{$request->domain}%");
                 });
             }
 
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $assignments->whereHas('order.reorderInfo', function($query) use ($request) {
                     $query->where('total_inboxes', $request->totalInboxes);
                 });
             }
 
             if ($request->has('startDate') && $request->startDate != '') {
-                $orders->whereDate('orders.created_at', '>=', $request->startDate);
+                $assignments->whereDate('orders.created_at', '>=', $request->startDate);
             }
 
             if ($request->has('endDate') && $request->endDate != '') {
-                $orders->whereDate('orders.created_at', '<=', $request->endDate);
+                $assignments->whereDate('orders.created_at', '<=', $request->endDate);
             }
 
-            return DataTables::of($orders)
-                ->addColumn('action', function ($order) {
+            return DataTables::of($assignments)
+                ->addColumn('action', function ($assignment) {
+                    $order = $assignment->order;
                     $statuses = $this->statuses;
                     $statusOptions = '';
 
@@ -274,51 +332,92 @@ class OrderController extends Controller
                             </a>
                         </li>';
                     }
-
                     return '<div class="dropdown">
                                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
                                     aria-expanded="false">
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
+                                    <li><a class="dropdown-item" href="' . route('contractor.orders.split.view', $assignment->order->id) . '">
                                         <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
-                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
+                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$assignment->id.'" data-status="'.($assignment->orderPanel->status ?? 'pending').'" data-reason="'.(isset($assignment->orderPanel->reason) ? $assignment->orderPanel->reason : '').'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
                                 </ul>
                             </div>';
                 })
-                ->addColumn('assignment', function ($order) {
-                    if ($order->assigned_to == auth()->id()) {
-                        return '<span class="badge bg-success">Assigned to you</span>';
+                ->addColumn('assignment', function ($assignment) {
+                    // Check if assignment has split domains data
+                    $hasSplitDomains = false;
+                    $domainCount = 0;
+                    
+                    if ($assignment->orderPanelSplit && $assignment->orderPanelSplit->domains) {
+                        $hasSplitDomains = true;
+                        $domains = is_array($assignment->orderPanelSplit->domains) 
+                            ? $assignment->orderPanelSplit->domains 
+                            : [$assignment->orderPanelSplit->domains];
+                        $domainCount = count($domains);
                     }
-                    return '<span class="badge bg-secondary">Unassigned</span>';
+                    
+                    if ($hasSplitDomains) {
+                        $downloadUrl = route('contractor.orders.export.csv.split.domains', $assignment->order->id);
+                        return '<a href="' . $downloadUrl . '" class="btn btn-sm btn-primary" title="Download CSV with ' . $domainCount . ' domains">
+                                    <i class="fa-solid fa-download me-1"></i> Download CSV
+                                </a>';
+                    }
+                    
+                    return '<span class="badge bg-secondary">No split domains</span>';
                 })
-                ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
+                ->editColumn('created_at', function ($assignment) {
+                    return $assignment->order->created_at ? $assignment->order->created_at->format('d F, Y') : '';
                 })
-                ->editColumn('status', function ($order) {
+                ->editColumn('status', function ($assignment) {
+                    $order = $assignment->order;
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusKey = $status;
                     $statusClass = $this->statuses[$statusKey] ?? 'secondary';
                     return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                         . ucfirst($status) . '</span>';
                 })
-                ->addColumn('name', function ($order) {
-                    return $order->user ? $order->user->name : 'N/A';
+                ->addColumn('name', function ($assignment) {
+                    return $assignment->order->user ? $assignment->order->user->name : 'N/A';
                 })
-                ->addColumn('email', function ($order) {
-                    return $order->user ? $order->user->email : 'N/A';
+                ->addColumn('email', function ($assignment) {
+                    return $assignment->order->user ? $assignment->order->user->email : 'N/A';
                 })
-                ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->forwarding_url : 'N/A';
+                ->addColumn('domain_forwarding_url', function ($assignment) {
+                    return $assignment->order->reorderInfo->first() ? $assignment->order->reorderInfo->first()->forwarding_url : 'N/A';
                 })
-                ->addColumn('plan_name', function ($order) {
-                    return $order->plan ? $order->plan->name : 'N/A';
+                ->addColumn('plan_name', function ($assignment) {
+                    return $assignment->order->plan ? $assignment->order->plan->name : 'N/A';
                 })
-                ->addColumn('total_inboxes', function ($order) {
-                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
+                ->addColumn('total_inboxes', function ($assignment) {
+                    return $assignment->order->reorderInfo->first() ? $assignment->order->reorderInfo->first()->total_inboxes : 'N/A';
                 })
-                ->rawColumns(['action', 'status', 'assignment'])
+                ->addColumn('split_status', function ($assignment) {
+                    $status = $assignment->orderPanel->status ?? 'pending';
+                    $statusClass = $this->getStatusClass($status);
+                    return '<span class="badge bg-' . $statusClass . '">' . ucfirst($status) . '</span>';
+                })
+                ->addColumn('total_inboxes_split', function ($assignment) {
+                    $totalInboxesSplit = 0;
+                    
+                    if ($assignment->orderPanelSplit) {
+                        $split = $assignment->orderPanelSplit;
+                        $domains = is_array($split->domains) ? $split->domains : (json_decode($split->domains, true) ?? []);
+                        $totalInboxesSplit = count($domains) * ($split->inboxes_per_domain ?? 0);
+                    }
+                    
+                    return $totalInboxesSplit > 0 ? $totalInboxesSplit : '<span class="text-muted">0</span>';
+                })
+                ->addColumn('order_id', function ($assignment) {
+                    return $assignment->order->id;
+                })
+                ->addColumn('panel_id', function ($assignment) {
+                    return $assignment->orderPanel && $assignment->orderPanel->panel ? 'PNL-' . $assignment->orderPanel->panel->id : 'N/A';
+                })
+                ->addColumn('assignment_id', function ($assignment) {
+                    return $assignment->id;
+                })
+                ->rawColumns(['action', 'status', 'assignment', 'split_status', 'total_inboxes_split'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -785,4 +884,227 @@ class OrderController extends Controller
         ];
     }
 
+    /**
+     * Export CSV file with split domains data for a specific order
+     */
+    public function exportCsvSplitDomains($orderId)
+    {
+        try {
+            $order = Order::with([
+                'orderPanels.userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id())
+                          ->with(['orderPanelSplit', 'orderPanel']);
+                }
+            ])->findOrFail($orderId);
+
+            // Check if contractor has access to this order
+            $hasAccess = $order->assigned_to == auth()->id() || 
+                        $order->orderPanels->flatMap->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0;
+
+            if (!$hasAccess) {
+                return back()->with('error', 'You do not have access to this order.');
+            }
+
+            // Collect split domains data (only domains)
+            $domains = [];
+            foreach ($order->orderPanels as $orderPanel) {
+                foreach ($orderPanel->userOrderPanelAssignments as $assignment) {
+                    if ($assignment->contractor_id == auth()->id() && $assignment->orderPanelSplit) {
+                        $split = $assignment->orderPanelSplit;
+                        $splitDomains = is_array($split->domains) ? $split->domains : [$split->domains];
+                        
+                        foreach ($splitDomains as $domain) {
+                            $domains[] = $domain;
+                        }
+                    }
+                }
+            }
+
+            if (empty($domains)) {
+                return back()->with('error', 'No domains data found for this order.');
+            }
+
+            $filename = "order_{$order->id}_domains.csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains) {
+                $file = fopen('php://output', 'w');
+
+                // Add CSV header
+                fputcsv($file, ['Domain']);
+
+                // Add data rows
+                foreach ($domains as $domain) {
+                    fputcsv($file, [$domain]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting CSV domains: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get CSS class for status display
+     */
+    private function getStatusClass($status)
+    {
+        $statusClasses = [
+            'pending' => 'warning',
+            'accepted' => 'success', 
+            'completed' => 'primary',
+            'cancelled' => 'danger',
+            'rejected' => 'danger',
+            'in_progress' => 'info',
+            'released' => 'secondary'
+        ];
+        
+        return $statusClasses[strtolower($status)] ?? 'secondary';
+    }
+    public function orderPanelStatusProcess(Request $request)
+    {
+        $request->validate([
+            'assignment_id' => 'required|exists:user_order_panel_assignment,id',
+            'marked_status' => 'required|string|in:' . implode(',', array_keys($this->splitStatuses)),
+            'reason' => 'nullable|string',
+        ]);
+
+        try {
+            // Get the assignment record
+            $assignment = UserOrderPanelAssignment::with(['orderPanel', 'orderPanel.order', 'orderPanel.order.user'])
+                ->findOrFail($request->assignment_id);
+            
+            $orderPanel = $assignment->orderPanel;
+            $order = $orderPanel->order;
+
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found.'
+                ], 404);
+            }
+
+            $oldStatus = $orderPanel->status;
+            $newStatus = strtolower($request->marked_status);
+            $reason = $request->reason ? $request->reason . " (Reason given by) " . Auth::user()->name : null;
+
+            // Update order panel status
+            $orderPanel->update([
+                'status' => $newStatus,
+            ]);
+
+            // If rejected, also update with reason (you might want to add a reason field to order_panel table)
+            if ($newStatus === 'rejected' && $reason) {
+                // Add reason to note field or create a separate reason field
+                $orderPanel->update(['note' => $reason]);
+            }
+
+            // Create activity log
+            ActivityLogService::log(
+                'contractor-order-panel-status-update',
+                'Order panel status updated: Panel ID ' . $orderPanel->id . ' for Order #' . $order->id,
+                $orderPanel,
+                [
+                    'order_panel_id' => $orderPanel->id,
+                    'order_id' => $order->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_by' => auth()->id(),
+                    'reason' => $reason
+                ]
+            );
+
+            // Create notifications
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Your order #' . $order->id . ' panel status has been changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'updated_by' => Auth::id()
+                ]
+            ]);
+
+            // Notification for contractor
+            Notification::create([
+                'user_id' => Auth::id(),
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Order #' . $order->id . ' panel status changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'updated_by' => Auth::id()
+                ]
+            ]);
+
+            // Send emails if needed
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order panel status change email sent', [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send order panel status change emails: ' . $e->getMessage());
+            }
+
+            $orderCounts = $this->getOrderCounts();
+            return response()->json([
+                'success' => true,
+                'message' => 'Order Panel Status Updated Successfully.',
+                'counts' => $orderCounts
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error While Updating The Panel Status: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed To Update The Panel Status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

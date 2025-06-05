@@ -3,12 +3,11 @@
         <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
         <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
     </div>
-    
-    <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 23px">
+    <!-- <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 23px">
         <input class="form-check-input"
             style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
             value="" id="checkDefault">
-    </div>
+    </div> -->
 
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->

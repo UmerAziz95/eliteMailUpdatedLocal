@@ -276,6 +276,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
     
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
+    Route::get('/orders/{id}/split/view', [ContractorOrderController::class, 'splitView'])->name('orders.split.view');
     
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [ContractorOrderController::class, 'getOrders'])->name('orders.data');
@@ -285,6 +286,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // contractor.orders.reorder
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
+    Route::post('/order-panel/status/process', [ContractorOrderController::class, 'orderPanelStatusProcess'])->name('order.panel.status.process');
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
     
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
@@ -311,6 +313,9 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/emails', [ContractorOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [ContractorOrderEmailController::class, 'delete']);
     
+    // CSV Export routes
+    Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
+    
     // Support ticket routes
     Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Contractor\SupportTicketController::class, 'getTickets'])->name('support.tickets');
@@ -334,7 +339,6 @@ Route::get('/forget_password', function () {
 Route::get('/reset_password', function () {
     return view('admin/auth/reset_password');
 });
-
 
 // Route::get('/admins', function () {
 //     return view('admin/admins/admins');
@@ -417,3 +421,41 @@ Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\Ord
     Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
     Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
 // });
+
+// Temporary test route to verify panel assignment data
+Route::get('/test-panel-assignments', function() {
+    $orders = \App\Models\Order::with([
+        'user', 
+        'plan', 
+        'reorderInfo',
+        'orderPanels.userOrderPanelAssignments' => function($query) {
+            $query->with(['orderPanel', 'orderPanelSplit']);
+        }
+    ])->get();
+    
+    $testData = [];
+    foreach($orders as $order) {
+        $assignmentData = [];
+        
+        // Check panel assignments
+        foreach($order->orderPanels as $orderPanel) {
+            foreach($orderPanel->userOrderPanelAssignments as $assignment) {
+                $assignmentData[] = [
+                    'type' => 'panel',
+                    'space_assigned' => $assignment->orderPanel->space_assigned ?? 'N/A',
+                    'domains_count' => $assignment->orderPanelSplit->domains ?? 'N/A',
+                    'contractor_id' => $assignment->contractor_id
+                ];
+            }
+        }
+        
+        $testData[] = [
+            'order_id' => $order->id,
+            'order_name' => $order->user->first_name . ' ' . $order->user->last_name,
+            'traditional_assignment' => $order->assigned_to,
+            'panel_assignments' => $assignmentData
+        ];
+    }
+    
+    return response()->json($testData);
+});
