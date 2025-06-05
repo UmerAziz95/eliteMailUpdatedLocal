@@ -194,8 +194,8 @@
                 </li>
         
                 <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panel') ? 'active' : '' }}"
-                        href="{{ route('contractor.panel') }}">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panels.index') ? 'active' : '' }}"
+                        href="{{ route('contractor.panels.index') }}">
                         <div class="d-flex align-items-center" style="gap: 13px">
                             <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
                             <div class="text">Panel</div>
