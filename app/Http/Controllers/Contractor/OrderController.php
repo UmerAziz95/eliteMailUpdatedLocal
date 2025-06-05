@@ -39,7 +39,7 @@ class OrderController extends Controller
         // 'allocated' => 'info',
         'rejected' => 'danger',
         'in-progress' => 'primary',
-        'pending' => 'secondary'
+        // 'pending' => 'secondary'
     ];
     private $paymentStatuses = [
         "Pending" => "warning",
