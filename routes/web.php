@@ -285,6 +285,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // contractor.orders.reorder
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
+    Route::post('/order-panel/status/process', [ContractorOrderController::class, 'orderPanelStatusProcess'])->name('order.panel.status.process');
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
     
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');

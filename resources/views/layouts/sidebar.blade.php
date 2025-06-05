@@ -3,11 +3,11 @@
         <img src="https://cdn-icons-png.flaticon.com/128/4439/4439182.png" width="40" alt="">
         <h4 class="text fs-5 mb-0">Mailboxes</h4>
     </div>
-    <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
+    <!-- <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">
         <input class="form-check-input"
             style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox" value=""
             id="checkDefault">
-    </div>
+    </div> -->
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->
         <li class="nav-item">

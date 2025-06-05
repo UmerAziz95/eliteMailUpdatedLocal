@@ -1080,15 +1080,15 @@
         $('#BulkImportModal').modal('show');
     });
 
-    //open the modal for cancel subscription
+    //open the modal for panel status update
     $(document).on('click', '.markStatus', function() {
-        const chargebee_subscription_id = $(this).data('id');
+        const assignment_id = $(this).data('id');
         const status = $(this).data('status');
         const reason = $(this).data('reason');
-        console.log('Modal opening with:', { chargebee_subscription_id, status, reason });
+        console.log('Modal opening with:', { assignment_id, status, reason });
         
-        // Set subscription ID in the hidden input
-        $('#subscription_id_to_cancel').val(chargebee_subscription_id);
+        // Set assignment ID in the hidden input
+        $('#assignment_id_to_update').val(assignment_id);
 
         // Uncheck all first to reset previous state
         $('input[name="marked_status"]').prop('checked', false);
@@ -1097,7 +1097,7 @@
         $(`input[name="marked_status"][value="${status}"]`).prop('checked', true);
 
         // Show or hide reason field depending on status
-        if (status === 'Reject') {
+        if (status === 'rejected') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').attr('required', true);
             $('#cancellation_reason').val(reason || '');
@@ -1116,7 +1116,7 @@
         const selected = $(this).val();
         console.log('Status changed to:', selected);
         
-        if (selected === 'Reject') {
+        if (selected === 'rejected') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').attr('required', true);
         } else {
@@ -1145,8 +1145,8 @@
             return;
         }
 
-        // If Reject is selected but no reason
-        if (selectedStatus === 'Reject' && !reason) {
+        // If rejected is selected but no reason
+        if (selectedStatus === 'rejected' && !reason) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',

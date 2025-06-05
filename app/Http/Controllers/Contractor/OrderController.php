@@ -86,6 +86,7 @@ class OrderController extends Controller
             : 0;
 
         $statuses = $this->statuses;
+        $splitStatuses = $this->splitStatuses;
         $plans = [];
         return view('contractor.orders.orders', compact(
             'plans', 
@@ -94,6 +95,7 @@ class OrderController extends Controller
             'inProgressOrders',
             'percentageChange',
             'statuses',
+            'splitStatuses',
             'expiredOrders',
             'rejectOrders',
             'cancelledOrders',
@@ -323,7 +325,7 @@ class OrderController extends Controller
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
                                         <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
-                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$order->chargebee_subscription_id.'" data-status="'.$order->status_manage_by_admin.'" data-reason="'.$order->reason.'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
+                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$assignment->id.'" data-status="'.($assignment->orderPanel->status ?? 'pending').'" data-reason="'.(isset($assignment->orderPanel->reason) ? $assignment->orderPanel->reason : '').'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
                                 </ul>
                             </div>';
                 })
@@ -953,5 +955,141 @@ class OrderController extends Controller
         
         return $statusClasses[strtolower($status)] ?? 'secondary';
     }
+    public function orderPanelStatusProcess(Request $request)
+    {
+        $request->validate([
+            'assignment_id' => 'required|exists:user_order_panel_assignment,id',
+            'marked_status' => 'required|string|in:' . implode(',', array_keys($this->splitStatuses)),
+            'reason' => 'nullable|string',
+        ]);
 
+        try {
+            // Get the assignment record
+            $assignment = UserOrderPanelAssignment::with(['orderPanel', 'orderPanel.order', 'orderPanel.order.user'])
+                ->findOrFail($request->assignment_id);
+            
+            $orderPanel = $assignment->orderPanel;
+            $order = $orderPanel->order;
+
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found.'
+                ], 404);
+            }
+
+            $oldStatus = $orderPanel->status;
+            $newStatus = strtolower($request->marked_status);
+            $reason = $request->reason ? $request->reason . " (Reason given by) " . Auth::user()->name : null;
+
+            // Update order panel status
+            $orderPanel->update([
+                'status' => $newStatus,
+            ]);
+
+            // If rejected, also update with reason (you might want to add a reason field to order_panel table)
+            if ($newStatus === 'rejected' && $reason) {
+                // Add reason to note field or create a separate reason field
+                $orderPanel->update(['note' => $reason]);
+            }
+
+            // Create activity log
+            ActivityLogService::log(
+                'contractor-order-panel-status-update',
+                'Order panel status updated: Panel ID ' . $orderPanel->id . ' for Order #' . $order->id,
+                $orderPanel,
+                [
+                    'order_panel_id' => $orderPanel->id,
+                    'order_id' => $order->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_by' => auth()->id(),
+                    'reason' => $reason
+                ]
+            );
+
+            // Create notifications
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Your order #' . $order->id . ' panel status has been changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'updated_by' => Auth::id()
+                ]
+            ]);
+
+            // Notification for contractor
+            Notification::create([
+                'user_id' => Auth::id(),
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Order #' . $order->id . ' panel status changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'updated_by' => Auth::id()
+                ]
+            ]);
+
+            // Send emails if needed
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order panel status change email sent', [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'assignment_id' => $assignment->id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send order panel status change emails: ' . $e->getMessage());
+            }
+
+            $orderCounts = $this->getOrderCounts();
+            return response()->json([
+                'success' => true,
+                'message' => 'Order Panel Status Updated Successfully.',
+                'counts' => $orderCounts
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error While Updating The Panel Status: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed To Update The Panel Status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

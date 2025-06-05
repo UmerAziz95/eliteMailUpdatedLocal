@@ -41,9 +41,9 @@
 
 
 
-                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.status.process') }}" method="POST">
+                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.panel.status.process') }}" method="POST">
                     @csrf
-                    <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
+                    <input type="hidden" name="assignment_id" id="assignment_id_to_update">
                     <div class="mb-3">
                         <div class="">
 
@@ -59,10 +59,10 @@
                         </div>
                         <label class="form-label">Select Status *</label>
                         <div class="d-flex flex-wrap gap-2">
-                            @foreach($statuses as $status => $badge)
+                            @foreach($splitStatuses as $status => $badge)
                             <div class="form-check me-3">
                                 <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ ucfirst($status) }}" id="status_{{ $loop->index }}" required>
+                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
                                 <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
                                     {{ ucfirst($status) }}
                                 </label>
