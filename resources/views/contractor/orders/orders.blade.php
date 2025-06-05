@@ -585,16 +585,24 @@
                         targets: planId ? 5 : 6
                     }, // Total Inboxes 
                     {
-                        width: '15%',
+                        width: '12%',
                         targets: planId ? 6 : 7
                     }, // Status
                     {
-                        width: '15%',
+                        width: '12%',
                         targets: planId ? 7 : 8
-                    }, // Assignment
+                    }, // Split Status
                     {
                         width: '10%',
                         targets: planId ? 8 : 9
+                    }, // Total Inboxes Split
+                    {
+                        width: '15%',
+                        targets: planId ? 9 : 10
+                    }, // Download CSV Split Domains
+                    {
+                        width: '8%',
+                        targets: planId ? 10 : 11
                     } // Actions
                 ],
                 ajax: {
@@ -705,8 +713,22 @@
                         name: 'orders.status'
                     },
                     {
+                        data: 'split_status',
+                        name: 'split_status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'total_inboxes_split',
+                        name: 'total_inboxes_split',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'assignment',
-                        name: 'assignment'
+                        name: 'assignment',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'action',

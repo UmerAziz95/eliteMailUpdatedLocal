@@ -12,7 +12,9 @@
                 <th>Domain URL</th>
                 <th>Total Inboxes</th>
                 <th>Status</th>
-                <th>Assignment</th>
+                <th>Split Status</th>
+                <th>Total Inboxes Split</th>
+                <th>Download CSV Split Domains</th>
                 <th>Actions</th>
             </tr>
         </thead>

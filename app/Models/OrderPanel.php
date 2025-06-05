@@ -42,4 +42,9 @@ class OrderPanel extends Model
         return $this->hasMany(OrderPanelSplit::class);
     }
 
+    public function userOrderPanelAssignments()
+    {
+        return $this->hasMany(UserOrderPanelAssignment::class, 'order_panel_id');
+    }
+
 }
