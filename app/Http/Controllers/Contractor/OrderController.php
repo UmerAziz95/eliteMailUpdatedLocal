@@ -248,6 +248,10 @@ class OrderController extends Controller
         
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+        
+        // Add split status color to orderPanel
+        $orderPanel->split_status_color = $this->splitStatuses[$orderPanel->status ?? 'pending'] ?? 'secondary';
+        
         $splitStatuses = $this->splitStatuses;
         
         return view('contractor.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
@@ -964,17 +968,7 @@ class OrderController extends Controller
      */
     private function getStatusClass($status)
     {
-        $statusClasses = [
-            'pending' => 'warning',
-            'accepted' => 'success', 
-            'completed' => 'primary',
-            'cancelled' => 'danger',
-            'rejected' => 'danger',
-            'in_progress' => 'info',
-            'released' => 'secondary'
-        ];
-        
-        return $statusClasses[strtolower($status)] ?? 'secondary';
+        return $this->splitStatuses[strtolower($status)] ?? 'secondary';
     }
     public function orderPanelStatusProcess(Request $request)
     {

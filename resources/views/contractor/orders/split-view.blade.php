@@ -29,7 +29,7 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <div class="border border-{{ $orderPanel->split_status_color ?? 'secondary' }} rounded-2 py-1 px-2 text-{{ $orderPanel->split_status_color ?? 'secondary' }} bg-transparent">
-            {{ ucfirst($orderPanel->split_status ?? 'Pending') }}
+            {{ ucfirst($orderPanel->status ?? 'Pending') }}
             </div>
             <button
             id="openStatusModal"
