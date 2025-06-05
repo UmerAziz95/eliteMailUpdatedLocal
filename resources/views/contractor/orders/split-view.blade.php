@@ -54,9 +54,27 @@
 
                 @if(optional($orderPanel->order->reorderInfo)->count() > 0)
                 <div class="d-flex align-items-center justify-content-between">
-                    <span>Total Inboxes <br> {{ $orderPanel->order->reorderInfo->first()->total_inboxes ?? '0' }}</span>
-                    <span>Inboxes per domain <br> {{ $orderPanel->order->reorderInfo->first()->inboxes_per_domain ?? '0'
-                        }}</span>
+                    @php
+                        // Calculate split total inboxes based on domains and inboxes per domain
+                        $inboxesPerDomain = $orderPanel->order->reorderInfo->first()->inboxes_per_domain ?? 0;
+                        $splitDomainsCount = 0;
+                        
+                        if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                            foreach ($orderPanel->orderPanelSplits as $split) {
+                                if ($split->domains) {
+                                    if (is_array($split->domains)) {
+                                        $splitDomainsCount += count($split->domains);
+                                    } else {
+                                        $splitDomainsCount += 1;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        $splitTotalInboxes = $splitDomainsCount * $inboxesPerDomain;
+                    @endphp
+                    <span>Split Total Inboxes <br> {{ $splitTotalInboxes }}</span>
+                    <span>Inboxes per domain <br> {{ $inboxesPerDomain }}</span>
                 </div>
                 <hr>
                 <div class="d-flex flex-column">
