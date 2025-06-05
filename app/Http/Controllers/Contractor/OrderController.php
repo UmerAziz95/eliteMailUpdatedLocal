@@ -236,6 +236,7 @@ class OrderController extends Controller
             'order.user',
             'order.reorderInfo', 
             'order.plan',
+            'orderPanelSplits', // Load the split relationship
             'order.userOrderPanelAssignments' => function($query) {
                 $query->with(['orderPanel', 'orderPanelSplit'])
                       ->where('contractor_id', auth()->id());
