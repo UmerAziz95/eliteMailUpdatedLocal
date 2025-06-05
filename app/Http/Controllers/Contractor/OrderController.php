@@ -1052,6 +1052,9 @@ class OrderController extends Controller
                 $orderPanel->update(['note' => $reason]);
             }
 
+            // Update order status_manage_by_admin based on panel status changes
+            $this->updateOrderStatusBasedOnPanelStatus($order, $newStatus);
+
             // Create activity log
             ActivityLogService::log(
                 'contractor-order-panel-status-update',
@@ -1149,6 +1152,35 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Failed To Update The Panel Status: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Update order's status_manage_by_admin based on panel status changes
+     */
+    private function updateOrderStatusBasedOnPanelStatus($order, $newPanelStatus)
+    {
+        // If a panel is set to "in-progress", update order status to "in-progress"
+        if ($newPanelStatus === 'in-progress') {
+            if ($order->status_manage_by_admin !== 'in-progress') {
+                $order->update(['status_manage_by_admin' => 'in-progress']);
+            }
+        }
+        
+        // If a panel is set to "completed", check if all panels are completed
+        if ($newPanelStatus === 'completed') {
+            // Get all panels for this order
+            $allPanels = OrderPanel::where('order_id', $order->id)->get();
+            
+            // Check if all panels are completed
+            $allCompleted = $allPanels->every(function ($panel) {
+                return $panel->status === 'completed';
+            });
+            
+            // If all panels are completed, update order status to "completed"
+            if ($allCompleted && $order->status_manage_by_admin !== 'completed') {
+                $order->update(['status_manage_by_admin' => 'completed']);
+            }
         }
     }
 }
