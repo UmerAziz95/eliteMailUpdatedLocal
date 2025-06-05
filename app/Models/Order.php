@@ -66,4 +66,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderPanel::class);
     }
+
+    public function userOrderPanelAssignments()
+    {
+        return $this->hasMany(UserOrderPanelAssignment::class, 'order_id');
+    }
 }

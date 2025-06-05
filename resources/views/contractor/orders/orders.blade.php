@@ -1082,13 +1082,13 @@
 
     //open the modal for panel status update
     $(document).on('click', '.markStatus', function() {
-        const assignment_id = $(this).data('id');
+        const order_panel_id = $(this).data('id');
         const status = $(this).data('status');
         const reason = $(this).data('reason');
-        console.log('Modal opening with:', { assignment_id, status, reason });
+        console.log('Modal opening with:', { order_panel_id, status, reason });
         
-        // Set assignment ID in the hidden input
-        $('#assignment_id_to_update').val(assignment_id);
+        // Set order panel ID in the hidden input
+        $('#order_panel_id_to_update').val(order_panel_id);
 
         // Uncheck all first to reset previous state
         $('input[name="marked_status"]').prop('checked', false);

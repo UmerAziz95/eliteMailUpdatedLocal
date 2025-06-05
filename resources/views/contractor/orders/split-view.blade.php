@@ -27,9 +27,13 @@
             class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
             {{ ucfirst($order->status2 ?? 'Pending') }}
         </div>
+        <div
+            id="openStatusModal"
+            class="border border-success rounded-2 py-1 px-2 text-success bg-transparent">
+            Change Status
+        </div>
+        
     </div>
-
-    <!-- Removed tabs - showing only configuration content -->
 
     <!-- Configuration Content Only -->
     <div class="row">
@@ -170,7 +174,6 @@
                     @php
                         // Get domains from the order_panel_split table for current contractor
                         $domainsArray = [];
-                        
                         foreach ($order->orderPanels as $orderPanel) {
                             foreach ($orderPanel->userOrderPanelAssignments as $assignment) {
                                 if ($assignment->contractor_id == auth()->id() && $assignment->orderPanelSplit) {
@@ -215,5 +218,160 @@
     </div>
 
 </section>
+<div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                    <div class="d-flex align-items-center justify-content-center"
+                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                        <i class="fa-solid fa-cart-plus"></i>
+                    </div>
+                    Mark Status
+                </h6>
 
+
+
+                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.panel.status.process') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" id="order_panel_id_to_update">
+                    <div class="mb-3">
+                        <div class="">
+
+                            <div class="mb-3 d-none" id="reason_wrapper">
+                                <p class="note">
+                                    Would you mind sharing the reason
+                                    for the rejection?
+                                </p>
+                                <label for="cancellation_reason">Reason *</label>
+                                <textarea id="cancellation_reason" name="reason" class="form-control"
+                                    rows="5"></textarea>
+                            </div>
+                        </div>
+                        <label class="form-label">Select Status *</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($splitStatuses as $status => $badge)
+                            <div class="form-check me-3">
+                                <input class="form-check-input marked_status" type="radio" name="marked_status"
+                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
+                                    {{ ucfirst($status) }}
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">No</button>
+                        <button type="submit"
+                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                            I'm sure</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+@push('scripts')
+<script>
+    $('#openStatusModal').on('click', function() {
+        // Use the order panel ID directly since we have it from the controller
+        $('#order_panel_id_to_update').val('{{ $orderPanel->id }}');
+        $('#cancel_subscription').modal('show');
+    });
+
+    // Handle status change to show/hide reason field
+    $('.marked_status').on('change', function() {
+        const selectedStatus = $(this).val();
+        if (selectedStatus === 'rejected') {
+            $('#reason_wrapper').removeClass('d-none');
+            $('#cancellation_reason').prop('required', true);
+        } else {
+            $('#reason_wrapper').addClass('d-none');
+            $('#cancellation_reason').prop('required', false);
+        }
+    });
+
+    // Handle form submission with SweetAlert
+    $('#cancelSubscriptionForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const selectedStatus = $('input[name="marked_status"]:checked').val();
+        
+        if (!selectedStatus) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Status Required',
+                text: 'Please select a status before submitting.'
+            });
+            return;
+        }
+
+        // Show loading alert
+        Swal.fire({
+            title: 'Updating Status...',
+            text: 'Please wait while we update the panel status.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Submit the form via AJAX
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                Swal.close();
+                $('#cancel_subscription').modal('hide');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message || 'Panel status updated successfully.',
+                    timer: 3000,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Optionally reload the page or update the UI
+                    window.location.reload();
+                });
+            },
+            error: function(xhr) {
+                Swal.close();
+                
+                let errorMessage = 'Failed to update panel status.';
+                
+                if (xhr.responseJSON) {
+                    errorMessage = xhr.responseJSON.message || errorMessage;
+                    
+                    // Show debug info if available
+                    if (xhr.responseJSON.debug) {
+                        console.log('Debug info:', xhr.responseJSON.debug);
+                    }
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    });
+</script>
+@endpush

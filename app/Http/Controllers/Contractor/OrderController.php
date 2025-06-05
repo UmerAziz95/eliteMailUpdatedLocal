@@ -213,7 +213,6 @@ class OrderController extends Controller
             // Get the billing period and unit from metadata
             $billingPeriod = $subscription['billing_period'] ?? 1;
             $billingPeriodUnit = $subscription['billing_period_unit'] ?? 'month';
-            
             $nextBillingInfo = [
                 'status' => $order->subscription->status,
                 'billing_period' => $billingPeriod,
@@ -230,21 +229,27 @@ class OrderController extends Controller
     
         return view('contractor.orders.order-view', compact('order', 'nextBillingInfo'));
     }
-    public function splitView($id)
+    public function splitView($order_panel_id)
     {
-        $order = Order::with([
-            'user', 
-            'reorderInfo',
-            'plan',
-            'orderPanels.userOrderPanelAssignments' => function($query) {
+        // Get the order panel with all necessary relationships including the order
+        $orderPanel = OrderPanel::with([
+            'order.user',
+            'order.reorderInfo', 
+            'order.plan',
+            'order.userOrderPanelAssignments' => function($query) {
                 $query->with(['orderPanel', 'orderPanelSplit'])
                       ->where('contractor_id', auth()->id());
             }
-        ])->findOrFail($id);
+        ])->findOrFail($order_panel_id);
+        
+        // Get the order from the panel
+        $order = $orderPanel->order;
+        
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
-    
-        return view('contractor.orders.split-view', compact('order'));
+        $splitStatuses = $this->splitStatuses;
+        
+        return view('contractor.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
     }
 
     public function getOrders(Request $request)
@@ -338,9 +343,9 @@ class OrderController extends Controller
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="' . route('contractor.orders.split.view', $assignment->order->id) . '">
+                                    <li><a class="dropdown-item" href="' . route('contractor.orders.split.view', $assignment->orderPanel->id) . '">
                                         <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
-                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$assignment->id.'" data-status="'.($assignment->orderPanel->status ?? 'pending').'" data-reason="'.(isset($assignment->orderPanel->reason) ? $assignment->orderPanel->reason : '').'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
+                                        <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$assignment->orderPanel->id.'" data-status="'.($assignment->orderPanel->status ?? 'pending').'" data-reason="'.(isset($assignment->orderPanel->reason) ? $assignment->orderPanel->reason : '').'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
                                 </ul>
                             </div>';
                 })
@@ -973,24 +978,62 @@ class OrderController extends Controller
     public function orderPanelStatusProcess(Request $request)
     {
         $request->validate([
-            'assignment_id' => 'required|exists:user_order_panel_assignment,id',
+            'order_panel_id' => 'required|exists:order_panel,id',
             'marked_status' => 'required|string|in:' . implode(',', array_keys($this->splitStatuses)),
             'reason' => 'nullable|string',
         ]);
 
         try {
-            // Get the assignment record
-            $assignment = UserOrderPanelAssignment::with(['orderPanel', 'orderPanel.order', 'orderPanel.order.user'])
-                ->findOrFail($request->assignment_id);
-            
-            $orderPanel = $assignment->orderPanel;
-            $order = $orderPanel->order;
-
-            if (!$orderPanel) {
+            // Ensure contractor is authenticated
+            if (!auth()->check()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Order panel not found.'
-                ], 404);
+                    'message' => 'You must be logged in to perform this action.'
+                ], 401);
+            }
+
+            $contractorId = auth()->id();
+            
+            // Get the order panel with all necessary relationships
+            $orderPanel = OrderPanel::with(['order', 'order.user', 'userOrderPanelAssignments'])->findOrFail($request->order_panel_id);
+            $order = $orderPanel->order;
+            
+            // Get the current contractor's assignment for this order panel
+            $assignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)
+                ->where('contractor_id', $contractorId)
+                ->first();
+
+            if (!$assignment) {
+                // Check if this order panel has any assignments at all
+                $allAssignments = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)->get();
+                $contractorAssignments = UserOrderPanelAssignment::where('contractor_id', $contractorId)->get();
+                
+                \Log::info('Assignment lookup failed', [
+                    'order_panel_id' => $orderPanel->id,
+                    'contractor_id' => $contractorId,
+                    'total_assignments_for_panel' => $allAssignments->count(),
+                    'total_assignments_for_contractor' => $contractorAssignments->count(),
+                    'panel_assignments' => $allAssignments->pluck('contractor_id')->toArray(),
+                    'contractor_panels' => $contractorAssignments->pluck('order_panel_id')->toArray()
+                ]);
+                
+                if ($allAssignments->isEmpty()) {
+                    $errorMessage = 'This order panel has not been assigned to any contractor yet.';
+                } else {
+                    $assignedContractors = $allAssignments->pluck('contractor_id')->unique();
+                    $errorMessage = 'This order panel is assigned to contractor ID(s): ' . $assignedContractors->implode(', ') . '. You are contractor ID: ' . $contractorId;
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'debug' => [
+                        'order_panel_id' => $orderPanel->id,
+                        'contractor_id' => $contractorId,
+                        'panel_has_assignments' => !$allAssignments->isEmpty(),
+                        'assigned_contractors' => $allAssignments->pluck('contractor_id')->toArray()
+                    ]
+                ], 403);
             }
 
             $oldStatus = $orderPanel->status;

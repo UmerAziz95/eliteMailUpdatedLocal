@@ -43,7 +43,7 @@
 
                 <form id="cancelSubscriptionForm" action="{{ route('contractor.order.panel.status.process') }}" method="POST">
                     @csrf
-                    <input type="hidden" name="assignment_id" id="assignment_id_to_update">
+                    <input type="hidden" name="order_panel_id" id="order_panel_id_to_update">
                     <div class="mb-3">
                         <div class="">
 
