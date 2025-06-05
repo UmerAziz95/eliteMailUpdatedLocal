@@ -895,6 +895,8 @@
             // Clear filters
             $('#clearFilters').on('click', function() {
                 $('#orderIdFilter, #nameFilter, #emailFilter, #domainFilter').val('');
+                // totalInboxesFilter
+                $('#totalInboxesFilter').val('');
                 $('#statusFilter').val('');
                 $('#startDate, #endDate').val('');
                 applyFilters();
