@@ -230,6 +230,22 @@ class OrderController extends Controller
     
         return view('contractor.orders.order-view', compact('order', 'nextBillingInfo'));
     }
+    public function splitView($id)
+    {
+        $order = Order::with([
+            'user', 
+            'reorderInfo',
+            'plan',
+            'orderPanels.userOrderPanelAssignments' => function($query) {
+                $query->with(['orderPanel', 'orderPanelSplit'])
+                      ->where('contractor_id', auth()->id());
+            }
+        ])->findOrFail($id);
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+    
+        return view('contractor.orders.split-view', compact('order'));
+    }
 
     public function getOrders(Request $request)
     {
@@ -316,14 +332,13 @@ class OrderController extends Controller
                             </a>
                         </li>';
                     }
-
                     return '<div class="dropdown">
                                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
                                     aria-expanded="false">
                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="' . route('contractor.orders.view', $order->id) . '">
+                                    <li><a class="dropdown-item" href="' . route('contractor.orders.split.view', $assignment->order->id) . '">
                                         <i class="fa-solid fa-eye"></i> &nbsp;View</a></li>
                                         <li><a href="#" class="dropdown-item markStatus" id="markStatus" data-id="'.$assignment->id.'" data-status="'.($assignment->orderPanel->status ?? 'pending').'" data-reason="'.(isset($assignment->orderPanel->reason) ? $assignment->orderPanel->reason : '').'" ><i class="fa-solid fa-flag"></i> &nbsp;Mark Status</a></li>
                                 </ul>

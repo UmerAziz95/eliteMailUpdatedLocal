@@ -276,6 +276,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
     
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
+    Route::get('/orders/{id}/split/view', [ContractorOrderController::class, 'splitView'])->name('orders.split.view');
     
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [ContractorOrderController::class, 'getOrders'])->name('orders.data');
