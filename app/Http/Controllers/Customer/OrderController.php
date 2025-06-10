@@ -800,9 +800,25 @@ class OrderController extends Controller
         $splitNumber = 1;
         $domainsProcessed = 0;
         
-        while ($remainingSpace > 0 && $splitNumber <= 20) { // Safety check to prevent infinite loops
+        while ($remainingSpace > 0 && $domainsProcessed < count($domains) && $splitNumber <= 20) { // Safety check to prevent infinite loops
             $spaceForThisPanel = min(1790, $remainingSpace);
-            $domainsForThisPanel = ceil($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
+            
+            // Calculate maximum domains that can fit in this panel without exceeding capacity
+            $maxDomainsForThisPanel = floor($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
+            
+            // Ensure we don't process more domains than remaining
+            $remainingDomains = count($domains) - $domainsProcessed;
+            $domainsForThisPanel = min($maxDomainsForThisPanel, $remainingDomains);
+            
+            Log::info("Panel split calculation", [
+                'split_number' => $splitNumber,
+                'space_for_panel' => $spaceForThisPanel,
+                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                'max_domains_for_panel' => $maxDomainsForThisPanel,
+                'remaining_domains' => $remainingDomains,
+                'domains_for_this_panel' => $domainsForThisPanel,
+                'domains_processed_so_far' => $domainsProcessed
+            ]);
             
             // Extract domains for this panel
             $domainsToAssign = array_slice($domains, $domainsProcessed, $domainsForThisPanel);
@@ -853,6 +869,25 @@ class OrderController extends Controller
             $splitNumber++;
         }
         
+        // Check if all domains have been processed
+        $totalDomainsToProcess = count($domains);
+        if ($domainsProcessed < $totalDomainsToProcess) {
+            $remainingDomains = array_slice($domains, $domainsProcessed);
+            $remainingSpace = count($remainingDomains) * $reorderInfo->inboxes_per_domain;
+            
+            Log::warning("Some domains were not processed, creating additional panel", [
+                'order_id' => $order->id,
+                'domains_processed' => $domainsProcessed,
+                'total_domains' => $totalDomainsToProcess,
+                'remaining_domains' => count($remainingDomains),
+                'remaining_space' => $remainingSpace
+            ]);
+            
+            // Create additional panel for remaining domains
+            $panel = $this->createSinglePanel(1790);
+            $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
+        }
+        
         if ($remainingSpace > 0) {
             Log::warning("Still have remaining space after panel creation", [
                 'order_id' => $order->id,
@@ -889,7 +924,13 @@ class OrderController extends Controller
             
             $availableSpace = $panel->remaining_limit;
             $spaceToUse = min($availableSpace, $remainingSpace);
-            $domainsToAssign = ceil($spaceToUse / $reorderInfo->inboxes_per_domain);
+            
+            // Calculate maximum domains that can fit in available space without exceeding capacity
+            $maxDomainsForSpace = floor($spaceToUse / $reorderInfo->inboxes_per_domain);
+            
+            // Ensure we don't process more domains than remaining
+            $remainingDomains = count($domains) - $domainsProcessed;
+            $domainsToAssign = min($maxDomainsForSpace, $remainingDomains);
             
             // Extract domains for this panel
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
@@ -911,16 +952,38 @@ class OrderController extends Controller
             }
         }
         
-        // If there's still remaining space, create new panel(s)
-        if ($remainingSpace > 0) {
+        // Check if all domains have been processed
+        $totalDomainsToProcess = count($domains);
+        if ($domainsProcessed < $totalDomainsToProcess) {
             $remainingDomains = array_slice($domains, $domainsProcessed);
+            $remainingSpace = count($remainingDomains) * $reorderInfo->inboxes_per_domain;
+            
+            Log::info("Processing remaining domains not assigned to existing panels", [
+                'order_id' => $order->id,
+                'domains_processed' => $domainsProcessed,
+                'total_domains' => $totalDomainsToProcess,
+                'remaining_domains' => count($remainingDomains),
+                'remaining_space' => $remainingSpace
+            ]);
+            
             if (!empty($remainingDomains)) {
                 $panel = $this->createSinglePanel(1790);
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
-                Log::info("Created additional panel #{$panel->id} for remaining space in order #{$order->id}", [
+                Log::info("Created additional panel #{$panel->id} for remaining domains in order #{$order->id}", [
+                    'remaining_domains' => count($remainingDomains),
                     'remaining_space' => $remainingSpace
                 ]);
             }
+        }
+        
+        // Legacy check for remaining space (should be covered by domain check above)
+        if ($remainingSpace > 0 && $domainsProcessed >= $totalDomainsToProcess) {
+            Log::warning("Remaining space detected but all domains processed - this should not happen", [
+                'order_id' => $order->id,
+                'remaining_space' => $remainingSpace,
+                'domains_processed' => $domainsProcessed,
+                'total_domains' => $totalDomainsToProcess
+            ]);
         }
     }
     
