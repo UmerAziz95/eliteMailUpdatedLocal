@@ -12,12 +12,18 @@
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-warning text-dark">Rejected Panels</span>
         </div>
-    </div>
-
-    <div class="mt-3">
+    </div>    <div class="mt-3">
         <h5 class="mb-3">Fix Domains Split - Order #{{ $order->id }}</h5>
         <p class="text-white">Update domains for rejected order panels. You can modify the domains but the total count must remain the same.</p>
-    </div>    <div class="card shadow-sm">
+        
+        <!-- Validation Summary -->
+        <div class="alert alert-info d-none" id="validation-summary">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <span id="validation-summary-text">Ready to validate...</span>
+            </div>
+        </div>
+    </div><div class="card shadow-sm">
         <div class="card-body">
             <form id="fixDomainsForm">
                 @csrf
@@ -66,30 +72,28 @@
                                         Domain Names
                                         <span class="badge bg-secondary ms-2">{{ count($split->domains) }} domains required</span>
                                     </label>
-                                    
-                                    <div class="alert alert-info py-2 mb-3" style="font-size: 0.875rem;">
+                                      <div class="alert alert-info py-2 mb-3" style="font-size: 0.875rem;">
                                         <i class="fa-solid fa-info-circle me-1"></i>
-                                        <strong>Note:</strong> All domains must be unique. Duplicates are not allowed.
+                                        <strong>Note:</strong> Enter one domain per line. All domains must be unique. Duplicates are not allowed.
                                     </div>
-                                    
-                                    <div class="row">
-                                        @foreach($split->domains as $index => $domain)
-                                            <div class="col-md-6 mb-3">
-                                                <div class="domain-input-group">
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-primary text-white fw-bold">
-                                                            {{ $index + 1 }}
-                                                        </span>
-                                                        <input type="text" 
-                                                               class="form-control domain-input" 
-                                                               name="panel_splits[{{ $split->id }}][domains][]" 
-                                                               value="{{ $domain }}" 
-                                                               placeholder="example.domain.com"
-                                                               required>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                      <div class="domain-textarea-group">
+                                        <textarea class="form-control domain-textarea" 
+                                                  name="panel_splits[{{ $split->id }}][domains]" 
+                                                  rows="6"
+                                                  placeholder="Enter domains (one per line):&#10;example1.com&#10;example2.com&#10;example3.com"
+                                                  data-split-id="{{ $split->id }}"
+                                                  data-required-count="{{ count($split->domains) }}"
+                                                  required>{{ implode("\n", $split->domains) }}</textarea>
+                                        <div class="invalid-feedback" id="domains-error-{{ $split->id }}"></div>
+                                        <div class="d-flex justify-content-between mt-1">
+                                            <small class="form-text text-muted">
+                                                <i class="fa-solid fa-info-circle me-1"></i>
+                                                Required: {{ count($split->domains) }} domains
+                                            </small>
+                                            <small class="form-text text-muted" id="count-display-{{ $split->id }}">
+                                                <span class="domain-count">0</span> / {{ count($split->domains) }}
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -99,12 +103,17 @@
                     <div class="text-white">
                         <i class="fa-solid fa-info-circle me-1"></i>
                         You can modify domains but must keep the same count
+                        <br>
+                        <small class="text-muted">
+                            <i class="fa-solid fa-keyboard me-1"></i>
+                            Shortcuts: Ctrl+S to save, Ctrl+R to reset
+                        </small>
                     </div>
                     <div class="d-flex gap-2">
                         <a href="{{ route('customer.orders') }}" class="btn btn-outline-secondary">
                             <i class="fa-solid fa-times me-1"></i> Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary px-4" id="submitBtn">
+                        <button type="submit" class="btn btn-primary px-4" id="submitBtn" title="Ctrl+S">
                             <i class="fa-solid fa-save me-1"></i> Update Domains
                         </button>
                     </div>
@@ -145,39 +154,83 @@
     background: var(--second-primary) !important;
 }
 
-.domain-input-group {
+.domain-textarea-group {
     transition: all 0.2s ease;
 }
 
-.domain-input-group:hover {
+.domain-textarea-group:hover {
     transform: translateY(-2px);
 }
 
-.domain-input {
+.domain-textarea {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     border: 2px solid var(--input-border-color, #e9ecef);
     transition: all 0.3s ease;
+    resize: vertical;
+    min-height: 150px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-.domain-input:focus {
+.domain-textarea:focus {
     border-color: var(--second-primary);
     box-shadow: 0 0 0 0.2rem rgba(87, 80, 191, 0.25);
-    transform: scale(1.02);
+    transform: scale(1.01);
 }
 
-.domain-input.is-invalid {
+.domain-textarea.is-invalid {
     border-color: var(--danger-color, #dc3545);
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
-.domain-input.is-invalid::placeholder {
+.domain-textarea.is-invalid::placeholder {
     color: rgba(220, 53, 69, 0.6);
 }
 
-.domain-input.is-duplicate {
+.domain-textarea.is-duplicate {
     border-color: #fd7e14;
     box-shadow: 0 0 0 0.2rem rgba(253, 126, 20, 0.25);
     background-color: rgba(253, 126, 20, 0.1);
+}
+
+/* Enhanced feedback for textareas */
+.domain-textarea.is-valid {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.domain-textarea {
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.domain-textarea:focus {
+    outline: none;
+}
+
+/* Validation feedback styling */
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Domain count display styling */
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.domain-count {
+    font-weight: bold;
 }
 
 .input-group-text {
@@ -189,7 +242,7 @@
     color: var(--white-color, #ffffff);
 }
 
-.btn-primary {
+/* .btn-primary {
     background: var(--second-primary);
     border-color: var(--second-primary);
     color: var(--white-color, #ffffff);
@@ -215,7 +268,7 @@
     color: var(--white-color, #ffffff);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(87, 80, 191, 0.2);
-}
+} */
 
 .bg-primary {
     background-color: var(--second-primary) !important;
@@ -365,55 +418,98 @@ if (typeof jQuery === 'undefined') {
         });
     });    // Function to handle form submission with validation
     function submitFormWithValidation(form, submitBtn) {
-        // Validate all domains are filled and are valid domain names
+        // Validate all domains in textareas
         let allValid = true;
         let errorMessages = [];
-        let domainValues = [];
-        let emptyFields = 0;
+        let allDomainValues = [];
+        let emptyTextareas = 0;
         let invalidFormats = 0;
         let duplicateNames = [];
+        let insufficientDomains = 0;
 
-        $('.domain-input').each(function() {
-            const domain = $(this).val().trim();
+        $('.domain-textarea').each(function() {
+            const textarea = $(this);
+            const domainsText = textarea.val().trim();
+            const requiredCount = parseInt(textarea.data('required-count')) || 0;
             const domainRegex = /^[^\s]+\.[^\s]+$/;
             
-            if (!domain) {
+            // Reset validation state
+            textarea.removeClass('is-invalid');
+            
+            if (!domainsText) {
                 allValid = false;
-                $(this).addClass('is-invalid');
-                emptyFields++;
-            } else if (!domainRegex.test(domain)) {
-                allValid = false;
-                $(this).addClass('is-invalid');
-                invalidFormats++;
-            } else {
-                $(this).removeClass('is-invalid');
-                domainValues.push(domain.toLowerCase());
+                textarea.addClass('is-invalid');
+                emptyTextareas++;
+                return;
             }
+            
+            // Split domains by newlines and filter empty lines
+            const domains = domainsText.split('\n')
+                .map(domain => domain.trim())
+                .filter(domain => domain.length > 0);
+            
+            // Check if we have the required number of domains
+            if (domains.length !== requiredCount) {
+                allValid = false;
+                textarea.addClass('is-invalid');
+                insufficientDomains++;
+                const splitId = textarea.data('split-id');
+                $(`#domains-error-${splitId}`).text(`Required: ${requiredCount} domains, found: ${domains.length}`);
+                return;
+            }
+            
+            // Validate each domain format
+            const invalidDomains = domains.filter(domain => !domainRegex.test(domain));
+            if (invalidDomains.length > 0) {
+                allValid = false;
+                textarea.addClass('is-invalid');
+                invalidFormats++;
+                const splitId = textarea.data('split-id');
+                $(`#domains-error-${splitId}`).text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                return;
+            }
+            
+            // Add valid domains to global list for duplicate checking
+            domains.forEach(domain => {
+                allDomainValues.push(domain.toLowerCase());
+            });
         });
 
-        // Check for duplicate domains
-        const duplicateDomains = domainValues.filter((domain, index) => domainValues.indexOf(domain) !== index);
+        // Check for duplicate domains across all textareas
+        const duplicateDomains = allDomainValues.filter((domain, index) => allDomainValues.indexOf(domain) !== index);
         if (duplicateDomains.length > 0) {
             allValid = false;
-            duplicateNames = [...new Set(duplicateDomains)]; // Remove duplicates from duplicate list
-            // Mark duplicate domain inputs as invalid
-            $('.domain-input').each(function() {
-                const domain = $(this).val().trim().toLowerCase();
-                if (duplicateDomains.includes(domain)) {
-                    $(this).addClass('is-invalid');
+            duplicateNames = [...new Set(duplicateDomains)];
+            
+            // Mark textareas containing duplicates as invalid
+            $('.domain-textarea').each(function() {
+                const textarea = $(this);
+                const domainsText = textarea.val().trim();
+                const domains = domainsText.split('\n')
+                    .map(domain => domain.trim().toLowerCase())
+                    .filter(domain => domain.length > 0);
+                
+                const hasDuplicates = domains.some(domain => duplicateDomains.includes(domain));
+                if (hasDuplicates) {
+                    textarea.addClass('is-invalid');
+                    const splitId = textarea.data('split-id');
+                    const foundDuplicates = domains.filter(domain => duplicateDomains.includes(domain));
+                    $(`#domains-error-${splitId}`).text(`Duplicate domains found: ${foundDuplicates.join(', ')}`);
                 }
             });
-        }
-
+        } 
         // Build numbered error messages
-        if (emptyFields > 0) {
-            errorMessages.push(`${emptyFields} empty domain field${emptyFields > 1 ? 's' : ''} found. Please fill all required fields.`);
+        if (emptyTextareas > 0) {
+            errorMessages.push(`${emptyTextareas} empty domain textarea${emptyTextareas > 1 ? 's' : ''} found. Please fill all required fields.`);
+        }
+        if (insufficientDomains > 0) {
+            errorMessages.push(`${insufficientDomains} textarea${insufficientDomains > 1 ? 's' : ''} with incorrect domain count. Please check required counts.`);
         }
         if (invalidFormats > 0) {
-            errorMessages.push(`${invalidFormats} invalid domain format${invalidFormats > 1 ? 's' : ''} detected. Please use valid domain names (e.g., example.com).`);
+            errorMessages.push(`${invalidFormats} textarea${invalidFormats > 1 ? 's' : ''} with invalid domain format${invalidFormats > 1 ? 's' : ''} detected. Please use valid domain names (e.g., example.com).`);
         }
         if (duplicateNames.length > 0) {
-            errorMessages.push(`${duplicateNames.length} duplicate domain${duplicateNames.length > 1 ? 's' : ''} found: ${duplicateNames.join(', ')}. Each domain must be unique.`);
+            errorMessages.push(`${duplicateNames.length} duplicate domain${duplicateNames.length > 1 ? 's' : ''} found: ${duplicateNames.join(', ')}. Each domain must be unique across all splits.`);
         }
         
         if (!allValid) {
@@ -434,13 +530,14 @@ if (typeof jQuery === 'undefined') {
             didOpen: () => {
                 Swal.showLoading();
             }
-        });
-        
+        });        
         // Submit the form
         $.ajax({
             url: '{{ route("customer.orders.update-fixed-domains", $order->id) }}',
             method: 'POST',
-            data: form.serialize(),
+            data: prepareFormData(form),
+            processData: false,
+            contentType: false,
             success: function(response) {
                 Swal.close();
                 if (response.success) {
@@ -461,113 +558,277 @@ if (typeof jQuery === 'undefined') {
                     const errors = Object.values(xhr.responseJSON.errors).flat();
                     errorMessage = errors.join('<br>');
                 }
-                showToast('error', errorMessage);
-            }
-        });
-    }// Real-time validation for domain fields
-    $('.domain-input').on('input blur', function() {
+                showToast('error', errorMessage);            }
+        });    }
+    
+    // Function to prepare form data with proper array formatting
+    function prepareFormData(form) {
+        const formData = new FormData();
+        
+        // Add CSRF token
+        formData.append('_token', $('input[name="_token"]').val());
+        
+        // Add order_id
+        formData.append('order_id', $('input[name="order_id"]').val());
+        
+        // Process each textarea and convert to array format
+        $('.domain-textarea').each(function() {
+            const textarea = $(this);
+            const name = textarea.attr('name'); // e.g., "panel_splits[3][domains]"
+            const domainsText = textarea.val().trim();
+            
+            if (domainsText) {
+                // Split domains by newlines and filter empty lines
+                const domains = domainsText.split('\n')
+                    .map(domain => domain.trim())
+                    .filter(domain => domain.length > 0);
+                
+                // Add each domain as an array element
+                domains.forEach((domain, index) => {
+                    // Convert "panel_splits[3][domains]" to "panel_splits[3][domains][0]", "panel_splits[3][domains][1]", etc.
+                    const arrayName = name.replace('[domains]', `[domains][${index}]`);
+                    formData.append(arrayName, domain);
+                });
+            }        });
+        
+        console.log('Form data prepared for submission:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]);
+        }
+        
+        return formData;
+    }
+    
+    // Real-time validation for domain textareas
+    $('.domain-textarea').on('input blur', function() {
         if (!$(this).length) return; // Safety check
+        
+        // Auto-resize textarea based on content
+        const textarea = this;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(150, textarea.scrollHeight) + 'px';
         
         validateAllDomainsRealTime();
         updateSubmitButtonState();
-    });    // Function for real-time domain validation
+    });
+      // Add paste event handler for better UX
+    $('.domain-textarea').on('paste', function() {
+        const textarea = $(this);
+        // Use setTimeout to allow the paste content to be processed first
+        setTimeout(() => {
+            validateAllDomainsRealTime();
+            updateSubmitButtonState();
+            
+            // Auto-resize after paste
+            const textareaElement = textarea[0];
+            textareaElement.style.height = 'auto';
+            textareaElement.style.height = Math.max(150, textareaElement.scrollHeight) + 'px';
+        }, 100);
+    });
+    
+    // Add keyboard shortcuts
+    $(document).on('keydown', function(e) {
+        // Ctrl+S to save
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            if (!$('#submitBtn').prop('disabled')) {
+                $('#submitBtn').click();
+            }
+        }
+        
+        // Ctrl+R to reset form (with confirmation)
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Reset Form?',
+                text: 'This will reset all domains to their original values.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--second-primary)',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Reset',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload();
+                }
+            });
+        }
+    });// Function for real-time domain validation
     function validateAllDomainsRealTime() {
         // Reset all validation states
-        $('.domain-input').removeClass('is-invalid');
-        $('.input-group-text').removeClass('border-danger').addClass('border-primary');
+        $('.domain-textarea').removeClass('is-invalid is-valid');
+        $('.invalid-feedback').text('');
         
-        let domainCounts = {};
-        let invalidInputs = [];
-        let emptyFields = 0;
+        let allDomainValues = [];
+        let hasErrors = false;
+        let emptyTextareas = 0;
         let invalidFormats = 0;
-        let duplicateCount = 0;
+        let insufficientDomains = 0;
         let duplicateNames = [];
         const domainRegex = /^[^\s]+\.[^\s]+$/;
         
-        // First pass: validate format and count domains
-        $('.domain-input').each(function() {
-            const currentInput = $(this);
-            const domain = currentInput.val().trim();
+        // First pass: validate each textarea individually
+        $('.domain-textarea').each(function() {
+            const textarea = $(this);
+            const domainsText = textarea.val().trim();
+            const requiredCount = parseInt(textarea.data('required-count')) || 0;
+            const splitId = textarea.data('split-id');
+            const errorElement = $(`#domains-error-${splitId}`);
+              // Reset individual validation state
+            textarea.removeClass('is-invalid is-valid');
+            errorElement.text('');
+              if (!domainsText) {
+                textarea.addClass('is-invalid');
+                errorElement.text('Please enter domains for this split');
+                emptyTextareas++;
+                hasErrors = true;
+                
+                // Update count display for empty textarea
+                const countDisplay = $(`#count-display-${splitId} .domain-count`);
+                countDisplay.text(0);
+                $(`#count-display-${splitId}`).removeClass('text-success text-warning').addClass('text-danger');
+                return;
+            }
             
-            if (domain) {
-                // Check domain format
-                if (!domainRegex.test(domain)) {
-                    currentInput.addClass('is-invalid');
-                    invalidInputs.push(currentInput);
-                    invalidFormats++;
-                } else {
-                    // Count domain occurrences (case-insensitive)
-                    const lowerDomain = domain.toLowerCase();
-                    domainCounts[lowerDomain] = (domainCounts[lowerDomain] || []);
-                    domainCounts[lowerDomain].push(currentInput);
-                }
+            // Split domains by newlines and filter empty lines
+            const domains = domainsText.split('\n')
+                .map(domain => domain.trim())
+                .filter(domain => domain.length > 0);
+            
+            // Update domain count display
+            const countDisplay = $(`#count-display-${splitId} .domain-count`);
+            countDisplay.text(domains.length);
+            
+            // Color-code the count based on requirement
+            const countParent = $(`#count-display-${splitId}`);
+            countParent.removeClass('text-success text-warning text-danger');
+            if (domains.length === requiredCount) {
+                countParent.addClass('text-success');
+            } else if (domains.length > 0) {
+                countParent.addClass('text-warning');
             } else {
-                // Empty domain
-                currentInput.addClass('is-invalid');
-                invalidInputs.push(currentInput);
-                emptyFields++;
+                countParent.addClass('text-danger');
+            }
+            
+            // Check if we have the required number of domains
+            if (domains.length !== requiredCount) {
+                textarea.addClass('is-invalid');
+                errorElement.text(`Required: ${requiredCount} domains, found: ${domains.length}`);
+                insufficientDomains++;
+                hasErrors = true;
+                return;
+            }
+            
+            // Validate each domain format
+            const invalidDomains = domains.filter(domain => !domainRegex.test(domain));
+            if (invalidDomains.length > 0) {
+                textarea.addClass('is-invalid');
+                errorElement.text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                invalidFormats++;
+                hasErrors = true;
+                return;
+            }
+              // Add valid domains to global list for duplicate checking
+            domains.forEach(domain => {
+                allDomainValues.push({
+                    domain: domain.toLowerCase(),
+                    textarea: textarea,
+                    splitId: splitId
+                });
+            });
+            
+            // Mark as valid if no issues so far
+            if (!hasErrors) {
+                textarea.addClass('is-valid');
             }
         });
         
-        // Second pass: mark duplicates
-        Object.keys(domainCounts).forEach(domain => {
-            if (domainCounts[domain].length > 1) {
-                duplicateCount += domainCounts[domain].length;
+        // Second pass: check for duplicates across all textareas
+        const domainCounts = {};
+        allDomainValues.forEach(item => {
+            const domain = item.domain;
+            if (!domainCounts[domain]) {
+                domainCounts[domain] = [];
+            }
+            domainCounts[domain].push(item);
+        });
+        
+        // Mark duplicates
+        Object.keys(domainCounts).forEach(domain => {            if (domainCounts[domain].length > 1) {
                 duplicateNames.push(domain);
-                domainCounts[domain].forEach(input => {
-                    input.addClass('is-invalid');
-                    invalidInputs.push(input);
+                domainCounts[domain].forEach(item => {
+                    item.textarea.removeClass('is-valid').addClass('is-invalid');
+                    const errorElement = $(`#domains-error-${item.splitId}`);
+                    const currentError = errorElement.text();
+                    const duplicateError = `Duplicate domain: ${domain}`;
+                    errorElement.text(currentError ? `${currentError}; ${duplicateError}` : duplicateError);
+                    hasErrors = true;
                 });
             }
-        });
-        
-        // Update input group styling for all invalid inputs
-        invalidInputs.forEach(input => {
-            const inputGroup = input.closest('.input-group');
-            if (inputGroup.length) {
-                inputGroup.find('.input-group-text').addClass('border-danger').removeClass('border-primary');
-            }
-        });
-        
+        });        
         // Show validation errors in toaster if any found
-        if (emptyFields > 0 || invalidFormats > 0 || duplicateCount > 0) {
+        if (emptyTextareas > 0 || invalidFormats > 0 || insufficientDomains > 0 || duplicateNames.length > 0) {
             let errorMessages = [];
             
-            if (emptyFields > 0) {
-                errorMessages.push(`${emptyFields} empty domain field${emptyFields > 1 ? 's' : ''} found`);
+            if (emptyTextareas > 0) {
+                errorMessages.push(`${emptyTextareas} empty textarea${emptyTextareas > 1 ? 's' : ''} found`);
+            }
+            if (insufficientDomains > 0) {
+                errorMessages.push(`${insufficientDomains} textarea${insufficientDomains > 1 ? 's' : ''} with incorrect domain count`);
             }
             if (invalidFormats > 0) {
-                errorMessages.push(`${invalidFormats} invalid domain format${invalidFormats > 1 ? 's' : ''} detected`);
+                errorMessages.push(`${invalidFormats} textarea${invalidFormats > 1 ? 's' : ''} with invalid domain format${invalidFormats > 1 ? 's' : ''} detected`);
             }
-            if (duplicateCount > 0) {
-                errorMessages.push(`${duplicateNames.length} duplicate domain${duplicateNames.length > 1 ? 's' : ''} found: ${duplicateNames.join(', ')}`);
+            if (duplicateNames.length > 0) {
+                errorMessages.push(`duplicate domain${duplicateNames.length > 1 ? 's' : ''} found: ${duplicateNames.join(', ')}`);
             }
             
             // Only show toaster after a short delay to avoid spam during typing
             clearTimeout(window.validationToastTimeout);
             window.validationToastTimeout = setTimeout(() => {
                 showValidationToast(errorMessages);
-            }, 1000); // 1 second delay
-        } else {
+            }, 1000); // 1 second delay        } else {
             // Clear any pending validation toasts if all is valid
             clearTimeout(window.validationToastTimeout);
         }
+        
+        // Update validation summary
+        updateValidationSummary(emptyTextareas, invalidFormats, insufficientDomains, duplicateNames.length);
     }
-
-    // Function to update submit button state
+    
+    // Function to update validation summary
+    function updateValidationSummary(emptyCount, invalidCount, insufficientCount, duplicateCount) {
+        const summaryElement = $('#validation-summary');
+        const summaryText = $('#validation-summary-text');
+        
+        if (emptyCount === 0 && invalidCount === 0 && insufficientCount === 0 && duplicateCount === 0) {
+            summaryElement.removeClass('alert-warning alert-danger').addClass('alert-success d-block');
+            summaryText.html('<i class="fa-solid fa-check-circle me-1"></i> All domains are valid and ready for submission!');
+        } else {
+            summaryElement.removeClass('alert-success').addClass('alert-warning d-block');
+            let issues = [];
+            if (emptyCount > 0) issues.push(`${emptyCount} empty`);
+            if (insufficientCount > 0) issues.push(`${insufficientCount} incorrect count`);
+            if (invalidCount > 0) issues.push(`${invalidCount} invalid format`);
+            if (duplicateCount > 0) issues.push(`${duplicateCount} duplicates`);
+            
+            summaryText.html(`<i class="fa-solid fa-exclamation-triangle me-1"></i> Issues found: ${issues.join(', ')}`);
+        }
+    }// Function to update submit button state
     function updateSubmitButtonState() {
-        const hasInvalidInputs = $('.domain-input.is-invalid').length > 0;
-        const hasEmptyInputs = $('.domain-input').filter(function() {
+        const hasInvalidTextareas = $('.domain-textarea.is-invalid').length > 0;
+        const hasEmptyTextareas = $('.domain-textarea').filter(function() {
             return $(this).val().trim() === '';
         }).length > 0;
         
         const submitBtn = $('#submitBtn');
-        if (hasInvalidInputs || hasEmptyInputs) {
+        if (hasInvalidTextareas || hasEmptyTextareas) {
             submitBtn.prop('disabled', true).addClass('opacity-50');
         } else {
             submitBtn.prop('disabled', false).removeClass('opacity-50');
         }
-    }      // Function to show toast notifications
+    }// Function to show toast notifications
     function showToast(type, message) {
         // Remove HTML tags for toast display
         const cleanMessage = message.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -609,13 +870,12 @@ if (typeof jQuery === 'undefined') {
             });
         }
     }
-
     // Function to show validation errors in toaster
     function showValidationToast(errorMessages) {
         if (!errorMessages || errorMessages.length === 0) return;
         
         // Format numbered error messages
-        const numberedErrors = errorMessages.map((error, index) => `${index + 1}. ${error}`);
+        const numberedErrors = errorMessages.map((error, index) => `${error}`);
         const formattedMessage = numberedErrors.join('\n');
         
         if (typeof toastr !== 'undefined') {
@@ -642,7 +902,8 @@ if (typeof jQuery === 'undefined') {
             };
             
             // Convert line breaks to HTML for better formatting
-            const htmlMessage = formattedMessage.replace(/\n/g, '<br>');            toastr.warning(htmlMessage, '⚠️ Validation Issues');
+            const htmlMessage = formattedMessage.replace(/\n/g, '<br>');            
+            toastr.warning(htmlMessage, '⚠️ Validation Issues');
         } else {
             // Fallback to SweetAlert
             Swal.fire({
@@ -655,13 +916,33 @@ if (typeof jQuery === 'undefined') {
                 width: '450px'
             });
         }
-    }
-    
-        // Initialize input styling and validation
-        if ($('.domain-input').length) {
-            $('.domain-input').each(function() {
+    }        // Initialize textarea styling and validation
+        if ($('.domain-textarea').length) {
+            $('.domain-textarea').each(function() {
                 $(this).trigger('blur');
+                
+                // Initialize domain count displays
+                const textarea = $(this);
+                const splitId = textarea.data('split-id');
+                const domainsText = textarea.val().trim();
+                const domains = domainsText ? domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0) : [];
+                const requiredCount = parseInt(textarea.data('required-count')) || 0;
+                
+                const countDisplay = $(`#count-display-${splitId} .domain-count`);
+                countDisplay.text(domains.length);
+                
+                // Set initial color
+                const countParent = $(`#count-display-${splitId}`);
+                countParent.removeClass('text-success text-warning text-danger');
+                if (domains.length === requiredCount) {
+                    countParent.addClass('text-success');
+                } else if (domains.length > 0) {
+                    countParent.addClass('text-warning');
+                } else {
+                    countParent.addClass('text-danger');
+                }
             });
+            
             // Run initial validation
             validateAllDomainsRealTime();
             updateSubmitButtonState();
