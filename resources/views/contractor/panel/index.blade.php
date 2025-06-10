@@ -688,7 +688,7 @@
                                     <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
                                     <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                        onclick="window.location.href='{{ route('contractor.orders.view', '') }}/' + ${order.order_id}">
+                                        onclick="window.location.href='/contractor/orders/${order.order_id}/split/view/'">
                                         View
                                     </button>
                                     ${order.status === 'unallocated' ? `

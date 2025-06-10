@@ -686,8 +686,7 @@
                                     aria-controls="order-collapse-${order.order_id}">
                                     <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
-                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                        onclick="window.location.href='{{ route('admin.orders.view', '') }}/' + ${order.order_id}">
+                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary" href="javascript:;">
                                         View
                                     </button>
                                 </div>
