@@ -21,9 +21,13 @@
             <div class="d-flex align-items-center">
                 <i class="fa-solid fa-info-circle me-2"></i>
                 <span id="validation-summary-text">Ready to validate...</span>
-            </div>
-        </div>
-    </div><div class="card shadow-sm">
+            </div>        </div>
+    </div>
+
+    {{-- Include Domain & Platform Configuration Section --}}
+    @include('customer.orders.partials._domain_platform_config')
+
+    <div class="card shadow-sm">
         <div class="card-body">
             <form id="fixDomainsForm">
                 @csrf
@@ -75,7 +79,8 @@
                                         <i class="fa-solid fa-info-circle me-1"></i>
                                         <strong>Note:</strong> Enter domains separated by new lines or commas. All domains must be unique. Duplicates are not allowed.
                                     </div>
-                                      <div class="domain-textarea-group">                                        <textarea class="form-control domain-textarea" 
+                                      <div class="domain-textarea-group">                                        
+                                        <textarea class="form-control domain-textarea" 
                                                   name="panel_splits[{{ $split->id }}][domains]" 
                                                   rows="6"
                                                   placeholder="Enter domains (one per line or comma-separated):&#10;example1.com&#10;example2.com, example3.com&#10;example4.com"
@@ -416,6 +421,13 @@ if (typeof jQuery === 'undefined') {
         });
     });    // Function to handle form submission with validation
     function submitFormWithValidation(form, submitBtn) {
+        // First validate platform configuration
+        if (!validatePlatformConfig()) {
+            showValidationToast(['Platform configuration validation failed. Please check all required fields.']);
+            updateSubmitButtonState();
+            return;
+        }
+        
         // Validate all domains in textareas
         let allValid = true;
         let errorMessages = [];
@@ -563,9 +575,22 @@ if (typeof jQuery === 'undefined') {
         
         // Add CSRF token
         formData.append('_token', $('input[name="_token"]').val());
-        
-        // Add order_id
+          // Add order_id
         formData.append('order_id', $('input[name="order_id"]').val());
+        
+        // Add platform configuration data
+        const platformFields = [
+            'forwarding_url', 'hosting_platform', 'sending_platform',
+            'platform_login', 'platform_password', 'sequencer_login', 'sequencer_password',
+            'access_tutorial', 'backup_codes', 'bison_url', 'bison_workspace', 'other_platform'
+        ];
+        
+        platformFields.forEach(fieldName => {
+            const field = $(`[name="${fieldName}"]`);
+            if (field.length && field.val()) {
+                formData.append(fieldName, field.val());
+            }
+        });
         
         // Process each textarea and convert to array format
         $('.domain-textarea').each(function() {

@@ -355,7 +355,6 @@ class OrderController extends Controller
                     } else {
                         // Check if order has rejected order panels for conditional button
                         $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
-                        
                         // Default action buttons
                         return '<div class="dropdown">
                                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
@@ -1288,7 +1287,7 @@ class OrderController extends Controller
     public function showFixDomains($orderId)
     {
         try {
-            $order = Order::with(['orderPanels.orderPanelSplits', 'user'])
+            $order = Order::with(['orderPanels.orderPanelSplits', 'user', 'reorderInfo'])
                 ->where('id', $orderId)
                 ->where('user_id', auth()->id())
                 ->firstOrFail();
@@ -1297,18 +1296,24 @@ class OrderController extends Controller
             $rejectedPanels = $order->orderPanels()->where('status', 'rejected')->get();
 
             if ($rejectedPanels->isEmpty()) {
-                return redirect()->route('customer.orders.index')
+                return redirect()->route('customer.orders')
                     ->with('error', 'No rejected panels found for this order.');
             }
 
+            // Get hosting and sending platforms for the configuration form
+            $hostingPlatforms = \App\Models\HostingPlatform::orderBy('sort_order')->get();
+            $sendingPlatforms = \App\Models\SendingPlatform::orderBy('sort_order')->get();
+
             return view('customer.orders.fix-domains', [
                 'order' => $order,
-                'rejectedPanels' => $rejectedPanels
+                'rejectedPanels' => $rejectedPanels,
+                'hostingPlatforms' => $hostingPlatforms,
+                'sendingPlatforms' => $sendingPlatforms
             ]);
 
         } catch (Exception $e) {
             Log::error('Error showing fix domains page: ' . $e->getMessage());
-            return redirect()->route('customer.orders.index')
+            return redirect()->route('customer.orders')
                 ->with('error', 'Failed to load domain fixing interface.');
         }
     }
@@ -1319,7 +1324,7 @@ class OrderController extends Controller
     public function updateFixedDomains(Request $request, $orderId)
     {
         try {
-            $order = Order::with('orderPanels.orderPanelSplits')
+            $order = Order::with(['orderPanels.orderPanelSplits', 'reorderInfo'])
                 ->where('id', $orderId)
                 ->where('user_id', auth()->id())
                 ->firstOrFail();
@@ -1330,9 +1335,49 @@ class OrderController extends Controller
                 'panel_splits.*' => 'required|array',
                 'panel_splits.*.domains' => 'required|array|min:1',
                 'panel_splits.*.domains.*' => 'required|string',
+                // Platform configuration validation
+                'forwarding_url' => 'nullable|url|max:255',
+                'hosting_platform' => 'nullable|string|max:50',
+                'sending_platform' => 'nullable|string|max:50',
+                'platform_login' => 'nullable|string|max:255',
+                'platform_password' => 'nullable|string|max:255',
+                'sequencer_login' => 'nullable|email|max:255',
+                'sequencer_password' => 'nullable|string|max:255',
+                'backup_codes' => 'nullable|string',
+                'bison_url' => 'nullable|url|max:255',
+                'bison_workspace' => 'nullable|string|max:255',
+                'other_platform' => 'nullable|string|max:255',
+                'access_tutorial' => 'nullable|string',
             ]);
 
             DB::beginTransaction();
+
+            // Update platform configuration in reorder_info if provided
+            if ($order->reorderInfo && $order->reorderInfo->isNotEmpty()) {
+                $reorderInfo = $order->reorderInfo->first();
+                $platformData = [];
+
+                // Collect platform configuration fields that were submitted
+                $platformFields = [
+                    'forwarding_url', 'hosting_platform', 'sending_platform',
+                    'platform_login', 'platform_password', 'sequencer_login', 'sequencer_password',
+                    'backup_codes', 'bison_url', 'bison_workspace', 'other_platform', 'access_tutorial'
+                ];
+
+                foreach ($platformFields as $field) {
+                    if ($request->has($field) && $request->filled($field)) {
+                        $platformData[$field] = $request->input($field);
+                    }
+                }
+
+                // Only update reorder_info if we have platform data to update
+                if (!empty($platformData)) {
+                    $reorderInfo->update($platformData);
+                    Log::info("Updated platform configuration for order #{$order->id}", [
+                        'updated_fields' => array_keys($platformData)
+                    ]);
+                }
+            }
 
             foreach ($request->panel_splits as $splitId => $splitData) {
                 $split = OrderPanelSplit::where('id', $splitId)
