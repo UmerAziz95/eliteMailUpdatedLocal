@@ -475,7 +475,7 @@ class OrderController extends Controller
             $validated = $request->validate([
                 'user_id' => 'required|exists:users,id',
                 'plan_id' => 'required|exists:plans,id',
-                'forwarding_url' => 'required|max:255',
+                'forwarding_url' => 'required|string|max:255',
                 'hosting_platform' => 'required|string|max:50',
                 'other_platform' => 'nullable|required_if:hosting_platform,other|string|max:50',
                 'platform_login' => 'nullable|string|max:255',
@@ -515,7 +515,6 @@ class OrderController extends Controller
                 'additional_info' => 'nullable|string',
                 'coupon_code' => 'nullable|string|max:50'
             ], [
-                'forwarding_url.url' => 'Please enter a valid URL for domain forwarding',
                 'other_platform.required_if' => 'Please specify the hosting platform when selecting "Other" option',
                 'backup_codes.required_if' => 'Backup codes are required when using Namecheap',
                 'inboxes_per_domain.max' => 'You can have maximum 3 inboxes per domain',
@@ -1284,9 +1283,16 @@ class OrderController extends Controller
     /**
      * Show the domains fixing interface for rejected order panels
      */
+     
     public function showFixDomains($orderId)
     {
         try {
+            // Validate orderId
+            if (!$orderId || !is_numeric($orderId)) {
+                return redirect()->route('customer.orders')
+                    ->with('error', 'Invalid order ID.');
+            }
+
             $order = Order::with(['orderPanels.orderPanelSplits', 'user', 'reorderInfo'])
                 ->where('id', $orderId)
                 ->where('user_id', auth()->id())
@@ -1301,8 +1307,19 @@ class OrderController extends Controller
             }
 
             // Get hosting and sending platforms for the configuration form
-            $hostingPlatforms = \App\Models\HostingPlatform::orderBy('sort_order')->get();
-            $sendingPlatforms = \App\Models\SendingPlatform::orderBy('sort_order')->get();
+            try {
+                $hostingPlatforms = \App\Models\HostingPlatform::orderBy('sort_order')->get();
+            } catch (\Exception $e) {
+                Log::warning('Failed to load hosting platforms: ' . $e->getMessage());
+                $hostingPlatforms = collect(); // Empty collection as fallback
+            }
+
+            try {
+                $sendingPlatforms = \App\Models\SendingPlatform::orderBy('id')->get();
+            } catch (\Exception $e) {
+                Log::warning('Failed to load sending platforms: ' . $e->getMessage());
+                $sendingPlatforms = collect(); // Empty collection as fallback
+            }
 
             return view('customer.orders.fix-domains', [
                 'order' => $order,
@@ -1311,10 +1328,21 @@ class OrderController extends Controller
                 'sendingPlatforms' => $sendingPlatforms
             ]);
 
-        } catch (Exception $e) {
-            Log::error('Error showing fix domains page: ' . $e->getMessage());
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Order not found in showFixDomains', [
+                'orderId' => $orderId,
+                'userId' => auth()->id()
+            ]);
             return redirect()->route('customer.orders')
-                ->with('error', 'Failed to load domain fixing interface.');
+                ->with('error', 'Order not found or you do not have permission to access it.');
+        } catch (Exception $e) {
+            Log::error('Error showing fix domains page: ' . $e->getMessage(), [
+                'orderId' => $orderId,
+                'userId' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('customer.orders')
+                ->with('error', 'Failed to load domain fixing interface: ' . $e->getMessage());
         }
     }
 
@@ -1324,11 +1352,11 @@ class OrderController extends Controller
     public function updateFixedDomains(Request $request, $orderId)
     {
         try {
+            
             $order = Order::with(['orderPanels.orderPanelSplits', 'reorderInfo'])
                 ->where('id', $orderId)
                 ->where('user_id', auth()->id())
                 ->firstOrFail();
-
             // Validate the request
             $request->validate([
                 'panel_splits' => 'required|array',
@@ -1336,7 +1364,7 @@ class OrderController extends Controller
                 'panel_splits.*.domains' => 'required|array|min:1',
                 'panel_splits.*.domains.*' => 'required|string',
                 // Platform configuration validation
-                'forwarding_url' => 'nullable|url|max:255',
+                'forwarding_url' => 'nullable|string|max:255',
                 'hosting_platform' => 'nullable|string|max:50',
                 'sending_platform' => 'nullable|string|max:50',
                 'platform_login' => 'nullable|string|max:255',

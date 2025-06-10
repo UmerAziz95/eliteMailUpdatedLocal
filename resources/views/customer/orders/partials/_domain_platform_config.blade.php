@@ -11,25 +11,22 @@
                 Required Setup
             </div>
         </div>
-
         {{-- Domain Forwarding Destination URL --}}
         <div class="mb-3">
             <label for="forwarding_url" class="form-label fw-bold text-white">
                 <i class="fa-solid fa-external-link-alt me-2"></i>
                 Domain forwarding destination URL
                 <span class="text-danger">*</span>
-            </label>
-            <input type="url" 
+            </label>            <input type="text" 
                    id="forwarding_url" 
                    name="forwarding_url" 
                    class="form-control" 
-                   placeholder="https://example.com" 
+                   placeholder="Enter destination URL or text" 
                    value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}" 
                    required>
-            <div class="invalid-feedback" id="forwarding_url-error"></div>
-            <small class="form-text text-muted">
+            <div class="invalid-feedback" id="forwarding_url-error"></div>            <small class="form-text text-muted">
                 <i class="fa-solid fa-info-circle me-1"></i>
-                A link where you'd like to drive the traffic from the domains you send us – could be your main website, blog post, etc.
+                A link or text where you'd like to drive the traffic from the domains you send us – could be your main website, blog post, etc.
             </small>
         </div>
 
@@ -288,15 +285,8 @@ function validatePlatformConfig() {
             isValid = false;
         }
     });
-    
-    // Validate URL format
-    const urlField = $('#forwarding_url');
-    const urlValue = urlField.val()?.trim();
-    if (urlValue && !isValidUrl(urlValue)) {
-        urlField.addClass('is-invalid');
-        $('#forwarding_url-error').text('Please enter a valid URL (e.g., https://example.com)');
-        isValid = false;
-    }
+      // Validate URL format
+    // URL validation removed - forwarding_url is now treated as simple text
     
     // Validate dynamic platform fields
     $('.platform-field .required').each(function() {
@@ -311,18 +301,7 @@ function validatePlatformConfig() {
             isValid = false;
         }
     });
-    
-    return isValid;
-}
-
-// URL validation helper
-function isValidUrl(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        return false;
-    }
+      return isValid;
 }
 
 // Initialize platform configuration
@@ -343,14 +322,11 @@ $(document).ready(function() {
         
         field.removeClass('is-invalid');
         $(`#${fieldName}-error`).text('');
-        
-        if (!value) {
+          if (!value) {
             field.addClass('is-invalid');
             $(`#${fieldName}-error`).text('This field is required');
-        } else if (fieldName === 'forwarding_url' && !isValidUrl(value)) {
-            field.addClass('is-invalid');
-            $(`#${fieldName}-error`).text('Please enter a valid URL');
         }
+        // URL validation removed for forwarding_url - now treated as simple text
     });
 });
 </script>
