@@ -723,7 +723,7 @@ if (typeof jQuery === 'undefined') {
                 hasErrors = true;
                 return;
             }
-              // Add valid domains to global list for duplicate checking
+            // Add valid domains to global list for duplicate checking
             domains.forEach(domain => {
                 allDomainValues.push({
                     domain: domain.toLowerCase(),
@@ -915,7 +915,8 @@ if (typeof jQuery === 'undefined') {
             $('.domain-textarea').each(function() {
                 $(this).trigger('blur');
                 
-                // Initialize domain count displays                const textarea = $(this);
+                // Initialize domain count displays
+                const textarea = $(this);
                 const splitId = textarea.data('split-id');
                 const domainsText = textarea.val().trim();
                 const domains = domainsText ? domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0) : [];
