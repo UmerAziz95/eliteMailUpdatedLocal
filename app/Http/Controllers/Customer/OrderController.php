@@ -1353,6 +1353,18 @@ class OrderController extends Controller
                 if ($originalDomainCount !== $newDomainCount) {
                     throw new Exception("Domain count must remain the same. Expected: {$originalDomainCount}, Got: {$newDomainCount}");
                 }
+                $existingDomains = OrderPanelSplit::where('id', '!=', $splitId)
+                    ->where('order_panel_id', $split->orderPanel->id)
+                    ->pluck('domains')
+                    ->flatten()
+                    ->toArray();
+
+                $newDomains = $splitData['domains'];
+
+                $duplicates = array_intersect($existingDomains, $newDomains);
+                if (!empty($duplicates)) {
+                    throw new Exception("Duplicate domains found: " . implode(', ', $duplicates));
+                }
 
                 // Update the domains
                 $split->domains = $splitData['domains'];
