@@ -1360,6 +1360,10 @@ class OrderController extends Controller
 
                 // Update the order panel status to 'allocated' for reprocessing
                 $split->orderPanel->status = 'allocated';
+
+                // orders table status update
+                $order->status_manage_by_admin = 'pending';
+                $order->save();
                 $split->orderPanel->save();
             }
 
