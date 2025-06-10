@@ -1161,6 +1161,13 @@ class OrderController extends Controller
             }
         }
         
+        // If a panel is set to "rejected", update order status to "reject"
+        if ($newPanelStatus === 'rejected') {
+            if ($order->status_manage_by_admin !== 'reject') {
+                $order->update(['status_manage_by_admin' => 'reject']);
+            }
+        }
+        
         // If a panel is set to "completed", check if all panels are completed
         if ($newPanelStatus === 'completed') {
             // Get all panels for this order

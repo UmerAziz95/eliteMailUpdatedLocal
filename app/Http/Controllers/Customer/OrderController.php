@@ -353,6 +353,9 @@ class OrderController extends Controller
                                     <i class="fa-solid fa-file-import"></i> Import
                                 </button>';
                     } else {
+                        // Check if order has rejected order panels for conditional button
+                        $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
+                        
                         // Default action buttons
                         return '<div class="dropdown">
                                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
@@ -362,8 +365,10 @@ class OrderController extends Controller
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                             <i class="fa-solid fa-eye"></i> View</a></li>
-                                        ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['reject', 'draft']) ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                        ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                             <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
+                                        ' . ($hasRejectedPanels ? '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
+                                            <i class="fa-solid fa-tools"></i> Fixed Domains Split</a></li>' : '') . '
                                     </ul>
                                 </div>';
                     }
@@ -1273,6 +1278,104 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to import order data.'
+            ]);
+        }
+    }
+
+    /**
+     * Show the domains fixing interface for rejected order panels
+     */
+    public function showFixDomains($orderId)
+    {
+        try {
+            $order = Order::with(['orderPanels.orderPanelSplits', 'user'])
+                ->where('id', $orderId)
+                ->where('user_id', auth()->id())
+                ->firstOrFail();
+
+            // Get only rejected order panels
+            $rejectedPanels = $order->orderPanels()->where('status', 'rejected')->get();
+
+            if ($rejectedPanels->isEmpty()) {
+                return redirect()->route('customer.orders.index')
+                    ->with('error', 'No rejected panels found for this order.');
+            }
+
+            return view('customer.orders.fix-domains', [
+                'order' => $order,
+                'rejectedPanels' => $rejectedPanels
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error showing fix domains page: ' . $e->getMessage());
+            return redirect()->route('customer.orders.index')
+                ->with('error', 'Failed to load domain fixing interface.');
+        }
+    }
+
+    /**
+     * Update domains for rejected order panel splits
+     */
+    public function updateFixedDomains(Request $request, $orderId)
+    {
+        try {
+            $order = Order::with('orderPanels.orderPanelSplits')
+                ->where('id', $orderId)
+                ->where('user_id', auth()->id())
+                ->firstOrFail();
+
+            // Validate the request
+            $request->validate([
+                'panel_splits' => 'required|array',
+                'panel_splits.*' => 'required|array',
+                'panel_splits.*.domains' => 'required|array|min:1',
+                'panel_splits.*.domains.*' => 'required|string',
+            ]);
+
+            DB::beginTransaction();
+
+            foreach ($request->panel_splits as $splitId => $splitData) {
+                $split = OrderPanelSplit::where('id', $splitId)
+                    ->whereHas('orderPanel', function($query) use ($orderId) {
+                        $query->where('order_id', $orderId)
+                              ->where('status', 'rejected');
+                    })
+                    ->first();
+
+                if (!$split) {
+                    throw new Exception("Invalid split ID: {$splitId}");
+                }
+
+                // Validate domain count remains the same
+                $originalDomainCount = is_array($split->domains) ? count($split->domains) : 0;
+                $newDomainCount = count($splitData['domains']);
+
+                if ($originalDomainCount !== $newDomainCount) {
+                    throw new Exception("Domain count must remain the same. Expected: {$originalDomainCount}, Got: {$newDomainCount}");
+                }
+
+                // Update the domains
+                $split->domains = $splitData['domains'];
+                $split->save();
+
+                // Update the order panel status to 'allocated' for reprocessing
+                $split->orderPanel->status = 'allocated';
+                $split->orderPanel->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Domains updated successfully. The order panels have been resubmitted for processing.'
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollback();
+            Log::error('Error updating fixed domains: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update domains: ' . $e->getMessage()
             ]);
         }
     }

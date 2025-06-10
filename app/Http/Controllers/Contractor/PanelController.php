@@ -593,6 +593,8 @@ class PanelController extends Controller
 
             // Update the order panel status to allocated
             $orderPanel->status = 'allocated';
+            // order_panel add contractor_id
+            $orderPanel->contractor_id = $contractorId; // Assuming you want to track who allocated it
             $orderPanel->save();
 
             return response()->json([

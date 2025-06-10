@@ -107,16 +107,16 @@
             collapseTarget.addEventListener("hide.bs.collapse", () => icon.classList.remove("active"));
         });
 
-        const textElements = document.querySelectorAll('.text');
-        const toggleBtn = document.querySelector('#toggle-btn');
-        const sidebar = document.querySelector('aside');
+        // const textElements = document.querySelectorAll('.text');
+        // const toggleBtn = document.querySelector('#toggle-btn');
+        // const sidebar = document.querySelector('aside');
 
-        toggleBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            textElements.forEach(function(item) {
-                item.style.opacity = sidebar.classList.contains('collapsed') ? '0' : '1';
-            });
-        });
+        // toggleBtn.addEventListener('click', function() {
+        //     sidebar.classList.toggle('collapsed');
+        //     textElements.forEach(function(item) {
+        //         item.style.opacity = sidebar.classList.contains('collapsed') ? '0' : '1';
+        //     });
+        // });
 
     });
 </script>

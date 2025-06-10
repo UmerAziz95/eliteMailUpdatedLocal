@@ -214,6 +214,10 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [CustomerOrderController::class, 'getOrders'])->name('orders.data');
     // Route::get('/orders/import/{id}', [CustomerOrderController::class, 'getOrderImportData'])->name('orders.import');
+    
+    // Domain fixing routes for rejected order panels
+    Route::get('/orders/{id}/fix-domains', [CustomerOrderController::class, 'showFixDomains'])->name('orders.fix-domains');
+    Route::post('/orders/{id}/fix-domains', [CustomerOrderController::class, 'updateFixedDomains'])->name('orders.update-fixed-domains');
   
    
     Route::get('/profile', function () {
