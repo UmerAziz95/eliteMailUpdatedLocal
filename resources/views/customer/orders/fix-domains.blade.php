@@ -71,26 +71,24 @@
                                         <i class="fa-solid fa-globe me-2"></i>
                                         Domain Names
                                         <span class="badge bg-secondary ms-2">{{ count($split->domains) }} domains required</span>
-                                    </label>
-                                      <div class="alert alert-info py-2 mb-3" style="font-size: 0.875rem;">
+                                    </label>                                      <div class="alert alert-info py-2 mb-3" style="font-size: 0.875rem;">
                                         <i class="fa-solid fa-info-circle me-1"></i>
-                                        <strong>Note:</strong> Enter one domain per line. All domains must be unique. Duplicates are not allowed.
+                                        <strong>Note:</strong> Enter domains separated by new lines or commas. All domains must be unique. Duplicates are not allowed.
                                     </div>
-                                      <div class="domain-textarea-group">
-                                        <textarea class="form-control domain-textarea" 
+                                      <div class="domain-textarea-group">                                        <textarea class="form-control domain-textarea" 
                                                   name="panel_splits[{{ $split->id }}][domains]" 
                                                   rows="6"
-                                                  placeholder="Enter domains (one per line):&#10;example1.com&#10;example2.com&#10;example3.com"
+                                                  placeholder="Enter domains (one per line or comma-separated):&#10;example1.com&#10;example2.com, example3.com&#10;example4.com"
                                                   data-split-id="{{ $split->id }}"
                                                   data-required-count="{{ count($split->domains) }}"
                                                   required>{{ implode("\n", $split->domains) }}</textarea>
                                         <div class="invalid-feedback" id="domains-error-{{ $split->id }}"></div>
                                         <div class="d-flex justify-content-between mt-1">
-                                            <small class="form-text text-muted">
+                                            <small class="form-text text-white">
                                                 <i class="fa-solid fa-info-circle me-1"></i>
                                                 Required: {{ count($split->domains) }} domains
                                             </small>
-                                            <small class="form-text text-muted" id="count-display-{{ $split->id }}">
+                                            <small class="form-text text-white" id="count-display-{{ $split->id }}">
                                                 <span class="domain-count">0</span> / {{ count($split->domains) }}
                                             </small>
                                         </div>
@@ -440,11 +438,10 @@ if (typeof jQuery === 'undefined') {
                 allValid = false;
                 textarea.addClass('is-invalid');
                 emptyTextareas++;
-                return;
-            }
+                return;            }
             
-            // Split domains by newlines and filter empty lines
-            const domains = domainsText.split('\n')
+            // Split domains by newlines and commas, then filter empty lines
+            const domains = domainsText.split(/[\n,]+/)
                 .map(domain => domain.trim())
                 .filter(domain => domain.length > 0);
             
@@ -480,12 +477,11 @@ if (typeof jQuery === 'undefined') {
         if (duplicateDomains.length > 0) {
             allValid = false;
             duplicateNames = [...new Set(duplicateDomains)];
-            
-            // Mark textareas containing duplicates as invalid
+              // Mark textareas containing duplicates as invalid
             $('.domain-textarea').each(function() {
                 const textarea = $(this);
                 const domainsText = textarea.val().trim();
-                const domains = domainsText.split('\n')
+                const domains = domainsText.split(/[\n,]+/)
                     .map(domain => domain.trim().toLowerCase())
                     .filter(domain => domain.length > 0);
                 
@@ -576,10 +572,9 @@ if (typeof jQuery === 'undefined') {
             const textarea = $(this);
             const name = textarea.attr('name'); // e.g., "panel_splits[3][domains]"
             const domainsText = textarea.val().trim();
-            
-            if (domainsText) {
-                // Split domains by newlines and filter empty lines
-                const domains = domainsText.split('\n')
+              if (domainsText) {
+                // Split domains by newlines and commas, then filter empty lines
+                const domains = domainsText.split(/[\n,]+/)
                     .map(domain => domain.trim())
                     .filter(domain => domain.length > 0);
                 
@@ -688,11 +683,10 @@ if (typeof jQuery === 'undefined') {
                 const countDisplay = $(`#count-display-${splitId} .domain-count`);
                 countDisplay.text(0);
                 $(`#count-display-${splitId}`).removeClass('text-success text-warning').addClass('text-danger');
-                return;
-            }
+                return;            }
             
-            // Split domains by newlines and filter empty lines
-            const domains = domainsText.split('\n')
+            // Split domains by newlines and commas, then filter empty lines
+            const domains = domainsText.split(/[\n,]+/)
                 .map(domain => domain.trim())
                 .filter(domain => domain.length > 0);
             
@@ -921,11 +915,10 @@ if (typeof jQuery === 'undefined') {
             $('.domain-textarea').each(function() {
                 $(this).trigger('blur');
                 
-                // Initialize domain count displays
-                const textarea = $(this);
+                // Initialize domain count displays                const textarea = $(this);
                 const splitId = textarea.data('split-id');
                 const domainsText = textarea.val().trim();
-                const domains = domainsText ? domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0) : [];
+                const domains = domainsText ? domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0) : [];
                 const requiredCount = parseInt(textarea.data('required-count')) || 0;
                 
                 const countDisplay = $(`#count-display-${splitId} .domain-count`);
