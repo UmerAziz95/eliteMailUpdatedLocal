@@ -691,7 +691,7 @@
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
                                     <div class="d-flex align-items-center gap-2">
                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                            onclick="window.location.href='/contractor/orders/${order.order_id}/split/view/'">
+                                            onclick="window.location.href='/contractor/orders/${order.order_panel_id}/split/view'">
                                             View
                                         </button>
                                         ${order.status === 'unallocated' ? `
