@@ -210,7 +210,7 @@
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
-            <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="offcanvas" aria-label="Close">
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
                 <i class="fas fa-times"></i>
             </button>
         </div>

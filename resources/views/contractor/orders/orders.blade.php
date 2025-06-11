@@ -555,7 +555,7 @@
                         renderer: $.fn.dataTable.Responsive.renderer.tableAll()
                     }
                 },
-                autoWidth: false,
+                autoWidth: true,
                 columnDefs: [{
                         width: '10%',
                         targets: 0
