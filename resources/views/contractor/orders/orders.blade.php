@@ -557,25 +557,25 @@
                 },
                 autoWidth: false,
                 scrollX: true,
-                columnDefs: [
-                    { responsivePriority: 1, targets: 0 }, // ID - highest priority
-                    { responsivePriority: 2, targets: -1 }, // Actions - second highest
-                    { responsivePriority: 3, targets: [2, 3] }, // Name and Email
-                    { responsivePriority: 4, targets: planId ? 6 : 7 }, // Status
-                    { responsivePriority: 10000, targets: '_all' }, // All others lowest priority
-                    { width: '10%', targets: 0 }, // ID 
-                    { width: '15%', targets: 1 }, // Date
-                    { width: '15%', targets: 2 }, // Name
-                    { width: '15%', targets: 3 }, // Email
-                    ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
-                    { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
-                    { width: '10%', targets: planId ? 5 : 6 }, // Total Inboxes 
-                    { width: '12%', targets: planId ? 6 : 7 }, // Status
-                    { width: '12%', targets: planId ? 7 : 8 }, // Split Status
-                    { width: '10%', targets: planId ? 8 : 9 }, // Total Inboxes Split
-                    { width: '15%', targets: planId ? 9 : 10 }, // Download CSV Split Domains
-                    { width: '8%', targets: planId ? 10 : 11} // Actions
-                ],
+                // columnDefs: [
+                //     { responsivePriority: 1, targets: 0 }, // ID - highest priority
+                //     { responsivePriority: 2, targets: -1 }, // Actions - second highest
+                //     { responsivePriority: 3, targets: [2, 3] }, // Name and Email
+                //     { responsivePriority: 4, targets: planId ? 6 : 7 }, // Status
+                //     { responsivePriority: 10000, targets: '_all' }, // All others lowest priority
+                //     { width: '10%', targets: 0 }, // ID 
+                //     { width: '15%', targets: 1 }, // Date
+                //     { width: '15%', targets: 2 }, // Name
+                //     { width: '15%', targets: 3 }, // Email
+                //     ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
+                //     { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
+                //     { width: '10%', targets: planId ? 5 : 6 }, // Total Inboxes 
+                //     { width: '12%', targets: planId ? 6 : 7 }, // Status
+                //     { width: '12%', targets: planId ? 7 : 8 }, // Split Status
+                //     { width: '10%', targets: planId ? 8 : 9 }, // Total Inboxes Split
+                //     { width: '15%', targets: planId ? 9 : 10 }, // Download CSV Split Domains
+                //     { width: '8%', targets: planId ? 10 : 11} // Actions
+                // ],
                 ajax: {
                     url: "{{ route('contractor.orders.data') }}",
                     type: "GET",
@@ -626,8 +626,8 @@
                     }
                 },
                 columns: [{
-                        data: 'id',
-                        name: 'orders.id'
+                        data: 'order_id',
+                        name: 'order_id'
                     },
                     {
                         data: 'created_at',
