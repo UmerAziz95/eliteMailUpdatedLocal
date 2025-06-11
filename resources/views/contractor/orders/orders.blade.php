@@ -545,10 +545,6 @@
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
-                autoWidth: false,
-                scrollX: true,
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 responsive: {
                     details: {
                         display: $.fn.dataTable.Responsive.display.modal({
@@ -556,86 +552,29 @@
                                 return 'Order Details';
                             }
                         }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll(),
-                        type: 'column',
-                        target: 'tr'
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
                     }
                 },
+                autoWidth: false,
+                scrollX: true,
                 columnDefs: [
-                    {
-                        targets: 0,
-                        width: '8%',
-                        responsivePriority: 1,
-                        className: 'all'
-                    }, // Order ID - Always visible
-                    {
-                        targets: 1,
-                        width: '10%',
-                        responsivePriority: 3,
-                        className: 'min-tablet-l'
-                    }, // Date
-                    {
-                        targets: 2,
-                        width: '12%',
-                        responsivePriority: 2,
-                        className: 'min-tablet-l'
-                    }, // Name
-                    {
-                        targets: 3,
-                        width: '15%',
-                        responsivePriority: 4,
-                        className: 'min-desktop'
-                    }, // Email
-                    ...(planId ? [] : [{
-                        targets: 4,
-                        width: '10%',
-                        responsivePriority: 5,
-                        className: 'none'
-                    }]), // Plan (only for All Orders)
-                    {
-                        targets: planId ? 4 : 5,
-                        width: '15%',
-                        responsivePriority: 6,
-                        className: 'none'
-                    }, // Domain URL
-                    {
-                        targets: planId ? 5 : 6,
-                        width: '8%',
-                        responsivePriority: 3,
-                        className: 'min-tablet-l'
-                    }, // Total Inboxes
-                    {
-                        targets: planId ? 6 : 7,
-                        width: '10%',
-                        responsivePriority: 2,
-                        className: 'all'
-                    }, // Status
-                    {
-                        targets: planId ? 7 : 8,
-                        width: '10%',
-                        responsivePriority: 7,
-                        className: 'none'
-                    }, // Split Status
-                    {
-                        targets: planId ? 8 : 9,
-                        width: '8%',
-                        responsivePriority: 8,
-                        className: 'none'
-                    }, // Total Inboxes Split
-                    {
-                        targets: planId ? 9 : 10,
-                        width: '12%',
-                        responsivePriority: 9,
-                        className: 'none'
-                    }, // Download CSV Split Domains
-                    {
-                        targets: planId ? 10 : 11,
-                        width: '8%',
-                        responsivePriority: 1,
-                        className: 'all',
-                        orderable: false,
-                        searchable: false
-                    } // Actions - Always visible
+                    { responsivePriority: 1, targets: 0 }, // ID - highest priority
+                    { responsivePriority: 2, targets: -1 }, // Actions - second highest
+                    { responsivePriority: 3, targets: [2, 3] }, // Name and Email
+                    { responsivePriority: 4, targets: planId ? 6 : 7 }, // Status
+                    { responsivePriority: 10000, targets: '_all' }, // All others lowest priority
+                    { width: '10%', targets: 0 }, // ID 
+                    { width: '15%', targets: 1 }, // Date
+                    { width: '15%', targets: 2 }, // Name
+                    { width: '15%', targets: 3 }, // Email
+                    ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
+                    { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
+                    { width: '10%', targets: planId ? 5 : 6 }, // Total Inboxes 
+                    { width: '12%', targets: planId ? 6 : 7 }, // Status
+                    { width: '12%', targets: planId ? 7 : 8 }, // Split Status
+                    { width: '10%', targets: planId ? 8 : 9 }, // Total Inboxes Split
+                    { width: '15%', targets: planId ? 9 : 10 }, // Download CSV Split Domains
+                    { width: '8%', targets: planId ? 10 : 11} // Actions
                 ],
                 ajax: {
                     url: "{{ route('contractor.orders.data') }}",
@@ -697,7 +636,7 @@
                             return `
                                 <div class="d-flex gap-1 align-items-center opacity-50">
                                     <i class="ti ti-calendar-month"></i>
-                                    <span>${data}</span>    
+                                    <span class="text-nowrap">${data}</span>    
                                 </div>
                             `;
                         }
@@ -708,10 +647,10 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <div>
+                                    <div class="flex-shrink-0">
                                         <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">    
                                     </div>
-                                    <span>${data}</span>    
+                                    <span class="text-truncate">${data}</span>    
                                 </div>
                             `;
                         }
@@ -722,8 +661,8 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <i class="ti ti-mail"></i>
-                                    <span>${data}</span>    
+                                    <i class="ti ti-mail flex-shrink-0"></i>
+                                    <span class="text-truncate">${data}</span>    
                                 </div>
                             `;
                         }
@@ -734,11 +673,18 @@
                     }]),
                     {
                         data: 'domain_forwarding_url',
-                        name: 'domain_forwarding_url'
+                        name: 'domain_forwarding_url',
+                        render: function(data, type, row) {
+                            if (data && data.length > 30) {
+                                return `<span class="text-truncate d-inline-block" style="max-width: 200px;" title="${data}">${data}</span>`;
+                            }
+                            return data;
+                        }
                     },
                     {
                         data: 'total_inboxes',
-                        name: 'total_inboxes'
+                        name: 'total_inboxes',
+                        // className: 'text-center'
                     },
                     {
                         data: 'status',
@@ -754,7 +700,8 @@
                         data: 'total_inboxes_split',
                         name: 'total_inboxes_split',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        // className: 'text-center'
                     },
                     {
                         data: 'assignment',
@@ -766,7 +713,8 @@
                         data: 'action',
                         name: 'action',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        // className: 'text-center'
                     }
                 ],
                 order: [
@@ -779,12 +727,22 @@
                     }
                     $('[data-bs-toggle="tooltip"]').tooltip();
 
-                    // Only adjust columns
-                    this.api().columns.adjust();
+                    // Adjust columns for responsive behavior
+                    setTimeout(() => {
+                        this.api().columns.adjust();
+                        if (this.api().responsive) {
+                            this.api().responsive.recalc();
+                        }
+                    }, 100);
                 },
                 initComplete: function(settings, json) {
                     console.log('Table initialization complete');
-                    this.api().columns.adjust();
+                    setTimeout(() => {
+                        this.api().columns.adjust();
+                        if (this.api().responsive) {
+                            this.api().responsive.recalc();
+                        }
+                    }, 100);
                 }
             });
 
@@ -799,6 +757,16 @@
                     console.log('DataTable processing completed');
                     wrapper.removeClass('loading');
                     wrapper.find('.dt-loading').remove();
+                }
+            });
+
+            // Handle window resize for better responsive behavior
+            $(window).on('resize', function() {
+                if (table) {
+                    table.columns.adjust();
+                    if (table.responsive) {
+                        table.responsive.recalc();
+                    }
                 }
             });
 
@@ -882,26 +850,6 @@
                     console.error('Error in initial column adjustment:', error);
                 }
             }, 100);
-
-            // Handle window resize for responsive behavior
-            let resizeTimer;
-            $(window).on('resize', function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    Object.values(window.orderTables).forEach(function(table) {
-                        if (table && $(table.table().node()).is(':visible')) {
-                            try {
-                                table.columns.adjust();
-                                if (table.responsive && typeof table.responsive.recalc === 'function') {
-                                    table.responsive.recalc();
-                                }
-                            } catch (error) {
-                                console.error('Error during resize adjustment:', error);
-                            }
-                        }
-                    });
-                }, 250);
-            });
 
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {
@@ -1038,79 +986,6 @@
         position: relative;
         pointer-events: none;
         opacity: 0.6;
-    }
-
-    /* Enhanced responsive table styles */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .dataTables_wrapper {
-        width: 100%;
-        margin: 0 auto;
-    }
-
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_filter {
-        margin-bottom: 1rem;
-    }
-
-    /* Responsive DataTable improvements */
-    table.dataTable tbody td {
-        word-wrap: break-word;
-        word-break: break-word;
-        white-space: normal;
-        max-width: 200px;
-    }
-
-    table.dataTable tbody td.control {
-        text-align: center;
-        cursor: pointer;
-    }
-
-    table.dataTable tbody td.control:before {
-        color: #007bff;
-        font-weight: bold;
-    }
-
-    /* Mobile responsive adjustments */
-    @media screen and (max-width: 767px) {
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter {
-            text-align: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate {
-            text-align: center;
-            margin-top: 0.5rem;
-        }
-        
-        /* Hide less important columns on mobile */
-        table.dataTable tbody td {
-            font-size: 0.85rem;
-            padding: 0.5rem 0.25rem;
-        }
-    }
-
-    /* Tablet responsive adjustments */
-    @media screen and (max-width: 991px) {
-        table.dataTable tbody td {
-            font-size: 0.9rem;
-            padding: 0.6rem 0.4rem;
-        }
-    }
-
-    /* Force responsive recalculation */
-    .dataTables_wrapper .dataTables_scroll {
-        width: 100%;
-    }
-
-    .dataTables_wrapper .dataTables_scrollBody {
-        width: 100%;
     }
 </style>
 @endpush

@@ -1,5 +1,5 @@
 <div class="table-responsive">
-    <table class="table table-striped table-hover w-100" id="{{ isset($plan_id) ? 'myTable-'.$plan_id : 'myTable' }}">
+    <table class="table w-100" id="{{ isset($plan_id) ? 'myTable-'.$plan_id : 'myTable' }}">
         <thead>
             <tr>
                 <th>Order ID</th>
