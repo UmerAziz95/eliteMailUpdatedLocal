@@ -545,6 +545,10 @@
             var table = $table.DataTable({
                 processing: true,
                 serverSide: true,
+                responsive: true,
+                autoWidth: false,
+                scrollX: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 responsive: {
                     details: {
                         display: $.fn.dataTable.Responsive.display.modal({
@@ -552,58 +556,86 @@
                                 return 'Order Details';
                             }
                         }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll(),
+                        type: 'column',
+                        target: 'tr'
                     }
                 },
-                autoWidth: true,
-                columnDefs: [{
-                        width: '10%',
-                        targets: 0
-                    }, // ID 
+                columnDefs: [
                     {
-                        width: '15%',
-                        targets: 1
+                        targets: 0,
+                        width: '8%',
+                        responsivePriority: 1,
+                        className: 'all'
+                    }, // Order ID - Always visible
+                    {
+                        targets: 1,
+                        width: '10%',
+                        responsivePriority: 3,
+                        className: 'min-tablet-l'
                     }, // Date
                     {
-                        width: '15%',
-                        targets: 2
+                        targets: 2,
+                        width: '12%',
+                        responsivePriority: 2,
+                        className: 'min-tablet-l'
                     }, // Name
                     {
+                        targets: 3,
                         width: '15%',
-                        targets: 3
+                        responsivePriority: 4,
+                        className: 'min-desktop'
                     }, // Email
                     ...(planId ? [] : [{
-                        width: '15%',
-                        targets: 4
-                    }]), // Plan (only for All Orders) 
+                        targets: 4,
+                        width: '10%',
+                        responsivePriority: 5,
+                        className: 'none'
+                    }]), // Plan (only for All Orders)
                     {
-                        width: '20%',
-                        targets: planId ? 4 : 5
+                        targets: planId ? 4 : 5,
+                        width: '15%',
+                        responsivePriority: 6,
+                        className: 'none'
                     }, // Domain URL
                     {
-                        width: '10%',
-                        targets: planId ? 5 : 6
-                    }, // Total Inboxes 
+                        targets: planId ? 5 : 6,
+                        width: '8%',
+                        responsivePriority: 3,
+                        className: 'min-tablet-l'
+                    }, // Total Inboxes
                     {
-                        width: '12%',
-                        targets: planId ? 6 : 7
+                        targets: planId ? 6 : 7,
+                        width: '10%',
+                        responsivePriority: 2,
+                        className: 'all'
                     }, // Status
                     {
-                        width: '12%',
-                        targets: planId ? 7 : 8
+                        targets: planId ? 7 : 8,
+                        width: '10%',
+                        responsivePriority: 7,
+                        className: 'none'
                     }, // Split Status
                     {
-                        width: '10%',
-                        targets: planId ? 8 : 9
+                        targets: planId ? 8 : 9,
+                        width: '8%',
+                        responsivePriority: 8,
+                        className: 'none'
                     }, // Total Inboxes Split
                     {
-                        width: '15%',
-                        targets: planId ? 9 : 10
+                        targets: planId ? 9 : 10,
+                        width: '12%',
+                        responsivePriority: 9,
+                        className: 'none'
                     }, // Download CSV Split Domains
                     {
+                        targets: planId ? 10 : 11,
                         width: '8%',
-                        targets: planId ? 10 : 11
-                    } // Actions
+                        responsivePriority: 1,
+                        className: 'all',
+                        orderable: false,
+                        searchable: false
+                    } // Actions - Always visible
                 ],
                 ajax: {
                     url: "{{ route('contractor.orders.data') }}",
@@ -851,6 +883,26 @@
                 }
             }, 100);
 
+            // Handle window resize for responsive behavior
+            let resizeTimer;
+            $(window).on('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    Object.values(window.orderTables).forEach(function(table) {
+                        if (table && $(table.table().node()).is(':visible')) {
+                            try {
+                                table.columns.adjust();
+                                if (table.responsive && typeof table.responsive.recalc === 'function') {
+                                    table.responsive.recalc();
+                                }
+                            } catch (error) {
+                                console.error('Error during resize adjustment:', error);
+                            }
+                        }
+                    });
+                }, 250);
+            });
+
             // Add global error handler for AJAX requests
             $(document).ajaxError(function(event, xhr, settings, error) {
                 console.error('AJAX Error:', error);
@@ -986,6 +1038,79 @@
         position: relative;
         pointer-events: none;
         opacity: 0.6;
+    }
+
+    /* Enhanced responsive table styles */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dataTables_wrapper {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 1rem;
+    }
+
+    /* Responsive DataTable improvements */
+    table.dataTable tbody td {
+        word-wrap: break-word;
+        word-break: break-word;
+        white-space: normal;
+        max-width: 200px;
+    }
+
+    table.dataTable tbody td.control {
+        text-align: center;
+        cursor: pointer;
+    }
+
+    table.dataTable tbody td.control:before {
+        color: #007bff;
+        font-weight: bold;
+    }
+
+    /* Mobile responsive adjustments */
+    @media screen and (max-width: 767px) {
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        
+        /* Hide less important columns on mobile */
+        table.dataTable tbody td {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+    /* Tablet responsive adjustments */
+    @media screen and (max-width: 991px) {
+        table.dataTable tbody td {
+            font-size: 0.9rem;
+            padding: 0.6rem 0.4rem;
+        }
+    }
+
+    /* Force responsive recalculation */
+    .dataTables_wrapper .dataTables_scroll {
+        width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_scrollBody {
+        width: 100%;
     }
 </style>
 @endpush
