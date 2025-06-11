@@ -755,7 +755,7 @@
                                                         const domainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
                                                         const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
                                                         const totalInboxes = domainsCount * inboxesPerDomain;
-                                                        return `(${domainsCount} domains × ${inboxesPerDomain} inboxes) = ${totalInboxes}`;
+                                                        return `${totalInboxes} (${domainsCount} domains × ${inboxesPerDomain})`;
                                                     })() : 'N/A'}</span>
                                                     <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
                                                 </div>

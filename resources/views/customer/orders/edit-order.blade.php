@@ -1395,6 +1395,7 @@ $(document).ready(function() {
         }, 600);
         
         toastr.success('Order data imported successfully!');
+        
     }
     
     function populateDynamicFields(reorderInfo) {
