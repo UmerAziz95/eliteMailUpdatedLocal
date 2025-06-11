@@ -59,6 +59,127 @@
         opacity: 0.6;
     }
 </style>
+<style>
+    input,
+    .form-control,
+    .form-label {
+        font-size: 12px
+    }
+
+    small {
+        font-size: 11px
+    }
+
+    .total {
+        color: var(--second-primary);
+    }
+
+    .used {
+        color: #43C95C;
+    }
+
+    .remain {
+        color: orange
+    }
+
+    .accordion {
+        --bs-accordion-bg: transparent !important;
+    }
+
+    .accordion-button:focus {
+        box-shadow: none !important
+    }
+
+    .button.collapsed {
+        background-color: var(--slide-bg) !important;
+        color: var(--light-color)
+    }
+
+    .button {
+        background-color: var(--second-primary);
+        color: var(--light-color);
+        transition: all ease .4s
+    }
+
+    .accordion-body {
+        color: var(--light-color)
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Loading state styling */
+    #loadingState {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    /* Fix offcanvas backdrop issues */
+    .offcanvas-backdrop {
+        transition: opacity 0.15s linear !important;
+    }
+
+    .offcanvas-backdrop.fade {
+        opacity: 0;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
+    }
+
+    /* Ensure body doesn't keep backdrop classes */
+    body:not(.offcanvas-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
+
+    /* Fix any remaining backdrop elements */
+    .modal-backdrop,
+    .offcanvas-backdrop.fade:not(.show) {
+        display: none !important;
+    }
+
+    /* Ensure offcanvas doesn't interfere with page interaction */
+    .offcanvas.hiding,
+    .offcanvas:not(.show) {
+        pointer-events: none;
+    }
+
+    /* Force cleanup of backdrop opacity */
+    .offcanvas-backdrop.fade {
+        opacity: 0 !important;
+        transition: opacity 0.15s linear;
+    }
+
+    /* Ensure page remains interactive */
+    body:not(.offcanvas-open):not(.modal-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
+
+    /* Hide any orphaned backdrop elements */
+    div[class*="backdrop"]:empty {
+        display: none !important;
+    }
+</style>
 @endpush
 
 @section('content')
@@ -269,7 +390,8 @@
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 animate-gradient px-4 border-0">Filter</button>
+                            <button id="applyFilters"
+                                class="btn btn-primary btn-sm me-2 animate-gradient px-4 border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
@@ -909,6 +1031,304 @@
         applyFilters();
     });
 </script>
+
+//split view
+<script>
+    $('body').on('click', '.splitView', async function (e) {
+        e.preventDefault();
+        
+        const orderId = $(this).data('order-id');
+        const offcanvasElement = document.getElementById('order-view');
+        const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+
+        // Add event listener to clean up backdrop
+        offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
+            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+
+            document.body.classList.remove('offcanvas-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, { once: true });
+
+        offcanvas.show();
+
+        try {
+            const response = await fetch(`/admin/splits/${orderId}/orders`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            // if (!response.success) throw new Error('Failed to fetch orders');
+
+            const data = await response.json();
+            renderPanelOrders(data);
+        } catch (error) {
+            console.error('Error loading order splits:', error);
+            const container = document.getElementById('panelOrdersContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                        <h5>Error Loading Orders</h5>
+                        <p>Failed to load order splits. Please try again.</p>
+                        <button class="btn btn-primary" onclick="viewPanelOrders(${orderId})">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+          
+    });
+
+    // Function to render panel orders in the offcanvas
+     function renderPanelOrders(data) {
+              const panel=data.data[0].panel;
+               const orders=data.data;
+              const container = document.getElementById('panelOrdersContainer');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox text-muted fs-3 mb-3"></i>
+                        <h5>No split found</h5> 
+                        <p>This order does not have split details.</p>
+                    </div>
+                `;
+                return;
+            }
+           
+
+      
+            const ordersHtml = `
+                <div class="mb-4">
+                    <h6>PNL- ${panel.id}</h6>
+                    <p class="">${panel?.description || 'No description'}</p>
+                </div>
+                
+                <div class="accordion accordion-flush" id="panelOrdersAccordion">
+                    ${orders.map((order, index) => `
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#order-collapse-${order?.id}" aria-expanded="false"
+                                    aria-controls="order-collapse-${order?.id}">
+                                    <small>ID: #${order?.id || 0 }</small>
+                                    <small>Inboxes: ${order?.space_assigned || order?.inboxes_per_domain || 0}</small>
+                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary" href="javascript:;">
+                                        View
+                                    </button>
+                                </div>
+                            </h2>
+                            <div id="order-collapse-${order?.id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
+                                <div class="accordion-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">#</th>
+                                                    <th scope="col">Order ID</th>
+                                                    <th scope="col">Status</th>
+                                                    <th scope="col">Space Assigned</th>
+                                                    <th scope="col">Inboxes/Domain</th>
+                                                    <th scope="col">Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <th scope="row">${index + 1}</th>
+                                                    <td>${order?.order_id || 0}</td>
+                                                    <td>
+                                                        <span class="badge ${getStatusBadgeClass(order?.status)}">${order?.status || 'Unknown'}</span>
+                                                    </td>
+                                                    <td>${order?.space_assigned || 'N/A'}</td>
+                                                    <td>${order?.inboxes_per_domain || 'N/A'}</td>
+                                                    <td>${formatDate(order?.created_at)}</td>
+                                                </tr>
+                                                ${order?.splits && order?.splits?.length > 0 ? order?.splits.map((split, splitIndex) => ``).join('') : ''}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+
+
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card p-3 mb-3">
+                                                <h6 class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                        <i class="fa-regular fa-envelope"></i>
+                                                    </div>
+                                                    Email configurations
+                                                </h6>
+
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <span>Total Inboxes <br> ${order?.order?.reorder_info[0]?.total_inboxes || 'N/A'}</span>
+                                                    <span>Inboxes per domain <br> ${order?.order?.reorder_info[0]?.inboxes_per_domain || 'N/A'}</span>
+                                                </div>
+                                                <hr>
+                                                <div class="d-flex flex-column">
+                                                    <span class="opacity-50">Prefix Variants</span>
+                                                    ${renderPrefixVariants(order?.order?.reorder_info[0].prefix_variants)}
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Profile Picture URL</span>
+                                                    <span>${order?.order?.reorder_info[0]?.profile_picture_link || 'N/A'}</span>
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Email Persona Password</span>
+                                                    <span>${order?.order?.reorder_info[0]?.email_persona_password || 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                                                <h6 class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                        <i class="fa-solid fa-earth-europe"></i>
+                                                    </div>
+                                                    Domains &amp; Configuration
+                                                </h6>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Hosting Platform</span>
+                                                    <span>${order?.order?.reorder_info[0]?.hosting_platform || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Platform Login</span>
+                                                    <span>${order?.order?.reorder_info[0]?.platform_login || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Platform Password</span>
+                                                    <span>${order?.order?.reorder_info[0]?.platform_password || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                                    <span>${order?.order?.reorder_info[0]?.forwarding_url || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending Platform</span>
+                                                    <span>${order?.order?.reorder_info[0]?.sending_platform || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending platform Sequencer - Login</span>
+                                                    <span>${order?.order?.reorder_info[0]?.sequencer_login || 'N/A'}</span>
+                                                </div>
+
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Sending platform Sequencer - Password</span>
+                                                    <span>${order?.order?.reorder_info[0]?.sequencer_password || 'N/A'}</span>
+                                                </div>
+                                                
+                                                <div class="d-flex flex-column">
+                                                    <span class="opacity-50">Domains</span>
+                                                    ${renderDomains(order?.order_panel_splits)}
+                                                </div>
+                                            </div> 
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = ordersHtml;
+            }
+
+
+           function getStatusBadgeClass(status) {
+               switch(status) {
+                case 'completed': return 'bg-success';
+                case 'unallocated': return 'bg-warning text-dark';
+                case 'allocated': return 'bg-info';
+                case 'rejected': return 'bg-danger';
+                case 'in-progress': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
+        }
+           // Helper function to format date
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                return 'Invalid Date';
+            }
+        }
+
+        // Helper function to render prefix variants
+        function renderPrefixVariants(reorderInfo) {
+            if (!reorderInfo) return '<span>N/A</span>';
+            
+            let variants = [];
+            
+            // Check if we have the new prefix_variants JSON format
+            if (reorderInfo.prefix_variants) {
+                try {
+                    const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                        ? JSON.parse(reorderInfo.prefix_variants) 
+                        : reorderInfo.prefix_variants;
+                    
+                    Object.keys(prefixVariants).forEach((key, index) => {
+                        if (prefixVariants[key]) {
+                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Could not parse prefix variants:', e);
+                }
+            }
+            
+            // Fallback to old individual fields if new format is empty
+            if (variants.length === 0) {
+                if (reorderInfo.prefix_variant_1) {
+                    variants.push(`<span>Variant 1: ${reorderInfo.prefix_variant_1}</span>`);
+                }
+                if (reorderInfo.prefix_variant_2) {
+                    variants.push(`<span>Variant 2: ${reorderInfo.prefix_variant_2}</span>`);
+                }
+            }
+            
+            return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
+        }
+
+        // Helper function to render domains from splits
+        function renderDomains(splits) {
+            if (!splits || splits.length === 0) {
+                return '<span>N/A</span>';
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains && Array.isArray(split.domains)) {
+                    allDomains = allDomains.concat(split.domains);
+                }
+            });
+            
+            if (allDomains.length === 0) {
+                return '<span>N/A</span>';
+            }
+            
+            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
+        }
+</script>
+
 
 
 @endpush

@@ -61,8 +61,6 @@ class OrderController extends Controller
         ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
         : 0;
 
-   
-
     return view('admin.orders.orders', compact(
         'plans', 
         'totalOrders', 
@@ -346,7 +344,14 @@ class OrderController extends Controller
                                 data-reason="' . $order->reason . '">
                                 <i class="fa-solid fa-flag"></i> &nbsp;Mark Status
                             </a>
-                        </li>') .
+                        </li>
+                        <li>
+                            <a href="#" class="dropdown-item splitView" id="splitView"
+                                data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-columns"></i> &nbsp;Split View
+                            </a>
+                        </li>
+                        ') .
                     '</ul>
                 </div>';
 

@@ -284,9 +284,9 @@ class AuthController extends Controller
         'message' => 'User registered successfully! We have sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!',
         'redirect' => $this->redirectTo($user),
         'user' => $user,
-        'verificationLink'=>$$verificationLink
+        'verificationLink'=>$verificationLink
     ], 200);
-   }  
+   }    
 
     // Show forgot password form
     public function showForgotPasswordForm()

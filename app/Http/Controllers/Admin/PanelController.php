@@ -198,6 +198,43 @@ class PanelController extends Controller
             ], 500);
         }
     }
+
+
+
+    public function getOrdersSplits(Request $request, $orderId){
+
+        try{
+           
+            $order= Order::find($orderId);
+            if(!$order){
+                return response()->json([
+                    'success'=>false,
+                    'message'=>'Order not found'
+                ],404);
+            } 
+            $orderPanel = OrderPanel::with(['panel','orderPanelSplits','order.reorderInfo'])
+                ->where('order_id', $orderId)
+                ->get(); 
+            //  $panel = Panel::findOrFail($panelId);
+            
+            // $orders = OrderPanel::with(['order.user', 'order.reorderInfo', 'orderPanelSplits'])
+            //     ->where('panel_id', $panelId)
+            //     ->orderBy('created_at', 'desc')
+            //     ->get();
+            return response()->json([
+                'success'=>true,
+                'data'=>$orderPanel
+            ],200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order splits: ' . $e->getMessage()
+            ], 500);
+        }
+         
+        
+    }
     
     /**
      * Test method to verify database connectivity and basic data retrieval

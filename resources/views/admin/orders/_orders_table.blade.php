@@ -38,8 +38,7 @@
                     Mark Status
                 </h6>
 
-                <form id="cancelSubscriptionForm" action="{{ route('admin.order.cancel.process') }}"
-                    method="POST">
+                <form id="cancelSubscriptionForm" action="{{ route('admin.order.cancel.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="chargebee_subscription_id" id="subscription_id_to_cancel">
                     <div class="mb-3">
@@ -83,6 +82,25 @@
                             I'm sure</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Orders Offcanvas -->
+<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view"
+    aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="order-viewLabel">Order splits</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="panelOrdersContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="ordersLoadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading order splits ...</span>
+                </div>
+                <p class="mt-2">Loading orders splits...</p>
             </div>
         </div>
     </div>
