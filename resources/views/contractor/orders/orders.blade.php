@@ -556,55 +556,26 @@
                     }
                 },
                 autoWidth: false,
-                columnDefs: [{
-                        width: '10%',
-                        targets: 0
-                    }, // ID 
-                    {
-                        width: '15%',
-                        targets: 1
-                    }, // Date
-                    {
-                        width: '15%',
-                        targets: 2
-                    }, // Name
-                    {
-                        width: '15%',
-                        targets: 3
-                    }, // Email
-                    ...(planId ? [] : [{
-                        width: '15%',
-                        targets: 4
-                    }]), // Plan (only for All Orders) 
-                    {
-                        width: '20%',
-                        targets: planId ? 4 : 5
-                    }, // Domain URL
-                    {
-                        width: '10%',
-                        targets: planId ? 5 : 6
-                    }, // Total Inboxes 
-                    {
-                        width: '12%',
-                        targets: planId ? 6 : 7
-                    }, // Status
-                    {
-                        width: '12%',
-                        targets: planId ? 7 : 8
-                    }, // Split Status
-                    {
-                        width: '10%',
-                        targets: planId ? 8 : 9
-                    }, // Total Inboxes Split
-                    {
-                        width: '15%',
-                        targets: planId ? 9 : 10
-                    }, // Download CSV Split Domains
-                    {
-                        width: '8%',
-                        targets: planId ? 10 : 11
-                    } // Actions
-                ],
+                scrollX: true,
+                // columnDefs: [
+                //     { responsivePriority: 1, targets: 0 }, // ID - highest priority
+                //     { responsivePriority: 2, targets: -1 }, // Actions - second highest
+                //     { responsivePriority: 3, targets: [2, 3] }, // Name and Email
+                //     { responsivePriority: 4, targets: planId ? 6 : 7 }, // Status
+                //     { responsivePriority: 10000, targets: '_all' }, // All others lowest priority
+                //     { width: '10%', targets: 0 }, // ID 
+                //     { width: '15%', targets: 1 }, // Date
+                //     { width: '15%', targets: 2 }, // Name
+                //     { width: '15%', targets: 3 }, // Email
+                //     ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
+                //     { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
+                //     { width: '10%', targets: planId ? 5 : 6 }, // Total Inboxes 
+                //     { width: '12%', targets: planId ? 6 : 7 }, // Status
+                //     { width: '12%', targets: planId ? 7 : 8 }, // Split Status
+                //     { width: '10%', targets: planId ? 8 : 9 }, // Total Inboxes Split
+                //     { width: '15%', targets: planId ? 9 : 10 }, // Download CSV Split Domains
+                //     { width: '8%', targets: planId ? 10 : 11} // Actions
+                // ],
                 ajax: {
                     url: "{{ route('contractor.orders.data') }}",
                     type: "GET",
@@ -655,8 +626,8 @@
                     }
                 },
                 columns: [{
-                        data: 'id',
-                        name: 'orders.id'
+                        data: 'order_id',
+                        name: 'order_id'
                     },
                     {
                         data: 'created_at',
@@ -665,7 +636,7 @@
                             return `
                                 <div class="d-flex gap-1 align-items-center opacity-50">
                                     <i class="ti ti-calendar-month"></i>
-                                    <span>${data}</span>    
+                                    <span class="text-nowrap">${data}</span>    
                                 </div>
                             `;
                         }
@@ -676,10 +647,10 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <div>
+                                    <div class="flex-shrink-0">
                                         <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">    
                                     </div>
-                                    <span>${data}</span>    
+                                    <span class="text-truncate">${data}</span>    
                                 </div>
                             `;
                         }
@@ -690,8 +661,8 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <i class="ti ti-mail"></i>
-                                    <span>${data}</span>    
+                                    <i class="ti ti-mail flex-shrink-0"></i>
+                                    <span class="text-truncate">${data}</span>    
                                 </div>
                             `;
                         }
@@ -702,11 +673,18 @@
                     }]),
                     {
                         data: 'domain_forwarding_url',
-                        name: 'domain_forwarding_url'
+                        name: 'domain_forwarding_url',
+                        render: function(data, type, row) {
+                            if (data && data.length > 30) {
+                                return `<span class="text-truncate d-inline-block" style="max-width: 200px;" title="${data}">${data}</span>`;
+                            }
+                            return data;
+                        }
                     },
                     {
                         data: 'total_inboxes',
-                        name: 'total_inboxes'
+                        name: 'total_inboxes',
+                        // className: 'text-center'
                     },
                     {
                         data: 'status',
@@ -722,7 +700,8 @@
                         data: 'total_inboxes_split',
                         name: 'total_inboxes_split',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        // className: 'text-center'
                     },
                     {
                         data: 'assignment',
@@ -734,7 +713,8 @@
                         data: 'action',
                         name: 'action',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        // className: 'text-center'
                     }
                 ],
                 order: [
@@ -747,12 +727,22 @@
                     }
                     $('[data-bs-toggle="tooltip"]').tooltip();
 
-                    // Only adjust columns
-                    this.api().columns.adjust();
+                    // Adjust columns for responsive behavior
+                    setTimeout(() => {
+                        this.api().columns.adjust();
+                        if (this.api().responsive) {
+                            this.api().responsive.recalc();
+                        }
+                    }, 100);
                 },
                 initComplete: function(settings, json) {
                     console.log('Table initialization complete');
-                    this.api().columns.adjust();
+                    setTimeout(() => {
+                        this.api().columns.adjust();
+                        if (this.api().responsive) {
+                            this.api().responsive.recalc();
+                        }
+                    }, 100);
                 }
             });
 
@@ -767,6 +757,16 @@
                     console.log('DataTable processing completed');
                     wrapper.removeClass('loading');
                     wrapper.find('.dt-loading').remove();
+                }
+            });
+
+            // Handle window resize for better responsive behavior
+            $(window).on('resize', function() {
+                if (table) {
+                    table.columns.adjust();
+                    if (table.responsive) {
+                        table.responsive.recalc();
+                    }
                 }
             });
 

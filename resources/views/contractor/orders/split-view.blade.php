@@ -73,7 +73,7 @@
                         
                         $splitTotalInboxes = $splitDomainsCount * $inboxesPerDomain;
                     @endphp
-                    <span>Split Total Inboxes <br> {{ $splitTotalInboxes }}</span>
+                    <span>Split Total Inboxes <br> ({{ $splitDomainsCount }} domains * {{ $inboxesPerDomain }} inboxes per domain) = {{ $splitTotalInboxes }}</span>
                     <span>Inboxes per domain <br> {{ $inboxesPerDomain }}</span>
                 </div>
                 <hr>
