@@ -10,7 +10,43 @@
                 <i class="fa-solid fa-info-circle me-1"></i>
                 Required Setup
             </div>
-        </div>
+        </div>        
+        @if(isset($rejectedPanels) && $rejectedPanels->count() > 0)
+            @foreach($rejectedPanels as $rejectedPanel)
+                @if($rejectedPanel->note)
+                    <div class="mb-4">
+                        <div class="alert border-0 shadow-lg panel-rejection-alert" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border-left: 5px solid #fff !important; position: relative; overflow: hidden;">
+                            <!-- Animated background pattern -->
+                            <div class="alert-pattern"></div>
+                            
+                            <div class="d-flex align-items-start position-relative" style="z-index: 2;">
+                                <div class="alert-icon-wrapper me-3">
+                                    <i class="fa-solid fa-exclamation-triangle fa-2x text-white" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading mb-2 text-white fw-bold" style="text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                                        <i class="fa-solid fa-server me-2"></i>
+                                        Panel #{{ $rejectedPanel->id }} - Rejection Notice
+                                    </h5>
+                                    <div class="rejection-note-content p-3 rounded" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                                        <p class="mb-0 text-white fw-medium" style="font-size: 1.1em; line-height: 1.5; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                                            {{ $rejectedPanel->note }}
+                                        </p>
+                                    </div>
+                                    <div class="mt-3">
+                                        <span class="badge bg-warning text-dark px-3 py-2" style="font-size: 0.9em;">
+                                            <i class="fa-solid fa-clock me-1"></i>
+                                            Action Required
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
+        @endif
+
         {{-- Domain Forwarding Destination URL --}}
         <div class="mb-3">
             <label for="forwarding_url" class="form-label fw-bold text-white">
@@ -114,6 +150,84 @@
 {{-- Additional Styles --}}
 @push('styles')
 <style>
+.panel-rejection-alert {
+    animation: pulseGlow 2s ease-in-out infinite alternate;
+    border-radius: 12px !important;
+}
+
+.panel-rejection-alert::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+    border-radius: 14px;
+    z-index: -1;
+    animation: borderAnimation 3s linear infinite;
+}
+
+.alert-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    animation: patternMove 8s ease-in-out infinite;
+}
+
+.alert-icon-wrapper {
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    animation: iconBounce 2s ease-in-out infinite;
+}
+
+.rejection-note-content {
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.panel-rejection-alert:hover .rejection-note-content {
+    transform: translateY(-2px);
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 
+            0 4px 20px rgba(220, 53, 69, 0.4),
+            0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    100% {
+        box-shadow: 
+            0 8px 30px rgba(220, 53, 69, 0.6),
+            0 0 0 10px rgba(220, 53, 69, 0);
+    }
+}
+
+@keyframes borderAnimation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes patternMove {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    25% { transform: translateX(-10px) translateY(-5px); }
+    50% { transform: translateX(10px) translateY(-10px); }
+    75% { transform: translateX(-5px) translateY(5px); }
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
 .platform-field {
     transition: all 0.3s ease;
 }
