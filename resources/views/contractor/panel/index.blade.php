@@ -210,7 +210,9 @@
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <div class="offcanvas-body">
             <div id="panelOrdersContainer">
@@ -687,24 +689,22 @@
                                     aria-controls="order-collapse-${order.order_id}">
                                     <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
+                                    <span>
                                     <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                         onclick="window.location.href='/contractor/orders/${order.order_id}/split/view/'">
                                         View
                                     </button>
                                     ${order.status === 'unallocated' ? `
-                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success ms-1"
+                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                             onclick="assignOrderToMe(${order.order_panel_id}, this)">
                                             Assign to Me
                                         </button>
-                                    ` : order.status === 'allocated' ? `
-                                        <span class="badge bg-success ms-1" style="font-size: 10px;">
-                                            Allocated
-                                        </span>
                                     ` : `
-                                        <span class="badge bg-info ms-1" style="font-size: 10px;">
-                                            ${order.status}
+                                        <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 10px;">
+                                            ${order.status || 'Unknown'}
                                         </span>
                                     `}
+                                    </span>
                                 </div>
                             </h2>
                             <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
@@ -726,7 +726,7 @@
                                                     <th scope="row">${index + 1}</th>
                                                     <td>${order.order_id || 0}</td>
                                                     <td>
-                                                        <span class="badge ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
+                                                        <span class="badge badge-update-text ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
                                                     </td>
                                                     <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
@@ -751,7 +751,12 @@
                                                 </h6>
 
                                                 <div class="d-flex align-items-center justify-content-between">
-                                                    <span>Total Inboxes <br> ${order.reorder_info?.total_inboxes || 'N/A'}</span>
+                                                    <span>Total Inboxes <br> ${order.splits ? (() => {
+                                                        const domainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
+                                                        const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
+                                                        const totalInboxes = domainsCount * inboxesPerDomain;
+                                                        return `(${domainsCount} domains × ${inboxesPerDomain} inboxes) = ${totalInboxes}`;
+                                                    })() : 'N/A'}</span>
                                                     <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
                                                 </div>
                                                 <hr>
@@ -1031,6 +1036,8 @@
                     buttonElement.textContent = 'Allocated';
                     buttonElement.disabled = true;
                     buttonElement.onclick = null; // Remove click handler
+                    // badge-update-text
+                    $('.badge-update-text').removeClass('bg-warning text-dark').addClass('bg-success').text('Allocated');
                 }
                 
                 // Refresh the panel orders to show updated status
