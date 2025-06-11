@@ -689,22 +689,22 @@
                                     aria-controls="order-collapse-${order.order_id}">
                                     <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
-                                    <span>
-                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                        onclick="window.location.href='/contractor/orders/${order.order_id}/split/view/'">
-                                        View
-                                    </button>
-                                    ${order.status === 'unallocated' ? `
-                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                            onclick="assignOrderToMe(${order.order_panel_id}, this)">
-                                            Assign to Me
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                            onclick="window.location.href='/contractor/orders/${order.order_id}/split/view/'">
+                                            View
                                         </button>
-                                    ` : `
-                                        <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 10px;">
-                                            ${order.status || 'Unknown'}
-                                        </span>
-                                    `}
-                                    </span>
+                                        ${order.status === 'unallocated' ? `
+                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                onclick="assignOrderToMe(${order.order_panel_id}, this)">
+                                                Assign to Me
+                                            </button>
+                                        ` : `
+                                            <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 10px;">
+                                                ${order.status || 'Unknown'}
+                                            </span>
+                                        `}
+                                    </div>
                                 </div>
                             </h2>
                             <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
