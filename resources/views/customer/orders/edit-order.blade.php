@@ -98,6 +98,7 @@
     #domain-count-text {
         font-weight: 600;
         color: var(--bs-info);
+        display: none;
     }
 
     /* Domain textarea enhancements */
@@ -181,7 +182,7 @@
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
                     <br>
-                    <span class="text-info">
+                    <span class="text-info" style="display: none;">
                         <i class="fa-solid fa-info-circle me-1"></i>
                         Total domains: <strong id="domain-count-text">0</strong>
                     </span>
