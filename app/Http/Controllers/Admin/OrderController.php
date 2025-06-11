@@ -289,9 +289,20 @@ class OrderController extends Controller
                 });
             }
 
+            // if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+            //     $orders->whereHas('reorderInfo', function($query) use ($request) {
+            //         $query->where('total_inboxes', $request->totalInboxes);
+            //     });
+            // }
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
                 $orders->whereHas('reorderInfo', function($query) use ($request) {
-                    $query->where('total_inboxes', $request->totalInboxes);
+                    $query->whereRaw('(
+                        CASE 
+                            WHEN domains IS NOT NULL AND domains != "" THEN 
+                                (LENGTH(domains) - LENGTH(REPLACE(REPLACE(REPLACE(domains, ",", ""), CHAR(10), ""), CHAR(13), "")) + 1) * inboxes_per_domain
+                            ELSE total_inboxes 
+                        END
+                    ) = ?', [$request->totalInboxes]);
                 });
             }
 
@@ -364,7 +375,32 @@ class OrderController extends Controller
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
                 ->addColumn('total_inboxes', function ($order) {
-                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->total_inboxes : 'N/A';
+                    if (!$order->reorderInfo || !$order->reorderInfo->first()) {
+                        return 'N/A';
+                    }
+                    
+                    $reorderInfo = $order->reorderInfo->first();
+                    $domains = $reorderInfo->domains ?? '';
+                    $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
+                    
+                    // Parse domains and count them
+                    $domainsArray = [];
+                    $lines = preg_split('/\r\n|\r|\n/', $domains);
+                    foreach ($lines as $line) {
+                        if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                    $domainsArray[] = trim($item);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalDomains = count($domainsArray);
+                    $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                    
+                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
                 ->rawColumns(['action', 'status'])
                 ->make(true);

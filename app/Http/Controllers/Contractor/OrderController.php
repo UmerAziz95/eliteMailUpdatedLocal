@@ -315,9 +315,21 @@ class OrderController extends Controller
                 });
             }
 
+            // if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+            //     $assignments->whereHas('order.reorderInfo', function($query) use ($request) {
+            //         $query->where('total_inboxes', $request->totalInboxes);
+            //     });
+            // }
+            
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
                 $assignments->whereHas('order.reorderInfo', function($query) use ($request) {
-                    $query->where('total_inboxes', $request->totalInboxes);
+                    $query->whereRaw('(
+                        CASE 
+                            WHEN domains IS NOT NULL AND domains != "" THEN 
+                                (LENGTH(domains) - LENGTH(REPLACE(REPLACE(REPLACE(domains, ",", ""), CHAR(10), ""), CHAR(13), "")) + 1) * inboxes_per_domain
+                            ELSE total_inboxes 
+                        END
+                    ) = ?', [$request->totalInboxes]);
                 });
             }
 
@@ -400,7 +412,32 @@ class OrderController extends Controller
                     return $assignment->order->plan ? $assignment->order->plan->name : 'N/A';
                 })
                 ->addColumn('total_inboxes', function ($assignment) {
-                    return $assignment->order->reorderInfo->first() ? $assignment->order->reorderInfo->first()->total_inboxes : 'N/A';
+                    if (!$assignment->order->reorderInfo || !$assignment->order->reorderInfo->first()) {
+                        return 'N/A';
+                    }
+                    
+                    $reorderInfo = $assignment->order->reorderInfo->first();
+                    $domains = $reorderInfo->domains ?? '';
+                    $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
+                    
+                    // Parse domains and count them
+                    $domainsArray = [];
+                    $lines = preg_split('/\r\n|\r|\n/', $domains);
+                    foreach ($lines as $line) {
+                        if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                    $domainsArray[] = trim($item);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalDomains = count($domainsArray);
+                    $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                    
+                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
                 ->addColumn('split_status', function ($assignment) {
                     $status = $assignment->orderPanel->status ?? 'pending';

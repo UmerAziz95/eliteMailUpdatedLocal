@@ -319,10 +319,16 @@ class OrderController extends Controller
                     $query->where('forwarding_url', 'like', "%{$request->domain}%");
                 });
             }
-
+             
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
                 $orders->whereHas('reorderInfo', function($query) use ($request) {
-                    $query->where('total_inboxes', $request->totalInboxes);
+                    $query->whereRaw('(
+                        CASE 
+                            WHEN domains IS NOT NULL AND domains != "" THEN 
+                                (LENGTH(domains) - LENGTH(REPLACE(REPLACE(REPLACE(domains, ",", ""), CHAR(10), ""), CHAR(13), "")) + 1) * inboxes_per_domain
+                            ELSE total_inboxes 
+                        END
+                    ) = ?', [$request->totalInboxes]);
                 });
             }
 
@@ -411,11 +417,32 @@ class OrderController extends Controller
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
                 ->addColumn('total_inboxes', function ($order) {
-                    // return $order->reorderInfo ? $order->reorderInfo->total_inboxes : 'N/A';
                     if(!$order->reorderInfo || $order->reorderInfo->isEmpty()) {
                         return 'N/A';
                     }
-                    return $order->reorderInfo->first()->total_inboxes ?? 'N/A';
+                    
+                    $reorderInfo = $order->reorderInfo->first();
+                    $domains = $reorderInfo->domains ?? '';
+                    $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
+                    
+                    // Parse domains and count them
+                    $domainsArray = [];
+                    $lines = preg_split('/\r\n|\r|\n/', $domains);
+                    foreach ($lines as $line) {
+                        if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                    $domainsArray[] = trim($item);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalDomains = count($domainsArray);
+                    $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                    
+                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
                 ->filterColumn('domain_forwarding_url', function($query, $keyword) {
                     $query->whereHas('reorderInfo', function($q) use ($keyword) {
@@ -1202,7 +1229,32 @@ class OrderController extends Controller
                     return $domains;
                 })
                 ->addColumn('total_inboxes', function ($order) {
-                    return optional(optional($order->reorderInfo)->first())->total_inboxes ?? 0;
+                    if (!$order->reorderInfo || !$order->reorderInfo->first()) {
+                        return 0;
+                    }
+                    
+                    $reorderInfo = $order->reorderInfo->first();
+                    $domains = $reorderInfo->domains ?? '';
+                    $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
+                    
+                    // Parse domains and count them
+                    $domainsArray = [];
+                    $lines = preg_split('/\r\n|\r|\n/', $domains);
+                    foreach ($lines as $line) {
+                        if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                    $domainsArray[] = trim($item);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalDomains = count($domainsArray);
+                    $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                    
+                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 0);
                 })
                 ->addColumn('status_badge', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
