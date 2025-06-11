@@ -78,6 +78,29 @@
     .is-invalid + .validation-message {
         display: block;
     }
+
+    /* Domain count badge styling */
+    #domain-count-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        transition: all 0.3s ease;
+        animation: pulseCount 2s infinite;
+    }
+
+    @keyframes pulseCount {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    #domain-count-text {
+        font-weight: 600;
+        color: var(--bs-info);
+    }
+
+    /* Domain textarea enhancements */
+    #domains:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+    }
 </style>
 @endpush
 
@@ -146,10 +169,20 @@
             </div>
 
             <div class="mb-3">
-                <label for="domains">Domains *</label>
+                <label for="domains">
+                    Domains * 
+                    <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
+                </label>
                 <textarea id="domains" name="domains" class="form-control" rows="8" required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
-                <small class="note">Please enter each domain on a new line and ensure you double-check the number of domains you submit</small>
+                <small class="note">
+                    Please enter each domain on a new line and ensure you double-check the number of domains you submit
+                    <br>
+                    <span class="text-info">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Total domains: <strong id="domain-count-text">0</strong>
+                    </span>
+                </small>
             </div>
 
             <div class="row g-3 mt-4">
@@ -2050,6 +2083,54 @@ $(document).ready(function() {
     
     // Initialize remaining inboxes progress bar on page load
     updateRemainingInboxesBar();
+    
+    // Domain counting functionality
+    function countDomains() {
+        const domainsText = $('#domains').val().trim();
+        let domainCount = 0;
+        
+        if (domainsText) {
+            // Handle both comma-separated and newline-separated domains
+            let domains;
+            if (domainsText.includes(',')) {
+                // Comma-separated format
+                domains = domainsText.split(',').map(d => d.trim()).filter(d => d.length > 0);
+            } else {
+                // Newline-separated format (default)
+                domains = domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0);
+            }
+            domainCount = domains.length;
+        }
+        
+        // Update both badge and text
+        $('#domain-count-badge').text(`${domainCount} domain${domainCount !== 1 ? 's' : ''}`);
+        $('#domain-count-text').text(domainCount);
+        
+        // Add visual feedback based on count
+        const badge = $('#domain-count-badge');
+        badge.removeClass('bg-primary bg-success bg-warning bg-danger');
+        
+        if (domainCount === 0) {
+            badge.addClass('bg-danger');
+        } else if (domainCount < 10) {
+            badge.addClass('bg-warning');
+        } else if (domainCount < 50) {
+            badge.addClass('bg-primary');
+        } else {
+            badge.addClass('bg-success');
+        }
+        
+        return domainCount;
+    }
+    
+    // Real-time domain counting
+    $('#domains').on('input paste keyup', function() {
+        // Small delay to handle paste operations
+        setTimeout(countDomains, 100);
+    });
+    
+    // Initial domain count on page load
+    countDomains();
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
