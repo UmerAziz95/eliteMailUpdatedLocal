@@ -81,10 +81,13 @@
 
     /* Domain count badge styling */
     #domain-count-badge {
+        position: absolute;
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
         transition: all 0.3s ease;
         animation: pulseCount 2s infinite;
+        right: 20px;
+        margin-top: -2px;
     }
 
     @keyframes pulseCount {
@@ -1339,7 +1342,15 @@ $(document).ready(function() {
         // Populate basic fields
         if (reorderInfo.forwarding_url) $('#forwarding').val(reorderInfo.forwarding_url);
         if (reorderInfo.hosting_platform) $('#hosting').val(reorderInfo.hosting_platform).trigger('change');
-        if (reorderInfo.domains) $('#domains').val(reorderInfo.domains);
+        if (reorderInfo.domains) {
+            $('#domains').val(reorderInfo.domains);
+            // Trigger domain counting after populating domains
+            setTimeout(() => {
+                if (typeof countDomains === 'function') {
+                    countDomains();
+                }
+            }, 100);
+        }
         if (reorderInfo.sending_platform) $('#sending_platform').val(reorderInfo.sending_platform).trigger('change');
         if (reorderInfo.inboxes_per_domain) $('#inboxes_per_domain').val(reorderInfo.inboxes_per_domain).trigger('change');
         
@@ -1380,6 +1391,11 @@ $(document).ready(function() {
                 calculateTotalInboxes();
             }
             
+            // Update domain count badge after import
+            if (typeof countDomains === 'function') {
+                countDomains();
+            }
+            
             // Check domain cutting if needed
             checkDomainCutting();
             
@@ -1391,6 +1407,13 @@ $(document).ready(function() {
                 if (typeof calculateTotalInboxes === 'function') {
                     calculateTotalInboxes();
                 }
+                // Final domain count update
+                if (typeof countDomains === 'function') {
+                    // alert('Domains have been imported successfully. Please check the domain count.');
+                    $('#domains').trigger('input'); // Trigger input to recalculate domains
+                    countDomains();
+                }
+                $('#domains').trigger('input'); // Trigger input to recalculate domains
             }, 200);
         }, 600);
         
@@ -2130,9 +2153,17 @@ $(document).ready(function() {
         setTimeout(countDomains, 100);
     });
     
-    // Initial domain count on page load
-    countDomains();
-    
+    // Initial domain count on page load - with delay to ensure DOM is fully loaded
+    setTimeout(() => {
+        countDomains();
+        
+        // Additional check after a longer delay for pre-populated data
+        setTimeout(() => {
+            if ($('#domains').val().trim()) {
+                countDomains();
+            }
+        }, 500);
+    }, 100);
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
