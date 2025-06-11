@@ -82,7 +82,28 @@
 
                         @if(optional($order->reorderInfo)->count() > 0)
                         <div class="d-flex align-items-center justify-content-between">
-                            <span>Total Inboxes <br> {{ $order->reorderInfo->first()->total_inboxes ?? '0' }}</span>
+                            @php
+                                $domains = $order->reorderInfo->first()->domains ?? '';
+                                $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+                                
+                                // Parse domains and count them
+                                $domainsArray = [];
+                                $lines = preg_split('/\r\n|\r|\n/', $domains);
+                                foreach ($lines as $line) {
+                                    if (trim($line)) {
+                                        $lineItems = explode(',', $line);
+                                        foreach ($lineItems as $item) {
+                                            if (trim($item)) {
+                                                $domainsArray[] = trim($item);
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                $totalDomains = count($domainsArray);
+                                $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                            @endphp
+                            <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{ $inboxesPerDomain }})</span>
                             <span>Inboxes per domain <br> {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
                         </div>
                         <hr>

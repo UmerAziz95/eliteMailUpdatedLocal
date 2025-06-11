@@ -1407,6 +1407,9 @@ class OrderController extends Controller
                 }
             }
 
+            // Collect all updated domains for merging into reorder_info
+            $allUpdatedDomains = [];
+            
             foreach ($request->panel_splits as $splitId => $splitData) {
                 $split = OrderPanelSplit::where('id', $splitId)
                     ->whereHas('orderPanel', function($query) use ($orderId) {
@@ -1443,6 +1446,9 @@ class OrderController extends Controller
                 $split->domains = $splitData['domains'];
                 $split->save();
 
+                // Collect domains for reorder_info update
+                $allUpdatedDomains = array_merge($allUpdatedDomains, $splitData['domains']);
+
                 // Update the order panel status to 'allocated' for reprocessing
                 $split->orderPanel->status = 'allocated';
 
@@ -1450,6 +1456,34 @@ class OrderController extends Controller
                 $order->status_manage_by_admin = 'pending';
                 $order->save();
                 $split->orderPanel->save();
+            }
+
+            // Get all remaining split domains that weren't updated (non-rejected panels)
+            $allOrderSplits = OrderPanelSplit::whereHas('orderPanel', function($query) use ($orderId) {
+                $query->where('order_id', $orderId);
+            })->get();
+
+            $allDomains = [];
+            foreach ($allOrderSplits as $split) {
+                if (is_array($split->domains)) {
+                    $allDomains = array_merge($allDomains, $split->domains);
+                }
+            }
+
+            // Remove duplicates and ensure we have a clean array
+            $allDomains = array_unique($allDomains);
+            $totalDomainsCount = count($allDomains); // Count before converting to string
+            $allDomains = implode(',', $allDomains); // Convert array to comma-separated string
+
+            // Update reorder_info domains column with merged domains
+            if ($order->reorderInfo && $order->reorderInfo->isNotEmpty()) {
+                $reorderInfo = $order->reorderInfo->first();
+                $reorderInfo->update(['domains' => $allDomains]);
+                
+                Log::info("Updated reorder_info domains for order #{$order->id}", [
+                    'total_domains' => $totalDomainsCount,
+                    'updated_splits' => count($request->panel_splits)
+                ]);
             }
 
             DB::commit();
