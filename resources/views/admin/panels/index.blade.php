@@ -203,14 +203,14 @@
 
     </section> 
     
-    
-
-
     <!-- Orders Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <!-- <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button> -->
+             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <div class="offcanvas-body">
             <div id="panelOrdersContainer">
@@ -720,10 +720,6 @@
                                             </tbody>
                                         </table>
                                     </div>
-
-
-
-
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="card p-3 mb-3">
@@ -734,8 +730,13 @@
                                                     Email configurations
                                                 </h6>
 
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <span>Total Inboxes <br> ${order.reorder_info?.total_inboxes || 'N/A'}</span>
+                                                <div class="d-flex align-items-center justify-content-between"> 
+                                                    <span>Total Inboxes <br> ${order.splits ? (() => {
+                                                        const domainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
+                                                        const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
+                                                        const totalInboxes = domainsCount * inboxesPerDomain;
+                                                        return `(${domainsCount} domains × ${inboxesPerDomain} inboxes) = ${totalInboxes}`;
+                                                    })() : 'N/A'}</span>
                                                     <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
                                                 </div>
                                                 <hr>

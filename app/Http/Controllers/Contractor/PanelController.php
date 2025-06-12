@@ -36,7 +36,7 @@ class PanelController extends Controller
 
             // Apply filters if provided
             if ($request->filled('panel_id')) {
-                // PNL-35 remove string PNL
+                // PNL-00 remove string PNL
                 $request->panel_id = str_replace('PNL-', '', $request->panel_id);
                 $query->where('id', 'like', '%' . $request->panel_id . '%');
             }
@@ -59,7 +59,7 @@ class PanelController extends Controller
 
             // Apply ordering
             $order = $request->get('order', 'desc');
-            $query->orderBy('created_at', $order);
+            $query->orderBy('id', $order);
 
             // Pagination parameters
             $perPage = $request->get('per_page', 12); // Default 12 panels per page
