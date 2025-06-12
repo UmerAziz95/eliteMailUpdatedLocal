@@ -84,43 +84,71 @@
             </ul>
         </div>
 
-        <div class="dropdown">
-            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
-                    alt="">
-                <div class="d-flex flex-column gap-0">
-                    <h6 class="mb-0">{{ Auth::user()->name ?? 'N/A' }}</h6>
-                    <small>{{ Auth::user()->email ?? 'N/A' }}</small>
-                </div>
+    @php
+    $user = Auth::user();
+
+    if (!empty($user->name)) {
+        $initials = collect(explode(' ', $user->name))
+            ->filter()
+            ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+            ->take(2)
+            ->implode('');
+    } else {
+        $initials = strtoupper(substr($user->email, 0, 2));
+    }
+@endphp
+
+<div class="dropdown">
+    <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        @if ($user->profile_image)
+            <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                style="border-radius: 50%;" height="40" width="40"
+                class="object-fit-cover login-user-profile" alt="User Image">
+        @else
+            <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: #5750bf;">
+                {{ $initials }}
             </div>
-            <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
-                <div class="profile d-flex align-items-center gap-2 px-2">
-                    <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                            style="border-radius: 50%" height="40" width="40"
-                            class="object-fit-cover login-user-profile" alt="">
-                    </div>
-                    <div>
-                        <h6 class="mb-0">{{ Auth::user()->name }}</h6>
-                        <p class="small mb-0">{{ Auth::user()->role->name }}</p>
-                    </div>
-                </div>
-                <hr>
+        @endif
 
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="{{ route('admin.profile') }}"><i class="ti ti-user"></i> My Profile</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="{{ route('admin.settings') }}"><i class="ti ti-settings"></i> Settings</a></li>
-
-
-                <a class="logout-btn" href="{{ route('logout') }}">
-                    <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
-                        Logout</button>
-                </a>
-            </ul>
+        <div class="d-flex flex-column gap-0">
+            <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+            <small>{{ $user->email ?? 'N/A' }}</small>
         </div>
+    </div>
+
+    <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
+        <div class="profile d-flex align-items-center gap-2 px-2">
+            @if ($user->profile_image)
+                <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                    style="border-radius: 50%;" height="40" width="40"
+                    class="object-fit-cover login-user-profile" alt="User Image">
+            @else
+                <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                    style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: #5750bf;">
+                    {{ $initials }}
+                </div>
+            @endif
+
+            <div>
+                <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+                <p class="small mb-0">{{ $user->role->name ?? '' }}</p>
+            </div>
+        </div>
+        <hr>
+
+        <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                href="{{ route('admin.profile') }}"><i class="ti ti-user"></i> My Profile</a></li>
+        <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                href="{{ route('admin.settings') }}"><i class="ti ti-settings"></i> Settings</a></li>
+
+        <a class="logout-btn" href="{{ route('logout') }}">
+            <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
+                Logout</button>
+        </a>
+    </ul>
+</div>
+
     </div>
 </header>
 

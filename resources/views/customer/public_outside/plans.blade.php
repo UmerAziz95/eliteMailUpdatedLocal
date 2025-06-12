@@ -201,15 +201,11 @@
     $btn.prop('disabled', false);
     $btn.find('.btn-text').text('Subscribe Now');
     $btn.find('.spinner-border').addClass('d-none');
-}
+    }
             });
         });
-    });
+    }); 
 </script>
 
-
-
-
-
 @endpush
-@endsection
+@endsection 
