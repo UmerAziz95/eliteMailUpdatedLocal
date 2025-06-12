@@ -853,7 +853,7 @@
                                                     <span class="opacity-50">Sending platform Sequencer - Password</span>
                                                     <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
                                                 </div>
-                                                
+
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50">Domains</span>
                                                     ${renderDomains(order.splits)}
@@ -862,7 +862,12 @@
                                                 ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `
                                                     <div class="d-flex flex-column mt-3">
                                                         <span class="opacity-50">Domains from Remaining Panels</span>
-                                                        ${order.remaining_order_panels.map(panel => renderDomains(panel.splits)).join('')}
+                                                        ${order.remaining_order_panels.map((panel, index) => `
+                                                            <div class="mb-2">
+                                                                <small class="text-white">Split ${String(index + 2).padStart(2, '0')}</small>
+                                                                ${renderDomains(panel.splits)}
+                                                            </div>
+                                                        `).join('')}
                                                     </div>
                                                 ` : ''}
                                                 <div class="d-flex flex-column mt-3">
