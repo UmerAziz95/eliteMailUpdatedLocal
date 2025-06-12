@@ -723,7 +723,7 @@
                                                     <th scope="col">Status</th>
                                                     <th scope="col">Space Assigned</th>
                                                     <th scope="col">Inboxes/Domain</th>
-                                                    <th scope="col">Contractor</th>
+                                                    <th scope="col">Total Domains</th>
                                                     <th scope="col">Date</th>
                                                 </tr>
                                             </thead>
@@ -741,77 +741,37 @@
                                                     <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
                                                     <td>
-                                                        ${order.is_assigned ? `
-                                                            <span class="badge bg-success" style="font-size: 10px;">
-                                                                Assigned
-                                                            </span>
-                                                        ` : `
-                                                            <span class="badge bg-warning text-dark" style="font-size: 10px;">
-                                                                Unassigned
-                                                            </span>
-                                                        `}
+                                                        <span class="badge bg-info" style="font-size: 10px;">
+                                                            ${order.splits ? order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0) : 0} domain(s)
+                                                        </span>
                                                     </td>
                                                     <td>${formatDate(order.created_at)}</td>
                                                 </tr>
+                                                ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
+                                                    order.remaining_order_panels.map((remainingPanel, panelIndex) => `
+                                                        <tr>
+                                                            <th scope="row">${index + 1}.${panelIndex + 1}</th>
+                                                            <td>${order.order_id || 0}</td>
+                                                            <td>${remainingPanel.order_panel_id || 'N/A'}</td>
+                                                            <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
+                                                            <td>
+                                                                <span class="badge badge-update-text ${getStatusBadgeClass(remainingPanel.status)}">${remainingPanel.status || 'Unknown'}</span>
+                                                            </td>
+                                                            <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                            <td>${remainingPanel.inboxes_per_domain || 'N/A'}</td>
+                                                            <td>
+                                                                <span class="badge bg-info" style="font-size: 10px;">
+                                                                    ${remainingPanel.domains_count || 0} domain(s)
+                                                                </span>
+                                                            </td>
+                                                            <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
+                                                        </tr>
+                                                    `).join('') : ''
+                                                }
                                             </tbody>
                                         </table>
                                     </div>
 
-                                    <!-- Remaining Order Panels Section -->
-                                    ${order. && order.remaining_order_panels.length > 0 ? `
-                                        <div class="mt-4remaining_order_panels">
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-bordered">
-                                                    <thead class="">
-                                                        <tr>
-                                                            <th>Panel ID</th>
-                                                            <th>Panel Title</th>
-                                                            <th>Status</th>
-                                                            <th>Space Assigned</th>
-                                                            <th>Domains</th>
-                                                            <th>Total Inboxes</th>
-                                                            <th>Contractor</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        ${order.remaining_order_panels.map(remainingPanel => `
-                                                            <tr>
-                                                                <td>PNL-${remainingPanel.panel_id}</td>
-                                                                <td>${remainingPanel.panel_title}</td>
-                                                                <td>
-                                                                    <span class="badge ${getStatusBadgeClass(remainingPanel.status)}" style="font-size: 10px;">
-                                                                        ${remainingPanel.status || 'Unknown'}
-                                                                    </span>
-                                                                </td>
-                                                                <td>${remainingPanel.space_assigned || 'N/A'}</td>
-                                                                <td>
-                                                                    <span class="badge bg-info" style="font-size: 10px;">
-                                                                        ${remainingPanel.domains_count} domain(s)
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    <span class="badge bg-success" style="font-size: 10px;">
-                                                                        ${remainingPanel.total_inboxes} inbox(es)
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    ${remainingPanel.is_assigned ? `
-                                                                        <span class="badge bg-primary" style="font-size: 10px;">
-                                                                            ID: ${remainingPanel.contractor_id}
-                                                                        </span>
-                                                                    ` : `
-                                                                        <span class="badge bg-warning text-dark" style="font-size: 10px;">
-                                                                            Unassigned
-                                                                        </span>
-                                                                    `}
-                                                                </td>
-                                                            </tr>
-                                                        `).join('')}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    ` : ''}
 
 
                                     <div class="row">
@@ -833,6 +793,7 @@
                                                     })() : 'N/A'}</span>
                                                     <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
                                                 </div>
+                                                 
                                                 <hr>
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50">Prefix Variants</span>
@@ -896,6 +857,17 @@
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50">Domains</span>
                                                     ${renderDomains(order.splits)}
+                                                </div>
+                                                // here shows the domains from remaining_order_panels
+                                                ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `
+                                                    <div class="d-flex flex-column mt-3">
+                                                        <span class="opacity-50">Domains from Remaining Panels</span>
+                                                        ${order.remaining_order_panels.map(panel => renderDomains(panel.splits)).join('')}
+                                                    </div>
+                                                ` : ''}
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Additional Notes</span>
+                                                    <span>${order.reorder_info?.additional_notes || 'N/A'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -976,6 +948,7 @@
 
         // Helper function to render domains from splits
         function renderDomains(splits) {
+            console.log(splits);
             if (!splits || splits.length === 0) {
                 return '<span>N/A</span>';
             }
@@ -983,8 +956,30 @@
             let allDomains = [];
             
             splits.forEach(split => {
-                if (split.domains && Array.isArray(split.domains)) {
-                    allDomains = allDomains.concat(split.domains);
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        // Check if it's an array of objects with domain property
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
+                            }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        // If it's a string, split by common separators
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            // Split by comma, newline, or semicolon
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        // If it's an object, try to extract domain values
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
                 }
             });
             
@@ -992,7 +987,11 @@
                 return '<span>N/A</span>';
             }
             
-            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
+            // Filter out any remaining non-string values and display domains
+            return allDomains
+                .filter(domain => domain && typeof domain === 'string')
+                .map(domain => `<span class="d-block">${domain}</span>`)
+                .join('');
         }
 
         // Handle filter form submission
