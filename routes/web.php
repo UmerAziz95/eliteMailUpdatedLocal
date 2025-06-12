@@ -238,10 +238,10 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/plans/delete-payment-method', [CustomerPlanController::class, 'deletePaymentMethod'])->name('plans.delete-payment-method');
     
     // Subscription handling routes
-    Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
     Route::get('/subscription/cancel', [CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
     Route::post('/subscription/cancel-process', [CustomerPlanController::class, 'subscriptionCancelProcess'])->name('subscription.cancel.process');
     Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
+    // Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
 
 
     //subscriptions controller

@@ -169,7 +169,7 @@ class AuthController extends Controller
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email',
-        'role' => 'required|in:admin,customer,contractor',
+         'role' => 'required|in:customer',
     ]);
 
     // Check if user already exists
@@ -184,7 +184,7 @@ class AuthController extends Controller
         // Create encrypted verification link
         $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
         $encrypted = Crypt::encryptString($payload);
-        $verificationLink = url('/email_verification/' . $encrypted);
+        $verificationLink = url('/plans/public/' . $encrypted);
 
         try {
             Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
@@ -193,7 +193,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'User already exists. We have sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!',
+            'message' => 'User already exists. Again we have sent you a verification link please check your inbox',
             'user' => $existingUser,
             'verificationLink'=>$verificationLink
         ], 200);
@@ -272,7 +272,8 @@ class AuthController extends Controller
 
     $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
     $encrypted = Crypt::encryptString($payload);
-    $verificationLink = url('/email_verification/' . $encrypted);
+    $verificationLink =url('/plans/public/' . $encrypted);
+    
 
     try {
         Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));

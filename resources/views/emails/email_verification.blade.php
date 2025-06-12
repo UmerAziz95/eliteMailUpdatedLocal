@@ -442,26 +442,26 @@
             <p>Dear {{ $user->name }},</p>
 
             <p>Thank you for registering with <strong>{{ config('app.name') }}</strong>! To complete your sign-up,
-                please verify your email address by entering the verification code.</p>
+                please verify by clicking the below button</p>
 
-            <div style="margin: 20px 0;">
+            {{-- <div style="margin: 20px 0;">
                 <p style="font-size: 16px;">🔐 <strong>Your 4-digit verification code is:</strong></p>
                 <p
                     style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 15px; border-radius: 8px; text-align: center; color: #2a2a2a;">
                     {{ $user->email_verification_code }}
                 </p>
-            </div>
+            </div> --}}
 
             {{-- <p>Alternatively, you can verify your email using the following secure link:</p> --}}
 
-            {{-- @if($verificationLink )
+            @if($verificationLink )
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{{ $verificationLink }}"
                     style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
-                    Verify Email
+                    Verify Here
                 </a>
             </div>
-            @endif --}}
+            @endif
 
             <p>If you didn’t request this verification, you can safely ignore this email.</p>
         </div>

@@ -122,33 +122,31 @@ class PlanController extends Controller
         
         try {
            $plan = Plan::findOrFail($planId);
-
            if($encrypted !==null){
             $decrypted = Crypt::decryptString($request->encrypted);
             [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
             }
             // Check if user is already logged in or fetch by email
             $user = Auth::check() ? auth()->user() : User::where('email', $email)->first();
+            // Login and create session 
+            Auth::login($user);
+            // dd(auth()->user()); 
 
             if (!$user) {
                 abort(404, 'User not found, auth failed please login or contact to support');
             }
-
-            
             if($encrypted !==null){
             $user->status=1;
             $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
             $user->password=Hash::make($randomPassword);
             $user->save();
-              try {
+            try {
             Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
              } catch (\Exception $e) {
-               Log::error('Failed to send email verification code to : '.$user->email . $e->getMessage());
+               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
               }
             }
-            // Login and create session 
-            Auth::login($user);
-           
+         
             // get charge_customer_id from user
             $charge_customer_id = $user->chargebee_customer_id ?? null;
             if ($request->has('order_id') && $charge_customer_id == null) {

@@ -63,6 +63,24 @@
 </script>
 
 <body>
+    <!-- Vertically centered modal -->
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4 rounded-3">
+                <div class="modal-body">
+                    <h4 class="fw-bold mb-3 text-black">Verify your Email</h4>
+                    <p class="mb-2  text-black">We've sent you a temporary link.<br>
+                        Please, check your inbox at</p>
+                    <p id="userEmail" class="fw-semibold text-primary"></p>
+
+                    <button type="button" class="btn btn-link mt-3" data-bs-dismiss="modal">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <div class="preloader">
         <div class="circle circle5 c51"></div>
@@ -213,15 +231,21 @@
                 url: "{{ route('register') }}",
                 type: "POST",
                 data: $(this).serialize(),
-                success: function(response) { 
-                toastr.info(response.message || "We've sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!");                     submitBtn.prop("disabled", false).text("Submitted");
-                     setTimeout(() => {
+               success: function(response) {
+                    // toastr.info(response.message);
+                    submitBtn.prop("disabled", false).text("Submitted");
 
-                         window.location.href=response.verificationLink;
-    
-                     }, 5000);
+                    // Get email from input
+                    const email = $('#email').val();
+                    // Set email in modal
+                    $('#userEmail').text(email);
+                    //cleaning input
+                      $('#email').val('');
+                      $('#name').val('');
                     
-                     
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+                    modal.show();
                 },
                 error: function(xhr) {
                     submitBtn.prop("disabled", false).text("Register");
