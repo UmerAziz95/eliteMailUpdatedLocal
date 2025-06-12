@@ -76,9 +76,19 @@
         border: 1px dashed rgba(255, 255, 255, 0.2);
     }
 </style>
+
 @endpush
 @section('content')
 <div class="py-3 ">
+    <div id="subscription-loader" class="d-none position-absolute top-50 start-50 translate-middle text-center"
+        style="z-index: 9999; min-width: 200px;">
+        <div class="spinner-border text-primary" role="status" style="width: 1.5rem; height: 1.5rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 fw-bold text-dark" style="font-size: 1rem;">Loading...</div>
+    </div>
+
+
     <div class="row justify-content-center align-items-center m-auto">
         <div class="col-md-12 mt-3 d-flex justify-content-center align-items-center">
             {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
@@ -112,8 +122,11 @@
                         <div class="text-center mt-4">
 
                             <button class="btn btn-primary subscribe-btn" data-plan-id="{{ $plan->id }}">
-                                Subscribe Now
+                                <span class="btn-text">Subscribe Now</span>
+                                <span class="spinner-border spinner-border-sm d-none ms-2" role="status"
+                                    aria-hidden="true"></span>
                             </button>
+
 
                         </div>
                     </div>
@@ -142,12 +155,16 @@
 <script>
     $(document).ready(function () {
         $('.subscribe-btn').click(function () {
-            const planId = $(this).data('plan-id');
+            const $btn = $(this);
+            const planId = $btn.data('plan-id');
             const encrypted = @json($encrypted);
             const token = $('meta[name="csrf-token"]').attr('content');
+            const url = `/customer/plans/${planId}/subscribe/${encrypted}`;
 
-            const url =`/customer/plans/${planId}/subscribe/${encrypted}`
-                
+            // Disable button and show spinner
+            $btn.prop('disabled', true);
+            $btn.find('.btn-text').text('Processing...');
+            $btn.find('.spinner-border').removeClass('d-none');
 
             $.ajax({
                 url: url,
@@ -156,17 +173,42 @@
                     'X-CSRF-TOKEN': token
                 },
                 success: function (response) {
-                   window.location.href = response.hosted_page_url; // optional
+                    // Restore button state before redirect
+                    $btn.prop('disabled', false);
+                    $btn.find('.btn-text').text('Subscribe Now');
+                    $btn.find('.spinner-border').addClass('d-none');
+
+                    // Redirect
+                    window.location.href = response.hosted_page_url;
                 },
-                error: function (xhr) {
-                    // Handle error
-                    console.error(xhr.responseText);
-                    alert('Subscription failed. Please try again.');
-                }
+               error: function (xhr) {
+    const errorCode = xhr.status;
+    let errorMsg = 'Subscription failed. Please try again.';
+
+    // Try to get a message from the response JSON
+    if (xhr.responseJSON && xhr.responseJSON.message) {
+        errorMsg = xhr.responseJSON.message;
+    }
+
+        toastr.info("Operation failed!")
+        if(errorCode==419){
+            toastr.info("Oops! One time session has expired Try again.")
+            setTimeout(() => {
+                window.location.reload();
+            }, 4000);
+        }
+    // Restore button state
+    $btn.prop('disabled', false);
+    $btn.find('.btn-text').text('Subscribe Now');
+    $btn.find('.spinner-border').addClass('d-none');
+}
             });
         });
     });
 </script>
+
+
+
 
 
 @endpush

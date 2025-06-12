@@ -233,7 +233,7 @@
                 data: $(this).serialize(),
                success: function(response) {
                     // toastr.info(response.message);
-                    submitBtn.prop("disabled", false).text("Submitted");
+                    submitBtn.prop("disabled", false).text("Sign up");
 
                     // Get email from input
                     const email = $('#email').val();
