@@ -207,7 +207,7 @@ class PlanController extends Controller
                     ],
                     "allow_plan_change" => true,
                     "redirect_url" => route('customer.subscription.success'),
-                    "cancel_url" => route('customer.subscription.cancel')
+                    // "cancel_url" => route('customer.subscription.cancel')
                 ]);
             }
 
@@ -843,6 +843,7 @@ class PlanController extends Controller
     // Subscription Cancel Method
     public function subscriptionCancel(Request $request)
     {
+        // dd('ok');
         return redirect('/plans')->with('error', 'Subscription process was cancelled.');
     }
 

@@ -482,6 +482,7 @@
         
         // Create panel card HTML
         function createPanelCard(panel) {
+            // console.log('Creating card for panel:', panel);
             const used = panel.limit - panel.remaining_limit;
             const remaining = panel.remaining_limit;
             const totalOrders = panel.recent_orders ? panel.recent_orders.length : 0;
@@ -679,7 +680,7 @@
                     <h6>PNL- ${panel.id}</h6>
                     <p class="text-muted small">${panel.description || 'No description'}</p>
                 </div>
-                
+
                 <div class="accordion accordion-flush" id="panelOrdersAccordion">
                     ${orders.map((order, index) => `
                         <div class="accordion-item">
@@ -688,7 +689,7 @@
                                     data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.order_id}" aria-expanded="false"
                                     aria-controls="order-collapse-${order.order_id}">
                                     <small>ID: #${order.order_id || 0 }</small>
-                                    <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
+                                    <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0} [Other Panels for Order #${order.order_id} (${order.remaining_order_panels.length} remaining)]</small>
                                     <div class="d-flex align-items-center gap-2">
                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                             onclick="window.location.href='/contractor/orders/${order.order_panel_id}/split/view'">
@@ -709,35 +710,108 @@
                             </h2>
                             <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
                                 <div class="accordion-body">
+                                
+                                    
                                     <div class="table-responsive">
                                         <table class="table table-striped table-hover">
                                             <thead>
                                                 <tr>
                                                     <th scope="col">#</th>
                                                     <th scope="col">Order ID</th>
+                                                    <th scope="col">Order Panel ID</th>
+                                                    <th scope="col">Panel ID</th>
                                                     <th scope="col">Status</th>
                                                     <th scope="col">Space Assigned</th>
                                                     <th scope="col">Inboxes/Domain</th>
+                                                    <th scope="col">Contractor</th>
                                                     <th scope="col">Date</th>
                                                 </tr>
                                             </thead>
+
                                             <tbody>
+                                                
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
                                                     <td>${order.order_id || 0}</td>
+                                                    <td>${order.order_panel_id || 'N/A'}</td>
+                                                    <td>PNL-${order.panel_id || 'N/A'}</td>
                                                     <td>
                                                         <span class="badge badge-update-text ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
                                                     </td>
                                                     <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
+                                                    <td>
+                                                        ${order.is_assigned ? `
+                                                            <span class="badge bg-success" style="font-size: 10px;">
+                                                                Assigned
+                                                            </span>
+                                                        ` : `
+                                                            <span class="badge bg-warning text-dark" style="font-size: 10px;">
+                                                                Unassigned
+                                                            </span>
+                                                        `}
+                                                    </td>
                                                     <td>${formatDate(order.created_at)}</td>
                                                 </tr>
-                                                ${order.splits && order.splits.length > 0 ? order.splits.map((split, splitIndex) => ``).join('') : ''}
                                             </tbody>
                                         </table>
                                     </div>
 
-
+                                    <!-- Remaining Order Panels Section -->
+                                    ${order. && order.remaining_order_panels.length > 0 ? `
+                                        <div class="mt-4remaining_order_panels">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead class="">
+                                                        <tr>
+                                                            <th>Panel ID</th>
+                                                            <th>Panel Title</th>
+                                                            <th>Status</th>
+                                                            <th>Space Assigned</th>
+                                                            <th>Domains</th>
+                                                            <th>Total Inboxes</th>
+                                                            <th>Contractor</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${order.remaining_order_panels.map(remainingPanel => `
+                                                            <tr>
+                                                                <td>PNL-${remainingPanel.panel_id}</td>
+                                                                <td>${remainingPanel.panel_title}</td>
+                                                                <td>
+                                                                    <span class="badge ${getStatusBadgeClass(remainingPanel.status)}" style="font-size: 10px;">
+                                                                        ${remainingPanel.status || 'Unknown'}
+                                                                    </span>
+                                                                </td>
+                                                                <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                                <td>
+                                                                    <span class="badge bg-info" style="font-size: 10px;">
+                                                                        ${remainingPanel.domains_count} domain(s)
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-success" style="font-size: 10px;">
+                                                                        ${remainingPanel.total_inboxes} inbox(es)
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    ${remainingPanel.is_assigned ? `
+                                                                        <span class="badge bg-primary" style="font-size: 10px;">
+                                                                            ID: ${remainingPanel.contractor_id}
+                                                                        </span>
+                                                                    ` : `
+                                                                        <span class="badge bg-warning text-dark" style="font-size: 10px;">
+                                                                            Unassigned
+                                                                        </span>
+                                                                    `}
+                                                                </td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    ` : ''}
 
 
                                     <div class="row">
@@ -826,6 +900,8 @@
                                             </div>
                                         </div>
                                     </div>
+
+
                                 </div>
                             </div>
                         </div>
