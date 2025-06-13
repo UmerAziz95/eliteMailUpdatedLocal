@@ -984,19 +984,19 @@
                                                 </h6>
         
                                                 <div class="d-flex align-items-center justify-content-between">
-                                                    <span>Total Inboxes <br> ${order.splits ? (() => {
+                                                    <span>${order.splits ? (() => {
                                                         const mainDomainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
                                                         const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
                                                         const mainTotalInboxes = mainDomainsCount * inboxesPerDomain;
                                                         
-                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Domains: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
+                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Inboxes: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
                                                         
                                                         // Add remaining splits details
                                                         if (order.remaining_order_panels && order.remaining_order_panels.length > 0) {
                                                             order.remaining_order_panels.forEach((panel, index) => {
                                                                 const splitDomainsCount = panel.domains_count || 0;
                                                                 const splitInboxes = splitDomainsCount * inboxesPerDomain;
-                                                                splitDetails += `<br><div class="text-white"><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 2).padStart(2, '0')}</span> Domains: ${splitInboxes} (${splitDomainsCount} domains × ${inboxesPerDomain})</div>`;
+                                                                splitDetails += `<br><div class="text-white"><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 2).padStart(2, '0')}</span> Inboxes: ${splitInboxes} (${splitDomainsCount} domains × ${inboxesPerDomain})</div>`;
                                                             });
                                                         }
                                                         
@@ -1005,7 +1005,7 @@
                                                         const totalAllDomains = mainDomainsCount + (order.remaining_order_panels ? 
                                                             order.remaining_order_panels.reduce((total, panel) => total + (panel.domains_count || 0), 0) : 0);
                                                         
-                                                        return `<strong>Total: ${totalAllInboxes} (${totalAllDomains} domains)</strong><br>${splitDetails}`;
+                                                        return `<strong>Total Inboxes: ${totalAllInboxes} (${totalAllDomains} domains)</strong><br>${splitDetails}`;
                                                     })() : 'N/A'}</span>
                                                     
                                                 </div>
