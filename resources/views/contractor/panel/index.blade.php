@@ -866,20 +866,20 @@
                     <h6>PNL- ${panel.id}</h6>
                     <p class="text-muted small">${panel.description || 'No description'}</p>
                 </div>
-
                 <div class="accordion accordion-flush" id="panelOrdersAccordion">
                     ${orders.map((order, index) => `
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.order_id}" aria-expanded="false"
-                                    aria-controls="order-collapse-${order.order_id}">
+                                    aria-expanded="false"
+                                    aria-controls="order-collapse-${order.order_id}"
+                                    onclick="toggleOrderAccordion('order-collapse-${order.order_id}', this, event)">
                                     <small>ORDER ID: #${order.order_id || 0 }</small>
                                     <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
                                     <div class="d-flex align-items-center gap-2">
                                         ${order.status === 'unallocated' ? `
                                             <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                onclick="assignOrderToMe(${order.order_panel_id}, this)">
+                                                onclick="event.stopPropagation(); assignOrderToMe(${order.order_panel_id}, this)">
                                                 Assign to Me
                                             </button>
                                         ` : `
@@ -887,6 +887,7 @@
                                                 ${order.status || 'Unknown'}
                                             </span>
                                         `}
+                                        <i class="fas fa-chevron-down transition-transform" id="accordion-icon-${order.order_id}" style="font-size: 12px; transition: transform 0.3s ease;"></i>
                                     </div>
                                 </div>
                             </h2>
@@ -1183,6 +1184,53 @@
                 splitContainers.forEach((container, index) => {
                     container.style.animation = 'none';
                 });                }, 100);
+        }
+
+        // Function to toggle order accordion with arrow icon rotation
+        function toggleOrderAccordion(targetId, buttonElement, event) {
+            // Prevent default Bootstrap behavior
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            
+            // Get the order ID from targetId (e.g., "order-collapse-123" -> "123")
+            const orderId = targetId.replace('order-collapse-', '');
+            const arrowIcon = document.getElementById(`accordion-icon-${orderId}`);
+            
+            // Check if accordion is currently expanded
+            const isCurrentlyExpanded = target.classList.contains('show');
+            
+            if (isCurrentlyExpanded) {
+                // Collapse
+                target.classList.remove('show');
+                target.classList.add('collapse');
+                buttonElement.setAttribute('aria-expanded', 'false');
+                buttonElement.classList.add('collapsed');
+                
+                // Rotate arrow down (collapsed state)
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(0deg)';
+                    arrowIcon.classList.remove('fa-chevron-up');
+                    arrowIcon.classList.add('fa-chevron-down');
+                }
+            } else {
+                // Expand
+                target.classList.add('show');
+                target.classList.remove('collapse');
+                buttonElement.setAttribute('aria-expanded', 'true');
+                buttonElement.classList.remove('collapsed');
+                
+                // Rotate arrow up (expanded state)
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(180deg)';
+                    arrowIcon.classList.remove('fa-chevron-down');
+                    arrowIcon.classList.add('fa-chevron-up');
+                }
+            }
         }
 
         // Helper function to get status badge class
