@@ -1131,41 +1131,28 @@
             setTimeout(function() {
                 initializeChevronStates();
                 
-                // Initialize Bootstrap accordion events for smooth animations
+                // Initialize Bootstrap accordion events without animations
                 const accordionElements = container.querySelectorAll('.accordion-collapse');
                 accordionElements.forEach(accordionEl => {
                     accordionEl.addEventListener('show.bs.collapse', function () {
-                        // Add fade-in animation when accordion opens
-                        this.style.opacity = '0';
-                        this.style.transform = 'translateY(-15px)';
-                        
-                        requestAnimationFrame(() => {
-                            this.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                            this.style.opacity = '1';
-                            this.style.transform = 'translateY(0)';
-                        });
-                        
-                        // Animate domain badges with staggered delay
-                        setTimeout(() => {
-                            const domainBadges = this.querySelectorAll('.domain-badge');
-                            domainBadges.forEach((badge, index) => {
-                                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.05}s both`;
-                            });
-                        }, 200);
+                        // Remove animations - keep static display
+                        this.style.opacity = '1';
+                        this.style.transform = 'none';
+                        this.style.transition = 'none';
                     });
                     
                     accordionEl.addEventListener('hide.bs.collapse', function () {
-                        // Add fade-out animation when accordion closes
-                        this.style.transition = 'all 0.3s ease-in';
-                        this.style.opacity = '0';
-                        this.style.transform = 'translateY(-10px)';
+                        // Remove animations - keep static display
+                        this.style.transition = 'none';
+                        this.style.opacity = '1';
+                        this.style.transform = 'none';
                     });
                 });
                 
-                // Add staggered animation to domain split containers
+                // Remove staggered animation from domain split containers
                 const splitContainers = container.querySelectorAll('.domain-split-container');
                 splitContainers.forEach((container, index) => {
-                    container.style.animation = `splitFadeIn 0.5s ease-out ${index * 0.1}s both`;
+                    container.style.animation = 'none';
                 });                }, 100);
         }
 
