@@ -423,7 +423,6 @@
         let hasMorePages = false;
         let totalPanels = 0;
         let isLoading = false;
-        let currentOrdersData = {}; // Store current orders data for assignment dialog
 
         // Load panels data
         async function loadPanels(filters = {}, page = 1, append = false) {
@@ -851,14 +850,6 @@
             console.log('orders', orders);
             const container = document.getElementById('panelOrdersContainer');
             
-            // Store orders data globally for assignment dialog
-            currentOrdersData = {};
-            if (orders && orders.length > 0) {
-                orders.forEach(order => {
-                    currentOrdersData[order.order_id] = order;
-                });
-            }
-            
             if (!orders || orders.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
@@ -888,7 +879,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                         ${order.status === 'unallocated' ? `
                                             <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                onclick="event.stopPropagation(); assignOrderToMe(${order.order_panel_id}, this, '${order.order_id}')">
+                                                onclick="event.stopPropagation(); assignOrderToMe(${order.order_panel_id}, this)">
                                                 Assign to Me
                                             </button>
                                         ` : `
@@ -1877,71 +1868,18 @@
         // Cleanup on page focus (in case of any lingering issues)
         window.addEventListener('focus', cleanupOffcanvasBackdrop);
         // Function to assign order to logged-in contractor
-        async function assignOrderToMe(orderPanelId, buttonElement, orderData = null) {
+        async function assignOrderToMe(orderPanelId, buttonElement) {
             try {
-            // Prepare splits information for the confirmation dialog
-            let splitsInfo = '';
-            let assignmentNote = '';
-            
-            if (orderData) {
-                const totalSplits = 1 + (orderData.remaining_order_panels ? orderData.remaining_order_panels.length : 0);
-                const mainDomainsCount = orderData.splits ? orderData.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0) : 0;
-                const inboxesPerDomain = orderData.reorder_info?.inboxes_per_domain || 0;
-                
-                splitsInfo = `
-                    <div style="text-align: left; margin: 15px 0;">
-                        <strong>📊 Order Split Details:</strong><br>
-                        <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                            <div style="margin-bottom: 8px;">
-                                <span style="background: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold;">Split 01</span>
-                                <span style="margin-left: 8px;"><strong>PNL-${orderData.panel_id}</strong> - ${mainDomainsCount} domains (${mainDomainsCount * inboxesPerDomain} inboxes)</span>
-                            </div>
-                `;
-                
-                if (orderData.remaining_order_panels && orderData.remaining_order_panels.length > 0) {
-                    orderData.remaining_order_panels.forEach((panel, index) => {
-                        const splitDomainsCount = panel.domains_count || 0;
-                        const splitInboxes = splitDomainsCount * inboxesPerDomain;
-                        splitsInfo += `
-                            <div style="margin-bottom: 8px;">
-                                <span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold;">Split ${String(index + 2).padStart(2, '0')}</span>
-                                <span style="margin-left: 8px;"><strong>PNL-${panel.panel_id}</strong> - ${splitDomainsCount} domains (${splitInboxes} inboxes)</span>
-                            </div>
-                        `;
-                    });
-                }
-                
-                splitsInfo += '</div>';
-                
-                // Add assignment note
-                if (totalSplits === 1) {
-                    assignmentNote = `<div style="background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                        <strong>ℹ️ Note:</strong> This order has only <strong>1 split</strong>, so you'll be assigned to the complete order.
-                    </div>`;
-                } else {
-                    assignmentNote = `<div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                        <strong>⚠️ Note:</strong> This order has <strong>${totalSplits} splits</strong>. You're only being assigned to <strong>Split 01 (PNL-${orderData.panel_id})</strong>. Other splits remain unassigned.
-                    </div>`;
-                }
-            }
-            
-            // First show confirmation dialog with splits details
+            // First show confirmation dialog
             const confirmResult = await Swal.fire({
                 title: 'Confirm Assignment',
-                html: `
-                    <div style="text-align: center;">
-                        <p>Are you sure you want to assign this order to yourself?</p>
-                        ${splitsInfo}
-                        ${assignmentNote}
-                    </div>
-                `,
+                text: 'Are you sure you want to assign this order to yourself?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, Assign',
                 cancelButtonText: 'Cancel',
                 confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                width: '600px'
+                cancelButtonColor: '#d33'
             });
 
             // If user cancels, exit the function
