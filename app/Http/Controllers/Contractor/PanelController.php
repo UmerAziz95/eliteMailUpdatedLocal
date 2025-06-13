@@ -135,7 +135,6 @@ class PanelController extends Controller
                 ->where('panel_id', $panelId)
                 ->orderBy('created_at', 'desc')
                 ->get();
-
             $ordersData = $orders->map(function ($orderPanel) use ($request) {
                 $order = $orderPanel->order;
                 $splits = $orderPanel->orderPanelSplits;
@@ -155,9 +154,61 @@ class PanelController extends Controller
                         $assignmentStatus = 'assigned_to_me';
                     }
                 }
+
+                // Get remaining order panels for the same order_id
+                $remainingOrderPanels = OrderPanel::with(['orderPanelSplits', 'panel'])
+                    ->where('order_id', $order->id)
+                    ->where('id', '!=', $orderPanel->id) // Exclude current order panel
+                    ->get()
+                    ->map(function ($remainingPanel) {
+                        $remainingSplits = $remainingPanel->orderPanelSplits;
+                        
+                        // Check assignment status for remaining panels
+                        $remainingAssignment = UserOrderPanelAssignment::where('order_panel_id', $remainingPanel->id)->first();
+                        
+                        return [
+                            'order_panel_id' => $remainingPanel->id,
+                            'panel_id' => $remainingPanel->panel_id,
+                            'panel_title' => $remainingPanel->panel->title ?? 'N/A',
+                            'space_assigned' => $remainingPanel->space_assigned,
+                            'inboxes_per_domain' => $remainingPanel->inboxes_per_domain,
+                            'status' => $remainingPanel->status,
+                            'contractor_id' => $remainingAssignment ? $remainingAssignment->contractor_id : null,
+                            'is_assigned' => $remainingAssignment ? true : false,
+                            'domains_count' => $remainingSplits->sum(function ($split) {
+                                return is_array($split->domains) ? count($split->domains) : 0;
+                            }),
+                            'total_inboxes' => $remainingSplits->sum(function ($split) {
+                                return $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
+                            }),
+                            'created_at' => $remainingPanel->created_at->format('Y-m-d H:i:s'),
+                            'splits' => $remainingSplits->map(function ($split) use ($remainingPanel) {
+                                // Get contractor assignment for this split
+                                $contractorAssignment = UserOrderPanelAssignment::where('order_panel_id', $remainingPanel->id)->first();
+                                
+                                return [
+                                    'id' => $split->id,
+                                    'panel_id' => $remainingPanel->panel_id,
+                                    'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
+                                    'inboxes_per_domain' => $split->inboxes_per_domain,
+                                    'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
+                                        return [
+                                            'domain' => is_string($domain) ? $domain : ($domain['domain'] ?? $domain),
+                                            'id' => is_array($domain) ? ($domain['id'] ?? null) : null
+                                        ];
+                                    })->toArray() : [],
+                                    'domains_count' => is_array($split->domains) ? count($split->domains) : 0,
+                                    'status' => $split->status ?? 'unallocated',
+                                    'contractor_id' => $contractorAssignment ? $contractorAssignment->contractor_id : null,
+                                    'created_at' => $split->created_at ? $split->created_at->format('Y-m-d H:i:s') : null,
+                                ];
+                            }),
+                        ];
+                    });
                 
                 return [
                     'order_panel_id' => $orderPanel->id,
+                    'panel_id' => $orderPanel->panel_id,
                     'order_id' => $order->id ?? 'N/A',
                     'customer_name' => $order->user->name ?? 'N/A',
                     'space_assigned' => $orderPanel->space_assigned,
@@ -190,17 +241,32 @@ class PanelController extends Controller
                         'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                         'prefix_variant_2' => $reorderInfo->prefix_variant_2,
                     ] : null,
-                    // Add splits with domain information
-                    'splits' => $splits->map(function ($split) {
+                    // Add splits with enhanced domain information and status
+                    'splits' => $splits->map(function ($split) use ($orderPanel) {
+                        // Get contractor assignment for this split
+                        $contractorAssignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)->first();
+                        
                         return [
                             'id' => $split->id,
+                            'panel_id' => $orderPanel->panel_id,
                             'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
                             'inboxes_per_domain' => $split->inboxes_per_domain,
-                            'domains' => $split->domains,
+                            'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
+                                return [
+                                    'domain' => is_string($domain) ? $domain : ($domain['domain'] ?? $domain),
+                                    'id' => is_array($domain) ? ($domain['id'] ?? null) : null
+                                ];
+                            })->toArray() : [],
                             'domains_count' => is_array($split->domains) ? count($split->domains) : 0,
-                            'created_at' => $split->created_at->format('Y-m-d H:i:s'),
+                            'status' => $split->status ?? 'unallocated',
+                            'contractor_id' => $contractorAssignment ? $contractorAssignment->contractor_id : null,
+                            'created_at' => $split->created_at ? $split->created_at->format('Y-m-d H:i:s') : null,
                         ];
                     }),
+                    // Add remaining order panels for the same order
+                    'remaining_order_panels' => $remainingOrderPanels,
+                    'remaining_panels_count' => $remainingOrderPanels->count(),
+                    'total_order_panels' => $remainingOrderPanels->count() + 1, // Including current panel
                 ];
             });
 
