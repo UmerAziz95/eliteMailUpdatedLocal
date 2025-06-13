@@ -877,10 +877,6 @@
                                     <small>ID: #${order.order_id || 0 }</small>
                                     <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0} [Other Panels for Order #${order.order_id} (${order.remaining_order_panels.length} remaining)]</small>
                                     <div class="d-flex align-items-center gap-2">
-                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                            onclick="window.location.href='/contractor/orders/${order.order_panel_id}/split/view'">
-                                            View
-                                        </button>
                                         ${order.status === 'unallocated' ? `
                                             <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                 onclick="assignOrderToMe(${order.order_panel_id}, this)">
@@ -903,14 +899,15 @@
                                             <thead>
                                                 <tr>
                                                     <th scope="col">#</th>
-                                                    <th scope="col">Order ID</th>
-                                                    <th scope="col">Order Panel ID</th>
                                                     <th scope="col">Panel ID</th>
+                                                    <th scope="col">Order Panel ID</th>
                                                     <th scope="col">Status</th>
-                                                    <th scope="col">Space Assigned</th>
+                                                    
                                                     <th scope="col">Inboxes/Domain</th>
                                                     <th scope="col">Total Domains</th>
+                                                    <th scope="col">Inboxes</th>
                                                     <th scope="col">Date</th>
+                                                    <th scope="col">Action</th>
                                                 </tr>
                                             </thead>
 
@@ -918,39 +915,54 @@
                                                 
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
-                                                    <td>${order.order_id || 0}</td>
-                                                    <td>${order.order_panel_id || 'N/A'}</td>
                                                     <td>PNL-${order.panel_id || 'N/A'}</td>
+                                                    <td>${order.order_panel_id || 'N/A'}</td>
+                                                    
                                                     <td>
                                                         <span class="badge badge-update-text ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
                                                     </td>
-                                                    <td>${order.space_assigned || 'N/A'}</td>
+                                                    
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
                                                     <td>
-                                                        <span class="badge bg-info" style="font-size: 10px;">
+                                                        <span class="badge bg-success" style="font-size: 10px;">
                                                             ${order.splits ? order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0) : 0} domain(s)
                                                         </span>
                                                     </td>
+                                                    
+                                                    <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${formatDate(order.created_at)}</td>
+                                                    <td>
+                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                            onclick="window.location.href='/contractor/orders/${order.order_panel_id}/split/view'">
+                                                            View
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                                 ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
                                                     order.remaining_order_panels.map((remainingPanel, panelIndex) => `
                                                         <tr>
                                                             <th scope="row">${index + 1}.${panelIndex + 1}</th>
-                                                            <td>${order.order_id || 0}</td>
-                                                            <td>${remainingPanel.order_panel_id || 'N/A'}</td>
                                                             <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
+                                                            <td>${remainingPanel.order_panel_id || 'N/A'}</td>
+                                                            
                                                             <td>
                                                                 <span class="badge badge-update-text ${getStatusBadgeClass(remainingPanel.status)}">${remainingPanel.status || 'Unknown'}</span>
                                                             </td>
-                                                            <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                            
                                                             <td>${remainingPanel.inboxes_per_domain || 'N/A'}</td>
                                                             <td>
-                                                                <span class="badge bg-info" style="font-size: 10px;">
+                                                                <span class="badge bg-success" style="font-size: 10px;">
                                                                     ${remainingPanel.domains_count || 0} domain(s)
                                                                 </span>
                                                             </td>
+                                                            <td>${remainingPanel.space_assigned || 'N/A'}</td>
                                                             <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
+                                                            <td>
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                                    onclick="window.location.href='/contractor/orders/${remainingPanel.order_panel_id}/split/view'">
+                                                                    View
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     `).join('') : ''
                                                 }
@@ -976,7 +988,7 @@
                                                         const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
                                                         const mainTotalInboxes = mainDomainsCount * inboxesPerDomain;
                                                         
-                                                        let splitDetails = `<span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Domains: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})`;
+                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Domains: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
                                                         
                                                         // Add remaining splits details
                                                         if (order.remaining_order_panels && order.remaining_order_panels.length > 0) {
