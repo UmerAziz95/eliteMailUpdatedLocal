@@ -874,8 +874,8 @@
                                 <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.order_id}" aria-expanded="false"
                                     aria-controls="order-collapse-${order.order_id}">
-                                    <small>ID: #${order.order_id || 0 }</small>
-                                    <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0} [Other Panels for Order #${order.order_id} (${order.remaining_order_panels.length} remaining)]</small>
+                                    <small>ORDER ID: #${order.order_id || 0 }</small>
+                                    <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
                                     <div class="d-flex align-items-center gap-2">
                                         ${order.status === 'unallocated' ? `
                                             <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
