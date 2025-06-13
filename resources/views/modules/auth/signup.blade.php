@@ -111,12 +111,12 @@
                             <form id="registerForm">
                                 @csrf
                                 <div class="input-group">
-                                    <label for="name">Username</label>
-                                    <input type="text" name="name" id="name" placeholder="User Name" required>
+                                    <label for="name">First name</label>
+                                    <input type="text" name="name" id="name" placeholder="" required>
                                 </div>
                                 <div class="input-group">
                                     <label for="email">Email</label>
-                                    <input type="email" name="email" id="email" placeholder="Email" required>
+                                    <input type="email" name="email" id="email" placeholder="" required>
                                 </div>
                                 {{-- <div class="input-group">
                                     <label for="password">Password</label>

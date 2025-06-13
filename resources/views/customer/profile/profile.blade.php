@@ -95,30 +95,30 @@
                     {{-- <p class="card-text text-uppercase opacity-75 fw-lighter">About</p> --}}
                     <div class="d-flex flex-column align-items-center">
                        @php
-    $user = Auth::user();
-    if (!empty($user->name)) {
-        $initials = collect(explode(' ', $user->name))
-            ->filter()
-            ->map(fn($word) => strtoupper(substr($word, 0, 1)))
-            ->take(2)
-            ->implode('');
-    } else {
-        $initials = strtoupper(substr($user->email, 0, 2));
-    }
-@endphp
+                        $user = Auth::user();
+                        if (!empty($user->name)) {
+                            $initials = collect(explode(' ', $user->name))
+                                ->filter()
+                                ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+                                ->take(2)
+                                ->implode('');
+                        } else {
+                            $initials = strtoupper(substr($user->email, 0, 2));
+                        }
+                    @endphp
 
-<div class="flex-shrink-0 mx-sm-0 mx-auto">
-    @if ($user->profile_image)
-        <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
-            style="inline-size: 160px; border-radius: 50%" alt="user image"
-            class="d-block h-auto user-profile-img">
-    @else
-        <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-            style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: #5750bf;">
-            {{ $initials }}
-        </div>
-    @endif
-</div>
+                    <div class="flex-shrink-0 mx-sm-0 mx-auto">
+                        @if ($user->profile_image)
+                            <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                                style="inline-size: 160px; border-radius: 50%" alt="user image"
+                                class="d-block h-auto user-profile-img">
+                        @else
+                            <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                                style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: #5750bf;">
+                                {{ $initials }}
+                            </div>
+                        @endif
+                    </div>
 
                         <div class="flex-grow-1 mt-3">
                             <div

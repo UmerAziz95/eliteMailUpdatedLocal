@@ -263,4 +263,81 @@ class PanelController extends Controller
             ], 500);
         }
     }
+
+    
+    public function createPanel(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                'panel_title' => 'nullable|string|max:255',
+                'panel_description' => 'nullable|string',
+                'panel_status' => 'in:0,1',
+                'panel_limit' => 'required|integer|min:1',
+                
+            ]);
+
+            $panel = Panel::create([
+                'title' => $data['panel_title'] ?? null,
+                'description' => $data['panel_description'] ?? null,
+                'is_active' => $data['panel_status'] ?? 1,
+                'limit' => $data['panel_limit'],
+                'created_by' => auth()->user()->name, // Assuming the user is authenticated
+            ]);
+            return response()->json(['message' => 'Panel created successfully', 'panel' => $panel], 201);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to create panel'], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $panel = Panel::findOrFail($id);
+
+            $data = $request->validate([
+                'title' => 'nullable|string|max:255',
+                'description' => 'nullable|string',
+                'limit' => 'nullable|integer|min:1',
+                'is_active' => 'boolean',
+                'created_by' => 'nullable|string|max:255',
+            ]);
+
+            $panel->update($data);
+
+            return response()->json(['message' => 'Panel updated successfully', 'panel' => $panel]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Panel not found'], 404);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to update panel'], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $panel = Panel::findOrFail($id);
+            $panel->delete();
+            return response()->json(['message' => 'Panel deleted successfully']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Panel not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to delete panel'], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $panel = Panel::with('users')->findOrFail($id);
+            return response()->json($panel);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Panel not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to retrieve panel'], 500);
+        }
+    }
 }

@@ -185,12 +185,16 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         // /revenue-totals Admin/DashboardController
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
+        
         //panels
         Route::get('/panels/dashboard', [AdminPanelController::class, 'index'])->name('panels.index');
         Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
         Route::get('/splits/{orderId}/orders', [AdminPanelController::class, 'getOrdersSplits'])->name('orders.splits');
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
+        //panel crud
+        Route::post('/panels/create', [AdminPanelController::class, 'createPanel'])->name('panels.create');
+
 
         
     }); 

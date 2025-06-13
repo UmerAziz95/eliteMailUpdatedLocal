@@ -3,232 +3,291 @@
 @section('title', 'Panels')
 
 @push('styles')
-    <style>
-        input,
-        .form-control,
-        .form-label {
-            font-size: 12px
-        }
+<style>
+    input,
+    .form-control,
+    .form-label {
+        font-size: 12px
+    }
 
-        small {
-            font-size: 11px
-        }
+    small {
+        font-size: 11px
+    }
 
-        .total {
-            color: var(--second-primary);
-        }
+    .total {
+        color: var(--second-primary);
+    }
 
-        .used {
-            color: #43C95C;
-        }
+    .used {
+        color: #43C95C;
+    }
 
-        .remain {
-            color: orange
-        }
+    .remain {
+        color: orange
+    }
 
-        .accordion {
-            --bs-accordion-bg: transparent !important;
-        }
+    .accordion {
+        --bs-accordion-bg: transparent !important;
+    }
 
-        .accordion-button:focus {
-            box-shadow: none !important
-        }
+    .accordion-button:focus {
+        box-shadow: none !important
+    }
 
-        .button.collapsed {
-            background-color: var(--slide-bg) !important;
-            color: var(--light-color)
-        }
+    .button.collapsed {
+        background-color: var(--slide-bg) !important;
+        color: var(--light-color)
+    }
 
-        .button {
-            background-color: var(--second-primary);
-            color: var(--light-color);
-            transition: all ease .4s
-        }
+    .button {
+        background-color: var(--second-primary);
+        color: var(--light-color);
+        transition: all ease .4s
+    }
 
-        .accordion-body {
-            color: var(--light-color)
-        }        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #6c757d;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+    .accordion-body {
+        color: var(--light-color)
+    }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 
-        /* Loading state styling */
-        #loadingState {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4rem 2rem;
-        }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
 
-        /* Fix offcanvas backdrop issues */
-        .offcanvas-backdrop {
-            transition: opacity 0.15s linear !important;
-        }
-        
-        .offcanvas-backdrop.fade {
-            opacity: 0;
-        }
-        
-        .offcanvas-backdrop.show {
-            opacity: 0.5;
-        }
-        
-        /* Ensure body doesn't keep backdrop classes */
-        body:not(.offcanvas-open) {
-            overflow: visible !important;
-            padding-right: 0 !important;
-        }
-          /* Fix any remaining backdrop elements */
-        .modal-backdrop,
-        .offcanvas-backdrop.fade:not(.show) {
-            display: none !important;
-        }
+    /* Loading state styling */
+    #loadingState {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
 
-        /* Ensure offcanvas doesn't interfere with page interaction */
-        .offcanvas.hiding,
-        .offcanvas:not(.show) {
-            pointer-events: none;
-        }
-        
-        /* Force cleanup of backdrop opacity */
-        .offcanvas-backdrop.fade {
-            opacity: 0 !important;
-            transition: opacity 0.15s linear;
-        }
-        
-        /* Ensure page remains interactive */
-        body:not(.offcanvas-open):not(.modal-open) {
-            overflow: visible !important;
-            padding-right: 0 !important;
-        }
-        
-        /* Hide any orphaned backdrop elements */
-        div[class*="backdrop"]:empty {
-            display: none !important;
-        }
-    </style>
+    /* Fix offcanvas backdrop issues */
+    .offcanvas-backdrop {
+        transition: opacity 0.15s linear !important;
+    }
+
+    .offcanvas-backdrop.fade {
+        opacity: 0;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
+    }
+
+    /* Ensure body doesn't keep backdrop classes */
+    body:not(.offcanvas-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
+
+    /* Fix any remaining backdrop elements */
+    .modal-backdrop,
+    .offcanvas-backdrop.fade:not(.show) {
+        display: none !important;
+    }
+
+    /* Ensure offcanvas doesn't interfere with page interaction */
+    .offcanvas.hiding,
+    .offcanvas:not(.show) {
+        pointer-events: none;
+    }
+
+    /* Force cleanup of backdrop opacity */
+    .offcanvas-backdrop.fade {
+        opacity: 0 !important;
+        transition: opacity 0.15s linear;
+    }
+
+    /* Ensure page remains interactive */
+    body:not(.offcanvas-open):not(.modal-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
+
+    /* Hide any orphaned backdrop elements */
+    div[class*="backdrop"]:empty {
+        display: none !important;
+    }
+</style>
 @endpush
 
 @section('content')
-    <section class="py-3">
+<section class="py-3">
 
-        <!-- Advanced Search Filter UI -->
-        <div class="card p-3 mb-4">
-            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
-                role="button" aria-expanded="false" aria-controls="filter_1">
-                <div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
-                            width="30" alt="">
-                    </div>
-                    <small>Click here to open advance search for a table</small>
-                </div>
-            </div>
-            <div class="row collapse" id="filter_1">
-                <form id="filterForm">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Panel Id</label>
-                            <input type="text" name="panel_id" class="form-control" placeholder="Enter panel ID">
+    <!-- Advanced Search Filter UI -->
+    <div class="card p-3 mb-4">
+        {{-- panel creation modal --}}
+        <div class="modal fade" id="panelFormModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body p-3 p-md-5 position-relative">
+                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="text-center mb-4">
+                            <h4>Panel</h4>
                         </div>
-                        <div class="col-md-4 mb-3" style="display: none !important;">
-                            <label class="form-label mb-0">Min Inbox Limit</label>
-                            <input type="number" name="min_inbox_limit" class="form-control" placeholder="e.g. 10">
-                        </div>
-                        <div class="col-md-4 mb-3" style="display: none !important;">
-                            <label class="form-label mb-0">Max Inbox Limit</label>
-                            <input type="number" name="max_inbox_limit" class="form-control" placeholder="e.g. 100">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Min Remaining</label>
-                            <input type="number" name="min_remaining" class="form-control" placeholder="e.g. 5">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Max Remaining</label>
-                            <input type="number" name="max_remaining" class="form-control" placeholder="e.g. 50">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Order</label>
-                            <select name="order" class="form-select">
-                                <option value="desc">Newest First</option>
-                                <option value="asc">Oldest First</option>
+                        <form id="panelForm" class="row g-3">
+                            <!-- form fields here -->
+                            <label>Panel title:</label>
+                            <input type="text" class="form-control mb-3" id="panel_title" name="panel_title" value="">
+                            <label>Panel Description:</label>
+                            <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
+                                value="">
+                            <label>Limit:</label>
+                            <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit"
+                                value="1790">
+                            <label>Status:</label>
+                            <select class="form-control mb-3" name="panel_status" id="panel_status" required>
+                                <option value="1">
+                                    Active
+                                </option>
+                                <option value="0">In Active
+                                </option>
                             </select>
-                        </div>
-                        <div class="col-12 text-end">
-                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm border-0 px-3">Search</button>
-                        </div>
+                            <div class="mt-4">
+                                <button type="button" id="submitPanelFormBtn"
+                                    class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Submit</button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
-        </div>  
-        <!-- Grid Cards (Dynamic) -->
-        <div id="panelsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
-            <!-- Loading state -->
-            <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
+            role="button" aria-expanded="false" aria-controls="filter_1">
+            <div>
+                <div class="d-flex gap-2 align-items-center">
+                    <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
+                    <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                        width="30" alt="">
+                </div>
+                <small>Click here to open advance search for a table</small>
+            </div>
+        </div>
+        <div class="row collapse" id="filter_1">
+            <form id="filterForm">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Panel Id</label>
+                        <input type="text" name="panel_id" class="form-control" placeholder="Enter panel ID">
+                    </div>
+                    <div class="col-md-4 mb-3" style="display: none !important;">
+                        <label class="form-label mb-0">Min Inbox Limit</label>
+                        <input type="number" name="min_inbox_limit" class="form-control" placeholder="e.g. 10">
+                    </div>
+                    <div class="col-md-4 mb-3" style="display: none !important;">
+                        <label class="form-label mb-0">Max Inbox Limit</label>
+                        <input type="number" name="max_inbox_limit" class="form-control" placeholder="e.g. 100">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Min Remaining</label>
+                        <input type="number" name="min_remaining" class="form-control" placeholder="e.g. 5">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Max Remaining</label>
+                        <input type="number" name="max_remaining" class="form-control" placeholder="e.g. 50">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Order</label>
+                        <select name="order" class="form-select">
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="button" id="resetFilters"
+                            class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                        <button type="submit" id="submitBtn"
+                            class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {{-- create panel button --}}
+    <div class="col-12 text-end mb-4">
+        <button type="button" id="createPanelBtn" class="btn btn-primary btn-sm border-0 px-3">
+            <i class="fa-solid fa-plus me-2"></i>
+            Create New Panel
+        </button>
+    </div>
+
+    <!-- Grid Cards (Dynamic) -->
+    <div id="panelsContainer"
+        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
+        <!-- Loading state -->
+        <div id="loadingState"
+            style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0">Loading panels...</p>
+        </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+        <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+            <span id="loadMoreText">Load More</span>
+            <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                style="display: none;">
+                <span class="visually-hidden">Loading...</span>
+            </span>
+        </button>
+        <div id="paginationInfo" class="mt-2 text-light small">
+            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalPanels">0</span>
+            panels
+        </div>
+    </div>
+
+</section>
+
+<!-- Orders Offcanvas -->
+<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view"
+    aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
+        <!-- <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button> -->
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="panelOrdersContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="ordersLoadingState" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">Loading orders...</span>
                 </div>
-                <p class="mt-2 mb-0">Loading panels...</p>
-            </div>
-        </div>
-
-        <!-- Load More Button -->
-        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                <span id="loadMoreText">Load More</span>
-                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
-                    <span class="visually-hidden">Loading...</span>
-                </span>
-            </button>
-            <div id="paginationInfo" class="mt-2 text-light small">
-                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalPanels">0</span> panels
-            </div>
-        </div>
-
-    </section> 
-    
-    <!-- Orders Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view" aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
-            <!-- <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button> -->
-             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="offcanvas-body">
-            <div id="panelOrdersContainer">
-                <!-- Dynamic content will be loaded here -->
-                <div id="ordersLoadingState" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading orders...</span>
-                    </div>
-                    <p class="mt-2">Loading panel orders...</p>
-                </div>
+                <p class="mt-2">Loading panel orders...</p>
             </div>
         </div>
     </div>
+</div>
+
+
+
 @endsection
 
 @push('scripts')
-    <script>
-        let panels = [];
+<script>
+    let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
         let currentPage = 1;
@@ -977,5 +1036,38 @@
                 loadPanels();
             }
         });
-    </script>
+</script>
+
+//create new panel
+<script>
+    $('#createPanelBtn').on('click', function() {
+    var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
+    modal.show();
+});
+
+$('#submitPanelFormBtn').on('click', function(e) {
+    e.preventDefault();
+    const form = $('#panelForm');
+    const formData = new FormData(form[0]);
+    console.log(formData);
+  $.ajax({
+    url: "{{ url('admin/panels/create') }}",
+    method: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    success: function(response) {
+        toastr.success("Panel created successfully!");
+        $('#panelFormModal').modal('hide');
+        loadPanels(); // Reload panels after creation
+    },
+    error: function(xhr) {
+        toastr.error("Failed to create panel. Please try again.");
+    }
+});
+});
+</script>
 @endpush
