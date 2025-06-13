@@ -14,7 +14,8 @@
         href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;ampdisplay=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
-    {{-- <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> --}}
+    {{--
+    <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
         .login {
@@ -93,8 +94,7 @@
                                 @csrf
                                 <div class="input-group">
                                     <label for="name">Username</label>
-                                    <input type="text" name="name" id="name" placeholder="User Name"
-                                        required>
+                                    <input type="text" name="name" id="name" placeholder="User Name" required>
                                 </div>
                                 <div class="input-group">
                                     <label for="email">Email</label>
@@ -125,15 +125,15 @@
                                 </div>
                                 {{-- role customer, contractor radio button --}}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="role"
-                                        id="radioDefault1" value="customer">
+                                    <input class="form-check-input" type="radio" name="role" id="radioDefault1"
+                                        value="customer">
                                     <label class="form-check-label" for="radioDefault1">
                                         Customer
                                     </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="role"
-                                        id="radioDefault2" value="contractor">
+                                    <input class="form-check-input" type="radio" name="role" id="radioDefault2"
+                                        value="contractor">
                                     <label class="form-check-label" for="radioDefault2">
                                         Contractor
                                     </label>
@@ -141,8 +141,7 @@
 
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value=""
-                                            id="flexCheckDefault">
+                                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
                                             I agree to privacy policy & terms
                                         </label>
@@ -153,8 +152,8 @@
                             </form>
 
                             <div class="mt-3 text-center">
-                                <p>Already have an account? <a href="/"
-                                        class="theme-text text-decoration-none">Sign in instead</a></p>
+                                <p>Already have an account? <a href="/" class="theme-text text-decoration-none">Sign in
+                                        instead</a></p>
                             </div>
                         </div>
                     </div>
@@ -203,7 +202,7 @@
                         console.log(response);
                         // $("#alert-container").html('<div class="alert alert-success">Registration successful! Redirecting...</div>');
                         setTimeout(() => window.location.href = response.redirect, 2000);
-                    },
+                    }, 
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             let errors = xhr.responseJSON.errors;

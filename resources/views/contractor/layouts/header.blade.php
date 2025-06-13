@@ -72,43 +72,81 @@
             </ul>
         </div>
 
-        <div class="dropdown">
-            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+@php
+    $user = Auth::user();
+
+    if (!empty($user->name)) {
+        $initials = collect(explode(' ', $user->name))
+            ->filter()
+            ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+            ->take(2)
+            ->implode('');
+    } else {
+        $initials = strtoupper(substr($user->email, 0, 2));
+    }
+@endphp
+
+<div class="dropdown">
+    <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-2" type="button"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        @if ($user->profile_image)
+            <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
+                alt="Profile Image">
+        @else
+            <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: #5750bf;">
+                {{ $initials }}
+            </div>
+        @endif
+
+        <div>
+            <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+            <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
+        </div>
+    </div>
+
+    <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
+        <div class="profile d-flex align-items-center gap-2 px-2">
+            @if ($user->profile_image)
+                <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
                     style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
                     alt="Profile Image">
-                <div>
-                    <h6 class="mb-0">{{ Auth::user()->name }}</h6>
-                    <p class="small mb-0">{{ Auth::user()->email }}</p>
+            @else
+                <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                    style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: #5750bf;">
+                    {{ $initials }}
                 </div>
+            @endif
+
+            <div>
+                <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+                <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
             </div>
-            <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
-                <div class="profile d-flex align-items-center gap-2 px-2">
-                    <img src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                        style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
-                        alt="Profile Image">
-                    <div>
-                        <h6 class="mb-0">{{ Auth::user()->name }}</h6>
-                        <p class="small mb-0">{{ Auth::user()->email }}</p>
-                    </div>
-                </div>
-                <hr>
-
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="/contractor/profile"><i class="ti ti-user"></i> My Profile</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                        href="/contractor/settings"><i class="ti ti-settings"></i> Settings</a></li>
-                <!-- <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-receipt"></i> Billing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="/pricing"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
-                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px" href="#"><i class="ti ti-message-2"></i> Faq</a></li> -->
-
-                <div class="logout-btn">
-                    <a href="{{ route('logout') }}" class="btn btn-danger w-100" style="font-size: 13px"><i
-                            class="fas fa-sign-out-alt"></i> Logout</a>
-                </div>
-            </ul>
         </div>
+        <hr>
+
+        <li>
+            <a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2"
+               style="font-size: 15px" href="/contractor/profile">
+                <i class="ti ti-user"></i> My Profile
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2"
+               style="font-size: 15px" href="/contractor/settings">
+                <i class="ti ti-settings"></i> Settings
+            </a>
+        </li>
+
+        <div class="logout-btn">
+            <a href="{{ route('logout') }}" class="btn btn-danger w-100" style="font-size: 13px">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </ul>
+</div>
+
     </div>
 </header>
 
