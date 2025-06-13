@@ -88,6 +88,29 @@
         <div class="mt-2 fw-bold text-dark" style="font-size: 1rem;">Loading...</div>
     </div>
 
+ <div class="col-12">
+    <div>
+        <div class="mb-3 d-flex justify-content-center align-items-center">
+            <h2 class="mb-0 fw-bold"
+                style="
+                    font-family: 'Poppins', sans-serif;
+                    font-size: 2.2rem;
+                    letter-spacing: 2px;
+                    text-transform: uppercase;
+                    color: #fff;
+                    text-shadow: 2px 2px 8px #5e50ee, 0 2px 8px #00000033;
+                    background: linear-gradient(90deg, #fff 30%, #ffcc00 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                ">
+             
+                Select Your Plan
+             
+            </h2>
+        </div>
+    </div>
+</div>
 
     <div class="row justify-content-center align-items-center m-auto">
         <div class="col-md-12 mt-3 d-flex justify-content-center align-items-center">
