@@ -156,7 +156,7 @@ class CustomRolePermissionController extends Controller
         // Step 2: Get the permissions by IDs
         $permissions = Permission::whereIn('id', [1,2,3,4,5,6,7,8,9])->get();
 
-        // Step 3: Assign permissions to role
+        // Step 3: Assign permissions to role to user
         $role->syncPermissions($permissions);
 
         // Step 4: Assign role to user
