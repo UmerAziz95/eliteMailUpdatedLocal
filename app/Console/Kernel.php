@@ -12,7 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Send draft order notifications every 10 minutes
+        $schedule->command('orders:send-draft-notifications')
+                 ->everyTenMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
     }
 
     /**
