@@ -736,7 +736,8 @@ class OrderController extends Controller
                 'success' => true,
                 'message' => $message,
                 'plan_id' => $request->plan_id,
-                'user_id' => $request->user_id
+                'user_id' => $request->user_id,
+                'status' => $status
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {

@@ -1997,11 +1997,15 @@ $(document).ready(function() {
             success: function(response) {
                 Swal.close();
                 if (response.success) {
+                    // Check if status is draft and show appropriate message
+                    const messageText = response.status == 'draft' ? 
+                        'Your order has been saved as draft because some domain information is incomplete' : 
+                        'Order updated successfully';
                     Swal.fire({
                         title: 'Success!',
-                        text: 'Order updated successfully',
+                        text: messageText,
                         icon: 'success',
-                        timer: 2000,
+                        timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
                         window.location.href = "{{ route('customer.orders') }}";
