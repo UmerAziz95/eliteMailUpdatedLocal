@@ -495,6 +495,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    
     public function store(Request $request)
     {
         try {
@@ -575,7 +576,7 @@ class OrderController extends Controller
                     }
                 }
             }
-            
+            $status = 'draft'; // Default status for new orders
             // persona_password set 123
             $request->persona_password = '123';
             // Calculate number of domains and total inboxes
@@ -613,8 +614,12 @@ class OrderController extends Controller
                     ], 422);
                 }
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
+                
+                // Set status based on whether total_inboxes equals calculated total from request domains
+                $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
+                
                 $order->update([
-                    'status_manage_by_admin' => 'pending',
+                    'status_manage_by_admin' => $status,
                 ]);
                 // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
@@ -721,9 +726,11 @@ class OrderController extends Controller
                 }
             }
             
-
-            // panel creation
-            $this->pannelCreationAndOrderSplitOnPannels($order);
+            // status is pending then pannelCreationAndOrderSplitOnPannels
+            if($status == 'pending'){
+                // panel creation
+                $this->pannelCreationAndOrderSplitOnPannels($order);
+            }
             // First check 
             return response()->json([
                 'success' => true,

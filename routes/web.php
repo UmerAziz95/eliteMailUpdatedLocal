@@ -206,7 +206,6 @@ Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::cl
 // Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 // Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
-
 Route::get('/customer/orders/new-order/{id}/{encrypted?}', [CustomerOrderController::class, 'newOrder'])->name('customer.orders.new.order');
 Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/pricing', [CustomerPlanController::class, 'index'])->name('pricing');
