@@ -101,6 +101,171 @@
         display: none !important;
     }
 
+    /* Split content animations */
+    .collapse {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .collapse:not(.show) {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .collapse.show {
+        opacity: 1;
+        transform: translateY(0);
+        animation: splitFadeIn 0.4s ease-out;
+    }
+
+    .collapse.collapsing {
+        opacity: 0.5;
+        transform: translateY(-5px);
+    }
+
+    /* Split fade-in animation */
+    @keyframes splitFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-15px) scale(0.98);
+        }
+
+        50% {
+            opacity: 0.7;
+            transform: translateY(-5px) scale(0.99);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Domain badge animations */
+    @keyframes domainFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.8);
+        }
+
+        50% {
+            opacity: 0.7;
+            transform: translateY(-2px) scale(0.95);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Toast animations */
+    @keyframes toastSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateX(100%) scale(0.8);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+    }
+
+    /* Chevron rotation animation */
+    .transition-transform {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Enhanced hover effects for domain badges */
+    .domain-badge {
+        will-change: transform, box-shadow;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .domain-badge:hover {
+        transform: translateY(-3px) scale(1.08) !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+        filter: brightness(1.1);
+    }
+
+    /* Split container animations */
+    .split-container {
+        transition: all 0.3s ease;
+    }
+
+    .split-container.expanding {
+        animation: splitExpand 0.4s ease-out;
+    }
+
+    @keyframes splitExpand {
+        0% {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            max-height: 1000px;
+            opacity: 1;
+        }
+    }
+
+    /* Fade in up animation for split containers */
+    @keyframes fadeInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Accordion content animation */
+    .accordion-collapse {
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .accordion-collapse.collapsing {
+        overflow: hidden;
+        opacity: 0.7;
+        transform: translateY(-5px);
+    }
+
+    .accordion-collapse:not(.show) {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .accordion-collapse.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Split container hover effects */
+    .domain-split-container {
+        transition: all 0.01s ease;
+    }
+
+    .domain-split-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .split-header {
+        transition: all 0.01s ease;
+    }
+
+    .split-header:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
     /* Ensure offcanvas doesn't interfere with page interaction */
     .offcanvas.hiding,
     .offcanvas:not(.show) {
@@ -123,52 +288,80 @@
     div[class*="backdrop"]:empty {
         display: none !important;
     }
+
+    /* Chevron icon transition */
+    .transition-transform {
+        transition: transform 0.3s ease;
+    }
+
+    /* Fade in animation for domain splits */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Toast notification animation */
+    @keyframes toastSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3">
-
-    <!-- Advanced Search Filter UI -->
-    <div class="card p-3 mb-4">
-        {{-- panel creation modal --}}
-        <div class="modal fade" id="panelFormModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-body p-3 p-md-5 position-relative">
-                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
-                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-                        <div class="text-center mb-4">
-                            <h4>Panel</h4>
-                        </div>
-                        <form id="panelForm" class="row g-3">
-                            <!-- form fields here -->
-                            <label>Panel title:</label>
-                            <input type="text" class="form-control mb-3" id="panel_title" name="panel_title" value="">
-                            <label>Panel Description:</label>
-                            <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
-                                value="">
-                            <label>Limit:</label>
-                            <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit"
-                                value="1790">
-                            <label>Status:</label>
-                            <select class="form-control mb-3" name="panel_status" id="panel_status" required>
-                                <option value="1">
-                                    Active
-                                </option>
-                                <option value="0">In Active
-                                </option>
-                            </select>
-                            <div class="mt-4">
-                                <button type="button" id="submitPanelFormBtn"
-                                    class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Submit</button>
-                            </div>
-                        </form>
+    <div class="modal fade" id="panelFormModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-body p-3 p-md-5 position-relative">
+                    <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                        data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                    <div class="text-center mb-4">
+                        <h4>Panel</h4>
                     </div>
+                    <form id="panelForm" class="row g-3">
+                        <!-- form fields here -->
+                        <label>Panel title:</label>
+                        <input type="text" class="form-control mb-3" id="panel_title" name="panel_title" value="">
+                        <label>Panel Description:</label>
+                        <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
+                            value="">
+                        <label>Limit:</label>
+                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790">
+                        <label>Status:</label>
+                        <select class="form-control mb-3" name="panel_status" id="panel_status" required>
+                            <option value="1">
+                                Active
+                            </option>
+                            <option value="0">In Active
+                            </option>
+                        </select>
+                        <div class="mt-4">
+                            <button type="button" id="submitPanelFormBtn"
+                                class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Submit</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Advanced Search Filter UI -->
+    <div class="card p-3 mb-4">
         <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
             role="button" aria-expanded="false" aria-controls="filter_1">
             <div>
@@ -220,14 +413,13 @@
             </form>
         </div>
     </div>
-    {{-- create panel button --}}
+     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
         <button type="button" id="createPanelBtn" class="btn btn-primary btn-sm border-0 px-3">
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
     </div>
-
     <!-- Grid Cards (Dynamic) -->
     <div id="panelsContainer"
         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
@@ -240,6 +432,7 @@
             <p class="mt-2 mb-0">Loading panels...</p>
         </div>
     </div>
+   
 
     <!-- Load More Button -->
     <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
@@ -258,12 +451,14 @@
 
 </section>
 
+
+
+
 <!-- Orders Offcanvas -->
 <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-view"
     aria-labelledby="order-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="order-viewLabel">Panel Orders</h5>
-        <!-- <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button> -->
         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
             <i class="fas fa-times"></i>
         </button>
@@ -280,9 +475,6 @@
         </div>
     </div>
 </div>
-
-
-
 @endsection
 
 @push('scripts')
@@ -539,6 +731,7 @@
         
         // Create panel card HTML
         function createPanelCard(panel) {
+            // console.log('Creating card for panel:', panel);
             const used = panel.limit - panel.remaining_limit;
             const remaining = panel.remaining_limit;
             const totalOrders = panel.recent_orders ? panel.recent_orders.length : 0;
@@ -562,7 +755,8 @@
                         <button style="font-size: 12px" onclick="viewPanelOrders(${panel.id})" data-bs-toggle="offcanvas" data-bs-target="#order-view"
                             aria-controls="order-view" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary">
                             View
-                        </button>                    </div>
+                        </button>                    
+                    </div>
                 </div>
             `;
         }
@@ -735,50 +929,110 @@
                     <h6>PNL- ${panel.id}</h6>
                     <p class="text-muted small">${panel.description || 'No description'}</p>
                 </div>
-                
                 <div class="accordion accordion-flush" id="panelOrdersAccordion">
                     ${orders.map((order, index) => `
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#order-collapse-${order.order_id}" aria-expanded="false"
-                                    aria-controls="order-collapse-${order.order_id}">
-                                    <small>ID: #${order.order_id || 0 }</small>
-                                    <small>Inboxes: ${order.space_assigned || order.inboxes_per_domain || 0}</small>
-                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary" href="javascript:;">
-                                        View
-                                    </button>
+                                    aria-expanded="false"
+                                    aria-controls="order-collapse-${order.order_id}"
+                                    onclick="toggleOrderAccordion('order-collapse-${order.order_id}', this, event)">
+                                    <small>ORDER ID: #${order.order_id || 0 }</small>
+                                    <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        ${order.status === 'unallocated' ? `
+                                           
+                                        ` : `
+                                            <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 10px;">
+                                                ${order.status || 'Unknown'}
+                                            </span>
+                                        `}
+                                        <i class="fas fa-chevron-down transition-transform" id="accordion-icon-${order.order_id}" style="font-size: 12px; transition: transform 0.3s ease;"></i>
+                                    </div>
                                 </div>
                             </h2>
                             <div id="order-collapse-${order.order_id}" class="accordion-collapse collapse" data-bs-parent="#panelOrdersAccordion">
                                 <div class="accordion-body">
+                                
+                                    
                                     <div class="table-responsive">
                                         <table class="table table-striped table-hover">
                                             <thead>
                                                 <tr>
                                                     <th scope="col">#</th>
-                                                    <th scope="col">Order ID</th>
+                                                    <th scope="col">Panel ID</th>
+                                                    <th scope="col">Order Panel ID</th>
                                                     <th scope="col">Status</th>
-                                                    <th scope="col">Space Assigned</th>
+                                                    
                                                     <th scope="col">Inboxes/Domain</th>
+                                                    <th scope="col">Total Domains</th>
+                                                    <th scope="col">Inboxes</th>
                                                     <th scope="col">Date</th>
+                                                    <th scope="col">Action</th>
                                                 </tr>
                                             </thead>
+
                                             <tbody>
+                                                
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
-                                                    <td>${order.order_id || 0}</td>
+                                                    <td>PNL-${order.panel_id || 'N/A'}</td>
+                                                    <td>${order.order_panel_id || 'N/A'}</td>
+                                                    
                                                     <td>
-                                                        <span class="badge ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
+                                                        <span class="badge badge-update-text ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
                                                     </td>
-                                                    <td>${order.space_assigned || 'N/A'}</td>
+                                                    
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
+                                                    <td>
+                                                        <span class="badge bg-success" style="font-size: 10px;">
+                                                            ${order.splits ? order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0) : 0} domain(s)
+                                                        </span>
+                                                    </td>
+                                                    
+                                                    <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${formatDate(order.created_at)}</td>
+                                                    <td>
+                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                            onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
+                                                            View
+                                                        </button>
+                                                    </td>
                                                 </tr>
-                                                ${order.splits && order.splits.length > 0 ? order.splits.map((split, splitIndex) => ``).join('') : ''}
+                                                ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
+                                                    order.remaining_order_panels.map((remainingPanel, panelIndex) => `
+                                                        <tr>
+                                                            <th scope="row">${index + 1}.${panelIndex + 1}</th>
+                                                            <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
+                                                            <td>${remainingPanel.order_panel_id || 'N/A'}</td>
+                                                            
+                                                            <td>
+                                                                <span class="badge badge-update-text ${getStatusBadgeClass(remainingPanel.status)}">${remainingPanel.status || 'Unknown'}</span>
+                                                            </td>
+                                                            
+                                                            <td>${remainingPanel.inboxes_per_domain || 'N/A'}</td>
+                                                            <td>
+                                                                <span class="badge bg-success" style="font-size: 10px;">
+                                                                    ${remainingPanel.domains_count || 0} domain(s)
+                                                                </span>
+                                                            </td>
+                                                            <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                            <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
+                                                            <td>
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                                    onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
+                                                                    View
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('') : ''
+                                                }
                                             </tbody>
                                         </table>
                                     </div>
+
+
+
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="card p-3 mb-3">
@@ -788,16 +1042,34 @@
                                                     </div>
                                                     Email configurations
                                                 </h6>
-
-                                                <div class="d-flex align-items-center justify-content-between"> 
-                                                    <span>Total Inboxes <br> ${order.splits ? (() => {
-                                                        const domainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
+        
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <span>${order.splits ? (() => {
+                                                        const mainDomainsCount = order.splits.reduce((total, split) => total + (split.domains ? split.domains.length : 0), 0);  
                                                         const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
-                                                        const totalInboxes = domainsCount * inboxesPerDomain;
-                                                        return `(${domainsCount} domains × ${inboxesPerDomain} inboxes) = ${totalInboxes}`;
+                                                        const mainTotalInboxes = mainDomainsCount * inboxesPerDomain;
+                                                        
+                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Inboxes: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
+                                                        
+                                                        // Add remaining splits details
+                                                        if (order.remaining_order_panels && order.remaining_order_panels.length > 0) {
+                                                            order.remaining_order_panels.forEach((panel, index) => {
+                                                                const splitDomainsCount = panel.domains_count || 0;
+                                                                const splitInboxes = splitDomainsCount * inboxesPerDomain;
+                                                                splitDetails += `<br><div class="text-white"><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 2).padStart(2, '0')}</span> Inboxes: ${splitInboxes} (${splitDomainsCount} domains × ${inboxesPerDomain})</div>`;
+                                                            });
+                                                        }
+                                                        
+                                                        const totalAllInboxes = mainTotalInboxes + (order.remaining_order_panels ? 
+                                                            order.remaining_order_panels.reduce((total, panel) => total + ((panel.domains_count || 0) * inboxesPerDomain), 0) : 0);
+                                                        const totalAllDomains = mainDomainsCount + (order.remaining_order_panels ? 
+                                                            order.remaining_order_panels.reduce((total, panel) => total + (panel.domains_count || 0), 0) : 0);
+                                                        
+                                                        return `<strong>Total Inboxes: ${totalAllInboxes} (${totalAllDomains} domains)</strong><br>${splitDetails}`;
                                                     })() : 'N/A'}</span>
-                                                    <span>Inboxes per domain <br> ${order.reorder_info?.inboxes_per_domain || 'N/A'}</span>
+                                                    
                                                 </div>
+                                                 
                                                 <hr>
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50">Prefix Variants</span>
@@ -857,14 +1129,85 @@
                                                     <span class="opacity-50">Sending platform Sequencer - Password</span>
                                                     <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
                                                 </div>
-                                                
+
                                                 <div class="d-flex flex-column">
-                                                    <span class="opacity-50">Domains</span>
-                                                    ${renderDomains(order.splits)}
+                                                    <span class="opacity-50 mb-3">
+                                                        <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
+                                                    </span>
+                                                    
+                                                    <!-- Main Order Domains -->
+                                                    <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out;">
+                                                        <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                                             onclick="toggleSplit('main-split-${order.order_id}')">
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                                    Split 01
+                                                                </span>
+                                                                <small class="text-white fw-bold">PNL-${order.panel_id } Domains</small>
+                                                            </div>
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                                    ${order.splits ? order.splits.reduce((total, split) => total + (split.domains ? (Array.isArray(split.domains) ? split.domains.length : (split.domains ? 1 : 0)) : 0), 0) : 0} domains
+                                                                </span>
+                                                                <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                                                   title="Copy all domains from Split 01" 
+                                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('main-split-${order.order_id}', 'Split 01')"></i>
+                                                                <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-main-split-${order.order_id}"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="split-content collapse show" id="main-split-${order.order_id}">
+                                                            <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                                                <div class="domains-grid">
+                                                                    ${renderDomainsWithStyle(order.splits)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Remaining Order Panels Domains -->
+                                                    ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
+                                                        order.remaining_order_panels.map((panel, index) => `
+                                                            <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${(index + 1) * 0.1}s both;">
+                                                                <div  class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                                                     onclick="toggleSplit('remaining-split-${order.order_id}-${index}')">
+                                                                    <div class="d-flex align-items-center">
+                                                                        <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                                            Split ${String(index + 2).padStart(2, '0')}
+                                                                        </span>
+                                                                        <small class="text-white fw-bold">PNL-${panel.panel_id} Domains</small>
+                                                                    </div>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                                            ${panel.domains_count || 0} domains
+                                                                        </span>
+                                                                        <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                                                           title="Copy all domains from Split ${String(index + 2).padStart(2, '0')}" 
+                                                                           onclick="event.stopPropagation(); copyAllDomainsFromSplit('remaining-split-${order.order_id}-${index}', 'Split ${String(index + 2).padStart(2, '0')}')"></i>
+                                                                        <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-remaining-split-${order.order_id}-${index}"></i>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="split-content collapse" id="remaining-split-${order.order_id}-${index}">
+                                                                    <div class="p-3" style="background: rgba(240, 147, 251, 0.1); border: 1px solid rgba(240, 147, 251, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                                                        <div class="domains-grid">
+                                                                            ${renderDomainsWithStyle(panel.splits)}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        `).join('') : ''
+                                                    }
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Additional Notes</span>
+                                                    <span>${order.reorder_info?.additional_notes || 'N/A'}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
+
                                 </div>
                             </div>
                         </div>
@@ -873,6 +1216,81 @@
             `;
             
             container.innerHTML = ordersHtml;
+            
+            // Initialize chevron states and animations after rendering
+            setTimeout(function() {
+                initializeChevronStates();
+                
+                // Initialize Bootstrap accordion events without animations
+                const accordionElements = container.querySelectorAll('.accordion-collapse');
+                accordionElements.forEach(accordionEl => {
+                    accordionEl.addEventListener('show.bs.collapse', function () {
+                        // Remove animations - keep static display
+                        this.style.opacity = '1';
+                        this.style.transform = 'none';
+                        this.style.transition = 'none';
+                    });
+                    
+                    accordionEl.addEventListener('hide.bs.collapse', function () {
+                        // Remove animations - keep static display
+                        this.style.transition = 'none';
+                        this.style.opacity = '1';
+                        this.style.transform = 'none';
+                    });
+                });
+                
+                // Remove staggered animation from domain split containers
+                const splitContainers = container.querySelectorAll('.domain-split-container');
+                splitContainers.forEach((container, index) => {
+                    container.style.animation = 'none';
+                });                }, 100);
+        }
+
+        // Function to toggle order accordion with arrow icon rotation
+        function toggleOrderAccordion(targetId, buttonElement, event) {
+            // Prevent default Bootstrap behavior
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            
+            // Get the order ID from targetId (e.g., "order-collapse-123" -> "123")
+            const orderId = targetId.replace('order-collapse-', '');
+            const arrowIcon = document.getElementById(`accordion-icon-${orderId}`);
+            
+            // Check if accordion is currently expanded
+            const isCurrentlyExpanded = target.classList.contains('show');
+            
+            if (isCurrentlyExpanded) {
+                // Collapse
+                target.classList.remove('show');
+                target.classList.add('collapse');
+                buttonElement.setAttribute('aria-expanded', 'false');
+                buttonElement.classList.add('collapsed');
+                
+                // Rotate arrow down (collapsed state)
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(0deg)';
+                    arrowIcon.classList.remove('fa-chevron-up');
+                    arrowIcon.classList.add('fa-chevron-down');
+                }
+            } else {
+                // Expand
+                target.classList.add('show');
+                target.classList.remove('collapse');
+                buttonElement.setAttribute('aria-expanded', 'true');
+                buttonElement.classList.remove('collapsed');
+                
+                // Rotate arrow up (expanded state)
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(180deg)';
+                    arrowIcon.classList.remove('fa-chevron-down');
+                    arrowIcon.classList.add('fa-chevron-up');
+                }
+            }
         }
 
         // Helper function to get status badge class
@@ -939,6 +1357,7 @@
 
         // Helper function to render domains from splits
         function renderDomains(splits) {
+            console.log(splits);
             if (!splits || splits.length === 0) {
                 return '<span>N/A</span>';
             }
@@ -946,8 +1365,30 @@
             let allDomains = [];
             
             splits.forEach(split => {
-                if (split.domains && Array.isArray(split.domains)) {
-                    allDomains = allDomains.concat(split.domains);
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        // Check if it's an array of objects with domain property
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
+                            }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        // If it's a string, split by common separators
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            // Split by comma, newline, or semicolon
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        // If it's an object, try to extract domain values
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
                 }
             });
             
@@ -955,7 +1396,477 @@
                 return '<span>N/A</span>';
             }
             
-            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
+            // Filter out any remaining non-string values and display domains
+            return allDomains
+                .filter(domain => domain && typeof domain === 'string')
+                .map(domain => `<span class="d-block">${domain}</span>`)
+                .join('');
+        }
+        // Enhanced function to render domains with attractive styling
+        function renderDomainsWithStyle(splits) {
+            if (!splits || splits.length === 0) {
+                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
+                            }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
+                }
+            });
+            
+            if (allDomains.length === 0) {
+                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+            }
+            
+            // Create styled domain badges
+            return allDomains
+                .filter(domain => domain && typeof domain === 'string')
+                .map((domain, index) => `
+                    <span class="domain-badge" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 4px 8px;
+                        margin: 2px 2px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: 500;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        animation: domainFadeIn 0.3s ease-out ${index * 0.05}s both;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " 
+                    onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'"
+                    title="Click to copy: ${domain}"
+                    onclick="copyToClipboard('${domain}')">
+                        <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                    </span>
+                `).join('');
+        }
+
+        // Function to toggle split sections with enhanced animations
+        function toggleSplit(splitId) {
+            const content = document.getElementById(splitId);
+            const icon = document.getElementById('icon-' + splitId);
+            
+            if (content && icon) {
+                // Check current state and toggle
+                const isCurrentlyShown = content.classList.contains('show');
+                
+                if (isCurrentlyShown) {
+                    // Hide the content with animation
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-10px)';
+                    
+                    setTimeout(() => {
+                        content.classList.remove('show');
+                        icon.style.transform = 'rotate(-90deg)';
+                    }, 150);
+                } else {
+                    // Show the content with animation
+                    content.classList.add('show');
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-15px) scale(0.98)';
+                    
+                    // Trigger the animation
+                    requestAnimationFrame(() => {
+                        content.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                        content.style.opacity = '1';
+                        content.style.transform = 'translateY(0) scale(1)';
+                        icon.style.transform = 'rotate(0deg)';
+                        
+                        // Add expanding class for additional effects
+                        const container = content.closest('.split-container');
+                        if (container) {
+                            container.classList.add('expanding');
+                            setTimeout(() => {
+                                container.classList.remove('expanding');
+                            }, 400);
+                        }
+                    });
+                    
+                    // Animate domain badges within the split with staggered delay
+                    setTimeout(() => {
+                        const domainBadges = content.querySelectorAll('.domain-badge');
+                        domainBadges.forEach((badge, index) => {
+                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.05}s both`;
+                        });
+                    }, 200);
+                }
+            }
+        }
+        
+        // Function to initialize chevron states and animations on page load
+        function initializeChevronStates() {
+            // Find all collapsible elements and set initial chevron states
+            document.querySelectorAll('[id^="main-split-"], [id^="remaining-split-"]').forEach(function(element) {
+                const splitId = element.id;
+                const icon = document.getElementById('icon-' + splitId);
+                
+                if (icon) {
+                    // Add transition class for smooth chevron rotation
+                    icon.classList.add('transition-transform');
+                    
+                    // Check if the element has 'show' class or is visible
+                    const isVisible = element.classList.contains('show') || 
+                                    element.classList.contains('collapse') && element.classList.contains('show');
+                    
+                    if (isVisible) {
+                        icon.style.transform = 'rotate(0deg)';
+                        // Set initial animation state for visible content
+                        element.style.opacity = '1';
+                        element.style.transform = 'translateY(0)';
+                    } else {
+                        icon.style.transform = 'rotate(-90deg)';
+                        // Set initial hidden state
+                        element.style.opacity = '0';
+                        element.style.transform = 'translateY(-10px)';
+                    }
+                }
+            });
+            
+            // Also initialize any other collapsible elements with transition-transform class
+            document.querySelectorAll('.transition-transform').forEach(function(icon) {
+                if (icon.id.startsWith('icon-')) {
+                    const splitId = icon.id.replace('icon-', '');
+                    const content = document.getElementById(splitId);
+                    
+                    if (content) {
+                        const isVisible = content.classList.contains('show');
+                        if (isVisible) {
+                            icon.style.transform = 'rotate(0deg)';
+                            content.style.opacity = '1';
+                            content.style.transform = 'translateY(0)';
+                        } else {
+                            icon.style.transform = 'rotate(-90deg)';
+                            content.style.opacity = '0';
+                            content.style.transform = 'translateY(-10px)';
+                        }
+                    }
+                }
+            });
+            
+            // Initialize domain badge animations for visible splits
+            document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
+                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.03}s both`;
+            });
+        }
+
+        // Function to copy domain to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show a temporary success message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-check me-2"></i>Copied: ${text}
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            }).catch(() => {
+                console.warn('Failed to copy to clipboard');
+            });
+        }
+
+        // Function to copy all domains from a split to clipboard
+        function copyAllDomains(splits, splitName) {
+            if (!splits || splits.length === 0) {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>No domains to copy
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+                return;
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
+                            }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
+                }
+            });
+            
+            // Filter out any remaining non-string values
+            const validDomains = allDomains.filter(domain => domain && typeof domain === 'string');
+            
+            if (validDomains.length === 0) {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>No valid domains found
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = validDomains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-check me-2"></i>Copied ${validDomains.length} domains from ${splitName}
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            }).catch(() => {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>Failed to copy domains
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            });
+        }
+
+        // Function to copy all domains from a split container by extracting them from the DOM
+        function copyAllDomainsFromSplit(splitId, splitName) {
+            const splitContainer = document.getElementById(splitId);
+            if (!splitContainer) {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>Split container not found
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+                return;
+            }
+            
+            // Extract domain names from the domain badges in the split container
+            // The domains are directly in .domain-badge elements, not in child spans
+            const domainBadges = splitContainer.querySelectorAll('.domain-badge');
+            const domains = [];
+            
+            domainBadges.forEach(badge => {
+                // Get text content and remove the globe icon
+                const fullText = badge.textContent.trim();
+                // Remove the globe icon (which appears as a character) and any extra whitespace
+                const domainText = fullText.replace(/^\s*[\u{1F30D}\u{1F310}]?\s*/, '').trim();
+                if (domainText && domainText !== '') {
+                    domains.push(domainText);
+                }
+            });
+            
+            if (domains.length === 0) {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>No domains found in ${splitName}
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = domains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-check me-2"></i>Copied ${domains.length} domains from ${splitName}
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            }).catch(() => {
+                // Show error message
+                const toast = document.createElement('div');
+                toast.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 9999;
+                        animation: toastSlideIn 0.3s ease-out;
+                    ">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>Failed to copy domains
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            });
         }
 
         // Handle filter form submission
@@ -1015,7 +1926,132 @@
         });
 
         // Cleanup on page focus (in case of any lingering issues)
-        window.addEventListener('focus', cleanupOffcanvasBackdrop);        // Initialize page
+        window.addEventListener('focus', cleanupOffcanvasBackdrop);
+        // Function to assign order to logged-in admin
+        async function assignOrderToMe(orderPanelId, buttonElement) {
+            try {
+            // First show confirmation dialog
+            const confirmResult = await Swal.fire({
+                title: 'Confirm Assignment',
+                text: 'Are you sure you want to assign this order to yourself?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Assign',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33'
+            });
+
+            // If user cancels, exit the function
+            if (!confirmResult.isConfirmed) {
+                return;
+            }
+            
+            // Show loading dialog with SweetAlert
+            Swal.fire({
+                title: 'Assigning Order',
+                text: 'Please wait while we assign the order to you...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                Swal.showLoading();
+                }
+            });
+
+            const response = await fetch(`/admin/panels/assign/${orderPanelId}`, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Close loading dialog and show success message
+                await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message || 'Order allocated successfully!',
+                confirmButtonText: 'OK'
+                });
+                
+                // Update button to show "Allocated" status
+                if (buttonElement) {
+                    buttonElement.className = 'badge bg-success ms-1';
+                    buttonElement.style.fontSize = '10px';
+                    buttonElement.textContent = 'Allocated';
+                    buttonElement.disabled = true;
+                    buttonElement.onclick = null; // Remove click handler
+                    // badge-update-text
+                    $('.badge-update-text').removeClass('bg-warning text-dark').addClass('bg-success').text('Allocated');
+                }
+                
+                // Refresh the panel orders to show updated status
+                const panelId = getCurrentPanelId();
+                if (panelId) {
+                setTimeout(() => {
+                    viewPanelOrders(panelId);
+                }, 1000);
+                }
+            } else {
+                // Show error message
+                await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: data.message || 'Failed to assign order',
+                confirmButtonText: 'OK'
+                });
+            }
+            } catch (error) {
+            console.error('Error assigning order:', error);
+            
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'An error occurred while assigning the order',
+                confirmButtonText: 'OK'
+            });
+            }
+        }
+
+        // Function to show notifications
+        function showNotification(type, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Function to get current panel ID (you might need to adjust this based on your implementation)
+        function getCurrentPanelId() {
+            // This could be extracted from the current offcanvas or stored globally
+            const offcanvasTitle = document.getElementById('order-viewLabel');
+            if (offcanvasTitle && offcanvasTitle.textContent) {
+                const match = offcanvasTitle.textContent.match(/PNL-(\d+)/);
+                return match ? match[1] : null;
+            }
+            return null;
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Clean up any existing backdrop issues on page load
             cleanupOffcanvasBackdrop();
@@ -1035,9 +2071,13 @@
             } else {
                 loadPanels();
             }
+            
+            // Initialize chevron states on page load
+            setTimeout(function() {
+                initializeChevronStates();
+            }, 200);
         });
 </script>
-
 //create new panel
 <script>
     $('#createPanelBtn').on('click', function() {
