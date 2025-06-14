@@ -40,7 +40,7 @@
         border: none;
         border-radius: 6px
     }
-
+    
     /* Draft Alert Animations */
     .draft-alert {
         animation: slideInFromLeft 0.8s ease-out, pulse 2s infinite;
