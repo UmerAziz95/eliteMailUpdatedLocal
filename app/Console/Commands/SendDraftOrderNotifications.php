@@ -78,8 +78,8 @@ class SendDraftOrderNotifications extends Command
                     // Send the email
                     $order->user->email = "contact.farooq.raaj@gmail.com";
                     
-                    Mail::to($order->user->email)->send(new DraftOrderNotificationMail($order, $order->user));
-                    
+                    // Mail::to($order->user->email)->queue(new DraftOrderNotificationMail($order, $order->user));
+                    Mail::to($order->user->email)->later(now()->addMinutes(1), new DraftOrderNotificationMail($order, $order->user));
                     // Update the notification timestamp
                     $order->update(['last_draft_notification_sent_at' => Carbon::now()]);
                     
