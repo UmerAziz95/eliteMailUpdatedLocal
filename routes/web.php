@@ -467,3 +467,38 @@ Route::get('/test-panel-assignments', function() {
     
     return response()->json($testData);
 });
+
+
+// Route for manual execution with parameters
+Route::get('/cron/run-draft-notifications', function () {
+    try {
+        $options = [];
+        
+        // // Check for dry-run parameter
+        // if ($request->has('dry-run') || $request->boolean('dry_run')) {
+        //     $options['--dry-run'] = true;
+        // }
+        
+        // // Check for force parameter
+        // if ($request->has('force') || $request->boolean('force')) {
+        //     $options['--force'] = true;
+        // }
+        
+        // Capture command output
+        $exitCode = Artisan::call('orders:send-draft-notifications', $options);
+        $output = Artisan::output();
+        
+        return response()->json([
+            'success' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'output' => $output,
+            'message' => $exitCode === 0 ? 'Command executed successfully' : 'Command failed'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('cron.run-draft-notifications');
