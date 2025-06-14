@@ -17,6 +17,7 @@ use ChargeBee\ChargeBee\Models\Customer;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use App\Models\Plan;
+use App\Models\Subscription;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Onboarding;
 class AuthController extends Controller
@@ -174,30 +175,16 @@ class AuthController extends Controller
 
     // Check if user already exists
     $existingUser = User::where('email', $data['email'])->first();
-
+    
+    
     if ($existingUser) {
-        // // Generate new 4-digit verification code
-        // $verificationCode = rand(1000, 9999);
-        // $existingUser->email_verification_code = $verificationCode;
-        // $existingUser->save();
-
-        // // Create encrypted verification link
-        // $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
-        // $encrypted = Crypt::encryptString($payload);
-        // $verificationLink = url('/plans/public/' . $encrypted);
-
-        // try {
-        //     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
-        // } catch (\Exception $e) {
-        //     Log::error('Failed to send email verification code to existing user: '.$existingUser->email.' '.$e->getMessage());
-        // }
-
+       $userSubs=Subscription::where('user_id',$existingUser->id)->first();
+       if($userSubs){
         return response()->json([
-            'message' => 'User with the same email already exists. Please log in to your account.',
-            // 'user' => $existingUser,
-            // 'verificationLink'=>$verificationLink
-        ], 403);
-    } 
+                    'message' => 'User with the same email already exists. Please log in to your account.',
+                ], 403);
+        }
+    }  
 
     // Role mapping
     $isCustomer = false;

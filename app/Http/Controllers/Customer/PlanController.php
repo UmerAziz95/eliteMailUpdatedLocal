@@ -140,18 +140,6 @@ class PlanController extends Controller
                 session()->put('unauthorized_session', $user);
             }
 
-            // if($encrypted !==null){
-            // // $user->status=1;
-            // // $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-            // // $user->password=Hash::make($randomPassword);
-            // // $user->save();
-            // // try {
-            // // Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-            // //  } catch (\Exception $e) {
-            // //    Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-            // //   }
-            // }
-         
             // get charge_customer_id from user
             $charge_customer_id = $user->chargebee_customer_id ?? null;
             if ($request->has('order_id') && $charge_customer_id == null) {
@@ -176,12 +164,7 @@ class PlanController extends Controller
                     ],
                     "billing_address" => [
                         "first_name" => $user->name,
-                        // "last_name" => "xcxc",
-                        // "line1" => "Address Line 1", // Default value
-                        // "city" => "City", // Default value 
-                        // "state" => "State", // Default value
-                        // "zip" => "12345", // Default value
-                        // "country" => "US" // Default value
+                       
                     ],
                     "allow_plan_change" => true,
                     "redirect_url" => route('customer.subscription.success'),
@@ -320,7 +303,7 @@ class PlanController extends Controller
                     'message' => 'Missing hosted page ID in request.'
                 ]);
             }
-            
+
           
 
             if(!Auth::check()){
