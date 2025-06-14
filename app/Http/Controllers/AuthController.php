@@ -173,7 +173,7 @@ class AuthController extends Controller
          'role' => 'required|in:customer',
     ]);
 
-    // Check if user already exists
+    // Check if user already exists or not
     $existingUser = User::where('email', $data['email'])->first();
     
     
