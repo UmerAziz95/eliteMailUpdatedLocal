@@ -77,6 +77,7 @@ class SendDraftOrderNotifications extends Command
                 } else {
                     // Send the email
                     $order->user->email = "contact.farooq.raaj@gmail.com";
+                    
                     Mail::to($order->user->email)->send(new DraftOrderNotificationMail($order, $order->user));
                     
                     // Update the notification timestamp

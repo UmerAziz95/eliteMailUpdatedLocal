@@ -21,8 +21,6 @@
             --gradient-3: linear-gradient(to right, #7367ef 0%, #6254e8 100%);
             --bg-gradient-1: linear-gradient(135deg, #1a1f2c 0%, #212433 100%);
             --bg-gradient-2: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
-            --warning-color: #ff9800;
-            --warning-gradient: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
         }
         * {
             margin: 0;
@@ -104,7 +102,7 @@
             font-size: 32px;
             font-weight: 800;
             margin: 0;
-            background: linear-gradient(135deg, #ffffff 0%, #ff9800 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
