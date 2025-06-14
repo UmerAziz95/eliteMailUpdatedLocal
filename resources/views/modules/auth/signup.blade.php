@@ -242,23 +242,27 @@
                     //cleaning input
                       $('#email').val('');
                       $('#name').val('');
+                     
                     
                     // Show modal
                     const modal = new bootstrap.Modal(document.getElementById('successModal'));
                     modal.show();
                 },
-                error: function(xhr) {
-                    submitBtn.prop("disabled", false).text("Register");
+             error: function(xhr) {
+    submitBtn.prop("disabled", false).text("Register");
 
-                    if (xhr.status === 422) {
-                        let errors = xhr.responseJSON.errors;
-                        $.each(errors, function(key, value) {
-                            toastr.error(value, 'Error');
-                        });
-                    } else {
-                        toastr.error('An error occurred. Please try again.', 'Error');
-                    }
-                },
+    if (xhr.status === 422) {
+        let errors = xhr.responseJSON.errors;
+        $.each(errors, function(key, value) {
+            toastr.error(value, 'Error');
+        });
+    } else if (xhr.status === 403) {
+      
+        toastr.error(xhr.responseJSON.message || 'User already exist! please login.');
+    } else {
+        toastr.error('An error occurred. Please try again.', 'Error');
+    }
+},
                 complete: function() {
                     // Optional: In case you want to re-enable the button always at the end
                     // submitBtn.prop("disabled", false).text("Register");

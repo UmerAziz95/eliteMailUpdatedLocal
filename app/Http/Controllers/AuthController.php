@@ -176,28 +176,28 @@ class AuthController extends Controller
     $existingUser = User::where('email', $data['email'])->first();
 
     if ($existingUser) {
-        // Generate new 4-digit verification code
-        $verificationCode = rand(1000, 9999);
-        $existingUser->email_verification_code = $verificationCode;
-        $existingUser->save();
+        // // Generate new 4-digit verification code
+        // $verificationCode = rand(1000, 9999);
+        // $existingUser->email_verification_code = $verificationCode;
+        // $existingUser->save();
 
-        // Create encrypted verification link
-        $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
-        $encrypted = Crypt::encryptString($payload);
-        $verificationLink = url('/plans/public/' . $encrypted);
+        // // Create encrypted verification link
+        // $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+        // $encrypted = Crypt::encryptString($payload);
+        // $verificationLink = url('/plans/public/' . $encrypted);
 
-        try {
-            Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
-        } catch (\Exception $e) {
-            Log::error('Failed to send email verification code to existing user: '.$existingUser->email.' '.$e->getMessage());
-        }
+        // try {
+        //     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+        // } catch (\Exception $e) {
+        //     Log::error('Failed to send email verification code to existing user: '.$existingUser->email.' '.$e->getMessage());
+        // }
 
         return response()->json([
-            'message' => 'User already exists. Again we have sent you a verification link please check your inbox',
-            'user' => $existingUser,
-            'verificationLink'=>$verificationLink
-        ], 200);
-    }
+            'message' => 'User with the same email already exists. Please log in to your account.',
+            // 'user' => $existingUser,
+            // 'verificationLink'=>$verificationLink
+        ], 403);
+    } 
 
     // Role mapping
     $isCustomer = false;
@@ -282,7 +282,7 @@ class AuthController extends Controller
     }
 
     return response()->json([
-        'message' => 'User registered successfully! We have sent you a verification code (OTP) to your email. Please check your inbox to continue. Thank you!',
+        'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
         'redirect' => $this->redirectTo($user),
         'user' => $user,
         'verificationLink'=>$verificationLink

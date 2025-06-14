@@ -129,23 +129,28 @@ class PlanController extends Controller
             // Check if user is already logged in or fetch by email
             $user = Auth::check() ? auth()->user() : User::where('email', $email)->first();
             // Login and create session 
-            Auth::login($user);
+            //  Auth::login($user);
             // dd(auth()->user()); 
-
+         
             if (!$user) {
                 abort(404, 'User not found, auth failed please login or contact to support');
             }
-            if($encrypted !==null){
-            $user->status=1;
-            $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-            $user->password=Hash::make($randomPassword);
-            $user->save();
-            try {
-            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-             } catch (\Exception $e) {
-               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-              }
+
+             if (!Auth::check()) {
+                session()->put('unauthorized_session', $user);
             }
+
+            // if($encrypted !==null){
+            // // $user->status=1;
+            // // $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+            // // $user->password=Hash::make($randomPassword);
+            // // $user->save();
+            // // try {
+            // // Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
+            // //  } catch (\Exception $e) {
+            // //    Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
+            // //   }
+            // }
          
             // get charge_customer_id from user
             $charge_customer_id = $user->chargebee_customer_id ?? null;
@@ -204,7 +209,7 @@ class PlanController extends Controller
                         "country" => "US" // Default value
                     ],
                     "allow_plan_change" => true,
-                    "redirect_url" => route('customer.subscription.success'),
+                    "redirect_url" => route('subscription.success'),
                     // "cancel_url" => route('customer.subscription.cancel')
                 ]);
             }
@@ -222,6 +227,7 @@ class PlanController extends Controller
                 'message' => 'Failed to initiate subscription: ' . $e->getMessage()
             ], 500);
         }
+        
     }
     
     // public function initiateSubscription(Request $request)
@@ -314,6 +320,26 @@ class PlanController extends Controller
                     'message' => 'Missing hosted page ID in request.'
                 ]);
             }
+            
+          
+
+            if(!Auth::check()){
+                $unauthorized_user = session()->get('unauthorized_session');
+                $user=User::where('email',$unauthorized_user->email)->first();
+                $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+                $user->password=Hash::make($randomPassword);
+                $user->status=1;
+                $user->save();
+                Auth::login($user);
+                session()->forget('unauthorized_session');
+            try {
+            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
+             } catch (\Exception $e) {
+               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
+              }
+            }   
+         
+            
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
             $hostedPage = $result->hostedPage();
