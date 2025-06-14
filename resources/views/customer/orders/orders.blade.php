@@ -40,10 +40,109 @@
         border: none;
         border-radius: 6px
     }
+
+    /* Draft Alert Animations */
+    .draft-alert {
+        animation: slideInFromLeft 0.8s ease-out, pulse 2s infinite;
+        position: relative;
+        overflow: hidden;
+        margin-top: 15px;
+    }
+
+    .draft-alert::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: shimmer 3s infinite;
+    }
+
+    .draft-alert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    }
+
+    .draft-alert .alert-icon {
+        animation: bounce 1s infinite;
+    }
+
+    .draft-alert .btn-close {
+        transition: all 0.3s ease;
+    }
+
+    .draft-alert .btn-close:hover {
+        transform: rotate(90deg) scale(1.1);
+    }
+
+    @keyframes slideInFromLeft {
+        0% {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            border-color: var(--second-primary);
+        }
+        50% {
+            border-color: #ffc107;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+        }
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-8px);
+        }
+        60% {
+            transform: translateY(-4px);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            left: -100%;
+        }
+        100% {
+            left: 100%;
+        }
+    }
+
+    /* Fade out animation for dismiss */
+    .draft-alert.fade {
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+
+    .draft-alert.fade:not(.show) {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
 </style>
 @endpush
 
 @section('content')
+<!-- Draft Orders Notification -->
+@if(isset($draftOrders) && $draftOrders > 0)
+    <div class="alert alert-warning alert-dismissible fade show draft-alert" role="alert" style="background-color: var(--second-primary); color: #fff; border: 2px solid var(--second-primary);">
+        <i class="ti ti-alert-triangle me-2 alert-icon"></i>
+        <strong>Draft Orders Alert:</strong> You have {{ $draftOrders }} order{{ $draftOrders > 1 ? 's' : '' }} available in drafts. 
+        Please complete or review these draft orders.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <section class="py-3">
 
     <div class="counters mb-4">

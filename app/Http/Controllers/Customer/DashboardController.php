@@ -68,6 +68,9 @@ class DashboardController extends Controller
         $completedOrders = $user->orders()
             ->where('status_manage_by_admin', 'completed')
             ->count();
+        $draftOrders = $user->orders()
+            ->where('status_manage_by_admin', 'draft')
+            ->count();
 
         // Get ticket statistics
         $totalTickets = $user->tickets()->count();
@@ -90,6 +93,7 @@ class DashboardController extends Controller
             'totalOrders',
             'pendingOrders',
             'completedOrders',
+            'draftOrders',
             'totalTickets',
             'pendingTickets',
             'resolvedTickets',
