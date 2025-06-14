@@ -11,6 +11,7 @@ class Order extends Model
     use HasFactory;
     protected $casts = [
         'meta' => 'array',
+        'last_draft_notification_sent_at' => 'datetime',
     ];
     protected $fillable = [
         'user_id',
@@ -24,7 +25,8 @@ class Order extends Model
         'meta',
         'plan_id',
         'status_manage_by_admin',
-        'reason'
+        'reason',
+        'last_draft_notification_sent_at'
     ];
     
     // status_manage_by_admin
@@ -71,4 +73,5 @@ class Order extends Model
     {
         return $this->hasMany(UserOrderPanelAssignment::class, 'order_id');
     }
+    
 }

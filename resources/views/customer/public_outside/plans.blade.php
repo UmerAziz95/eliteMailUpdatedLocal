@@ -4,10 +4,10 @@
 <style>
     .pricing-card {
         background-color: var(--secondary-color);
-        box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px;
-        border-radius: 10px;
-        padding: 30px 60px;
-        text-align: center;
+        /* box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px; */
+        box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;        border-radius: 10px;
+        padding: 30px;
+        /* text-align: center; */
         transition: 0.3s ease-in-out;
     }
 
@@ -16,7 +16,7 @@
     }
 
     .pricing-card:hover {
-        box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15);
+        /* box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15); */
         transform: translateY(-10px);
     }
 
@@ -91,36 +91,28 @@
  <div class="col-12">
     <div>
         <div class="mb-3 d-flex justify-content-center align-items-center">
-            <h2 class="mb-0 fw-bold"
+            <h2 class="mb-5 fw-bold"
                 style="
-                    font-family: 'Poppins', sans-serif;
                     font-size: 2.2rem;
-                    letter-spacing: 2px;
                     text-transform: uppercase;
-                    color: #fff;
-                    text-shadow: 2px 2px 8px #5e50ee, 0 2px 8px #00000033;
-                    background: linear-gradient(90deg, #fff 30%, #ffcc00 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
+                    color: var(--white-color);
+                    text-shadow: 2px 1px 2px #887FF1;
                 ">
-             
                 Select Your Plan
-             
             </h2>
         </div>
     </div>
 </div>
 
     <div class="row justify-content-center align-items-center m-auto">
-        <div class="col-md-12 mt-3 d-flex justify-content-center align-items-center">
+        <div class="col-md-12 d-flex justify-content-center align-items-center">
             {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
             @if(count($plans)>0)
-            <div class="row g-5 mt-5" id="plans-container">
+            <div class="row g-5" id="plans-container">
                 @foreach($plans as $plan)
-                <div class="col-md-4 mt-4 " id="plan-{{ $plan->id }}">
-                    <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                        <h4 class="fw-bold plan-name text-capitalize fs-6">{{ $plan->name }}</h4>
+                <div class="col-md-6 col-lg-4 mt-4 " id="plan-{{ $plan->id }}">
+                    <div class="pricing-card h-100 {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
+                        <h4 class="fw-bold plan-name text-uppercase fs-6">{{ $plan->name }}</h4>
                         <h2 class="fw-bold plan-price fs-4">${{ number_format($plan->price, 2) }} <span class="fw-light"
                                 style="font-size: 12px">/{{
                                 $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
@@ -130,14 +122,18 @@
                         <hr>
                         <div class="mb-3 ">
                             <span>
-                                {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
+                                <span style="color: #FFCC00">{{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
                                 <strong>Inboxes</strong>
                             </span>
                         </div>
                         <ul class="list-unstyled features-list">
                             @foreach ($plan->features as $feature)
-                            <li style="font-size: 13px" class="mb-2">
-                                <i class="fas fa-check text-success"></i>
+                            <li style="font-size: 13px" class="mb-2 d-flex align-items-center gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-center" style="height: 20px; width: 20px; border-radius: 50px; background-color: rgb(39, 200, 39);">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>
                                 {{ $feature->title }} {{ $feature->pivot->value }}
                             </li>
                             @endforeach

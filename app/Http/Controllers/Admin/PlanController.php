@@ -152,7 +152,17 @@ public function store(Request $request)
                 'type' => 'plan',
                 'enabled_in_portal' => true,
                 'item_family_id' => 'cbdemo_omnisupport-solutions',
-                'status' => 'active'
+                'status' => 'active',
+                // ChargeBee settings for customer-facing visibility
+                'customer_facing_description' => $data['description'],
+                // 'customer_facing_info' => $data['description'],
+                'show_description_in_invoices' => true,  // Show description on Invoices
+                'show_description_in_quotes' => false,    // Show description on Quotes
+                'metadata' => [
+                    'customer_facing_description' => $data['description'],
+                    'show_on_checkout' => 'true',
+                    'show_on_portal' => 'true'
+                ]
             ]);
 
             if ($result && $result->item()) {
@@ -168,7 +178,16 @@ public function store(Request $request)
                     'period' => 1,
                     'currency_code' => $data['currency_code'],
                     'status' => 'active',
-                    'channel' => 'web'
+                    'channel' => 'web',
+                    // ChargeBee settings for customer-facing visibility
+                    'customer_facing_description' => $data['description'],
+                    'show_description_in_invoices' => true,  // Show description on Invoices
+                    'show_description_in_quotes' => false,    // Show description on Quotes
+                    'metadata' => [
+                        'customer_facing_description' => $data['description'],
+                        'show_on_checkout' => 'true',
+                        'show_on_portal' => 'true'
+                    ]
                 ];
                 // $priceParams['metadata'] = [
                 //     'min_usage' => $data['min_usage'] ?? 0,
@@ -359,8 +378,7 @@ public function store(Request $request)
     //         return redirect()->back()->with('error', 'Error updating plan: ' . $e->getMessage());
     //     }
     // }
-    public function update(Request $request, Plan $plan)
-{
+    public function update(Request $request, Plan $plan) {
     try {
         $request->validate([
             'name' => 'required|string|max:255',
