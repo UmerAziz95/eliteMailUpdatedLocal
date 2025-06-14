@@ -33,7 +33,7 @@ class DraftOrderNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Order #{$this->order->chargebee_invoice_id} - Action Required",
+            subject: "Order #{$this->order->id} - Action Required",
         );
     }
 
