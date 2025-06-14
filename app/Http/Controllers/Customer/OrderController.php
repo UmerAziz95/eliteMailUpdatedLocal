@@ -782,9 +782,9 @@ class OrderController extends Controller
             ]);
             
             // Decision point: >= 1790 creates new panels, < 1790 tries to use existing panels
-            if ($totalSpaceNeeded >= 1790) {
-                $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);
-            } else {
+            // if ($totalSpaceNeeded >= 1790) {
+            //     $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);
+            // } else {
                 // Try to find existing panel with sufficient space
                 $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
                 
@@ -796,7 +796,7 @@ class OrderController extends Controller
                     // No single panel can fit, try intelligent splitting across available panels
                     $this->handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded);
                 }
-            }
+            // }
             
             DB::commit();
             Log::info("Panel creation completed successfully for order #{$order->id}");
