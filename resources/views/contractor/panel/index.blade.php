@@ -776,7 +776,7 @@
                 `;
                 return;
             }
-
+            
             const orderInfo = data.order;
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
@@ -863,7 +863,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                        <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-solid fa-earth-europe"></i>
