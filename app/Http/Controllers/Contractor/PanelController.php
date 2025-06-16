@@ -16,10 +16,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use DataTables;
+use App\Models\Status; // Assuming you have a Status model for order statuses
 //models
 
 class PanelController extends Controller
 {
+    private $statuses;
+    public function __construct()
+    {
+        $this->statuses = Status::where('name', '!=', 'draft')->pluck('badge', 'name')->toArray();
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -167,7 +173,14 @@ class PanelController extends Controller
                     'id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
-                    'status' => $orderPanels->first()->status ?? 'pending'
+                    'status' => $orderPanels->first()->status ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
                 ],
                 'reorder_info' => $reorderInfo ? [
                     'total_inboxes' => $reorderInfo->total_inboxes,

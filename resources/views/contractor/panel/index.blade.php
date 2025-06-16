@@ -704,7 +704,10 @@
 
             const splitsHtml = `
                 <div class="mb-4">
-                    <h6>Order #${orderInfo.id}</h6>
+                    <h6>
+                        Order #${orderInfo.id}
+                        ${orderInfo.status_manage_by_admin}
+                    </h6>
                     <p class="text-white small">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                 </div>
                 <div class="table-responsive mb-4">
@@ -712,7 +715,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Status</th>
+                                <th scope="col">Split Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
@@ -725,6 +728,7 @@
                                     <td>
                                         <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
+                                    
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
                                     <td>
                                         <span class="badge bg-success" style="font-size: 10px;">
