@@ -141,7 +141,7 @@
         .order-card button {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
+        
         .order-card button:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
@@ -930,10 +930,10 @@
                                                 <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                    title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
                                                    onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
-                                                <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                                <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                             </div>
                                         </div>
-                                        <div class="split-content collapse show" id="split-${orderInfo.id}-${index}">
+                                        <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
                                             <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
                                                 <div class="domains-grid">
                                                     ${renderDomainsWithStyle([split])}
@@ -1191,7 +1191,7 @@
                         font-size: 11px;
                         font-weight: 500;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        animation: domainFadeIn 0.3s ease-out ${index * 0.05}s both;
+                        animation: domainFadeIn 0.3s ease-out ${index * 0.001}s both;
                         transition: all 0.3s ease;
                         cursor: pointer;
                     " 
@@ -1256,7 +1256,7 @@
                     
                     setTimeout(() => {
                         content.classList.remove('show');
-                        icon.style.transform = 'rotate(-90deg)';
+                        icon.style.transform = 'rotate(0deg)'; // Point right when closed
                     }, 150);
                 } else {
                     // Show the content with animation
@@ -1269,7 +1269,7 @@
                         content.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
                         content.style.opacity = '1';
                         content.style.transform = 'translateY(0) scale(1)';
-                        icon.style.transform = 'rotate(0deg)';
+                        icon.style.transform = 'rotate(90deg)'; // Point down when open
                         
                         // Add expanding class for additional effects
                         const container = content.closest('.split-container');
@@ -1285,7 +1285,7 @@
                     setTimeout(() => {
                         const domainBadges = content.querySelectorAll('.domain-badge');
                         domainBadges.forEach((badge, index) => {
-                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.05}s both`;
+                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
                         });
                     }, 200);
                 }
@@ -1307,12 +1307,12 @@
                     const isVisible = element.classList.contains('show');
                     
                     if (isVisible) {
-                        icon.style.transform = 'rotate(0deg)';
+                        icon.style.transform = 'rotate(90deg)'; // Point down when open
                         // Set initial animation state for visible content
                         element.style.opacity = '1';
                         element.style.transform = 'translateY(0)';
                     } else {
-                        icon.style.transform = 'rotate(-90deg)';
+                        icon.style.transform = 'rotate(0deg)'; // Point right when closed
                         // Set initial hidden state
                         element.style.opacity = '0';
                         element.style.transform = 'translateY(-10px)';
@@ -1320,9 +1320,9 @@
                 }
             });
             
-            // Initialize domain badge animations for visible splits
+            // Initialize domain badge animations for visible splits only
             document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
-                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.03}s both`;
+                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
             });
         }
 
