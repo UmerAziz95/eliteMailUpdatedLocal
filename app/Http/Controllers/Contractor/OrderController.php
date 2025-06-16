@@ -1217,8 +1217,15 @@ class OrderController extends Controller
             });
             
             // If all panels are completed, update order status to "completed"
-            if ($allCompleted && $order->status_manage_by_admin !== 'completed') {
-                $order->update(['status_manage_by_admin' => 'completed']);
+            // Otherwise, update order status to "in-progress"
+            if ($allCompleted) {
+                if ($order->status_manage_by_admin !== 'completed') {
+                    $order->update(['status_manage_by_admin' => 'completed']);
+                }
+            } else {
+                if ($order->status_manage_by_admin !== 'in-progress') {
+                    $order->update(['status_manage_by_admin' => 'in-progress']);
+                }
             }
         }
     }
