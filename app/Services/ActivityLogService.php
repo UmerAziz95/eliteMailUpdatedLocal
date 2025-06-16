@@ -25,6 +25,10 @@ class ActivityLogService
         // browser
         $browser = $request->header('User-Agent');
         // append ip, user agent and url to data
+        // Ensure $data is an array before merging
+        if (!is_array($data)) {
+            $data = [];
+        }
         $data = array_merge($data, [
             'ip' => $ip,
             'user_agent' => $userAgent,

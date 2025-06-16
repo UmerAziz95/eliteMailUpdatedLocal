@@ -1189,6 +1189,7 @@ class OrderController extends Controller
     /**
      * Update order's status_manage_by_admin based on panel status changes
      */
+    
     private function updateOrderStatusBasedOnPanelStatus($order, $newPanelStatus)
     {
         // If a panel is set to "in-progress", update order status to "in-progress"
@@ -1281,7 +1282,8 @@ class OrderController extends Controller
                     Log::error("Error assigning panel {$panel->id} to contractor {$contractorId}: " . $e->getMessage());
                 }
             }
-            
+            $order->assigned_to = $contractorId;
+            $order->save();
             // Update order status if all panels are now allocated
             $remainingUnallocated = OrderPanel::where('order_id', $orderId)
                 ->where('status', 'unallocated')
@@ -1292,7 +1294,13 @@ class OrderController extends Controller
             $activityLogService->log(
                 'Order Assignment',
                 "Contractor assigned {$assignedCount} splits of Order #{$orderId} to themselves",
-                'contractor',
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'assigned_count' => $assignedCount,
+                    'contractor_id' => $contractorId,
+                    'remaining_unallocated' => $remainingUnallocated
+                ],
                 $contractorId
             );
             

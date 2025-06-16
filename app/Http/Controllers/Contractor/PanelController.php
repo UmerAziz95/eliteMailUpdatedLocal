@@ -102,7 +102,7 @@ class PanelController extends Controller
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
-                    'status' => $orderPanels->first()->status ?? 'pending',
+                    'status' => $orderPanels->first()->status ?? 'unallocated',
                     'created_at' => $order->created_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
