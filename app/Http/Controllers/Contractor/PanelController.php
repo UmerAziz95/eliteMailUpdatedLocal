@@ -102,7 +102,7 @@ class PanelController extends Controller
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
-                    'status' => $orderPanels->first()->status ?? 'unallocated',
+                    'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
@@ -111,6 +111,7 @@ class PanelController extends Controller
                             . ucfirst($status) . '</span>';
                     })(),
                     'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();

@@ -103,7 +103,7 @@
         }
 
         .order-card:hover {
-            transform: translateY(-2px);
+            /* transform: translateY(-2px); */
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
@@ -114,7 +114,7 @@
         }
 
         .order-card .col-6 > div:hover {
-            transform: translateY(-1px);
+            /* transform: translateY(-1px); */
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border-color: rgba(255, 255, 255, 0.3) !important;
         }
@@ -252,6 +252,110 @@
             }
             100% {
                 transform: scale(1);
+            }
+        }
+
+        /* Timer badge styling */
+        .timer-badge {
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 0.25rem 0.5rem;
+            margin-left: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            animation: pulse 2s infinite;
+            position: relative;
+            cursor: help;
+            z-index: 1;
+        }
+
+        .timer-badge:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .timer-badge:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+        }
+
+        .timer-badge.positive {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .timer-badge.negative {
+            background: linear-gradient(135deg, #dc3545, #e74c3c);
+            color: white;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            animation: pulseRed 1s infinite;
+        }
+
+        .timer-badge.completed {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: 1px solid rgba(108, 117, 125, 0.3);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        @keyframes pulseRed {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.9);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 4px rgba(220, 53, 69, 0);
+                transform: scale(1.05);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+                transform: scale(1);
+            }
+        }
+
+        .timer-icon {
+            font-size: 8px;
+            /* animation: tick 1s infinite; */
+        }
+
+        @keyframes tick {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(360deg);
             }
         }
     </style>
@@ -547,7 +651,10 @@
                         <div class="d-flex align-items-center">
                             <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
                         </div>
-                        ${order.status_manage_by_admin}
+                        <div class="d-flex align-items-center">
+                            ${order.status_manage_by_admin}
+                            ${createTimerBadge(order)}
+                        </div>
                     </div>
                     
                     <div class="row g-3">
@@ -698,6 +805,103 @@
                 return 'Invalid Date';
             }
         }
+
+        // Calculate timer for order
+        function calculateOrderTimer(createdAt, status, completedAt = null) {
+            const now = new Date();
+            const orderDate = new Date(createdAt);
+            const twelveHoursLater = new Date(orderDate.getTime() + (12 * 60 * 60 * 1000));
+            
+            // If order is completed, show the time it took to complete
+            if (status === 'completed' && completedAt) {
+                const completionDate = new Date(completedAt);
+                const timeTaken = completionDate - orderDate;
+                const isOverdue = completionDate > twelveHoursLater;
+                
+                return {
+                    display: formatTimeDuration(timeTaken),
+                    isNegative: isOverdue,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+            
+            // If order is completed but no completion date, just show completed
+            if (status === 'completed') {
+                return {
+                    display: 'Completed',
+                    isNegative: false,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+            
+            // For active orders, calculate remaining/overdue time
+            const timeDiff = now - twelveHoursLater;
+            
+            if (timeDiff > 0) {
+                // Order is overdue (negative time)
+                return {
+                    display: '-' + formatTimeDuration(timeDiff),
+                    isNegative: true,
+                    isCompleted: false,
+                    class: 'negative'
+                };
+            } else {
+                // Order still has time remaining
+                return {
+                    display: formatTimeDuration(-timeDiff),
+                    isNegative: false,
+                    isCompleted: false,
+                    class: 'positive'
+                };
+            }
+        }
+
+        // Format time duration in human readable format
+        function formatTimeDuration(milliseconds) {
+            const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        }
+
+        // Create timer badge HTML
+        function createTimerBadge(order) {
+            console.log(order);
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at);
+            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            
+            // Create tooltip text
+            let tooltip = '';
+            if (timer.isCompleted) {
+                tooltip = order.completed_at 
+                    ? `Order completed on ${formatDate(order.completed_at)}` 
+                    : 'Order is completed';
+            } else if (timer.isNegative) {
+                tooltip = `Order is overdue by ${timer.display.substring(1)}. Created on ${formatDate(order.created_at)}`;
+            } else {
+                tooltip = `Time remaining: ${timer.display}. Order created on ${formatDate(order.created_at)}`;
+            }
+            
+            return `
+                <span class="timer-badge ${timer.class}" 
+                      data-order-id="${order.order_id}" 
+                      data-created-at="${order.created_at}" 
+                      data-status="${order.status}" 
+                      data-completed-at="${order.completed_at || ''}"
+                      data-tooltip="${tooltip}">
+                    <i class="${iconClass} timer-icon"></i>
+                    ${timer.display}
+                </span>
+            `;
+        }
+
         // View order splits
         async function viewOrderSplits(orderId) {
             try {
@@ -1514,6 +1718,47 @@
             }
         }
 
+        // Update all timer badges on the page
+        function updateAllTimers() {
+            const timerBadges = document.querySelectorAll('.timer-badge');
+            timerBadges.forEach(badge => {
+                const orderId = badge.dataset.orderId;
+                const createdAt = badge.dataset.createdAt;
+                const status = badge.dataset.status;
+                const completedAt = badge.dataset.completedAt;
+                
+                // Skip updating completed orders
+                if (status === 'completed') {
+                    return;
+                }
+                
+                const timer = calculateOrderTimer(createdAt, status, completedAt);
+                const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                
+                // Create tooltip text
+                let tooltip = '';
+                if (timer.isCompleted) {
+                    tooltip = completedAt 
+                        ? `Order completed on ${formatDate(completedAt)}` 
+                        : 'Order is completed';
+                } else if (timer.isNegative) {
+                    tooltip = `Order is overdue by ${timer.display.substring(1)}. Created on ${formatDate(createdAt)}`;
+                } else {
+                    tooltip = `Time remaining: ${timer.display}. Order created on ${formatDate(createdAt)}`;
+                }
+                
+                // Update badge class and tooltip
+                badge.className = `timer-badge ${timer.class}`;
+                badge.setAttribute('data-tooltip', tooltip);
+                
+                // Update badge content
+                badge.innerHTML = `
+                    <i class="${iconClass} timer-icon"></i>
+                    ${timer.display}
+                `;
+            });
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Clean up any existing backdrop issues on page load
@@ -1527,6 +1772,9 @@
             
             // Load orders immediately
             loadOrders();
+            
+            // Update timers every minute
+            setInterval(updateAllTimers, 60000); // Update every 60 seconds
         });
     </script>
 @endpush
