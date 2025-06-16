@@ -134,8 +134,11 @@ a {
 
 .filter {
     /* background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%); */
-    background-color: var(--second-primary) !important;
+    /* background-color: var(--second-primary) !important; */
+    background-color: #221b5b60 !important;
     border-radius: 8px;
+    border: 1px solid var(--second-primary);
+    backdrop-filter: blur(10px);
 }
 
 .filter img {
@@ -175,7 +178,7 @@ button {
 }
 
 .m-btn {
-    background: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+    background-color: var(--second-primary);
     font-size: 14px;
     color: var(--white-color);
     font-weight: 600;
