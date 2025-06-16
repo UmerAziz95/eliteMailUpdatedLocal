@@ -107,6 +107,46 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
+        /* Enhanced stat boxes hover effects */
+        .order-card .col-6 > div {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .order-card .col-6 > div:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        /* Icon animations */
+        .order-card i {
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover i {
+            transform: scale(1.1);
+        }
+
+        /* Status badge enhancement */
+        .order-card .badge {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Button enhancement */
+        .order-card button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .order-card button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        }
+
         /* Split content animations */
         .collapse {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -499,39 +539,78 @@
                 container.innerHTML = ordersHtml;
             }
         }
-
+        
         // Create order card HTML
         function createOrderCard(order) {
             return `
                 <div class="card p-3 d-flex flex-column gap-3 order-card">                    
                     <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0">Order #${order.order_id}</h6>
-                        <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span>
+                        <div class="d-flex align-items-center">
+                            <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
+                        </div>
+                        <span class="badge ${getStatusBadgeClass(order.status)} px-2 py-1 rounded-pill">${order.status}</span>
                     </div>
                     
-                    <div class="row g-2">
+                    <div class="row g-3">
                         <div class="col-6">
-                            <small class="text-white d-block">Customer</small>
-                            <small class="fw-bold">${order.customer_name}</small>
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-user text-info" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Customer</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.customer_name}</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-6">
-                            <small class="text-white d-block">Total Inboxes</small>
-                            <small class="fw-bold">${order.total_inboxes}</small>
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-inbox text-success" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_inboxes}</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-6">
-                            <small class="text-white d-block">Inboxes/Domain</small>
-                            <small class="fw-bold">${order.inboxes_per_domain}</small>
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-divide text-warning" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.inboxes_per_domain}</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-6">
-                            <small class="text-white d-block">Total Domains</small>
-                            <small class="fw-bold">${order.total_domains}</small>
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-globe text-primary" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_domains}</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="d-flex align-items-center justify-content-between">
-                        <small class="text-white">${formatDate(order.created_at)}</small>
-                        <button class="btn btn-sm btn-primary" onclick="viewOrderSplits(${order.order_id})" data-bs-toggle="offcanvas" data-bs-target="#order-splits-view">
-                            View Order (${order.splits_count} splits)
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-alt text-white opacity-75 me-1" style="font-size: 11px;"></i>
+                            <small class="text-white opacity-75">${formatDate(order.created_at)}</small>
+                        </div>
+                        <button class="btn btn-sm btn-primary px-3 rounded-pill fw-bold" 
+                                onclick="viewOrderSplits(${order.order_id})" 
+                                data-bs-toggle="offcanvas" 
+                                data-bs-target="#order-splits-view"
+                                style="font-size: 11px;">
+                            <i class="fas fa-eye me-1" style="font-size: 10px;"></i>
+                            View Details
+                            <span class="badge bg-white text-primary ms-1 rounded-pill" style="font-size: 9px;">${order.splits_count}</span>
                         </button>
                     </div>
                 </div>
