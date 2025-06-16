@@ -85,37 +85,39 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Welcome to Project Inboxes 👋</h5>
+                            <h5 class="fw-bold">Welcome to Project Inbox 👋</h5>
                             <p>
                                 Please sign-in to your account and start the adventure
                             </p>
                             @if (session('success'))
-                                <div class="alert alert-success">
-                                    {{ session('success') }}
-                                </div>
+                            <div class="alert alert-success">
+                                {{ session('success') }}
+                            </div>
                             @endif
                             @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    <ul class="mb-0">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
                             @endif
                             <form action="{{ route('doLogin') }}" method="POST">
                                 @csrf
                                 <div class="input-group">
                                     <label for="email">Email</label>
-                                    <input type="email" name="email" id="email" placeholder="" value="{{ old('email') }}" >
+                                    <input type="email" name="email" id="email" placeholder=""
+                                        value="{{ old('email') }}">
                                     {{-- error --}}
                                     {{-- @error('email')
-                                        <div class="text-danger">{{ $message }}</div>
+                                    <div class="text-danger">{{ $message }}</div>
                                     @enderror --}}
                                 </div>
                                 <div class="input-group">
                                     <label for="password">Password</label>
-                                    <input type="password" name="password" id="password" placeholder="" value="{{ old('password') }}" >
+                                    <input type="password" name="password" id="password" placeholder=""
+                                        value="{{ old('password') }}">
                                     <span id="togglePassword"
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
@@ -124,8 +126,8 @@
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="remember" 
-                                            id="remember" {{ old('remember') ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="remember" id="remember" {{
+                                            old('remember') ? 'checked' : '' }}>
                                         <label class="form-check-label" for="remember">
                                             Remember me
                                         </label>
@@ -138,7 +140,8 @@
                                     </div>
                                 </div>
                                 <div class="w-100 mt-3">
-                                    {{-- <a href="{{ route('login') }}" class="w-100 d-flex align-items-center justify-content-center m-btn py-2 px-4 border-0 rounded-2 text-decoration-none">
+                                    {{-- <a href="{{ route('login') }}"
+                                        class="w-100 d-flex align-items-center justify-content-center m-btn py-2 px-4 border-0 rounded-2 text-decoration-none">
                                         Sign In
                                     </a> --}}
                                     <button type="submit"
