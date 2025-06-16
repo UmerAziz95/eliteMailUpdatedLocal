@@ -413,7 +413,7 @@
             </form>
         </div>
     </div>
-     {{-- create panel button --}}
+    {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
         <button type="button" id="createPanelBtn" class="btn btn-primary btn-sm border-0 px-3">
             <i class="fa-solid fa-plus me-2"></i>
@@ -432,7 +432,7 @@
             <p class="mt-2 mb-0">Loading panels...</p>
         </div>
     </div>
-   
+
 
     <!-- Load More Button -->
     <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
@@ -511,7 +511,7 @@
                     per_page: 12
                 });
                 const url = `/admin/panels/data?${params}`;
-                console.log('Fetching from URL:', url);
+               
                 
                 const response = await fetch(url, {
                     headers: {
@@ -520,20 +520,18 @@
                     }
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Error response:', errorText);
+                 
                     throw new Error(`Failed to fetch panels: ${response.status} ${response.statusText}`);
                 }
                   
                 const data = await response.json();
-                console.log('Received data:', data);
+              
                 
                 const newPanels = data.data || [];
-                console.log('New panels:', newPanels);
+              
                 
                 if (append) {
                     panels = panels.concat(newPanels);
@@ -547,7 +545,6 @@
                 hasMorePages = pagination.has_more_pages || false;
                 totalPanels = pagination.total || 0;
                 
-                console.log('Updated state:', { currentPage, hasMorePages, totalPanels, panelsCount: panels.length });
                 
                 renderPanels(append);
                 updatePaginationInfo();
@@ -910,9 +907,7 @@
         
         // Render panel orders in offcanvas
         function renderPanelOrders(orders, panel) {
-            console.log('orders', orders);
             const container = document.getElementById('panelOrdersContainer');
-            
             if (!orders || orders.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
@@ -938,6 +933,7 @@
                                     aria-controls="order-collapse-${order.order_id}"
                                     onclick="toggleOrderAccordion('order-collapse-${order.order_id}', this, event)">
                                     <small>ORDER ID: #${order.order_id || 0 }</small>
+                                    <small>${handleOrderRelativeTimeCount(order.timer_order) }</small>
                                     <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
                                     <div class="d-flex align-items-center gap-2">
                                         ${order.status === 'unallocated' ? `
@@ -1245,6 +1241,70 @@
                     container.style.animation = 'none';
                 });                }, 100);
         }
+
+            function handleOrderRelativeTimeCount(order) {
+                if (order.status_manage_by_admin !== 'pending') return '';
+
+                // 🧼 Sanitize and normalize the created_at timestamp
+                let rawDate = order.created_at?.replace(' ', 'T') ?? '';
+                rawDate = rawDate.replace(/\.\d+/, ''); // remove microseconds
+                if (!rawDate.endsWith('Z')) rawDate += 'Z'; // force UTC
+
+                const createdAt = new Date(rawDate);
+                const now = new Date();
+
+                // 🐞 Debugging logs
+                console.log('📦 Raw from DB:', order.created_at);
+                console.log('🧪 Parsed ISO:', rawDate);
+                console.log('📅 CreatedAt (UTC):', createdAt.toISOString());
+                console.log('⏰ Now (UTC):', now.toISOString());
+
+                // 🧱 Validate creation date
+                if (isNaN(createdAt.getTime())) {
+                    console.warn('⚠️ Invalid creation time');
+                    return 'Invalid creation time';
+                }
+
+                const diffInMs = now.getTime() - createdAt.getTime();
+
+                if (diffInMs < 0) {
+                    console.warn('⚠️ Creation time is in the future');
+                    return 'Invalid creation time (in future)';
+                }
+
+                const diffInHours = diffInMs / (1000 * 60 * 60);
+
+                if (diffInHours <= 12) {
+                    const totalMinutes = Math.floor(diffInMs / (1000 * 60));
+                    const hours = Math.floor(totalMinutes / 60);
+                    const minutes = totalMinutes % 60;
+
+                    let parts = [];
+                    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+                    if (minutes > 0 || parts.length === 0)
+                        parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+
+                    console.log('🟢 Within 12 hours:', parts.join(' '));
+                    return `Order time: ${parts.join(' ')}`;
+                } else {
+                    const extraMs = diffInMs - 12 * 60 * 60 * 1000;
+                    const totalMinutes = Math.floor(extraMs / (1000 * 60));
+                    const days = Math.floor(totalMinutes / (60 * 24));
+                    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+                    const minutes = totalMinutes % 60;
+
+                    let parts = [];
+                    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+                    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+                    if (minutes > 0 || parts.length === 0)
+                        parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+
+                    console.log('🔴 Exceeded 12 hours by:', parts.join(' '));
+                    return `Order time exceeded: -${parts.join(' ')}`;
+                }
+            }
+
+
 
         // Function to toggle order accordion with arrow icon rotation
         function toggleOrderAccordion(targetId, buttonElement, event) {
