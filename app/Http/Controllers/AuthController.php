@@ -70,6 +70,13 @@ class AuthController extends Controller
     
         $remember = $request->has('remember');
     
+        $userCheck=User::where('email',$request->email)->first();
+        if(!$userCheck){
+             return back()->withErrors(['email' => 'Account does not exist!']);
+        }
+        if($userCheck->status==0){
+              return back()->withErrors(['email' => 'Account does not exist!']);
+        }
         if (Auth::attempt($credentials, $remember)) {
             // Check if the authenticated user's account is inactive
             if (Auth::user()->status == 0) {
@@ -144,261 +151,240 @@ class AuthController extends Controller
         return view('modules.auth.signup');
     }
 
-    // Handle registration refresh
-    // public function register(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'email' => 'required|email|unique:users',
-    //         'password' => 'required|min:6|confirmed',
-    //         'role' => 'required|in:admin,customer,contractor',
-    //     ]);
-
-    //     $user = User::create([
-    //         'name' => $data['name'],
-    //         'email' => $data['email'],
-    //         'password' => Hash::make($data['password']),
-    //         'role' => $data['role'],
-    //     ]);
-
-    //     Auth::login($user);
-
-    //     return redirect($this->.redirectTo($user));
-    // }
+ 
   public function register(Request $request)
-{
-    $data = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email',
-         'role' => 'required|in:customer',
-    ]);
+        {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email',
+                'role' => 'required|in:customer',
+            ]);
 
 
-    $existingUser = User::where('email', $data['email'])->first();
-    if ($existingUser) {
-       $userSubs=Subscription::where('user_id',$existingUser->id)->first();
-       if($userSubs){
-        return response()->json([
-                    'message' => 'User with the same email already exists. Please log in to your account.',
-                ], 403);
-        }
-          else {
-        // Email verification code
-        $verificationCode = rand(1000, 9999);
-        $existingUser->email_verification_code = $verificationCode;
-        $existingUser->save();
+            $existingUser = User::where('email', $data['email'])->first();
+            if ($existingUser) {
+            $userSubs=Subscription::where('user_id',$existingUser->id)->first();
+            if($userSubs){
+                return response()->json([
+                            'message' => 'Account already exists. Please login.',
+                        ], 403);
+                }
+                else {
+                // Email verification code
+                $verificationCode = rand(1000, 9999);
+                $existingUser->email_verification_code = $verificationCode;
+                $existingUser->save();
 
-        $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
-        $encrypted = Crypt::encryptString($payload);
-        $verificationLink =url('/plans/public/' . $encrypted);
+                $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+                $encrypted = Crypt::encryptString($payload);
+                $verificationLink =url('/plans/public/' . $encrypted);
+                
+
+                try {
+                    Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                }
+
+                return response()->json([
+                    'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+                    'redirect' => $this->redirectTo($existingUser),
+                    'user' => $existingUser,
+                    'verificationLink'=>$verificationLink
+                ], 200);
+                }
+            
+            } 
         
 
-        try {
-            Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
-        } catch (\Exception $e) {
-            Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
-        }
 
-        return response()->json([
-            'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
-            'redirect' => $this->redirectTo($existingUser),
-            'user' => $existingUser,
-            'verificationLink'=>$verificationLink
-        ], 200);
-        }
-    
-     } 
-   
-
-    // Role mapping
-    $isCustomer = false;
-    switch ($data['role']) {
-        case 'admin':
-            $data['role'] = 1;
-            break;
-        case 'customer':
-            $data['role'] = 3;
-            $isCustomer = true;
-            break;
-        case 'contractor':
-            $data['role'] = 4;
-            break;
-        default:
-            $data['role'] = 3;
-            $isCustomer = true;
-    }
-
-    // Create new user
-    
-    $user = User::create([
-        'name' => $data['name'],
-        'email' => $data['email'],
-        'password' => Hash::make(Str::random(6)),
-        'role_id' => $data['role'],
-        'status' => 0
-    ]);
-
-    // Optional: create Chargebee customer
-    if ($isCustomer) {
-        try {
-            $result = \ChargeBee\ChargeBee\Models\Customer::create([
-                'firstName' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'autoCollection' => 'on',
-            ]);
-
-            $customer = $result->customer();
-            $user->update(['chargebee_customer_id' => $customer->id]);
-
-            Log::info('Chargebee customer created for user', [
-                'user_id' => $user->id,
-                'chargebee_customer_id' => $customer->id
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
-                'user_id' => $user->id
-            ]);
-        }
-    }
-
-    // Log activity
-    ActivityLogService::log(
-        'user_signup',
-        'New user registered successfully',
-        $user,
-        [
-            'email' => $user->email,
-            'role_id' => $user->role_id,
-            'ip' => $request->ip(),
-            'user_agent' => $request->header('User-Agent'),
-            'chargebee_customer_id' => $user->chargebee_customer_id,
-        ],
-        $user->id
-    );
-
-    // Email verification code
-    $verificationCode = rand(1000, 9999);
-    $user->email_verification_code = $verificationCode;
-    $user->save();
-
-    $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
-    $encrypted = Crypt::encryptString($payload);
-    $verificationLink =url('/plans/public/' . $encrypted);
-    
-
-    try {
-        Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
-    } catch (\Exception $e) {
-        Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
-    }
-
-    return response()->json([
-        'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
-        'redirect' => $this->redirectTo($user),
-        'user' => $user,
-        'verificationLink'=>$verificationLink
-    ], 200);
-   }    
-
-    // Show forgot password form
-    public function showForgotPasswordForm()
-    {
-        // return view('auth.forgot-password');
-        return view('modules.auth.forget_password');
-    }
-
-    // Send password reset link
-    public function sendResetLink(Request $request)
-    {
-        $request->validate(['email' => 'required|email|exists:users,email']);
-        Password::sendResetLink($request->only('email'));
-
-        return back()->with('success', 'Password reset link sent to your email.');
-    }
-
-    // Show reset password form
-    public function showResetPasswordForm($token)
-    {
-        return view('modules.auth.reset_password', ['token' => $token, 'email'=>$email = request('email')]);
-    }
-
-    // Handle password reset
-    public function resetPassword(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'email' => 'required|email|exists:users,email',
-                'password' => [
-                    'required',
-                    'string',
-                    'min:8',
-                    'confirmed',
-                    'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-                ],
-                'token' => 'required',
-            ],
-            [
-                'password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
-            ]);
+            // Create new user
             
-            Password::reset(
-                $request->only('email', 'password', 'password_confirmation', 'token'),
-                function ($user, $password) {
-                    $user->update(['password' => Hash::make($password)]);
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make(Str::random(6)),
+                'role_id' =>3,
+                'status' => 0
+            ]);
+
+            // Optional: create Chargebee customer
+           
+                try {
+                    $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                        'firstName' => $user->name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'autoCollection' => 'on',
+                    ]);
+
+                    $customer = $result->customer();
+                    $user->update(['chargebee_customer_id' => $customer->id]);
+
+                    Log::info('Chargebee customer created for user', [
+                        'user_id' => $user->id,
+                        'chargebee_customer_id' => $customer->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                        'user_id' => $user->id
+                    ]);
                 }
+      
+            // Log activity
+            ActivityLogService::log(
+                'user_signup',
+                'New user registered successfully',
+                $user,
+                [
+                    'email' => $user->email,
+                    'role_id' => $user->role_id,
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'chargebee_customer_id' => $user->chargebee_customer_id,
+                ],
+                $user->id
             );
 
-            return redirect()->route('login')->with('success', 'Your password has been reset.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
-        }
-    }
+            // Email verification code
+            $verificationCode = rand(1000, 9999);
+            $user->email_verification_code = $verificationCode;
+            $user->save();
 
-    // Handle password change
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'oldPassword' => 'required',
-            'newPassword' => 'required|min:8|different:oldPassword',
-            'confirmPassword' => 'required|same:newPassword'
-        ]);
+            $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            $verificationLink =url('/plans/public/' . $encrypted);
+            
 
-        $user = Auth::user();
+            try {
+                Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
+            } catch (\Exception $e) {
+                Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+            }
 
-        if (!Hash::check($request->oldPassword, $user->password)) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Current password is incorrect'
-            ], 400);
-        }
+                'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+                'redirect' => $this->redirectTo($user),
+                'user' => $user,
+                'verificationLink'=>$verificationLink
+            ], 200);
+        }    
 
-        $user->password = Hash::make($request->newPassword);
-        $user->save();
+            // Show forgot password form
+            public function showForgotPasswordForm()
+            {
+                // return view('auth.forgot-password');
+                return view('modules.auth.forget_password');
+            }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Password changed successfully'
-        ]);
-    }
-
-   public function showVerifyEmailForm(Request $request, $encrypted)
+            // Send password reset link
+public function sendResetLink(Request $request)
 {
-    try {
-        $decrypted = Crypt::decryptString($encrypted);
-        [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+    if(!$request->email){
 
-        $user = User::where('email', $email)->firstOrFail();
-        session(['verifyEmail' => $user->email]);
-
-        return view('modules.auth.verify_email', [
-            'encrypted' => $encrypted,
-        ]);
-    } catch (\Exception $e) {
-        // Handle invalid token or user not found
-        return redirect()->route('register')->withErrors(['error' => 'Invalid or expired verification link.']);
+     return back()->with('error', 'Please provide a valid email address.');
     }
+
+
+     $user = User::where('email', $request->email)->first();
+    // 🔒 Check if user exists and is active
+    if (!$user || $user->status == 0) {
+        return back()->with('error', 'Account does not exist.');
+    } 
+   
+    // ✅ Attempt to send the reset link
+    $status = Password::sendResetLink($request->only('email'));
+
+    if ($status === Password::RESET_LINK_SENT) {
+        return back()->with('success', 'Password reset link has been sent to your email.');
+    }
+
+    return back()->with('error', 'Failed to send password reset link. Please try again later.');
 }
+
+
+            // Show reset password form
+            public function showResetPasswordForm($token)
+            {
+                return view('modules.auth.reset_password', ['token' => $token, 'email'=>$email = request('email')]);
+            }
+
+            // Handle password reset
+            public function resetPassword(Request $request)
+            {
+                try {
+                    $validated = $request->validate([
+                        'email' => 'required|email|exists:users,email',
+                        'password' => [
+                            'required',
+                            'string',
+                            'min:8',
+                            'confirmed',
+                            'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                        ],
+                        'token' => 'required',
+                    ],
+                    [
+                        'password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+                    ]);
+                    
+                    Password::reset(
+                        $request->only('email', 'password', 'password_confirmation', 'token'),
+                        function ($user, $password) {
+                            $user->update(['password' => Hash::make($password)]);
+                        }
+                    );
+
+                    return redirect()->route('login')->with('success', 'Your password has been reset.');
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    return back()->withErrors($e->errors())->withInput();
+                }
+            }
+
+            // Handle password change
+            public function changePassword(Request $request)
+            {
+                $request->validate([
+                    'oldPassword' => 'required',
+                    'newPassword' => 'required|min:8|different:oldPassword',
+                    'confirmPassword' => 'required|same:newPassword'
+                ]);
+
+                $user = Auth::user();
+
+                if (!Hash::check($request->oldPassword, $user->password)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Current password is incorrect'
+                    ], 400);
+                }
+
+                $user->password = Hash::make($request->newPassword);
+                $user->save();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Password changed successfully'
+                ]);
+            }
+
+        public function showVerifyEmailForm(Request $request, $encrypted)
+        {
+            try {
+                $decrypted = Crypt::decryptString($encrypted);
+                [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+
+                $user = User::where('email', $email)->firstOrFail();
+                session(['verifyEmail' => $user->email]);
+
+                return view('modules.auth.verify_email', [
+                    'encrypted' => $encrypted,
+                ]);
+            } catch (\Exception $e) {
+                // Handle invalid token or user not found
+                return redirect()->route('register')->withErrors(['error' => 'Invalid or expired verification link.']);
+            }
+        }
 
 
    // Handle the form submission and verification
