@@ -1085,11 +1085,11 @@
 
     // Function to render panel orders in the offcanvas
      function renderPanelOrders(data) {
-              const panel=data.data[0].panel;
-               const orders=data.data;
-              const container = document.getElementById('panelOrdersContainer');
+            const panel=data?.data?.[0]?.panel;
+            const orders=data?.data;
+            const container = document.getElementById('panelOrdersContainer');
             
-            if (!data || data.length === 0) {
+            if (!data || !data.data || data.data.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-inbox text-muted fs-3 mb-3"></i>
@@ -1104,7 +1104,7 @@
       
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>PNL- ${panel.id}</h6>
+                    <h6>PNL- ${panel?.id || 'N/A'}</h6>
                     <p class="">${panel?.description || 'No description'}</p>
                 </div>
                 
