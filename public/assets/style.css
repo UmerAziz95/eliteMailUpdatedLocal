@@ -1,22 +1,23 @@
 :root {
     --primary-color: #12141D;
     --secondary-color: #1d2239;
-    --second-primary: #5750bf;
+    --second-primary: #4A3AFF;
     --light-color: #ffffffbb;
     --white-color: #fff;
     --box-shadow: 0 0 7px #dfdfffa1;
     --input-border: #ffffff4c;
-    --extra-light: #ffffff89;
+    --extra-light: #ffffff5e;
     --dropdown-hover: #ffffff16;
     --text-color: #c8c5ff;
     --slide-bg: #6c64c957;
+    --green-color: #A6FF00;
 }
 
 .light-theme {
     --primary-color: #efefef;
     --secondary-color: #ffffff;
-    --second-primary: #716ad3;
-    --light-color: #00000089;
+    --second-primary: #4A3AFF;
+    --light-color: #050505bb;
     --white-color: #000;
     --box-shadow: 0 0 7px #797979a1;
     --input-border: #0000004c;
@@ -24,6 +25,7 @@
     --dropdown-hover: #00000016;
     --text-color: #7c76ef;
     --slide-bg: #726ace8f;
+    --green-color: #24b204;
 }
 
 * {
@@ -180,7 +182,7 @@ button {
 }
 
 .theme-text {
-    color: #877fff;
+    color: var(--second-primary);
 }
 
 .c-btn {
@@ -506,8 +508,8 @@ footer {
 .card {
     background-color: var(--secondary-color);
     color: var(--light-color);
-    box-shadow: var(--box-shadow);
-    border: none
+    /* box-shadow: var(--box-shadow); */
+    border: 1px solid #99999962
 }
 
 .text-success {

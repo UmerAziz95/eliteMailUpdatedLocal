@@ -1,5 +1,5 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
         <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
         <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
     </div>
