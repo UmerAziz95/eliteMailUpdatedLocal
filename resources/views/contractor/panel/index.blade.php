@@ -521,7 +521,6 @@
                 `;
                 return;
             }
-            
             // Reset container to grid layout for orders
             container.style.display = 'grid';
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
@@ -783,11 +782,39 @@
 
             const splitsHtml = `
                 <div class="mb-4">
-                    <h6>
-                        Order #${orderInfo.id}
-                        ${orderInfo.status_manage_by_admin}
-                    </h6>
-                    <p class="text-white small">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6>
+                                Order #${orderInfo.id}
+                                ${orderInfo.status_manage_by_admin}
+                            </h6>
+                            <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                        </div>
+                        <div>
+                            ${(() => {
+                                const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                if (unallocatedSplits.length > 0) {
+                                    return `
+                                        <button class="btn btn-success btn-sm px-3 py-2" 
+                                                onclick="assignOrderToMe(${orderInfo.id})"
+                                                id="assignOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                                            Assign Order to Me
+                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
+                                        </button>
+                                    `;
+                                } else {
+                                    return `
+                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                                            All Splits Assigned
+                                        </span>
+                                    `;
+                                }
+                            })()}
+                        </div>
+                    </div>
                 </div>
                 <div class="table-responsive mb-4">
                     <table class="table table-striped table-hover">
@@ -1361,6 +1388,130 @@
             }).catch(() => {
                 showToast('Failed to copy domains', 'error');
             });
+        }
+
+        // Function to assign entire order to logged-in contractor
+        async function assignOrderToMe(orderId) {
+            try {
+            // Show SweetAlert2 confirmation dialog
+            const result = await Swal.fire({
+                title: 'Assign Order to Yourself?',
+                text: 'This will assign all unallocated splits of this order to you. Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            // If user cancels, return early
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            // Show SweetAlert2 loading dialog
+            Swal.fire({
+                title: 'Assigning Order...',
+                text: 'Please wait while we assign the order to you.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                Swal.showLoading();
+                }
+            });
+
+            // Show loading state on the button as backup
+            const button = document.getElementById('assignOrderBtn');
+            if (button) {
+                const originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = `
+                <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Assigning Order...
+                `;
+            }
+
+            // Make API request to assign all unallocated splits of the order
+            const response = await fetch(`/contractor/orders/${orderId}/assign-to-me`, {
+                method: 'POST',
+                headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to assign order');
+            }
+
+            const data = await response.json();
+            
+            // Close loading dialog and show success
+            await Swal.fire({
+                title: 'Success!',
+                text: data.message || 'Order assigned successfully!',
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                timer: 3000,
+                timerProgressBar: true
+            });
+            
+            // Update the button to show assigned state
+            if (button) {
+                button.outerHTML = `
+                <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                    <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                    Order Assigned to You
+                </span>
+                `;
+            }
+            
+            // Update all status badges in the table to show allocated
+            const statusBadges = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge');
+            statusBadges.forEach(badge => {
+                if (badge.textContent.trim().toLowerCase() === 'unallocated') {
+                badge.className = 'badge bg-info';
+                badge.textContent = 'allocated';
+                }
+            });
+            
+            // Refresh the order list to reflect changes
+            setTimeout(() => {
+                loadOrders(currentFilters, 1, false);
+            }, 1000);
+            
+            } catch (error) {
+            console.error('Error assigning order:', error);
+            
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign order. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+            
+            // Restore button state
+            const button = document.getElementById('assignOrderBtn');
+            if (button) {
+                button.disabled = false;
+                // Restore original button content - we need to recreate it
+                const unallocatedCount = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge').length;
+                button.innerHTML = `
+                <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                Assign Order to Me
+                <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedCount}</span>
+                `;
+            }
+            }
         }
 
         // Initialize page

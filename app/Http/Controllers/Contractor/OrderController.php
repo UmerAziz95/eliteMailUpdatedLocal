@@ -1221,4 +1221,103 @@ class OrderController extends Controller
             }
         }
     }
+
+    /**
+     * Assign all unallocated splits of an order to the logged-in contractor
+     */
+    public function assignOrderToMe(Request $request, $orderId)
+    {
+        try {
+            $contractorId = Auth::id();
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Get all order panels (splits) for this order that are unallocated
+            $unallocatedPanels = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->get();
+            
+            if ($unallocatedPanels->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No unallocated splits found for this order.'
+                ], 400);
+            }
+            
+            $assignedCount = 0;
+            $errors = [];
+            
+            // Assign each unallocated panel to the contractor
+            foreach ($unallocatedPanels as $panel) {
+                try {
+                    // Check if there's already an assignment for this panel
+                    $existingAssignment = UserOrderPanelAssignment::where('order_panel_id', $panel->id)
+                        ->where('contractor_id', $contractorId)
+                        ->first();
+                    
+                    if (!$existingAssignment) {
+                        // order_panel_split_id
+                        $order_panel_split_id = OrderPanelSplit::where('order_panel_id', $panel->id)->value('id');
+                        // Create new assignment
+                        UserOrderPanelAssignment::create([
+                            'order_panel_id' => $panel->id,
+                            'contractor_id' => $contractorId,
+                            'order_panel_split_id' => $order_panel_split_id,
+                            'order_id' => $orderId
+                        ]);
+                    }
+                    
+                    // Update panel status to allocated
+                    $panel->update([
+                        'status' => 'allocated',
+                        'contractor_id' => $contractorId
+                    ]);
+                    
+                    $assignedCount++;
+                    
+                } catch (Exception $e) {
+                    $errors[] = "Failed to assign panel {$panel->id}: " . $e->getMessage();
+                    Log::error("Error assigning panel {$panel->id} to contractor {$contractorId}: " . $e->getMessage());
+                }
+            }
+            
+            // Update order status if all panels are now allocated
+            $remainingUnallocated = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->count();
+            
+            // Log the activity
+            $activityLogService = new ActivityLogService();
+            $activityLogService->log(
+                'Order Assignment',
+                "Contractor assigned {$assignedCount} splits of Order #{$orderId} to themselves",
+                'contractor',
+                $contractorId
+            );
+            
+            $message = $assignedCount > 0 
+                ? "Successfully assigned {$assignedCount} split(s) to you!" 
+                : "No new assignments were made.";
+            
+            if (!empty($errors)) {
+                $message .= " However, some errors occurred: " . implode(', ', $errors);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'assigned_count' => $assignedCount,
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error("Error in assignOrderToMe for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
