@@ -473,7 +473,7 @@
                 container.style.gap = '1rem';
                 
                 container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+                        <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
                         <h5>No Orders Found</h5>
                         <p class="mb-3">No orders match your current filters.</p>
                         <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
@@ -511,25 +511,25 @@
                     
                     <div class="row g-2">
                         <div class="col-6">
-                            <small class="text-muted d-block">Customer</small>
+                            <small class="text-white d-block">Customer</small>
                             <small class="fw-bold">${order.customer_name}</small>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Total Inboxes</small>
+                            <small class="text-white d-block">Total Inboxes</small>
                             <small class="fw-bold">${order.total_inboxes}</small>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Inboxes/Domain</small>
+                            <small class="text-white d-block">Inboxes/Domain</small>
                             <small class="fw-bold">${order.inboxes_per_domain}</small>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Total Domains</small>
+                            <small class="text-white d-block">Total Domains</small>
                             <small class="fw-bold">${order.total_domains}</small>
                         </div>
                     </div>
                     
                     <div class="d-flex align-items-center justify-content-between">
-                        <small class="text-muted">${formatDate(order.created_at)}</small>
+                        <small class="text-white">${formatDate(order.created_at)}</small>
                         <button class="btn btn-sm btn-primary" onclick="viewOrderSplits(${order.order_id})" data-bs-toggle="offcanvas" data-bs-target="#order-splits-view">
                             View Order (${order.splits_count} splits)
                         </button>
@@ -690,7 +690,7 @@
             if (!data.splits || data.splits.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
-                        <i class="fas fa-inbox text-muted fs-3 mb-3"></i>
+                        <i class="fas fa-inbox text-white fs-3 mb-3"></i>
                         <h5>No Splits Found</h5>
                         <p>This order doesn't have any splits yet.</p>
                     </div>
@@ -705,15 +705,13 @@
             const splitsHtml = `
                 <div class="mb-4">
                     <h6>Order #${orderInfo.id}</h6>
-                    <p class="text-muted small">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                    <p class="text-white small">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                 </div>
-
                 <div class="table-responsive mb-4">
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Panel ID</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
@@ -724,7 +722,6 @@
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
-                                    <td>PNL-${split.panel_id || 'N/A'}</td>
                                     <td>
                                         <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
@@ -1064,7 +1061,7 @@
         // Enhanced function to render domains with attractive styling
         function renderDomainsWithStyle(splits) {
             if (!splits || splits.length === 0) {
-                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+                return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
             }
             
             let allDomains = [];
@@ -1094,7 +1091,7 @@
             });
             
             if (allDomains.length === 0) {
-                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+                return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
             }
             
             // Create styled domain badges
