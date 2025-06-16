@@ -16,45 +16,52 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use DataTables;
+use App\Models\Status; // Assuming you have a Status model for order statuses
 //models
 
 class PanelController extends Controller
 {
+    private $statuses;
+    public function __construct()
+    {
+        $this->statuses = Status::where('name', '!=', 'draft')->pluck('badge', 'name')->toArray();
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            return $this->getPanelsData($request);
+            return $this->getOrdersData($request);
         }
 
         return view('contractor.panel.index');
     }    
-    public function getPanelsData(Request $request)
+    
+    public function getOrdersData(Request $request)
     {
         try {
-            $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
-                ->withCount('order_panels as total_orders');
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
+                ->whereHas('orderPanels');
 
             // Apply filters if provided
-            if ($request->filled('panel_id')) {
-                // PNL-00 remove string PNL
-                $request->panel_id = str_replace('PNL-', '', $request->panel_id);
-                $query->where('id', 'like', '%' . $request->panel_id . '%');
+            if ($request->filled('order_id')) {
+                $query->where('id', 'like', '%' . $request->order_id . '%');
             }
 
-            if ($request->filled('min_inbox_limit')) {
-                $query->where('limit', '>=', $request->min_inbox_limit);
+            if ($request->filled('status')) {
+                $query->whereHas('orderPanels', function($q) use ($request) {
+                    $q->where('status', $request->status);
+                });
             }
 
-            if ($request->filled('max_inbox_limit')) {
-                $query->where('limit', '<=', $request->max_inbox_limit);
+            if ($request->filled('min_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '>=', $request->min_inboxes);
+                });
             }
 
-            if ($request->filled('min_remaining')) {
-                $query->where('remaining_limit', '>=', $request->min_remaining);
-            }
-
-            if ($request->filled('max_remaining')) {
-                $query->where('remaining_limit', '<=', $request->max_remaining);
+            if ($request->filled('max_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '<=', $request->max_inboxes);
+                });
             }
 
             // Apply ordering
@@ -62,70 +69,152 @@ class PanelController extends Controller
             $query->orderBy('id', $order);
 
             // Pagination parameters
-            $perPage = $request->get('per_page', 12); // Default 12 panels per page
+            $perPage = $request->get('per_page', 12); // Default 12 orders per page
             $page = $request->get('page', 1);
             
             // Get paginated results
-            $paginatedPanels = $query->paginate($perPage, ['*'], 'page', $page);
+            $paginatedOrders = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // Format panels data for the frontend
-            $panelsData = $paginatedPanels->getCollection()->map(function ($panel) {
-                $used = $panel->limit - $panel->remaining_limit;
+            // Format orders data for the frontend
+            $ordersData = $paginatedOrders->getCollection()->map(function ($order) {
+                $reorderInfo = $order->reorderInfo->first();
+                $orderPanels = $order->orderPanels;
                 
-                // Get recent orders for this panel
-                $recentOrders = OrderPanel::with('order')
-                    ->where('panel_id', $panel->id)
-                    ->orderBy('created_at', 'desc')
-                    // ->limit(5)
-                    ->get();
-                // dd('ok');
+                // Calculate total domains count from all splits
+                $totalDomainsCount = 0;
+                $totalInboxes = 0;
+                
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        if ($split->domains && is_array($split->domains)) {
+                            $totalDomainsCount += count($split->domains);
+                        }
+                        $totalInboxes += $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
+                    }
+                }
+                
+                $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
+                
                 return [
-                    'id' => $panel->id,
-                    'auto_generated_id' => $panel->auto_generated_id,
-                    'title' => $panel->title,
-                    'description' => $panel->description,
-                    'limit' => $panel->limit,
-                    'used' => $used,
-                    'remaining_limit' => $panel->remaining_limit,
-                    'is_active' => $panel->is_active,
-                    'created_by' => $panel->created_by,
-                    'created_at' => $panel->created_at,
-                    'total_orders' => $panel->total_orders,
-                    'recent_orders' => $recentOrders->map(function ($orderPanel) {
-                        return [
-                            'id' => $orderPanel->order->id ?? 'N/A',
-                            'space_assigned' => $orderPanel->space_assigned,
-                            'status' => $orderPanel->status,
-                            'created_at' => $orderPanel->created_at,
-                            'order_id' => $orderPanel->order->id ?? null,
-                        ];
-                    }),
-                    'usage_percentage' => $panel->limit > 0 ? round(($used / $panel->limit) * 100, 2) : 0,
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
+                    'inboxes_per_domain' => $inboxesPerDomain,
+                    'total_domains' => $totalDomainsCount,
+                    'status' => $orderPanels->first()->status ?? 'unallocated',
+                    'created_at' => $order->created_at,
+                    'order_panels_count' => $orderPanels->count(),
+                    'splits_count' => $orderPanels->sum(function($panel) {
+                        return $panel->orderPanelSplits->count();
+                    })
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $panelsData,
+                'data' => $ordersData,
                 'pagination' => [
-                    'current_page' => $paginatedPanels->currentPage(),
-                    'last_page' => $paginatedPanels->lastPage(),
-                    'per_page' => $paginatedPanels->perPage(),
-                    'total' => $paginatedPanels->total(),
-                    'has_more_pages' => $paginatedPanels->hasMorePages(),
-                    'from' => $paginatedPanels->firstItem(),
-                    'to' => $paginatedPanels->lastItem()
+                    'current_page' => $paginatedOrders->currentPage(),
+                    'last_page' => $paginatedOrders->lastPage(),
+                    'per_page' => $paginatedOrders->perPage(),
+                    'total' => $paginatedOrders->total(),
+                    'has_more_pages' => $paginatedOrders->hasMorePages(),
+                    'from' => $paginatedOrders->firstItem(),
+                    'to' => $paginatedOrders->lastItem()
                 ]
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching panels data: ' . $e->getMessage()
+                'message' => 'Error fetching orders data: ' . $e->getMessage()
             ], 500);
         }
     }
 
+    public function getOrderSplits($orderId, Request $request)
+    {
+        try {
+            $order = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
+                ->findOrFail($orderId);
+            
+            $reorderInfo = $order->reorderInfo->first();
+            $orderPanels = $order->orderPanels;
+            
+            // Format splits data
+            $splitsData = [];
+            
+            foreach ($orderPanels as $orderPanel) {
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    $domains = [];
+                    if ($split->domains && is_array($split->domains)) {
+                        $domains = $split->domains;
+                    }
+                    
+                    $splitsData[] = [
+                        'id' => $split->id,
+                        'panel_id' => $orderPanel->panel_id,
+                        'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'order_panel_id' => $orderPanel->id,
+                        'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'domains' => $domains,
+                        'domains_count' => count($domains),
+                        'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                        'status' => $orderPanel->status,
+                        'created_at' => $split->created_at
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'order' => [
+                    'id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'created_at' => $order->created_at,
+                    'status' => $orderPanels->first()->status ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                ],
+                'reorder_info' => $reorderInfo ? [
+                    'total_inboxes' => $reorderInfo->total_inboxes,
+                    'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                    'hosting_platform' => $reorderInfo->hosting_platform,
+                    'platform_login' => $reorderInfo->platform_login,
+                    'platform_password' => $reorderInfo->platform_password,
+                    'forwarding_url' => $reorderInfo->forwarding_url,
+                    'sending_platform' => $reorderInfo->sending_platform,
+                    'sequencer_login' => $reorderInfo->sequencer_login,
+                    'sequencer_password' => $reorderInfo->sequencer_password,
+                    'first_name' => $reorderInfo->first_name,
+                    'last_name' => $reorderInfo->last_name,
+                    'email_persona_password' => $reorderInfo->email_persona_password,
+                    'profile_picture_link' => $reorderInfo->profile_picture_link,
+                    'prefix_variants' => $reorderInfo->prefix_variants,
+                    'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                    'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                ] : null,
+                'splits' => $splitsData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order splits: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Note: This method was used for the complex panel orders interface with accordion.
+    // It's been replaced with the simplified getOrderSplits method above.
+    // Keeping this commented for potential future reference.
+    /*
     public function getPanelOrders($panelId, Request $request)
     {
         try {
@@ -289,6 +378,7 @@ class PanelController extends Controller
             ], 500);
         }
     }
+    */
     
     /**
      * Test method to verify database connectivity and basic data retrieval
