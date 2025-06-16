@@ -106,12 +106,120 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+
+        /* Split content animations */
+        .collapse {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collapse:not(.show) {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .collapse.show {
+            opacity: 1;
+            transform: translateY(0);
+            animation: splitFadeIn 0.4s ease-out;
+        }
+
+        .collapse.collapsing {
+            opacity: 0.5;
+            transform: translateY(-5px);
+        }
+
+        /* Split fade-in animation */
+        @keyframes splitFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-15px) scale(0.98);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translateY(-5px) scale(0.99);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Domain badge animations */
+        @keyframes domainFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.8);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translateY(-2px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Toast animations */
+        @keyframes toastSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(100%) scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Chevron rotation animation */
+        .transition-transform {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Enhanced hover effects for domain badges */
+        .domain-badge {
+            will-change: transform, box-shadow;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .domain-badge:hover {
+            transform: translateY(-3px) scale(1.08) !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+            filter: brightness(1.1);
+        }
+
+        /* Split container animations */
+        .split-container {
+            transition: all 0.3s ease;
+        }
+
+        .split-container.expanding {
+            animation: splitExpand 0.4s ease-out;
+        }
+
+        @keyframes splitExpand {
+            0% {
+                transform: scale(0.98);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
     </style>
 @endpush
 
 @section('content')
     <section class="py-3">
-
+        
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -597,80 +705,179 @@
             const splitsHtml = `
                 <div class="mb-4">
                     <h6>Order #${orderInfo.id}</h6>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-3">
-                            <small class="text-muted d-block">Customer</small>
-                            <small class="fw-bold">${orderInfo.customer_name}</small>
-                        </div>
-                        ${reorderInfo ? `
-                        <div class="col-md-3">
-                            <small class="text-muted d-block">Total Inboxes</small>
-                            <small class="fw-bold">${reorderInfo.total_inboxes || 'N/A'}</small>
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted d-block">Inboxes per Domain</small>
-                            <small class="fw-bold">${reorderInfo.inboxes_per_domain || 'N/A'}</small>
-                        </div>
-                        ` : ''}
-                        <div class="col-md-3">
-                            <small class="text-muted d-block">Order Date</small>
-                            <small class="fw-bold">${formatDate(orderInfo.created_at)}</small>
-                        </div>
-                    </div>
+                    <p class="text-muted small">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                 </div>
 
-                <h6 class="mb-3">Order Splits (${splits.length})</h6>
-                <div class="row g-3">
-                    ${splits.map((split, index) => `
-                        <div class="col-md-6">
-                            <div class="card p-3 h-100">
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <h6 class="mb-0">Split ${index + 1}</h6>
-                                    <span class="badge ${getStatusBadgeClass(split.status)}">${split.status}</span>
+                <div class="table-responsive mb-4">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Panel ID</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Inboxes/Domain</th>
+                                <th scope="col">Total Domains</th>
+                                <th scope="col">Total Inboxes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${splits.map((split, index) => `
+                                <tr>
+                                    <th scope="row">${index + 1}</th>
+                                    <td>PNL-${split.panel_id || 'N/A'}</td>
+                                    <td>
+                                        <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                    </td>
+                                    <td>${split.inboxes_per_domain || 'N/A'}</td>
+                                    <td>
+                                        <span class="badge bg-success" style="font-size: 10px;">
+                                            ${split.domains_count || 0} domain(s)
+                                        </span>
+                                    </td>
+                                    <td>${split.total_inboxes || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card p-3 mb-3">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-regular fa-envelope"></i>
                                 </div>
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Panel</small>
-                                        <small class="fw-bold">PNL-${split.panel_id}</small>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Total Inboxes</small>
-                                        <small class="fw-bold">${split.total_inboxes}</small>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Inboxes/Domain</small>
-                                        <small class="fw-bold">${split.inboxes_per_domain}</small>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Domains Count</small>
-                                        <small class="fw-bold">${split.domains_count}</small>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <small class="text-muted d-block mb-2">Domains:</small>
-                                    <div class="domains-container" style="max-height: 200px; overflow-y: auto;">
-                                        ${split.domains && split.domains.length > 0 ? 
-                                            split.domains.map(domain => `
-                                                <span class="domain-badge" onclick="copyToClipboard('${domain}')" title="Click to copy">
-                                                    <i class="fas fa-globe me-1"></i>${domain}
-                                                </span>
-                                            `).join('')
-                                            : '<small class="text-muted">No domains</small>'
-                                        }
-                                    </div>
-                                </div>
-                                ${split.domains && split.domains.length > 0 ? `
-                                <button class="btn btn-sm btn-outline-primary" onclick="copyAllDomains(${JSON.stringify(split.domains).replace(/"/g, '&quot;')}, 'Split ${index + 1}')">
-                                    <i class="fas fa-copy me-1"></i>Copy All Domains (${split.domains.length})
-                                </button>
-                                ` : ''}
+                                Email configurations
+                            </h6>
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>${(() => {
+                                    const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
+                                    const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
+                                    const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
+                                    
+                                    let splitDetails = '';
+                                    splits.forEach((split, index) => {
+                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                    });
+                                    
+                                    return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                                })()}</span>
+                            </div>
+                             
+                            <hr>
+                            <div class="d-flex flex-column">
+                                <span class="opacity-50">Prefix Variants</span>
+                                ${renderPrefixVariants(reorderInfo)}
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Profile Picture URL</span>
+                                <span>${reorderInfo?.profile_picture_link || 'N/A'}</span>
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Email Persona Password</span>
+                                <span>${reorderInfo?.email_persona_password || 'N/A'}</span>
                             </div>
                         </div>
-                    `).join('')}
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-solid fa-earth-europe"></i>
+                                </div>
+                                Domains &amp; Configuration
+                            </h6>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Hosting Platform</span>
+                                <span>${reorderInfo?.hosting_platform || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Platform Login</span>
+                                <span>${reorderInfo?.platform_login || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Platform Password</span>
+                                <span>${reorderInfo?.platform_password || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                <span>${reorderInfo?.forwarding_url || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending Platform</span>
+                                <span>${reorderInfo?.sending_platform || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending platform Sequencer - Login</span>
+                                <span>${reorderInfo?.sequencer_login || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending platform Sequencer - Password</span>
+                                <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column">
+                                <span class="opacity-50 mb-3">
+                                    <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
+                                </span>
+                                
+                                <!-- Order Splits Domains -->
+                                ${splits.map((split, index) => `
+                                    <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
+                                        <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                             onclick="toggleSplit('split-${orderInfo.id}-${index}')">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                    Split ${String(index + 1).padStart(2, '0')}
+                                                </span>
+                                                <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                    ${split.domains_count || 0} domains
+                                                </span>
+                                                <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                                   title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
+                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                            </div>
+                                        </div>
+                                        <div class="split-content collapse show" id="split-${orderInfo.id}-${index}">
+                                            <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                                <div class="domains-grid">
+                                                    ${renderDomainsWithStyle([split])}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Additional Notes</span>
+                                <span>${reorderInfo?.additional_notes || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
             
             container.innerHTML = splitsHtml;
+            
+            // Initialize chevron states and animations after rendering
+            setTimeout(function() {
+                initializeChevronStates();
+            }, 100);
         }
         
         // Function to copy domain to clipboard
@@ -853,6 +1060,228 @@
 
         // Cleanup on page focus (in case of any lingering issues)
         window.addEventListener('focus', cleanupOffcanvasBackdrop);
+
+        // Enhanced function to render domains with attractive styling
+        function renderDomainsWithStyle(splits) {
+            if (!splits || splits.length === 0) {
+                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
+                            }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
+                }
+            });
+            
+            if (allDomains.length === 0) {
+                return '<div class="text-center py-3"><small class="text-muted">No domains available</small></div>';
+            }
+            
+            // Create styled domain badges
+            return allDomains
+                .filter(domain => domain && typeof domain === 'string')
+                .map((domain, index) => `
+                    <span class="domain-badge" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 4px 8px;
+                        margin: 2px 2px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: 500;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        animation: domainFadeIn 0.3s ease-out ${index * 0.05}s both;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " 
+                    onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'"
+                    title="Click to copy: ${domain}"
+                    onclick="copyToClipboard('${domain}')">
+                        <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                    </span>
+                `).join('');
+        }
+
+        // Helper function to render prefix variants
+        function renderPrefixVariants(reorderInfo) {
+            if (!reorderInfo) return '<span>N/A</span>';
+            
+            let variants = [];
+            
+            // Check if we have the new prefix_variants JSON format
+            if (reorderInfo.prefix_variants) {
+                try {
+                    const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                        ? JSON.parse(reorderInfo.prefix_variants) 
+                        : reorderInfo.prefix_variants;
+                    
+                    Object.keys(prefixVariants).forEach((key, index) => {
+                        if (prefixVariants[key]) {
+                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Could not parse prefix variants:', e);
+                }
+            }
+            
+            // Fallback to old individual fields if new format is empty
+            if (variants.length === 0) {
+                if (reorderInfo.prefix_variant_1) {
+                    variants.push(`<span>Variant 1: ${reorderInfo.prefix_variant_1}</span>`);
+                }
+                if (reorderInfo.prefix_variant_2) {
+                    variants.push(`<span>Variant 2: ${reorderInfo.prefix_variant_2}</span>`);
+                }
+            }
+            
+            return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
+        }
+
+        // Function to toggle split sections with enhanced animations
+        function toggleSplit(splitId) {
+            const content = document.getElementById(splitId);
+            const icon = document.getElementById('icon-' + splitId);
+            
+            if (content && icon) {
+                // Check current state and toggle
+                const isCurrentlyShown = content.classList.contains('show');
+                
+                if (isCurrentlyShown) {
+                    // Hide the content with animation
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-10px)';
+                    
+                    setTimeout(() => {
+                        content.classList.remove('show');
+                        icon.style.transform = 'rotate(-90deg)';
+                    }, 150);
+                } else {
+                    // Show the content with animation
+                    content.classList.add('show');
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-15px) scale(0.98)';
+                    
+                    // Trigger the animation
+                    requestAnimationFrame(() => {
+                        content.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                        content.style.opacity = '1';
+                        content.style.transform = 'translateY(0) scale(1)';
+                        icon.style.transform = 'rotate(0deg)';
+                        
+                        // Add expanding class for additional effects
+                        const container = content.closest('.split-container');
+                        if (container) {
+                            container.classList.add('expanding');
+                            setTimeout(() => {
+                                container.classList.remove('expanding');
+                            }, 400);
+                        }
+                    });
+                    
+                    // Animate domain badges within the split with staggered delay
+                    setTimeout(() => {
+                        const domainBadges = content.querySelectorAll('.domain-badge');
+                        domainBadges.forEach((badge, index) => {
+                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.05}s both`;
+                        });
+                    }, 200);
+                }
+            }
+        }
+        
+        // Function to initialize chevron states and animations on page load
+        function initializeChevronStates() {
+            // Find all collapsible elements and set initial chevron states
+            document.querySelectorAll('[id^="split-"]').forEach(function(element) {
+                const splitId = element.id;
+                const icon = document.getElementById('icon-' + splitId);
+                
+                if (icon) {
+                    // Add transition class for smooth chevron rotation
+                    icon.classList.add('transition-transform');
+                    
+                    // Check if the element has 'show' class or is visible
+                    const isVisible = element.classList.contains('show');
+                    
+                    if (isVisible) {
+                        icon.style.transform = 'rotate(0deg)';
+                        // Set initial animation state for visible content
+                        element.style.opacity = '1';
+                        element.style.transform = 'translateY(0)';
+                    } else {
+                        icon.style.transform = 'rotate(-90deg)';
+                        // Set initial hidden state
+                        element.style.opacity = '0';
+                        element.style.transform = 'translateY(-10px)';
+                    }
+                }
+            });
+            
+            // Initialize domain badge animations for visible splits
+            document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
+                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.03}s both`;
+            });
+        }
+
+        // Function to copy all domains from a split container by extracting them from the DOM
+        function copyAllDomainsFromSplit(splitId, splitName) {
+            const splitContainer = document.getElementById(splitId);
+            if (!splitContainer) {
+                showToast('Split container not found', 'error');
+                return;
+            }
+            
+            // Extract domain names from the domain badges in the split container
+            const domainBadges = splitContainer.querySelectorAll('.domain-badge');
+            const domains = [];
+            
+            domainBadges.forEach(badge => {
+                // Get text content and remove the globe icon
+                const fullText = badge.textContent.trim();
+                // Remove the globe icon (which appears as a character) and any extra whitespace
+                const domainText = fullText.replace(/^\s*[\u{1F30D}\u{1F310}]?\s*/, '').trim();
+                if (domainText && domainText !== '') {
+                    domains.push(domainText);
+                }
+            });
+            
+            if (domains.length === 0) {
+                showToast(`No domains found in ${splitName}`, 'error');
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = domains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                showToast(`Copied ${domains.length} domains from ${splitName}`, 'success');
+            }).catch(() => {
+                showToast('Failed to copy domains', 'error');
+            });
+        }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
