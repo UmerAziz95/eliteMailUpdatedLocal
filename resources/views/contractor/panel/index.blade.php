@@ -547,7 +547,7 @@
                         <div class="d-flex align-items-center">
                             <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
                         </div>
-                        <span class="badge ${getStatusBadgeClass(order.status)} px-2 py-1 rounded-pill">${order.status}</span>
+                        ${order.status_manage_by_admin}
                     </div>
                     
                     <div class="row g-3">

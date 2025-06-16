@@ -301,14 +301,16 @@ class PanelController extends Controller
         try {
             $panel = Panel::findOrFail($panelId);
             
-            $orders = OrderPanel::with(['order.user', 'order.reorderInfo', 'orderPanelSplits'])
+            $orders = OrderPanel::with(['order.user','order', 'order.reorderInfo', 'orderPanelSplits'])
                 ->where('panel_id', $panelId)
                 ->orderBy('created_at', 'desc')
                 ->get();
+            
             $ordersData = $orders->map(function ($orderPanel) use ($request) {
                 $order = $orderPanel->order;
                 $splits = $orderPanel->orderPanelSplits;
                 $reorderInfo = $order->reorderInfo->first();
+            
                 
                 // Check if this order is assigned to the current user
                 $isAssignedToCurrentUser = false;
@@ -326,7 +328,7 @@ class PanelController extends Controller
                 }
 
                 // Get remaining order panels for the same order_id
-                $remainingOrderPanels = OrderPanel::with(['orderPanelSplits', 'panel'])
+                $remainingOrderPanels = OrderPanel::with(['orderPanelSplits','order', 'panel'])
                     ->where('order_id', $order->id)
                     ->where('id', '!=', $orderPanel->id) // Exclude current order panel
                     ->get()
@@ -380,6 +382,7 @@ class PanelController extends Controller
                     'order_panel_id' => $orderPanel->id,
                     'panel_id' => $orderPanel->panel_id,
                     'order_id' => $order->id ?? 'N/A',
+                    'timer_order'=>$order,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'space_assigned' => $orderPanel->space_assigned,
                     'inboxes_per_domain' => $orderPanel->inboxes_per_domain,
@@ -449,7 +452,9 @@ class PanelController extends Controller
                     'limit' => $panel->limit,
                     'remaining_limit' => $panel->remaining_limit,
                 ],
-                'orders' => $ordersData
+                'orders' => $ordersData,
+                
+
             ]);
 
         } catch (\Exception $e) {

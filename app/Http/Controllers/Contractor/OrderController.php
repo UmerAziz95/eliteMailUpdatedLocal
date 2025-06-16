@@ -1211,20 +1211,32 @@ class OrderController extends Controller
             // Get all panels for this order
             $allPanels = OrderPanel::where('order_id', $order->id)->get();
             
-            // Check if all panels are completed
-            $allCompleted = $allPanels->every(function ($panel) {
-                return $panel->status === 'completed';
+            // Check if any panel is rejected
+            $hasRejected = $allPanels->contains(function ($panel) {
+                return $panel->status === 'rejected';
             });
             
-            // If all panels are completed, update order status to "completed"
-            // Otherwise, update order status to "in-progress"
-            if ($allCompleted) {
-                if ($order->status_manage_by_admin !== 'completed') {
-                    $order->update(['status_manage_by_admin' => 'completed']);
+            // If any panel is rejected, update order status to "reject"
+            if ($hasRejected) {
+                if ($order->status_manage_by_admin !== 'reject') {
+                    $order->update(['status_manage_by_admin' => 'reject']);
                 }
             } else {
-                if ($order->status_manage_by_admin !== 'in-progress') {
+                // Check if all panels are completed
+                $allCompleted = $allPanels->every(function ($panel) {
+                    return $panel->status === 'completed';
+                });
+                
+                // If all panels are completed, update order status to "completed"
+                // Otherwise, update order status to "in-progress"
+                if ($allCompleted) {
+                    if ($order->status_manage_by_admin !== 'completed') {
+                    $order->update(['status_manage_by_admin' => 'completed']);
+                    }
+                } else {
+                    if ($order->status_manage_by_admin !== 'in-progress') {
                     $order->update(['status_manage_by_admin' => 'in-progress']);
+                    }
                 }
             }
         }

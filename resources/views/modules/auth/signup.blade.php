@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <title>@yield('title')</title>
+    <title>Signup</title>
+    <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
+    
     <link rel="stylesheet" href="{{ url('assets/style.css') }}">
     <!-- <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -162,7 +164,7 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
-                                            I agree to privacy policy & terms
+                                            I agree to privacy <a style="text-decoration:none" href="https://projectinbox.ai/privacy-policy">policy</a> & <a style="text-decoration:none" href="https://projectinbox.ai/terms-conditions">terms</a> 
                                         </label>
                                     </div>
                                 </div>
@@ -249,24 +251,24 @@
                     modal.show();
                 },
              error: function(xhr) {
-    submitBtn.prop("disabled", false).text("Register");
+            submitBtn.prop("disabled", false).text("Register");
 
-    if (xhr.status === 422) {
-        let errors = xhr.responseJSON.errors;
-        $.each(errors, function(key, value) {
-            toastr.error(value, 'Error');
-        });
-    } else if (xhr.status === 403) {
-      
-        toastr.error(xhr.responseJSON.message || 'User already exist! please login.');
-    } else {
-        toastr.error('An error occurred. Please try again.', 'Error');
-    }
-},
-                complete: function() {
-                    // Optional: In case you want to re-enable the button always at the end
-                    // submitBtn.prop("disabled", false).text("Register");
-                }
+            if (xhr.status === 422) {
+                let errors = xhr.responseJSON.errors;
+                $.each(errors, function(key, value) {
+                    toastr.error(value, 'Error');
+                });
+            } else if (xhr.status === 403) {
+            
+                toastr.error(xhr.responseJSON.message || 'User already exist! please login.');
+            }else if(xhr.status==419){
+                toastr.error('Session expired. Please try again.', 'Error');
+                window.location.reload();
+            } else {
+                toastr.error('An error occurred. Please try again.', 'Error');
+            }
+           },
+
             });
         });
     });
