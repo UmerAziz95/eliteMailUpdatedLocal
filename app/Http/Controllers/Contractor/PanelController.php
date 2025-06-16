@@ -103,6 +103,13 @@ class PanelController extends Controller
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
                     'status' => $orderPanels->first()->status ?? 'unallocated',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
                     'created_at' => $order->created_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
