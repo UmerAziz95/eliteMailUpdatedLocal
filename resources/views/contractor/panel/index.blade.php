@@ -333,15 +333,15 @@
         @keyframes pulseRed {
             0% {
                 box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.9);
-                transform: scale(1);
+                /* transform: scale(1); */
             }
             50% {
                 box-shadow: 0 0 0 4px rgba(220, 53, 69, 0);
-                transform: scale(1.05);
+                /* transform: scale(1.05); */
             }
             100% {
                 box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-                transform: scale(1);
+                /* transform: scale(1); */
             }
         }
 
