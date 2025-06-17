@@ -288,7 +288,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div style="background-color: #8d8d8d2c" class="rounded-2 py-1 px-3">
                                     <span class="d-block opacity-75">Total Inboxes</span>
-                                    <h3 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h3>
+                                    <h5 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h5>
                                 </div>
                                 <span style="background-color: var(--second-primary)"
                                     class="bg-opacity-25  px-3 py-1 rounded-2">
@@ -304,14 +304,14 @@
                                     <div style="background-color: #2ae6112c; width: fit-content;"
                                         class="px-3 py-1 rounded-2">
                                         <span class="d-block success">Active</span>
-                                        <h4 class="mb-0 success">{{ $activeInboxes ?? 0 }}</h4>
+                                        <h5 class="mb-0 success">{{ $activeInboxes ?? 0 }}</h5>
                                     </div>
                                 </div>
                                 <div class="col-6 d-flex justify-content-end">
                                     <div style="background-color: #e6b11138; width: fit-content;"
                                         class="px-3 py-1 rounded-2">
                                         <span class="d-block text-warning">Pending/Issue</span>
-                                        <h4 class="mb-0 text-warning">{{ $pendingInboxes ?? 0 }}</h4>
+                                        <h5 class="mb-0 text-warning">{{ $pendingInboxes ?? 0 }}</h5>
                                     </div>
                                 </div>
                             </div>
@@ -778,8 +778,8 @@
                     <div class="row pt-2">
                         <div class="">
                             <div class="">
-                                <h1 style="background-color: #19e32d2c; width: fit-content;"
-                                    class="mb-0 success fs-3 py-1 px-3 rounded-2">{{ $totalTickets ?? 0 }}</h1>
+                                <h1 style="background-color: #1926e32c; width: fit-content;"
+                                    class="mb-0 theme-text fs-3 py-1 px-3 rounded-2">{{ $totalTickets ?? 0 }}</h1>
                                 {{-- <p class="mb-0">Total Tickets</p> --}}
                             </div>
                             <div id="ticketPieChart"></div>
