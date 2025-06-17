@@ -274,7 +274,7 @@
         .timer-badge:hover::after {
             content: attr(data-tooltip);
             position: absolute;
-            bottom: 100%;
+            top: 100%;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.9);
@@ -284,7 +284,7 @@
             font-size: 11px;
             white-space: nowrap;
             z-index: 1000;
-            margin-bottom: 5px;
+            margin-top: 5px;
         }
 
         .timer-badge:hover::before {
@@ -357,6 +357,13 @@
             50% {
                 transform: rotate(360deg);
             }
+        }
+
+        /* Offcanvas title timer badge styling */
+        .offcanvas-title .timer-badge {
+            font-size: 11px;
+            margin-left: 0.75rem;
+            vertical-align: middle;
         }
     </style>
 @endpush
@@ -932,6 +939,12 @@
                     document.body.classList.remove('offcanvas-open');
                     document.body.style.overflow = '';
                     document.body.style.paddingRight = '';
+                    
+                    // Reset offcanvas title
+                    const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+                    if (offcanvasTitle) {
+                        offcanvasTitle.innerHTML = 'Order Details';
+                    }
                 }, { once: true });
                 
                 offcanvas.show();
@@ -984,13 +997,21 @@
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
 
+            // Update offcanvas title with timer
+            const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+            if (offcanvasTitle && orderInfo) {
+                offcanvasTitle.innerHTML = `
+                    Order Details #${orderInfo.id} 
+                `;
+            }
+
             const splitsHtml = `
                 <div class="mb-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6>
-                                Order #${orderInfo.id}
                                 ${orderInfo.status_manage_by_admin}
+                                ${createTimerBadge(orderInfo)}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
