@@ -63,6 +63,9 @@ html.dark-theme .logo-light {
 }
 
 
+.number {
+    font-family: "Space Grotesk"
+}
 
 ::-webkit-scrollbar {
     background-color: var(--secondary-color);

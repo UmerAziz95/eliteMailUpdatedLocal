@@ -254,6 +254,10 @@
             opacity: 0;
             transform: translateX(-100%);
         }
+
+        h6 {
+            font-family: "Montserrat"
+        }
     </style>
 @endpush
 
@@ -288,7 +292,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div style="background-color: #8d8d8d2c" class="rounded-2 py-1 px-3">
                                     <span class="d-block opacity-75">Total Inboxes</span>
-                                    <h5 class="mb-0 mt-1">{{ $totalInboxes ?? 0 }}</h5>
+                                    <h5 class="mb-0 mt-1 number">{{ $totalInboxes ?? 0 }}</h5>
                                 </div>
                                 <span style="background-color: var(--second-primary)"
                                     class="bg-opacity-25  px-3 py-1 rounded-2">
@@ -304,14 +308,14 @@
                                     <div style="background-color: #2ae6112c; width: fit-content;"
                                         class="px-3 py-1 rounded-2">
                                         <span class="d-block success">Active</span>
-                                        <h5 class="mb-0 success">{{ $activeInboxes ?? 0 }}</h5>
+                                        <h5 class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
                                     </div>
                                 </div>
                                 <div class="col-6 d-flex justify-content-end">
                                     <div style="background-color: #e6b11138; width: fit-content;"
                                         class="px-3 py-1 rounded-2">
                                         <span class="d-block text-warning">Pending/Issue</span>
-                                        <h5 class="mb-0 text-warning">{{ $pendingInboxes ?? 0 }}</h5>
+                                        <h5 class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
                                     </div>
                                 </div>
                             </div>
@@ -906,10 +910,10 @@
                     <!-- heading  -->
                     <div class=" border-0 d-flex justify-content-between">
                         <div class=" mb-0">
-                            <h5 class="mb-1 fw-bold fs-6">
+                            <h6 class="mb-1 fw-bold fs-6">
                                 <i class="fa-solid fa-square-person-confined"></i>
                                 Recent Activity
-                            </h5>
+                            </h6>
                         </div>
                     </div>
                     <div class="table-responsive">
