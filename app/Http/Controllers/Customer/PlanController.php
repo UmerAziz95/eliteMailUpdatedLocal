@@ -185,11 +185,11 @@ class PlanController extends Controller
                     "billing_address" => [
                         "first_name" => $user->first_name,
                         "last_name" => "",
-                        "line1" => $user->billing_address ?? "", // Default value
-                        "city" => $user->billing_city ?? "", // Default value
-                        "state" => $user->billing_state ?? "", // Default value
-                        "zip" => $user->billing_zip ?? "", // Default value
-                        "country" => $user->billing_country ?? "", // Default value
+                        "line1" => "Address Line 1", // Default value
+                        "city" => "City", // Default value
+                        "state" => "State", // Default value
+                        "zip" => "12345", // Default value
+                        "country" => "US" // Default value
                     ],
                     "allow_plan_change" => true,
                     "redirect_url" => route('subscription.success'),
