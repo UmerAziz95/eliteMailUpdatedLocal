@@ -102,7 +102,7 @@ class PanelController extends Controller
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
-                    'status' => $orderPanels->first()->status ?? 'unallocated',
+                    'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
@@ -111,6 +111,7 @@ class PanelController extends Controller
                             . ucfirst($status) . '</span>';
                     })(),
                     'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
@@ -180,12 +181,13 @@ class PanelController extends Controller
                     'id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
-                    'status' => $orderPanels->first()->status ?? 'pending',
+                    'completed_at' => $order->completed_at,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
                         $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                        return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                             . ucfirst($status) . '</span>';
                     })(),
                 ],

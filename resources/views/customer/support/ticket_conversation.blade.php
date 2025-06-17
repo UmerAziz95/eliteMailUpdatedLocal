@@ -34,12 +34,12 @@
     }
 
     .sent .message-content {
-        background-color: #7267ef6c;
+        background-color: #2e20c343;
         color: white;
     }
 
     .received .message-content {
-        background-color: #64738c;
+        background-color: #64738c47;
         color: #333;
     }
 
@@ -120,6 +120,18 @@
         overflow: hidden;
         white-space: nowrap;
     }
+
+    .bg-warning {
+        background-color: rgba(255, 166, 0, 0.261) !important;
+        color: orange !important;
+        border-radius: 2px !important
+    }
+
+    .bg-success {
+        background-color: rgba(157, 255, 0, 0.261) !important;
+        color: rgb(13, 220, 13) !important;
+        border-radius: 2px !important
+    }
 </style>
 @endpush
 
@@ -129,7 +141,7 @@
         <a href="{{ route('customer.support') }}" class="btn btn-sm btn-secondary me-3">
             <i class="fas fa-arrow-left"></i> Back to Tickets
         </a>
-        <h4 class="mb-0">Ticket #{{ $ticket->ticket_number }}</h4>
+        <h4 class="mb-0 theme-text">Ticket #{{ $ticket->ticket_number }}</h4>
     </div>
 
     <div class="row">
@@ -259,7 +271,7 @@
                     <h6 class="card-title">Ticket Information</h6>
                     <div class="mb-3">
                         <small class="opacity-50">Category</small>
-                        <p>{{ ucfirst($ticket->category) }}</p>
+                        <p class="small">{{ ucfirst($ticket->category) }}</p>
                     </div>
                     <div class="mb-3">
                         <small class="opacity-50">Priority</small>
@@ -281,11 +293,11 @@
                     </div>
                     <div class="mb-3">
                         <small class="opacity-50">Created</small>
-                        <p>{{ $ticket->created_at->format('M d, Y H:i') }}</p>
+                        <p class="small">{{ $ticket->created_at->format('M d, Y H:i') }}</p>
                     </div>
                     <div class="mb-3">
                         <small class="opacity-50">Last Updated</small>
-                        <p>{{ $ticket->updated_at->format('M d, Y H:i') }}</p>
+                        <p class="small">{{ $ticket->updated_at->format('M d, Y H:i') }}</p>
                     </div>
                 </div>
             </div>

@@ -12,6 +12,7 @@ class Order extends Model
     protected $casts = [
         'meta' => 'array',
         'last_draft_notification_sent_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
     protected $fillable = [
         'user_id',
@@ -26,7 +27,8 @@ class Order extends Model
         'plan_id',
         'status_manage_by_admin',
         'reason',
-        'last_draft_notification_sent_at'
+        'last_draft_notification_sent_at',
+        'completed_at'
     ];
     
     // status_manage_by_admin
