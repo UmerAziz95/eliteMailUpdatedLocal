@@ -135,7 +135,7 @@
 
                                     <div>
                                         <a href="{{ route('password.request') }}"
-                                            class="theme-text text-decoration-none">Forget
+                                            class="theme-text text-decoration-none">Forgot
                                             Password?</a>
                                     </div>
                                 </div>

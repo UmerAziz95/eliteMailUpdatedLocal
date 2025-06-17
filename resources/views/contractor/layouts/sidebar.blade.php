@@ -54,7 +54,7 @@
             </a>
         </li> -->
 
-        <!-- Support -->
+        <!-- Support --> 
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.support') ? 'active' : '' }}"
                 href="{{ route('contractor.support') }}">
@@ -65,15 +65,16 @@
             </a>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panels.index') ? 'active' : '' }}"
-                href="{{ route('contractor.panels.index') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
-                    <div class="text">Panel</div>
-                </div>
-            </a>
-        </li>
+<li class="nav-item">
+    <a href="{{ route('contractor.panels.index') }}"
+       class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panels.index') ? 'active' : '' }}">
+        <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-layout-dashboard fs-5"></i>
+            <span class="text">Panel</span>
+        </div>
+    </a>
+</li>
+
         
 
         {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
@@ -88,134 +89,12 @@
             </a>
         </li>
 
-        <!-- Users -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('customers') ? 'active' : '' }}"
-                href="{{ url('customers') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-headphones fs-5"></i></div>
-                    <div class="text">Customers</div>
-                </div>
-            </a>
-        </li>
+    
 
-        <!-- Contractors -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contractor') ? 'active' : '' }}"
-                href="{{ url('contractor') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-contract fs-5"></i></div>
-                    <div class="text">Contractors</div>
-                </div>
-            </a>
-        </li>
+       
 
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
-        </p>
-        <!-- Roles -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('roles') ? 'active' : '' }}"
-                href="{{ url('roles') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-circles fs-5"></i></div>
-                    <div class="text">Roles</div>
-                </div>
-            </a>
-        </li>
-
-        <!-- Permissions -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('permissions') ? 'active' : '' }}"
-                href="{{ url('permissions') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-pointer-pause fs-5"></i></div>
-                    <div class="text">Permissions</div>
-                </div>
-            </a>
-        </li>
-
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Website settings</p>
-        <!-- Pages -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
-                data-bs-toggle="collapse" href="#pages" role="button" aria-expanded="false">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-clipboard fs-5"></i></div>
-                    <div class="text">Pages</div>
-                </div>
-                <i class="fa-solid fa-chevron-right rotate-icon"></i>
-            </a>
-            <ul class="collapse list-unstyled" id="pages">
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
-                            class="circle"></span> Faq</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
-                            class="circle"></span> Pricing</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
-                            class="circle"></span> Teams</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px" href="{{ url('/') }}"><span
-                            class="circle"></span> Projects</a></li>
-            </ul>
-        </li>
-
-        <!-- Front Pages -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
-                data-bs-toggle="collapse" href="#front_pages" role="button" aria-expanded="false">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-brand-pagekit fs-5"></i></div>
-                    <div class="text">Front Pages</div>
-                </div>
-                <i class="fa-solid fa-chevron-right rotate-icon"></i>
-            </a>
-            <ul class="collapse list-unstyled" id="front_pages">
-                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                            class="circle"></span> Home</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                            class="circle"></span> Why Us</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                            class="circle"></span> Pricing</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                            class="circle"></span> Contact</a></li>
-                <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                            class="circle"></span> Testimonials</a></li>
-            </ul>
-        </li>
-
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
-        <!-- Pricing -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
-                href="{{ url('pricing') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                    <div class="text">Pricing</div>
-                </div>
-            </a>
-        </li>
-
-        <!-- Payments -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('payments') ? 'active' : '' }}"
-                href="{{ url('payments') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-wallet fs-5"></i></div>
-                    <div class="text">Payments</div>
-                </div>
-            </a>
-        </li>
-
-        <!-- Orders -->
-        <li class="nav-item">
-            <a class="nav-link px-3 d-flex align-items-center {{ request()->is('orders') ? 'active' : '' }}"
-                href="{{ url('orders') }}">
-                <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-details"></i></div>
-                    <div class="text">Orders</div>
-                </div>
-            </a>
-        </li>
-
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
+       
+    <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
         <!-- Support -->
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contact_us') ? 'active' : '' }}"
@@ -239,13 +118,7 @@
         </li> --}}
     </ul>
 
-    {{-- <div class="counter_1 p-4 rounded-3 mt-5">
-        <div class="d-flex flex-column">
-            <h6 class="mb-1">Do you want to buy more inboxes from here?</h6>
-            <small>Click here to buy more inboxes</small>
-        </div>
-        <button class="m-btn mt-3 border-0 py-2 px-4">Buy Now</button>
-    </div> --}}
+   
 </aside>
 
 <script>
