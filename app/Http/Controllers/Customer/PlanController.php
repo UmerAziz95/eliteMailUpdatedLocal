@@ -306,21 +306,21 @@ class PlanController extends Controller
 
           
 
-            if(!Auth::check()){
-                $unauthorized_user = session()->get('unauthorized_session');
-                $user=User::where('email',$unauthorized_user->email)->first();
-                $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-                $user->password=Hash::make($randomPassword);
-                $user->status=1;
-                $user->save();
-                Auth::login($user);
-                session()->forget('unauthorized_session');
-            try {
-            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-             } catch (\Exception $e) {
-               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-              }
-            }   
+            // if(!Auth::check()){
+            //     $unauthorized_user = session()->get('unauthorized_session');
+            //     $user=User::where('email',$unauthorized_user->email)->first();
+            //     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+            //     $user->password=Hash::make($randomPassword);
+            //     $user->status=1;
+            //     $user->save();
+            //     Auth::login($user);
+            //     session()->forget('unauthorized_session');
+            // try {
+            // Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
+            //  } catch (\Exception $e) {
+            //    Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
+            //   }
+            // }   
          
             
 
