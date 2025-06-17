@@ -1347,4 +1347,110 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    
+    public function getAssignedOrdersData(Request $request)
+    {
+        try {
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
+                ->whereHas('orderPanels');
+
+            // Apply filters if provided
+            if ($request->filled('order_id')) {
+                $query->where('id', 'like', '%' . $request->order_id . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->whereHas('orderPanels', function($q) use ($request) {
+                    $q->where('status', $request->status);
+                });
+            }
+
+            if ($request->filled('min_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '>=', $request->min_inboxes);
+                });
+            }
+
+            if ($request->filled('max_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '<=', $request->max_inboxes);
+                });
+            }
+
+            // Apply ordering
+            $order = $request->get('order', 'desc');
+            $query->orderBy('id', $order);
+
+            // Pagination parameters
+            $perPage = $request->get('per_page', 12); // Default 12 orders per page
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedOrders = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Format orders data for the frontend
+            $ordersData = $paginatedOrders->getCollection()->map(function ($order) {
+                $reorderInfo = $order->reorderInfo->first();
+                $orderPanels = $order->orderPanels;
+                
+                // Calculate total domains count from all splits
+                $totalDomainsCount = 0;
+                $totalInboxes = 0;
+                
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        if ($split->domains && is_array($split->domains)) {
+                            $totalDomainsCount += count($split->domains);
+                        }
+                        $totalInboxes += $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
+                    }
+                }
+                
+                $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
+                
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
+                    'inboxes_per_domain' => $inboxesPerDomain,
+                    'total_domains' => $totalDomainsCount,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                    'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
+                    'order_panels_count' => $orderPanels->count(),
+                    'splits_count' => $orderPanels->sum(function($panel) {
+                        return $panel->orderPanelSplits->count();
+                    })
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $ordersData,
+                'pagination' => [
+                    'current_page' => $paginatedOrders->currentPage(),
+                    'last_page' => $paginatedOrders->lastPage(),
+                    'per_page' => $paginatedOrders->perPage(),
+                    'total' => $paginatedOrders->total(),
+                    'has_more_pages' => $paginatedOrders->hasMorePages(),
+                    'from' => $paginatedOrders->firstItem(),
+                    'to' => $paginatedOrders->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching orders data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

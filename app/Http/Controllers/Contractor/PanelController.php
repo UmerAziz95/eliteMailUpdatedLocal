@@ -140,6 +140,7 @@ class PanelController extends Controller
             ], 500);
         }
     }
+    
 
     public function getOrderSplits($orderId, Request $request)
     {
