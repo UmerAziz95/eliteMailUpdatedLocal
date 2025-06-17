@@ -1,6 +1,39 @@
 @extends('customer.layouts.app')
 @push('styles')
     <style>
+        h1 {
+            font-family: "Montserrat";
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(0deg, #f6f6f7, #7e808f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin-top: 0;
+            margin-bottom: 0;
+            font-size: 3.5em;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        header {
+            background-image: url('https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682746cfd17013f9e1df8695_Qi3BAFZ1SJONCSiPk3u43ulmBhw.png');
+            background-position: 50% 80%;
+            background-size: 65%;
+            background-repeat: no-repeat;
+        }
+
+        p {
+            color: var(--light-color);
+            font-family: "Montserrat";
+        }
+
+        h4, h2 {
+            font-family: "Montserrat"
+        }
+
+        li {
+            font-family: "Montserrat"
+        }
+
         .pricing-card {
             border-radius: 25px;
             padding: 40px 30px;
@@ -105,9 +138,14 @@
             bottom: -55px;
         }
 
-        .subscribe-btn {
-            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+        .subscribe-btn span {
+            font-family: "Montserrat";
+            font-weight: 500
         }
+
+        /* .subscribe-btn {
+            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+        } */
 
         @media (max-width: 1400px) {
             .pricing-card {
@@ -156,12 +194,16 @@
                     </h2>
                 </div>
             </div> --}}
+            <header class="text-center pb-5">
+                <h1 class="text-center mb-3">Simple And Fexible Pricing</h1>
+                <p style="font-size: 18px" class="mb-0">Lightning-fast email setup. Unlimited Inboxes.</p>
+                <p style="font-size: 18px">Our email infrastructure is built for <strong>speed</strong> and <strong>reliability</strong>.</p>
+            </header>
         </div>
 
         <div class="">
-            {{-- <h2 class="text-center mb-4">Choose Your Plan</h2> --}}
             @if (count($plans) > 0)
-                <div id="plans-container" class="plans">
+                <div id="plans-container" class="plans px-xl-5">
                     @foreach ($plans as $plan)
                         <div id="plan-{{ $plan->id }}">
                             <div
@@ -174,10 +216,12 @@
                                             </div>
                                         </div> --}}
                                         <div>
-                                            <h4 class="fw-bold text-white plan-name text-uppercase fs-5">{{ $plan->name }}</h4>
+                                            <h4 style="font-size: 28px; font-weight: 500" class="text-white plan-name text-capitalize">
+                                                {{ $plan->name }}
+                                            </h4>
                                             <div class="mb-3 ">
-                                                <span>
-                                                    <span>{{ $plan->min_inbox }}
+                                                <span style="font-family: Montserrat">
+                                                    <span style="font-family: Montserrat">{{ $plan->min_inbox }}
                                                         {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
                                                     Inboxes
                                                 </span>
@@ -185,19 +229,20 @@
 
                                             {{-- <small class="plan-description text-capitalize opacity-75"
                                                 style="line-height: 1px !important">{{ $plan->description }}</small> --}}
-                                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4">
+                                            <h2 style="font-family: Space Grotesk; font-size: 56px;" class="fw-bold plan-price theme-text mb-4 d-flex gap-1 align-items-center mb-0">
                                                 ${{ number_format($plan->price, 2) }}
-                                                <span class="fw-light text-white" style="font-size: 12px">
+                                                <span class="fw-light text-white mt-3 opacity-75" style="font-size: 17px; font-family: Space Grotesk;">
                                                     /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
                                                     per Inboxes
                                                 </span>
                                             </h2>
                                             <ul class="list-unstyled features-list">
                                                 @foreach ($plan->features as $feature)
-                                                    <li style="font-size: 14px"
-                                                        class="mb-2 d-flex align-items-center gap-2">
+                                                    <li style="font-size: 16px; margin-bottom: 12px"
+                                                        class="d-flex align-items-center gap-2">
                                                         <div>
-                                                            <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png" width="20" alt="">
+                                                            <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
+                                                                width="25" alt="">
                                                         </div>
                                                         {{ $feature->title }} {{ $feature->pivot->value }}
                                                     </li>
@@ -205,7 +250,7 @@
                                             </ul>
                                         </div>
 
-                                        <button class="btn btn-primary border-0 subscribe-btn w-100 mt-4"
+                                        <button class="btn btn-primary py-2 border-0 subscribe-btn w-100 mt-4"
                                             data-plan-id="{{ $plan->id }}">
                                             <span class="btn-text">Subscribe Now</span>
                                             <span class="spinner-border spinner-border-sm d-none ms-2" role="status"

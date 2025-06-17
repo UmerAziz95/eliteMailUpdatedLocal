@@ -94,18 +94,6 @@ table {
     color: var(--text-color);
 }
 
-.badge.bg-success {
-    background-color: transparent !important;
-    border: 1px solid green;
-    color: rgb(13, 180, 13);
-}
-
-table {
-    .text-success, .text-warning, .text-info, text-danger {
-        font-size: 10px !important;
-    }
-}
-
 .success {
     color: rgb(4, 229, 154) !important
 }
@@ -122,7 +110,7 @@ a {
 
 .counters {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 20px;
 }
 
@@ -157,11 +145,9 @@ a {
 .filter {
     /* background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%); */
     /* background-color: var(--second-primary) !important; */
-    /* background-color: var(--filter-color) !important; */
-    background-color: var(--secondary-color);
+    background-color: var(--filter-color) !important;
     border-radius: 8px;
-    border: 1px solid #99999962;
-    /* border: 1px solid var(--second-primary); */
+    border: 1px solid var(--second-primary);
     backdrop-filter: blur(10px);
 }
 
