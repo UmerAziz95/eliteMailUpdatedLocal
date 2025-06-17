@@ -76,8 +76,6 @@ class SendDraftOrderNotifications extends Command
                     $this->line("🔍 [DRY RUN] Would send email to: {$order->user->email} for Order #{$orderId}");
                 } else {
                     // Send the email
-                    $order->user->email = "contact.farooq.raaj@gmail.com";
-                    
                     // Mail::to($order->user->email)->queue(new DraftOrderNotificationMail($order, $order->user));
                     Mail::to($order->user->email)->later(now()->addMinutes(1), new DraftOrderNotificationMail($order, $order->user));
                     // Update the notification timestamp
