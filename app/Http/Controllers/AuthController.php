@@ -69,7 +69,23 @@ class AuthController extends Controller
         ]);
     
         $remember = $request->has('remember');
-    
+        
+        // First login attempt - check credentials before any other validations
+        if (Auth::attempt($credentials, $remember)) {
+            // Store successful login attempt temporarily
+            $loginSuccessful = true;
+        } else {
+            $loginSuccessful = false;
+        }
+        
+        // If login failed, return early with error
+        if (!$loginSuccessful) {
+            return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
+        }
+        
+        // Logout immediately to perform additional checks
+        Auth::logout();
+
         $userCheck=User::where('email',$request->email)->first();
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
@@ -98,7 +114,10 @@ class AuthController extends Controller
         
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
         if(!$userSubsc){
-            return redirect()->route('plans.public', ['encrypted' => '']);
+            // If user has no subscription, redirect to plans/public with encrypted user info
+            $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            return redirect()->to('/plans/public/' . $encrypted);
         }
        
         if (Auth::attempt($credentials, $remember)) {
@@ -186,41 +205,47 @@ class AuthController extends Controller
             'password_confirmation' => 'required',
         ]);
 
-
+        // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
         if ($existingUser) {
-        $userSubs=Subscription::where('user_id',$existingUser->id)->first();
-        if($userSubs){
             return response()->json([
-                        'message' => 'Account already exists. Please login.',
-                    ], 403);
+                'message' => 'Account already exists. Please login.',
+            ], 403);
+        }
+        $existingUser = User::where('email', $data['email'])->first();
+        if ($existingUser) {
+            $userSubs=Subscription::where('user_id',$existingUser->id)->first();
+            if($userSubs){
+                return response()->json([
+                    'message' => 'Account already exists. Please login.',
+                ], 403);
             }
             else {
-            // Email verification code
-            $verificationCode = rand(1000, 9999);
-            $existingUser->email_verification_code = $verificationCode;
-            $existingUser->save();
+                // Email verification code
+                $verificationCode = rand(1000, 9999);
+                $existingUser->email_verification_code = $verificationCode;
+                $existingUser->save();
 
-            $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
-            $encrypted = Crypt::encryptString($payload);
-            $verificationLink =url('/plans/public/' . $encrypted);
+                $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+                $encrypted = Crypt::encryptString($payload);
+                $verificationLink =url('/plans/public/' . $encrypted);
             
 
-            try {
-                Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
-            } catch (\Exception $e) {
-                Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
-            }
+                try {
+                    Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                }
 
-            return response()->json([
-                'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
-                'redirect' => $this->redirectTo($existingUser),
-                'user' => $existingUser,
-                'verificationLink'=>$verificationLink
-            ], 200);
+                return response()->json([
+                    'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+                    'redirect' => $this->redirectTo($existingUser),
+                    'user' => $existingUser,
+                    'verificationLink'=>$verificationLink
+                ], 200);
             }
         
-        } 
+        }
 
 
 
