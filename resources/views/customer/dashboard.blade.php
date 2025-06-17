@@ -273,7 +273,7 @@
     <section class="py-3">
         <div class="row gy-4">
             <!-- Inbox Statistics -->
-            <div class="col-4">
+            <div class="col-md-6 col-lg-4">
                 <div class=" inbox overflow-hidden h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-1 mb-3">
@@ -592,7 +592,7 @@
                                 </div> -->
 
 
-            <div class="col-4">
+            <div class="col-md-6 col-lg-4">
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-1 fw-bold">
@@ -680,7 +680,7 @@
                                 </div> -->
 
 
-            <div class="col-4">
+            <div class="col-md-6 col-lg-4">
                 <div class="card h-100 p-3">
                     <div class="border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -753,7 +753,7 @@
 
 
 
-            <div class="col-4">
+            <div class="col-md-6 col-lg-4">
                 <div class="card h-100 p-3">
                     <div class="border-0">
                         <div class="card-title mb-1">
@@ -783,7 +783,7 @@
                                 {{-- <p class="mb-0">Total Tickets</p> --}}
                             </div>
                             <div id="ticketPieChart"></div>
-                            <ul class="p-0 m-0 d-flex gap-3 align-items-center justify-content-between">
+                            <ul class="p-0 m-0 gap-3" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));">
                                 <li style="background-color: #8d8d8d2c"
                                     class="d-flex gap-2 align-items-center p-2 rounded-2 w-100">
                                     <div class="badge rounded bg-label-primary p-1">
@@ -870,7 +870,7 @@
                                 </div> -->
 
             <!-- Order History -->
-            <div class="col-8">
+            <div class="col-lg-8">
                 <div class="card p-3" style="max-height: 28.7rem">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -1264,7 +1264,7 @@
                     },
                     {
                         data: 'status',
-                        name: 'orders.status'
+                        name: 'orders.status',
                     }
                 ],
                 order: [
