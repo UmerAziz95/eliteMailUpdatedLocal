@@ -1,3 +1,3 @@
 <footer class="text-center p-3 mt-4 rounded-3">
-    <p class="mb-0">&copy; {{ date('Y') }} Projectinbox.ai All rights reserved.</p>
+    <p class="mb-0">&copy; {{ date('Y') }} Project inbox.ai All rights reserved.</p>
 </footer>
