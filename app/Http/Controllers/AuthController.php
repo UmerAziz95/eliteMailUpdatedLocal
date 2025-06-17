@@ -95,10 +95,9 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Please verify your account. Unable to send verification email at this time. Please try again later.']);
             }
         }
-
+        
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
         if(!$userSubsc){
-           
             return redirect()->route('plans.public', ['encrypted' => '']);
         }
        
@@ -460,6 +459,28 @@ public function sendResetLink(Request $request)
 
         
         public function viewPublicPlans(Request $request,$encrypted){
+            
+            // If encrypted parameter is provided, verify and update user status
+            if($encrypted) {
+                try {
+                    $decrypted = Crypt::decryptString($encrypted);
+                    [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+
+                    $user = User::where('email', $email)->first();
+                    if ($user && $user->status == 0) {
+                        // Update user status to 1 (verified/active)
+                        $user->status = 1;
+                        $user->save();
+                        
+                        Log::info('User status updated to active via public plans access', [
+                            'user_id' => $user->id,
+                            'email' => $user->email
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to decrypt verification link in viewPublicPlans: ' . $e->getMessage());
+                }
+            }
          
             $getMostlyUsed = Plan::getMostlyUsed();
             $plans = Plan::with('features')->where('is_active', true)->get();
