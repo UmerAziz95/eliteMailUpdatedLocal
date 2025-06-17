@@ -99,7 +99,7 @@
         /* Order card styling */
         .order-card {
             transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.1);
+            border: 1px solid rgba(140, 140, 140, 0.362);
         }
 
         .order-card:hover {
@@ -169,7 +169,7 @@
         }
 
         /* Split fade-in animation */
-        @keyframes splitFadeIn {
+        /* @keyframes splitFadeIn {
             0% {
                 opacity: 0;
                 transform: translateY(-15px) scale(0.98);
@@ -186,7 +186,6 @@
             }
         }
 
-        /* Domain badge animations */
         @keyframes domainFadeIn {
             0% {
                 opacity: 0;
@@ -204,7 +203,6 @@
             }
         }
 
-        /* Toast animations */
         @keyframes toastSlideIn {
             0% {
                 opacity: 0;
@@ -215,14 +213,12 @@
                 opacity: 1;
                 transform: translateX(0) scale(1);
             }
-        }
+        } */
 
-        /* Chevron rotation animation */
         .transition-transform {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Enhanced hover effects for domain badges */
         .domain-badge {
             will-change: transform, box-shadow;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -234,7 +230,6 @@
             filter: brightness(1.1);
         }
 
-        /* Split container animations */
         .split-container {
             transition: all 0.3s ease;
         }
@@ -243,7 +238,7 @@
             animation: splitExpand 0.4s ease-out;
         }
 
-        @keyframes splitExpand {
+        /* @keyframes splitExpand {
             0% {
                 transform: scale(0.98);
             }
@@ -253,7 +248,7 @@
             100% {
                 transform: scale(1);
             }
-        }
+        } */
 
         /* Timer badge styling */
         .timer-badge {
@@ -297,7 +292,7 @@
         }
 
         /* Pulse animation for overdue timers */
-        @keyframes pulse-red {
+        /* @keyframes pulse-red {
             0% {
                 box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
             }
@@ -308,7 +303,7 @@
             100% {
                 box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
             }
-        }
+        } */
 
         /* Timer icon styling */
         .timer-icon {
@@ -375,7 +370,7 @@
             </div>
         </div>  
         <!-- Grid Cards (Dynamic) -->
-        <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+        <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
             <!-- Loading state -->
             <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                 <div class="spinner-border text-primary" role="status">
@@ -522,7 +517,7 @@
                 // Keep the grid display but show only loading element
                 container.style.display = 'grid';
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-                container.style.gap = '1rem';
+                container.style.gap = '30px';
                 
                 // Clear any existing content except loading
                 container.innerHTML = '';
@@ -551,9 +546,10 @@
             // Keep grid layout but show error spanning full width
             container.style.display = 'grid';
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-            container.style.gap = '1rem';
+            container.style.gap = '30px';
             
-            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
@@ -578,9 +574,10 @@
                 // Keep grid layout but show empty state spanning full width
                 container.style.display = 'grid';
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-                container.style.gap = '1rem';
+                container.style.gap = '30px';
                 
-                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                         <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
                         <h5>No Orders Found</h5>
                         <p class="mb-3">No orders match your current filters.</p>
@@ -592,7 +589,7 @@
             // Reset container to grid layout for orders
             container.style.display = 'grid';
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-            container.style.gap = '1rem';
+            container.style.gap = '30px';
 
             if (append) {
                 // Only add new orders for pagination
@@ -624,10 +621,10 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-user text-info" style="font-size: 12px;"></i>
+                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
+                                    <i class="fas fa-user" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="d-flex flex-column gap-0">
                                     <small class="text-white opacity-75 d-block" style="font-size: 10px;">Customer</small>
                                     <small class="fw-bold text-white" style="font-size: 12px;">${order.customer_name}</small>
                                 </div>
@@ -635,10 +632,10 @@
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-inbox text-success" style="font-size: 12px;"></i>
+                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
+                                    <i class="fas fa-inbox" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="d-flex flex-column gap-0">
                                     <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
                                     <small class="fw-bold text-white" style="font-size: 12px;">${order.total_inboxes}</small>
                                 </div>
@@ -646,10 +643,10 @@
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-divide text-warning" style="font-size: 12px;"></i>
+                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
+                                    <i class="fas fa-divide" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="d-flex flex-column gap-0">
                                     <small class="text-white opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
                                     <small class="fw-bold text-white" style="font-size: 12px;">${order.inboxes_per_domain}</small>
                                 </div>
@@ -657,10 +654,10 @@
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-globe text-primary" style="font-size: 12px;"></i>
+                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
+                                    <i class="fas fa-globe" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="d-flex flex-column gap-0">
                                     <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
                                     <small class="fw-bold text-white" style="font-size: 12px;">${order.total_domains}</small>
                                 </div>
@@ -670,10 +667,10 @@
                     
                     <div class="d-flex align-items-center justify-content-between mt-2">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-calendar-alt text-white opacity-75 me-1" style="font-size: 11px;"></i>
-                            <small class="text-white opacity-75">${formatDate(order.created_at)}</small>
+                            <i class="fas fa-calendar-alt me-1" style="font-size: 12px;"></i>
+                            <small class="" style="font-size: 12px">${formatDate(order.created_at)}</small>
                         </div>
-                        <button class="btn btn-sm btn-primary px-3 rounded-pill fw-bold" 
+                        <button class="btn btn-sm btn-primary px-3 rounded-2 fw-bold" 
                                 onclick="viewOrderSplits(${order.order_id})" 
                                 data-bs-toggle="offcanvas" 
                                 data-bs-target="#order-splits-view"
@@ -1038,7 +1035,7 @@
                     <div class="col-md-6">
                         <div class="card p-3 mb-3">
                             <h6 class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 30px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-regular fa-envelope"></i>
                                 </div>
                                 Email configurations
@@ -1078,7 +1075,7 @@
                     <div class="col-md-6">
                         <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
                             <h6 class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 30px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-solid fa-earth-europe"></i>
                                 </div>
                                 Domains &amp; Configuration
