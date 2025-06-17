@@ -165,7 +165,7 @@
                     @foreach ($plans as $plan)
                         <div id="plan-{{ $plan->id }}">
                             <div
-                                class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+                                class="pricing-card h-100 {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
                                 <div class="inner-content d-flex flex-column justify-content-between">
                                     <div>
                                         {{-- <div class="d-flex align-items-center justify-content-center mb-0">
