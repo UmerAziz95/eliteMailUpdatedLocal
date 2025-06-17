@@ -60,11 +60,11 @@
         animation: shimmer 3s infinite;
     }
 
-    .draft-alert:hover {
+    /* .draft-alert:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         transition: all 0.3s ease;
-    }
+    } */
 
     .draft-alert .alert-icon {
         animation: bounce 1s infinite;
@@ -91,10 +91,10 @@
 
     @keyframes pulse {
         0%, 100% {
-            border-color: var(--second-primary);
+            /* border-color: var(--second-primary); */
         }
         50% {
-            border-color: #ffc107;
+            /* border-color: #ffc107; */
             box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
         }
     }
@@ -135,7 +135,7 @@
 @section('content')
 <!-- Draft Orders Notification -->
 @if(isset($draftOrders) && $draftOrders > 0)
-    <div class="alert alert-warning alert-dismissible fade show draft-alert" role="alert" style="background-color: var(--second-primary); color: #fff; border: 2px solid var(--second-primary);">
+    <div class="alert alert-warning alert-dismissible fade show draft-alert" role="alert" style="background-color: rgba(255, 166, 0, 0.359); color: #fff; border: 2px solid orange;">
         <i class="ti ti-alert-triangle me-2 alert-icon"></i>
         <strong>Draft Orders Alert:</strong> You have {{ $draftOrders }} order{{ $draftOrders > 1 ? 's' : '' }} available in drafts. 
         Please complete or review these draft orders.
@@ -159,8 +159,9 @@
                         <!-- <small class="mb-0" style="font-size: 10px">Last week vs previous week</small> -->
                     </div>
                     <div class="avatar">
-                        <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-regular fa-file-lines fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -180,8 +181,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-spinner fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -202,8 +204,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-check-double fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -224,8 +227,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-bars-progress fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -245,8 +249,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-brands fa-empire fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -267,8 +272,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-book-skull fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -289,8 +295,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-ban fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -311,8 +318,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-edit"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-brands fa-firstdraft fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -533,7 +541,7 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <img src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 20px" alt="">
+                                    <img src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 15px" alt="">
                                     <span>${data}</span>    
                                 </div>
                             `;

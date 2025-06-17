@@ -24,8 +24,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-user-search"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-file-invoice fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -35,7 +36,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
-                        <h6 class="text-heading">Active Users</h6>
+                        <h6 class="text-heading">Active Invoices</h6>
                         <div class="d-flex align-items-center my-1">
                             <h4 class="mb-0 me-2 fs-4" id="paidInvoices">0</h4>
                             <p class="text-danger mb-0"></p>
@@ -46,8 +47,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-brands fa-creative-commons-sa fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -69,8 +71,10 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                            
+                        <i class="fa-regular fa-circle-xmark fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -92,8 +96,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-triangle-exclamation fs-2"></i>
                     </div>
                 </div>
             </div>

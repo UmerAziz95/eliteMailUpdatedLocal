@@ -268,8 +268,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-user-search"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-ticket fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -290,8 +291,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-envelope-open-text fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -313,8 +315,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-bars-progress fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -324,7 +327,7 @@
             <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
-                        <h6 class="text-heading">Open Tickets</h6>
+                        <h6 class="text-heading">Closed Tickets</h6>
                         <div class="d-flex align-items-center my-1">
                             <h4 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h4>
                             <p class="mb-0"></p>
@@ -335,8 +338,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-shop-slash fs-2"></i>
                     </div>
                 </div>
             </div>
