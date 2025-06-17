@@ -257,114 +257,71 @@
 
         /* Timer badge styling */
         .timer-badge {
-            font-size: 10px;
-            font-weight: 600;
-            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 11px;
             padding: 0.25rem 0.5rem;
-            margin-left: 0.5rem;
+            border-radius: 4px;
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            animation: pulse 2s infinite;
-            position: relative;
-            cursor: help;
-            z-index: 1;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            letter-spacing: 0.5px;
+            min-width: 70px;
+            justify-content: center;
+            margin-left: 8px;
         }
 
-        .timer-badge:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 0.5rem;
-            border-radius: 4px;
-            font-size: 11px;
-            white-space: nowrap;
-            z-index: 1000;
-            margin-top: 5px;
-        }
-
-        .timer-badge:hover::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-        }
-
+        /* Timer states */
         .timer-badge.positive {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
-            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-color: rgba(40, 167, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
         }
 
         .timer-badge.negative {
-            background: linear-gradient(135deg, #dc3545, #e74c3c);
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
             color: white;
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            animation: pulseRed 1s infinite;
+            border-color: rgba(220, 53, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+            animation: pulse-red 2s infinite;
         }
 
         .timer-badge.completed {
             background: linear-gradient(135deg, #6c757d, #495057);
             color: white;
-            border: 1px solid rgba(108, 117, 125, 0.3);
-            animation: none;
+            border-color: rgba(108, 117, 125, 0.3);
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
         }
 
-        @keyframes pulse {
+        /* Pulse animation for overdue timers */
+        @keyframes pulse-red {
             0% {
-                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
-            }
-        }
-
-        @keyframes pulseRed {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.9);
-                /* transform: scale(1); */
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
             }
             50% {
-                box-shadow: 0 0 0 4px rgba(220, 53, 69, 0);
-                /* transform: scale(1.05); */
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+                transform: scale(1.02);
             }
             100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-                /* transform: scale(1); */
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
             }
         }
 
+        /* Timer icon styling */
         .timer-icon {
-            font-size: 8px;
-            /* animation: tick 1s infinite; */
+            font-size: 10px;
+            margin-right: 2px;
         }
 
-        @keyframes tick {
-            0%, 100% {
-                transform: rotate(0deg);
-            }
-            50% {
-                transform: rotate(360deg);
-            }
+        /* Hover effects */
+        .timer-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* Offcanvas title timer badge styling */
-        .offcanvas-title .timer-badge {
-            font-size: 11px;
-            margin-left: 0.75rem;
-            vertical-align: middle;
-        }
     </style>
 @endpush
 
@@ -819,7 +776,7 @@
             const orderDate = new Date(createdAt);
             const twelveHoursLater = new Date(orderDate.getTime() + (12 * 60 * 60 * 1000));
             
-            // If order is completed, show the time it took to complete
+            // If order is completed, timer is paused - show the time it took to complete
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
                 const timeTaken = completionDate - orderDate;
@@ -843,11 +800,13 @@
                 };
             }
             
-            // For active orders, calculate remaining/overdue time
+            // For active orders: 12-hour countdown from created_at
+            // - Counts down from 12:00:00 to 00:00:00
+            // - After reaching zero, continues in negative time (overtime)
             const timeDiff = now - twelveHoursLater;
             
             if (timeDiff > 0) {
-                // Order is overdue (negative time)
+                // Order is overdue (negative time - overtime)
                 return {
                     display: '-' + formatTimeDuration(timeDiff),
                     isNegative: true,
@@ -855,7 +814,7 @@
                     class: 'negative'
                 };
             } else {
-                // Order still has time remaining
+                // Order still has time remaining (countdown)
                 return {
                     display: formatTimeDuration(-timeDiff),
                     isNegative: false,
@@ -865,17 +824,19 @@
             }
         }
 
-        // Format time duration in human readable format
+        // Format time duration in countdown format (HH:MM:SS)
         function formatTimeDuration(milliseconds) {
             const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
             
-            if (hours > 0) {
-                return `${hours}h ${minutes}m`;
-            } else {
-                return `${minutes}m`;
-            }
+            // Format with leading zeros for proper countdown display
+            const hoursStr = hours.toString().padStart(2, '0');
+            const minutesStr = minutes.toString().padStart(2, '0');
+            const secondsStr = seconds.toString().padStart(2, '0');
+            
+            return `${hoursStr}:${minutesStr}:${secondsStr}`;
         }
 
         // Create timer badge HTML
@@ -891,9 +852,9 @@
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
             } else if (timer.isNegative) {
-                tooltip = `Order is overdue by ${timer.display.substring(1)}. Created on ${formatDate(order.created_at)}`;
+                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
             } else {
-                tooltip = `Time remaining: ${timer.display}. Order created on ${formatDate(order.created_at)}`;
+                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
             }
             
             return `
@@ -1738,7 +1699,6 @@
             }
             }
         }
-
         // Update all timer badges on the page
         function updateAllTimers() {
             const timerBadges = document.querySelectorAll('.timer-badge');
@@ -1748,13 +1708,19 @@
                 const status = badge.dataset.status;
                 const completedAt = badge.dataset.completedAt;
                 
-                // Skip updating completed orders
+                // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
                     return;
                 }
                 
                 const timer = calculateOrderTimer(createdAt, status, completedAt);
                 const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                
+                // Check if the timer display has changed to avoid unnecessary DOM updates
+                const currentDisplay = badge.textContent.trim();
+                if (currentDisplay === timer.display) {
+                    return;
+                }
                 
                 // Create tooltip text
                 let tooltip = '';
@@ -1763,9 +1729,9 @@
                         ? `Order completed on ${formatDate(completedAt)}` 
                         : 'Order is completed';
                 } else if (timer.isNegative) {
-                    tooltip = `Order is overdue by ${timer.display.substring(1)}. Created on ${formatDate(createdAt)}`;
+                    tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
                 } else {
-                    tooltip = `Time remaining: ${timer.display}. Order created on ${formatDate(createdAt)}`;
+                    tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
                 }
                 
                 // Update badge class and tooltip
@@ -1794,8 +1760,8 @@
             // Load orders immediately
             loadOrders();
             
-            // Update timers every minute
-            setInterval(updateAllTimers, 60000); // Update every 60 seconds
+            // Update timers every second for real-time countdown
+            setInterval(updateAllTimers, 1000); // Update every 1 second
         });
     </script>
 @endpush
