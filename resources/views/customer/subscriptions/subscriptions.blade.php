@@ -46,7 +46,7 @@
 @section('content')
 <section class="py-3">
     <div class="row mb-4">
-        <div class="counters col-lg-6">
+        <div class="counters col-xl-6">
             <div class="card p-3 counter_1">
                 <div>
                     <div class="d-flex align-items-start justify-content-between">
@@ -142,45 +142,40 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-xl-6 mt-4 mt-xl-0">
             <div class="p-4 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
 
                     <div class="d-flex gap-2 justify-content-between">
-                        <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 shadow border-0 animate-gradient h-100">Filter</button>
+                        <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 shadow border-0 h-100">Filter</button>
                         <button id="clearFilters" class="btn btn-secondary btn-sm px-4 h-100">Clear</button>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-start gap-4">
-                    <div class="row gy-3">
-                        <div class="col-md-6">
-                            <label for="subscriptionIdFilter" class="form-label mb-0">Subscription ID</label>
-                            <input type="text" id="subscriptionIdFilter" class="form-control"
-                                placeholder="Search by ID">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="subscriptionStatusFilter" class="form-label mb-0">Status</label>
-                            <select id="subscriptionStatusFilter" class="form-select">
-                                <option value="">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="startDate" class="form-label mb-0">Start Date</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="endDate" class="form-label mb-0">End Date</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
-
+                <div class="row gy-3">
+                    <div class="col-sm-6 col-md-3 col-xl-6">
+                        <label for="subscriptionIdFilter" class="form-label mb-0">Subscription ID</label>
+                        <input type="text" id="subscriptionIdFilter" class="form-control"
+                            placeholder="Search by ID">
+                    </div>
+                    <div class="col-sm-6 col-md-3 col-xl-6">
+                        <label for="subscriptionStatusFilter" class="form-label mb-0">Status</label>
+                        <select id="subscriptionStatusFilter" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-md-3 col-xl-6">
+                        <label for="startDate" class="form-label mb-0">Start Date</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="col-sm-6 col-md-3 col-xl-6">
+                        <label for="endDate" class="form-label mb-0">End Date</label>
+                        <input type="date" id="endDate" class="form-control">
                     </div>
 
-                    {{-- <img style="mix-blend-mode: color-burn" src="https://cdn-icons-gif.flaticon.com/19004/19004071.gif" class="d-none d-sm-block"
-                        width="20%" style="border-radius: 50%" alt=""> --}}
                 </div>
             </div>
         </div>

@@ -29,18 +29,17 @@
             <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
             <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
-            {{ ucfirst($order->status2 ?? 'Pending') }}
+        <div class="d-flex gap-2">
+            <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
+                {{ ucfirst($order->status2 ?? 'Pending') }}
+            </div>
+            <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
+                <a href="javascript:;">Bulk Export</a>            
+            </div>
         </div>
-       
     </div>
     <div class="row d-flex justify-content-end" id="exportCsvBtn" style="margin-right: 1px">
-        <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
-            
-            <a href="javascript:;">Bulk Export</a>
-
-            
-        </div>
+        
     </div>
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
@@ -147,7 +146,7 @@
                             <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
                         </div>
                         @else
-                        <div class="text-muted">No email configuration data available</div>
+                        <div class="opacity-50">No email configuration data available</div>
                         @endif
                     </div>
 
@@ -176,12 +175,12 @@
                                         <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{ $order->plan->duration }})</small></span>
                                     </div>
                                 </div>
-                                <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
-                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
-                                <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
+                                <h6><span class="theme-text small">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
+                                <!-- <h6><span class="theme-text small">Discount:</span> 0%</h6> -->
+                                <h6><span class="theme-text small">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
                             @else
-                                <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small></h6>
-                                <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
+                                <h6><span class="theme-text small">Original Price:</span> <small>Select a plan to view price</small></h6>
+                                <h6><span class="theme-text small">Total:</span> <small>Select a plan to view total</small></h6>
                             @endif
                         </div>
                     </div>
@@ -276,7 +275,7 @@
                         </div>
                         @endif
                         @else
-                        <div class="text-muted">No configuration information available</div>
+                        <div class="opacity-50">No configuration information available</div>
                         @endif
                     </div>
                 </div>
