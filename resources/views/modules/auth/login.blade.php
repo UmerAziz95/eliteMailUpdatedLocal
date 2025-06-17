@@ -85,7 +85,7 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Welcome to Project Inbox 👋</h5>
+                            <h5 class="fw-bold">Welcome to Project inbox 👋</h5>
                             <p>
                                 Please sign-in to your account and start the adventure
                             </p>

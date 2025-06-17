@@ -83,23 +83,23 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Welcome to Project Inboxes 👋</h5>
+                            <h5 class="fw-bold">Welcome to Project inboxes 👋</h5>
                             <p>
                                 Please sign-in to your account and start the adventure
                             </p>
                             @if (session('success'))
-                                <div class="alert alert-success">
-                                    {{ session('success') }}
-                                </div>
+                            <div class="alert alert-success">
+                                {{ session('success') }}
+                            </div>
                             @endif
                             @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    <ul class="mb-0">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
                             @endif
                             <form action="{{ route('doLogin') }}" method="POST">
                                 @csrf
@@ -108,7 +108,7 @@
                                     <input type="email" name="email" id="email" placeholder="Email">
                                     {{-- error --}}
                                     {{-- @error('email')
-                                        <div class="text-danger">{{ $message }}</div>
+                                    <div class="text-danger">{{ $message }}</div>
                                     @enderror --}}
                                 </div>
                                 <div class="input-group">
@@ -120,13 +120,12 @@
                                     </span>
                                     {{-- error --}}
                                     {{-- @error('password')
-                                        <div class="text-danger">{{ $message }}</div>
+                                    <div class="text-danger">{{ $message }}</div>
                                     @enderror --}}
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value=""
-                                            id="flexCheckDefault">
+                                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
                                             I agree to privacy policy & terms
                                         </label>
@@ -139,7 +138,8 @@
                                     </div>
                                 </div>
                                 <div class="w-100 mt-3">
-                                    {{-- <a href="{{ route('login') }}" class="w-100 d-flex align-items-center justify-content-center m-btn py-2 px-4 border-0 rounded-2 text-decoration-none">
+                                    {{-- <a href="{{ route('login') }}"
+                                        class="w-100 d-flex align-items-center justify-content-center m-btn py-2 px-4 border-0 rounded-2 text-decoration-none">
                                         Sign In
                                     </a> --}}
                                     <button type="submit"

@@ -164,7 +164,7 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
-                                            I agree to privacy <a style="text-decoration:none" href="https://projectinbox.ai/privacy-policy">policy</a> & <a style="text-decoration:none" href="https://projectinbox.ai/terms-conditions">terms</a> 
+                                            I agree to the  <a style="text-decoration:none" href="https://projectinbox.ai/privacy-policy">Privacy Policy</a> and <a style="text-decoration:none" href="https://projectinbox.ai/terms-conditions">Terms Of Service</a> 
                                         </label>
                                     </div>
                                 </div>
