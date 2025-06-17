@@ -3,1230 +3,1765 @@
 @section('title', 'Orders')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-<style>
-    .avatar {
-        position: relative;
-        block-size: 2.5rem;
-        cursor: pointer;
-        inline-size: 2.5rem;
-    }
+    <style>
+        input,
+        .form-control,
+        .form-label {
+            font-size: 12px
+        }
 
-    .avatar .avatar-initial {
-        position: absolute;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--second-primary);
-        font-size: 1.5rem;
-        font-weight: 500;
-        inset: 0;
-        text-transform: uppercase;
-    }
+        small {
+            font-size: 11px
+        }
 
-    .nav-tabs .nav-link {
-        color: var(--extra-light);
-        border: none
-    }
+        .total {
+            color: var(--second-primary);
+        }
 
-    .nav-tabs .nav-link:hover {
-        color: var(--white-color);
-        border: none
-    }
+        .used {
+            color: #43C95C;
+        }
 
-    .nav-tabs .nav-link.active {
-        background-color: var(--second-primary);
-        color: #fff;
-        border: none;
-        border-radius: 6px
-    }
+        .remain {
+            color: orange
+        }
 
-    .bg-success, .bg-secondary, .bg-primary, .bg-warning {
-        padding: .4rem;
-        font-weight: 400;
-        font-size: 10px
-    }
-</style>
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Loading state styling */
+        #loadingState {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        /* Fix offcanvas backdrop issues */
+        .offcanvas-backdrop {
+            transition: opacity 0.15s linear !important;
+        }
+        
+        .offcanvas-backdrop.fade {
+            opacity: 0;
+        }
+        
+        .offcanvas-backdrop.show {
+            opacity: 0.5;
+        }
+        
+        /* Ensure body doesn't keep backdrop classes */
+        body:not(.offcanvas-open) {
+            overflow: visible !important;
+            padding-right: 0 !important;
+        }
+          
+        /* Fix any remaining backdrop elements */
+        .modal-backdrop,
+        .offcanvas-backdrop.fade:not(.show) {
+            display: none !important;
+        }
+
+        /* Domain badge styling */
+        .domain-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            margin: 0.125rem;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .domain-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Order card styling */
+        .order-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .order-card:hover {
+            /* transform: translateY(-2px); */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Enhanced stat boxes hover effects */
+        .order-card .col-6 > div {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .order-card .col-6 > div:hover {
+            /* transform: translateY(-1px); */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        /* Icon animations */
+        .order-card i {
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover i {
+            transform: scale(1.1);
+        }
+
+        /* Status badge enhancement */
+        .order-card .badge {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Button enhancement */
+        .order-card button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .order-card button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        }
+
+        /* Split content animations */
+        .collapse {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collapse:not(.show) {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .collapse.show {
+            opacity: 1;
+            transform: translateY(0);
+            animation: splitFadeIn 0.4s ease-out;
+        }
+
+        .collapse.collapsing {
+            opacity: 0.5;
+            transform: translateY(-5px);
+        }
+
+        /* Split fade-in animation */
+        @keyframes splitFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-15px) scale(0.98);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translateY(-5px) scale(0.99);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Domain badge animations */
+        @keyframes domainFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.8);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translateY(-2px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Toast animations */
+        @keyframes toastSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(100%) scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Chevron rotation animation */
+        .transition-transform {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Enhanced hover effects for domain badges */
+        .domain-badge {
+            will-change: transform, box-shadow;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .domain-badge:hover {
+            transform: translateY(-3px) scale(1.08) !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+            filter: brightness(1.1);
+        }
+
+        /* Split container animations */
+        .split-container {
+            transition: all 0.3s ease;
+        }
+
+        .split-container.expanding {
+            animation: splitExpand 0.4s ease-out;
+        }
+
+        @keyframes splitExpand {
+            0% {
+                transform: scale(0.98);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Timer badge styling */
+        .timer-badge {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            letter-spacing: 0.5px;
+            min-width: 70px;
+            justify-content: center;
+            margin-left: 8px;
+        }
+
+        /* Timer states */
+        .timer-badge.positive {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-color: rgba(40, 167, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+        }
+
+        .timer-badge.negative {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+            border-color: rgba(220, 53, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+            animation: pulse-red 2s infinite;
+        }
+
+        .timer-badge.completed {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border-color: rgba(108, 117, 125, 0.3);
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+        }
+
+        /* Pulse animation for overdue timers */
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+            }
+            50% {
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+            }
+        }
+
+        /* Timer icon styling */
+        .timer-icon {
+            font-size: 10px;
+            margin-right: 2px;
+        }
+
+        /* Hover effects */
+        .timer-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+    </style>
 @endpush
 
 @section('content')
-<section class="py-3">
-
-    <div class="row gy-3 mb-4">
-        <div class="counters col-lg-6">
-            <div class="card p-3 counter_1">
+    <section class="py-3">
+        
+        <!-- Advanced Search Filter UI -->
+        <div class="card p-3 mb-4">
+            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
+                role="button" aria-expanded="false" aria-controls="filter_1">
                 <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Total Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($totalOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-user-search"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
+                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                            width="30" alt="">
                     </div>
+                    <small>Click here to open advance search for orders</small>
                 </div>
             </div>
-
-            <div class="card p-3 counter_2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Pending Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($pendingOrders) }}</h4>
-                                <p class="text-danger mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
+            <div class="row collapse" id="filter_1">
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Order ID</label>
+                            <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
                         </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-user-check"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-3 counter_1">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Complete Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($inProgressOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-3 counter_2">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Progress Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($inProgressOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-3 counter_1">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Cancelled Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($cancelledOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-3 counter_1">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Rejected Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2">{{ number_format($rejectOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            {{-- <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-user-plus"></i>
-                            </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
-                                style="border-radius: 50px" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="p-3 h-100 filter">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-2 text-white">Filters</h5>
-                </div>
-
-                <div class="d-flex align-items-start gap-4">
-                    <div class="row gy-3">
-                        <div class="col-md-6 col-lg-4">
-                            <label for="orderIdFilter" class="form-label mb-0">Order ID</label>
-                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="statusFilter" class="form-label mb-0">Status</label>
-                            <select id="statusFilter" class="form-select">
-                                <option value="">All Statuses</option>
-                                @foreach($statuses as $key => $status)
-                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
-                                @endforeach
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="unallocated">Unallocated</option>
+                                <option value="allocated">Allocated</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
                             </select>
                         </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="emailFilter" class="form-label mb-0">Email</label>
-                            <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Min Inboxes</label>
+                            <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
                         </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="domainFilter" class="form-label mb-0">Domain URL</label>
-                            <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Max Inboxes</label>
+                            <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
                         </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="totalInboxesFilter" class="form-label mb-0">Total Inboxes</label>
-                            <input type="number" id="totalInboxesFilter" class="form-control"
-                                placeholder="Search by total inboxes" min="1">
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="startDate" class="form-label mb-0">Start Date</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label for="endDate" class="form-label mb-0">End Date</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
-                        <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 py-1 animate-gradient border-0">Filter</button>
-                            <button id="clearFilters" class="btn btn-secondary btn-sm px-4 py-1">Clear</button>
+                        <div class="col-12 text-end">
+                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm border-0 px-3">Search</button>
                         </div>
                     </div>
-
-                    {{-- <img src="https://cdn-icons-gif.flaticon.com/19009/19009016.gif" width="30%"
-                        style="border-radius: 50%" class="d-none d-sm-block" alt=""> --}}
+                </form>
+            </div>
+        </div>  
+        <!-- Grid Cards (Dynamic) -->
+        <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+            <!-- Loading state -->
+            <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
+                <p class="mt-2 mb-0">Loading orders...</p>
+            </div>
+        </div>
 
+        <!-- Load More Button -->
+        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                <span id="loadMoreText">Load More</span>
+                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                    <span class="visually-hidden">Loading...</span>
+                </span>
+            </button>
+            <div id="paginationInfo" class="mt-2 text-light small">
+                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalOrders">0</span> orders
+            </div>
+        </div>
+
+    </section> 
+    
+    <!-- Order Details Offcanvas -->
+    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="orderSplitsContainer">
+                <!-- Dynamic content will be loaded here -->
+                <div id="splitsLoadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading order details...</span>
+                    </div>
+                    <p class="mt-2">Loading order details...</p>
+                </div>
             </div>
         </div>
     </div>
-
-    {{-- <div class="row gy-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Total Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="totalOrders">{{ number_format($totalOrders) }}</h4>
-                                <!-- <p class="text-{{ $percentageChange >= 0 ? 'success' : 'danger' }} mb-0">({{ $percentageChange >= 0 ? '+' : '' }}{{ number_format($percentageChange, 1) }}%)</p> -->
-                            </div>
-                            <small class="mb-0">Total orders placed</small>
-                            <!-- <small class="mb-0">Last week vs previous week</small> -->
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-shopping-cart"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Pending Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="pendingOrders">{{ number_format($pendingOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Awaiting admin review</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-clock"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Completed Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="completedOrders">{{ number_format($completedOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Fully processed orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-success">
-                                <i class="ti ti-check"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">In-Progress Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="inProgressOrders">{{ number_format($inProgressOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Currently processing</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-loader"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Rejected Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="rejectOrders">{{ number_format($rejectOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Rejected orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ti ti-x"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Cancelled Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="cancelledOrders">{{ number_format($cancelledOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Cancelled orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-secondary">
-                                <i class="ti ti-ban"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-4" style="display: none;">
-            <div class="card p-2">
-                <div>
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Expired Orders</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2" id="expiredOrders">{{ number_format($expiredOrders) }}</h4>
-                            </div>
-                            <small class="mb-0">Expired orders</small>
-                        </div>
-                        <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-secondary">
-                                <i class="ti ti-alert-circle"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div>
-                    <div class="row gy-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-2">Filters</h5>
-                            <div>
-                                <button id="applyFilters" class="btn btn-primary btn-sm me-2">Filter</button>
-                                <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="orderIdFilter" class="form-label">Order ID</label>
-                            <input type="text" id="orderIdFilter" class="form-control" placeholder="Search by ID">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="nameFilter" class="form-label">Name</label>
-                            <input type="text" id="nameFilter" class="form-control" placeholder="Search by name">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="statusFilter" class="form-label">Status</label>
-                            <select id="statusFilter" class="form-select">
-                                <option value="">All Statuses</option>
-                                @foreach($statuses as $key => $status)
-                                <option value="{{ $key }}">{{ ucfirst(str_replace('_', ' ', $key)) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="emailFilter" class="form-label">Email</label>
-                            <input type="text" id="emailFilter" class="form-control" placeholder="Search by email">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="domainFilter" class="form-label">Domain URL</label>
-                            <input type="text" id="domainFilter" class="form-control" placeholder="Search by domain">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
-                            <input type="number" id="totalInboxesFilter" class="form-control"
-                                placeholder="Search by total inboxes" min="1">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> --}}
-
-    <div class="card py-3 px-4">
-        {{-- <h2 class="mb-3">Orders</h2> --}}
-        <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist" style="display: none;">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
-                    type="button" role="tab" aria-controls="all-tab-pane" aria-selected="true">All Orders</button>
-            </li>
-            @foreach($plans as $plan)
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-{{ $plan->id }}-tab" data-bs-toggle="tab"
-                    data-bs-target="#plan-{{ $plan->id }}-tab-pane" type="button" role="tab"
-                    aria-controls="plan-{{ $plan->id }}-tab-pane" aria-selected="false">{{ ucfirst($plan->name)
-                    }}</button>
-            </li>
-            @endforeach
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
-                tabindex="0">
-                @include('contractor.orders._orders_table')
-            </div>
-            @foreach($plans as $plan)
-            <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
-                aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
-                @include('contractor.orders._orders_table', ['plan_id' => $plan->id])
-            </div>
-            @endforeach
-        </div>
-    </div>
-
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAddAdmin" aria-labelledby="offcanvasAddAdminLabel"
-        aria-modal="true" role="dialog">
-        <div class="offcanvas-header" style="border-bottom: 1px solid var(--input-border)">
-            <h5 id="offcanvasAddAdminLabel" class="offcanvas-title">View Detail</h5>
-            <button class="border-0 bg-transparent" type="button" data-bs-dismiss="offcanvas" aria-label="Close"><i
-                    class="fa-solid fa-xmark fs-5"></i></button>
-        </div>
-        <div class="offcanvas-body mx-0 flex-grow-0 p-6 h-100">
-
-        </div>
-    </div>
-</section>
 @endsection
 
 @push('scripts')
-<script>
-    // Add this at the beginning of your script section
-    function formatNumber(number) {
-        return new Intl.NumberFormat().format(number);
-    }
-    
-    function updateCounters(counts) {
-        console.log('Updating counters with:', counts);
-        Object.keys(counts).forEach(key => {
-            const element = document.getElementById(key);
-            if(element) {
-                console.log(`Updating ${key} to ${counts[key]}`);
-                element.textContent = formatNumber(counts[key]);
-            } else {
-                console.log(`Element with ID ${key} not found`);
-            }
-        });
-    }
+    <script>
+        let orders = [];
+        let currentFilters = {};
+        let currentPage = 1;
+        let hasMorePages = false;
+        let totalOrders = 0;
+        let isLoading = false;
 
-    // Debug AJAX calls
-    $(document).ajaxSend(function(event, jqXHR, settings) {
-        console.log('AJAX Request:', {
-            url: settings.url,
-            type: settings.type,
-            data: settings.data,
-            headers: jqXHR.headers
-        });
-    });
-
-
-    function viewOrder(id) {
-        window.location.href = `{{ url('/contractor/orders/${id}/view') }}`;
-    }
-
-    function initDataTable(planId = '') {
-        console.log('Initializing DataTable for planId:', planId);
-        var tableId = planId ? `#myTable-${planId}` : '#myTable';
-        console.log('Looking for table with selector:', tableId);
-        var $table = $(tableId);
-        if (!$table.length) {
-            console.error('Table not found with selector:', tableId);
-            return null;
-        }
-        console.log('Found table:', $table);
-
-        try {
-            var table = $table.DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: {
-                    details: {
-                        display: $.fn.dataTable.Responsive.display.modal({
-                            header: function(row) {
-                                return 'Order Details';
-                            }
-                        }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                    }
-                },
-                autoWidth: false,
-                scrollX: true,
-                // columnDefs: [
-                //     { responsivePriority: 1, targets: 0 }, // ID - highest priority
-                //     { responsivePriority: 2, targets: -1 }, // Actions - second highest
-                //     { responsivePriority: 3, targets: [2, 3] }, // Name and Email
-                //     { responsivePriority: 4, targets: planId ? 6 : 7 }, // Status
-                //     { responsivePriority: 10000, targets: '_all' }, // All others lowest priority
-                //     { width: '10%', targets: 0 }, // ID 
-                //     { width: '15%', targets: 1 }, // Date
-                //     { width: '15%', targets: 2 }, // Name
-                //     { width: '15%', targets: 3 }, // Email
-                //     ...(planId ? [] : [{ width: '15%', targets: 4 }]), // Plan (only for All Orders) 
-                //     { width: '20%', targets: planId ? 4 : 5 }, // Domain URL
-                //     { width: '10%', targets: planId ? 5 : 6 }, // Total Inboxes 
-                //     { width: '12%', targets: planId ? 6 : 7 }, // Status
-                //     { width: '12%', targets: planId ? 7 : 8 }, // Split Status
-                //     { width: '10%', targets: planId ? 8 : 9 }, // Total Inboxes Split
-                //     { width: '15%', targets: planId ? 9 : 10 }, // Download CSV Split Domains
-                //     { width: '8%', targets: planId ? 10 : 11} // Actions
-                // ],
-                ajax: {
-                    url: "{{ route('contractor.orders.data') }}",
-                    type: "GET",
+        // Load orders data
+        async function loadOrders(filters = {}, page = 1, append = false) {
+            try {
+                if (isLoading) return; // Prevent concurrent requests
+                isLoading = true;
+                
+                console.log('Loading orders with filters:', filters, 'page:', page, 'append:', append);
+                
+                if (!append) {
+                    showLoading();
+                    orders = []; // Reset orders array for new search
+                }
+                
+                // Show loading state for Load More button
+                if (append) {
+                    showLoadMoreSpinner(true);
+                }
+                
+                const params = new URLSearchParams({
+                    ...filters,
+                    page: page,
+                    per_page: 12
+                });
+                const url = `/contractor/assigned/order/data?${params}`;
+                console.log('Fetching from URL:', url);
+                
+                const response = await fetch(url, {
                     headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'Accept': 'application/json'
-                    },
-                    data: function(d) {
-                        d.draw = d.draw || 1;
-                        d.length = d.length || 10;
-                        d.start = d.start || 0;
-                        d.search = d.search || {
-                            value: '',
-                            regex: false
-                        };
-                        d.plan_id = planId;
-
-                        // Add filter parameters
-                        d.orderId = $('#orderIdFilter').val();
-                        d.name = $('#nameFilter').val();
-                        d.status = $('#statusFilter').val();
-                        d.email = $('#emailFilter').val();
-                        d.domain = $('#domainFilter').val();
-                        d.totalInboxes = $('#totalInboxesFilter').val();
-                        d.startDate = $('#startDate').val();
-                        d.endDate = $('#endDate').val();
-
-                        console.log('DataTables request parameters:', d);
-                        return d;
-                    },
-                    dataSrc: function(json) {
-                        console.log('Server response:', json);
-                        return json.data;
-                    },
-                    error: function(xhr, error, thrown) {
-                        console.error('DataTables error:', error);
-                        console.error('Server response:', xhr.responseText);
-                        console.error('Status:', xhr.status);
-                        console.error('Full XHR:', xhr);
-
-                        if (xhr.status === 401) {
-                            window.location.href = "{{ route('login') }}";
-                        } else if (xhr.status === 403) {
-                            toastr.error('You do not have permission to view this data');
-                        } else {
-                            toastr.error('Error loading orders data: ' + error);
-                        }
-                    }
-                },
-                columns: [{
-                        data: 'order_id',
-                        name: 'order_id'
-                    },
-                    {
-                        data: 'created_at',
-                        name: 'orders.created_at',
-                        render: function(data, type, row) {
-                            return `
-                                <div class="d-flex gap-1 align-items-center opacity-50">
-                                    <i class="ti ti-calendar-month"></i>
-                                    <span class="text-nowrap">${data}</span>    
-                                </div>
-                            `;
-                        }
-                    },
-                    {
-                        data: 'name',
-                        name: 'users.name',
-                        render: function(data, type, row) {
-                            return `
-                                <div class="d-flex gap-1 align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">    
-                                    </div>
-                                    <span class="text-truncate">${data}</span>    
-                                </div>
-                            `;
-                        }
-                    },
-                    {
-                        data: 'email',
-                        name: 'users.email',
-                        render: function(data, type, row) {
-                            return `
-                                <div class="d-flex gap-1 align-items-center">
-                                    <i class="ti ti-mail flex-shrink-0"></i>
-                                    <span class="text-truncate">${data}</span>    
-                                </div>
-                            `;
-                        }
-                    },
-                    ...(planId ? [] : [{
-                        data: 'plan_name',
-                        name: 'plans.name'
-                    }]),
-                    {
-                        data: 'domain_forwarding_url',
-                        name: 'domain_forwarding_url',
-                        render: function(data, type, row) {
-                            if (data && data.length > 30) {
-                                return `<span class="text-truncate d-inline-block" style="max-width: 200px;" title="${data}">${data}</span>`;
-                            }
-                            return data;
-                        }
-                    },
-                    {
-                        data: 'total_inboxes',
-                        name: 'total_inboxes',
-                        // className: 'text-center'
-                    },
-                    {
-                        data: 'status',
-                        name: 'orders.status'
-                    },
-                    {
-                        data: 'split_status',
-                        name: 'split_status',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'total_inboxes_split',
-                        name: 'total_inboxes_split',
-                        orderable: false,
-                        searchable: false,
-                        // className: 'text-center'
-                    },
-                    {
-                        data: 'assignment',
-                        name: 'assignment',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false,
-                        // className: 'text-center'
-                    }
-                ],
-                order: [
-                    [1, 'desc']
-                ],
-                drawCallback: function(settings) {
-                    console.log('Table draw complete. Response:', settings.json);
-                    if (settings.json && settings.json.error) {
-                        toastr.error(settings.json.message || 'Error loading data');
-                    }
-                    $('[data-bs-toggle="tooltip"]').tooltip();
-
-                    // Adjust columns for responsive behavior
-                    setTimeout(() => {
-                        this.api().columns.adjust();
-                        if (this.api().responsive) {
-                            this.api().responsive.recalc();
-                        }
-                    }, 100);
-                },
-                initComplete: function(settings, json) {
-                    console.log('Table initialization complete');
-                    setTimeout(() => {
-                        this.api().columns.adjust();
-                        if (this.api().responsive) {
-                            this.api().responsive.recalc();
-                        }
-                    }, 100);
-                }
-            });
-
-            // Handle processing state visually
-            table.on('processing.dt', function(e, settings, processing) {
-                const wrapper = $(tableId + '_wrapper');
-                if (processing) {
-                    console.log('DataTable processing started');
-                    wrapper.addClass('loading');
-                    wrapper.append('<div class="dt-loading">Loading...</div>');
-                } else {
-                    console.log('DataTable processing completed');
-                    wrapper.removeClass('loading');
-                    wrapper.find('.dt-loading').remove();
-                }
-            });
-
-            // Handle window resize for better responsive behavior
-            $(window).on('resize', function() {
-                if (table) {
-                    table.columns.adjust();
-                    if (table.responsive) {
-                        table.responsive.recalc();
-                    }
-                }
-            });
-
-            return table;
-        } catch (error) {
-            console.error('Error initializing DataTable:', error);
-            toastr.error('Error initializing table. Please refresh the page.');
-            return null;
-        }
-    }
-
-    $(document).ready(function() {
-        try {
-            console.log('Document ready, initializing tables');
-
-            // Initialize DataTables object to store all table instances
-            window.orderTables = {};
-
-            // Initialize table for all orders
-            window.orderTables.all = initDataTable();
-
-            // Initialize tables for each plan
-            @foreach($plans as $plan)
-            window.orderTables['plan{{ $plan->id }}'] = initDataTable('{{ $plan->id }}');
-            @endforeach
-
-            // Handle tab changes
-            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
-                const tabId = $(e.target).attr('id');
-                console.log('Tab changed to:', tabId);
-
-                // Clear DataTables events before reapplying
-                Object.values(window.orderTables).forEach(function(table) {
-                    if (table) {
-                        table.off('preXhr.dt');
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`);
+                }
+                  
+                const data = await response.json();
+                console.log('Received data:', data);
+                
+                const newOrders = data.data || [];
+                console.log('New orders:', newOrders);
+                
+                if (append) {
+                    orders = orders.concat(newOrders);
+                } else {
+                    orders = newOrders;
+                }
+                
+                // Update pagination state
+                const pagination = data.pagination || {};
+                currentPage = pagination.current_page || 1;
+                hasMorePages = pagination.has_more_pages || false;
+                totalOrders = pagination.total || 0;
+                
+                console.log('Updated state:', { currentPage, hasMorePages, totalOrders, ordersCount: orders.length });
+                
+                renderOrders(append);
+                updatePaginationInfo();
+                updateLoadMoreButton();
+                
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                if (!append) {
+                    showError(`Failed to load orders: ${error.message}`);
+                }
+            } finally {
+                isLoading = false;
+                if (append) {
+                    showLoadMoreSpinner(false);
+                }
 
-                // Force recalculation of column widths for visible tables
-                setTimeout(function() {
-                    Object.values(window.orderTables).forEach(function(table) {
-                        if (table && $(table.table().node()).is(':visible')) {
-                            try {
-                                // Add filter parameters before redraw
-                                table.on('preXhr.dt', function(e, settings, data) {
-                                    data.orderId = $('#orderIdFilter').val();
-                                    data.name = $('#nameFilter').val();
-                                    data.status = $('#statusFilter').val();
-                                    data.email = $('#emailFilter').val();
-                                    data.domain = $('#domainFilter').val();
-                                    data.totalInboxes = $('#totalInboxesFilter').val();
-                                    data.startDate = $('#startDate').val();
-                                    data.endDate = $('#endDate').val();
-                                });
+                // submit enabled
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+        
+        // Show loading state        
+        function showLoading() {
+            const container = document.getElementById('ordersContainer');
+            const loadingElement = document.getElementById('loadingState');
+            
+            if (container && loadingElement) {
+                // Keep the grid display but show only loading element
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '1rem';
+                
+                // Clear any existing content except loading
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+        
+        // Hide loading state
+        function hideLoading() {
+            const loadingElement = document.getElementById('loadingState');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }        
+        
+        // Show error message
+        function showError(message) {
+            hideLoading();
+            const container = document.getElementById('ordersContainer');
+            if (!container) {
+                console.error('ordersContainer element not found');
+                return;
+            }
+            
+            // Keep grid layout but show error spanning full width
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+            container.style.gap = '1rem';
+            
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                    <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                    <h5>Error</h5>
+                    <p class="mb-3">${message}</p>
+                    <button class="btn btn-primary" onclick="loadOrders(currentFilters)">Retry</button>
+                </div>
+            `;
+        }
+        
+        // Render orders
+        function renderOrders(append = false) {
+            if (!append) {
+                hideLoading();
+            }
+            
+            const container = document.getElementById('ordersContainer');
+            if (!container) {
+                console.error('ordersContainer element not found');
+                return;
+            }
+              
+            if (orders.length === 0 && !append) {
+                // Keep grid layout but show empty state spanning full width
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '1rem';
+                
+                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
+                        <h5>No Orders Found</h5>
+                        <p class="mb-3">No orders match your current filters.</p>
+                        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
+                    </div>
+                `;
+                return;
+            }
+            // Reset container to grid layout for orders
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+            container.style.gap = '1rem';
 
-                                table.columns.adjust();
-                                if (table.responsive && typeof table.responsive.recalc === 'function') {
-                                    table.responsive.recalc();
+            if (append) {
+                // Only add new orders for pagination
+                const currentOrdersCount = container.children.length;
+                const newOrders = orders.slice(currentOrdersCount);
+                const newOrdersHtml = newOrders.map(order => createOrderCard(order)).join('');
+                container.insertAdjacentHTML('beforeend', newOrdersHtml);
+            } else {
+                // Replace all content for new search
+                const ordersHtml = orders.map(order => createOrderCard(order)).join('');
+                container.innerHTML = ordersHtml;
+            }
+        }
+        
+        // Create order card HTML
+        function createOrderCard(order) {
+            return `
+                <div class="card p-3 d-flex flex-column gap-3 order-card">                    
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            ${order.status_manage_by_admin}
+                            ${createTimerBadge(order)}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-user text-info" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Customer</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.customer_name}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-inbox text-success" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_inboxes}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-divide text-warning" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.inboxes_per_domain}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
+                                <div class="me-2">
+                                    <i class="fas fa-globe text-primary" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
+                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_domains}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-alt text-white opacity-75 me-1" style="font-size: 11px;"></i>
+                            <small class="text-white opacity-75">${formatDate(order.created_at)}</small>
+                        </div>
+                        <button class="btn btn-sm btn-primary px-3 rounded-pill fw-bold" 
+                                onclick="viewOrderSplits(${order.order_id})" 
+                                data-bs-toggle="offcanvas" 
+                                data-bs-target="#order-splits-view"
+                                style="font-size: 11px;">
+                            <i class="fas fa-eye me-1" style="font-size: 10px;"></i>
+                            View Details
+                            <span class="badge bg-white text-primary ms-1 rounded-pill" style="font-size: 9px;">${order.splits_count}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update pagination info display
+        function updatePaginationInfo() {
+            const showingFromEl = document.getElementById('showingFrom');
+            const showingToEl = document.getElementById('showingTo');
+            const totalOrdersEl = document.getElementById('totalOrders');
+            
+            if (showingFromEl && showingToEl && totalOrdersEl) {
+                const from = orders.length > 0 ? 1 : 0;
+                const to = orders.length;
+                
+                showingFromEl.textContent = from;
+                showingToEl.textContent = to;
+                totalOrdersEl.textContent = totalOrders;
+            }
+        }
+
+        // Update Load More button visibility and state
+        function updateLoadMoreButton() {
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            if (loadMoreContainer && loadMoreBtn) {
+                if (hasMorePages && orders.length > 0) {
+                    loadMoreContainer.style.display = 'block';
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreContainer.style.display = 'none';
+                }
+            }
+        }
+
+        // Show/hide loading spinner on Load More button
+        function showLoadMoreSpinner(show) {
+            const loadMoreText = document.getElementById('loadMoreText');
+            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            if (loadMoreText && loadMoreSpinner && loadMoreBtn) {
+                if (show) {
+                    loadMoreText.textContent = 'Loading...';
+                    loadMoreSpinner.style.display = 'inline-block';
+                    loadMoreBtn.disabled = true;
+                } else {
+                    loadMoreText.textContent = 'Load More';
+                    loadMoreSpinner.style.display = 'none';
+                    loadMoreBtn.disabled = false;
+                }
+            }
+        }
+
+        // Load More button click handler
+        function loadMoreOrders() {
+            if (hasMorePages && !isLoading) {
+                loadOrders(currentFilters, currentPage + 1, true);
+            }
+        }
+
+        // Helper function to get status badge class
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'completed': return 'bg-success';
+                case 'unallocated': return 'bg-warning text-dark';
+                case 'allocated': return 'bg-info';
+                case 'rejected': return 'bg-danger';
+                case 'in-progress': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        // Helper function to format date
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                return 'Invalid Date';
+            }
+        }
+
+        // Calculate timer for order
+        function calculateOrderTimer(createdAt, status, completedAt = null) {
+            const now = new Date();
+            const orderDate = new Date(createdAt);
+            const twelveHoursLater = new Date(orderDate.getTime() + (12 * 60 * 60 * 1000));
+            
+            // If order is completed, timer is paused - show the time it took to complete
+            if (status === 'completed' && completedAt) {
+                const completionDate = new Date(completedAt);
+                const timeTaken = completionDate - orderDate;
+                const isOverdue = completionDate > twelveHoursLater;
+                
+                return {
+                    display: formatTimeDuration(timeTaken),
+                    isNegative: isOverdue,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+            
+            // If order is completed but no completion date, just show completed
+            if (status === 'completed') {
+                return {
+                    display: 'Completed',
+                    isNegative: false,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+            
+            // For active orders: 12-hour countdown from created_at
+            // - Counts down from 12:00:00 to 00:00:00
+            // - After reaching zero, continues in negative time (overtime)
+            const timeDiff = now - twelveHoursLater;
+            
+            if (timeDiff > 0) {
+                // Order is overdue (negative time - overtime)
+                return {
+                    display: '-' + formatTimeDuration(timeDiff),
+                    isNegative: true,
+                    isCompleted: false,
+                    class: 'negative'
+                };
+            } else {
+                // Order still has time remaining (countdown)
+                return {
+                    display: formatTimeDuration(-timeDiff),
+                    isNegative: false,
+                    isCompleted: false,
+                    class: 'positive'
+                };
+            }
+        }
+
+        // Format time duration in countdown format (HH:MM:SS)
+        function formatTimeDuration(milliseconds) {
+            const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            // Format with leading zeros for proper countdown display
+            const hoursStr = hours.toString().padStart(2, '0');
+            const minutesStr = minutes.toString().padStart(2, '0');
+            const secondsStr = seconds.toString().padStart(2, '0');
+            
+            return `${hoursStr}:${minutesStr}:${secondsStr}`;
+        }
+
+        // Create timer badge HTML
+        function createTimerBadge(order) {
+            console.log(order);
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at);
+            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            
+            // Create tooltip text
+            let tooltip = '';
+            if (timer.isCompleted) {
+                tooltip = order.completed_at 
+                    ? `Order completed on ${formatDate(order.completed_at)}` 
+                    : 'Order is completed';
+            } else if (timer.isNegative) {
+                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
+            } else {
+                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
+            }
+            
+            return `
+                <span class="timer-badge ${timer.class}" 
+                      data-order-id="${order.order_id}" 
+                      data-created-at="${order.created_at}" 
+                      data-status="${order.status}" 
+                      data-completed-at="${order.completed_at || ''}"
+                      data-tooltip="${tooltip}">
+                    <i class="${iconClass} timer-icon"></i>
+                    ${timer.display}
+                </span>
+            `;
+        }
+
+        // View order splits
+        async function viewOrderSplits(orderId) {
+            try {
+                // Show loading in offcanvas
+                const container = document.getElementById('orderSplitsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div id="splitsLoadingState" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading order details...</span>
+                            </div>
+                            <p class="mt-2">Loading order details...</p>
+                        </div>
+                    `;
+                }
+                  
+                // Show offcanvas with proper cleanup
+                const offcanvasElement = document.getElementById('order-splits-view');
+                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+                
+                // Add event listeners for proper cleanup
+                offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
+                    // Clean up any remaining backdrop elements
+                    const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    
+                    // Ensure body classes are removed
+                    document.body.classList.remove('offcanvas-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    // Reset offcanvas title
+                    const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+                    if (offcanvasTitle) {
+                        offcanvasTitle.innerHTML = 'Order Details';
+                    }
+                }, { once: true });
+                
+                offcanvas.show();
+                
+                // Fetch order splits
+                const response = await fetch(`/contractor/orders/${orderId}/splits`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch order splits');
+                
+                const data = await response.json();
+                renderOrderSplits(data);
+                  
+            } catch (error) {
+                console.error('Error loading order splits:', error);
+                const container = document.getElementById('orderSplitsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                            <h5>Error Loading Order Details</h5>
+                            <p>Failed to load order details. Please try again.</p>
+                            <button class="btn btn-primary" onclick="viewOrderSplits(${orderId})">Retry</button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Render order splits in offcanvas
+        function renderOrderSplits(data) {
+            const container = document.getElementById('orderSplitsContainer');
+            
+            if (!data.splits || data.splits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox text-white fs-3 mb-3"></i>
+                        <h5>No Splits Found</h5>
+                        <p>This order doesn't have any splits yet.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const orderInfo = data.order;
+            const reorderInfo = data.reorder_info;
+            const splits = data.splits;
+
+            // Update offcanvas title with timer
+            const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+            if (offcanvasTitle && orderInfo) {
+                offcanvasTitle.innerHTML = `
+                    Order Details #${orderInfo.id} 
+                `;
+            }
+
+            const splitsHtml = `
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6>
+                                ${orderInfo.status_manage_by_admin}
+                                ${createTimerBadge(orderInfo)}
+                            </h6>
+                            <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                        </div>
+                        <div>
+                            ${(() => {
+                                const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                if (unallocatedSplits.length > 0) {
+                                    return `
+                                        <button class="btn btn-success btn-sm px-3 py-2" 
+                                                onclick="assignOrderToMe(${orderInfo.id})"
+                                                id="assignOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                                            Assign Order to Me
+                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
+                                        </button>
+                                    `;
+                                } else {
+                                    return `
+                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                                            All Splits Assigned
+                                        </span>
+                                    `;
                                 }
-                                table.draw();
-                            } catch (error) {
-                                console.error('Error adjusting table:', error);
+                            })()}
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive mb-4">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Split Status</th>
+                                <th scope="col">Inboxes/Domain</th>
+                                <th scope="col">Total Domains</th>
+                                <th scope="col">Total Inboxes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${splits.map((split, index) => `
+                                <tr>
+                                    <th scope="row">${index + 1}</th>
+                                    <td>
+                                        <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                    </td>
+                                    
+                                    <td>${split.inboxes_per_domain || 'N/A'}</td>
+                                    <td>
+                                        <span class="badge bg-success" style="font-size: 10px;">
+                                            ${split.domains_count || 0} domain(s)
+                                        </span>
+                                    </td>
+                                    <td>${split.total_inboxes || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card p-3 mb-3">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-regular fa-envelope"></i>
+                                </div>
+                                Email configurations
+                            </h6>
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>${(() => {
+                                    const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
+                                    const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
+                                    const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
+                                    
+                                    let splitDetails = '';
+                                    splits.forEach((split, index) => {
+                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                    });
+                                    
+                                    return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                                })()}</span>
+                            </div>
+                             
+                            <hr>
+                            <div class="d-flex flex-column">
+                                <span class="opacity-50">Prefix Variants</span>
+                                ${renderPrefixVariants(reorderInfo)}
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Profile Picture URL</span>
+                                <span>${reorderInfo?.profile_picture_link || 'N/A'}</span>
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Email Persona Password</span>
+                                <span>${reorderInfo?.email_persona_password || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-solid fa-earth-europe"></i>
+                                </div>
+                                Domains &amp; Configuration
+                            </h6>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Hosting Platform</span>
+                                <span>${reorderInfo?.hosting_platform || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Platform Login</span>
+                                <span>${reorderInfo?.platform_login || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Platform Password</span>
+                                <span>${reorderInfo?.platform_password || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                <span>${reorderInfo?.forwarding_url || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending Platform</span>
+                                <span>${reorderInfo?.sending_platform || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending platform Sequencer - Login</span>
+                                <span>${reorderInfo?.sequencer_login || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Sending platform Sequencer - Password</span>
+                                <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
+                            </div>
+
+                            <div class="d-flex flex-column">
+                                <span class="opacity-50 mb-3">
+                                    <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
+                                </span>
+                                
+                                <!-- Order Splits Domains -->
+                                ${splits.map((split, index) => `
+                                    <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
+                                        <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                             onclick="toggleSplit('split-${orderInfo.id}-${index}')">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                    Split ${String(index + 1).padStart(2, '0')}
+                                                </span>
+                                                <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                    ${split.domains_count || 0} domains
+                                                </span>
+                                                <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                                   title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
+                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                            </div>
+                                        </div>
+                                        <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
+                                            <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                                <div class="domains-grid">
+                                                    ${renderDomainsWithStyle([split])}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Additional Notes</span>
+                                <span>${reorderInfo?.additional_notes || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = splitsHtml;
+            
+            // Initialize chevron states and animations after rendering
+            setTimeout(function() {
+                initializeChevronStates();
+            }, 100);
+        }
+        
+        // Function to copy domain to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show a temporary success message
+                showToast('Domain copied to clipboard!', 'success');
+            }).catch(() => {
+                console.warn('Failed to copy to clipboard');
+                showToast('Failed to copy domain', 'error');
+            });
+        }
+
+        // Function to copy all domains from a split to clipboard
+        function copyAllDomains(domains, splitName) {
+            if (!domains || domains.length === 0) {
+                showToast('No domains to copy', 'error');
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = domains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                showToast(`All domains from ${splitName} copied to clipboard!`, 'success');
+            }).catch(() => {
+                showToast('Failed to copy domains', 'error');
+            });
+        }
+
+        // Function to show toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toast && toast.parentNode) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+        // Function to copy domain to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show a temporary success message
+                showToast('Domain copied to clipboard!', 'success');
+            }).catch(() => {
+                console.warn('Failed to copy to clipboard');
+                showToast('Failed to copy domain', 'error');
+            });
+        }
+
+        // Function to copy all domains from a split to clipboard
+        function copyAllDomains(domains, splitName) {
+            if (!domains || domains.length === 0) {
+                showToast('No domains to copy', 'error');
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = domains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                showToast(`All domains from ${splitName} copied to clipboard!`, 'success');
+            }).catch(() => {
+                showToast('Failed to copy domains', 'error');
+            });
+        }
+
+        // Function to show toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toast && toast.parentNode) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+
+        // Helper function to get status badge class
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'completed': return 'bg-success';
+                case 'unallocated': return 'bg-warning text-dark';
+                case 'allocated': return 'bg-info';
+                case 'rejected': return 'bg-danger';
+                case 'in-progress': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        // Helper function to format date
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                return 'Invalid Date';
+            }
+        }
+
+        // Handle filter form submission
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const filters = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value.trim() !== '') {
+                    filters[key] = value.trim();
+                }
+            }
+            
+            currentFilters = filters;
+            currentPage = 1;
+            hasMorePages = false;
+            totalOrders = 0;
+            loadOrders(filters);
+        });
+          
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('filterForm').reset();
+            currentFilters = {};
+            currentPage = 1;
+            hasMorePages = false;
+            totalOrders = 0;
+            loadOrders();
+        }
+        
+        // Reset filters button
+        document.getElementById('resetFilters').addEventListener('click', resetFilters);
+
+        // Global cleanup function for offcanvas issues
+        function cleanupOffcanvasBackdrop() {
+            // Remove any remaining backdrop elements
+            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop, .fade');
+            backdrops.forEach(backdrop => {
+                if (backdrop.classList.contains('offcanvas-backdrop') || backdrop.classList.contains('modal-backdrop')) {
+                    backdrop.remove();
+                }
+            });
+            
+            // Reset body styles
+            document.body.classList.remove('offcanvas-open', 'modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+
+        // Add global event listener for offcanvas cleanup
+        document.addEventListener('click', function(e) {
+            // If clicking outside offcanvas or on close button, ensure cleanup
+            if (e.target.matches('[data-bs-dismiss="offcanvas"]') || 
+                e.target.closest('[data-bs-dismiss="offcanvas"]')) {
+                setTimeout(cleanupOffcanvasBackdrop, 300);
+            }
+        });
+
+        // Cleanup on page focus (in case of any lingering issues)
+        window.addEventListener('focus', cleanupOffcanvasBackdrop);
+
+        // Enhanced function to render domains with attractive styling
+        function renderDomainsWithStyle(splits) {
+            if (!splits || splits.length === 0) {
+                return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
+            }
+            
+            let allDomains = [];
+            
+            splits.forEach(split => {
+                if (split.domains) {
+                    // Handle different data types for domains
+                    if (Array.isArray(split.domains)) {
+                        split.domains.forEach(domainItem => {
+                            if (typeof domainItem === 'object' && domainItem.domain) {
+                                allDomains.push(domainItem.domain);
+                            } else if (typeof domainItem === 'string') {
+                                allDomains.push(domainItem);
                             }
+                        });
+                    } else if (typeof split.domains === 'string') {
+                        const domainString = split.domains.trim();
+                        if (domainString) {
+                            const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                            allDomains = allDomains.concat(domains);
+                        }
+                    } else if (typeof split.domains === 'object' && split.domains !== null) {
+                        const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                        allDomains = allDomains.concat(domainValues);
+                    }
+                }
+            });
+            
+            if (allDomains.length === 0) {
+                return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
+            }
+            
+            // Create styled domain badges
+            return allDomains
+                .filter(domain => domain && typeof domain === 'string')
+                .map((domain, index) => `
+                    <span class="domain-badge" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 4px 8px;
+                        margin: 2px 2px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: 500;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        animation: domainFadeIn 0.3s ease-out ${index * 0.001}s both;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " 
+                    onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'"
+                    title="Click to copy: ${domain}"
+                    onclick="copyToClipboard('${domain}')">
+                        <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                    </span>
+                `).join('');
+        }
+
+        // Helper function to render prefix variants
+        function renderPrefixVariants(reorderInfo) {
+            if (!reorderInfo) return '<span>N/A</span>';
+            
+            let variants = [];
+            
+            // Check if we have the new prefix_variants JSON format
+            if (reorderInfo.prefix_variants) {
+                try {
+                    const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                        ? JSON.parse(reorderInfo.prefix_variants) 
+                        : reorderInfo.prefix_variants;
+                    
+                    Object.keys(prefixVariants).forEach((key, index) => {
+                        if (prefixVariants[key]) {
+                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
                         }
                     });
-                }, 100); // Increased timeout to ensure DOM is ready
-            });
-
-            // Initial column adjustment for the active tab
-            setTimeout(function() {
-                try {
-                    const activeTable = $('.tab-pane.active .table').DataTable();
-                    if (activeTable) {
-                        activeTable.columns.adjust();
-                        if (activeTable.responsive && typeof activeTable.responsive.recalc === 'function') {
-                            activeTable.responsive.recalc();
-                        }
-                        console.log('Initial column adjustment for active table completed');
-                    }
-                } catch (error) {
-                    console.error('Error in initial column adjustment:', error);
+                } catch (e) {
+                    console.warn('Could not parse prefix variants:', e);
                 }
-            }, 100);
-
-            // Add global error handler for AJAX requests
-            $(document).ajaxError(function(event, xhr, settings, error) {
-                console.error('AJAX Error:', error);
-                if (xhr.status === 401) {
-                    window.location.href = "{{ route('login') }}";
-                } else if (xhr.status === 403) {
-                    toastr.error('You do not have permission to perform this action');
-                }
-            });
-
-            // Filter functionality
-            function applyFilters() {
-                // Clear previous event handlers
-                Object.values(window.orderTables).forEach(function(table) {
-                    table.off('preXhr.dt');
-                });
-
-                Object.values(window.orderTables).forEach(function(table) {
-                    if ($(table.table().node()).is(':visible')) {
-                        // Add filter parameters
-                        table.on('preXhr.dt', function(e, settings, data) {
-                            data.orderId = $('#orderIdFilter').val();
-                            data.name = $('#nameFilter').val();
-                            data.status = $('#statusFilter').val();
-                            data.email = $('#emailFilter').val();
-                            data.domain = $('#domainFilter').val();
-                            data.totalInboxes = $('#totalInboxesFilter').val();
-                            data.startDate = $('#startDate').val();
-                            data.endDate = $('#endDate').val();
-                        });
-
-                        table.draw();
-                    }
-                });
             }
-
-            // Apply filters button click handler
-            $('#applyFilters').on('click', function() {
-                applyFilters();
-            });
-
-            // Clear filters
-            $('#clearFilters').on('click', function() {
-                $('#orderIdFilter, #nameFilter, #emailFilter, #domainFilter').val('');
-                // totalInboxesFilter
-                $('#totalInboxesFilter').val('');
-                $('#statusFilter').val('');
-                $('#startDate, #endDate').val('');
-                applyFilters();
-            });
-
-        } catch (error) {
-            console.error('Error in document ready:', error);
+            
+            // Fallback to old individual fields if new format is empty
+            if (variants.length === 0) {
+                if (reorderInfo.prefix_variant_1) {
+                    variants.push(`<span>Variant 1: ${reorderInfo.prefix_variant_1}</span>`);
+                }
+                if (reorderInfo.prefix_variant_2) {
+                    variants.push(`<span>Variant 2: ${reorderInfo.prefix_variant_2}</span>`);
+                }
+            }
+            
+            return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
         }
-    });
 
-    $(document).on('change', '.status-dropdown', function(e) {
-        e.preventDefault(); // Prevent form submission
-        let $dropdown = $(this);
-        let selectedStatus = $dropdown.val();
-        let orderId = $dropdown.data('id');
-        let originalStatus = $dropdown.data('original-status');
-
-        Swal.fire({
-            title: 'Are you sure?',
-            text: `Do you want to change the status to ${selectedStatus}?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, change it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: '/contractor/update-order-status',
-                    method: 'POST',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content'),
-                        order_id: orderId,
-                        status_manage_by_admin: selectedStatus
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update the counters
-                            if (response.counts) {
-                                updateCounters(response.counts);
-                            }
-                            Swal.fire(
-                                'Updated!',
-                                'Order status has been updated.',
-                                'success'
-                            );
-                            if (window.orderTables && window.orderTables.all) {
-                                window.orderTables.all.ajax.reload(null, false);
-                            }
+        // Function to toggle split sections with enhanced animations
+        function toggleSplit(splitId) {
+            const content = document.getElementById(splitId);
+            const icon = document.getElementById('icon-' + splitId);
+            
+            if (content && icon) {
+                // Check current state and toggle
+                const isCurrentlyShown = content.classList.contains('show');
+                
+                if (isCurrentlyShown) {
+                    // Hide the content with animation
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-10px)';
+                    
+                    setTimeout(() => {
+                        content.classList.remove('show');
+                        icon.style.transform = 'rotate(0deg)'; // Point right when closed
+                    }, 150);
+                } else {
+                    // Show the content with animation
+                    content.classList.add('show');
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-15px) scale(0.98)';
+                    
+                    // Trigger the animation
+                    requestAnimationFrame(() => {
+                        content.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                        content.style.opacity = '1';
+                        content.style.transform = 'translateY(0) scale(1)';
+                        icon.style.transform = 'rotate(90deg)'; // Point down when open
+                        
+                        // Add expanding class for additional effects
+                        const container = content.closest('.split-container');
+                        if (container) {
+                            container.classList.add('expanding');
+                            setTimeout(() => {
+                                container.classList.remove('expanding');
+                            }, 400);
                         }
-                    },
-                    error: function(xhr) {
-                        Swal.fire(
-                            'Error!',
-                            'Failed to update status.',
-                            'error'
-                        );
-                        // Reset to original value on error
-                        $dropdown.val(originalStatus);
-                        if (window.orderTables && window.orderTables.all) {
-                            window.orderTables.all.ajax.reload(null, false);
-                        }
-                        console.error(xhr.responseText);
-                    }
-                });
-            } else {
-                // Reset to original value if user cancels
-                $dropdown.val(originalStatus);
+                    });
+                    
+                    // Animate domain badges within the split with staggered delay
+                    setTimeout(() => {
+                        const domainBadges = content.querySelectorAll('.domain-badge');
+                        domainBadges.forEach((badge, index) => {
+                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+                        });
+                    }, 200);
+                }
             }
-        });
-    });
-</script>
+        }
+        
+        // Function to initialize chevron states and animations on page load
+        function initializeChevronStates() {
+            // Find all collapsible elements and set initial chevron states
+            document.querySelectorAll('[id^="split-"]').forEach(function(element) {
+                const splitId = element.id;
+                const icon = document.getElementById('icon-' + splitId);
+                
+                if (icon) {
+                    // Add transition class for smooth chevron rotation
+                    icon.classList.add('transition-transform');
+                    
+                    // Check if the element has 'show' class or is visible
+                    const isVisible = element.classList.contains('show');
+                    
+                    if (isVisible) {
+                        icon.style.transform = 'rotate(90deg)'; // Point down when open
+                        // Set initial animation state for visible content
+                        element.style.opacity = '1';
+                        element.style.transform = 'translateY(0)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)'; // Point right when closed
+                        // Set initial hidden state
+                        element.style.opacity = '0';
+                        element.style.transform = 'translateY(-10px)';
+                    }
+                }
+            });
+            
+            // Initialize domain badge animations for visible splits only
+            document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
+                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+            });
+        }
 
-<style>
-    .dt-loading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 1rem;
-        border-radius: 4px;
-    }
+        // Function to copy all domains from a split container by extracting them from the DOM
+        function copyAllDomainsFromSplit(splitId, splitName) {
+            const splitContainer = document.getElementById(splitId);
+            if (!splitContainer) {
+                showToast('Split container not found', 'error');
+                return;
+            }
+            
+            // Extract domain names from the domain badges in the split container
+            const domainBadges = splitContainer.querySelectorAll('.domain-badge');
+            const domains = [];
+            
+            domainBadges.forEach(badge => {
+                // Get text content and remove the globe icon
+                const fullText = badge.textContent.trim();
+                // Remove the globe icon (which appears as a character) and any extra whitespace
+                const domainText = fullText.replace(/^\s*[\u{1F30D}\u{1F310}]?\s*/, '').trim();
+                if (domainText && domainText !== '') {
+                    domains.push(domainText);
+                }
+            });
+            
+            if (domains.length === 0) {
+                showToast(`No domains found in ${splitName}`, 'error');
+                return;
+            }
+            
+            // Join domains with newlines for easy copying
+            const domainsText = domains.join('\n');
+            
+            navigator.clipboard.writeText(domainsText).then(() => {
+                showToast(`Copied ${domains.length} domains from ${splitName}`, 'success');
+            }).catch(() => {
+                showToast('Failed to copy domains', 'error');
+            });
+        }
 
-    .loading {
-        position: relative;
-        pointer-events: none;
-        opacity: 0.6;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<script>
-    $(document).ready(function() {
-        // Handle status change clicks
-        $(document).on('click', '.status-change', function(e) {
-            e.preventDefault();
-            const orderId = $(this).data('order-id');
-            const newStatus = $(this).data('status');
-
-            // Show confirmation dialog
-            Swal.fire({
-                title: 'Are you sure?',
-                text: `Do you want to change the order status to ${newStatus}?`,
-                icon: 'warning',
+        // Function to assign entire order to logged-in contractor
+        async function assignOrderToMe(orderId) {
+            try {
+            // Show SweetAlert2 confirmation dialog
+            const result = await Swal.fire({
+                title: 'Assign Order to Yourself?',
+                text: 'This will assign all unallocated splits of this order to you. Are you sure?',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, change it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    updateOrderStatus(orderId, newStatus);
-                }
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
             });
-        });
 
-        function updateOrderStatus(orderId, status) {
-            $.ajax({
-                url: '{{ route("contractor.orders.update.status") }}',
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    order_id: orderId,
-                    status: status
-                },
-                beforeSend: function() {
-                    // Show loading state
-                    Swal.fire({
-                        title: 'Updating...',
-                        html: 'Please wait while we update the order status',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                },                    success: function(response) {
-                        if (response.success) {
-                            // Update the counters with the new values
-                            if (response.counts) {
-                                updateCounters(response.counts);
-                            }
-                            
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success!',
-                                text: response.message,
-                                timer: 1500
-                            }).then(() => {
-                                // Refresh the DataTable
-                                $('#myTable').DataTable().ajax.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: response.message || 'Something went wrong!'
-                            });
-                        }
-                },
-                error: function(xhr) {
-                    let errorMessage = 'Something went wrong!';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: errorMessage
-                    });
-                }
-            });
-        }
-    });
-    
-    // Handle bulk import modal
-    $(document).on('click', '.bulk-import', function() {
-        // Show the modal
-        $('#BulkImportModal').modal('show');
-    });
-
-    //open the modal for panel status update
-    $(document).on('click', '.markStatus', function() {
-        const order_panel_id = $(this).data('id');
-        const status = $(this).data('status');
-        const reason = $(this).data('reason');
-        console.log('Modal opening with:', { order_panel_id, status, reason });
-        
-        // Set order panel ID in the hidden input
-        $('#order_panel_id_to_update').val(order_panel_id);
-
-        // Uncheck all first to reset previous state
-        $('input[name="marked_status"]').prop('checked', false);
-
-        // Check the radio button that matches the status
-        $(`input[name="marked_status"][value="${status}"]`).prop('checked', true);
-
-        // Show or hide reason field depending on status
-        if (status === 'rejected') {
-            $('#reason_wrapper').removeClass('d-none');
-            $('#cancellation_reason').attr('required', true);
-            $('#cancellation_reason').val(reason || '');
-        } else {
-            $('#reason_wrapper').addClass('d-none');
-            $('#cancellation_reason').removeAttr('required');
-            $('#cancellation_reason').val('');
-        }
-
-        // Show the modal
-        $('#cancel_subscription').modal('show');
-    });
-
-    //handle the reason field on status change
-    $(document).on('change', 'input[name="marked_status"]', function() {
-        const selected = $(this).val();
-        console.log('Status changed to:', selected);
-        
-        if (selected === 'rejected') {
-            $('#reason_wrapper').removeClass('d-none');
-            $('#cancellation_reason').attr('required', true);
-        } else {
-            $('#reason_wrapper').addClass('d-none');
-            $('#cancellation_reason').val('');
-            $('#cancellation_reason').removeAttr('required');
-        }
-    });
-
-    // Handle form submission
-    $('#cancelSubscriptionForm').on('submit', function(e) {
-        e.preventDefault();
-
-        const selectedStatus = $('input[name="marked_status"]:checked').val();
-        const reason = $('#cancellation_reason').val().trim();
-
-
-        // If status is required
-        if (!selectedStatus) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please select a status.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // If rejected is selected but no reason
-        if (selectedStatus === 'rejected' && !reason) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'The reason field is required for rejection.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Gather form data manually
-        const formData = new FormData(this);
-        formData.append('marked_status', selectedStatus);
-
-        // Confirm dialog
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: $(this).attr('action'),
-                    method: 'POST',
-                    data: Object.fromEntries(formData),
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    beforeSend: function() {
-                        Swal.fire({
-                            title: 'Processing...',
-                            text: 'Please wait a while...',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showConfirmButton: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                    },
-                    success: function(response) {
-                        $('#cancel_subscription').modal('hide');
-                        if (response.success && response.counts) {
-                            updateCounters(response.counts);
-                        }
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Status has been updated successfully.',
-                            confirmButtonColor: '#3085d6'
-                        }).then(() => {
-                            $('#cancellation_reason').val('');
-                            // window.location.reload();
-                            if (window.orderTables) {
-                                Object.values(window.orderTables).forEach(function(table) {
-                                    if (table) {
-                                        table.ajax.reload(null, false);
-                                    }
-                                });
-                            }
-                        });
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'An error occurred while updating status.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: errorMessage,
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                });
+            // If user cancels, return early
+            if (!result.isConfirmed) {
+                return;
             }
+
+            // Show SweetAlert2 loading dialog
+            Swal.fire({
+                title: 'Assigning Order...',
+                text: 'Please wait while we assign the order to you.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                Swal.showLoading();
+                }
+            });
+
+            // Show loading state on the button as backup
+            const button = document.getElementById('assignOrderBtn');
+            if (button) {
+                const originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = `
+                <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Assigning Order...
+                `;
+            }
+
+            // Make API request to assign all unallocated splits of the order
+            const response = await fetch(`/contractor/orders/${orderId}/assign-to-me`, {
+                method: 'POST',
+                headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to assign order');
+            }
+
+            const data = await response.json();
+            
+            // Close loading dialog and show success
+            await Swal.fire({
+                title: 'Success!',
+                text: data.message || 'Order assigned successfully!',
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                timer: 3000,
+                timerProgressBar: true
+            });
+            
+            // Update the button to show assigned state
+            if (button) {
+                button.outerHTML = `
+                <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                    <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                    Order Assigned to You
+                </span>
+                `;
+            }
+            
+            // Update all status badges in the table to show allocated
+            const statusBadges = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge');
+            statusBadges.forEach(badge => {
+                if (badge.textContent.trim().toLowerCase() === 'unallocated') {
+                badge.className = 'badge bg-info';
+                badge.textContent = 'allocated';
+                }
+            });
+            
+            // Refresh the order list to reflect changes
+            setTimeout(() => {
+                loadOrders(currentFilters, 1, false);
+            }, 1000);
+            
+            } catch (error) {
+            console.error('Error assigning order:', error);
+            
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign order. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+            
+            // Restore button state
+            const button = document.getElementById('assignOrderBtn');
+            if (button) {
+                button.disabled = false;
+                // Restore original button content - we need to recreate it
+                const unallocatedCount = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge').length;
+                button.innerHTML = `
+                <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                Assign Order to Me
+                <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedCount}</span>
+                `;
+            }
+            }
+        }
+        // Update all timer badges on the page
+        function updateAllTimers() {
+            const timerBadges = document.querySelectorAll('.timer-badge');
+            timerBadges.forEach(badge => {
+                const orderId = badge.dataset.orderId;
+                const createdAt = badge.dataset.createdAt;
+                const status = badge.dataset.status;
+                const completedAt = badge.dataset.completedAt;
+                
+                // Skip updating completed orders (timer is paused)
+                if (status === 'completed') {
+                    return;
+                }
+                
+                const timer = calculateOrderTimer(createdAt, status, completedAt);
+                const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                
+                // Check if the timer display has changed to avoid unnecessary DOM updates
+                const currentDisplay = badge.textContent.trim();
+                if (currentDisplay === timer.display) {
+                    return;
+                }
+                
+                // Create tooltip text
+                let tooltip = '';
+                if (timer.isCompleted) {
+                    tooltip = completedAt 
+                        ? `Order completed on ${formatDate(completedAt)}` 
+                        : 'Order is completed';
+                } else if (timer.isNegative) {
+                    tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
+                } else {
+                    tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
+                }
+                
+                // Update badge class and tooltip
+                badge.className = `timer-badge ${timer.class}`;
+                badge.setAttribute('data-tooltip', tooltip);
+                
+                // Update badge content
+                badge.innerHTML = `
+                    <i class="${iconClass} timer-icon"></i>
+                    ${timer.display}
+                `;
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clean up any existing backdrop issues on page load
+            cleanupOffcanvasBackdrop();
+            
+            // Add Load More button event handler
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', loadMoreOrders);
+            }
+            
+            // Load orders immediately
+            loadOrders();
+            
+            // Update timers every second for real-time countdown
+            setInterval(updateAllTimers, 1000); // Update every 1 second
         });
-    });
-</script>
+    </script>
 @endpush
