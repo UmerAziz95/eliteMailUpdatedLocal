@@ -2,62 +2,14 @@
 @push('styles')
     <style>
         .pricing-card {
-            /* background-color: var(--secondary-color); */
-            /* background-color: rebeccapurple; */
-            /* box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px; */
-            /* box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset; */
             border-radius: 25px;
             padding: 40px 30px;
             transition: 0.3s ease-in-out;
             position: relative;
-            /* overflow: hidden; */
             z-index: 2;
             background-color: var(--primary-color);
-            /* background-color: var(--secondary-color); */
             box-shadow: rgb(133, 133, 133) 0px 0px 8px;
         }
-
-        /* .pricing-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 90%;
-            background-image: url('https://img.freepik.com/free-photo/3d-rendering-abstract-black-white-background_23-2150913897.jpg?ga=GA1.1.1410736458.1721019759&semt=ais_hybrid&w=740');
-            background-position: center;
-            background-size: 150%;
-            z-index: 2;
-            border-radius: 45px;
-            opacity: .1;
-            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
-        }
-
-        .pricing-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 90%;
-            background: linear-gradient(303deg, rgba(255, 255, 255, 1) 0%, rgb(98, 89, 234) 100%);
-            z-index: 1;
-            border-radius: 45px;
-            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
-        } */
-
-        /* .inner-content {
-            background-color: #000;
-            max-height: 100%;
-            width: 100%;
-            position: relative;
-            top: 0;
-            right: -15%;
-            z-index: 3;
-            border-radius: 50px;
-            padding: 0 20px 20px 20px;
-            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
-        } */
 
         .plan-header {
             border-radius: 0 0 25px 25px;
@@ -73,13 +25,11 @@
         }
 
         .pricing-card:hover {
-            /* box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15); */
             transform: translateY(-10px);
         }
 
         .popular {
             position: relative;
-            /* background: linear-gradient(270deg, rgba(89, 74, 253, 0.7) 0%, #8d84f5 100%); */
             background-color: rgba(89, 74, 253, 0.236);
             border: 1px solid var(--second-primary);
             color: white;
@@ -142,7 +92,6 @@
         }
 
         .price {
-            /* background: linear-gradient(303deg,rgba(255, 255, 255, 1) 0%, rgb(101, 91, 234) 100%); */
             background-color: #000;
             border: 3px solid #fff;
             width: fit-content;
@@ -158,7 +107,6 @@
 
         .subscribe-btn {
             box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
-            /* margin-bottom: 6rem */
         }
 
         @media (max-width: 1400px) {

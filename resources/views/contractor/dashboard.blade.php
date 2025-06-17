@@ -132,8 +132,6 @@
     <section class="py-3">
         <div class="row gy-4">
 
-
-
             <!-- <div class="col-md-6">
                     <div class="swiper">
                         <div class="swiper-wrapper">
@@ -265,7 +263,6 @@
                 </div> -->
 
 
-
             <!-- <div class="col-xl-3 col-sm-6">
                     <div class="card h-100">
                         <div class="card-header border-0 px-3 pt-3 pb-0">
@@ -331,7 +328,6 @@
                         </div>
                     </div>
                 </div> -->
-
 
 
             <!-- <div class="col-md-6">
@@ -414,7 +410,7 @@
                         </div>
                     </div>
                 </div> -->
-            <div class="col-6">
+            <div class="col-md-4">
                 <div class="card h-100 p-3">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -423,76 +419,77 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-12 col-sm-4">
-                            <div class=" my-2">
-                                <h1 class="mb-0 success">{{ $totalOrders ?? 0 }}</h1>
-                                {{-- <p class="mb-0">Total Orders</p> --}}
-                            </div>
-                            <ul class="p-0 m-0">
-                                <li class="d-flex gap-2 align-items-center mb-2">
+
+                        <div class=" my-2 d-flex align-items-end">
+                            <h1 class="mb-0 theme-text">{{ $totalOrders ?? 0 }}</h1>
+                            {{-- <p class="mb-0">Total Orders</p> --}}
+                        </div>
+
+                        <div class="col-12">
+                            <div id="orderStatusChart"></div>
+                        </div>
+
+                        <div class="col-12">
+                            <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div
                                         class="p-1 d-flex align-items-center justify-content-center bg-label-warning rounded border border-warning">
-                                        <i class="ti ti-clock-play fs-5"></i>
+                                        <i class="ti ti-clock-play fs-6"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Pending</h6>
-                                        <p class="small opacity-75 mb-0">{{ $pendingOrders ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Pending</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $pendingOrders ?? 0 }}</p>
                                     </div>
                                 </li>
 
-                                <li class="d-flex gap-2 align-items-center mb-2">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div class="badge p-1 rounded icon">
-                                        <i class="ti ti-loader fs-5"></i>
+                                        <i class="ti ti-loader fs-6"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">In Progress</h6>
-                                        <p class="small opacity-75 mb-0">{{ $inProgressOrders ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $inProgressOrders ?? 0 }}</p>
                                     </div>
                                 </li>
 
-                                <li class="d-flex gap-2 align-items-start mb-2">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div class="badge p-1 rounded bg-label-success border border-success">
-                                        <i class="ti ti-check fs-5 success"></i>
+                                        <i class="fa-regular fa-circle-check success fs-6"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Completed</h6>
-                                        <p class="small opacity-75 mb-0">{{ $completedOrders ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Completed</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $completedOrders ?? 0 }}</p>
                                     </div>
                                 </li>
 
-                                <li class="d-flex gap-2 align-items-start mb-2">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div class="badge p-1 rounded bg-label-danger border border-danger">
-                                        <i class="ti ti-ban fs-5 text-danger"></i>
+                                        <i class="ti ti-ban fs-6 text-danger"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Reject</h6>
-                                        <p class="small opacity-75 mb-0">{{ $rejectedOrders ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Reject</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $rejectedOrders ?? 0 }}</p>
                                     </div>
                                 </li>
 
-                                <li class="d-flex gap-2 align-items-start">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div class="badge p-1 rounded"
                                         style="background-color: #8B8E93; border: 1px solid #d2d3d5;">
-                                        <i class="ti ti-x fs-5" style="color: #d2d3d5"></i>
+                                        <i class="ti ti-x fs-6" style="color: #d2d3d5"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Cancelled</h6>
-                                        <p class="small opacity-75 mb-0">{{ $cancelledOrders ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Cancelled</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $cancelledOrders ?? 0 }}</p>
                                     </div>
                                 </li>
                             </ul>
-                        </div>
-                        <div class="col-12 col-sm-8">
-                            <div id="orderStatusChart"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
 
-
-
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
                 <div class="card h-100 p-3">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -510,50 +507,51 @@
                             </div> -->
                     </div>
                     <div class="row pt-0">
-                        <div class="col-12 col-sm-4 d-flex flex-column gap-2">
+                        <div class="col-12 d-flex flex-column gap-2">
                             <div class="my-2">
-                                <h1 class="mb-0 success">{{ $totalTickets ?? 0 }}</h1>
+                                <h1 class="mb-0 theme-text">{{ $totalTickets ?? 0 }}</h1>
                                 {{-- <p class="mb-0">Total Tickets</p> --}}
                             </div>
-                            <ul class="p-0 m-0">
-                                <li class="d-flex gap-2 align-items-center mb-2">
+                            <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
                                     <div class="badge rounded p-1 icon">
-                                        <i class="ti ti-ticket theme-text fs-5"></i>
+                                        <i class="ti ti-ticket theme-text fs-6"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Open Tickets</h6>
-                                        <p class="mb-0 small opacity-75">{{ $newTickets ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Open Tickets</h6>
+                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
-                                <li class="d-flex gap-2 align-items-center mb-2">
+                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
                                     <div class="badge rounded p-1 bg-label-warning border border-warning">
-                                        <i class="ti ti-clock fs-5 text-warning"></i>
+                                        <i class="ti ti-clock fs-6 text-warning"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">In Progress</h6>
-                                        <p class="mb-0 small opacity-75">{{ $inProgressTickets ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
+                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $inProgressTickets ?? 0 }}</p>
                                     </div>
                                 </li>
-                                <li class="d-flex gap-2 align-items-center pb-1">
+
+                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
                                     <div class="badge rounded p-1 bg-label-success border border-success">
-                                        <i class="ti ti-check fs-5 success"></i>
+                                        <i class="fa-regular fa-circle-check success fs-6"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 text-nowrap small">Closed</h6>
-                                        <p class="mb-0 small opacity-75">{{ $resolvedTickets ?? 0 }}</p>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Closed</h6>
+                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $inProgressTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                             </ul>
                         </div>
-                        <div class="col-12 col-md-8">
+                        <div class="col-12">
                             <div id="ticketPieChart"></div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="col-12">
-                <div class="card p-3">
+            <div class="col-12 col-md-4">
+                <div class="card p-3" style="max-height: 32.1rem">
                     <div class="border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
                             <!-- History -->
@@ -561,8 +559,8 @@
                             {{-- <p>History of orders</p> --}}
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table id="ordersTable" class="">
+                    <div class="overflow-x-hidden">
+                        <table id="ordersTable" class="w-100">
                             <!-- Changed from myTable to ordersTable -->
                             <thead>
                                 <tr>
@@ -591,7 +589,7 @@
                             <h6 class="mb-1">Recent Activity</h6>
                         </div>
                     </div>
-                    <div class="table-responsive">
+                    <div class="overflow-hidden">
                         <table id="activityTable" class="w-100">
                             <thead>
                                 <tr>
@@ -780,7 +778,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 350,
+                    height: 300,
                     dropShadow: {
                         enabled: true,
                         color: '#000',
@@ -916,7 +914,7 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                                    <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
                                     <span>${data}</span>    
                                 </div>
                             `;
@@ -997,35 +995,35 @@
                     // { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 columnDefs: [{
-                        width: '10%',
+                        // width: '10%',
                         targets: 0
                     }, // ID
                     {
-                        width: '15%',
+                        // width: '15%',
                         targets: 1
                     }, // Action Type
                     {
-                        width: '20%',
+                        // width: '20%',
                         targets: 2
                     }, // Description 
                     {
-                        width: '10%',
+                        // width: '10%',
                         targets: 3
                     }, // Performed By
                     {
-                        width: '10%',
+                        // width: '10%',
                         targets: 4
                     }, // Performed On Type
                     {
-                        width: '10%',
+                        // width: '10%',
                         targets: 5
                     }, // Performed On Id
                     {
-                        width: '15%',
+                        // width: '15%',
                         targets: 6
                     }, // Extra Data
                     {
-                        width: '10%',
+                        // width: '10%',
                         targets: 7
                     } // User Agent
                 ],
