@@ -290,9 +290,16 @@
                         </div>
                         <div class="d-flex flex-column gap-3">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div style="background-color: #8d8d8d2c" class="rounded-2 py-1 px-3">
-                                    <span class="d-block opacity-75">Total Inboxes</span>
-                                    <h5 class="mb-0 mt-1 number">{{ $totalInboxes ?? 0 }}</h5>
+                                <div style="background-color: #8d8d8d2c" class="d-flex align-items-center gap-2 rounded-2 py-1 px-3">
+                                    <div class="py-1 px-2 rounded-1" style="background-color: #8c8c8c6d">
+                                        <i class="fa-solid fa-inbox"></i>
+                                    </div>
+                                    <div class="d-flex flex-column gap-0"> 
+                                        <span class="opacity-75">
+                                            Total Inboxes
+                                        </span>
+                                        <h5 class="mb-0 number">{{ $totalInboxes ?? 0 }}</h5>
+                                    </div>
                                 </div>
                                 <span style="background-color: var(--second-primary)"
                                     class="bg-opacity-25  px-3 py-1 rounded-2">
@@ -306,16 +313,26 @@
                             <div class="row g-0 mt-1">
                                 <div class="col-6">
                                     <div style="background-color: #2ae6112c; width: fit-content;"
-                                        class="px-3 py-1 rounded-2">
-                                        <span class="d-block success">Active</span>
-                                        <h5 class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
+                                        class="px-3 py-1 rounded-2 d-flex align-items-center gap-2">
+                                        <div class="py-1 px-2 rounded-1" style="background-color: #04e59a66">
+                                            <i class="fa-solid fa-inbox"></i>
+                                        </div>
+                                        <div class="d-flex flex-column gap-0">
+                                            <span class="d-block success">Active</span>
+                                            <h5 class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-6 d-flex justify-content-end">
                                     <div style="background-color: #e6b11138; width: fit-content;"
-                                        class="px-3 py-1 rounded-2">
-                                        <span class="d-block text-warning">Pending/Issue</span>
-                                        <h5 class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
+                                        class="px-3 py-1 rounded-2 d-flex align-items-center gap-2">
+                                        <div class="py-1 px-2 rounded-1" style="background-color: rgba(255, 166, 0, 0.641)">
+                                            <i class="fa-solid fa-spinner"></i>
+                                        </div>
+                                        <div class="d-flex flex-column gap-0">
+                                            <span class="d-block text-warning">Pending/Issue</span>
+                                            <h5 class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
