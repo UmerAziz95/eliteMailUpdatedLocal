@@ -1351,8 +1351,10 @@ class OrderController extends Controller
     public function getAssignedOrdersData(Request $request)
     {
         try {
-            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
-                ->whereHas('orderPanels');
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
+                ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+                    $q->where('contractor_id', auth()->id());
+                });
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
