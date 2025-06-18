@@ -168,7 +168,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <button type="submit" class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Sign
+                                <button type="submit" id="submitBtn" class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Sign
                                     up</button>
                             </form>
 
@@ -221,10 +221,16 @@
     </script>
     <script>
         
-        $(document).ready(function() { 
-        $("#registerForm").submit(function(event) {
+        $(document).ready(function() {
+            $("#registerForm").submit(function(event) {
             event.preventDefault(); // Prevent default form submission
             console.log("Form submitted");
+
+            // Check if terms and conditions checkbox is checked
+            if (!$('#flexCheckDefault').is(':checked')) {
+                toastr.error('Please accept the Privacy Policy and Terms of Service to continue.', 'Error');
+                return false;
+            }
 
             $(".text-danger").html(""); // Clear previous errors
 
