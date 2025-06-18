@@ -124,7 +124,8 @@ class AuthController extends Controller
             // Check if the authenticated user's account is inactive
             if (Auth::user()->status == 0) {
                 Auth::logout(); // Immediately log them out
-                return back()->withErrors(['email' => 'Your account is inactive. Please contact support.']);
+                return back()->withErrors(['email' => 'Your account is inactive. Please verify your account using the verification email we sent to your registered email address.']);
+                // return back()->withErrors(['email' => 'Please verify your account to continue. We\'ve sent a verification link to your email address.']);
             }
     
             $request->session()->regenerate();
