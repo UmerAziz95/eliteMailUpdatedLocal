@@ -278,7 +278,7 @@
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 border-0 animate-gradient">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
