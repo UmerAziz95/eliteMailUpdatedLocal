@@ -77,7 +77,8 @@ class AuthController extends Controller
         } else {
             $loginSuccessful = false;
         }
-        
+        // immediately logout to perform additional checks
+        Auth::logout();
         // If login failed, return early with error
         if (!$loginSuccessful) {
             return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
