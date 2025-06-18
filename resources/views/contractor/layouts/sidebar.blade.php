@@ -27,7 +27,7 @@
                 href="{{ route('contractor.orders') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
                     <div class="icons"><i class="ti ti-box fs-5"></i></div>
-                    <div class="text">Orders</div>
+                    <div class="text">My Orders</div>
                 </div>
             </a>
         </li>
@@ -70,7 +70,7 @@
        class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.panels.index') ? 'active' : '' }}">
         <div class="d-flex align-items-center gap-2">
             <i class="ti ti-layout-dashboard fs-5"></i>
-            <span class="text">Panel</span>
+            <span class="text">Order In Queue</span>
         </div>
     </a>
 </li>
