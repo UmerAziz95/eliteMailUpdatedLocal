@@ -1011,6 +1011,7 @@
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1028,6 +1029,11 @@
                                         </span>
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
+                                    <td>
+                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
