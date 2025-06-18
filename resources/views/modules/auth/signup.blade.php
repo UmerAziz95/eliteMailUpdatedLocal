@@ -105,9 +105,9 @@
                     <div
                         class="col-md-5 col-lg-4 login-right d-flex align-items-center justify-content-center text-start p-5">
                         <div class="text-white position-relative w-100" style="z-index: 9">
-                            <h5 class="fw-bold">Welcome to Project Inbox 👋</h5>
+                            <h5 class="fw-bold">Your adventure starts here 🚀</h5>
                             <p>
-                                Please sign-in to your account and start the adventure
+                                Join thousands of teams rethinking how they purchase Google inboxes for cold email.
                             </p>
 
                             <form id="registerForm">

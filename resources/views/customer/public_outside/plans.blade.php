@@ -263,7 +263,7 @@
                     @endforeach
                 </div>
             @else
-                <div class="alert mt-5 p-4 text-center" style="background-color: #7367ef">
+                <div class="alert mt-5 p-4 text-center" style="background-color: var(--second-primary)">
                     <p
                         style="font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 1.6rem; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #000000; text-shadow: 1px 1px 1px rgba(0,0,0,0.1);">
                         No plans available at the moment.
