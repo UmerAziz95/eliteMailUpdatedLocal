@@ -69,20 +69,55 @@ class AuthController extends Controller
         ]);
     
         $remember = $request->has('remember');
-    
+        
+        // First login attempt - check credentials before any other validations
+        if (Auth::attempt($credentials, $remember)) {
+            // Store successful login attempt temporarily
+            $loginSuccessful = true;
+        } else {
+            $loginSuccessful = false;
+        }
+        
+        // If login failed, return early with error
+        if (!$loginSuccessful) {
+            return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
+        }
+        
+        // // Logout immediately to perform additional checks
+        // Auth::logout();
+
         $userCheck=User::where('email',$request->email)->first();
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
-         if($userCheck->status==0){ //unverified user
+        
+        if($userCheck->status==0){ //unverified user
+            // Generate new verification code
+            $verificationCode = rand(1000, 9999);
+            $userCheck->email_verification_code = $verificationCode;
+            $userCheck->save();
 
-              return back()->withErrors(['email' => 'Account does not exist!']);
+            // Create verification link
+            $payload = $userCheck->email . '/' . $verificationCode . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            $verificationLink = url('/plans/public/' . $encrypted);
+
+            // Send verification email
+            try {
+                Mail::to($userCheck->email)->queue(new EmailVerificationMail($userCheck, $verificationLink));
+                return back()->withErrors(['email' => 'Please verify your account. We have sent you a verification link to your email. Please check your inbox to continue.']);
+            } catch (\Exception $e) {
+                Log::error('Failed to send email verification code: '.$userCheck->email.' '.$e->getMessage());
+                return back()->withErrors(['email' => 'Please verify your account. Unable to send verification email at this time. Please try again later.']);
+            }
         }
-
+        
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
         if(!$userSubsc){
-           
-            return redirect()->route('plans.public', ['encrypted' => '']);
+            // If user has no subscription, redirect to plans/public with encrypted user info
+            $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            return redirect()->to('/plans/public/' . $encrypted);
         }
        
         if (Auth::attempt($credentials, $remember)) {
@@ -160,24 +195,45 @@ class AuthController extends Controller
     }
 
  
-  public function register(Request $request)
-        {
-            $data = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email',
-                'role' => 'required|in:customer',
-            ]);
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'role' => 'required|in:customer',
+            'password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            ],
+            'password_confirmation' => 'required',
+        ], [
+            'password.required' => 'Password is required.',
+            'password.string' => 'Password must be a valid string.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'password.regex' => 'Password must contain at least one uppercase letter, one number, and one special character.',
+            'password_confirmation.required' => 'Password confirmation is required.',
+        ]);
 
-
-            $existingUser = User::where('email', $data['email'])->first();
-            if ($existingUser) {
+        // Check if the user is already registered
+        $existingUser = User::where('email', $data['email'])->first();
+        if ($existingUser) {
+            return response()->json([
+                'message' => 'Account already exists. Please login.',
+            ], 403);
+        }
+        $existingUser = User::where('email', $data['email'])->first();
+        if ($existingUser) {
             $userSubs=Subscription::where('user_id',$existingUser->id)->first();
             if($userSubs){
                 return response()->json([
-                            'message' => 'Account already exists. Please login.',
-                        ], 403);
-                }
-                else {
+                    'message' => 'Account already exists. Please login.',
+                ], 403);
+            }
+            else {
                 // Email verification code
                 $verificationCode = rand(1000, 9999);
                 $existingUser->email_verification_code = $verificationCode;
@@ -186,7 +242,7 @@ class AuthController extends Controller
                 $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
                 $encrypted = Crypt::encryptString($payload);
                 $verificationLink =url('/plans/public/' . $encrypted);
-                
+            
 
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
@@ -200,83 +256,83 @@ class AuthController extends Controller
                     'user' => $existingUser,
                     'verificationLink'=>$verificationLink
                 ], 200);
-                }
-            
-            } 
+            }
         
+        }
 
 
-            // Create new user
-            
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make(Str::random(6)),
-                'role_id' =>3,
-                'status' => 0
-            ]);
 
-            // Optional: create Chargebee customer
-           
-                try {
-                    $result = \ChargeBee\ChargeBee\Models\Customer::create([
-                        'firstName' => $user->name,
-                        'email' => $user->email,
-                        'phone' => $user->phone,
-                        'autoCollection' => 'on',
-                    ]);
+        // Create new user
+        
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make(Str::random(6)),
+            'role_id' =>3,
+            'status' => 0
+        ]);
 
-                    $customer = $result->customer();
-                    $user->update(['chargebee_customer_id' => $customer->id]);
-
-                    Log::info('Chargebee customer created for user', [
-                        'user_id' => $user->id,
-                        'chargebee_customer_id' => $customer->id
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
-                        'user_id' => $user->id
-                    ]);
-                }
-      
-            // Log activity
-            ActivityLogService::log(
-                'user_signup',
-                'New user registered successfully',
-                $user,
-                [
-                    'email' => $user->email,
-                    'role_id' => $user->role_id,
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->header('User-Agent'),
-                    'chargebee_customer_id' => $user->chargebee_customer_id,
-                ],
-                $user->id
-            );
-
-            // Email verification code
-            $verificationCode = rand(1000, 9999);
-            $user->email_verification_code = $verificationCode;
-            $user->save();
-
-            $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
-            $encrypted = Crypt::encryptString($payload);
-            $verificationLink =url('/plans/public/' . $encrypted);
-            
-
+        // Optional: create Chargebee customer
+        
             try {
-                Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
+                $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                    'firstName' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'autoCollection' => 'on',
+                ]);
+
+                $customer = $result->customer();
+                $user->update(['chargebee_customer_id' => $customer->id]);
+
+                Log::info('Chargebee customer created for user', [
+                    'user_id' => $user->id,
+                    'chargebee_customer_id' => $customer->id
+                ]);
             } catch (\Exception $e) {
-                Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+                Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                    'user_id' => $user->id
+                ]);
             }
 
-            return response()->json([
-                'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
-                'redirect' => $this->redirectTo($user),
-                'user' => $user,
-                'verificationLink'=>$verificationLink
-            ], 200);
-        }    
+        // Log activity
+        ActivityLogService::log(
+            'user_signup',
+            'New user registered successfully',
+            $user,
+            [
+                'email' => $user->email,
+                'role_id' => $user->role_id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'chargebee_customer_id' => $user->chargebee_customer_id,
+            ],
+            $user->id
+        );
+
+        // Email verification code
+        $verificationCode = rand(1000, 9999);
+        $user->email_verification_code = $verificationCode;
+        $user->save();
+
+        $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+        $encrypted = Crypt::encryptString($payload);
+        $verificationLink =url('/plans/public/' . $encrypted);
+        
+
+        try {
+            Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
+        } catch (\Exception $e) {
+            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+            'redirect' => $this->redirectTo($user),
+            'user' => $user,
+            'verificationLink'=>$verificationLink
+        ], 200);
+    }    
 
             // Show forgot password form
             public function showForgotPasswordForm()
@@ -439,8 +495,30 @@ public function sendResetLink(Request $request)
             }
         }
 
+        
+        public function viewPublicPlans(Request $request,$encrypted){
+            
+            // If encrypted parameter is provided, verify and update user status
+            if($encrypted) {
+                try {
+                    $decrypted = Crypt::decryptString($encrypted);
+                    [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
 
-            public function viewPublicPlans(Request $request,$encrypted){
+                    $user = User::where('email', $email)->first();
+                    if ($user && $user->status == 0) {
+                        // Update user status to 1 (verified/active)
+                        $user->status = 1;
+                        $user->save();
+                        
+                        Log::info('User status updated to active via public plans access', [
+                            'user_id' => $user->id,
+                            'email' => $user->email
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to decrypt verification link in viewPublicPlans: ' . $e->getMessage());
+                }
+            }
          
             $getMostlyUsed = Plan::getMostlyUsed();
             $plans = Plan::with('features')->where('is_active', true)->get();

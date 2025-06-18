@@ -296,6 +296,7 @@ class PlanController extends Controller
     {
         try {
             $hostedPageId = $request->input('id');
+            // dd($hostedPageId);
             // get session order_info
             if (!$hostedPageId) {
                 return response()->json([
@@ -305,7 +306,17 @@ class PlanController extends Controller
             }
 
           
-
+            if(!Auth::check()){
+                $unauthorized_user = session()->get('unauthorized_session');
+                if($unauthorized_user) {
+                    $user = User::where('email', $unauthorized_user->email)->first();
+                    if($user) {
+                        Auth::login($user);
+                        session()->forget('unauthorized_session');
+                    }
+                }
+            }
+            // dd($unauthorized_user);
             // if(!Auth::check()){
             //     $unauthorized_user = session()->get('unauthorized_session');
             //     $user=User::where('email',$unauthorized_user->email)->first();
@@ -354,7 +365,7 @@ class PlanController extends Controller
             }
             // dd($subscription, $customer, $invoice, $plan_id, $charge_plan_id);
             $user = auth()->user();
-
+            // dd($user);
             if (!$subscription || !$customer || !$invoice) {
                 return response()->json([
                     'success' => false,
