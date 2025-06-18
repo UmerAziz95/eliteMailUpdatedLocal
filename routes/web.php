@@ -298,6 +298,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
     Route::post('/order-panel/status/process', [ContractorOrderController::class, 'orderPanelStatusProcess'])->name('order.panel.status.process');
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
+    Route::post('/order/panel/email/bulk-import', [ContractorOrderController::class, 'orderSplitImportProcess'])->name('order.panel.email.bulkImport');
     
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
     
@@ -322,6 +323,11 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/orders/{orderId}/emails', [ContractorOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [ContractorOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [ContractorOrderEmailController::class, 'delete']);
+    
+    // Split Panel Email routes
+    Route::get('/orders/panel/{orderPanelId}/emails', [ContractorOrderController::class, 'getSplitEmails']);
+    Route::post('/orders/panel/emails', [ContractorOrderController::class, 'storeSplitEmails']);
+    Route::delete('/orders/panel/emails/{id}', [ContractorOrderController::class, 'deleteSplitEmail']);
     
     // CSV Export routes
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
