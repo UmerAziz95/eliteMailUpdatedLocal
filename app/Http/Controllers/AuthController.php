@@ -113,13 +113,13 @@ class AuthController extends Controller
         }
         
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
-        if(!$userSubsc){
-            // If user has no subscription, redirect to plans/public with encrypted user info
+        if(!$userSubsc && $userCheck->role_id == 3){
+            // If user has no subscription and is a customer, redirect to plans/public with encrypted user info
             $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
             return redirect()->to('/plans/public/' . $encrypted);
         }
-       
+        
         if (Auth::attempt($credentials, $remember)) {
             // Check if the authenticated user's account is inactive
             if (Auth::user()->status == 0) {
