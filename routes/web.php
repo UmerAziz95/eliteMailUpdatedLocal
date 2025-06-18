@@ -94,7 +94,7 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
 });
 
-Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('subscription.success');
+Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('customer.subscription.success');
 
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
