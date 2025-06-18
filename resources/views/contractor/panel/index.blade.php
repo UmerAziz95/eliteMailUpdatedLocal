@@ -37,6 +37,10 @@
             justify-content: center;
         }
 
+        .table>:not(caption)>*>* {
+            border-bottom-width: 0 !important
+        }
+
         .empty-state i {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -578,7 +582,7 @@
                 
                 container.innerHTML = `
                     <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
+                        <i class="fas fa-inbox mb-3" style="font-size: 3rem;"></i>
                         <h5>No Orders Found</h5>
                         <p class="mb-3">No orders match your current filters.</p>
                         <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
@@ -610,7 +614,7 @@
                 <div class="card p-3 d-flex flex-column gap-3 order-card">                    
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
-                            <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
+                            <h6 class="mb-0">Order #${order.order_id}</h6>
                         </div>
                         <div class="d-flex align-items-center">
                             ${order.status_manage_by_admin}
@@ -625,8 +629,8 @@
                                     <i class="fas fa-user" style="font-size: 16px;"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-0">
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Customer</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.customer_name}</small>
+                                    <small class="opacity-75 d-block" style="font-size: 10px;">Customer</small>
+                                    <small class="fw-bold" style="font-size: 12px;">${order.customer_name}</small>
                                 </div>
                             </div>
                         </div>
@@ -636,8 +640,8 @@
                                     <i class="fas fa-inbox" style="font-size: 16px;"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-0">
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_inboxes}</small>
+                                    <small class="opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
+                                    <small class="fw-bold" style="font-size: 12px;">${order.total_inboxes}</small>
                                 </div>
                             </div>
                         </div>
@@ -647,8 +651,8 @@
                                     <i class="fas fa-divide" style="font-size: 16px;"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-0">
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.inboxes_per_domain}</small>
+                                    <small class="opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
+                                    <small class="fw-bold" style="font-size: 12px;">${order.inboxes_per_domain}</small>
                                 </div>
                             </div>
                         </div>
@@ -658,8 +662,8 @@
                                     <i class="fas fa-globe" style="font-size: 16px;"></i>
                                 </div>
                                 <div class="d-flex flex-column gap-0">
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_domains}</small>
+                                    <small class="opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
+                                    <small class="fw-bold" style="font-size: 12px;">${order.total_domains}</small>
                                 </div>
                             </div>
                         </div>
@@ -943,7 +947,7 @@
             if (!data.splits || data.splits.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
-                        <i class="fas fa-inbox text-white fs-3 mb-3"></i>
+                        <i class="fas fa-inbox fs-3 mb-3"></i>
                         <h5>No Splits Found</h5>
                         <p>This order doesn't have any splits yet.</p>
                     </div>
@@ -971,7 +975,7 @@
                                 ${orderInfo.status_manage_by_admin}
                                 ${createTimerBadge(orderInfo)}
                             </h6>
-                            <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                            <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
                         <div>
                             ${(() => {
@@ -989,7 +993,7 @@
                                     `;
                                 } else {
                                     return `
-                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                                        <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
@@ -1015,12 +1019,12 @@
                                 <tr>
                                     <th scope="row">${index + 1}</th>
                                     <td>
-                                        <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                        <span class="text-white px-2 py-1 rounded-1 ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
                                     
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
                                     <td>
-                                        <span class="badge bg-success" style="font-size: 10px;">
+                                        <span class="px-2 py-1 rounded-1 bg-success text-white" style="font-size: 10px;">
                                             ${split.domains_count || 0} domain(s)
                                         </span>
                                     </td>
@@ -1131,16 +1135,16 @@
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Split ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                                <small class="fw-bold">PNL-${split.panel_id} Domains</small>
                                             </div>
                                             <div class="d-flex align-items-center">
-                                                <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                <span class="badge bg-white bg-opacity-25 me-2" style="font-size: 9px;">
                                                     ${split.domains_count || 0} domains
                                                 </span>
-                                                <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                                <i class="fa-solid fa-copy me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                    title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
                                                    onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
-                                                <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                                <i class="fa-solid fa-chevron-right transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                             </div>
                                         </div>
                                         <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
