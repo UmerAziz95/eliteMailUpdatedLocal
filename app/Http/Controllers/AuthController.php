@@ -74,9 +74,17 @@ class AuthController extends Controller
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
-        if($userCheck->status==0){
+         if($userCheck->status==0){ //unverified user
+
               return back()->withErrors(['email' => 'Account does not exist!']);
         }
+
+        $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
+        if(!$userSubsc){
+           
+            return redirect()->route('plans.public', ['encrypted' => '']);
+        }
+       
         if (Auth::attempt($credentials, $remember)) {
             // Check if the authenticated user's account is inactive
             if (Auth::user()->status == 0) {
