@@ -732,22 +732,24 @@
                 return;
             }
 
+            // Send as JSON to avoid max_input_vars limit
             $.ajax({
                 url: '/contractor/orders/panel/emails',
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Content-Type': 'application/json'
                 },
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    order_panel_id: '{{ $orderPanel->id }}',
+                data: JSON.stringify({
+                    order_panel_id: {{ $orderPanel->id }},
                     emails: emailsToSave
-                },
+                }),
                 success: function(response) {
                     toastr.success('Emails saved successfully');
                     emailTable.ajax.reload();
                 },
                 error: function(xhr) {
+                    console.error('Error response:', xhr.responseText);
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
                         // Loop through each error and mark fields as invalid
                         Object.keys(xhr.responseJSON.errors).forEach(function(key) {
@@ -830,8 +832,6 @@
             const formData = new FormData(this);
             const order_panel_id = {{ $orderPanel->id }};
             const split_total_inboxes = {{ $splitTotalInboxes }};
-            formData.append('order_panel_id', order_panel_id);
-            formData.append('split_total_inboxes', split_total_inboxes);
 
             Swal.fire({
                 title: 'Are you sure?',
@@ -842,6 +842,10 @@
                 confirmButtonText: 'Yes!'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // For file uploads, we still need to use FormData, not JSON
+                    formData.append('order_panel_id', order_panel_id);
+                    formData.append('split_total_inboxes', split_total_inboxes);
+
                     $.ajax({
                         url: $(this).attr('action'),
                         method: 'POST',
@@ -878,6 +882,12 @@
                             let errorMessage = 'An error occurred while processing the file.';
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseText) {
+                                console.error('Error response:', xhr.responseText);
+                                // Check if it's a PHP max_input_vars error
+                                if (xhr.responseText.includes('max_input_vars')) {
+                                    errorMessage = 'File too large. Please try with a smaller file or contact administrator.';
+                                }
                             }
                             Swal.fire({
                                 icon: 'error',
