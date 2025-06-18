@@ -40,17 +40,31 @@
         
     </div>
 
-    <!-- Configuration Content Only -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card p-3 mb-3">
-                <h6 class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center justify-content-center"
-                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                        <i class="fa-regular fa-envelope"></i>
-                    </div>
-                    Email configurations
-                </h6>
+    <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+                data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
+                aria-selected="true">Configuration</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane"
+                type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">Other</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="myTabContent">
+        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+            aria-labelledby="configuration-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-regular fa-envelope"></i>
+                            </div>
+                            Email configurations
+                        </h6>
 
                 @if(optional($orderPanel->order->reorderInfo)->count() > 0)
                 <div class="d-flex align-items-center justify-content-between">
@@ -234,7 +248,86 @@
                 @endif
                 @else
                 <div class="text-muted">No configuration information available</div>
-                @endif
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="other-tab-pane" role="tabpanel" aria-labelledby="other-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-info-circle"></i>
+                            </div>
+                            Additional Information
+                        </h6>
+
+                        @if(optional($orderPanel->order->reorderInfo)->count() > 0)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Order Notes</span>
+                            <span>{{ $orderPanel->order->reorderInfo->first()->notes ?? 'No notes available' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Special Instructions</span>
+                            <span>{{ $orderPanel->order->reorderInfo->first()->special_instructions ?? 'No special instructions' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Additional Requirements</span>
+                            <span>{{ $orderPanel->order->reorderInfo->first()->additional_requirements ?? 'No additional requirements' }}</span>
+                        </div>
+                        @else
+                        <div class="text-muted">No additional information available</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            Order Statistics
+                        </h6>
+
+                        @if(optional($orderPanel->order->reorderInfo)->count() > 0)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Order Priority</span>
+                            <span>{{ $orderPanel->order->reorderInfo->first()->priority ?? 'Normal' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Estimated Completion</span>
+                            <span>{{ $orderPanel->order->reorderInfo->first()->estimated_completion ?? 'Not specified' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Last Updated</span>
+                            <span>{{ $orderPanel->updated_at ? $orderPanel->updated_at->format('M d, Y H:i') : 'Never' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Processing Time</span>
+                            @php
+                                $processingTime = 'Calculating...';
+                                if ($orderPanel->order->created_at && $orderPanel->updated_at) {
+                                    $diff = $orderPanel->order->created_at->diffInHours($orderPanel->updated_at);
+                                    $processingTime = $diff . ' hours';
+                                }
+                            @endphp
+                            <span>{{ $processingTime }}</span>
+                        </div>
+                        @else
+                        <div class="text-muted">No statistics available</div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>
