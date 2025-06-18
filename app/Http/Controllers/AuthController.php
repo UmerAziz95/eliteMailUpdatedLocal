@@ -83,8 +83,8 @@ class AuthController extends Controller
             return back()->withInput()->withErrors(['email' => 'Invalid credentials']);
         }
         
-        // Logout immediately to perform additional checks
-        Auth::logout();
+        // // Logout immediately to perform additional checks
+        // Auth::logout();
 
         $userCheck=User::where('email',$request->email)->first();
         if(!$userCheck){
@@ -201,8 +201,21 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'role' => 'required|in:customer',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            ],
             'password_confirmation' => 'required',
+        ], [
+            'password.required' => 'Password is required.',
+            'password.string' => 'Password must be a valid string.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'password.regex' => 'Password must contain at least one uppercase letter, one number, and one special character.',
+            'password_confirmation.required' => 'Password confirmation is required.',
         ]);
 
         // Check if the user is already registered
