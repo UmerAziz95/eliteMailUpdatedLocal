@@ -87,7 +87,7 @@ class AuthController extends Controller
         // Auth::logout();
 
         $userCheck=User::where('email',$request->email)->first();
-        dd($userCheck);
+        dd($userCheck, Auth::user()->status == 0 && $userCheck->role_id == 3 );
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
