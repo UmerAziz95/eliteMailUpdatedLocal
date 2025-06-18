@@ -87,7 +87,7 @@ class AuthController extends Controller
         // Auth::logout();
 
         $userCheck=User::where('email',$request->email)->first();
-        dd($userCheck, Auth::user()->status == 0 && $userCheck->role_id == 3 );
+        // dd($userCheck, Auth::user()->status == 0 && $userCheck->role_id == 3 );
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
@@ -128,7 +128,7 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Your account is inactive. Please verify your account using the verification email we sent to your registered email address.']);
                 // return back()->withErrors(['email' => 'Please verify your account to continue. We\'ve sent a verification link to your email address.']);
             }
-            if (Auth::user()->status == 0){
+            if (Auth::user()->status == 0 && $userCheck->role_id != 3 ){
                 // If the user is active, proceed with the login
                   Auth::logout(); // Immediately log them out
                   return back()->withErrors(['email' => 'Your account is inactive. Please contact support for assistance.']);
