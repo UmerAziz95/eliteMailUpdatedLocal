@@ -434,43 +434,39 @@
 <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
     <div class="container"
         style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px;">
-        <div class="welcome-header" style="text-align: center;">
-            <h2 style="color: #333;">Verify Your Email Address</h2>
-        </div>
 
-        <div class="content" style="margin-top: 20px; color: #555;">
-            <p>Dear {{ $user->name }},</p>
-
-            <p>Thank you for registering with <strong>{{ config('app.name') }}</strong>! To complete your sign-up,
-                please verify by clicking the below button</p>
-
-            {{-- <div style="margin: 20px 0;">
-                <p style="font-size: 16px;">🔐 <strong>Your 4-digit verification code is:</strong></p>
-                <p
-                    style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 15px; border-radius: 8px; text-align: center; color: #2a2a2a;">
-                    {{ $user->email_verification_code }}
-                </p>
-            </div> --}}
-
-            {{-- <p>Alternatively, you can verify your email using the following secure link:</p> --}}
-
-            @if($verificationLink )
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{{ $verificationLink }}"
-                    style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
-                    Verify Here
-                </a>
+        {{-- <div class="welcome-header" style="text-align: center;"> --}}
+            <div class="" style="text-align: center;">
+                <h2 style="color: #333;">Verify Your Email Address</h2>
             </div>
-            @endif
 
-            <p>If you didn’t request this verification, you can safely ignore this email.</p>
-        </div>
+            <div class="content" style="margin-top: 20px; color: #555; padding-left: 20px;">
 
-        <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
-            <p>If you have any questions or need help, feel free to contact our support team.</p>
-            <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+                <p>Dear {{ $user->name }},</p>
+
+                <p>Thank you for registering with <strong>{{ config('app.name') }}</strong>! To complete your sign-up,
+                    please verify by clicking the below button</p>
+
+
+                {{-- <p>Alternatively, you can verify your email using the following secure link:</p> --}}
+
+                @if($verificationLink )
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{{ $verificationLink }}"
+                        style="background-color: #4b3bff; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
+                        Verify Here
+                    </a>
+                </div>
+                @endif
+
+                <p>If you didn’t request this verification, you can safely ignore this email.</p>
+            </div>
+
+            <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+                <p>If you have any questions or need help, feel free to contact at support@projectinbox.ai </p>
+                <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+            </div>
         </div>
-    </div>
 </body>
 
 </html>

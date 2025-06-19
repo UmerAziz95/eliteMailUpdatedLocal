@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,29 +23,65 @@
             --bg-gradient-1: linear-gradient(135deg, #1a1f2c 0%, #212433 100%);
             --bg-gradient-2: linear-gradient(45deg, rgba(47, 51, 73, 0.98) 0%, rgba(33, 36, 51, 0.98) 100%);
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
+
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
+
         @keyframes borderGlow {
-            0% { box-shadow: 0 0 0 0 rgba(115, 103, 240, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(115, 103, 240, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(115, 103, 240, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(115, 103, 240, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(115, 103, 240, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(115, 103, 240, 0);
+            }
         }
+
         body {
             font-family: "Public Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
@@ -59,6 +96,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .container {
             width: min(90%, 800px);
             margin: 40px auto;
@@ -71,6 +109,7 @@
             animation: fadeIn 0.8s ease-out forwards;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .welcome-header {
             display: flex;
             align-items: center;
@@ -84,6 +123,7 @@
             overflow: hidden;
             animation: slideIn 0.6s ease-out forwards;
         }
+
         .welcome-header::before {
             content: '';
             position: absolute;
@@ -91,12 +131,12 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(to right, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.2) 50%,
-                transparent 100%
-            );
+            background: linear-gradient(to right,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.2) 50%,
+                    transparent 100%);
         }
+
         .welcome-header h2 {
             color: var(--white-color);
             font-size: 32px;
@@ -110,6 +150,7 @@
             position: relative;
             z-index: 1;
         }
+
         .content {
             background: linear-gradient(145deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.12) 100%);
             padding: clamp(20px, 4vw, 30px);
@@ -121,6 +162,7 @@
             animation-delay: 0.2s;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
+
         .detail-card {
             background: rgba(115, 103, 240, 0.08);
             border-radius: 12px;
@@ -128,6 +170,7 @@
             margin: 20px 0;
             border: 1px solid rgba(115, 103, 240, 0.15);
         }
+
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -138,16 +181,19 @@
             margin-bottom: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .detail-label {
             color: var(--second-primary);
             font-weight: 500;
             font-size: 14px;
         }
+
         .detail-value {
             color: var(--text-primary);
             font-weight: 600;
             font-size: 14px;
         }
+
         .btn-primary {
             display: inline-block;
             background: var(--gradient-3);
@@ -164,10 +210,12 @@
             transition: all 0.3s ease;
             animation: borderGlow 2s infinite;
         }
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(115, 103, 240, 0.3);
         }
+
         .footer {
             margin: 40px 0 0 0;
             padding: 32px 40px;
@@ -179,6 +227,7 @@
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             animation: fadeIn 0.8s ease-out forwards;
         }
+
         .footer::before {
             content: '';
             position: absolute;
@@ -186,42 +235,49 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(to right, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.2) 50%,
-                transparent 100%
-            );
+            background: linear-gradient(to right,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.2) 50%,
+                    transparent 100%);
         }
+
         .highlight-text {
             background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
         }
+
         @media only screen and (max-width: 768px) {
             body {
                 background: var(--primary-color);
             }
+
             .container {
                 width: 100%;
                 margin: 0;
                 border-radius: 0;
                 min-height: 100vh;
             }
+
             .btn-primary {
                 width: 100%;
                 text-align: center;
                 padding: 18px 24px;
             }
+
             .welcome-header {
                 padding: 30px 20px;
             }
+
             .welcome-header h2 {
                 font-size: clamp(20px, 5vw, 24px);
             }
+
             .content {
                 border-radius: 12px;
             }
+
             .detail-row {
                 flex-direction: column;
                 align-items: flex-start;
@@ -230,45 +286,48 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <div class="welcome-header">
-            <h2>New Order Created</h2>
-        </div>
-        
-        <div class="content">
-            <p>Dear {{ $user->name }},</p>
-            <!-- isAdminNotification -->
-            @if($isAdminNotification)
-                <p>A new order has been created.</p>
-            @else
-                <p>Thank you for your order! Your order has been successfully created.</p>
-            @endif
+        {{-- <div class="welcome-header"> --}}
+            <div style="text-align: center" class="text-center w-100 bg-info">
+                <h2 class="text-center" style="text-align: center">New Order Created</h2>
+            </div>
 
-            <div class="detail-card">
-                <div class="detail-row">
-                    <span class="detail-label">Order Number:</span>
-                    <span class="detail-value">#{{ $order->id }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Plan:</span>
-                    <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Amount:</span>
-                    <span class="detail-value">${{ number_format($order->amount, 2) }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Status:</span>
-                    <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
+            <div class="content">
+                <p>Dear {{ $user->name }},</p>
+                <!-- isAdminNotification -->
+                @if($isAdminNotification)
+                <p>A new order has been created.</p>
+                @else
+                <p>Thank you for your order! Your order has been successfully created.</p>
+                @endif
+
+                <div class="detail-card">
+                    <div class="detail-row">
+                        <span class="detail-label">Order Number:</span>
+                        <span class="detail-value">#{{ $order->id }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Plan:</span>
+                        <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">${{ number_format($order->amount, 2) }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="footer">
-            <p>If you have any questions about your order, please don't hesitate to contact our support team.</p>
-            <p>Best regards,<br>The <span class="highlight-text">{{ config('app.name') }}</span> Team</p>
+            <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+                <p>If you have any questions or need help, feel free to contact at support@projectinbox.ai </p>
+                <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+            </div>
         </div>
-    </div>
 </body>
+
 </html>
