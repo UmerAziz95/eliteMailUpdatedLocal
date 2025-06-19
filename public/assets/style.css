@@ -11,7 +11,7 @@
     --text-color: #c8c5ff;
     --slide-bg: #6c64c957;
     --green-color: #A6FF00;
-    --filter-color: #4124fb44;
+    --filter-color: #5a49cd7b;
 }
 
 .light-theme {
@@ -65,6 +65,10 @@ html.dark-theme .logo-light {
 
 .number {
     font-family: "Space Grotesk"
+}
+
+.mont {
+    font-family: 'Montserrat';
 }
 
 ::-webkit-scrollbar {
@@ -148,7 +152,7 @@ a {
 .filter {
     /* background: linear-gradient(128deg, rgb(154, 146, 245) 0%, rgba(255, 255, 255, 1) 65%); */
     /* background-color: var(--second-primary) !important; */
-    background-color: var(--filter-color) !important;
+    background-color: var(--slide-bg) !important;
     border-radius: 8px;
     border: 1px solid var(--second-primary);
     backdrop-filter: blur(10px);
@@ -537,6 +541,10 @@ footer {
     color: rgb(255, 0, 0) !important;
 }
 
+.dataTables_paginate {
+    margin-bottom: .5rem;
+}
+
 /* ===========data table============ */
 
 thead tr {
@@ -770,7 +778,8 @@ thead {
 
 
 footer {
-    box-shadow: var(--box-shadow);
+    /* box-shadow: var(--box-shadow); */
+    border: 1px solid #8a8a8a62;
 }
 
 .modal {
