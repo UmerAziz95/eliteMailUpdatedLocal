@@ -683,85 +683,92 @@ pointer-events: none
                 container.innerHTML = ordersHtml;
             }
         }
-        // this template change with new template also flip_details add order splits of orders
+        // replace this card view with new template also flip_details add order splits of orders not change any other change in my code
         
         // Create order card HTML
         function createOrderCard(order) {
+            // Calculate splits table content
+            const splitsTableContent = order.splits && order.splits.length > 0 
+            ? order.splits.map((split, index) => `
+                <tr>
+                <td style="font-size: 10px; padding: 5px !important;">${index + 1}</td>
+                <td style="font-size: 10px; padding: 5px !important;"><span class="badge ${getStatusBadgeClass(split.status)}" style="font-size: 9px;">${split.status || 'Unknown'}</span></td>
+                <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
+                <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
+                <td style="padding: 5px !important;"><i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')"></i></td>
+                </tr>
+            `).join('')
+            : `<tr><td colspan="5" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
+
             return `
-                <div class="card p-3 d-flex flex-column gap-3 order-card">                    
+            <div class="anim_card rounded-2">
+                <div class="order_detail p-3">
+                <div class="card_content">
+                    <div class="text-end">
+                    <button class="btn btn-primary px-2 py-1 rounded-1" 
+                        onclick="viewOrderSplits(${order.order_id})" 
+                        data-bs-toggle="offcanvas" 
+                        data-bs-target="#order-splits-view"
+                        style="font-size: 11px">
+                        View More Detail
+                    </button>
+                    </div>
+
+                    <table class="mt-2 border-0 w-100" style="height: 10.5rem; overflow-y: auto; display: block; scrollbar-width: none;">
+                    <thead>
+                        <tr>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">ID #</th>
+                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Split Status</th>
+                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
+                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${splitsTableContent}
+                    </tbody>
+                    </table>
+                </div>
+                </div>
+                
+                <div class="flip_details overflow-hidden">
+                <div class="center w-100 h-100">
+                    <div class="rounded-2">
                     <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <h6 class="mb-0 text-white">Order #${order.order_id}</h6>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            ${order.status_manage_by_admin}
-                            ${createTimerBadge(order)}
+                        <h6>Order #${order.order_id}</h6>
+                        <div>
+                        ${order.status_manage_by_admin}
+                        ${createTimerBadge(order)}
                         </div>
                     </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-user text-info" style="font-size: 12px;"></i>
-                                </div>
-                                <div>
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Customer</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.customer_name}</small>
-                                </div>
-                            </div>
+
+                    <div class="mt-3 d-flex gap-3 align-items-center">
+                        <div>
+                        <img src="https://images.pexels.com/photos/6603118/pexels-photo-6603118.jpeg" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="">
                         </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-inbox text-success" style="font-size: 12px;"></i>
-                                </div>
-                                <div>
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_inboxes}</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-divide text-warning" style="font-size: 12px;"></i>
-                                </div>
-                                <div>
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.inboxes_per_domain}</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2">
-                                    <i class="fas fa-globe text-primary" style="font-size: 12px;"></i>
-                                </div>
-                                <div>
-                                    <small class="text-white opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
-                                    <small class="fw-bold text-white" style="font-size: 12px;">${order.total_domains}</small>
-                                </div>
-                            </div>
+
+                        <div class="d-flex flex-column gap-1">
+                        <span class="fw-bold">${order.customer_name}</span>
+                        <small>Total Inbox: ${order.total_inboxes}</small>
                         </div>
                     </div>
-                    
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-calendar-alt text-white opacity-75 me-1" style="font-size: 11px;"></i>
-                            <small class="text-white opacity-75">${formatDate(order.created_at)}</small>
+
+                    <small class="ms-2">${formatDate(order.created_at)}</small>
+
+                    <div class="d-flex align-items-center justify-content-between mt-4">
+                        <div class="d-flex flex-column align-items-center gap-0">
+                        <small class="fw-bold" style="font-size: 13px">Inbox/Domain</small>
+                        <small style="font-size: 12px">${order.inboxes_per_domain}</small>
                         </div>
-                        <button class="btn btn-sm btn-primary px-3 rounded-pill fw-bold" 
-                                onclick="viewOrderSplits(${order.order_id})" 
-                                data-bs-toggle="offcanvas" 
-                                data-bs-target="#order-splits-view"
-                                style="font-size: 11px;">
-                            <i class="fas fa-eye me-1" style="font-size: 10px;"></i>
-                            View Details
-                            <span class="badge bg-white text-primary ms-1 rounded-pill" style="font-size: 9px;">${order.splits_count}</span>
-                        </button>
+                        <div class="d-flex flex-column align-items-center gap-0">
+                        <small class="fw-bold" style="font-size: 13px">Total Domains</small>
+                        <small style="font-size: 12px">${order.total_domains}</small>
+                        </div>
+                    </div>
                     </div>
                 </div>
+                </div>
+            </div>
             `;
         }
 
