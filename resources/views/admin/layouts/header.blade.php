@@ -9,7 +9,7 @@
         <i class="fa-solid fa-magnifying-glass fs-5"></i> Search
     </button> --}}
 
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-2">
         {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-language fs-5"></i>
@@ -21,7 +21,7 @@
             </ul>
         </div> --}}
 
-        <div class="dropdown">
+        {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-moon-stars fs-5"></i>
             </div>
@@ -31,7 +31,7 @@
                 <li><a class="dropdown-item d-flex align-items-center gap-1" id="dark-theme" href="#"><i
                             class="ti ti-moon-stars fs-6"></i> Dark</a></li>
             </ul>
-        </div>
+        </div> --}}
 
         {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -43,6 +43,7 @@
                 <li><a class="dropdown-item" href="#">Something else here</a></li>
             </ul>
         </div> --}}
+
 
         <div class="dropdown notification-dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"
@@ -67,8 +68,8 @@
             </ul>
         </div>
 
-        <div class="dropdown">
 
+        <div class="dropdown">
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;">
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
                     style="background-color: var(--secondary-color); z-index: 10">
@@ -106,8 +107,9 @@
                 class="object-fit-cover login-user-profile" alt="User Image">
         @else
             <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: #5750bf;">
-                {{ $initials }}
+                style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
+                {{-- {{ $initials }} --}}
+                <i class="fa-regular fa-user"></i>
             </div>
         @endif
 

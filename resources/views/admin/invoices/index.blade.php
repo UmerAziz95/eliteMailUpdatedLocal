@@ -25,8 +25,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/15579/15579005.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-file-invoice fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -47,8 +48,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/15575/15575685.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-brands fa-creative-commons-sa fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -70,8 +72,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/18998/18998293.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-regular fa-circle-xmark fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -93,8 +96,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/17905/17905386.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-triangle-exclamation fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -153,7 +157,7 @@
                         </div>
 
                         <div class="d-flex align-items-center justify-content-end">
-                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 animate-gradient border-0">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm me-2 px-4 border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>

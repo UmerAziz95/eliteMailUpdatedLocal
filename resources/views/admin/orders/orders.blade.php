@@ -202,8 +202,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/14385/14385008.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-regular fa-file-lines fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -224,8 +225,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/18873/18873804.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-spinner fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -247,8 +249,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/6416/6416374.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-check-double fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -270,8 +273,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/10282/10282642.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-bars-progress fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -293,8 +297,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/19005/19005362.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-brands fa-empire fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -316,8 +321,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/15332/15332434.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-book-skull fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -339,8 +345,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-edit"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/10690/10690672.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-ban fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -391,7 +398,7 @@
                         </div>
                         <div class="d-flex align-items-center justify-content-end">
                             <button id="applyFilters"
-                                class="btn btn-primary btn-sm me-2 animate-gradient px-4 border-0">Filter</button>
+                                class="btn btn-primary btn-sm me-2 px-4 border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary btn-sm px-4">Clear</button>
                         </div>
                     </div>
