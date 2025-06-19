@@ -87,12 +87,12 @@
         </li>
     </ul>
 
-    <div style="background-color: var(--second-primary)" class="p-4 rounded-3 mt-5">
+    <div style="background-color: var(--second-primary); border: 2px solid #7669ff;" class="py-4 px-3 rounded-3 mt-5">
         <div class="d-flex flex-column mb-3">
             <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
-            <small class="text-white">Click here to buy more inboxes</small>
+            <small class="text-white opacity-75">Click here to buy more inboxes</small>
         </div>
-        <a style="background-color: #1D2239; font-size: 12px;" class="mt-1 border-0 rounded-2 py-2 px-4 text-white animate-gradient" href="{{ route('customer.pricing') }}">Buy Now</a>
+        <a style="background-color: var(--second-primary); font-size: 12px;" class="mt-1 shadow border-0 rounded-2 py-2 px-4 text-white animate-gradient" href="{{ route('customer.pricing') }}">Buy Now</a>
     </div>
 </aside>
 

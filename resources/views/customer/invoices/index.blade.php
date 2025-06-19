@@ -172,12 +172,12 @@
                             <th>Invoice #</th>
                             <th>Order ID #</th>
                             <th>Date</th>
-                            <th>Due Date</th>
+                            {{-- <th>Due Date</th> --}}
                             <th>Price</th>
-                            <th>Paid At</th>
-                            <th>Subscription ID</th>
+                            {{-- <th>Paid At</th> --}}
+                            {{-- <th>Subscription ID</th> --}}
                             <th>Status</th>
-                            <th>Order Status</th>
+                            {{-- <th>Order Status</th> --}}
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -236,17 +236,17 @@
                         `;
                     }
                 },
-                { 
-                    data: 'created_at', name: 'created_at',
-                    render: function(data, type, row) {
-                        return `
-                            <div class="d-flex gap-1 align-items-center opacity-50">
-                                <i class="ti ti-calendar-month"></i>
-                                <span>${data}</span>    
-                            </div>
-                        `;
-                    }
-                },
+                // { 
+                //     data: 'created_at', name: 'created_at',
+                //     render: function(data, type, row) {
+                //         return `
+                //             <div class="d-flex gap-1 align-items-center opacity-50">
+                //                 <i class="ti ti-calendar-month"></i>
+                //                 <span>${data}</span>    
+                //             </div>
+                //         `;
+                //     }
+                // },
                 { 
                     data: 'amount', name: 'amount',
                     render: function(data, type, row) {
@@ -255,20 +255,20 @@
                         `;
                     } 
                 },
-                { 
-                    data: 'paid_at', name: 'paid_at',   
-                    render: function(data, type, row) {
-                        return `
-                            <div class="d-flex gap-1 align-items-center opacity-50">
-                                <i class="ti ti-calendar-month"></i>
-                                <span>${data}</span>    
-                            </div>
-                        `;
-                    }
-                },
-                { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
+                // { 
+                //     data: 'paid_at', name: 'paid_at',   
+                //     render: function(data, type, row) {
+                //         return `
+                //             <div class="d-flex gap-1 align-items-center opacity-50">
+                //                 <i class="ti ti-calendar-month"></i>
+                //                 <span>${data}</span>    
+                //             </div>
+                //         `;
+                //     }
+                // },
+                // { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
                 { data: 'status', name: 'status' },
-                { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
+                // { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
             order: [[1, 'desc']],
