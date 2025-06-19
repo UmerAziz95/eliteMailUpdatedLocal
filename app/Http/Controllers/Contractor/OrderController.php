@@ -379,8 +379,8 @@ class OrderController extends Controller
                         $domainCount = count($domains);
                     }
                     
-                    if ($hasSplitDomains) {
-                        $downloadUrl = route('contractor.orders.export.csv.split.domains', $assignment->order->id);
+                    if ($hasSplitDomains && $assignment->orderPanelSplit) {
+                        $downloadUrl = route('contractor.orders.split.export.csv.domains', $assignment->orderPanelSplit->id);
                         return '<a href="' . $downloadUrl . '" class="btn btn-sm btn-primary" title="Download CSV with ' . $domainCount . ' domains">
                                     <i class="fa-solid fa-download me-1"></i> Download CSV
                                 </a>';
@@ -1809,6 +1809,115 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Error importing emails: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Export CSV file with domains data for a specific order panel split
+     */
+    public function exportCsvSplitDomainsById($splitId)
+    {
+        try {
+            // Find the order panel split
+            $orderPanelSplit = OrderPanelSplit::with([
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                }
+            ])->findOrFail($splitId);
+
+            // Check if contractor has access to this split
+            $hasAccess = false;
+            $order = $orderPanelSplit->orderPanel->order;
+            
+            // Check if the contractor is assigned to this order or has access to the order panel
+            if ($order->assigned_to == auth()->id()) {
+                $hasAccess = true;
+            } else {
+                // Check if contractor has access to any split of this order
+                foreach ($order->orderPanels as $orderPanel) {
+                    if ($orderPanel->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0) {
+                        $hasAccess = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$hasAccess) {
+                return back()->with('error', 'You do not have access to this order split.');
+            }
+
+            // Get domains from the split
+            $domains = [];
+            if ($orderPanelSplit->domains) {
+                if (is_array($orderPanelSplit->domains)) {
+                    $domains = $orderPanelSplit->domains;
+                } else if (is_string($orderPanelSplit->domains)) {
+                    // Handle case where domains might be stored as comma-separated string
+                    $domains = array_map('trim', explode(',', $orderPanelSplit->domains));
+                    $domains = array_filter($domains); // Remove empty values
+                }
+                
+                // Flatten array if it contains nested arrays or objects
+                $flatDomains = [];
+                foreach ($domains as $domain) {
+                    if (is_array($domain) || is_object($domain)) {
+                        // Handle case where domain data is nested
+                        if (is_object($domain) && isset($domain->domain)) {
+                            $flatDomains[] = $domain->domain;
+                        } else if (is_array($domain) && isset($domain['domain'])) {
+                            $flatDomains[] = $domain['domain'];
+                        } else if (is_string($domain)) {
+                            $flatDomains[] = $domain;
+                        }
+                    } else if (is_string($domain)) {
+                        $flatDomains[] = $domain;
+                    }
+                }
+                $domains = $flatDomains;
+            }
+
+            if (empty($domains)) {
+                return back()->with('error', 'No domains data found for this split.');
+            }
+
+            $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $orderPanelSplit, $order) {
+                $file = fopen('php://output', 'w');
+
+                // Add CSV headers with more detailed information
+                fputcsv($file, [
+                    'Domain', 
+                    'Order ID', 
+                    'Split ID', 
+                    'Panel ID', 
+                    'Inboxes per Domain'
+                ]);
+
+                // Add data rows
+                foreach ($domains as $domain) {
+                    fputcsv($file, [
+                        $domain,
+                        $order->id,
+                        $orderPanelSplit->id,
+                        $orderPanelSplit->panel_id,
+                        $orderPanelSplit->inboxes_per_domain ?? 'N/A'
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting CSV domains by split ID: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
 }

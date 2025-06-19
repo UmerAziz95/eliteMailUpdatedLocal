@@ -693,7 +693,12 @@ pointer-events: none
                 <td style="font-size: 10px; padding: 5px !important;"><span class="badge ${getStatusBadgeClass(split.status)}" style="font-size: 9px;">${split.status || 'Unknown'}</span></td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
-                <td style="padding: 5px !important;"><i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')"></i></td>
+                <td style="padding: 5px !important;">
+                    <div class="d-flex gap-1">
+                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
+                        <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/contractor/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
+                    </div>
+                </td>
                 </tr>
             `).join('')
             : `<tr><td colspan="5" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
@@ -1123,9 +1128,14 @@ pointer-events: none
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
                                     <td>
-                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                                <i class="fas fa-download"></i> CSV
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             `).join('')}

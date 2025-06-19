@@ -331,6 +331,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     
     // CSV Export routes
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
+    Route::get('/orders/split/{splitId}/export-csv-domains', [ContractorOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
     
     // Support ticket routes
     Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
