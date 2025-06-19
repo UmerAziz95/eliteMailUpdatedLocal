@@ -28,5 +28,22 @@ class OrderObserver
                 $order->completed_at = null;
             }
         }
+
+        // Handle timer_started_at for status changes
+        if ($order->isDirty('status_manage_by_admin')) {
+            $newStatus = strtolower($order->status_manage_by_admin);
+            $oldStatus = strtolower($order->getOriginal('status_manage_by_admin') ?? '');
+            
+            // If status is changing to pending and timer hasn't started yet
+            if ($newStatus === 'pending' && is_null($order->timer_started_at)) {
+                $order->timer_started_at = now();
+            }
+            
+            // If status is changing from pending to something else and timer was running
+            if ($oldStatus === 'pending' && $newStatus !== 'pending' && !is_null($order->timer_started_at)) {
+            // Keep timer_started_at as is - don't reset it
+            // This allows us to track when the timer originally started
+            }
+        }
     }
 }

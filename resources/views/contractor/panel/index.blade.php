@@ -770,17 +770,19 @@
                 return 'Invalid Date';
             }
         }
-
         // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null) {
-            const now = new Date();
-            const orderDate = new Date(createdAt);
-            const twelveHoursLater = new Date(orderDate.getTime() + (12 * 60 * 60 * 1000));
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+            // const now = new Date();
+            const now = new Date('{{ now()->toISOString() }}');
+            
+            // Use timer_started_at if available, otherwise fall back to created_at
+            const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
+            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
             
             // If order is completed, timer is paused - show the time it took to complete
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - orderDate;
+                const timeTaken = completionDate - startTime;
                 const isOverdue = completionDate > twelveHoursLater;
                 
                 return {
@@ -801,7 +803,7 @@
                 };
             }
             
-            // For active orders: 12-hour countdown from created_at
+            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
             // - Counts down from 12:00:00 to 00:00:00
             // - After reaching zero, continues in negative time (overtime)
             const timeDiff = now - twelveHoursLater;
@@ -839,11 +841,10 @@
             
             return `${hoursStr}:${minutesStr}:${secondsStr}`;
         }
-
         // Create timer badge HTML
         function createTimerBadge(order) {
             console.log(order);
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at);
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
             const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
             
             // Create tooltip text
@@ -1708,13 +1709,14 @@
                 const createdAt = badge.dataset.createdAt;
                 const status = badge.dataset.status;
                 const completedAt = badge.dataset.completedAt;
+                const timerStartedAt = badge.dataset.timerStartedAt;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt);
+                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
                 const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
                 
                 // Check if the timer display has changed to avoid unnecessary DOM updates
