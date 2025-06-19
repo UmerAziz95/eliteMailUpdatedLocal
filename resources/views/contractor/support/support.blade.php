@@ -126,7 +126,7 @@
 @section('content')
 <section class="py-3">
     <div class="row mb-4">
-        <div class="counters col-lg-6">
+        <div class="counters col-lg-12 mb-3">
             <div class="card p-3 counter_1">
                 <div>
                     <div class="d-flex align-items-start justify-content-between">
@@ -142,8 +142,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/8112/8112582.gif" width="50"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-ticket fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -164,8 +165,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/8701/8701351.gif" width="50"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-envelope-open-text fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -187,8 +189,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/17122/17122416.gif" width="50"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-bars-progress fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -210,15 +213,16 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/10352/10352695.gif" width="50"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-shop-slash fs-2"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-lg-12">
             <div class="p-3 h-100 filter">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-2 text-white">Filters</h5>
@@ -226,22 +230,22 @@
 
                 <div class="d-flex align-items-start gap-4">
                     <div class="row gy-3">
-                        <div class="col-md-4">
-                            {{-- <label for="ticketNumberFilter" class="form-label">Ticket #</label> --}}
+                        <div class="col-md-3">
+                            <label for="ticketNumberFilter" class="form-label">Ticket #</label>
                             <input type="text" id="ticketNumberFilter" class="form-control"
                                 placeholder="Search by ticket number">
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="subjectFilter" class="form-label">Subject</label> --}}
+                        <div class="col-md-3">
+                            <label for="subjectFilter" class="form-label">Subject</label>
                             <input type="text" id="subjectFilter" class="form-control" placeholder="Search by subject">
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="customerFilter" class="form-label">Customer</label> --}}
+                        <div class="col-md-3">
+                            <label for="customerFilter" class="form-label">Customer</label>
                             <input type="text" id="customerFilter" class="form-control"
                                 placeholder="Search by customer name">
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="categoryFilter" class="form-label">Category</label> --}}
+                        <div class="col-md-3">
+                            <label for="categoryFilter" class="form-label">Category</label>
                             <select id="categoryFilter" class="form-select">
                                 <option value="">All Categories</option>
                                 <option value="technical">Technical Issue</option>
@@ -251,8 +255,8 @@
                                 <option value="other">Other</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="priorityFilter" class="form-label">Priority</label> --}}
+                        <div class="col-md-3">
+                            <label for="priorityFilter" class="form-label">Priority</label>
                             <select id="priorityFilter" class="form-select">
                                 <option value="">All Priorities</option>
                                 <option value="low">Low</option>
@@ -260,8 +264,8 @@
                                 <option value="high">High</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="statusFilter" class="form-label">Status</label> --}}
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Status</label>
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Statuses</option>
                                 <option value="open">Open</option>
@@ -269,12 +273,12 @@
                                 <option value="closed">Closed</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="startDate" class="form-label">Start Date</label> --}}
+                        <div class="col-md-3">
+                            <label for="startDate" class="form-label">Start Date</label>
                             <input type="date" id="startDate" class="form-control">
                         </div>
-                        <div class="col-md-4">
-                            {{-- <label for="endDate" class="form-label">End Date</label> --}}
+                        <div class="col-md-3">
+                            <label for="endDate" class="form-label">End Date</label>
                             <input type="date" id="endDate" class="form-control">
                         </div>
                         <div class="d-flex align-items-center justify-content-end">

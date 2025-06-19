@@ -47,8 +47,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ti ti-user-search"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/17556/17556487.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-regular fa-user fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -69,8 +70,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-success">
                                 <i class="ti ti-user-check"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/16045/16045954.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-check-double fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -92,8 +94,9 @@
                             {{-- <span class="avatar-initial rounded bg-label-danger">
                                 <i class="ti ti-user-plus"></i>
                             </span> --}}
-                            <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
-                                style="border-radius: 50px" alt="">
+                            {{-- <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
+                                style="border-radius: 50px" alt=""> --}}
+                            <i class="fa-solid fa-person-arrow-down-to-line fs-2"></i>
                         </div>
                     </div>
                 </div>
@@ -124,7 +127,7 @@
                         </div>
 
                         <div class="d-flex align-item-center gap-2">
-                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2 animate-gradient border-0">Filter</button>
+                            <button id="applyFilters" class="btn btn-primary btn-sm px-4 me-2 border-0">Filter</button>
                             <button id="clearFilters" class="btn btn-secondary px-4 btn-sm">Clear</button>
                         </div>
                     </div>
