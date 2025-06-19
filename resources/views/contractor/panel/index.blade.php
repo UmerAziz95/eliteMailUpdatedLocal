@@ -411,7 +411,7 @@ pointer-events: none
 
 @section('content')
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+    <div style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
         @for ($i = 0; $i < 3; $i++)
             <div class="anim_card rounded-2">
                 <div class="order_detail p-3">
