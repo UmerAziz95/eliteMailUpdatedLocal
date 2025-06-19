@@ -742,7 +742,12 @@ pointer-events: none
 
                     <div class="mt-3 d-flex gap-3 align-items-center">
                         <div>
-                        <img src="https://images.pexels.com/photos/6603118/pexels-photo-6603118.jpeg" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="">
+                            ${order.customer_image ? 
+                                `<img src="${order.customer_image}" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="${order.customer_name}">` :
+                                `<div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50px; background-color: #f8f9fa; border: 2px solid #dee2e6;">
+                                    <i class="fas fa-user text-muted" style="font-size: 24px;"></i>
+                                </div>`
+                            }
                         </div>
 
                         <div class="d-flex flex-column gap-1">
