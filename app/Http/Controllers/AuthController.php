@@ -228,12 +228,26 @@ class AuthController extends Controller
 
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
-        if ($existingUser) {
+        if ($existingUser && $existingUser->status == 0) {
+              $verificationCode = rand(1000, 9999);
+                $existingUser->email_verification_code = $verificationCode;
+                $existingUser->save();
+
+                $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+                $encrypted = Crypt::encryptString($payload);
+                $verificationLink =url('/plans/public/' . $encrypted);
+            
+
+                try {
+                    Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                }
             return response()->json([
-                'message' => 'Account already exists. Please login.',
+                'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
             ], 403);
         }
-        $existingUser = User::where('email', $data['email'])->first();
+        
         if ($existingUser) {
             $userSubs=Subscription::where('user_id',$existingUser->id)->first();
             if($userSubs){

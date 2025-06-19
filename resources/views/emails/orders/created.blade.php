@@ -320,6 +320,10 @@
                         <span class="detail-label">Status:</span>
                         <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
                     </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Created_at:</span>
+                        <span class="detail-value highlight-text">{{ ucfirst($order->created_at->toString()) }}</span>
+                    </div>
                 </div>
             </div>
 
