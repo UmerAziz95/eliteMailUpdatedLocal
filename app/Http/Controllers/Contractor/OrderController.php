@@ -1410,10 +1410,34 @@ class OrderController extends Controller
                 
                 $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
                 
+                // Format splits data for the frontend
+                $splitsData = [];
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        $domains = [];
+                        if ($split->domains && is_array($split->domains)) {
+                            $domains = $split->domains;
+                        }
+                        
+                        $splitsData[] = [
+                            'id' => $split->id,
+                            'order_panel_id' => $orderPanel->id,
+                            'panel_id' => $orderPanel->panel_id,
+                            'inboxes_per_domain' => $split->inboxes_per_domain,
+                            'domains' => $domains,
+                            'domains_count' => count($domains),
+                            'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                            'status' => $orderPanel->status ?? 'unallocated',
+                            'created_at' => $split->created_at
+                        ];
+                    }
+                }
+                
                 return [
                     'id' => $order->id,
                     'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
+                    'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
@@ -1431,7 +1455,8 @@ class OrderController extends Controller
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
-                    })
+                    }),
+                    'splits' => $splitsData
                 ];
             });
 
