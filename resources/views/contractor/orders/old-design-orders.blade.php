@@ -323,83 +323,6 @@
         }
 
     </style>
-    <<style>
-            .anim_card {
-    background-color: var(--secondary-color);
-    color: var(--light-color);
-    border: 1px solid #99999962;
-    border-radius: 8px;
-    position: relative;
-    opacity: 1;
-}
-.anim_card .order_detail {
-    width: 100%;
-    height: 14rem;
-    overflow: hidden;
-    border: 1px solid #86868654
-}
-.anim_card .order_detail .card_content {
-    width: 100%;
-    transition: .5s;
-}
-
-.card_content {
-    transform: translateX(30%);
-}
-
-.anim_card:hover .order_detail .card_content {
-    opacity: .9;
-    transform: translateX(0%);
-}
-
-.anim_card .flip_details {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--second-primary);
-    border-radius: 10px;
-    transition: transform 0.5s ease, box-shadow 0.5s ease;
-    transform-origin: left;
-    transform: perspective(2000px) rotateY(0deg);
-    z-index: 2;
-}
-
-.anim_card .flip_details::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: -5px;
-    width: 0px;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.602); 
-    border-radius: 0 5px 5px 0;
-    transition: width 0.3s ease;
-}
-
-.anim_card:hover .flip_details {
-    transform: perspective(2000px) rotateY(-91deg);
-    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px, 
-                rgba(255, 255, 255, 0.3) 0px 7px 13px -3px, 
-                rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
-pointer-events: none
-}
-
-.anim_card:hover .flip_details::after {
-    width: 102px;
-    background-color: #9a9a9a81;
-    pointer-events: none;
-}
-
-.anim_card .flip_details .center {
-    padding: 20px;
-    background-color: var(--secondary-color);
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-}
-    </style>
 @endpush
 
 @section('content')
@@ -683,7 +606,6 @@ pointer-events: none
                 container.innerHTML = ordersHtml;
             }
         }
-        // this template change with new template also flip_details add order splits of orders
         
         // Create order card HTML
         function createOrderCard(order) {

@@ -411,7 +411,7 @@ pointer-events: none
 
 @section('content')
 
-    <div style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
         @for ($i = 0; $i < 3; $i++)
             <div class="anim_card rounded-2">
                 <div class="order_detail p-3">
@@ -955,10 +955,11 @@ pointer-events: none
                 return 'Invalid Date';
             }
         }
+        
         // Calculate timer for order
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
-            // const now = new Date();
-            const now = new Date('{{ now()->toISOString() }}');
+            // Use current real-time date for dynamic timer updates
+            const now = new Date();
             
             // Use timer_started_at if available, otherwise fall back to created_at
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
@@ -1050,7 +1051,9 @@ pointer-events: none
                       data-created-at="${order.created_at}" 
                       data-status="${order.status}" 
                       data-completed-at="${order.completed_at || ''}"
-                      data-tooltip="${tooltip}">
+                      data-timer-started-at="${order.timer_started_at || ''}"
+                      data-tooltip="${tooltip}"
+                      title="${tooltip}">
                     <i class="${iconClass} timer-icon"></i>
                     ${timer.display}
                 </span>
@@ -1901,36 +1904,42 @@ pointer-events: none
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-                const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-                
-                // Check if the timer display has changed to avoid unnecessary DOM updates
-                const currentDisplay = badge.textContent.trim();
-                if (currentDisplay === timer.display) {
-                    return;
+                try {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
+                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                    
+                    // Extract current time display from badge content (get text after icon)
+                    const badgeText = badge.textContent || '';
+                    const currentTimeDisplay = badgeText.replace(/^\s*[\u{1F310}\u{1F30D}\u{23F0}\u{26A0}\u{2713}]*\s*/, '').trim();
+                    
+                    // Only update if the display has actually changed to avoid unnecessary DOM updates
+                    if (currentTimeDisplay !== timer.display) {
+                        // Create tooltip text
+                        let tooltip = '';
+                        if (timer.isCompleted) {
+                            tooltip = completedAt 
+                                ? `Order completed on ${formatDate(completedAt)}` 
+                                : 'Order is completed';
+                        } else if (timer.isNegative) {
+                            tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
+                        } else {
+                            tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
+                        }
+                        
+                        // Update badge class and tooltip
+                        badge.className = `timer-badge ${timer.class}`;
+                        badge.setAttribute('data-tooltip', tooltip);
+                        badge.setAttribute('title', tooltip);
+                        
+                        // Update badge content
+                        badge.innerHTML = `
+                            <i class="${iconClass} timer-icon"></i>
+                            ${timer.display}
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error updating timer for order', orderId, ':', error);
                 }
-                
-                // Create tooltip text
-                let tooltip = '';
-                if (timer.isCompleted) {
-                    tooltip = completedAt 
-                        ? `Order completed on ${formatDate(completedAt)}` 
-                        : 'Order is completed';
-                } else if (timer.isNegative) {
-                    tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
-                } else {
-                    tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
-                }
-                
-                // Update badge class and tooltip
-                badge.className = `timer-badge ${timer.class}`;
-                badge.setAttribute('data-tooltip', tooltip);
-                
-                // Update badge content
-                badge.innerHTML = `
-                    <i class="${iconClass} timer-icon"></i>
-                    ${timer.display}
-                `;
             });
         }
 
@@ -1949,7 +1958,11 @@ pointer-events: none
             loadOrders();
             
             // Update timers every second for real-time countdown
+            console.log('Starting timer updates...');
             setInterval(updateAllTimers, 1000); // Update every 1 second
+            
+            // Also update timers immediately after DOM load
+            setTimeout(updateAllTimers, 500);
         });
     </script>
 @endpush
