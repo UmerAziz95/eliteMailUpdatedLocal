@@ -754,23 +754,7 @@ pointer-events: none
                     <small class="ms-2">${formatDate(order.created_at)}</small>
 
                     <!-- Order Splits Table in flip_details -->
-                    <div class="mt-3">
-                        <h6 style="font-size: 12px;" class="text-primary mb-2">Order Splits Details</h6>
-                        <table class="table table-sm" style="font-size: 10px;">
-                        <thead>
-                            <tr>
-                            <th style="padding: 3px;">ID #</th>
-                            <th style="padding: 3px;">Status</th>
-                            <th style="padding: 3px;">Inboxes/Domain</th>
-                            <th style="padding: 3px;">Domains</th>
-                            <th style="padding: 3px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${splitsTableContent}
-                        </tbody>
-                        </table>
-                    </div>
+                    
 
                     <div class="d-flex align-items-center justify-content-between mt-3">
                         <div class="d-flex flex-column align-items-center gap-0">
