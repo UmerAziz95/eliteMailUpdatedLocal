@@ -192,7 +192,7 @@ class PlanController extends Controller
                         "country" => "US" // Default value
                     ],
                     "allow_plan_change" => true,
-                    "redirect_url" => route('subscription.success'),
+                    "redirect_url" => route('customer.subscription.success'),
                     // "cancel_url" => route('customer.subscription.cancel')
                 ]);
             }
