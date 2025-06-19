@@ -40,17 +40,31 @@
         
     </div>
 
-    <!-- Configuration Content Only -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card p-3 mb-3">
-                <h6 class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center justify-content-center"
-                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                        <i class="fa-regular fa-envelope"></i>
-                    </div>
-                    Email configurations
-                </h6>
+    <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+                data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
+                aria-selected="true">Configuration</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane"
+                type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">Emails</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="myTabContent">
+        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+            aria-labelledby="configuration-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-regular fa-envelope"></i>
+                            </div>
+                            Email configurations
+                        </h6>
 
                 @if(optional($orderPanel->order->reorderInfo)->count() > 0)
                 <div class="d-flex align-items-center justify-content-between">
@@ -234,12 +248,125 @@
                 @endif
                 @else
                 <div class="text-muted">No configuration information available</div>
-                @endif
+                    @endif
+                </div>
+            </div>
+        </div>
+        
+    </div>               
+    <div class="tab-pane fade" id="other-tab-pane" role="tabpanel" aria-labelledby="other-tab" tabindex="0">
+        <div class="col-12">
+            <div class="card p-3">
+                <h6 class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center"
+                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    Email Accounts for Panel #{{ $orderPanel->id }}
+                </h6>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                                data-bs-target="#BulkImportModal">
+                                <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
+                            </button>
+                            <button id="addNewBtn" class="btn btn-primary me-2">
+                                <i class="fa-solid fa-plus me-1"></i> Add Email
+                            </button>
+                            <button id="saveAllBtn" class="btn btn-success">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Save All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                        <div class="badge rounded-circle bg-primary p-2">
+                            <i class="fa-solid fa-envelope text-white"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Email Accounts</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="totalRowCount" class="fw-bold">0</span>
+                                <div class="progress" style="width: 100px; height: 6px;">
+                                    <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
+                                        style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="email-configuration" class="display w-100">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+    
 
 </section>
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="BulkImportModal" tabindex="-1" aria-labelledby="BulkImportModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                    <div class="d-flex align-items-center justify-content-center"
+                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                        <i class="fa-solid fa-cart-plus"></i>
+                    </div>
+                    Bulk Import Emails for Panel #{{ $orderPanel->id }}
+                </h6>
+                <div class="row text-muted">
+                    <p class="text-danger">Only .csv files are accepted.</p>
+                    <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
+                        <strong>email</strong>, and <strong>password</strong>.
+                    </p>
+                    <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
+                                Sample File</strong></a></p>
+                </div>
+
+                <form id="BulkImportForm" action="{{ route('contractor.order.panel.email.bulkImport') }}" method="POST">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="bulk_file" class="form-label">Select CSV *</label>
+                        <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
+                            required>
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">No</button>
+                        <button type="submit"
+                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                            I'm sure</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Modal -->
 <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
     aria-hidden="true">
     <div class="modal-dialog">
@@ -393,6 +520,385 @@
                     confirmButtonText: 'OK'
                 });
             }
+        });
+    });
+
+    // Email Management JavaScript
+    $(document).ready(function() {
+        // Get the split total inboxes from order configuration
+        @php
+            $inboxesPerDomain = optional($orderPanel->order->reorderInfo->first())->inboxes_per_domain ?? 0;
+            $splitDomainsCount = 0;
+            
+            if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains) {
+                        if (is_array($split->domains)) {
+                            $splitDomainsCount += count($split->domains);
+                        } else {
+                            $splitDomainsCount += 1;
+                        }
+                    }
+                }
+            }
+            
+            $splitTotalInboxes = $splitDomainsCount * $inboxesPerDomain;
+        @endphp
+        
+        const splitTotalInboxes = {{ $splitTotalInboxes }};
+        const maxEmails = splitTotalInboxes || 0; // If splitTotalInboxes is 0, allow unlimited emails
+        
+        // Function declarations first
+        function updateRowCount(table) {
+            const rowCount = table.rows().count();
+            if (maxEmails > 0) {
+                $('#totalRowCount').text(rowCount + "/" + splitTotalInboxes);
+            } else {
+                $('#totalRowCount').text(rowCount + " (Unlimited)");
+            }
+            updateProgressBar(table);
+        }
+
+        function updateAddButtonState(table) {
+            const rowCount = table.rows().count();
+            const addButton = $('#addNewBtn');
+            
+            if (maxEmails > 0 && rowCount >= maxEmails) {
+                addButton.prop('disabled', true);
+                addButton.attr('title', `Maximum limit of ${maxEmails} emails reached`);
+            } else {
+                addButton.prop('disabled', false);
+                addButton.removeAttr('title');
+            }
+        }
+
+        function updateProgressBar(table) {
+            const rowCount = table.rows().count();
+            let percentage = 0;
+            
+            if (maxEmails > 0) {
+                percentage = Math.min((rowCount / maxEmails) * 100, 100);
+            } else {
+                // For unlimited inboxes, use a different logic
+                percentage = Math.min((rowCount / 100) * 100, 100);
+            }
+            
+            const progressBar = $('#emailProgressBar');
+            progressBar.css('width', percentage + '%')
+                     .attr('aria-valuenow', percentage);
+            
+            progressBar.removeClass('bg-primary bg-warning bg-danger');
+            if (maxEmails > 0) {
+                // For limited inboxes
+                if (percentage >= 90) {
+                    progressBar.addClass('bg-danger');
+                } else if (percentage >= 70) {
+                    progressBar.addClass('bg-warning');
+                } else {
+                    progressBar.addClass('bg-primary');
+                }
+            } else {
+                // For unlimited inboxes, always show primary color
+                progressBar.addClass('bg-primary');
+            }
+        }
+
+        // Initialize DataTable
+        let emailTable = $('#email-configuration').DataTable({
+            responsive: true,
+            paging: false,
+            searching: false,
+            info: false,
+            dom: 'frtip',
+            autoWidth: false,
+            columnDefs: [
+                { width: '30%', targets: 0 }, // Name column
+                { width: '30%', targets: 1 }, // Email column
+                { width: '30%', targets: 2 }, // Password column
+                { width: '10%', targets: 3 }  // Action column
+            ],
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function(row) {
+                            return 'Email Details';
+                        }
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                }
+            },
+            ajax: {
+                url: '/contractor/orders/panel/{{ $orderPanel->id }}/emails',
+                dataSrc: function(json) {
+                    return json.data || [];
+                }
+            },
+            columns: [
+                { 
+                    data: 'name',
+                    render: function(data, type, row) {
+                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
+                    }
+                },
+                { 
+                    data: 'email',
+                    render: function(data, type, row) {
+                        return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
+                    }
+                },
+                { 
+                    data: 'password',
+                    render: function(data, type, row) {
+                        return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
+                    }
+                },
+                {
+                    data: 'id',
+                    render: function(data, type, row) {
+                        return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
+                    }
+                }
+            ],
+            drawCallback: function(settings) {
+                updateRowCount(this.api());
+                updateAddButtonState(this.api());
+            }
+        });
+
+        // Event listeners
+        emailTable.on('draw', function() {
+            updateRowCount(emailTable);
+            updateAddButtonState(emailTable);
+            updateProgressBar(emailTable);
+        });
+
+        // Add new row button click handler
+        $('#addNewBtn').click(function() {
+            const rowCount = emailTable.rows().count();
+            if (maxEmails > 0 && rowCount >= maxEmails) {
+                toastr.error(`You can only add up to ${maxEmails} email accounts as per your panel configuration.`);
+                return;
+            }
+
+            emailTable.row.add({
+                name: '',
+                email: '',
+                password: '',
+                id: ''
+            }).draw(false);
+        });
+
+        // Save all button click handler
+        $('#saveAllBtn').click(function() {
+            const emailsToSave = [];
+            let isValid = true;
+
+            $(emailTable.rows().nodes()).each(function() {
+                const row = $(this);
+                const nameField = row.find('.name');
+                const emailField = row.find('.email');
+                const passwordField = row.find('.password');
+
+                // Reset validation classes
+                nameField.removeClass('is-invalid');
+                emailField.removeClass('is-invalid');
+                passwordField.removeClass('is-invalid');
+
+                const name = nameField.val()?.trim();
+                const email = emailField.val()?.trim();
+                const password = passwordField.val()?.trim();
+
+                // Validate fields
+                if (!name) {
+                    nameField.addClass('is-invalid');
+                    isValid = false;
+                }
+                if (!email) {
+                    emailField.addClass('is-invalid');
+                    isValid = false;
+                }
+                if (!password) {
+                    passwordField.addClass('is-invalid');
+                    isValid = false;
+                }
+
+                if (name && email && password) {
+                    emailsToSave.push({ name, email, password });
+                }
+            });
+
+            if (!isValid) {
+                toastr.error('Please fill in all required fields');
+                return;
+            }
+
+            // Send as JSON to avoid max_input_vars limit
+            $.ajax({
+                url: '/contractor/orders/panel/emails',
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    order_panel_id: {{ $orderPanel->id }},
+                    emails: emailsToSave
+                }),
+                success: function(response) {
+                    toastr.success('Emails saved successfully');
+                    emailTable.ajax.reload();
+                },
+                error: function(xhr) {
+                    console.error('Error response:', xhr.responseText);
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        // Loop through each error and mark fields as invalid
+                        Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                            // Handle array fields like emails.0.email
+                            if (key.includes('emails.')) {
+                                const parts = key.split('.');
+                                const index = parseInt(parts[1]); // Get the row index as integer
+                                const field = parts[2]; // Get the field name (email, password, etc.)
+                                const errorMsg = xhr.responseJSON.errors[key][0]; // Get the first error message
+                                
+                                // Find the input field at the specific row
+                                const row = $(emailTable.rows().nodes()).eq(index);
+                                const input = row.find(`.${field}`);
+                                
+                                if (input.length) {
+                                    input.addClass('is-invalid');
+                                    
+                                    // Add tooltip or display error message
+                                    input.attr('title', errorMsg);
+                                    
+                                    // Optionally create/update feedback element
+                                    let feedback = input.next('.invalid-feedback');
+                                    if (!feedback.length) {
+                                        input.after(`<div class="invalid-feedback">${errorMsg}</div>`);
+                                    } else {
+                                        feedback.text(errorMsg);
+                                    }
+                                }
+                            }
+                        });
+                        toastr.error('Please correct the errors in the form');
+                    } else {
+                        toastr.error(xhr.responseJSON?.message || 'Error saving emails');
+                    }
+                }
+            });
+        });
+
+        // Delete button click handler
+        $('#email-configuration tbody').on('click', '.deleteEmailBtn', function() {
+            const button = $(this);
+            const row = button.closest('tr');
+            const id = button.data('id');
+            
+            if (id) {
+                // Delete existing record
+                $.ajax({
+                    url: `/contractor/orders/panel/emails/${id}`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function() {
+                        toastr.success('Email deleted successfully');
+                        // Remove just the deleted row instead of reloading the entire table
+                        emailTable.row(row).remove().draw(false);
+                        updateRowCount(emailTable);
+                        updateAddButtonState(emailTable);
+                    },
+                    error: function(xhr) {
+                        toastr.error(xhr.responseJSON?.message || 'Error deleting email');
+                    }
+                });
+            } else {
+                // Remove unsaved row and redraw the table
+                emailTable.row(row).remove().draw(false);
+                updateRowCount(emailTable);
+                updateAddButtonState(emailTable);
+            }
+        });
+
+        // Bulk import functionality
+        $('#addBulkEmail').on('click', function() {
+            $('#BulkImportModal').modal('show');
+        });
+
+        $('#BulkImportForm').on('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const order_panel_id = {{ $orderPanel->id }};
+            const split_total_inboxes = {{ $splitTotalInboxes }};
+
+            Swal.fire({
+                title: 'Are you sure?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // For file uploads, we still need to use FormData, not JSON
+                    formData.append('order_panel_id', order_panel_id);
+                    formData.append('split_total_inboxes', split_total_inboxes);
+
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        method: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        beforeSend: function() {
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Please wait a while...',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            $('#BulkImportModal').modal('hide');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'File has been imported successfully.',
+                                confirmButtonColor: '#3085d6'
+                            }).then(() => {
+                                emailTable.ajax.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while processing the file.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseText) {
+                                console.error('Error response:', xhr.responseText);
+                                // Check if it's a PHP max_input_vars error
+                                if (xhr.responseText.includes('max_input_vars')) {
+                                    errorMessage = 'File too large. Please try with a smaller file or contact administrator.';
+                                }
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                }
+            });
         });
     });
 </script>
