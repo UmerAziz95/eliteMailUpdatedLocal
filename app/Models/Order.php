@@ -13,6 +13,7 @@ class Order extends Model
         'meta' => 'array',
         'last_draft_notification_sent_at' => 'datetime',
         'completed_at' => 'datetime',
+        'timer_started_at' => 'datetime',
     ];
     protected $fillable = [
         'user_id',
@@ -28,7 +29,8 @@ class Order extends Model
         'status_manage_by_admin',
         'reason',
         'last_draft_notification_sent_at',
-        'completed_at'
+        'completed_at',
+        'timer_started_at'
     ];
     
     // status_manage_by_admin

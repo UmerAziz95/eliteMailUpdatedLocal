@@ -6,7 +6,7 @@
             /* box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px; */
             border-radius: 10px;
             padding: 30px;
-            text-align: center;
+            /* text-align: center; */
             transition: 0.3s ease-in-out;
         }
 
@@ -95,9 +95,9 @@
             bottom: -55px;
         }
 
-        .subscribe-btn {
+        /* .subscribe-btn, .btn {
             box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
-        }
+        } */
 
         @media (max-width: 1400px) {
             .pricing-card {
@@ -182,7 +182,7 @@
                                             </div>
                                         </div> --}}
                                         <div>
-                                            <h4 class="fw-bold text-white plan-name text-uppercase fs-5">
+                                            <h4 class="fw-bold text-white plan-name text-uppercase fs-4">
                                                 {{ $plan->name }}</h4>
                                             <div class="mb-3 ">
                                                 <span>
@@ -194,9 +194,9 @@
 
                                             {{-- <small class="plan-description text-capitalize opacity-75"
                                                 style="line-height: 1px !important">{{ $plan->description }}</small> --}}
-                                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4">
+                                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1">
                                                 ${{ number_format($plan->price, 2) }}
-                                                <span class="fw-light text-white" style="font-size: 12px">
+                                                <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
                                                     /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
                                                     per Inboxes
                                                 </span>
@@ -225,7 +225,7 @@
                                                     ->first();
                                             @endphp
                                             @if ($activeSubscription)
-                                                <button class="btn btn-success" disabled>
+                                                <button class="btn text-white" style="background-color: rgb(5, 163, 23)">
                                                     <i class="fas fa-check me-2"></i>Subscribed Plan
                                                 </button>
                                             @else

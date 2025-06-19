@@ -1351,8 +1351,10 @@ class OrderController extends Controller
     public function getAssignedOrdersData(Request $request)
     {
         try {
-            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
-                ->whereHas('orderPanels');
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
+                ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+                    $q->where('contractor_id', auth()->id());
+                });
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
@@ -1425,6 +1427,7 @@ class OrderController extends Controller
                     })(),
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
+                    'timer_started_at' => $order->timer_started_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
@@ -1450,6 +1453,336 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching orders data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get emails for a specific order panel split
+     */
+    public function getSplitEmails($orderPanelId)
+    {
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with(['order'])
+                ->whereHas('userOrderPanelAssignments', function($query) {
+                    $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($orderPanelId);
+
+            // Get emails for this specific order panel split
+            $emails = OrderEmail::with(['orderSplit'])
+                ->where('order_id', $orderPanel->order_id)
+                ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                    $query->where('order_panel_id', $orderPanelId);
+                })
+                ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $emails,
+                'order_panel_id' => $orderPanelId
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching emails: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store emails for a specific order panel split
+     */
+    public function storeSplitEmails(Request $request)
+    {
+        try {
+            // Log the raw request data for debugging
+            \Log::info('Store Split Emails Request', [
+                'all_data' => $request->all(),
+                'content_type' => $request->header('Content-Type'),
+                'method' => $request->method()
+            ]);
+
+            $validator = Validator::make($request->all(), [
+                'order_panel_id' => 'required|exists:order_panel,id',
+                'emails' => 'required|array',
+                'emails.*.name' => 'required|string|max:255',
+                'emails.*.email' => 'required|email|max:255',
+                'emails.*.password' => 'required|string|min:6',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::error('Validation failed', ['errors' => $validator->errors()]);
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])
+                ->whereHas('userOrderPanelAssignments', function($query) {
+                    $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($request->order_panel_id);
+
+            // Debug: Log order panel information
+            \Log::info('Order Panel Debug', [
+                'order_panel_id' => $orderPanel->id,
+                'order_id' => $orderPanel->order_id,
+                'splits_count' => $orderPanel->orderPanelSplits->count(),
+                'splits_data' => $orderPanel->orderPanelSplits->toArray()
+            ]);
+
+            // Get the first order panel split (assuming one split per panel for now)
+            $orderPanelSplit = $orderPanel->orderPanelSplits->first();
+
+            if (!$orderPanelSplit) {
+                // Try to create an order panel split if none exists
+                $orderPanelSplit = OrderPanelSplit::create([
+                    'order_panel_id' => $orderPanel->id,
+                    'order_id' => $orderPanel->order_id,
+                    'panel_id' => $orderPanel->panel_id,
+                    'inboxes_per_domain' => $orderPanel->inboxes_per_domain ?? 1,
+                    'domains' => [] // Empty array for now
+                ]);
+                
+                \Log::info('Created new order panel split', ['split_id' => $orderPanelSplit->id]);
+            }
+
+            // Delete existing emails for this specific order panel split
+            $deletedCount = OrderEmail::where('order_id', $orderPanel->order_id)
+                ->where('order_split_id', $orderPanelSplit->id)
+                ->count();
+                
+            OrderEmail::where('order_id', $orderPanel->order_id)
+                ->where('order_split_id', $orderPanelSplit->id)
+                ->delete();
+
+            \Log::info('Deleted existing emails', [
+                'deleted_count' => $deletedCount,
+                'order_id' => $orderPanel->order_id,
+                'split_id' => $orderPanelSplit->id
+            ]);
+
+            // Create new emails
+            $emails = collect($request->emails)->map(function ($emailData) use ($orderPanel, $orderPanelSplit) {
+                return OrderEmail::create([
+                    'order_id' => $orderPanel->order_id,
+                    'user_id' => $orderPanel->order->user_id,
+                    'order_split_id' => $orderPanelSplit->id,
+                    'contractor_id' => auth()->id(),
+                    'name' => $emailData['name'],
+                    'email' => $emailData['email'],
+                    'password' => $emailData['password'],
+                    'profile_picture' => $emailData['profile_picture'] ?? null,
+                ]);
+            });
+
+            \Log::info('Created new emails', [
+                'email_count' => $emails->count(),
+                'order_panel_id' => $orderPanel->id
+            ]);
+
+            // Update order assignment if not already assigned
+            if ($orderPanel->order->assigned_to == null) {
+                $orderPanel->order->assigned_to = auth()->id();
+                $orderPanel->order->save();
+            }
+
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $orderPanel->order->user_id,
+                'type' => 'email_created',
+                'title' => 'New Email Accounts Created',
+                'message' => 'New email accounts have been created for your order #' . $orderPanel->order_id . ' panel #' . $orderPanel->id,
+                'data' => [
+                    'order_id' => $orderPanel->order_id,
+                    'order_panel_id' => $orderPanel->id,
+                    'email_count' => count($request->emails)
+                ]
+            ]);
+
+            // Create notification for contractor
+            Notification::create([
+                'user_id' => auth()->id(),
+                'type' => 'email_created',
+                'title' => 'Email Accounts Created',
+                'message' => 'You have created new email accounts for order #' . $orderPanel->order_id . ' panel #' . $orderPanel->id,
+                'data' => [
+                    'order_id' => $orderPanel->order_id,
+                    'order_panel_id' => $orderPanel->id,
+                    'email_count' => count($request->emails)
+                ]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Emails saved successfully',
+                'data' => $emails
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error saving split emails', [
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString(),
+                'order_panel_id' => $request->order_panel_id ?? 'N/A',
+                'contractor_id' => auth()->id() ?? 'N/A',
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'error' => 'Error saving emails: ' . $e->getMessage(),
+                'debug' => [
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                    'order_panel_id' => $request->order_panel_id ?? 'N/A'
+                ]
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a specific email from order panel split
+     */
+    public function deleteSplitEmail($id)
+    {
+        try {
+            // Find the email and verify contractor access
+            $email = OrderEmail::with(['orderSplit.orderPanel'])
+                ->whereHas('orderSplit.orderPanel.userOrderPanelAssignments', function($query) {
+                    $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($id);
+
+            $email->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk import emails for split panel
+     */
+    public function orderSplitImportProcess(Request $request)
+    {
+        // Validate file and order_panel_id
+        $validator = Validator::make($request->all(), [
+            'bulk_file' => 'required|file|mimes:csv,txt',
+            'order_panel_id' => 'required|exists:order_panel,id',
+            'split_total_inboxes' => 'required|integer'
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+    
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])
+                ->whereHas('userOrderPanelAssignments', function($query) {
+                    $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($request->order_panel_id);
+
+            // Get the first order panel split (assuming one split per panel for now)
+            $orderPanelSplit = $orderPanel->orderPanelSplits->first();
+
+            if (!$orderPanelSplit) {
+                return response()->json(['message' => 'No order panel split found'], 404);
+            }
+    
+            // Read the uploaded CSV file
+            $file = $request->file('bulk_file');
+            $filePath = $file->getRealPath();
+            $csv = array_map('str_getcsv', file($filePath));
+    
+            if (empty($csv) || count($csv) < 2) {
+                return response()->json([
+                    'message' => 'The uploaded file is empty or lacks data.'
+                ], 400);
+            }
+    
+            // Get the header and remove it from data
+            $headers = array_map('trim', $csv[0]);
+            unset($csv[0]);
+           
+            if (count($csv) > $request->split_total_inboxes) {
+                return response()->json([
+                    'message' => 'Oops! Limit exceeded. File contains more emails than allowed for this panel split.',
+                    'count' => count($csv)
+                ], 400);
+            }
+    
+            // Delete existing emails for this specific order panel split
+            OrderEmail::where('order_id', $orderPanel->order_id)
+                ->where('order_split_id', $orderPanelSplit->id)
+                ->delete();
+
+            $emails = [];
+    
+            foreach ($csv as $row) {
+                if (count($row) !== count($headers)) {
+                    continue; // Skip malformed row
+                }  
+    
+                $data = array_combine($headers, $row);
+    
+                $emails[] = [
+                    'order_id' => $orderPanel->order_id,
+                    'user_id' => $orderPanel->order->user_id,
+                    'order_split_id' => $orderPanelSplit->id,
+                    'contractor_id' => auth()->id(),
+                    'name' => $data['name'] ?? null,
+                    'email' => $data['email'] ?? null,
+                    'password' => $data['password'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+    
+            // Insert all at once
+            OrderEmail::insert($emails);
+            
+            // Update order assignment if not already assigned
+            if ($orderPanel->order->assigned_to == null) {
+                $orderPanel->order->assigned_to = auth()->id();
+                $orderPanel->order->save();
+            }
+
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $orderPanel->order->user_id,
+                'type' => 'email_created',
+                'title' => 'Bulk Email Accounts Created',
+                'message' => 'Bulk email accounts have been imported for your order #' . $orderPanel->order_id . ' panel #' . $orderPanel->id,
+                'data' => [
+                    'order_id' => $orderPanel->order_id,
+                    'order_panel_id' => $orderPanel->id,
+                    'email_count' => count($emails)
+                ]
+            ]);
+            
+            return response()->json([
+                'message' => 'Emails imported successfully for panel split.',
+                'count' => count($emails)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error importing emails: ' . $e->getMessage()
             ], 500);
         }
     }

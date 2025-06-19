@@ -130,6 +130,7 @@
         transform: translateX(-100%);
     }
 </style>
+
 @endpush
 
 @section('content')

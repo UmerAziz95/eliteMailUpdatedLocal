@@ -321,10 +321,176 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
+
+
+
+
+
+
+
+
+
+        .anim_card {
+    background-color: var(--secondary-color);
+    color: var(--light-color);
+    border: 1px solid #99999962;
+    border-radius: 8px;
+    position: relative;
+    opacity: 1;
+}
+.anim_card .order_detail {
+    width: 100%;
+    height: 14rem;
+    overflow: hidden;
+    border: 1px solid #86868654
+}
+.anim_card .order_detail .card_content {
+    width: 100%;
+    transition: .5s;
+}
+
+.card_content {
+    transform: translateX(30%);
+}
+
+.anim_card:hover .order_detail .card_content {
+    opacity: .9;
+    transform: translateX(0%);
+}
+
+.anim_card .flip_details {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--second-primary);
+    border-radius: 10px;
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    transform-origin: left;
+    transform: perspective(2000px) rotateY(0deg);
+    z-index: 2;
+}
+
+.anim_card .flip_details::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -5px;
+    width: 0px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.602); 
+    border-radius: 0 5px 5px 0;
+    transition: width 0.3s ease;
+}
+
+.anim_card:hover .flip_details {
+    transform: perspective(2000px) rotateY(-91deg);
+    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px, 
+                rgba(255, 255, 255, 0.3) 0px 7px 13px -3px, 
+                rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
+pointer-events: none
+}
+
+.anim_card:hover .flip_details::after {
+    width: 102px;
+    background-color: #9a9a9a81;
+    pointer-events: none;
+}
+
+.anim_card .flip_details .center {
+    padding: 20px;
+    background-color: var(--secondary-color);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
     </style>
 @endpush
 
 @section('content')
+
+    <div style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+        @for ($i = 0; $i < 3; $i++)
+            <div class="anim_card rounded-2">
+                <div class="order_detail p-3">
+
+                    <div class="card_content">
+                        <div class="text-end">
+                            <button class="btn btn-primary px-2 py-1 rounded-1" style="font-size: 11px">View More Detail</button>
+                        </div>
+    
+                        <table class="mt-2 border-0 w-100" style="height: 10.5rem; overflow-y: auto; display: block; scrollbar-width: none;">
+                            <thead>
+                                <tr>
+                                    <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">ID #</th>
+                                    <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Split Status</th>
+                                    <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
+                                    <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
+                                    <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-size: 10px; padding: 5px !important;">1</td>
+                                    <td style="font-size: 10px; padding: 5px !important;" class="success">Complete</td>
+                                    <td style="font-size: 10px; padding: 5px !important;">1</td>
+                                    <td style="font-size: 10px; padding: 5px !important;" class="success">1000</td>
+                                    <td><i class="fa-regular fa-eye"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                </div>
+                <div class="flip_details overflow-hidden">
+                    <div class="center w-100 h-100">
+                        <div class=" rounded-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h6>Order#2</h6>
+                                <div>
+                                    <small class="bg-success text-white py-1 px-2 rounded-5 me-1">Complete</small>
+                                    <small class="bg-warning text-white py-1 px-2 rounded-1">Timer</small>
+                                </div>
+                            </div>
+    
+                            <div class="mt-3 d-flex gap-3 align-items-center">
+                                <div>
+                                    <img src="https://images.pexels.com/photos/6603118/pexels-photo-6603118.jpeg" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="">
+                                </div>
+    
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="fw-bold">Hamza Ashfaq</span>
+                                    <small>Total Inbox: 1400</small>
+                                </div>
+                            </div>
+    
+                                <small class="ms-2">6/18/2025</small>
+    
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <div class="d-flex flex-column align-items-center gap-0">
+                                    <small class="fw-bold" style="font-size: 13px">Inbox/Domain</small>
+                                    <small style="font-size: 12px">2</small>
+                                </div>
+                                <div class="d-flex flex-column align-items-center gap-0">
+                                    <small class="fw-bold" style="font-size: 13px">Total Domains</small>
+                                    <small style="font-size: 12px">700</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endfor
+    </div>
+
+
+
+
+
+    
+
     <section class="py-3">
         
         <!-- Advanced Search Filter UI -->
@@ -373,6 +539,25 @@
                 </form>
             </div>
         </div>  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <!-- Grid Cards (Dynamic) -->
         <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
             <!-- Loading state -->
@@ -770,17 +955,19 @@
                 return 'Invalid Date';
             }
         }
-
         // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null) {
-            const now = new Date();
-            const orderDate = new Date(createdAt);
-            const twelveHoursLater = new Date(orderDate.getTime() + (12 * 60 * 60 * 1000));
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+            // const now = new Date();
+            const now = new Date('{{ now()->toISOString() }}');
+            
+            // Use timer_started_at if available, otherwise fall back to created_at
+            const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
+            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
             
             // If order is completed, timer is paused - show the time it took to complete
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - orderDate;
+                const timeTaken = completionDate - startTime;
                 const isOverdue = completionDate > twelveHoursLater;
                 
                 return {
@@ -801,7 +988,7 @@
                 };
             }
             
-            // For active orders: 12-hour countdown from created_at
+            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
             // - Counts down from 12:00:00 to 00:00:00
             // - After reaching zero, continues in negative time (overtime)
             const timeDiff = now - twelveHoursLater;
@@ -839,11 +1026,10 @@
             
             return `${hoursStr}:${minutesStr}:${secondsStr}`;
         }
-
         // Create timer badge HTML
         function createTimerBadge(order) {
             console.log(order);
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at);
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
             const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
             
             // Create tooltip text
@@ -1708,13 +1894,14 @@
                 const createdAt = badge.dataset.createdAt;
                 const status = badge.dataset.status;
                 const completedAt = badge.dataset.completedAt;
+                const timerStartedAt = badge.dataset.timerStartedAt;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt);
+                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
                 const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
                 
                 // Check if the timer display has changed to avoid unnecessary DOM updates

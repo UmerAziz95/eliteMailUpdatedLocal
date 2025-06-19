@@ -128,7 +128,7 @@
 
         .inbox {
             background-color: var(--slide-bg);
-            border: 1px solid #746af5;
+            border: 1px solid var(--second-primary);
             backdrop-filter: blur(10px);
             border-radius: 6px;
         }
@@ -255,9 +255,9 @@
             transform: translateX(-100%);
         }
 
-        h6 {
+        /* h6 {
             font-family: "Montserrat"
-        }
+        } */
     </style>
 @endpush
 
@@ -274,449 +274,105 @@
         </div>
     @endif
 
+
     <section class="py-3">
         <div class="row gy-4">
             <!-- Inbox Statistics -->
             <div class="col-md-6 col-lg-4">
                 <div class=" inbox overflow-hidden h-100">
-                    <div class="card-body p-3">
+                    <div class="p-3 h-100 d-flex flex-column justify-content-between">
                         <div class="d-flex align-items-center gap-1 mb-3">
-                            <span class="rounded-1 d-flex align-items-center justify-content-center">
+                            <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
                                 <i class="ti ti-inbox fs-6"></i>
                             </span>
                             <div>
                                 <h6 class="mb-0 fw-bold">Inbox Status</h6>
                             </div>
                         </div>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div style="background-color: #8d8d8d2c" class="d-flex align-items-center gap-2 rounded-2 py-1 px-3">
-                                    <div class="py-1 px-2 rounded-1" style="background-color: #8c8c8c6d">
-                                        <i class="fa-solid fa-inbox"></i>
-                                    </div>
-                                    <div class="d-flex flex-column gap-0"> 
-                                        <span class="opacity-75">
-                                            Total Inboxes
-                                        </span>
-                                        <h5 class="mb-0 number">{{ $totalInboxes ?? 0 }}</h5>
-                                    </div>
-                                </div>
-                                <span style="background-color: var(--second-primary)"
-                                    class="bg-opacity-25  px-3 py-1 rounded-2">
-                                    <i class="ti ti-inbox-off me-1"></i> Total
-                                </span>
-                            </div>
-                            <div class="progress bg-white bg-opacity-25" style="height: 3px;">
-                                <div class="progress-bar bg-danger"
-                                    style="width: 50%; background-color: rgb(7, 191, 62) !important"></div>
-                            </div>
-                            <div class="row g-0 mt-1">
-                                <div class="col-6">
-                                    <div style="background-color: #2ae6112c; width: fit-content;"
-                                        class="px-3 py-1 rounded-2 d-flex align-items-center gap-2">
-                                        <div class="py-1 px-2 rounded-1" style="background-color: #04e59a66">
-                                            <i class="fa-solid fa-inbox"></i>
-                                        </div>
-                                        <div class="d-flex flex-column gap-0">
-                                            <span class="d-block success">Active</span>
-                                            <h5 class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 d-flex justify-content-end">
-                                    <div style="background-color: #e6b11138; width: fit-content;"
-                                        class="px-3 py-1 rounded-2 d-flex align-items-center gap-2">
-                                        <div class="py-1 px-2 rounded-1" style="background-color: rgba(255, 166, 0, 0.641)">
-                                            <i class="fa-solid fa-spinner"></i>
-                                        </div>
-                                        <div class="d-flex flex-column gap-0">
-                                            <span class="d-block text-warning">Pending/Issue</span>
-                                            <h5 class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Subscription Info -->
-            <!-- <div class="col-xl-3 col-sm-6">
-                                    <div class="card overflow-hidden" style="background: linear-gradient(45deg, #11998e, #38ef7d);">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="avatar-sm flex-shrink-0">
-                                                    <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
-                                                        <i class="ti ti-currency-dollar fs-4 text-white"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h5 class="text-white mb-1">Subscription</h5>
-                                                </div>
-                                            </div>
-                                            @if (isset($nextBillingInfo))
-    <div class="d-flex flex-column gap-3">
-                <div class="text-white">
-                    <span class="d-block opacity-75">Next Payment</span>
-                    <h4 class="mb-0 mt-1">{{ $nextBillingInfo['next_billing_at'] ?? 'N/A' }}</h4>
-                </div>
-                <div class="progress bg-white bg-opacity-25" style="height: 2px;">
-                    <div class="progress-bar bg-white" style="width: 100%"></div>
-                </div>
-                <div class="row g-0">
-                    <div class="col-6">
-                        <div class="text-white">
-                            <span class="d-block opacity-75">Amount</span>
-                            <h4 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h4>
-                        </div>
-                    </div>
-                    <div class="col-6 text-end">
-                        <div class="text-white">
-                            <span class="d-block opacity-75">Status</span>
-                            <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill mt-1">
-                                {{ ucfirst($subscription->status ?? 'N/A') }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="background-color: #8d8d8d2c" class="d-flex align-items-center gap-2 rounded-1 py-1 px-2">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-center" style="border: 1px solid #8d8d8de5; border-radius: 50px; height: 30px; width: 30px;">
+                                        <i class="fa-solid fa-inbox" style="font-size: 14px"></i>
+                                    </div>    
+                                </div>
+                                <div class="d-flex flex-column gap-0"> 
+                                    <small class="opacity-75">
+                                        Total Inboxes
+                                    </small>
+                                    <h5 style="font-size: 16px" class="mb-0 number">{{ $totalInboxes ?? 0 }}</h5>
+                                </div>
+                            </div>
+
+                            <span style="background-color: var(--second-primary)"
+                                class="text-white px-2 py-1 rounded-1 d-flex align-items-center gap-1">
+                                <i class="ti ti-inbox-off"></i> Total
                             </span>
                         </div>
-                    </div>
-                </div>
-            </div>
-@else
-    <div class="text-white text-center py-3">
-                                                No active subscription
-                                            </div>
-    @endif
-                                        </div>
-                                    </div>
-                                </div> -->
-
-            <!-- Order Statistics -->
-            <!-- <div class="col-xl-3 col-sm-6">
-                                    <div class="card overflow-hidden" style="background: linear-gradient(45deg, #FF512F, #F09819);">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="avatar-sm flex-shrink-0">
-                                                    <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
-                                                        <i class="ti ti-shopping-cart fs-4 text-white"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h5 class="text-white mb-1">Orders</h5>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex flex-column gap-3">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div class="text-white">
-                                                        <span class="d-block opacity-75">Total Orders</span>
-                                                        <h3 class="mb-0 mt-1">{{ $totalOrders ?? 0 }}</h3>
-                                                    </div>
-                                                    <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
-                                                        <i class="ti ti-shopping me-1"></i> Total
-                                                    </span>
-                                                </div>
-                                                <div class="progress bg-white bg-opacity-25" style="height: 2px;">
-                                                    <div class="progress-bar bg-white" style="width: 100%"></div>
-                                                </div>
-                                                <div class="row g-0 mt-1">
-                                                    <div class="col-6">
-                                                        <div class="text-white">
-                                                            <span class="d-block opacity-75">Pending</span>
-                                                            <h4 class="mb-0">{{ $pendingOrders ?? 0 }}</h4>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <div class="text-white text-end">
-                                                            <span class="d-block opacity-75">Completed</span>
-                                                            <h4 class="mb-0">{{ $completedOrders ?? 0 }}</h4>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> -->
-
-            <!-- Support Tickets -->
-            <!-- <div class="col-xl-3 col-sm-6">
-                                    <div class="card overflow-hidden" style="background: linear-gradient(45deg, #834d9b, #d04ed6);">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="avatar-sm flex-shrink-0">
-                                                    <span class="avatar-title bg-white bg-opacity-25 rounded-circle">
-                                                        <i class="ti ti-ticket fs-4 text-white"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h5 class="text-white mb-1">Support</h5>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex flex-column gap-3">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div class="text-white">
-                                                        <span class="d-block opacity-75">Total Tickets</span>
-                                                        <h3 class="mb-0 mt-1">{{ $totalTickets ?? 0 }}</h3>
-                                                    </div>
-                                                    <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill">
-                                                        <i class="ti ti-ticket me-1"></i> Total
-                                                    </span>
-                                                </div>
-                                                <div class="progress bg-white bg-opacity-25" style="height: 2px;">
-                                                    <div class="progress-bar bg-white" style="width: 100%"></div>
-                                                </div>
-                                                <div class="row g-0 mt-1">
-                                                    <div class="col-6">
-                                                        <div class="text-white">
-                                                            <span class="d-block opacity-75">Pending</span>
-                                                            <h4 class="mb-0">{{ $pendingTickets ?? 0 }}</h4>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <div class="text-white text-end">
-                                                            <span class="d-block opacity-75">Resolved</span>
-                                                            <h4 class="mb-0">{{ $resolvedTickets ?? 0 }}</h4>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> -->
-
-            <!-- <div class="col-md-6">
-                                    <div class="swiper">
-                                        <div class="swiper-wrapper">
-                                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                                <div>
-                                                    <h5 class="mb-0">Websites Analytics</h5>
-                                                    <span>Total 28.5% conversation rate</span>
-                                                    <div class="mt-5">
-                                                        <h6>Spending</h6>
-                                                        <div class="row gy-4">
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-1.png"
-                                                    width="160" alt="Slide 1">
-                                            </div>
-
-                                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                                <div>
-                                                    <h5 class="mb-0">Websites Analytics</h5>
-                                                    <span>Total 28.5% conversation rate</span>
-                                                    <div class="mt-5">
-                                                        <h6>Spending</h6>
-                                                        <div class="row gy-4">
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-2.png"
-                                                    width="160" alt="Slide 1">
-                                            </div>
-
-                                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                                <div>
-                                                    <h5 class="mb-0">Websites Analytics</h5>
-                                                    <span>Total 28.5% conversation rate</span>
-                                                    <div class="mt-5">
-                                                        <h6>Spending</h6>
-                                                        <div class="row gy-4">
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="col-6">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                                    <h6 class="mb-0">Session</h6>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-3.png"
-                                                    width="160" alt="Slide 1">
-                                            </div>
-                                        </div>
-                                        <div class="swiper-pagination"></div>
-                                    </div>
-                                </div> -->
 
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-header border-0 px-3 pt-3 pb-0">
-                        <h6 class="mb-1 fw-bold">
-                            <i class="fa-brands fa-first-order"></i>
-                            Orders Overview
-                        </h6>
-                        <div style="background-color: #8d8d8d2c; border: 1px solid #8d8d8da0" class="py-1 px-3 rounded-2 d-flex align-items-center justify-content-between mt-3">
-                            <div>
-                                <p class="mb-0 small">All Time Orders</p>
-                                <h4 class="mb-0 mt-2">{{ $totalOrders ?? 0 }}</h4>
-                            </div>
-                            <span class="badge icon">
-                                <i class="ti ti-shopping-cart fs-5"></i>
-                            </span>
+                        <div class="progress bg-white bg-opacity-25" style="height: 5px;">
+                            <div class="progress-bar bg-danger rounded-5"
+                                style="width: 50%; background-color: rgb(7, 191, 62) !important"></div>
                         </div>
-                    </div>
-                    <div class="card-body px-3 pt-0">
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <p class="mb-0 small">Pending Orders</p>
-                                <p class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</p>
+
+
+                        <div class="row g-0 mt-1">
+                            <div class="col-6">
+                                <div style="background-color: #2ae6112c; width: fit-content;"
+                                    class="px-2 py-1 rounded-1 d-flex align-items-center gap-2">
+                                    <div>
+                                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid #04e59ad6;">
+                                            <i class="fa-solid fa-inbox success" style="font-size: 12px"></i>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column gap-0">
+                                        <small class="d-block success">Active</small>
+                                        <h5 style="font-size: 16px" class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-warning"
-                                    style="width: {{ $totalOrders > 0 ? ($pendingOrders / $totalOrders) * 100 : 0 }}%"
-                                    role="progressbar"></div>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <p class="mb-0 small">Completed Orders</p>
-                                <p class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</p>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar"
-                                    style=" background-color: rgb(7, 191, 62); width: {{ $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0 }}%"
-                                    role="progressbar"></div>
+                            <div class="col-6 d-flex justify-content-end">
+                                <div style="background-color: #e6b11138; width: fit-content;"
+                                    class="px-2 py-1 rounded-1 d-flex align-items-center gap-2">
+
+                                    <div>
+                                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid rgba(255, 166, 0, 0.905);">
+                                            <i class="fa-solid fa-spinner text-warning" style="font-size: 12px"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex flex-column gap-0">
+                                        <small class="d-block text-warning">Pending/Issue</small>
+                                        <h5 style="font-size: 16px" class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- <div class="col-xl-3 col-sm-6">
-                                    <div class="card h-100 p-2">
-                                        <div class="card-header">
-                                            <div class="d-flex justify-content-between">
-                                                <p class="mb-0">Inboxes Overview</p>
-                                            </div>
-                                            <h4 class="card-title mb-1">{{ $totalInboxes ?? 0 }} Total Inboxes</h4>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-12 mb-3">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <div class="d-flex align-items-center">
-                                                            <span class="badge bg-label-success p-1 rounded me-2">
-                                                                <i class="ti ti-inbox-filled text-success fs-5"></i>
-                                                            </span>
-                                                            <p class="mb-0">Active Inboxes</p>
-                                                        </div>
-                                                        <p class="mb-0 fw-semibold">{{ $activeInboxes ?? 0 }}</p>
-                                                    </div>
-                                                    <div class="progress" style="height: 8px;">
-                                                        <div class="progress-bar bg-success" style="width: {{ $totalInboxes > 0 ? ($activeInboxes / $totalInboxes) * 100 : 0 }}%" role="progressbar"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-12">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <div class="d-flex align-items-center">
-                                                            <span class="badge bg-label-warning p-1 rounded me-2">
-                                                                <i class="ti ti-inbox text-warning fs-5"></i>
-                                                            </span>
-                                                            <p class="mb-0">Pending Inboxes</p>
-                                                        </div>
-                                                        <p class="mb-0 fw-semibold">{{ $pendingInboxes ?? 0 }}</p>
-                                                    </div>
-                                                    <div class="progress" style="height: 8px;">
-                                                        <div class="progress-bar bg-warning" style="width: {{ $totalInboxes > 0 ? ($pendingInboxes / $totalInboxes) * 100 : 0 }}%" role="progressbar"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> -->
 
-
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-5">
                 <div class="card h-100 p-3">
                     <div class="border-0 pb-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h6 class="mb-2 fw-bold">
-                                <i class="fa-solid fa-binoculars"></i>
-                                Current Subscription Overview
+                        <div class="mb-0">
+                            <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
+                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                    <i class="fa-solid fa-binoculars"></i>
+                                </span>
+                                Most Recent Subscription Overview
                             </h6>
-                            <p class="small">Subscription and billing details</p>
+                            <p class="small mb-2">Subscription and billing details</p>
                         </div>
                     </div>
                     <div class="pt-0">
-                        <div class="row g-3">
+                        <div class="row g-0">
                             <div class="col-12">
-                                <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                    <h5 class="mb-0">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h5>
+                                <div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
+                                    <h5 class="mb-0 number">${{ $nextBillingInfo['amount'] ?? '0.00' }}</h5>
                                     @if (isset($subscription) && $subscription->status === 'active')
                                         <div class="badge rounded bg-label-success success">Active</div>
                                     @else
@@ -726,21 +382,21 @@
                                 <div class="d-flex flex-column gap-1">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Next Billing Date</small>
-                                        <span
+                                        <small
                                             class="mb-0">{{ isset($subscription) && $subscription->next_billing_date
                                                 ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y')
-                                                : 'N/A' }}</span>
+                                                : 'N/A' }}</small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Last Billing Date</small>
-                                        <span
+                                        <small
                                             class="mb-0">{{ isset($subscription) && $subscription->last_billing_date
                                                 ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y')
-                                                : 'N/A' }}</span>
+                                                : 'N/A' }}</small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Billing Period</small>
-                                        <span class="mb-0">Monthly</span>
+                                        <small class="mb-0">Monthly</small>
                                     </div>
                                 </div>
                             </div>
@@ -773,65 +429,102 @@
             </div>
 
 
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-header border-0 px-3 pt-3 pb-0">
+                        <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
+                            <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                <i class="fa-brands fa-first-order"></i>
+                            </span>
+                            Orders Overview
+                        </h6>
+                        <div style="background-color: #8d8d8d2c; border: 1px solid #8d8d8da0; padding: 0px 12px 5px 12px;" class="rounded-1 d-flex align-items-center justify-content-between mt-3">
+                            <div>
+                                <small class="mb-0 opacity-75">All Time Orders</small>
+                                <h5 class="mb-0 number">{{ $totalOrders ?? 0 }}</h5>
+                            </div>
+                            <span class="badge icon rounded-1">
+                                <i class="ti ti-shopping-cart fs-5"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body px-3 pt-0">
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="mb-0 opacity-75">Pending Orders</small>
+                                <small class="mb-0 fw-semibold">{{ $pendingOrders ?? 0 }}</small>
+                            </div>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-warning"
+                                    style="width: {{ $totalOrders > 0 ? ($pendingOrders / $totalOrders) * 100 : 0 }}%"
+                                    role="progressbar"></div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="mb-0 opacity-75">Completed Orders</small>
+                                <small class="mb-0 fw-semibold">{{ $completedOrders ?? 0 }}</small>
+                            </div>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar"
+                                    style=" background-color: rgb(7, 191, 62); width: {{ $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0 }}%"
+                                    role="progressbar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100 p-3">
                     <div class="border-0">
                         <div class="card-title mb-1">
-                            <h6 class="mb-1 fw-bold">
-                                <i class="fa-solid fa-headset"></i>
+                            <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
+                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                    <i class="fa-solid fa-headset fs-6"></i>
+                                </span>
                                 Support Tracker
                             </h6>
-                            <!-- <p>Last 7 Days</p> -->
                         </div>
-                        <!-- <div class="dropdown">
-                            <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                <a class="dropdown-item" href="javascript:void(0);">View
-                                    More</a>
-                                <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                            </div>
-                        </div> -->
                     </div>
                     <div class="row pt-2">
                         <div class="">
                             <div class="">
                                 <h1 style="background-color: #1926e32c; width: fit-content;"
-                                    class="mb-0 theme-text fs-3 py-1 px-3 rounded-2">{{ $totalTickets ?? 0 }}</h1>
-                                {{-- <p class="mb-0">Total Tickets</p> --}}
+                                    class="mb-0 theme-text fs-3 py-1 px-3 rounded-1">{{ $totalTickets ?? 0 }}</h1>
                             </div>
                             <div id="ticketPieChart"></div>
-                            <ul class="p-0 m-0 gap-3" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));">
+
+                            <ul class="p-0 m-0 gap-1" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));">
                                 <li style="background-color: #8d8d8d2c"
-                                    class="d-flex gap-2 align-items-center p-2 rounded-2 w-100">
-                                    <div class="badge rounded bg-label-primary p-1">
+                                    class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
+                                    <div class="badge rounded-1 bg-label-primary p-1">
                                         <i class="ti ti-ticket theme-text fs-5"></i>
                                     </div>
                                     <div>
-                                        <h6 style="font-size: 12px" class="mb-0 text-nowrap small">Open</h6>
+                                        <h6 style="font-size: 11px" class="mb-0 text-nowrap small">Open</h6>
                                         <p class="small opacity-75 mb-0">{{ $newTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                                 <li style="background-color: #8d8d8d2c"
-                                    class="d-flex gap-2 align-items-center p-2 rounded-2 w-100">
-                                    <div class="badge rounded bg-label-info p-1">
+                                    class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
+                                    <div class="badge rounded-1 bg-label-info p-1">
                                         <i class="ti ti-circle-check fs-5 text-info"></i>
                                     </div>
                                     <div>
-                                        <h6 style="font-size: 12px" class="mb-0 text-nowrap small">In-Progress</h6>
+                                        <h6 style="font-size: 11px" class="mb-0 text-nowrap small">In-Progress</h6>
                                         <p class="small opacity-75 mb-0">{{ $pendingTickets ?? 0 }}</p>
                                     </div>
                                 </li>
                                 <li style="background-color: #8d8d8d2c"
-                                    class="d-flex gap-2 align-items-center p-2 rounded-2 w-100">
-                                    <div class="badge rounded bg-label-success p-1">
+                                    class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
+                                    <div class="badge rounded-1 bg-label-success p-1">
                                         <i class="ti ti-circle-check fs-5 success"></i>
                                     </div>
                                     <div>
-                                        <h6 style="font-size: 12px" class="mb-0 text-nowrap small">Closed</h6>
+                                        <h6 style="font-size: 11px" class="mb-0 text-nowrap small">Closed</h6>
                                         <p class="small opacity-75 mb-0">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
                                 </li>
@@ -841,62 +534,15 @@
                 </div>
             </div>
 
-
-
-            <!-- <div class="col-xxl-4 col-md-6">
-                                    <div class="card h-100 p-2">
-                                        <div class="card-header border-0 d-flex justify-content-between">
-                                            <div class="card-title mb-0">
-                                                <h5 class="mb-1">Sales by Countries</h5>
-                                                <p>Monthly Sales Overview</p>
-                                            </div>
-                                            <div class="dropdown">
-                                                <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                    <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                                                </button>
-                                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                                    <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-                                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-body pt-0">
-                                            <ul class="p-0 m-0">
-                                                <li class="d-flex align-items-center mb-3">
-                                                    <div class="avatar flex-shrink-0 me-4">
-                                                        <img src="https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600"
-                                                            class="object-fit-cover" width="35" height="35"
-                                                            style="border-radius: 50px;" alt="">
-                                                    </div>
-                                                    <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
-                                                        <div class="me-2">
-                                                            <div class="d-flex align-items-center">
-                                                                <h6 class="mb-0 me-1">$8,567k</h6>
-                                                            </div>
-                                                            <small class="opacity-50">United states</small>
-                                                        </div>
-                                                        <div class="user-progress">
-                                                            <p class="text-success fw-medium mb-0 d-flex align-items-center gap-1">
-                                                                <i class="fa fa-chevron-up"></i>
-                                                                25.8%
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div> -->
-
             <!-- Order History -->
             <div class="col-lg-8">
                 <div class="card p-3" style="max-height: 28.7rem">
                     <div class="border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h6 class="mb-1 fw-bold">
-                                <i class="fa-solid fa-landmark-dome"></i>
+                        <div class="card-title mb-0">   
+                            <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
+                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                    <i class="fa-solid fa-landmark-dome"></i>
+                                </span>
                                 Order History
                             </h6>
                             <p class="small">Your orders and their current status</p>
@@ -927,8 +573,10 @@
                     <!-- heading  -->
                     <div class=" border-0 d-flex justify-content-between">
                         <div class=" mb-0">
-                            <h6 class="mb-1 fw-bold fs-6">
-                                <i class="fa-solid fa-square-person-confined"></i>
+                            <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
+                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                    <i class="fa-solid fa-square-person-confined"></i>
+                                </span>
                                 Recent Activity
                             </h6>
                         </div>
@@ -1374,7 +1022,7 @@
                             name: 'performed_by',
                             render: function(data, type, row) {
                                 return `
-                                    <div class="d-flex align-items-center text-nowrap px-2 rounded-2" style= "border: 1px solid #00F2FF; width: fit-content">
+                                    <div class="d-flex align-items-center text-nowrap px-2 rounded-1" style= "border: 1px solid #00F2FF; width: fit-content">
                                         <span style="color: #00F2FF; font-size: 11px">${data}</span>
                                     </div>
                                 `;
