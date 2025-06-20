@@ -10,7 +10,7 @@
 @section('content')
 <section class="py-3 overflow-hidden">
     <div class="d-flex align-items-center justify-content-between">
-        <a href="javascript:history.back()" class="d-flex align-items-center justify-content-center"
+        <a href="{{ url()->previous() }}" class="d-flex align-items-center justify-content-center"
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
