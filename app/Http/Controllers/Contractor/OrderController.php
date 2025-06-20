@@ -1829,8 +1829,12 @@ class OrderController extends Controller
             $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
             
-            // Check if the contractor is assigned to this order or has access to the order panel
-            if ($order->assigned_to == auth()->id()) {
+            // Allow access if order is unassigned (available for all contractors)
+            if ($order->assigned_to === null) {
+                $hasAccess = true;
+            }
+            // Or if the contractor is assigned to this order
+            else if ($order->assigned_to == auth()->id()) {
                 $hasAccess = true;
             } else {
                 // Check if contractor has access to any split of this order

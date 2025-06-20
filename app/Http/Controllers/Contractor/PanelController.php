@@ -34,12 +34,12 @@ class PanelController extends Controller
 
         return view('contractor.panel.index');
     }    
-    
     public function getOrdersData(Request $request)
     {
         try {
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
-                ->whereHas('orderPanels');
+                ->whereHas('orderPanels')
+                ->whereNull('assigned_to'); // Only show unassigned orders
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
