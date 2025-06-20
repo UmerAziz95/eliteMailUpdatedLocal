@@ -32,7 +32,7 @@ class DashboardController extends Controller
         // dd($totalInboxes);
         $activeInboxes = 0;
         $pendingInboxes = 0;
-        // dd($latestOrder);
+        // dd($latestOrder);      
         if ($latestOrder) {
             // Active inboxes are those in completed orders
             $activeInboxes = $user->orders()
