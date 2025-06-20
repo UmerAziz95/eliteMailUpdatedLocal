@@ -1415,34 +1415,9 @@
 
                                                 <div class="d-flex flex-column mb-3">
                                                     <span class="opacity-50">Domain Forwarding Destination URL</span>
-            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
-        }
+                                                    <span>${order?.order?.reorder_info[0]?.forwarding_url || 'N/A'}</span>
+                                                </div>
 
-        // Live timer update function
-        function updateTimers() {
-            $('.timer-badge').each(function() {
-                const $badge = $(this);
-                const createdAt = $badge.data('created-at');
-                const status = $badge.data('status');
-                const completedAt = $badge.data('completed-at');
-                const timerStartedAt = $badge.data('timer-started-at');
-                
-                if (createdAt && status !== 'completed') {
-                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-                    
-                    $badge.removeClass('positive negative completed').addClass(timer.class);
-                    $badge.html(`<i class="${iconClass} timer-icon"></i>${timer.display}`);
-                }
-            });
-        }
-
-        // Start timer updates
-        $(document).ready(function() {
-            // Update timers every second
-            setInterval(updateTimers, 1000);
-        });
-</script>
                                                 <div class="d-flex flex-column mb-3">
                                                     <span class="opacity-50">Sending Platform</span>
                                                     <span>${order?.order?.reorder_info[0]?.sending_platform || 'N/A'}</span>
@@ -1473,7 +1448,7 @@
             `;
             
             container.innerHTML = ordersHtml;
-            }
+        }
 
 
            function getStatusBadgeClass(status) {
@@ -1556,6 +1531,31 @@
             
             return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
         }
+
+        // Live timer update function
+        function updateTimers() {
+            $('.timer-badge').each(function() {
+                const $badge = $(this);
+                const createdAt = $badge.data('created-at');
+                const status = $badge.data('status');
+                const completedAt = $badge.data('completed-at');
+                const timerStartedAt = $badge.data('timer-started-at');
+                
+                if (createdAt && status !== 'completed') {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
+                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                    
+                    $badge.removeClass('positive negative completed').addClass(timer.class);
+                    $badge.html(`<i class="${iconClass} timer-icon"></i>${timer.display}`);
+                }
+            });
+        }
+
+        // Start timer updates
+        $(document).ready(function() {
+            // Update timers every second
+            setInterval(updateTimers, 1000);
+        });
 </script>
 
 
