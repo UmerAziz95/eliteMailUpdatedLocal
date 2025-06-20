@@ -1893,20 +1893,20 @@ class OrderController extends Controller
                 // Add CSV headers with more detailed information
                 fputcsv($file, [
                     'Domain', 
-                    'Order ID', 
-                    'Split ID', 
-                    'Panel ID', 
-                    'Inboxes per Domain'
+                    // 'Order ID', 
+                    // 'Split ID', 
+                    // 'Panel ID', 
+                    // 'Inboxes per Domain'
                 ]);
 
                 // Add data rows
                 foreach ($domains as $domain) {
                     fputcsv($file, [
                         $domain,
-                        $order->id,
-                        $orderPanelSplit->id,
-                        $orderPanelSplit->panel_id,
-                        $orderPanelSplit->inboxes_per_domain ?? 'N/A'
+                        // $order->id,
+                        // $orderPanelSplit->id,
+                        // $orderPanelSplit->panel_id,
+                        // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
                     ]);
                 }
 
