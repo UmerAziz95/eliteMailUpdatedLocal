@@ -162,7 +162,7 @@
                                             ->first();
                                     @endphp
                                     @if ($activeSubscription)
-                                        <button class="btn btn-success" disabled>
+                                        <button class="btn btn-success subscribe-btn" data-plan-id="{{ $plan->id }}">
                                             <i class="fas fa-check me-2"></i>Subscribed Plan
                                         </button>
                                     @else
@@ -225,7 +225,7 @@
                                                     ->first();
                                             @endphp
                                             @if ($activeSubscription)
-                                                <button class="btn text-white" style="background-color: rgb(5, 163, 23)">
+                                                <button class="btn text-white subscribe-btn"  data-plan-id="{{ $plan->id }}" style="background-color: rgb(5, 163, 23)">
                                                     <i class="fas fa-check me-2"></i>Subscribed Plan
                                                 </button>
                                             @else
