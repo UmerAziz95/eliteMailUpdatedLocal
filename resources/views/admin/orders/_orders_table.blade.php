@@ -11,6 +11,7 @@
                 @endif
                 <th>Split Counts</th>
                 <th>Total Inboxes</th>
+                <th>Timer</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>

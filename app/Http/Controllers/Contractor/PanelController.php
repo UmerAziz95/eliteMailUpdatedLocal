@@ -111,6 +111,7 @@ class PanelController extends Controller
                             . ucfirst($status) . '</span>';
                     })(),
                     'created_at' => $order->created_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
                     'completed_at' => $order->completed_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {

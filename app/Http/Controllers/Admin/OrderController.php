@@ -414,7 +414,17 @@ class OrderController extends Controller
                     
                     return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
-                ->rawColumns(['action', 'status'])
+                ->addColumn('timer', function ($order) {
+                    // Return timer data as JSON for JavaScript processing
+                    return json_encode([
+                        'created_at' => $order->created_at ? $order->created_at->toISOString() : null,
+                        'status' => strtolower($order->status_manage_by_admin ?? 'n/a'),
+                        'completed_at' => $order->completed_at ? $order->completed_at->toISOString() : null,
+                        'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                        'order_id' => $order->id
+                    ]);
+                })
+                ->rawColumns(['action', 'status', 'timer'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [

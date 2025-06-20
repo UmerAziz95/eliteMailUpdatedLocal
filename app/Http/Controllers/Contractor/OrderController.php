@@ -1451,7 +1451,8 @@ class OrderController extends Controller
                     })(),
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
-                    'timer_started_at' => $order->timer_started_at,
+                    // 'timer_started_at' => $order->timer_started_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();

@@ -179,6 +179,73 @@
     div[class*="backdrop"]:empty {
         display: none !important;
     }
+
+    /* Timer badge styling */
+    .timer-badge {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 11px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        letter-spacing: 0.5px;
+        min-width: 70px;
+        justify-content: center;
+        margin-left: 8px;
+    }
+
+    /* Timer states */
+    .timer-badge.positive {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-color: rgba(40, 167, 69, 0.3);
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    }
+
+    .timer-badge.negative {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+        color: white;
+        border-color: rgba(220, 53, 69, 0.3);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        animation: pulse-red 2s infinite;
+    }
+
+    .timer-badge.completed {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        border-color: rgba(108, 117, 125, 0.3);
+        box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+    }
+
+    /* Pulse animation for overdue timers */
+    @keyframes pulse-red {
+        0% {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+        50% {
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+            transform: scale(1.02);
+        }
+        100% {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+    }
+
+    /* Timer icon styling */
+    .timer-icon {
+        font-size: 10px;
+        margin-right: 2px;
+    }
+
+    /* Hover effects */
+    .timer-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
 </style>
 @endpush
 
@@ -474,6 +541,120 @@
         window.location.href = `{{ url('/admin/orders/${id}/view') }}`;
     }
 
+    // Timer calculation functions
+    function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+        const now = new Date();
+        
+        // Use timer_started_at if available, otherwise fall back to created_at
+        const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
+        const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
+        
+        // If order is completed, timer is paused - show the time it took to complete
+        if (status === 'completed' && completedAt) {
+            const completionDate = new Date(completedAt);
+            const timeTaken = completionDate - startTime;
+            const isOverdue = completionDate > twelveHoursLater;
+            
+            return {
+                display: formatTimeDuration(timeTaken),
+                isNegative: isOverdue,
+                isCompleted: true,
+                class: 'completed'
+            };
+        }
+        
+        // If order is completed but no completion date, just show completed
+        if (status === 'completed') {
+            return {
+                display: 'Completed',
+                isNegative: false,
+                isCompleted: true,
+                class: 'completed'
+            };
+        }
+        
+        // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
+        // - Counts down from 12:00:00 to 00:00:00
+        // - After reaching zero, continues in negative time (overtime)
+        const timeDiff = now - twelveHoursLater;
+        
+        if (timeDiff > 0) {
+            // Order is overdue (negative time - overtime)
+            return {
+                display: '-' + formatTimeDuration(timeDiff),
+                isNegative: true,
+                isCompleted: false,
+                class: 'negative'
+            };
+        } else {
+            // Order still has time remaining (countdown)
+            return {
+                display: formatTimeDuration(-timeDiff),
+                isNegative: false,
+                isCompleted: false,
+                class: 'positive'
+            };
+        }
+    }
+
+    // Format time duration in countdown format (HH:MM:SS)
+    function formatTimeDuration(milliseconds) {
+        const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        // Format with leading zeros for proper countdown display
+        const hoursStr = hours.toString().padStart(2, '0');
+        const minutesStr = minutes.toString().padStart(2, '0');
+        const secondsStr = seconds.toString().padStart(2, '0');
+        
+        return `${hoursStr}:${minutesStr}:${secondsStr}`;
+    }
+
+    // Format date for display
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return date.toLocaleDateString('en-US', options);
+    }
+
+    // Create timer badge HTML
+    function createTimerBadge(timerData) {
+        const timer = calculateOrderTimer(timerData.created_at, timerData.status, timerData.completed_at, timerData.timer_started_at);
+        const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+        
+        // Create tooltip text
+        let tooltip = '';
+        if (timer.isCompleted) {
+            tooltip = timerData.completed_at 
+                ? `Order completed on ${formatDate(timerData.completed_at)}` 
+                : 'Order is completed';
+        } else if (timer.isNegative) {
+            tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(timerData.created_at)}`;
+        } else {
+            tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(timerData.created_at)}`;
+        }
+        
+        return `
+            <span class="timer-badge ${timer.class}" 
+                  data-order-id="${timerData.order_id}" 
+                  data-created-at="${timerData.created_at}" 
+                  data-status="${timerData.status}" 
+                  data-completed-at="${timerData.completed_at || ''}"
+                  title="${tooltip}">
+                <i class="${iconClass} timer-icon"></i>
+                ${timer.display}
+            </span>
+        `;
+    }
+
     function initDataTable(planId = '') {
         console.log('Initializing DataTable for planId:', planId);
         var tableId = planId ? `#myTable-${planId}` : '#myTable';
@@ -642,6 +823,20 @@
                     {
                         data: 'total_inboxes',
                         name: 'total_inboxes'
+                    },
+                    {
+                        data: 'timer',
+                        name: 'timer',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            try {
+                                const timerData = JSON.parse(data);
+                                return createTimerBadge(timerData);
+                            } catch (e) {
+                                return '<span class="timer-badge completed">N/A</span>';
+                            }
+                        }
                     },
                     {
                         data: 'status',
@@ -1213,9 +1408,34 @@
 
                                                 <div class="d-flex flex-column mb-3">
                                                     <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                                    <span>${order?.order?.reorder_info[0]?.forwarding_url || 'N/A'}</span>
-                                                </div>
+            return allDomains.map(domain => `<span class="d-block">${domain}</span>`).join('');
+        }
 
+        // Live timer update function
+        function updateTimers() {
+            $('.timer-badge').each(function() {
+                const $badge = $(this);
+                const createdAt = $badge.data('created-at');
+                const status = $badge.data('status');
+                const completedAt = $badge.data('completed-at');
+                const timerStartedAt = $badge.data('timer-started-at');
+                
+                if (createdAt && status !== 'completed') {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
+                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                    
+                    $badge.removeClass('positive negative completed').addClass(timer.class);
+                    $badge.html(`<i class="${iconClass} timer-icon"></i>${timer.display}`);
+                }
+            });
+        }
+
+        // Start timer updates
+        $(document).ready(function() {
+            // Update timers every second
+            setInterval(updateTimers, 1000);
+        });
+</script>
                                                 <div class="d-flex flex-column mb-3">
                                                     <span class="opacity-50">Sending Platform</span>
                                                     <span>${order?.order?.reorder_info[0]?.sending_platform || 'N/A'}</span>
