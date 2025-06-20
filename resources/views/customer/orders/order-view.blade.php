@@ -33,13 +33,10 @@
             <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
                 {{ ucfirst($order->status2 ?? 'Pending') }}
             </div>
-            <div class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
+            <div id="exportCsvBtn" class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
                 <a href="javascript:;">Bulk Export</a>            
             </div>
         </div>
-    </div>
-    <div class="row d-flex justify-content-end" id="exportCsvBtn" style="margin-right: 1px">
-        
     </div>
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">

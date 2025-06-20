@@ -1716,14 +1716,14 @@ class OrderController extends Controller
             'order_panel_id' => 'required|exists:order_panel,id',
             'split_total_inboxes' => 'required|integer'
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed.',
                 'errors' => $validator->errors()
             ], 422);
         }
-    
+
         try {
             // Verify the contractor has access to this order panel
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])
@@ -1738,20 +1738,38 @@ class OrderController extends Controller
             if (!$orderPanelSplit) {
                 return response()->json(['message' => 'No order panel split found'], 404);
             }
-    
+
             // Read the uploaded CSV file
             $file = $request->file('bulk_file');
             $filePath = $file->getRealPath();
+            
+            // Check if file is readable
+            if (!is_readable($filePath)) {
+                return response()->json([
+                    'message' => 'The uploaded file is not readable.'
+                ], 400);
+            }
+
             $csv = array_map('str_getcsv', file($filePath));
-    
+
             if (empty($csv) || count($csv) < 2) {
                 return response()->json([
                     'message' => 'The uploaded file is empty or lacks data.'
                 ], 400);
             }
-    
-            // Get the header and remove it from data
+
+            // Get the header and validate required columns
             $headers = array_map('trim', $csv[0]);
+            $requiredColumns = ['name', 'email', 'password'];
+            $missingColumns = array_diff($requiredColumns, $headers);
+            
+            if (!empty($missingColumns)) {
+                return response()->json([
+                    'message' => 'File format is incorrect. Missing required columns: ' . implode(', ', $missingColumns),
+                    'required_format' => 'CSV file must contain columns: name, email, password'
+                ], 400);
+            }
+
             unset($csv[0]);
            
             if (count($csv) > $request->split_total_inboxes) {
@@ -1760,34 +1778,72 @@ class OrderController extends Controller
                     'count' => count($csv)
                 ], 400);
             }
-    
+
             // Delete existing emails for this specific order panel split
             OrderEmail::where('order_id', $orderPanel->order_id)
                 ->where('order_split_id', $orderPanelSplit->id)
                 ->delete();
 
             $emails = [];
-    
+            $errors = [];
+            $rowNumber = 1; // Start from 1 since we removed header
+
             foreach ($csv as $row) {
+                $rowNumber++;
+                
                 if (count($row) !== count($headers)) {
-                    continue; // Skip malformed row
+                    $errors[] = "Row {$rowNumber}: Column count mismatch. Expected " . count($headers) . " columns, got " . count($row);
+                    continue;
                 }  
-    
+
                 $data = array_combine($headers, $row);
-    
+                
+                // Validate required fields
+                if (empty(trim($data['name'] ?? ''))) {
+                    $errors[] = "Row {$rowNumber}: Name is required";
+                    continue;
+                }
+                
+                if (empty(trim($data['email'] ?? '')) || !filter_var(trim($data['email']), FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = "Row {$rowNumber}: Valid email is required";
+                    continue;
+                }
+                
+                if (empty(trim($data['password'] ?? ''))) {
+                    $errors[] = "Row {$rowNumber}: Password is required";
+                    continue;
+                }
+
                 $emails[] = [
                     'order_id' => $orderPanel->order_id,
                     'user_id' => $orderPanel->order->user_id,
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
-                    'name' => $data['name'] ?? null,
-                    'email' => $data['email'] ?? null,
-                    'password' => $data['password'] ?? null,
+                    'name' => trim($data['name']),
+                    'email' => trim($data['email']),
+                    'password' => trim($data['password']),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
-    
+
+            // If there are validation errors, return them
+            if (!empty($errors)) {
+                return response()->json([
+                    'message' => 'File contains validation errors.',
+                    'errors' => $errors,
+                    'valid_rows' => count($emails),
+                    'total_rows' => count($csv)
+                ], 400);
+            }
+
+            // If no valid emails after processing
+            if (empty($emails)) {
+                return response()->json([
+                    'message' => 'No valid email data found in the file.'
+                ], 400);
+            }
+
             // Insert all at once
             OrderEmail::insert($emails);
             

@@ -1101,16 +1101,9 @@
 
 @push('scripts')
 <script>
+    
     $('#addBulkEmail').on('click', function () {
-    $('#BulkImportModal').modal('show');
-   
-});
-
-
-
-    $('#addBulkEmail').on('click', function() {
         $('#BulkImportModal').modal('show');
-
     });
 
     $('#BulkImportForm').on('submit', function(e) {
