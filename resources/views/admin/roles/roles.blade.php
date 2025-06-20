@@ -88,7 +88,7 @@
         <div class="counters">
             @foreach ($roles as $role)
             <div class="">
-                <div class="card p-3 counter_1">
+                <div class="card p-3 counter_1 h-100">
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <p class="fw-normal mb-0">Total {{ $role->users->count() }} users</p>

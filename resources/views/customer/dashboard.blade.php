@@ -153,10 +153,10 @@
         }
 
         /* .draft-alert:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-                transition: all 0.3s ease;
-            } */
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                    transition: all 0.3s ease;
+                } */
 
         .draft-alert .alert-icon {
             animation: bounce 1s infinite;
@@ -256,33 +256,50 @@
         }
 
         /* h6 {
-            font-family: "Montserrat"
-        } */
+                font-family: "Montserrat"
+            } */
     </style>
 @endpush
 
 @section('content')
     <!-- Draft Orders Notification -->
     @if (isset($draftOrders) && $draftOrders > 0)
-        <div class="alert alert-warning alert-dismissible fade show draft-alert" role="alert"
+        <div class="alert alert-warning alert-dismissible fade show draft-alert py-2 rounded-1" role="alert"
             style="background-color: rgba(255, 166, 0, 0.414); color: #fff; border: 2px solid orange;">
             <i class="ti ti-alert-triangle me-2 alert-icon"></i>
             <strong>Draft Orders Alert:</strong> You have {{ $draftOrders }} order{{ $draftOrders > 1 ? 's' : '' }}
             available in drafts.
             <a href="{{ route('customer.orders') }}" class="text-warning alert-link">View your orders</a> to complete them.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
         </div>
     @endif
 
 
-    <section class="py-3">
+    <section class="py-0">
+
+        <h4>Dashboard</h4>
+        <p>Welcome to your dashbaord. Here you can see your stats.</p>
+
+        <div class="p-3 rounded-2 mb-4" style="background-color: #4a3aff36; border: 1px solid var(--second-primary);">
+            <h5>
+                Earn Rewards with Project Inboxes!
+            </h5>
+            <p>Signup for a affiliate program today and start earning for every referral.</p>
+            <a href="https://64gytyjw1wv.typeform.com/to/RekicwnC">
+                <button class="btn btn-primary btn-sm rounded-1 border-0 px-3">Join Now!</button>
+            </a>
+        </div>
+
         <div class="row gy-4">
             <!-- Inbox Statistics -->
             <div class="col-md-6 col-lg-4">
                 <div class=" inbox overflow-hidden h-100">
                     <div class="p-3 h-100 d-flex flex-column justify-content-between">
                         <div class="d-flex align-items-center gap-1 mb-3">
-                            <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                            <span
+                                style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;"
+                                class="d-flex align-items-center justify-content-center">
                                 <i class="ti ti-inbox fs-6"></i>
                             </span>
                             <div>
@@ -291,13 +308,15 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center">
-                            <div style="background-color: #8d8d8d2c" class="d-flex align-items-center gap-2 rounded-1 py-1 px-2">
+                            <div style="background-color: #8d8d8d2c"
+                                class="d-flex align-items-center gap-2 rounded-1 py-1 px-2">
                                 <div>
-                                    <div class="d-flex align-items-center justify-content-center" style="border: 1px solid #8d8d8de5; border-radius: 50px; height: 30px; width: 30px;">
+                                    <div class="d-flex align-items-center justify-content-center"
+                                        style="border: 1px solid #8d8d8de5; border-radius: 50px; height: 30px; width: 30px;">
                                         <i class="fa-solid fa-inbox" style="font-size: 14px"></i>
-                                    </div>    
+                                    </div>
                                 </div>
-                                <div class="d-flex flex-column gap-0"> 
+                                <div class="d-flex flex-column gap-0">
                                     <small class="opacity-75">
                                         Total Inboxes
                                     </small>
@@ -305,10 +324,10 @@
                                 </div>
                             </div>
 
-                            <span style="background-color: var(--second-primary)"
+                            {{-- <span style="background-color: var(--second-primary)"
                                 class="text-white px-2 py-1 rounded-1 d-flex align-items-center gap-1">
                                 <i class="ti ti-inbox-off"></i> Total
-                            </span>
+                            </span> --}}
                         </div>
 
 
@@ -323,13 +342,15 @@
                                 <div style="background-color: #2ae6112c; width: fit-content;"
                                     class="px-2 py-1 rounded-1 d-flex align-items-center gap-2">
                                     <div>
-                                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid #04e59ad6;">
+                                        <div class="d-flex align-items-center justify-content-center"
+                                            style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid #04e59ad6;">
                                             <i class="fa-solid fa-inbox success" style="font-size: 12px"></i>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-column gap-0">
                                         <small class="d-block success">Active</small>
-                                        <h5 style="font-size: 16px" class="mb-0 success number">{{ $activeInboxes ?? 0 }}</h5>
+                                        <h5 style="font-size: 16px" class="mb-0 success number">{{ $activeInboxes ?? 0 }}
+                                        </h5>
                                     </div>
                                 </div>
                             </div>
@@ -338,14 +359,16 @@
                                     class="px-2 py-1 rounded-1 d-flex align-items-center gap-2">
 
                                     <div>
-                                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid rgba(255, 166, 0, 0.905);">
+                                        <div class="d-flex align-items-center justify-content-center"
+                                            style="height: 30px; width: 30px; border-radius: 50px; border: 1px solid rgba(255, 166, 0, 0.905);">
                                             <i class="fa-solid fa-spinner text-warning" style="font-size: 12px"></i>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="d-flex flex-column gap-0">
                                         <small class="d-block text-warning">Pending/Issue</small>
-                                        <h5 style="font-size: 16px" class="mb-0 text-warning number">{{ $pendingInboxes ?? 0 }}</h5>
+                                        <h5 style="font-size: 16px" class="mb-0 text-warning number">
+                                            {{ $pendingInboxes ?? 0 }}</h5>
                                     </div>
                                 </div>
                             </div>
@@ -360,7 +383,9 @@
                     <div class="border-0 pb-0 d-flex justify-content-between">
                         <div class="mb-0">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
-                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                <span
+                                    style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;"
+                                    class="d-flex align-items-center justify-content-center">
                                     <i class="fa-solid fa-binoculars"></i>
                                 </span>
                                 Most Recent Subscription Overview
@@ -433,12 +458,15 @@
                 <div class="card h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
-                            <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                            <span
+                                style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;"
+                                class="d-flex align-items-center justify-content-center">
                                 <i class="fa-brands fa-first-order"></i>
                             </span>
                             Orders Overview
                         </h6>
-                        <div style="background-color: #8d8d8d2c; border: 1px solid #8d8d8da0; padding: 0px 12px 5px 12px;" class="rounded-1 d-flex align-items-center justify-content-between mt-3">
+                        <div style="background-color: #8d8d8d2c; border: 1px solid #8d8d8da0; padding: 0px 12px 5px 12px;"
+                            class="rounded-1 d-flex align-items-center justify-content-between mt-3">
                             <div>
                                 <small class="mb-0 opacity-75">All Time Orders</small>
                                 <h5 class="mb-0 number">{{ $totalOrders ?? 0 }}</h5>
@@ -482,7 +510,9 @@
                     <div class="border-0">
                         <div class="card-title mb-1">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
-                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                <span
+                                    style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;"
+                                    class="d-flex align-items-center justify-content-center">
                                     <i class="fa-solid fa-headset fs-6"></i>
                                 </span>
                                 Support Tracker
@@ -497,7 +527,8 @@
                             </div>
                             <div id="ticketPieChart"></div>
 
-                            <ul class="p-0 m-0 gap-1" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));">
+                            <ul class="p-0 m-0 gap-1"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));">
                                 <li style="background-color: #8d8d8d2c"
                                     class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
                                     <div class="badge rounded-1 bg-label-primary p-1">
@@ -534,18 +565,21 @@
                 </div>
             </div>
 
+
             <!-- Order History -->
             <div class="col-lg-8">
-                <div class="card p-3" style="max-height: 28.7rem">
+                <div class="card p-3 h-100" style="max-height: 28.7rem">
                     <div class="border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">   
+                        <div class="card-title mb-0">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
-                                <span style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;" class="d-flex align-items-center justify-content-center">
+                                <span
+                                    style="border: 1px solid var(--second-primary); border-radius: 50px; padding: 6px; color: var(--second-primary); height: 30px; width: 30px;"
+                                    class="d-flex align-items-center justify-content-center">
                                     <i class="fa-solid fa-landmark-dome"></i>
                                 </span>
                                 Order History
                             </h6>
-                            <p class="small">Your orders and their current status</p>
+                            <p class="small mb-1">Your orders and their current status</p>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -568,9 +602,8 @@
                 </div>
             </div>
 
-            <div class="col-12">
+            {{-- <div class="col-12">
                 <div class="card p-3">
-                    <!-- heading  -->
                     <div class=" border-0 d-flex justify-content-between">
                         <div class=" mb-0">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
@@ -600,7 +633,7 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </section>
 @endsection
@@ -608,6 +641,7 @@
 @push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+
             // Initialize Swiper
             var swiper = new Swiper(".swiper", {
                 loop: true,
@@ -880,6 +914,7 @@
 
             // Initialize orders DataTable
             const ordersTable = $('#ordersTable').DataTable({
+                searching: false,
                 responsive: {
                     details: {
                         display: $.fn.dataTable.Responsive.display.modal({

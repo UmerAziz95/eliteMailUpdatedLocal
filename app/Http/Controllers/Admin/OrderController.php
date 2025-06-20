@@ -254,7 +254,7 @@ class OrderController extends Controller
         
         try {
             $orders = Order::query()
-                ->with(['user', 'plan', 'reorderInfo'])
+                ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->leftJoin('users', 'orders.user_id', '=', 'users.id');
@@ -373,8 +373,15 @@ class OrderController extends Controller
                 ->addColumn('email', function ($order) {
                     return $order->user ? $order->user->email : 'N/A';
                 })
-                ->addColumn('domain_forwarding_url', function ($order) {
-                    return $order->reorderInfo->first() ? $order->reorderInfo->first()->forwarding_url : 'N/A';
+                ->addColumn('split_counts', function ($order) {
+                    // Count the number of order panel splits for this order
+                    $splitCount = 0;
+                    if ($order->orderPanels && $order->orderPanels->count() > 0) {
+                        foreach ($order->orderPanels as $orderPanel) {
+                            $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                        }
+                    }
+                    return $splitCount > 0 ? $splitCount . ' split(s)' : 'No splits';
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
@@ -407,7 +414,17 @@ class OrderController extends Controller
                     
                     return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
-                ->rawColumns(['action', 'status'])
+                ->addColumn('timer', function ($order) {
+                    // Return timer data as JSON for JavaScript processing
+                    return json_encode([
+                        'created_at' => $order->created_at ? $order->created_at->toISOString() : null,
+                        'status' => strtolower($order->status_manage_by_admin ?? 'n/a'),
+                        'completed_at' => $order->completed_at ? $order->completed_at->toISOString() : null,
+                        'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                        'order_id' => $order->id
+                    ]);
+                })
+                ->rawColumns(['action', 'status', 'timer'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [

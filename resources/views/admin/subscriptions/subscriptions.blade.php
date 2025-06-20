@@ -61,8 +61,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-warning">
                             <i class="ti ti-user-search"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/17905/17905131.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-users fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -83,8 +84,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-success">
                             <i class="ti ti-user-check"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/10970/10970316.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-square-person-confined fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -106,8 +108,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/10399/10399011.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-ban cancel fs-2"></i>
                     </div>
                 </div>
             </div>
@@ -129,8 +132,9 @@
                         {{-- <span class="avatar-initial rounded bg-label-danger">
                             <i class="ti ti-user-plus"></i>
                         </span> --}}
-                        <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
-                            style="border-radius: 50px" alt="">
+                        {{-- <img src="https://cdn-icons-gif.flaticon.com/14697/14697022.gif" width="40"
+                            style="border-radius: 50px" alt=""> --}}
+                        <i class="fa-solid fa-money-check-dollar fs-2"></i>
                     </div>
                 </div>
             </div>

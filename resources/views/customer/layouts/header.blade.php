@@ -261,22 +261,22 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const lightThemeBtn = document.getElementById("light-theme");
-        const darkThemeBtn = document.getElementById("dark-theme");
+        // const lightThemeBtn = document.getElementById("light-theme");
+        // const darkThemeBtn = document.getElementById("dark-theme");
 
-        // Light theme click
-        lightThemeBtn.addEventListener("click", () => {
-            document.documentElement.classList.add("light-theme");
-            document.documentElement.classList.remove("dark-theme");
-            localStorage.setItem("theme", "light");
-        });
+        // // Light theme click
+        // lightThemeBtn.addEventListener("click", () => {
+        //     document.documentElement.classList.add("light-theme");
+        //     document.documentElement.classList.remove("dark-theme");
+        //     localStorage.setItem("theme", "light");
+        // });
 
         // Dark theme click
-        darkThemeBtn.addEventListener("click", () => {
-            document.documentElement.classList.add("dark-theme");
-            document.documentElement.classList.remove("light-theme");
-            localStorage.setItem("theme", "dark");
-        });
+        // darkThemeBtn.addEventListener("click", () => {
+        //     document.documentElement.classList.add("dark-theme");
+        //     document.documentElement.classList.remove("light-theme");
+        //     localStorage.setItem("theme", "dark");
+        // });
         // Add notification dropdown event listener
         const notificationDropdownEl = document.querySelector('.notification-dropdown');
         notificationDropdownEl.addEventListener('show.bs.dropdown', function () {

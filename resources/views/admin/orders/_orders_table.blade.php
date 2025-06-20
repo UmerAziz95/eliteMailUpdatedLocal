@@ -9,8 +9,9 @@
                 @if(!isset($plan_id))
                 <th>Plan</th>
                 @endif
-                <th>Domain URL</th>
+                <th>Split Counts</th>
                 <th>Total Inboxes</th>
+                <th>Timer</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>

@@ -279,10 +279,10 @@
 
 
         <div class="col-12">
-            <div class="card p-3">
+            <div class="card p-3 overflow-y-auto">
                 <div>
                     <table id="myTable">
-                        <thead>
+                        <thead class="position-sticky" style="background-color: var(--secondary-color); top: -17px">
                             <tr>
                                 <th class="text-start">ID</th>
                                 <th>Action Type</th>

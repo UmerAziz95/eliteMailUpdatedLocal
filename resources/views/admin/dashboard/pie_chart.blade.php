@@ -72,31 +72,31 @@
         </div>
 
         <ul class="p-0 m-0 d-flex align-items-center justify-content-between gap-2">
-            <li class="d-flex gap-2 align-items-start mb-2">
+            <li class="d-flex gap-2 align-items-start mb-2 px-2 py-1 rounded-1" style="background-color: rgba(128, 128, 128, 0.28)">
                 <div class="p-1 d-flex align-items-center justify-content-center rounded icon mt-1">
                     <i class="ti ti-ticket fs-5"></i>
                 </div>
                 <div class="d-flex flex-column gap-0">
-                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Open</h6>
+                    <small class="mb-0 text-nowrap small" style="font-size: 12px">Open</small>
                     <small class="small opacity-75" id="openTicketsCount">{{ $newTickets ?? 0 }}</small>
                 </div>
             </li>
 
-            <li class="d-flex gap-2 align-items-start mb-2">
+            <li class="d-flex gap-2 align-items-start mb-2 px-2 py-1 rounded-1" style="background-color: rgba(128, 128, 128, 0.28)">
                 <div class="p-1 d-flex align-items-center justify-content-center rounded bg-label-warning mt-1">
                     <i class="ti ti-clock fs-5 text-warning"></i>
                 </div>
                 <div class="d-flex flex-column gap-0">
-                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Progress</h6>
+                    <small class="mb-0 text-nowrap small" style="font-size: 12px">Progress</small>
                     <small class="small opacity-75" id="inProgressTicketsCount">{{ $inProgressTickets ?? 0 }}</small>
                 </div>
             </li>
-            <li class="d-flex gap-2 align-items-start pb-1">
+            <li class="d-flex gap-2 align-items-start px-2 py-1 rounded-1" style="background-color: rgba(128, 128, 128, 0.28)">
                 <div class="p-1 d-flex align-items-center justify-content-center rounded bg-label-success mt-1">
                     <i class="ti ti-check fs-5 text-success"></i>
                 </div>
                 <div class="d-flex flex-column gap-0">
-                    <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Closed</h6>
+                    <small class="mb-0 text-nowrap small" style="font-size: 12px">Closed</small>
                     <small class="small opacity-75" id="closedTicketsCount">{{ $resolvedTickets ?? 0 }}</small>
                 </div>
             </li>

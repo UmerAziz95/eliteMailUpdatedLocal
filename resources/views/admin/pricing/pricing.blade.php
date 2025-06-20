@@ -225,7 +225,7 @@
             @foreach ($plans as $plan)
                 <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
                     <div
-                        class="pricing-card d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
+                        class="pricing-card h-100 d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                         <div>
                             <h5 class="fw-semibold plan-name text-capitalize fs-6">{{ $plan->name }}</h5>
                             <h2 class="fw-bold plan-price fs-4">${{ number_format($plan->price, 2) }} <span
