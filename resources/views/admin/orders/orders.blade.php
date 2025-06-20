@@ -634,8 +634,10 @@
                         }
                     }]),
                     {
-                        data: 'domain_forwarding_url',
-                        name: 'domain_forwarding_url'
+                        data: 'split_counts',
+                        name: 'split_counts',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'total_inboxes',
