@@ -1109,11 +1109,14 @@ pointer-events: none
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
+                                <th scope="col">Split timer</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${splits.map((split, index) => `
+                            ${console.log(split)}
+                            ${console.log("hello split")}
                                 <tr>
                                     <th scope="row">${index + 1}</th>
                                     <td>
@@ -1127,6 +1130,7 @@ pointer-events: none
                                         </span>
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
+                                    <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
                                             <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
@@ -1281,8 +1285,59 @@ pointer-events: none
                 initializeChevronStates();
             }, 100);
         }
-        
-        // Function to copy domain to clipboard
+
+
+
+        // split timer calculator
+        function calculateSplitTime(split) {
+  const order_panel = split.order_panel;
+
+  if (!order_panel || !order_panel.timer_started_at) {
+    return "00:00:00";
+  }
+
+  const start = parseUTCDateTime(order_panel.timer_started_at);
+  let end;
+  let statusLabel = ""; // Default empty
+
+  if (order_panel.status === "completed" && order_panel.completed_at) {
+    end = parseUTCDateTime(order_panel.completed_at);
+    statusLabel = "completed in";
+  } else if (order_panel.status === "in-progress") {
+    end = new Date(); // current time
+    statusLabel = "in-progress";
+  } else {
+    // If status is neither "completed" nor "in-progress", return just zeroed time
+    return "00:00:00";
+  }
+
+  const diffMs = end - start;
+  if (diffMs <= 0) return statusLabel ? `${statusLabel} 00:00:00` : "00:00:00";
+
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  const pad = (n) => (n < 10 ? "0" + n : n);
+  const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
+
+  return statusLabel ? `${statusLabel} ${formattedTime}` : formattedTime;
+}
+
+
+        function parseUTCDateTime(dateStr) {
+        const [datePart, timePart] = dateStr.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+        }
+
+        //timer calculator
+
+
+
+
+     // Function to copy domain to clipboard
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
                 // Show a temporary success message
