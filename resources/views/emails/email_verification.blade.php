@@ -462,10 +462,19 @@
                 <p>If you didn’t request this verification, you can safely ignore this email.</p>
             </div>
 
-            <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
-                <p>If you have any questions or need help, feel free to contact at support@projectinbox.ai </p>
-                <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+           <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+                <p>
+                    If you have any questions or need help, feel free to contact at 
+                    <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
+                        support@projectinbox.ai
+                    </a>
+                </p>
+                <p>
+                    Best regards,<br>
+                    The <strong>{{ config('app.name') }}</strong> Team
+                </p>
             </div>
+
         </div>
 </body>
 
