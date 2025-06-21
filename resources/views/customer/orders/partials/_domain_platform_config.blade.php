@@ -93,7 +93,7 @@
         </div>
 
         {{-- Tutorial Section --}}
-        <div id="tutorial_section" class="mb-3" style="display: none;">
+        <!-- <div id="tutorial_section" class="mb-3" style="display: none;">
             <div class="alert alert-warning">
                 <i class="fa-solid fa-exclamation-triangle me-2"></i>
                 <strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your hosting account:
@@ -102,7 +102,7 @@
                     Click here to view tutorial
                 </a>
             </div>
-        </div>
+        </div> -->
 
         {{-- Dynamic Platform Fields Container --}}
         <div id="platform-fields-container">

@@ -21,6 +21,9 @@ use App\Models\Status;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Notification;
+use App\Models\OrderPanel;
+use App\Models\OrderPanelSplit;
+use Illuminate\Support\Facades\Response;
 class OrderController extends Controller
 {
     private $statuses;
@@ -918,6 +921,264 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Error fetching orders data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+    public function getOrderSplits($orderId, Request $request)
+    {
+        try {
+            $order = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
+                ->findOrFail($orderId);
+            
+            $reorderInfo = $order->reorderInfo->first();
+            $orderPanels = $order->orderPanels;
+            
+            // Format splits data
+            $splitsData = [];
+            
+            foreach ($orderPanels as $orderPanel) {
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    $domains = [];
+                    if ($split->domains && is_array($split->domains)) {
+                        $domains = $split->domains;
+                    }
+                    
+                    $splitsData[] = [
+                        'id' => $split->id,
+                        'panel_id' => $orderPanel->panel_id,
+                        'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'order_panel_id' => $orderPanel->id,
+                        'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'order_panel'=>$orderPanel,
+                        'domains' => $domains,
+                        'domains_count' => count($domains),
+                        'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                        'status' => $orderPanel->status,
+                        'created_at' => $split->created_at
+                        
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'order' => [
+                    'id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                ],
+                'reorder_info' => $reorderInfo ? [
+                    'total_inboxes' => $reorderInfo->total_inboxes,
+                    'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                    'hosting_platform' => $reorderInfo->hosting_platform,
+                    'platform_login' => $reorderInfo->platform_login,
+                    'platform_password' => $reorderInfo->platform_password,
+                    'forwarding_url' => $reorderInfo->forwarding_url,
+                    'sending_platform' => $reorderInfo->sending_platform,
+                    'sequencer_login' => $reorderInfo->sequencer_login,
+                    'sequencer_password' => $reorderInfo->sequencer_password,
+                    'first_name' => $reorderInfo->first_name,
+                    'last_name' => $reorderInfo->last_name,
+                    'email_persona_password' => $reorderInfo->email_persona_password,
+                    'profile_picture_link' => $reorderInfo->profile_picture_link,
+                    'prefix_variants' => $reorderInfo->prefix_variants,
+                    'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                    'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                ] : null,
+                'splits' => $splitsData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order splits: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function splitView($order_panel_id)
+    {
+        // Get the order panel with all necessary relationships including the order
+        $orderPanel = OrderPanel::with([
+            'order.user',
+            'order.reorderInfo', 
+            'order.plan',
+            'orderPanelSplits', // Load the split relationship
+            'order.userOrderPanelAssignments' => function($query) {
+                $query->with(['orderPanel', 'orderPanelSplit']);
+                    //   ->where('contractor_id', auth()->id());
+            }
+        ])->findOrFail($order_panel_id);
+        
+        // Get the order from the panel
+        $order = $orderPanel->order;
+        
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+        
+        // Add split status color to orderPanel
+        $orderPanel->split_status_color = $this->splitStatuses[$orderPanel->status ?? 'pending'] ?? 'secondary';
+        
+        $splitStatuses = $this->splitStatuses;
+        
+        return view('admin.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
+    }
+
+    /**
+     * Get emails for a specific order panel split
+     */
+    public function getSplitEmails($orderPanelId)
+    {
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with(['order'])
+                ->whereHas('userOrderPanelAssignments', function($query) {
+                    // $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($orderPanelId);
+
+            // Get emails for this specific order panel split
+            $emails = OrderEmail::with(['orderSplit'])
+                ->where('order_id', $orderPanel->order_id)
+                ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                    $query->where('order_panel_id', $orderPanelId);
+                })
+                ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $emails,
+                'order_panel_id' => $orderPanelId
+            ]);
+
+        } catch (\Exception $e) {
+           return response()->json([
+                'success' => true,
+                'data'=> null,
+                'message' => 'Error fetching emails: ' . $e->getMessage()
+            ], 200);
+        }
+    }
+
+    /**
+     * Export CSV file with domains data for a specific order panel split
+     */
+    public function exportCsvSplitDomainsById($splitId)
+    {
+        try {
+            // Find the order panel split
+            $orderPanelSplit = OrderPanelSplit::with([
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                }
+            ])->findOrFail($splitId);
+
+            // Check if contractor has access to this split
+            $hasAccess = false;
+            $order = $orderPanelSplit->orderPanel->order;
+            
+            // Allow access if order is unassigned (available for all contractors)
+            if ($order->assigned_to === null) {
+                $hasAccess = true;
+            }
+            // Or if the contractor is assigned to this order
+            else if ($order->assigned_to == auth()->id()) {
+                $hasAccess = true;
+            } else {
+                // Check if contractor has access to any split of this order
+                foreach ($order->orderPanels as $orderPanel) {
+                    if ($orderPanel->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0) {
+                        $hasAccess = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$hasAccess) {
+                return back()->with('error', 'You do not have access to this order split.');
+            }
+
+            // Get domains from the split
+            $domains = [];
+            if ($orderPanelSplit->domains) {
+                if (is_array($orderPanelSplit->domains)) {
+                    $domains = $orderPanelSplit->domains;
+                } else if (is_string($orderPanelSplit->domains)) {
+                    // Handle case where domains might be stored as comma-separated string
+                    $domains = array_map('trim', explode(',', $orderPanelSplit->domains));
+                    $domains = array_filter($domains); // Remove empty values
+                }
+                
+                // Flatten array if it contains nested arrays or objects
+                $flatDomains = [];
+                foreach ($domains as $domain) {
+                    if (is_array($domain) || is_object($domain)) {
+                        // Handle case where domain data is nested
+                        if (is_object($domain) && isset($domain->domain)) {
+                            $flatDomains[] = $domain->domain;
+                        } else if (is_array($domain) && isset($domain['domain'])) {
+                            $flatDomains[] = $domain['domain'];
+                        } else if (is_string($domain)) {
+                            $flatDomains[] = $domain;
+                        }
+                    } else if (is_string($domain)) {
+                        $flatDomains[] = $domain;
+                    }
+                }
+                $domains = $flatDomains;
+            }
+
+            if (empty($domains)) {
+                return back()->with('error', 'No domains data found for this split.');
+            }
+
+            $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $orderPanelSplit, $order) {
+                $file = fopen('php://output', 'w');
+
+                // Add CSV headers with more detailed information
+                fputcsv($file, [
+                    'Domain', 
+                    // 'Order ID', 
+                    // 'Split ID', 
+                    // 'Panel ID', 
+                    // 'Inboxes per Domain'
+                ]);
+
+                // Add data rows
+                foreach ($domains as $domain) {
+                    fputcsv($file, [
+                        $domain,
+                        // $order->id,
+                        // $orderPanelSplit->id,
+                        // $orderPanelSplit->panel_id,
+                        // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting CSV domains by split ID: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
   

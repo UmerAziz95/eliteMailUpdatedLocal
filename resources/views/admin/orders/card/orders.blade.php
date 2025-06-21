@@ -323,7 +323,7 @@
         }
 
     </style>
-    <<style>
+    <style>
             .anim_card {
     background-color: var(--secondary-color);
     color: var(--light-color);
@@ -404,7 +404,6 @@ pointer-events: none
 
 @section('content')
     <section class="py-3">
-        
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -1073,30 +1072,6 @@ pointer-events: none
                                 ${createTimerBadge(orderInfo)}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
-                        </div>
-                        <div>
-                            ${(() => {
-                                const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
-                                if (unallocatedSplits.length > 0) {
-                                    return `
-                                        <button class="btn btn-success btn-sm px-3 py-2" 
-                                                onclick="assignOrderToMe(${orderInfo.id})"
-                                                id="assignOrderBtn"
-                                                style="font-size: 11px;">
-                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
-                                            Assign Order to Me
-                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
-                                        </button>
-                                    `;
-                                } else {
-                                    return `
-                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
-                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
-                                            All Splits Assigned
-                                        </span>
-                                    `;
-                                }
-                            })()}
                         </div>
                     </div>
                 </div>
