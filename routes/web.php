@@ -154,6 +154,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
+        Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
         // Route::post('/orders/panel/emails', [AdminOrderController::class, 'storeSplitEmails']);
         // Route::delete('/orders/panel/emails/{id}', [AdminOrderController::class, 'deleteSplitEmail']);
     
