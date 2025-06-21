@@ -323,7 +323,7 @@
         }
 
     </style>
-    <<style>
+    <style>
             .anim_card {
     background-color: var(--secondary-color);
     color: var(--light-color);
@@ -404,7 +404,6 @@ pointer-events: none
 
 @section('content')
     <section class="py-3">
-        
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"

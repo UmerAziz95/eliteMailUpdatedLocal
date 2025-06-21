@@ -920,5 +920,85 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    public function getOrderSplits($orderId, Request $request)
+    {
+        try {
+            $order = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
+                ->findOrFail($orderId);
+            
+            $reorderInfo = $order->reorderInfo->first();
+            $orderPanels = $order->orderPanels;
+            
+            // Format splits data
+            $splitsData = [];
+            
+            foreach ($orderPanels as $orderPanel) {
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    $domains = [];
+                    if ($split->domains && is_array($split->domains)) {
+                        $domains = $split->domains;
+                    }
+                    
+                    $splitsData[] = [
+                        'id' => $split->id,
+                        'panel_id' => $orderPanel->panel_id,
+                        'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'order_panel_id' => $orderPanel->id,
+                        'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'order_panel'=>$orderPanel,
+                        'domains' => $domains,
+                        'domains_count' => count($domains),
+                        'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                        'status' => $orderPanel->status,
+                        'created_at' => $split->created_at
+                        
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'order' => [
+                    'id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                ],
+                'reorder_info' => $reorderInfo ? [
+                    'total_inboxes' => $reorderInfo->total_inboxes,
+                    'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                    'hosting_platform' => $reorderInfo->hosting_platform,
+                    'platform_login' => $reorderInfo->platform_login,
+                    'platform_password' => $reorderInfo->platform_password,
+                    'forwarding_url' => $reorderInfo->forwarding_url,
+                    'sending_platform' => $reorderInfo->sending_platform,
+                    'sequencer_login' => $reorderInfo->sequencer_login,
+                    'sequencer_password' => $reorderInfo->sequencer_password,
+                    'first_name' => $reorderInfo->first_name,
+                    'last_name' => $reorderInfo->last_name,
+                    'email_persona_password' => $reorderInfo->email_persona_password,
+                    'profile_picture_link' => $reorderInfo->profile_picture_link,
+                    'prefix_variants' => $reorderInfo->prefix_variants,
+                    'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                    'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                ] : null,
+                'splits' => $splitsData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order splits: ' . $e->getMessage()
+            ], 500);
+        }
+    }
   
 }
