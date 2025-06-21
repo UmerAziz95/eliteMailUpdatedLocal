@@ -1,7 +1,11 @@
-@extends('contractor.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
+{{-- 
+    OPTIMIZED VERSION: This view now uses the $orderPanel variable for more efficient data access
+    instead of foreach loops through $order->orderPanels. This improves performance and code clarity.
+--}}
 
 @section('content')
 <section class="py-3 overflow-hidden">
@@ -28,6 +32,7 @@
             {{ ucfirst($orderPanel->status ?? 'Pending') }}
             </div>
             <button
+            style="display:none;"
             id="openStatusModal"
             class="btn btn-outline-success btn-sm py-1 px-2">
             Change Status
@@ -263,7 +268,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div>
+                        <!-- <div>
                             <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
@@ -274,7 +279,7 @@
                             <button id="saveAllBtn" class="btn btn-success">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save All
                             </button>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
                         <div class="badge rounded-circle bg-primary p-2">
@@ -340,23 +345,7 @@
                                 Sample File</strong></a></p>
                 </div>
 
-                <form id="BulkImportForm" action="{{ route('contractor.order.panel.email.bulkImport') }}" method="POST">
-                    @csrf
-                    <div class="mb-3">
-                        <label for="bulk_file" class="form-label">Select CSV *</label>
-                        <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
-                            required>
-                    </div>
-
-                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                        <button type="button"
-                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                            data-bs-dismiss="modal">No</button>
-                        <button type="submit"
-                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                            I'm sure</button>
-                    </div>
-                </form>
+                
             </div>
         </div>
     </div>
@@ -381,47 +370,7 @@
 
 
 
-                <form id="cancelSubscriptionForm" action="{{ route('contractor.order.panel.status.process') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="order_panel_id" id="order_panel_id_to_update">
-                    <div class="mb-3">
-                        <div class="">
-
-                            <div class="mb-3 d-none" id="reason_wrapper">
-                                <p class="note">
-                                    Would you mind sharing the reason
-                                    for the rejection?
-                                </p>
-                                <label for="cancellation_reason">Reason *</label>
-                                <textarea id="cancellation_reason" name="reason" class="form-control"
-                                    rows="5"></textarea>
-                            </div>
-                        </div>
-                        <label class="form-label">Select Status *</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            @foreach($splitStatuses as $status => $badge)
-                            <div class="form-check me-3">
-                                <input class="form-check-input marked_status" type="radio" name="marked_status"
-                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
-                                <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
-                                    {{ ucfirst($status) }}
-                                </label>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-
-
-                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                        <button type="button"
-                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                            data-bs-dismiss="modal">No</button>
-                        <button type="submit"
-                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                            I'm sure</button>
-                    </div>
-                </form>
+                
             </div>
         </div>
     </div>
@@ -624,7 +573,7 @@
                 }
             },
             ajax: {
-                url: '/contractor/orders/panel/{{ $orderPanel->id }}/emails',
+                url: '/admin/orders/panel/{{ $orderPanel->id }}/emails',
                 dataSrc: function(json) {
                     return json.data || [];
                 }
@@ -730,7 +679,7 @@
 
             // Send as JSON to avoid max_input_vars limit
             $.ajax({
-                url: '/contractor/orders/panel/emails',
+                url: '/admin/orders/panel/emails',
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
@@ -793,7 +742,7 @@
             if (id) {
                 // Delete existing record
                 $.ajax({
-                    url: `/contractor/orders/panel/emails/${id}`,
+                    url: `/admin/orders/panel/emails/${id}`,
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
