@@ -291,46 +291,77 @@
     <div class="container">
         {{-- <div class="welcome-header"> --}}
             <div style="text-align: center" class="text-center w-100 bg-info">
-                <h2 class="text-center" style="text-align: center">New Order Created</h2>
+                <h2 class="text-center" style="text-align: center">Order Successful</h2>
             </div>
 
-            <div class="content">
-                <p>Dear {{ $user->name }},</p>
-                <!-- isAdminNotification -->
-                @if($isAdminNotification)
-                <p>A new order has been created.</p>
-                @else
-                <p>Thank you for your order! Your order has been successfully created.</p>
-                @endif
+          <div class="content" style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+    
+    <!-- Logo centered and padded -->
+    <div style="text-align: center; padding: 20px 0;">
+        <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo" style="max-width: 200px; height: auto;">
+    </div>
 
-                <div class="detail-card">
-                    <div class="detail-row">
-                        <span class="detail-label">Order Number:</span>
-                        <span class="detail-value">#{{ $order->id }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Plan:</span>
-                        <span class="detail-value">{{ $order->plan->name ?? "N/A" }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Amount:</span>
-                        <span class="detail-value">${{ number_format($order->amount, 2) }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value highlight-text">{{ ucfirst($order->status) }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Created_at:</span>
-                        <span class="detail-value highlight-text">{{ ucfirst($order->created_at->toString()) }}</span>
-                    </div>
-                </div>
-            </div>
+    <p style="font-size: 16px; color: #333;">Dear {{ $user->name }},</p>
+
+    <!-- isAdminNotification -->
+    @if($isAdminNotification)
+        <p style="font-size: 14px; color: #333;">A new order has been created.</p>
+    @else
+        <p style="font-size: 14px; color: #333;">Thank you for your order! Your order has been successfully created.</p>
+    @endif
+
+    <!-- Order Details Table -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; color: #333;">
+        <thead>
+            <tr>
+                <th colspan="2" style="text-align: left; padding: 10px; background-color: #f7f7f7; border: 1px solid #ddd;">
+                    Order Details
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Order Number:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">#{{ $order->id }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Plan:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->plan->name ?? "N/A" }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Amount:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">${{ number_format($order->amount, 2) }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Payment Status:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status) }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Order Status:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status_manage_by_admin) }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">Order Created At:</td>
+                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->created_at->toString() }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 
             <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
-                <p>If you have any questions or need help, feel free to contact at support@projectinbox.ai </p>
-                <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+                <p>
+                    If you have any questions or need help, feel free to contact at
+                    <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
+                        support@projectinbox.ai
+                    </a>
+                </p>
+                <p>
+                    Best regards,<br>
+                    The <strong>{{ config('app.name') }}</strong> Team
+                </p>
             </div>
+
         </div>
 </body>
 
