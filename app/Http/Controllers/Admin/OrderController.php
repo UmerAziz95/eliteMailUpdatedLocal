@@ -1000,5 +1000,33 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    public function splitView($order_panel_id)
+    {
+        // Get the order panel with all necessary relationships including the order
+        $orderPanel = OrderPanel::with([
+            'order.user',
+            'order.reorderInfo', 
+            'order.plan',
+            'orderPanelSplits', // Load the split relationship
+            'order.userOrderPanelAssignments' => function($query) {
+                $query->with(['orderPanel', 'orderPanelSplit'])
+                      ->where('contractor_id', auth()->id());
+            }
+        ])->findOrFail($order_panel_id);
+        
+        // Get the order from the panel
+        $order = $orderPanel->order;
+        
+        $order->status2 = strtolower($order->status_manage_by_admin);
+        $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
+        
+        // Add split status color to orderPanel
+        $orderPanel->split_status_color = $this->splitStatuses[$orderPanel->status ?? 'pending'] ?? 'secondary';
+        
+        $splitStatuses = $this->splitStatuses;
+        
+        return view('contractor.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
+    }
   
 }

@@ -147,6 +147,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
         Route::get('/orders/card', [AdminOrderController::class, 'indexCard'])->name('orders.card');
         Route::get('/orders/card/data', [AdminOrderController::class, 'getCardOrders'])->name('orders.card.data');
+        Route::get('/orders/{id}/split/view', [ContractorOrderController::class, 'splitView'])->name('orders.split.view');
         Route::get('/orders/{orderId}/splits', [ContractorPanelController::class, 'getOrderSplits'])->name('orders.splits');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
