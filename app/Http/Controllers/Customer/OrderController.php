@@ -813,18 +813,27 @@ class OrderController extends Controller
     }
     
     /**
-     * Create new panel(s) for orders >= 1790 inboxes
+     * Create new panel(s) - first check for existing unused 1790 panels before creating new ones
      */
     private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
     {
         if ($spaceNeeded > 1790) {
-            // Split across multiple panels
+            // Split across multiple panels - but first check for existing 1790 panels
             $this->splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $spaceNeeded);
         } else {
-            // Create exactly one panel
-            $panel = $this->createSinglePanel($spaceNeeded);
-            $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
-            Log::info("Created single panel #{$panel->id} for order #{$order->id}");
+            // First check if there's an existing 1790 panel with sufficient space
+            $existing1790Panel = $this->findExisting1790Panel($spaceNeeded);
+            
+            if ($existing1790Panel) {
+                // Use existing 1790 panel instead of creating new one
+                $this->assignDomainsToPanel($existing1790Panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
+                Log::info("Used existing 1790 panel #{$existing1790Panel->id} for order #{$order->id} (space needed: {$spaceNeeded})");
+            } else {
+                // No suitable existing 1790 panel found, create new one
+                $panel = $this->createSinglePanel($spaceNeeded);
+                $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
+                Log::info("Created new panel #{$panel->id} for order #{$order->id} (no suitable 1790 panel available)");
+            }
         }
     }
     
@@ -864,31 +873,42 @@ class OrderController extends Controller
             
             $panel = null;
 
-            // If remaining space is less than 1790, first try to fill existing panels
-            if ($remainingSpace < 1790) {
-                // Try to find existing panel with sufficient space
+            // Always check for existing 1790 panels first before creating new ones
+            $existing1790Panel = $this->findExisting1790Panel($actualSpaceUsed);
+            
+            if ($existing1790Panel) {
+                $panel = $existing1790Panel;
+                Log::info("Using existing 1790 panel #{$panel->id} (split #{$splitNumber})", [
+                    'remaining_space' => $remainingSpace,
+                    'space_needed' => $actualSpaceUsed,
+                    'panel_available_space' => $panel->remaining_limit,
+                    'panel_limit' => $panel->limit
+                ]);
+            } else {
+                // If no 1790 panel available, check for any other existing panel with sufficient space
                 $existingPanel = Panel::where('is_active', true)
                     ->where('remaining_limit', '>=', $actualSpaceUsed)
-                    ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
+                    ->orderBy('remaining_limit', 'desc')
                     ->first();
                 
                 if ($existingPanel) {
                     $panel = $existingPanel;
-                    Log::info("Using existing panel #{$panel->id} for remaining space < 1790", [
+                    Log::info("Using existing panel #{$panel->id} (split #{$splitNumber}) - no 1790 panel available", [
                         'remaining_space' => $remainingSpace,
                         'space_needed' => $actualSpaceUsed,
-                        'panel_available_space' => $panel->remaining_limit
+                        'panel_available_space' => $panel->remaining_limit,
+                        'panel_limit' => $panel->limit
                     ]);
                 }
             }
             
-            // If no suitable existing panel found or remaining space >= 1790, create new panel
+            // If no suitable existing panel found, create new 1790 panel
             if (!$panel) {
                 $panel = $this->createSinglePanel(1790);
-                Log::info("Created new panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                Log::info("Created new 1790 panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                     'remaining_space' => $remainingSpace,
                     'space_needed' => $actualSpaceUsed,
-                    'reason' => $remainingSpace >= 1790 ? 'remaining_space >= 1790' : 'no_existing_panel_available'
+                    'reason' => 'no_existing_panel_with_sufficient_space'
                 ]);
             }
             
@@ -1033,6 +1053,18 @@ class OrderController extends Controller
         return Panel::where('is_active', true)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
+            ->first();
+    }
+    
+    /**
+     * Find existing 1790 panel with sufficient space
+     */
+    private function findExisting1790Panel($spaceNeeded)
+    {
+        return Panel::where('is_active', true)
+            ->where('limit', 1790)
+            ->where('remaining_limit', '>=', $spaceNeeded)
+            ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();
     }
     
