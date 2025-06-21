@@ -290,8 +290,8 @@
 <body>
     <div class="container">
         {{-- <div class="welcome-header"> --}}
-            <div style="text-align: center" class="text-center w-100 bg-info">
-                <h2 class="text-center" style="text-align: center">Order Successful</h2>
+            <div style="text-align: center " class="text-center w-100 bg-info mb-3">
+                <h2 class="text-center" style="text-align: center">Order Successful!</h2>
             </div>
 
           <div class="content" style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">

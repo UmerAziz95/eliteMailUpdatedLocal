@@ -434,7 +434,9 @@
 <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
     <div class="container"
         style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px;">
-
+        <div style="text-align: center; padding: 20px 0;">
+                <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo" style="max-width: 200px; height: auto;">
+            </div>
         {{-- <div class="welcome-header" style="text-align: center;"> --}}
             <div class="" style="text-align: center;">
                 <h2 style="color: #333;">Verify Your Email Address</h2>
