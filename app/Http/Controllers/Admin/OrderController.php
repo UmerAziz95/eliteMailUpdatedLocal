@@ -30,6 +30,15 @@ class OrderController extends Controller
         "Failed" => "danger",
         "Refunded" => "secondary"
     ];
+    // split statues
+    private $splitStatuses = [
+        'completed' => 'success',
+        // 'unallocated' => 'warning',
+        // 'allocated' => 'info',
+        'rejected' => 'danger',
+        'in-progress' => 'primary',
+        // 'pending' => 'secondary'
+    ];
 
     public function __construct()
     {
@@ -727,5 +736,189 @@ class OrderController extends Controller
 
       return $expiryDate; // Outputs the dynamically calculated expiry date
   }
+    public function indexCard()
+    {
+        $plans = Plan::where('is_active', true)->get();
+        
+        // Get orders that are either unassigned or assigned to the current contractor
+        $orders = Order::where(function($query) {
+            $query->whereNull('assigned_to')
+                  ->orWhere('assigned_to', auth()->id());
+        });
+        
+        $totalOrders = $orders->count();
+        
+        // Get orders by admin status using actual status names from Status model
+        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
+        $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
+        $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
+        $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
+        $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
+        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
+        $draftOrders = $orders->clone()->where('status_manage_by_admin', 'draft')->count();
+
+        // Calculate percentage changes (last week vs previous week)
+        $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
+        $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
+
+        $lastWeekOrders = $orders->clone()->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = $orders->clone()->whereBetween('created_at', $previousWeek)->count();
+
+        $percentageChange = $previousWeekOrders > 0 
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+            : 0;
+
+        $statuses = $this->statuses;
+        $splitStatuses = $this->splitStatuses;
+        $plans = [];
+        return view('admin.orders.card.orders', compact(
+            'plans', 
+            'totalOrders', 
+            'pendingOrders',            'completedOrders',
+            'inProgressOrders',
+            'percentageChange',
+            'statuses',
+            'splitStatuses',
+            'expiredOrders',
+            'rejectOrders',
+            'cancelledOrders',
+            'draftOrders'
+        ));
+    }
+
+    public function getCardOrders(Request $request)
+    {
+        try {
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user']);
+                // ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+                //     // $q->where('contractor_id', auth()->id());
+                // });
+
+            // Apply filters if provided
+            if ($request->filled('order_id')) {
+                $query->where('id', 'like', '%' . $request->order_id . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->whereHas('orderPanels', function($q) use ($request) {
+                    $q->where('status', $request->status);
+                });
+            }
+
+            if ($request->filled('min_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '>=', $request->min_inboxes);
+                });
+            }
+
+            if ($request->filled('max_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '<=', $request->max_inboxes);
+                });
+            }
+
+            // Apply ordering
+            $order = $request->get('order', 'desc');
+            $query->orderBy('id', $order);
+
+            // Pagination parameters
+            $perPage = $request->get('per_page', 12); // Default 12 orders per page
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedOrders = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Format orders data for the frontend
+            $ordersData = $paginatedOrders->getCollection()->map(function ($order) {
+                $reorderInfo = $order->reorderInfo->first();
+                $orderPanels = $order->orderPanels;
+                
+                // Calculate total domains count from all splits
+                $totalDomainsCount = 0;
+                $totalInboxes = 0;
+                
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        if ($split->domains && is_array($split->domains)) {
+                            $totalDomainsCount += count($split->domains);
+                        }
+                        $totalInboxes += $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
+                    }
+                }
+                
+                $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
+                
+                // Format splits data for the frontend
+                $splitsData = [];
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        $domains = [];
+                        if ($split->domains && is_array($split->domains)) {
+                            $domains = $split->domains;
+                        }
+                        
+                        $splitsData[] = [
+                            'id' => $split->id,
+                            'order_panel_id' => $orderPanel->id,
+                            'panel_id' => $orderPanel->panel_id,
+                            'inboxes_per_domain' => $split->inboxes_per_domain,
+                            'domains' => $domains,
+                            'domains_count' => count($domains),
+                            'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                            'status' => $orderPanel->status ?? 'unallocated',
+                            'created_at' => $split->created_at
+                        ];
+                    }
+                }
+                
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
+                    'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
+                    'inboxes_per_domain' => $inboxesPerDomain,
+                    'total_domains' => $totalDomainsCount,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                    'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
+                    // 'timer_started_at' => $order->timer_started_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'order_panels_count' => $orderPanels->count(),
+                    'splits_count' => $orderPanels->sum(function($panel) {
+                        return $panel->orderPanelSplits->count();
+                    }),
+                    'splits' => $splitsData
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $ordersData,
+                'pagination' => [
+                    'current_page' => $paginatedOrders->currentPage(),
+                    'last_page' => $paginatedOrders->lastPage(),
+                    'per_page' => $paginatedOrders->perPage(),
+                    'total' => $paginatedOrders->total(),
+                    'has_more_pages' => $paginatedOrders->hasMorePages(),
+                    'from' => $paginatedOrders->firstItem(),
+                    'to' => $paginatedOrders->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching orders data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
   
 }
