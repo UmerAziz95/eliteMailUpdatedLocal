@@ -434,12 +434,14 @@
 <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
     <div class="container"
         style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px;">
-        <div style="text-align: center; padding: 20px 0;">
-                <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo" style="max-width: 200px; height: auto;">
-            </div>
+
         {{-- <div class="welcome-header" style="text-align: center;"> --}}
             <div class="" style="text-align: center;">
                 <h2 style="color: #333;">Verify Your Email Address</h2>
+            </div>
+            <div style="text-align: center; padding: 20px 0;">
+                <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo"
+                    style="max-width: 200px; height: auto;">
             </div>
 
             <div class="content" style="margin-top: 20px; color: #555; padding-left: 20px;">
@@ -464,9 +466,9 @@
                 <p>If you didn’t request this verification, you can safely ignore this email.</p>
             </div>
 
-           <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+            <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
                 <p>
-                    If you have any questions or need help, feel free to contact at 
+                    If you have any questions or need help, feel free to contact at
                     <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
                         support@projectinbox.ai
                     </a>
