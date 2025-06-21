@@ -1061,11 +1061,11 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'data' => [],
+           return response()->json([
+                'success' => true,
+                'data'=> null,
                 'message' => 'Error fetching emails: ' . $e->getMessage()
-            ], 500);
+            ], 200);
         }
     }
 

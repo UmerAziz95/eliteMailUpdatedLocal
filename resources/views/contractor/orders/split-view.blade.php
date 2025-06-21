@@ -2,10 +2,6 @@
 
 @section('title', 'Orders')
 
-{{-- 
-    OPTIMIZED VERSION: This view now uses the $orderPanel variable for more efficient data access
-    instead of foreach loops through $order->orderPanels. This improves performance and code clarity.
---}}
 
 @section('content')
 <section class="py-3 overflow-hidden">

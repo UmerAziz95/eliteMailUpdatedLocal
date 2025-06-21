@@ -268,7 +268,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div>
+                        <!-- <div>
                             <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
@@ -279,7 +279,7 @@
                             <button id="saveAllBtn" class="btn btn-success">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save All
                             </button>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
                         <div class="badge rounded-circle bg-primary p-2">
