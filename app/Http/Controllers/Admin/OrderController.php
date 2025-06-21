@@ -21,6 +21,7 @@ use App\Models\Status;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Notification;
+use App\Models\OrderPanel;
 class OrderController extends Controller
 {
     private $statuses;
@@ -1010,8 +1011,8 @@ class OrderController extends Controller
             'order.plan',
             'orderPanelSplits', // Load the split relationship
             'order.userOrderPanelAssignments' => function($query) {
-                $query->with(['orderPanel', 'orderPanelSplit'])
-                      ->where('contractor_id', auth()->id());
+                $query->with(['orderPanel', 'orderPanelSplit']);
+                    //   ->where('contractor_id', auth()->id());
             }
         ])->findOrFail($order_panel_id);
         
@@ -1026,7 +1027,43 @@ class OrderController extends Controller
         
         $splitStatuses = $this->splitStatuses;
         
-        return view('contractor.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
+        return view('admin.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
+    }
+
+    /**
+     * Get emails for a specific order panel split
+     */
+    public function getSplitEmails($orderPanelId)
+    {
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with(['order'])
+                ->whereHas('userOrderPanelAssignments', function($query) {
+                    // $query->where('contractor_id', auth()->id());
+                })
+                ->findOrFail($orderPanelId);
+
+            // Get emails for this specific order panel split
+            $emails = OrderEmail::with(['orderSplit'])
+                ->where('order_id', $orderPanel->order_id)
+                ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                    $query->where('order_panel_id', $orderPanelId);
+                })
+                ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $emails,
+                'order_panel_id' => $orderPanelId
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching emails: ' . $e->getMessage()
+            ], 500);
+        }
     }
   
 }
