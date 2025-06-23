@@ -266,12 +266,12 @@
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
-                            <button id="addNewBtn" class="btn btn-primary me-2">
+                            <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
                             </button>
                             <button id="saveAllBtn" class="btn btn-success">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save All
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                     <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
@@ -720,7 +720,7 @@
         // Initialize DataTable with non-blocking configuration
         let emailTable = $('#email-configuration').DataTable({
             responsive: true,
-            paging: false,
+            paging: true,
             searching: false,
             info: false,
             dom: 'frtip',
