@@ -429,38 +429,97 @@
 @endsection
 @push('scripts')
 <script>
-    $('#openStatusModal').on('click', function() {
-        // Use the order panel ID directly since we have it from the controller
-        $('#order_panel_id_to_update').val('{{ $orderPanel->id }}');
+    // Open status modal with proper event handling
+    $('#openStatusModal').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Opening status modal');
+        
+        // Set the order panel ID
+        const orderPanelId = '{{ $orderPanel->id }}';
+        $('#order_panel_id_to_update').val(orderPanelId);
+        
+        // Reset form state
+        $('#cancelSubscriptionForm')[0].reset();
+        $('#reason_wrapper').addClass('d-none');
+        $('#cancellation_reason').prop('required', false);
+        
+        // Remove any validation states
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        // Show the modal
         $('#cancel_subscription').modal('show');
+        
+        console.log('Modal should be visible now, order panel ID set to:', orderPanelId);
     });
 
-    // Handle status change to show/hide reason field
-    $('.marked_status').on('change', function() {
+    // Handle status change to show/hide reason field with better event handling
+    $(document).on('change', '.marked_status', function() {
         const selectedStatus = $(this).val();
+        console.log('Status changed to:', selectedStatus);
+        
         if (selectedStatus === 'rejected') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').prop('required', true);
+            // Focus on the reason field after a short delay to ensure it's visible
+            setTimeout(() => {
+                $('#cancellation_reason').focus();
+            }, 100);
         } else {
             $('#reason_wrapper').addClass('d-none');
             $('#cancellation_reason').prop('required', false);
+            $('#cancellation_reason').val(''); // Clear the reason when not needed
         }
     });
 
     // Handle form submission with SweetAlert
     $('#cancelSubscriptionForm').on('submit', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         
+        console.log('Form submission triggered');
+        
+        const form = $(this);
         const formData = new FormData(this);
         const selectedStatus = $('input[name="marked_status"]:checked').val();
+        const orderPanelId = $('#order_panel_id_to_update').val();
         
+        console.log('Selected status:', selectedStatus);
+        console.log('Order panel ID:', orderPanelId);
+        
+        // Validation checks
         if (!selectedStatus) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Status Required',
                 text: 'Please select a status before submitting.'
             });
-            return;
+            return false;
+        }
+        
+        if (!orderPanelId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Order panel ID is missing. Please refresh the page and try again.'
+            });
+            return false;
+        }
+        
+        // Check if reason is required and provided
+        if (selectedStatus === 'rejected') {
+            const reason = $('#cancellation_reason').val()?.trim();
+            if (!reason) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Reason Required',
+                    text: 'Please provide a reason for rejection.'
+                });
+                $('#cancellation_reason').focus();
+                return false;
+            }
         }
 
         // Show loading alert
@@ -468,6 +527,8 @@
             title: 'Updating Status...',
             text: 'Please wait while we update the panel status.',
             allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
             didOpen: () => {
                 Swal.showLoading();
             }
@@ -475,12 +536,17 @@
 
         // Submit the form via AJAX
         $.ajax({
-            url: $(this).attr('action'),
+            url: form.attr('action'),
             method: 'POST',
             data: formData,
             processData: false,
             contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            timeout: 30000, // 30 second timeout
             success: function(response) {
+                console.log('Success response:', response);
                 Swal.close();
                 $('#cancel_subscription').modal('hide');
                 
@@ -488,35 +554,84 @@
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Panel status updated successfully.',
-                    timer: 3000,
-                    showConfirmButton: false
+                    confirmButtonText: 'OK',
+                    timer: 5000,
+                    timerProgressBar: true
                 }).then(() => {
-                    // Optionally reload the page or update the UI
+                    // Reload the page to reflect changes
                     window.location.reload();
                 });
             },
-            error: function(xhr) {
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText,
+                    xhr: xhr
+                });
+                
                 Swal.close();
                 
                 let errorMessage = 'Failed to update panel status.';
                 
-                if (xhr.responseJSON) {
+                if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Please try again.';
+                } else if (xhr.responseJSON) {
                     errorMessage = xhr.responseJSON.message || errorMessage;
+                    
+                    // Show validation errors if present
+                    if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join('<br>');
+                    }
                     
                     // Show debug info if available
                     if (xhr.responseJSON.debug) {
                         console.log('Debug info:', xhr.responseJSON.debug);
                     }
+                } else if (xhr.status === 0) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (xhr.status === 404) {
+                    errorMessage = 'Server endpoint not found. Please contact support.';
+                } else if (xhr.status >= 500) {
+                    errorMessage = 'Server error. Please try again later.';
                 }
                 
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: errorMessage,
-                    confirmButtonText: 'OK'
+                    html: errorMessage,
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: true
                 });
             }
         });
+        
+        return false;
+    });
+
+    // Additional fallback handler for the submit button
+    $(document).on('click', '#cancelSubscriptionForm button[type="submit"]', function(e) {
+        console.log('Submit button clicked directly');
+        
+        // Trigger form submission if it hasn't been triggered yet
+        const form = $('#cancelSubscriptionForm');
+        if (form.length) {
+            form.trigger('submit');
+        }
+    });
+    
+    // Debug modal events
+    $('#cancel_subscription').on('shown.bs.modal', function() {
+        console.log('Modal is now visible');
+    });
+    
+    $('#cancel_subscription').on('hidden.bs.modal', function() {
+        console.log('Modal is now hidden');
+        // Reset form when modal is closed
+        $('#cancelSubscriptionForm')[0].reset();
+        $('#reason_wrapper').addClass('d-none');
+        $('#cancellation_reason').prop('required', false);
     });
 
     // Email Management JavaScript
@@ -865,6 +980,11 @@
                         },
                         success: function(response) {
                             $('#BulkImportModal').modal('hide');
+                            
+                            // Reset form after successful import
+                            $('#BulkImportForm')[0].reset();
+                            $('#bulk_file').val('');
+                            
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
@@ -895,6 +1015,68 @@
                     });
                 }
             });
+        });
+
+        // Document ready function with validation
+        $(document).ready(function() {
+            console.log('Document ready, checking form elements...');
+            
+            // Validate required elements exist
+            const requiredElements = [
+                '#openStatusModal',
+                '#cancel_subscription',
+                '#cancelSubscriptionForm',
+                '#order_panel_id_to_update'
+            ];
+            
+            requiredElements.forEach(selector => {
+                const element = $(selector);
+                if (element.length === 0) {
+                    console.error(`Required element not found: ${selector}`);
+                } else {
+                    console.log(`Found element: ${selector}`);
+                }
+            });
+            
+            // Check if CSRF token exists
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found in meta tag');
+            } else {
+                console.log('CSRF token found');
+            }
+            
+            console.log('Form validation complete');
+        });
+
+        // Reset form when BulkImportModal is hidden
+        $('#BulkImportModal').on('hidden.bs.modal', function() {
+            console.log('BulkImportModal closed, resetting form');
+            
+            // Reset the form
+            $('#BulkImportForm')[0].reset();
+            
+            // Clear the file input specifically
+            $('#bulk_file').val('');
+            
+            // Remove any validation classes
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
+            
+            console.log('BulkImportModal form reset complete');
+        });
+
+        // Also reset form when modal is opened (for good measure)
+        $('#BulkImportModal').on('show.bs.modal', function() {
+            console.log('BulkImportModal opening, ensuring form is clean');
+            
+            // Reset the form
+            $('#BulkImportForm')[0].reset();
+            $('#bulk_file').val('');
+            
+            // Remove any validation states
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
         });
     });
 </script>
