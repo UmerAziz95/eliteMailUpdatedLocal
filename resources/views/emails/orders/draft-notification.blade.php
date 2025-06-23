@@ -306,20 +306,24 @@
                 </div>
             </div>
 
-            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+           
             
-            <!-- <center>
-                <a href="{{ config('app.url') }}/orders/{{ $order->id }}" class="btn-primary">
-                    View Order Details
-                </a>
-            </center> -->
+          
         </div>
 
-        <div class="footer">
-            <p>This is an automated reminder for order management.</p>
-            <p>Best regards,<br>The <span class="highlight-text">{{ config('app.name') }}</span> Team</p>
-            <p>© {{ date('Y') }} <span class="highlight-text">{{ config('app.name') }}</span>. All rights reserved.</p>
-        </div>
+            <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
+               <p>This is an automated reminder for order management.</p>
+                <p>
+                    If you have any questions or need help, feel free to contact at
+                    <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
+                        support@projectinbox.ai
+                    </a>
+                </p>
+                <p>
+                    Best regards,<br>
+                    The <strong>{{ config('app.name') }}</strong> Team
+                </p>
+            </div>
     </div>
 </body>
 </html>

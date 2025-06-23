@@ -42,77 +42,17 @@ class PlanController extends Controller
         $plan = Plan::with('features')->findOrFail($id);
         return response()->json(['plan' => $plan]);
     }
+    
 
     public function getPlanDetails($id)
     {
         $plan = Plan::with('features')->findOrFail($id);
         return view('customer.pricing.plan-details', compact('plan'));
     }
+
     // add chargebee card change details
     public function chargeBeeChangeCardDetails(Request $request) {}
-    // public function initiateSubscription(Request $request, $planId)
-    // {
-    //     $plan = Plan::findOrFail($planId);
-    //     try {
-    //         $user = auth()->user();
-    //         $charge_customer_id = null;
-    //         if ($request->has('order_id')) {
-    //             $order = Order::findOrFail($request->order_id);
-    //             $charge_customer_id = $order->chargebee_customer_id ?? null;
-    //         }
-
-    //         $hostedPageParams = [
-    //             "subscription_items" => [
-    //                 [
-    //                     "item_price_id" => $plan->chargebee_plan_id,
-    //                     "quantity" => $request->session()->has('order_info') ? $request->session()->get('order_info')['total_inboxes'] : 1
-    //                 ]
-    //             ],
-    //             "billing_address" => [
-    //                 "first_name" => $user->name,
-    //             ],
-    //             "redirect_url" => route('customer.subscription.success'),
-    //             "cancel_url" => route('customer.subscription.cancel'),
-    //             // Disable plan changes in checkout
-    //             "subscription" => [
-    //                 "force_term_reset" => false
-    //             ],
-    //             // Hide plan selector
-    //             "layout" => [
-    //                 "show_plan_selector" => "false"
-    //             ]
-    //         ];
-
-    //         if ($charge_customer_id == null) {
-    //             // New customer checkout
-    //             $hostedPageParams["customer"] = [
-    //                 "email" => $user->email,
-    //                 "first_name" => $user->name,
-    //                 "phone" => $user->phone,
-    //             ];
-    //         } else {
-    //             // Existing customer checkout
-    //             $hostedPageParams["customer"] = [
-    //                 "id" => $charge_customer_id,
-    //             ];
-    //         }
-
-    //         // Create hosted page for subscription
-    //         $result = HostedPage::checkoutNewForItems($hostedPageParams);
-
-    //         $hostedPage = $result->hostedPage();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'hosted_page_url' => $hostedPage->url
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to initiate subscription: ' . $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+  
     
     public function initiateSubscription(Request $request, $planId,$encrypted=null)
     {
@@ -213,85 +153,7 @@ class PlanController extends Controller
         
     }
     
-    // public function initiateSubscription(Request $request)
-    // {
-    //     try {
-    //         $user = auth()->user();
-    //         $charge_customer_id = null;
-    
-    //         // Retrieve chargebee_customer_id from order if available
-    //         if ($request->has('order_id')) {
-    //             $order = Order::findOrFail($request->order_id);
-    //             $charge_customer_id = $order->chargebee_customer_id ?? null;
-    //         }
-    
-    //         // ✅ Ensure Product Family ID is correct, change if necessary
-    //         $productFamilyId = 'cbdemo_omnisupport-solutions'; // Check this ID in Chargebee for accuracy
-    
-    //         // Setup subscription items
-    //         $subscriptionItems = [
-    //             [
-    //                 "item_family_id" => $productFamilyId,
-    //                 "quantity" => 1,
-    //                 "quantity_editable" => false,
-    //             ]
-    //         ];
-    
-    //         // Prepare parameters for Chargebee request
-    //         $params = [
-    //             "subscription_items" => $subscriptionItems,
-    //             "redirect_url" => route('customer.subscription.success'),
-    //             "cancel_url" => route('customer.subscription.cancel'),
-    //         ];
-    
-    //         // Log URLs to ensure they are correct
-    //         Log::info('Redirect URL: ' . route('customer.subscription.success'));
-    //         Log::info('Cancel URL: ' . route('customer.subscription.cancel'));
-    
-    //         // Add customer details (either new or existing)
-    //         if ($charge_customer_id) {
-    //             $params["customer"] = ["id" => $charge_customer_id];
-    //         } else {
-    //             // Ensure user data is complete (add 'last_name' if required by Chargebee)
-    //             $params["customer"] = [
-    //                 "email" => $user->email,
-    //                 "first_name" => $user->name,
-    //                 "phone" => $user->phone,
-    //                 "last_name" => $user->last_name ?? '', // Add last_name if needed
-    //             ];
-    //         }
-    
-    //         // Log the parameters for debugging
-    //         Log::info('Chargebee Request Params:', $params);
-    
-    //         // Call Chargebee API to initiate checkout
-    //         $result = HostedPage::checkoutNewForItems($params);
-    
-    //         // Check the response from Chargebee and handle the URL properly
-    //         if ($result && $result->hostedPage()) {
-    //             return response()->json([
-    //                 'success' => true,
-    //                 'hosted_page_url' => $result->hostedPage()->url
-    //             ]);
-    //         } else {
-    //             Log::error('Chargebee API Response Error: ' . json_encode($result));
-    //             throw new \Exception('Failed to retrieve hosted page URL from Chargebee API.');
-    //         }
-    
-    //     } catch (\Exception $e) {
-    //         // Log the error to troubleshoot
-    //         Log::error('Chargebee Subscription Error: ' . $e->getMessage());
-    
-    //         // Return a detailed error response
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to initiate subscription: ' . $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-    
-
-
+   
     public function subscriptionSuccess(Request $request)
     {
         try {

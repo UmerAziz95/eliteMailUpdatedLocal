@@ -879,7 +879,7 @@
                 
                 offcanvas.show();
                 
-                // Fetch orders
+                // Fetch orders for the selected panel
                 const response = await fetch(`/admin/panels/${panelId}/orders`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
