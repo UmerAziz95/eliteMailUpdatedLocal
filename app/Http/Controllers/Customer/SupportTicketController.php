@@ -24,7 +24,9 @@ class SupportTicketController extends Controller
             
         $totalTickets = $tickets->count();
         $pendingTickets = $tickets->where('status', 'open')->count();
+       
         $inProgressTickets = $tickets->where('status', 'in_progress')->count();
+      
         $completedTickets = $tickets->where('status', 'closed')->count();
         
         return view('customer.support.support', compact(
