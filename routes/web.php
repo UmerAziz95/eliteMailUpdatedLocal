@@ -39,6 +39,7 @@ use App\Http\Controllers\Customer\CustomerSupportController;
 //cron
 use App\Http\Controllers\CronController;
 use App\Http\Controllers\NotificationController;
+use Illuminate\Support\Facades\DB;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -519,3 +520,11 @@ Route::get('/cron/run-draft-notifications', function () {
         ], 500);
     }
 })->name('cron.run-draft-notifications');
+
+
+Route::get('update-sdiebar-next-orders', function(Request $request) {
+    DB::table('sidebar_navigations')->where('name', 'Orders')->update([
+        'nested_menu' => '[{"name":"Card","icon":"ti ti-devices-dollar fs-5","route":"admin.orders.card","permission":"Order"},{"name":"List","icon":"ti ti-devices-dollar fs-5","route":"admin.orders","permission":"Order"}]',
+        'updated_at' => now()
+    ]);
+});
