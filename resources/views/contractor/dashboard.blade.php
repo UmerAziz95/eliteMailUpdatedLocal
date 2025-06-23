@@ -564,7 +564,7 @@
                             <!-- Changed from myTable to ordersTable -->
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
+                                    <th style="min-width: 3rem">Order ID</th>
                                     <th>Customer</th>
                                     <th>Plan</th>
                                     <th>Total Inboxes</th>
