@@ -4,6 +4,12 @@
 
 @push('styles')
 <style>
+    #message .ql-editor.ql-blank::before {
+        color: #bebec2;
+        opacity: 1; /* Make sure it's fully visible */
+    }
+</style>
+<style>
     .chat-container {
         max-height: 600px;
         overflow-y: auto;
