@@ -1505,13 +1505,19 @@ class OrderController extends Controller
                 })
                 ->findOrFail($orderPanelId);
 
+            // Get the order panel split for this panel
+            $orderPanelSplit = OrderPanelSplit::where('order_panel_id', $orderPanelId)->first();
+
             // Get emails for this specific order panel split
-            $emails = OrderEmail::with(['orderSplit'])
-                ->where('order_id', $orderPanel->order_id)
-                ->whereHas('orderSplit', function($query) use ($orderPanelId) {
-                    $query->where('order_panel_id', $orderPanelId);
-                })
-                ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+            $emails = OrderEmail::where('order_id', $orderPanel->order_id)
+                ->where('contractor_id', auth()->id());
+
+            // If we have a split, filter by split_id, otherwise get all emails for this order
+            if ($orderPanelSplit) {
+                $emails = $emails->where('order_split_id', $orderPanelSplit->id);
+            }
+
+            $emails = $emails->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
                 ->get();
 
             return response()->json([
@@ -1522,10 +1528,10 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => true,
+                'success' => false,
                 'data'=> null,
                 'message' => 'Error fetching emails: ' . $e->getMessage()
-            ], 200);
+            ], 500);
         }
     }
 
