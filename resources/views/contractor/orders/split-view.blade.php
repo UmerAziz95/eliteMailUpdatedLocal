@@ -331,13 +331,18 @@
                     </div>
                     Bulk Import Emails for Panel #{{ $orderPanel->id }}
                 </h6>
-                <div class="row text-muted">
+                <div class="row text-muted" id="csvInstructions">
                     <p class="text-danger">Only .csv files are accepted.</p>
                     <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
                         <strong>email</strong>, and <strong>password</strong>.
                     </p>
                     <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                 Sample File</strong></a></p>
+                </div>
+                
+                <div class="alert alert-success d-none" id="fileSelectedInfo">
+                    <i class="fa-solid fa-check-circle me-2"></i>
+                    <span id="selectedFileName">File selected successfully</span>
                 </div>
 
                 <form id="BulkImportForm" action="{{ route('contractor.order.panel.email.bulkImport') }}" method="POST">
@@ -429,38 +434,97 @@
 @endsection
 @push('scripts')
 <script>
-    $('#openStatusModal').on('click', function() {
-        // Use the order panel ID directly since we have it from the controller
-        $('#order_panel_id_to_update').val('{{ $orderPanel->id }}');
+    // Open status modal with proper event handling
+    $('#openStatusModal').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Opening status modal');
+        
+        // Set the order panel ID
+        const orderPanelId = '{{ $orderPanel->id }}';
+        $('#order_panel_id_to_update').val(orderPanelId);
+        
+        // Reset form state
+        $('#cancelSubscriptionForm')[0].reset();
+        $('#reason_wrapper').addClass('d-none');
+        $('#cancellation_reason').prop('required', false);
+        
+        // Remove any validation states
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        // Show the modal
         $('#cancel_subscription').modal('show');
+        
+        console.log('Modal should be visible now, order panel ID set to:', orderPanelId);
     });
 
-    // Handle status change to show/hide reason field
-    $('.marked_status').on('change', function() {
+    // Handle status change to show/hide reason field with better event handling
+    $(document).on('change', '.marked_status', function() {
         const selectedStatus = $(this).val();
+        console.log('Status changed to:', selectedStatus);
+        
         if (selectedStatus === 'rejected') {
             $('#reason_wrapper').removeClass('d-none');
             $('#cancellation_reason').prop('required', true);
+            // Focus on the reason field after a short delay to ensure it's visible
+            setTimeout(() => {
+                $('#cancellation_reason').focus();
+            }, 100);
         } else {
             $('#reason_wrapper').addClass('d-none');
             $('#cancellation_reason').prop('required', false);
+            $('#cancellation_reason').val(''); // Clear the reason when not needed
         }
     });
 
     // Handle form submission with SweetAlert
     $('#cancelSubscriptionForm').on('submit', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         
+        console.log('Form submission triggered');
+        
+        const form = $(this);
         const formData = new FormData(this);
         const selectedStatus = $('input[name="marked_status"]:checked').val();
+        const orderPanelId = $('#order_panel_id_to_update').val();
         
+        console.log('Selected status:', selectedStatus);
+        console.log('Order panel ID:', orderPanelId);
+        
+        // Validation checks
         if (!selectedStatus) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Status Required',
                 text: 'Please select a status before submitting.'
             });
-            return;
+            return false;
+        }
+        
+        if (!orderPanelId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Order panel ID is missing. Please refresh the page and try again.'
+            });
+            return false;
+        }
+        
+        // Check if reason is required and provided
+        if (selectedStatus === 'rejected') {
+            const reason = $('#cancellation_reason').val()?.trim();
+            if (!reason) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Reason Required',
+                    text: 'Please provide a reason for rejection.'
+                });
+                $('#cancellation_reason').focus();
+                return false;
+            }
         }
 
         // Show loading alert
@@ -468,6 +532,8 @@
             title: 'Updating Status...',
             text: 'Please wait while we update the panel status.',
             allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
             didOpen: () => {
                 Swal.showLoading();
             }
@@ -475,12 +541,17 @@
 
         // Submit the form via AJAX
         $.ajax({
-            url: $(this).attr('action'),
+            url: form.attr('action'),
             method: 'POST',
             data: formData,
             processData: false,
             contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            timeout: 30000, // 30 second timeout
             success: function(response) {
+                console.log('Success response:', response);
                 Swal.close();
                 $('#cancel_subscription').modal('hide');
                 
@@ -488,35 +559,84 @@
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Panel status updated successfully.',
-                    timer: 3000,
-                    showConfirmButton: false
+                    confirmButtonText: 'OK',
+                    timer: 5000,
+                    timerProgressBar: true
                 }).then(() => {
-                    // Optionally reload the page or update the UI
+                    // Reload the page to reflect changes
                     window.location.reload();
                 });
             },
-            error: function(xhr) {
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText,
+                    xhr: xhr
+                });
+                
                 Swal.close();
                 
                 let errorMessage = 'Failed to update panel status.';
                 
-                if (xhr.responseJSON) {
+                if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Please try again.';
+                } else if (xhr.responseJSON) {
                     errorMessage = xhr.responseJSON.message || errorMessage;
+                    
+                    // Show validation errors if present
+                    if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join('<br>');
+                    }
                     
                     // Show debug info if available
                     if (xhr.responseJSON.debug) {
                         console.log('Debug info:', xhr.responseJSON.debug);
                     }
+                } else if (xhr.status === 0) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (xhr.status === 404) {
+                    errorMessage = 'Server endpoint not found. Please contact support.';
+                } else if (xhr.status >= 500) {
+                    errorMessage = 'Server error. Please try again later.';
                 }
                 
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: errorMessage,
-                    confirmButtonText: 'OK'
+                    html: errorMessage,
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: true
                 });
             }
         });
+        
+        return false;
+    });
+
+    // Additional fallback handler for the submit button
+    $(document).on('click', '#cancelSubscriptionForm button[type="submit"]', function(e) {
+        console.log('Submit button clicked directly');
+        
+        // Trigger form submission if it hasn't been triggered yet
+        const form = $('#cancelSubscriptionForm');
+        if (form.length) {
+            form.trigger('submit');
+        }
+    });
+    
+    // Debug modal events
+    $('#cancel_subscription').on('shown.bs.modal', function() {
+        console.log('Modal is now visible');
+    });
+    
+    $('#cancel_subscription').on('hidden.bs.modal', function() {
+        console.log('Modal is now hidden');
+        // Reset form when modal is closed
+        $('#cancelSubscriptionForm')[0].reset();
+        $('#reason_wrapper').addClass('d-none');
+        $('#cancellation_reason').prop('required', false);
     });
 
     // Email Management JavaScript
@@ -817,13 +937,43 @@
             }
         });
 
-        // Bulk import functionality
+        // Bulk import functionality with improved event handling
         $('#addBulkEmail').on('click', function() {
             $('#BulkImportModal').modal('show');
         });
 
-        $('#BulkImportForm').on('submit', function(e) {
+        // Use delegated event handling for better reliability
+        $(document).on('submit', '#BulkImportForm', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Bulk import form submitted');
+            
+            const form = $(this);
+            const fileInput = $('#bulk_file');
+            const file = fileInput[0].files[0];
+            
+            // Validate file selection
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No File Selected',
+                    text: 'Please select a CSV file to import.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
+            
+            // Validate file type
+            if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid CSV file.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
 
             const formData = new FormData(this);
             const order_panel_id = {{ $orderPanel->id }};
@@ -831,19 +981,33 @@
 
             Swal.fire({
                 title: 'Are you sure?',
+                text: 'Do you want to import this CSV file?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes!'
+                confirmButtonText: 'Yes, Import!',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // For file uploads, we still need to use FormData, not JSON
+                    // Add additional form data
                     formData.append('order_panel_id', order_panel_id);
                     formData.append('split_total_inboxes', split_total_inboxes);
 
+                    // Show processing dialog
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we process your file...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
                     $.ajax({
-                        url: $(this).attr('action'),
+                        url: form.attr('action'),
                         method: 'POST',
                         data: formData,
                         contentType: false,
@@ -851,50 +1015,225 @@
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
-                        beforeSend: function() {
-                            Swal.fire({
-                                title: 'Processing...',
-                                text: 'Please wait a while...',
-                                allowOutsideClick: false,
-                                allowEscapeKey: false,
-                                showConfirmButton: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-                                }
-                            });
-                        },
+                        timeout: 60000, // 60 second timeout for file processing
                         success: function(response) {
+                            console.log('Import success:', response);
+                            
+                            // Close the modal first
                             $('#BulkImportModal').modal('hide');
+                            
+                            // Show success message
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
-                                text: 'File has been imported successfully.',
-                                confirmButtonColor: '#3085d6'
+                                text: response.message || 'File has been imported successfully.',
+                                confirmButtonColor: '#3085d6',
+                                timer: 5000,
+                                timerProgressBar: true
                             }).then(() => {
-                                emailTable.ajax.reload();
+                                // Reload the email table
+                                if (typeof emailTable !== 'undefined') {
+                                    emailTable.ajax.reload();
+                                }
                             });
                         },
-                        error: function(xhr) {
+                        error: function(xhr, status, error) {
+                            console.error('Import error:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText
+                            });
+                            
                             let errorMessage = 'An error occurred while processing the file.';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                            
+                            if (status === 'timeout') {
+                                errorMessage = 'File processing timed out. Please try with a smaller file.';
+                            } else if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
                             } else if (xhr.responseText) {
-                                console.error('Error response:', xhr.responseText);
-                                // Check if it's a PHP max_input_vars error
+                                // Check for specific error patterns
                                 if (xhr.responseText.includes('max_input_vars')) {
                                     errorMessage = 'File too large. Please try with a smaller file or contact administrator.';
+                                } else if (xhr.responseText.includes('validation')) {
+                                    errorMessage = 'File validation failed. Please check your CSV format.';
                                 }
                             }
+                            
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Oops...',
+                                title: 'Import Failed',
                                 text: errorMessage,
-                                confirmButtonColor: '#3085d6'
+                                confirmButtonColor: '#3085d6',
+                                allowOutsideClick: true
                             });
                         }
                     });
+                } else {
+                    console.log('Import cancelled by user');
                 }
             });
+            
+            return false;
+        });
+
+        // Document ready function with validation
+        $(document).ready(function() {
+            console.log('Document ready, checking form elements...');
+            
+            // Validate required elements exist
+            const requiredElements = [
+                '#openStatusModal',
+                '#cancel_subscription',
+                '#cancelSubscriptionForm',
+                '#order_panel_id_to_update'
+            ];
+            
+            requiredElements.forEach(selector => {
+                const element = $(selector);
+                if (element.length === 0) {
+                    console.error(`Required element not found: ${selector}`);
+                } else {
+                    console.log(`Found element: ${selector}`);
+                }
+            });
+            
+            // Check if CSRF token exists
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found in meta tag');
+            } else {
+                console.log('CSRF token found');
+            }
+            
+            console.log('Form validation complete');
+        });
+
+        // Enhanced modal event handlers
+        $('#BulkImportModal').on('show.bs.modal', function() {
+            console.log('BulkImportModal opening, initializing form state');
+            
+            // Reset the form completely
+            const form = $('#BulkImportForm')[0];
+            if (form) {
+                form.reset();
+            }
+            
+            // Clear file input
+            $('#bulk_file').val('').trigger('change');
+            
+            // Remove all validation states
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
+            
+            // Reset UI messages
+            $('#csvInstructions').removeClass('d-none');
+            $('#fileSelectedInfo').addClass('d-none');
+            
+            // Ensure submit button is enabled
+            $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+            
+            console.log('BulkImportModal initialization complete');
+        });
+
+        $('#BulkImportModal').on('shown.bs.modal', function() {
+            // Focus on file input when modal is fully shown
+            $('#bulk_file').focus();
+        });
+
+        $('#BulkImportModal').on('hidden.bs.modal', function() {
+            console.log('BulkImportModal closed, performing cleanup');
+            
+            // Complete form reset
+            const form = $('#BulkImportForm')[0];
+            if (form) {
+                form.reset();
+            }
+            
+            // Clear file input and trigger change event
+            $('#bulk_file').val('').trigger('change');
+            
+            // Remove all validation and styling
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
+            $('#BulkImportForm .form-control').removeAttr('style');
+            
+            // Reset UI messages
+            $('#csvInstructions').removeClass('d-none');
+            $('#fileSelectedInfo').addClass('d-none');
+            
+            // Close any lingering SweetAlert dialogs
+            if (typeof Swal !== 'undefined') {
+                Swal.close();
+            }
+            
+            // Re-enable submit button
+            $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+            
+            console.log('BulkImportModal cleanup complete');
+        });
+
+        // Enhanced file selection handler with better event delegation
+        $(document).on('change', '#bulk_file', function() {
+            console.log('File input changed');
+            
+            const fileInput = $(this);
+            const file = fileInput[0].files[0];
+            const csvInstructions = $('#csvInstructions');
+            const fileSelectedInfo = $('#fileSelectedInfo');
+            const selectedFileName = $('#selectedFileName');
+            
+            // Clear previous validation states
+            fileInput.removeClass('is-invalid is-valid');
+            fileInput.next('.invalid-feedback').remove();
+            
+            if (file) {
+                console.log('File selected:', file.name, 'Type:', file.type);
+                
+                // Check if it's a CSV file
+                if (file.type === 'text/csv' || file.type === 'application/csv' || file.name.toLowerCase().endsWith('.csv')) {
+                    // Valid CSV file selected
+                    csvInstructions.addClass('d-none');
+                    fileSelectedInfo.removeClass('d-none');
+                    selectedFileName.text(`File selected: ${file.name}`);
+                    fileInput.addClass('is-valid');
+                    
+                    console.log('Valid CSV file selected');
+                } else {
+                    // Invalid file type
+                    csvInstructions.removeClass('d-none');
+                    fileSelectedInfo.addClass('d-none');
+                    fileInput.addClass('is-invalid');
+                    
+                    // Add error feedback
+                    if (!fileInput.next('.invalid-feedback').length) {
+                        fileInput.after('<div class="invalid-feedback">Please select a valid CSV file.</div>');
+                    }
+                    
+                    console.log('Invalid file type selected');
+                }
+            } else {
+                // No file selected
+                csvInstructions.removeClass('d-none');
+                fileSelectedInfo.addClass('d-none');
+                fileInput.removeClass('is-invalid is-valid');
+                
+                console.log('No file selected');
+            }
+        });
+
+        // Add a fallback submit button handler
+        $(document).on('click', '#BulkImportForm button[type="submit"]', function(e) {
+            console.log('Submit button clicked directly');
+            
+            // Ensure the form submission is triggered
+            const form = $('#BulkImportForm');
+            if (form.length && !form.data('submitting')) {
+                form.data('submitting', true);
+                setTimeout(() => {
+                    form.removeData('submitting');
+                }, 100);
+                form.trigger('submit');
+            }
         });
     });
 </script>

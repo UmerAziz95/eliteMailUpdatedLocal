@@ -153,10 +153,10 @@
         }
 
         /* .draft-alert:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-                    transition: all 0.3s ease;
-                } */
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                            transition: all 0.3s ease;
+                        } */
 
         .draft-alert .alert-icon {
             animation: bounce 1s infinite;
@@ -256,8 +256,8 @@
         }
 
         /* h6 {
-                font-family: "Montserrat"
-            } */
+                        font-family: "Montserrat"
+                    } */
     </style>
 @endpush
 
@@ -276,12 +276,12 @@
     @endif
 
 
-    <section class="py-0">
+    <section class="py-0" data-page="dashboard" >
 
         <h4>Dashboard</h4>
         <p>Welcome to your dashbaord. Here you can see your stats.</p>
 
-        <div class="p-3 rounded-2 mb-4" style="background-color: #4a3aff36; border: 1px solid var(--second-primary);">
+        <div class="reward p-3 rounded-2 mb-4" style="background-color: #4a3aff36; border: 1px solid var(--second-primary);">
             <h5>
                 Earn Rewards with Project Inboxes!
             </h5>
@@ -294,7 +294,7 @@
         <div class="row gy-4">
             <!-- Inbox Statistics -->
             <div class="col-md-6 col-lg-4">
-                <div class=" inbox overflow-hidden h-100">
+                <div class="inbox overflow-hidden h-100">
                     <div class="p-3 h-100 d-flex flex-column justify-content-between">
                         <div class="d-flex align-items-center gap-1 mb-3">
                             <span
@@ -379,7 +379,7 @@
 
 
             <div class="col-md-6 col-lg-5">
-                <div class="card h-100 p-3">
+                <div class="card recent h-100 p-3">
                     <div class="border-0 pb-0 d-flex justify-content-between">
                         <div class="mb-0">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
@@ -455,7 +455,7 @@
 
 
             <div class="col-md-6 col-lg-3">
-                <div class="card h-100">
+                <div class="card review h-100">
                     <div class="card-header border-0 px-3 pt-3 pb-0">
                         <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
                             <span
@@ -506,7 +506,7 @@
 
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 p-3">
+                <div class="card support h-100 p-3">
                     <div class="border-0">
                         <div class="card-title mb-1">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
@@ -568,7 +568,7 @@
 
             <!-- Order History -->
             <div class="col-lg-8">
-                <div class="card p-3 h-100" style="max-height: 28.7rem">
+                <div class="card history p-3 h-100" style="max-height: 28.7rem">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
                             <h6 class="mb-1 fw-bold d-flex align-items-center gap-1">
@@ -1174,5 +1174,6 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
+
     </script>
 @endpush

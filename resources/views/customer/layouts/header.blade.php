@@ -26,21 +26,16 @@
     </button> --}}
 
     <div class="d-flex align-items-center gap-3">
-        <div class="dropdown">
-            <!-- <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="ti ti-language fs-5"></i>
-            </div> -->
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">English</a></li>
-                <li><a class="dropdown-item" href="#">French</a></li>
-                <li><a class="dropdown-item" href="#">German</a></li>
-            </ul>
-        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+            <button class="tour-btn btn btn-primary btn-sm border-0 animate-gradient px-3" id="start-tour">Want To Start Tour</button>
+
         <div class="d-none d-md-block">
             <a href="{{ url('customer/pricing') }}"
                 class="btn btn-primary animate-gradient btn-sm me-2 d-flex align-items-center gap-1"><i
                     class="ti ti-building-store"></i>
                 Buy More Inboxes</a>
+        </div>
         </div>
 
         
