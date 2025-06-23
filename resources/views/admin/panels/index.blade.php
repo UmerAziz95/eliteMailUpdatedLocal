@@ -879,7 +879,7 @@
                 
                 offcanvas.show();
                 
-                // Fetch orders
+                // Fetch orders for the selected panel
                 const response = await fetch(`/admin/panels/${panelId}/orders`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -963,6 +963,7 @@
                                                     <th scope="col">Inboxes/Domain</th>
                                                     <th scope="col">Total Domains</th>
                                                     <th scope="col">Inboxes</th>
+                                                    <th scope="col">Split timer</th>
                                                     <th scope="col">Date</th>
                                                     <th scope="col">Action</th>
                                                 </tr>
@@ -986,8 +987,10 @@
                                                         </span>
                                                     </td>
                                                     
+                                                    
                                                     <td>${order.space_assigned || 'N/A'}</td>
-                                                    <td>${formatDate(order.created_at)}</td>
+                                                    <td>${calculateSplitTime(order?.order_panel_data)}</td>
+                                                    <td>${formatDate(order?.created_at)}</td>
                                                     <td>
                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                                             onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
@@ -997,7 +1000,9 @@
                                                 </tr>
                                                 ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
                                                     order.remaining_order_panels.map((remainingPanel, panelIndex) => `
+                                                   
                                                         <tr>
+
                                                             <th scope="row">${index + 1}.${panelIndex + 1}</th>
                                                             <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
                                                             <td>${remainingPanel.order_panel_id || 'N/A'}</td>
@@ -1013,6 +1018,7 @@
                                                                 </span>
                                                             </td>
                                                             <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                            <td>${calculateSplitTime(remainingPanel)}</td>
                                                             <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
                                                             <td>
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
@@ -1242,67 +1248,92 @@
                 });                }, 100);
         }
 
-            function handleOrderRelativeTimeCount(order) {
-                if (order.status_manage_by_admin !== 'pending') return '';
 
-                // 🧼 Sanitize and normalize the created_at timestamp
-                let rawDate = order.created_at?.replace(' ', 'T') ?? '';
-                rawDate = rawDate.replace(/\.\d+/, ''); // remove microseconds
-                if (!rawDate.endsWith('Z')) rawDate += 'Z'; // force UTC
+  // timer calculator split 
+      function calculateSplitTime(split) {
+  const order_panel = split.order_panel;
 
-                const createdAt = new Date(rawDate);
-                const now = new Date();
+  if (!order_panel || !order_panel.timer_started_at) {
+    return "00:00:00";
+  }
 
-                // 🐞 Debugging logs
-                console.log('📦 Raw from DB:', order.created_at);
-                console.log('🧪 Parsed ISO:', rawDate);
-                console.log('📅 CreatedAt (UTC):', createdAt.toISOString());
-                console.log('⏰ Now (UTC):', now.toISOString());
+  const start = parseUTCDateTime(order_panel.timer_started_at);
+  let end;
+  let statusLabel = ""; // Default empty
 
-                // 🧱 Validate creation date
-                if (isNaN(createdAt.getTime())) {
-                    console.warn('⚠️ Invalid creation time');
-                    return 'Invalid creation time';
-                }
+  if (order_panel.status === "completed" && order_panel.completed_at) {
+    end = parseUTCDateTime(order_panel.completed_at);
+    statusLabel = "completed in";
+  } else if (order_panel.status === "in-progress") {
+    end = new Date(); // current time
+    statusLabel = "in-progress";
+  } else {
+    // If status is neither "completed" nor "in-progress", return just zeroed time
+    return "00:00:00";
+  }
 
-                const diffInMs = now.getTime() - createdAt.getTime();
+  const diffMs = end - start;
+  if (diffMs <= 0) return statusLabel ? `${statusLabel} 00:00:00` : "00:00:00";
 
-                if (diffInMs < 0) {
-                    console.warn('⚠️ Creation time is in the future');
-                    return 'Invalid creation time (in future)';
-                }
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-                const diffInHours = diffInMs / (1000 * 60 * 60);
+  const pad = (n) => (n < 10 ? "0" + n : n);
+  const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 
-                if (diffInHours <= 12) {
-                    const totalMinutes = Math.floor(diffInMs / (1000 * 60));
-                    const hours = Math.floor(totalMinutes / 60);
-                    const minutes = totalMinutes % 60;
+  return statusLabel ? `${statusLabel} ${formattedTime}` : formattedTime;
+}
 
-                    let parts = [];
-                    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-                    if (minutes > 0 || parts.length === 0)
-                        parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
 
-                    console.log('🟢 Within 12 hours:', parts.join(' '));
-                    return `Order time: ${parts.join(' ')}`;
-                } else {
-                    const extraMs = diffInMs - 12 * 60 * 60 * 1000;
-                    const totalMinutes = Math.floor(extraMs / (1000 * 60));
-                    const days = Math.floor(totalMinutes / (60 * 24));
-                    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-                    const minutes = totalMinutes % 60;
+        function parseUTCDateTime(dateStr) {
+        const [datePart, timePart] = dateStr.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+        }
 
-                    let parts = [];
-                    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-                    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-                    if (minutes > 0 || parts.length === 0)
-                        parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+        //timer calculator       
 
-                    console.log('🔴 Exceeded 12 hours by:', parts.join(' '));
-                    return `Order time exceeded: -${parts.join(' ')}`;
-                }
-            }
+
+// timer calculator for order
+ function handleOrderRelativeTimeCount(order) {
+  if (order.status_manage_by_admin !== 'pending') return '';
+
+  // Parse and normalize timestamp
+  let rawDate = order.created_at?.replace(' ', 'T') ?? '';
+  rawDate = rawDate.replace(/\.\d+/, '');
+  if (!rawDate.endsWith('Z')) rawDate += 'Z';
+
+  const createdAt = new Date(rawDate);
+  const now = new Date();
+
+  if (isNaN(createdAt.getTime())) return 'Invalid creation time';
+
+  const diffInMs = now.getTime() - createdAt.getTime();
+
+  if (diffInMs < 0) return 'Invalid creation time (in future)';
+
+  const formatHHMMSS = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const pad = (n) => (n < 10 ? '0' + n : n);
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  };
+
+  const twelveHoursInMs = 12 * 60 * 60 * 1000;
+
+  if (diffInMs <= twelveHoursInMs) {
+    return `Order time: ${formatHHMMSS(diffInMs)}`;
+  } else {
+    const extraMs = diffInMs - twelveHoursInMs;
+    return `Order time exceeded: -${formatHHMMSS(extraMs)}`;
+  }
+}
+
 
 
 

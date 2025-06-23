@@ -1,4 +1,4 @@
-@extends('contractor.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
@@ -323,7 +323,7 @@
         }
 
     </style>
-    <<style>
+    <style>
             .anim_card {
     background-color: var(--secondary-color);
     color: var(--light-color);
@@ -404,7 +404,6 @@ pointer-events: none
 
 @section('content')
     <section class="py-3">
-        
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -531,7 +530,7 @@ pointer-events: none
                     page: page,
                     per_page: 12
                 });
-                const url = `/contractor/assigned/order/data?${params}`;
+                const url = `/admin/orders/card/data?${params}`;
                 console.log('Fetching from URL:', url);
                 
                 const response = await fetch(url, {
@@ -695,8 +694,8 @@ pointer-events: none
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
                     <div class="d-flex gap-1">
-                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
-                        <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/contractor/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
+                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
+                        <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/admin/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
                     </div>
                 </td>
                 </tr>
@@ -1009,7 +1008,7 @@ pointer-events: none
                 offcanvas.show();
                 
                 // Fetch order splits
-                const response = await fetch(`/contractor/orders/${orderId}/splits`, {
+                const response = await fetch(`/admin/orders/${orderId}/splits`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1074,30 +1073,6 @@ pointer-events: none
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
-                        <div>
-                            ${(() => {
-                                const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
-                                if (unallocatedSplits.length > 0) {
-                                    return `
-                                        <button class="btn btn-success btn-sm px-3 py-2" 
-                                                onclick="assignOrderToMe(${orderInfo.id})"
-                                                id="assignOrderBtn"
-                                                style="font-size: 11px;">
-                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
-                                            Assign Order to Me
-                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
-                                        </button>
-                                    `;
-                                } else {
-                                    return `
-                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
-                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
-                                            All Splits Assigned
-                                        </span>
-                                    `;
-                                }
-                            })()}
-                        </div>
                     </div>
                 </div>
                 <div class="table-responsive mb-4">
@@ -1133,10 +1108,10 @@ pointer-events: none
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
+                                            <a href="/admin/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
                                         </div>
@@ -1740,7 +1715,7 @@ pointer-events: none
             });
         }
 
-        // Function to assign entire order to logged-in contractor
+        // Function to assign entire order to logged-in admin
         async function assignOrderToMe(orderId) {
             try {
             // Show SweetAlert2 confirmation dialog
@@ -1788,7 +1763,7 @@ pointer-events: none
             }
 
             // Make API request to assign all unallocated splits of the order
-            const response = await fetch(`/contractor/orders/${orderId}/assign-to-me`, {
+            const response = await fetch(`/admin/orders/${orderId}/assign-to-me`, {
                 method: 'POST',
                 headers: {
                 'X-Requested-With': 'XMLHttpRequest',

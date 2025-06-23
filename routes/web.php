@@ -145,10 +145,19 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
+        Route::get('/orders/card', [AdminOrderController::class, 'indexCard'])->name('orders.card');
+        Route::get('/orders/card/data', [AdminOrderController::class, 'getCardOrders'])->name('orders.card.data');
+        Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
+        Route::get('/orders/{orderId}/splits', [AdminOrderController::class, 'getOrderSplits'])->name('orders.splits');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
-
+        // Split Panel Email routes
+        Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
+        Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+        // Route::post('/orders/panel/emails', [AdminOrderController::class, 'storeSplitEmails']);
+        // Route::delete('/orders/panel/emails/{id}', [AdminOrderController::class, 'deleteSplitEmail']);
+    
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
         Route::post('contractor/store', [AdminContractorController::class, 'store'])->name('contractor.store');

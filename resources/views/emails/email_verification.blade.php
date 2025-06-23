@@ -439,6 +439,10 @@
             <div class="" style="text-align: center;">
                 <h2 style="color: #333;">Verify Your Email Address</h2>
             </div>
+            <div style="text-align: center; padding: 20px 0;">
+                <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo"
+                    style="max-width: 200px; height: auto;">
+            </div>
 
             <div class="content" style="margin-top: 20px; color: #555; padding-left: 20px;">
 
@@ -463,9 +467,18 @@
             </div>
 
             <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
-                <p>If you have any questions or need help, feel free to contact at support@projectinbox.ai </p>
-                <p>Best regards,<br>The <strong>{{ config('app.name') }}</strong> Team</p>
+                <p>
+                    If you have any questions or need help, feel free to contact at
+                    <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
+                        support@projectinbox.ai
+                    </a>
+                </p>
+                <p>
+                    Best regards,<br>
+                    The <strong>{{ config('app.name') }}</strong> Team
+                </p>
             </div>
+
         </div>
 </body>
 

@@ -168,11 +168,13 @@ class PanelController extends Controller
                         'panel_title' => $orderPanel->panel->title ?? 'N/A',
                         'order_panel_id' => $orderPanel->id,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'order_panel'=>$orderPanel,
                         'domains' => $domains,
                         'domains_count' => count($domains),
                         'total_inboxes' => $split->inboxes_per_domain * count($domains),
                         'status' => $orderPanel->status,
                         'created_at' => $split->created_at
+                        
                     ];
                 }
             }
@@ -222,174 +224,7 @@ class PanelController extends Controller
         }
     }
 
-    // Note: This method was used for the complex panel orders interface with accordion.
-    // It's been replaced with the simplified getOrderSplits method above.
-    // Keeping this commented for potential future reference.
-    /*
-    public function getPanelOrders($panelId, Request $request)
-    {
-        try {
-            $panel = Panel::findOrFail($panelId);
-            
-            $orders = OrderPanel::with(['order.user', 'order.reorderInfo', 'orderPanelSplits'])
-                ->where('panel_id', $panelId)
-                ->orderBy('created_at', 'desc')
-                ->get();
-            $ordersData = $orders->map(function ($orderPanel) use ($request) {
-                $order = $orderPanel->order;
-                $splits = $orderPanel->orderPanelSplits;
-                $reorderInfo = $order->reorderInfo->first();
-                
-                // Check if this order is assigned to the current user
-                $isAssignedToCurrentUser = false;
-                $assignmentStatus = $orderPanel->status;
-                
-                if (auth()->check()) {
-                    $userAssignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)
-                        ->where('contractor_id', auth()->id())
-                        ->first();
-                    
-                    if ($userAssignment) {
-                        $isAssignedToCurrentUser = true;
-                        $assignmentStatus = 'assigned_to_me';
-                    }
-                }
-
-                // Get remaining order panels for the same order_id
-                $remainingOrderPanels = OrderPanel::with(['orderPanelSplits', 'panel'])
-                    ->where('order_id', $order->id)
-                    ->where('id', '!=', $orderPanel->id) // Exclude current order panel
-                    ->get()
-                    ->map(function ($remainingPanel) {
-                        $remainingSplits = $remainingPanel->orderPanelSplits;
-                        
-                        // Check assignment status for remaining panels
-                        $remainingAssignment = UserOrderPanelAssignment::where('order_panel_id', $remainingPanel->id)->first();
-                        
-                        return [
-                            'order_panel_id' => $remainingPanel->id,
-                            'panel_id' => $remainingPanel->panel_id,
-                            'panel_title' => $remainingPanel->panel->title ?? 'N/A',
-                            'space_assigned' => $remainingPanel->space_assigned,
-                            'inboxes_per_domain' => $remainingPanel->inboxes_per_domain,
-                            'status' => $remainingPanel->status,
-                            'contractor_id' => $remainingAssignment ? $remainingAssignment->contractor_id : null,
-                            'is_assigned' => $remainingAssignment ? true : false,
-                            'domains_count' => $remainingSplits->sum(function ($split) {
-                                return is_array($split->domains) ? count($split->domains) : 0;
-                            }),
-                            'total_inboxes' => $remainingSplits->sum(function ($split) {
-                                return $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
-                            }),
-                            'created_at' => $remainingPanel->created_at->format('Y-m-d H:i:s'),
-                            'splits' => $remainingSplits->map(function ($split) use ($remainingPanel) {
-                                // Get contractor assignment for this split
-                                $contractorAssignment = UserOrderPanelAssignment::where('order_panel_id', $remainingPanel->id)->first();
-                                
-                                return [
-                                    'id' => $split->id,
-                                    'panel_id' => $remainingPanel->panel_id,
-                                    'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
-                                    'inboxes_per_domain' => $split->inboxes_per_domain,
-                                    'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
-                                        return [
-                                            'domain' => is_string($domain) ? $domain : ($domain['domain'] ?? $domain),
-                                            'id' => is_array($domain) ? ($domain['id'] ?? null) : null
-                                        ];
-                                    })->toArray() : [],
-                                    'domains_count' => is_array($split->domains) ? count($split->domains) : 0,
-                                    'status' => $split->status ?? 'unallocated',
-                                    'contractor_id' => $contractorAssignment ? $contractorAssignment->contractor_id : null,
-                                    'created_at' => $split->created_at ? $split->created_at->format('Y-m-d H:i:s') : null,
-                                ];
-                            }),
-                        ];
-                    });
-                
-                return [
-                    'order_panel_id' => $orderPanel->id,
-                    'panel_id' => $orderPanel->panel_id,
-                    'order_id' => $order->id ?? 'N/A',
-                    'customer_name' => $order->user->name ?? 'N/A',
-                    'space_assigned' => $orderPanel->space_assigned,
-                    'inboxes_per_domain' => $orderPanel->inboxes_per_domain,
-                    'status' => $orderPanel->status,
-                    'assignment_status' => $assignmentStatus,
-                    'is_assigned_to_current_user' => $isAssignedToCurrentUser,
-                    'domains_count' => $splits->sum(function ($split) {
-                        return is_array($split->domains) ? count($split->domains) : 0;
-                    }),
-                    'created_at' => $orderPanel->created_at->format('Y-m-d H:i:s'),
-                    'accepted_at' => $orderPanel->accepted_at,
-                    'released_at' => $orderPanel->released_at,
-                    // Add comprehensive order information
-                    'reorder_info' => $reorderInfo ? [
-                        'total_inboxes' => $reorderInfo->total_inboxes,
-                        'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
-                        'hosting_platform' => $reorderInfo->hosting_platform,
-                        'platform_login' => $reorderInfo->platform_login,
-                        'platform_password' => $reorderInfo->platform_password,
-                        'forwarding_url' => $reorderInfo->forwarding_url,
-                        'sending_platform' => $reorderInfo->sending_platform,
-                        'sequencer_login' => $reorderInfo->sequencer_login,
-                        'sequencer_password' => $reorderInfo->sequencer_password,
-                        'first_name' => $reorderInfo->first_name,
-                        'last_name' => $reorderInfo->last_name,
-                        'email_persona_password' => $reorderInfo->email_persona_password,
-                        'profile_picture_link' => $reorderInfo->profile_picture_link,
-                        'prefix_variants' => $reorderInfo->prefix_variants,
-                        'prefix_variant_1' => $reorderInfo->prefix_variant_1,
-                        'prefix_variant_2' => $reorderInfo->prefix_variant_2,
-                    ] : null,
-                    // Add splits with enhanced domain information and status
-                    'splits' => $splits->map(function ($split) use ($orderPanel) {
-                        // Get contractor assignment for this split
-                        $contractorAssignment = UserOrderPanelAssignment::where('order_panel_id', $orderPanel->id)->first();
-                        
-                        return [
-                            'id' => $split->id,
-                            'panel_id' => $orderPanel->panel_id,
-                            'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
-                            'inboxes_per_domain' => $split->inboxes_per_domain,
-                            'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
-                                return [
-                                    'domain' => is_string($domain) ? $domain : ($domain['domain'] ?? $domain),
-                                    'id' => is_array($domain) ? ($domain['id'] ?? null) : null
-                                ];
-                            })->toArray() : [],
-                            'domains_count' => is_array($split->domains) ? count($split->domains) : 0,
-                            'status' => $split->status ?? 'unallocated',
-                            'contractor_id' => $contractorAssignment ? $contractorAssignment->contractor_id : null,
-                            'created_at' => $split->created_at ? $split->created_at->format('Y-m-d H:i:s') : null,
-                        ];
-                    }),
-                    // Add remaining order panels for the same order
-                    'remaining_order_panels' => $remainingOrderPanels,
-                    'remaining_panels_count' => $remainingOrderPanels->count(),
-                    'total_order_panels' => $remainingOrderPanels->count() + 1, // Including current panel
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'panel' => [
-                    'id' => $panel->id,
-                    'auto_generated_id' => $panel->auto_generated_id,
-                    'title' => $panel->title,
-                    'limit' => $panel->limit,
-                    'remaining_limit' => $panel->remaining_limit,
-                ],
-                'orders' => $ordersData
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error fetching panel orders: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-    */
+   
     
     /**
      * Test method to verify database connectivity and basic data retrieval
