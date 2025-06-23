@@ -4,6 +4,12 @@
 
 @push('styles')
 <style>
+    #message .ql-editor.ql-blank::before {
+        color: white;
+        opacity: 1;
+    }
+</style>
+<style>
     .chat-container {
         max-height: 600px;
         overflow-y: auto;
@@ -164,7 +170,16 @@
                                 <input type="file" id="attachments" name="attachments[]" multiple style="display: none;">
                                 <div class="attachments-area" id="attachmentPreviews"></div>
                             </div>
-                            <button type="submit" class="btn btn-primary">Send Reply</button>
+                            @if($ticket->status !== 'closed')
+                            
+                                    <button type="submit" class="btn btn-primary">Send Reply</button>
+                            
+                            @else
+                                <div class="alert alert-warning mb-3">
+                                    This ticket is closed. You cannot send new replies.
+                                </div>
+                            @endif
+                           
                         </form>
                     </div>
 
@@ -323,6 +338,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     toastr.success('Ticket status updated successfully');
+                    window.location.reload();
                 }
             },
             error: function() {
