@@ -1503,7 +1503,7 @@ class OrderController extends Controller
                 ->whereHas('userOrderPanelAssignments', function($query) {
                     $query->where('contractor_id', auth()->id());
                 })
-                ->findOrFail($orderPanelId);
+                ->find($orderPanelId);
 
             // Get the order panel split for this panel
             $orderPanelSplit = OrderPanelSplit::where('order_panel_id', $orderPanelId)->first();
