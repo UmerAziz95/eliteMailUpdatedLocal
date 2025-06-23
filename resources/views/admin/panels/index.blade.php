@@ -1251,10 +1251,8 @@
 
   // timer calculator split 
 function calculateSplitTime(split) {
-  console.log("Calculating split time for:", split);
-  const order_panel = split.order_panel_data;
-  console.log("Order Panel Data:", order_panel);
 
+  const order_panel = split.order_panel_data;
   if (!order_panel || !order_panel.timer_started_at) {
     return "00:00:00";
   }
@@ -1290,7 +1288,7 @@ function calculateSplitTime(split) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 
-  return `${statusLabel} ${formattedTime}`;
+  return `${formattedTime}`;
 }
 
 
