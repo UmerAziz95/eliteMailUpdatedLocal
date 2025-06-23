@@ -82,6 +82,7 @@
 @endpush
 
 @section('content')
+<!-- new order form -->    
 <form id="newOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">

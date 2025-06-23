@@ -306,7 +306,7 @@ function generatePlatformField(name, field, existingValue = '') {
     return html;
 }
 
-// Update hosting platform fields
+// Update hosting platform fields m
 function updatePlatformFields() {
     const selectedOption = $('#hosting_platform option:selected');
     const fieldsData = selectedOption.data('fields');
@@ -406,16 +406,19 @@ function validatePlatformConfig() {
     $('.platform-field .required').each(function() {
         const field = $(this);
         const value = field.val()?.trim();
+        const fieldName = field.attr('name');
         
         field.removeClass('is-invalid');
+        $(`#${fieldName}-error`).text('');
+        
         if (!value) {
             field.addClass('is-invalid');
-            const fieldName = field.attr('name');
             $(`#${fieldName}-error`).text('This field is required');
             isValid = false;
         }
     });
-      return isValid;
+    
+    return isValid;
 }
 
 // Initialize platform configuration

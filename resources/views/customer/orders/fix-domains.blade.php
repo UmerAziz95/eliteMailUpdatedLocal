@@ -420,156 +420,172 @@ if (typeof jQuery === 'undefined') {
             }
         });
     });    // Function to handle form submission with validation
-    function submitFormWithValidation(form, submitBtn) {
-        // First validate platform configuration
-        if (!validatePlatformConfig()) {
-            showValidationToast(['Platform configuration validation failed. Please check all required fields.']);
-            updateSubmitButtonState();
+function submitFormWithValidation() {
+    if (!validatePlatformConfig()) {
+        showValidationToast(['Platform configuration failed.']);
+        return;
+    }
+
+    let allValid = true;
+    const allDomains = [];
+    const splitDomainMap = {};
+    const duplicateCheck = new Set();
+    const duplicates = new Set();
+    const errorMessages = [];
+    let emptyCount = 0, invalidFormatCount = 0, countMismatch = 0;
+
+    $('.domain-textarea').each(function () {
+        const textarea = $(this);
+        const splitId = textarea.data('split-id');
+        const requiredCount = parseInt(textarea.data('required-count')) || 0;
+        const value = textarea.val().trim();
+        const errorEl = $(`#domains-error-${splitId}`);
+
+        textarea.removeClass('is-invalid');
+        errorEl.text('');
+
+        if (!value) {
+            allValid = false;
+            emptyCount++;
+            textarea.addClass('is-invalid');
+            errorEl.text('Required field is empty.');
             return;
         }
-        
-        // Validate all domains in textareas
-        let allValid = true;
-        let errorMessages = [];
-        let allDomainValues = [];
-        let emptyTextareas = 0;
-        let invalidFormats = 0;
-        let duplicateNames = [];
-        let insufficientDomains = 0;
 
-        $('.domain-textarea').each(function() {
-            const textarea = $(this);
-            const domainsText = textarea.val().trim();
-            const requiredCount = parseInt(textarea.data('required-count')) || 0;
-            const domainRegex = /^[^\s]+\.[^\s]+$/;
-            
-            // Reset validation state
-            textarea.removeClass('is-invalid');
-            
-            if (!domainsText) {
-                allValid = false;
-                textarea.addClass('is-invalid');
-                emptyTextareas++;
-                return;            }
-            
-            // Split domains by newlines and commas, then filter empty lines
-            const domains = domainsText.split(/[\n,]+/)
-                .map(domain => domain.trim())
-                .filter(domain => domain.length > 0);
-            
-            // Check if we have the required number of domains
-            if (domains.length !== requiredCount) {
-                allValid = false;
-                textarea.addClass('is-invalid');
-                insufficientDomains++;
-                const splitId = textarea.data('split-id');
-                $(`#domains-error-${splitId}`).text(`Required: ${requiredCount} domains, found: ${domains.length}`);
-                return;
+        const domains = value
+            .split(/[\n,]+/)
+            .map(d => d.trim().toLowerCase())
+            .filter(d => d);
+
+        if (domains.length !== requiredCount) {
+            allValid = false;
+            countMismatch++;
+            textarea.addClass('is-invalid');
+            errorEl.text(`Expected ${requiredCount}, got ${domains.length}.`);
+            return;
+        }
+
+        const invalid = domains.filter(d => !/^[^\s]+\.[^\s]+$/.test(d));
+        if (invalid.length > 0) {
+            allValid = false;
+            invalidFormatCount++;
+            textarea.addClass('is-invalid');
+            errorEl.text(`Invalid domains: ${invalid.join(', ')}`);
+            return;
+        }
+
+        // Check duplicates
+        domains.forEach(domain => {
+            if (duplicateCheck.has(domain)) {
+                duplicates.add(domain);
+            } else {
+                duplicateCheck.add(domain);
             }
-            
-            // Validate each domain format
-            const invalidDomains = domains.filter(domain => !domainRegex.test(domain));
-            if (invalidDomains.length > 0) {
-                allValid = false;
-                textarea.addClass('is-invalid');
-                invalidFormats++;
-                const splitId = textarea.data('split-id');
-                $(`#domains-error-${splitId}`).text(`Invalid domain format: ${invalidDomains.join(', ')}`);
-                return;
-            }
-            
-            // Add valid domains to global list for duplicate checking
-            domains.forEach(domain => {
-                allDomainValues.push(domain.toLowerCase());
-            });
         });
 
-        // Check for duplicate domains across all textareas
-        const duplicateDomains = allDomainValues.filter((domain, index) => allDomainValues.indexOf(domain) !== index);
-        if (duplicateDomains.length > 0) {
-            allValid = false;
-            duplicateNames = [...new Set(duplicateDomains)];
-              // Mark textareas containing duplicates as invalid
-            $('.domain-textarea').each(function() {
-                const textarea = $(this);
-                const domainsText = textarea.val().trim();
-                const domains = domainsText.split(/[\n,]+/)
-                    .map(domain => domain.trim().toLowerCase())
-                    .filter(domain => domain.length > 0);
-                
-                const hasDuplicates = domains.some(domain => duplicateDomains.includes(domain));
-                if (hasDuplicates) {
-                    textarea.addClass('is-invalid');
-                    const splitId = textarea.data('split-id');
-                    const foundDuplicates = domains.filter(domain => duplicateDomains.includes(domain));
-                    $(`#domains-error-${splitId}`).text(`Duplicate domains found: ${foundDuplicates.join(', ')}`);
-                }
-            });
-        } 
-        // Build numbered error messages
-        if (emptyTextareas > 0) {
-            errorMessages.push(`${emptyTextareas} empty domain textarea${emptyTextareas > 1 ? 's' : ''} found. Please fill all required fields.`);
-        }
-        if (insufficientDomains > 0) {
-            errorMessages.push(`${insufficientDomains} textarea${insufficientDomains > 1 ? 's' : ''} with incorrect domain count. Please check required counts.`);
-        }
-        if (invalidFormats > 0) {
-            errorMessages.push(`${invalidFormats} textarea${invalidFormats > 1 ? 's' : ''} with invalid domain format${invalidFormats > 1 ? 's' : ''} detected. Please use valid domain names (e.g., example.com).`);
-        }
-        if (duplicateNames.length > 0) {
-            errorMessages.push(`${duplicateNames.length} duplicate domain${duplicateNames.length > 1 ? 's' : ''} found: ${duplicateNames.join(', ')}. Each domain must be unique across all splits.`);
-        }
-        
-        if (!allValid) {
-            showValidationToast(errorMessages);
-            console.log('Form submission failed:', errorMessages);
-            updateSubmitButtonState();
-            return;
-        }
-        
-        // Show loading state
-        Swal.fire({
-            title: 'Updating Domains...',
-            text: 'Please wait while we update your domain configuration.',
-            icon: 'info',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
+        splitDomainMap[splitId] = {
+            domains: domains
+        };
+        allDomains.push(...domains);
+    });
+
+    if (duplicates.size > 0) {
+        allValid = false;
+        const dupes = Array.from(duplicates);
+        $('.domain-textarea').each(function () {
+            const textarea = $(this);
+            const splitId = textarea.data('split-id');
+            const domains = textarea.val()
+                .split(/[\n,]+/)
+                .map(d => d.trim().toLowerCase())
+                .filter(Boolean);
+
+            const overlap = domains.filter(d => dupes.includes(d));
+            if (overlap.length) {
+                textarea.addClass('is-invalid');
+                $(`#domains-error-${splitId}`).text(`Duplicate(s): ${overlap.join(', ')}`);
             }
-        });        
-        // Submit the form
-        $.ajax({
-            url: '{{ route("customer.orders.update-fixed-domains", $order->id) }}',
-            method: 'POST',
-            data: prepareFormData(form),
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                Swal.close();
-                if (response.success) {
-                    showToast('success', response.message);
-                    setTimeout(function() {
-                        window.location.href = '{{ route("customer.orders") }}';
-                    }, 2000);
-                } else {
-                    showToast('error', response.message || 'Failed to update domains.');
-                }
-            },
-            error: function(xhr) {
-                Swal.close();
-                let errorMessage = 'Failed to update domains.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    errorMessage = errors.join('<br>');
-                }
-                showToast('error', errorMessage);            }
-        });    }
+        });
+        errorMessages.push(`Duplicate domains found: ${Array.from(duplicates).join(', ')}`);
+    }
+
+    if (emptyCount > 0) errorMessages.push(`${emptyCount} empty textarea(s).`);
+    if (countMismatch > 0) errorMessages.push(`${countMismatch} domain count mismatch.`);
+    if (invalidFormatCount > 0) errorMessages.push(`${invalidFormatCount} invalid format issue(s).`);
+
+    if (!allValid) {
+        showValidationToast(errorMessages);
+        return;
+    }
+
+    // Show loading dialog
+    Swal.fire({
+        title: 'Submitting...',
+        text: 'Please wait while we submit your domains.',
+        icon: 'info',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    // Collect platform configuration data
+    const platformData = {};
+    const platformFields = [
+        'forwarding_url', 'hosting_platform', 'sending_platform',
+        'platform_login', 'platform_password', 'sequencer_login', 'sequencer_password',
+        'access_tutorial', 'backup_codes', 'bison_url', 'bison_workspace', 'other_platform'
+    ];
     
-    // Function to prepare form data with proper array formatting
+    platformFields.forEach(fieldName => {
+        const field = $(`[name="${fieldName}"]`);
+        if (field.length) {
+            platformData[fieldName] = field.val() || '';
+        }
+    });
+
+    // Collect dynamic platform fields
+    $('.platform-field input, .platform-field select, .platform-field textarea').each(function() {
+        const field = $(this);
+        const fieldName = field.attr('name');
+        if (fieldName) {
+            platformData[fieldName] = field.val() || '';
+        }
+    });
+
+    // Submit consolidated JSON
+    $.ajax({
+        url: '{{ route("customer.orders.update-fixed-domains", $order->id) }}',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            _token: '{{ csrf_token() }}',
+            panel_splits: splitDomainMap,
+            ...platformData
+        }),
+        success: function (response) {
+            Swal.close();
+            if (response.success) {
+                showToast('success', response.message);
+                setTimeout(() => window.location.href = '{{ route("customer.orders") }}', 2000);
+            } else {
+                showToast('error', response.message || 'Failed to update domains.');
+            }
+        },
+        error: function (xhr) {
+            Swal.close();
+            let message = 'Error occurred.';
+            if (xhr.responseJSON?.message) {
+                message = xhr.responseJSON.message;
+            } else if (xhr.responseJSON?.errors) {
+                message = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+            }
+            showToast('error', message);
+        }
+    });
+}
+
+    
+    // Function to prepare form data with proper array formattijng
     function prepareFormData(form) {
         const formData = new FormData();
         
