@@ -1900,6 +1900,7 @@ pointer-events: none
             }
             }
         }
+        
         // Update all timer badges on the page
         function updateAllTimers() {
             const timerBadges = document.querySelectorAll('.timer-badge');
