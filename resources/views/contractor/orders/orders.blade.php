@@ -1321,7 +1321,7 @@ pointer-events: none
   const pad = (n) => (n < 10 ? "0" + n : n);
   const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 
-  return statusLabel ? `${statusLabel} ${formattedTime}` : formattedTime;
+  return statusLabel ? `${formattedTime}` : formattedTime;
 }
 
 

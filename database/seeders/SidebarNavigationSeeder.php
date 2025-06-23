@@ -88,7 +88,22 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.panels.index",
                         "permission" => "Panels"
                     ]
+                    ],
+                    'nested_menu'=>[
+                [
+                    "name"=>"Card",
+                    "icon"=>"ti ti-credit-card fs-5",
+                    "route"=>"admin.orders.card",
+                    "permission"=>"Order"
+                ],
+                [
+                    "name"=>"List",
+                    "icon"=>"ti ti-list fs-5",
+                    "route"=>"admin.orders",
+                    "permission"=>"Order"
                 ]
+                ]
+
             ],
             [
                 'name' => 'Plans',
@@ -125,17 +140,19 @@ class SidebarNavigationSeeder extends Seeder
             );
 
             // Insert or update navigation
-            DB::table('sidebar_navigations')->updateOrInsert(
-                ['name' => $nav['name']], // unique constraint
-                [
-                    'icon' => $nav['icon'],
-                    'route' => $nav['route'],
-                    'permission' => $nav['permission'],
-                    'sub_menu' => json_encode($nav['sub_menu']),
-                    'updated_at' => now(),
-                    'created_at' => now()
-                ]
-            );
+         DB::table('sidebar_navigations')->updateOrInsert(
+            ['name' => $nav['name']], // unique constraint
+            [
+                'icon' => $nav['icon'],
+                'route' => $nav['route'],
+                'permission' => $nav['permission'],
+                'sub_menu' => json_encode($nav['sub_menu']),
+                'nested_menu' => isset($nav['nested_menu']) ? json_encode($nav['nested_menu']) : null,
+                'updated_at' => now(),
+                'created_at' => now()
+            ]
+        );
+
         }
 
         $extraPermissions=["Mod","Panels"];

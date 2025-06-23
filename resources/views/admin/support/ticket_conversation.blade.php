@@ -108,7 +108,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
         font-size: 10px;
         padding: 2px 5px;
@@ -116,33 +116,34 @@
         overflow: hidden;
         white-space: nowrap;
     }
-        /* Quill editor custom styles */
-        .ql-editor {
+
+    /* Quill editor custom styles */
+    .ql-editor {
         min-height: 120px;
         color: var(--light-color);
     }
-    
+
     .ql-toolbar.ql-snow {
         border-color: var(--input-border);
         border-top-left-radius: 6px;
         border-top-right-radius: 6px;
     }
-    
+
     .ql-container.ql-snow {
         border-color: var(--input-border);
         border-bottom-left-radius: 6px;
         border-bottom-right-radius: 6px;
         background: transparent;
     }
-    
+
     .ql-snow .ql-stroke {
         stroke: var(--light-color);
     }
-    
+
     .ql-snow .ql-fill {
         fill: var(--light-color);
     }
-    
+
     .ql-snow .ql-picker {
         color: var(--light-color);
     }
@@ -168,8 +169,10 @@
                         <div class="d-flex gap-2">
                             <select id="ticketStatus" class="form-select form-select-sm">
                                 <option value="open" {{ $ticket->status === 'open' ? 'selected' : '' }}>Open</option>
-                                <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                <option value="closed" {{ $ticket->status === 'closed' ? 'selected' : '' }}>Closed</option>
+                                <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>In
+                                    Progress</option>
+                                <option value="closed" {{ $ticket->status === 'closed' ? 'selected' : '' }}>Closed
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -191,10 +194,21 @@
                                 <label for="attachments" class="attachment-icon">
                                     <i class="fas fa-paperclip"></i> Add Attachments
                                 </label>
-                                <input type="file" id="attachments" name="attachments[]" multiple style="display: none;">
+                                <input type="file" id="attachments" name="attachments[]" multiple
+                                    style="display: none;">
                                 <div class="attachments-area" id="attachmentPreviews"></div>
                             </div>
+                            {{-- <button type="submit" class="btn btn-primary">Send Reply</button> --}}
+                            @if($ticket->status !== 'closed')
+
+                            <!-- ... your form fields ... -->
                             <button type="submit" class="btn btn-primary">Send Reply</button>
+
+                            @else
+                            <div class="alert alert-danger mb-3">
+                                This ticket is closed. You cannot send new replies.
+                            </div>
+                            @endif
                         </form>
                     </div>
 
@@ -217,22 +231,24 @@
                             <div class="attachments-area">
                                 @foreach($reply->attachments as $attachment)
                                 @php
-                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
-                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
-                                    $fileName = basename($attachment);
+                                $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                $fileName = basename($attachment);
                                 @endphp
                                 <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
                                     @if($isImage)
-                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
                                     @else
-                                        <i class="fas {{ 
+                                    <i class="fas {{ 
                                             in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
                                             (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
                                             (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
                                         }}"></i>
                                     @endif
                                     <div class="attachment-name">{{ $fileName }}</div>
-                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                    <a href="{{ Storage::url($attachment) }}"
+                                        class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2"
+                                        target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>
@@ -254,22 +270,24 @@
                             <div class="attachments-area">
                                 @foreach($ticket->attachments as $attachment)
                                 @php
-                                    $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
-                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
-                                    $fileName = basename($attachment);
+                                $extension = strtolower(pathinfo($attachment, PATHINFO_EXTENSION));
+                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                $fileName = basename($attachment);
                                 @endphp
                                 <div class="attachment-preview {{ $isImage ? '' : 'document' }}">
                                     @if($isImage)
-                                        <img src="{{ Storage::url($attachment) }}" alt="Attachment">
+                                    <img src="{{ Storage::url($attachment) }}" alt="Attachment">
                                     @else
-                                        <i class="fas {{ 
+                                    <i class="fas {{ 
                                             in_array($extension, ['pdf']) ? 'fa-file-pdf' : 
                                             (in_array($extension, ['doc', 'docx']) ? 'fa-file-word' : 
                                             (in_array($extension, ['xls', 'xlsx']) ? 'fa-file-excel' : 'fa-file'))
                                         }}"></i>
                                     @endif
                                     <div class="attachment-name">{{ $fileName }}</div>
-                                    <a href="{{ Storage::url($attachment) }}" class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2" target="_blank">
+                                    <a href="{{ Storage::url($attachment) }}"
+                                        class="btn btn-sm btn-primary position-absolute top-0 end-0 m-2"
+                                        target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>
@@ -301,7 +319,8 @@
                     <div class="mb-3">
                         <small class="text-muted">Priority</small>
                         <p>
-                            <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'success') }}">
+                            <span
+                                class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'success') }}">
                                 {{ ucfirst($ticket->priority) }}
                             </span>
                         </p>
@@ -324,7 +343,7 @@
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
-const quill = new Quill('#message', {
+    const quill = new Quill('#message', {
     theme: 'snow',
     modules: {
         toolbar: [
@@ -338,7 +357,7 @@ const quill = new Quill('#message', {
 });
 </script>
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
     // Handle status changes
     $('#ticketStatus').change(function() {
         const status = $(this).val();
@@ -353,6 +372,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     toastr.success('Ticket status updated successfully');
+                    window.location.reload(); // Reload to update ticket details   
                 }
             },
             error: function() {
@@ -481,8 +501,9 @@ $(document).ready(function() {
                     $('.message-bubble:first').slideDown();
                     
                     toastr.success('Reply sent successfully');
+                    window.location.reload(); // Reload to update ticket details
                 }
-            },
+            }, 
             error: function(xhr) {
                 const message = xhr.responseJSON?.message || 'Failed to send reply';
                 toastr.error(message);
