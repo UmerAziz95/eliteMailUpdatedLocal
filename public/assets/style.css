@@ -856,6 +856,12 @@ thead {
 .offcanvas {
     background-color: var(--secondary-color);
     color: var(--light-color);
+    border: 1px solid #94949463 !important;
+}
+
+.offcanvas-header {
+    background-color: var(--filter-color);
+    border-bottom: 2px solid var(--second-primary);
 }
 
 .modal-close-btn {

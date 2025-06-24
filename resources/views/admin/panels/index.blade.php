@@ -4,6 +4,11 @@
 
 @push('styles')
 <style>
+
+    /* ::-webkit-scrollbar {
+        display: none
+    } */
+
     input,
     .form-control,
     .form-label {
@@ -60,6 +65,10 @@
         justify-content: center;
     }
 
+    .odd {
+        background-color: #5a49cd7b !important;
+    }
+
     .empty-state i {
         font-size: 3rem;
         margin-bottom: 1rem;
@@ -86,7 +95,7 @@
     }
 
     .offcanvas-backdrop.show {
-        opacity: 0.5;
+        opacity: 0.6;
     }
 
     /* Ensure body doesn't keep backdrop classes */
@@ -272,21 +281,10 @@
         pointer-events: none;
     }
 
-    /* Force cleanup of backdrop opacity */
-    .offcanvas-backdrop.fade {
-        opacity: 0 !important;
-        transition: opacity 0.15s linear;
-    }
-
     /* Ensure page remains interactive */
     body:not(.offcanvas-open):not(.modal-open) {
         overflow: visible !important;
         padding-right: 0 !important;
-    }
-
-    /* Hide any orphaned backdrop elements */
-    div[class*="backdrop"]:empty {
-        display: none !important;
     }
 
     /* Chevron icon transition */
@@ -294,7 +292,6 @@
         transition: transform 0.3s ease;
     }
 
-    /* Fade in animation for domain splits */
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -307,7 +304,6 @@
         }
     }
 
-    /* Toast notification animation */
     @keyframes toastSlideIn {
         from {
             opacity: 0;
@@ -324,7 +320,8 @@
 
 @section('content')
 <section class="py-3">
-    <div class="modal fade" id="panelFormModal" tabindex="-1" aria-hidden="true">
+    
+    {{-- <div class="modal fade" id="panelFormModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-body p-3 p-md-5 position-relative">
@@ -358,7 +355,149 @@
                 </div>
             </div>
         </div>
+    </div> --}}
+
+
+    {{-- <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFormOffcanvas" aria-labelledby="offcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasLabel">Panel</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            
+        </div>
+    </div>     --}}
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" data-bs-backdrop="static" id="panelFormOffcanvas" aria-labelledby="staticBackdropLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="panelFormOffcanvasLabel">Panel</h5>
+            <button type="button" class="bg-transparent border-0 fs-5" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="d-flex justify-content-end">
+                <button type="button" id="openSecondOffcanvasBtn" class="m-btn py-1 px-4 rounded-1 mb-2 border-0">
+                    View Orders
+                </button>
+            </div>
+            <form id="panelForm" class="">
+                <label for="panel_title">Panel title:</label>
+                <input type="text" class="form-control mb-3" id="panel_title" name="panel_title" value="">
+
+                <label for="panel_description">Panel Description:</label>
+                <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
+
+                <label for="panel_limit">Limit:</label>
+                <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790">
+
+                <label for="panel_status">Status:</label>
+                <select class="form-control mb-3" name="panel_status" id="panel_status" required>
+                    <option value="1">Active</option>
+                    <option value="0">In Active</option>
+                </select>
+
+                <div class="mt-4">
+                    <button type="button" id="submitPanelFormBtn" class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn border-0">
+                        Submit
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+
+    <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="secondOffcanvas" aria-labelledby="secondOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="secondOffcanvasLabel">Panel</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="counters mb-3">
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Number of Orders</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-brands fa-first-order fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Number of Inbxes</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-solid fa-inbox fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Panels Required</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-solid fa-solar-panel fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="myTable" class="w-100 display">
+                    <thead style="position: sticky; top: 0;">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Plan</th>
+                            <th>Domain URL</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="overflow-y-auto">
+                        @for ($i = 0; $i < 100; $i++)
+                            <tr >
+                                <td>#123456</td>
+                                <td>2025-06-24</td>
+                                <td>Business Pro</td>
+                                <td>example.com</td>
+                                <td>10</td>
+                                <td><span class="badge bg-label-success rounded-1 px-2 py-1">Active</span></td>
+                            </tr>
+                        @endfor
+                    </tbody>
+                    
+                </table>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Advanced Search Filter UI -->
     <div class="card p-3 mb-4">
@@ -413,12 +552,14 @@
             </form>
         </div>
     </div>
+    
     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
-        <button type="button" id="createPanelBtn" class="btn btn-primary btn-sm border-0 px-3">
+        <button type="button" class="btn btn-primary btn-sm border-0 px-3" data-bs-toggle="offcanvas" data-bs-target="#panelFormOffcanvas" aria-controls="staticBackdrop" data-bs-backdrop="true" data-bs-scroll="false">
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
+
     </div>
     <!-- Grid Cards (Dynamic) -->
     <div id="panelsContainer"
@@ -463,6 +604,7 @@
             <i class="fas fa-times"></i>
         </button>
     </div>
+
     <div class="offcanvas-body">
         <div id="panelOrdersContainer">
             <!-- Dynamic content will be loaded here -->
@@ -479,7 +621,28 @@
 
 @push('scripts')
 <script>
-    let panels = [];
+
+    document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
+        const secondOffcanvasElement = document.getElementById("secondOffcanvas");
+        const secondOffcanvas = new bootstrap.Offcanvas(secondOffcanvasElement, {
+            backdrop: false, // no backdrop to prevent it from dismissing others
+            scroll: true     // allows scrolling while multiple are open
+        });
+        secondOffcanvas.show();
+    });
+
+    $(document).ready(function () {
+        $('#myTable').DataTable({
+            pageLength: 10,         // Show 10 rows per page
+            lengthMenu: [10, 25, 50, 100], // Optional dropdown for page length
+            ordering: true,         // Enable column sorting
+            searching: true,        // Enable search box
+            scrollX: true           // Enable horizontal scroll if needed
+        });
+    });
+
+
+        let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
         let currentPage = 1;
@@ -2176,7 +2339,7 @@ function calculateSplitTime(split) {
             }, 200);
         });
 </script>
-//create new panel
+
 <script>
     $('#createPanelBtn').on('click', function() {
     var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
