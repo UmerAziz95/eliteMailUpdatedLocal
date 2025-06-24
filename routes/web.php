@@ -491,21 +491,9 @@ Route::get('/test-panel-assignments', function() {
 Route::get('/cron/run-draft-notifications', function () {
     try {
         $options = [];
-        
-        // // Check for dry-run parameter
-        // if ($request->has('dry-run') || $request->boolean('dry_run')) {
-        //     $options['--dry-run'] = true;
-        // }
-        
-        // // Check for force parameter
-        // if ($request->has('force') || $request->boolean('force')) {
-        //     $options['--force'] = true;
-        // }
-        
         // Capture command output
         $exitCode = Artisan::call('orders:send-draft-notifications', $options);
         $output = Artisan::output();
-        
         return response()->json([
             'success' => $exitCode === 0,
             'exit_code' => $exitCode,
@@ -520,11 +508,3 @@ Route::get('/cron/run-draft-notifications', function () {
         ], 500);
     }
 })->name('cron.run-draft-notifications');
-
-
-Route::get('update-sdiebar-next-orders', function(Request $request) {
-    DB::table('sidebar_navigations')->where('name', 'Orders')->update([
-        'nested_menu' => '[{"name":"Card","icon":"ti ti-devices-dollar fs-5","route":"admin.orders.card","permission":"Order"},{"name":"List","icon":"ti ti-devices-dollar fs-5","route":"admin.orders","permission":"Order"}]',
-        'updated_at' => now()
-    ]);
-});
