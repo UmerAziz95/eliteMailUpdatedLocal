@@ -77,5 +77,10 @@ class Order extends Model
     {
         return $this->hasMany(UserOrderPanelAssignment::class, 'order_id');
     }
+
+    public function orderTracking()
+    {
+        return $this->hasOne(OrderTracking::class);
+    }
     
 }

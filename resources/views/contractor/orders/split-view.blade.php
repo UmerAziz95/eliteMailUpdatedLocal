@@ -17,7 +17,6 @@
     $defaultProfilePic =
     'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
     @endphp
-
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
             <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Panel {{ $orderPanel->id }}</h5>
@@ -35,7 +34,6 @@
         </div>
         
     </div>
-
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
@@ -268,12 +266,12 @@
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
-                            <button id="addNewBtn" class="btn btn-primary me-2">
+                            <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
                             </button>
                             <button id="saveAllBtn" class="btn btn-success">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save All
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                     <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
@@ -719,14 +717,15 @@
             }
         }
 
-        // Initialize DataTable
+        // Initialize DataTable with non-blocking configuration
         let emailTable = $('#email-configuration').DataTable({
             responsive: true,
-            paging: false,
+            paging: true,
             searching: false,
             info: false,
             dom: 'frtip',
             autoWidth: false,
+            deferRender: true, // Improve performance and reduce blocking
             columnDefs: [
                 { width: '30%', targets: 0 }, // Name column
                 { width: '30%', targets: 1 }, // Email column
@@ -778,14 +777,36 @@
             drawCallback: function(settings) {
                 updateRowCount(this.api());
                 updateAddButtonState(this.api());
+                
+                // Ensure tab remains functional after draw
+                $('#other-tab').removeClass('disabled').prop('disabled', false);
+            },
+            initComplete: function() {
+                // Ensure tab is functional after initialization
+                $('#other-tab').removeClass('disabled').prop('disabled', false);
+                console.log('Email DataTable initialized - tab should be fully functional');
             }
         });
 
-        // Event listeners
+        // Event listeners with tab functionality preservation
         emailTable.on('draw', function() {
             updateRowCount(emailTable);
             updateAddButtonState(emailTable);
             updateProgressBar(emailTable);
+            
+            // Ensure tab remains functional
+            $('#other-tab').removeClass('disabled').prop('disabled', false);
+        });
+
+        // Remove processing-related tab blocking
+        emailTable.on('processing.dt', function(e, settings, processing) {
+            if (processing) {
+                console.log('DataTable processing started - keeping tab functional');
+            } else {
+                console.log('DataTable processing completed - ensuring tab remains functional');
+            }
+            // Always keep tab functional regardless of processing state
+            $('#other-tab').removeClass('disabled').prop('disabled', false);
         });
 
         // Add new row button click handler
@@ -1221,18 +1242,41 @@
             }
         });
 
-        // Add a fallback submit button handler
-        $(document).on('click', '#BulkImportForm button[type="submit"]', function(e) {
-            console.log('Submit button clicked directly');
+        // Ensure tabs remain functional during email loading
+        $(document).ready(function() {
+            // Remove any potential disabled state from tabs
+            $('#other-tab').removeClass('disabled').prop('disabled', false);
             
-            // Ensure the form submission is triggered
-            const form = $('#BulkImportForm');
-            if (form.length && !form.data('submitting')) {
-                form.data('submitting', true);
+            // Ensure tab switching works during DataTable loading
+            $('#other-tab').on('click', function(e) {
+                // Don't prevent tab switching even during loading
+                console.log('Emails tab clicked - ensuring it remains functional');
+                
+                // Force enable the tab if it was disabled
+                $(this).removeClass('disabled').prop('disabled', false);
+                
+                // Ensure the tab content is shown
                 setTimeout(() => {
-                    form.removeData('submitting');
-                }, 100);
-                form.trigger('submit');
+                    $('#other-tab-pane').addClass('show active');
+                    $('#configuration-tab-pane').removeClass('show active');
+                }, 10);
+            });
+            
+            // Remove any loading-related tab disabling
+            $(document).on('processing.dt', function(e, settings, processing) {
+                // Keep tabs functional during processing
+                $('#other-tab').removeClass('disabled').prop('disabled', false);
+            });
+            
+            // Ensure tab remains enabled after DataTable operations
+            if (typeof emailTable !== 'undefined') {
+                emailTable.on('draw.dt', function() {
+                    $('#other-tab').removeClass('disabled').prop('disabled', false);
+                });
+                
+                emailTable.on('xhr.dt', function() {
+                    $('#other-tab').removeClass('disabled').prop('disabled', false);
+                });
             }
         });
     });
