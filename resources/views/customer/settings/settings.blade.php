@@ -142,7 +142,7 @@
                             </div>
                             <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                             <div class="user-info text-center">
-                                <h5>{{ Auth::user()->name }}</h5>
+                                <h5 class="text-capitalize">{{ Auth::user()->name }}</h5>
                                 <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
                             </div>
                         </div>
@@ -237,47 +237,48 @@
                             $latestOrder->subscription->next_billing_date = \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay();
                         }
                     @endphp
-                    <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex justify-content-between align-items-center">
                         @if($latestOrder && $latestOrder->plan)
                             <span class="badge bg-label-primary">{{ $latestOrder->plan->name }}</span>
                             <div class="d-flex justify-content-center">
                                 <sub class="h5 pricing-currency mb-auto mt-1 theme-text">$</sub>
                                 <h1 class="mb-0 theme-text">{{ number_format($latestOrder->plan->price, 2) }}</h1>
-                                <sub class="h6 pricing-duration mt-auto mb-3 fw-normal">/ {{ $latestOrder->plan->duration }} Per Inboxes</sub>
+                                <small class="pricing-duration mt-auto mb-2 fw-normal">/ {{ $latestOrder->plan->duration }} Per Inboxes</small>
                             </div>
                         @else
                             <span class="badge bg-label-secondary">No Active Plan</span>
                         @endif
                     </div>
+
                     @if($latestOrder && $latestOrder->reorderInfo && $latestOrder->reorderInfo->count() > 0)
                         <ul class="list-unstyled g-2 my-4">
                             <li class="mb-2 d-flex align-items-center">
                                 <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                                <span>Total Inboxes: {{ $latestOrder->reorderInfo->first()->total_inboxes }}</span>
+                                <small>Total Inboxes: {{ $latestOrder->reorderInfo->first()->total_inboxes }}</small>
                             </li>
                             <li class="mb-2 d-flex align-items-center">
                                 <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                                <span>Inboxes per Domain: {{ $latestOrder->reorderInfo->first()->inboxes_per_domain }}</span>
+                                <small>Inboxes per Domain: {{ $latestOrder->reorderInfo->first()->inboxes_per_domain }}</small>
                             </li>
                             <li class="mb-2 d-flex align-items-center">
                                 <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                                <span>Status: <span class="badge bg-label-{{ $latestOrder->status_manage_by_admin == 'completed' ? 'success' : ($latestOrder->status_manage_by_admin == 'pending' ? 'warning' : 'info') }}">
+                                <small>Status: <small class="badge rounded-1 py-1 bg-{{ $latestOrder->status_manage_by_admin == 'completed' ? 'success' : ($latestOrder->status_manage_by_admin == 'pending' ? 'warning' : 'info') }}">
                                     {{ ucfirst($latestOrder->status_manage_by_admin) }}
-                                </span></span>
+                                </small></small>
                             </li>
                         </ul>
                     @endif
 
                     @if($latestOrder && $latestOrder->subscription)
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="h6 mb-0">Subscription Period: </span>
-                            <span class="h6 mb-0">
+                            <span class="mb-0">Subscription Period: </span>
+                            <small class="opacity-75 mb-0">
                                 {{ \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date)->format('M d, Y') }} - 
                                 {{ $latestOrder->subscription->next_billing_date ? \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay()->format('M d, Y') : 'N/A' }}
-                            </span>
+                            </small>
                         </div>
                         <!-- remaining days and next billing date check deeply and analyzed -->
-                        <div class="progress mb-1 bg-label-primary" style="height: 6px;">
+                        <div class="progress mb-1 bg-label-primary rounded-1 p-0" style="height: 4px; padding: 0 !important;">
                             @php
                                 $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
                                 $endDate = $latestOrder->subscription->next_billing_date 
@@ -305,11 +306,11 @@
                             @endphp
                             <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <small>{{ $daysRemaining }} days remaining</small>
+                        <small class="opacity-50">{{ $daysRemaining }} days remaining</small>
                     @endif
 
                     <div class="d-grid w-100 mt-4">
-                        <a href="{{ route('customer.pricing') }}" class="m-btn border-0 py-2 px-4 rounded-2">Upgrade Plan</a>
+                        <a href="{{ route('customer.pricing') }}" class="m-btn border-0 py-2 px-4 rounded-2 text-center">Upgrade Plan</a>
                     </div>
                 </div>
             </div>
@@ -343,7 +344,6 @@
             </ul>
 
             <div class="tab-content mt-4" id="myTabContent">
-            
 
                 <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
                     tabindex="0">

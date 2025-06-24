@@ -257,7 +257,7 @@
 
         /* Timer badge styling */
         .timer-badge {
-            font-family: 'Courier New', monospace;
+            /* font-family: 'Space Grotesk'; */
             font-weight: bold;
             font-size: 11px;
             padding: 0.25rem 0.5rem;
@@ -288,6 +288,24 @@
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
             animation: pulse-red 2s infinite;
         }
+
+        /* .timer-badge.negative {
+    background-color: #1a1a1a;
+    color: #ff4d4d;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 8px #ff4d4d50;
+} */
+
+.timer-badge.timer-negative .timer-icon {
+    color: #ff4d4d;
+}
+
 
         .timer-badge.completed {
             background: linear-gradient(135deg, #6c757d, #495057);
@@ -320,6 +338,18 @@
         .timer-badge:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .flipdown .rotor-group:first-child {
+  display: none !important; /* Hide days */
+}
+
+        .rotor-group-heading {
+            display: none !important
+        }
+
+        .rotor-top, .rotor-bottom, .rotor-leaf {
+            font-size: 20px !important
         }
 
     </style>
@@ -475,6 +505,8 @@ pointer-events: none
             </div>
         </div>
 
+            {{-- <div class="flipdown" id="flipdown"></div> --}}
+
     </section> 
     
     <!-- Order Details Offcanvas -->
@@ -501,6 +533,21 @@ pointer-events: none
 
 @push('scripts')
     <script>
+
+// document.addEventListener('DOMContentLoaded', () => {
+//     // Unix timestamp (in seconds) to count down to
+//     var toDayFromNow = (new Date("Dec 31, 2025 23:59:59").getTime() / 1000) + (3600 / 60 / 60 / 24) - 1;
+//     // Set Up FlipDown
+//     var flipdown = new FlipDown(toDayFromNow)
+
+//     // Start The Count Down
+//     .start()
+//     // Do Something When The Countdown Ends
+//     .ifEnded(() => {
+//         document.querySelector(".flipdown").innerHTML = `<h2>Timer is ended</h2>`;
+//     });
+// });
+
         let orders = [];
         let currentFilters = {};
         let currentPage = 1;
@@ -630,7 +677,8 @@ pointer-events: none
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
             container.style.gap = '1rem';
             
-            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            container.innerHTML = 
+                `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
@@ -657,7 +705,8 @@ pointer-events: none
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
                 container.style.gap = '1rem';
                 
-                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                container.innerHTML = 
+                    `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                         <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
                         <h5>No Orders Found</h5>
                         <p class="mb-3">No orders match your current filters.</p>
@@ -740,8 +789,8 @@ pointer-events: none
                     <div class="d-flex align-items-center justify-content-between">
                         <h6>Order #${order.order_id}</h6>
                         <div>
-                        ${order.status_manage_by_admin}
-                        ${createTimerBadge(order)}
+                            ${order.status_manage_by_admin}
+                            ${createTimerBadge(order)}
                         </div>
                     </div>
 

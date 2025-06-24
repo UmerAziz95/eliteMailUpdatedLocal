@@ -122,7 +122,7 @@
                                 </div>
                                 <div class="input-group">
                                     <label for="password">Password</label>
-                                    <input type="password" name="password" id="password" placeholder="Password"
+                                    <input type="password" name="password" id="password" placeholder=""
                                         required>
                                     <span id="togglePassword"
                                         class="input-group-text bg-transparent text-white border-0">
@@ -132,7 +132,7 @@
                                 <div class="input-group">
                                     <label for="password_confirmation">Password Confirmation</label>
                                     <input type="password" name="password_confirmation" id="password_confirmation"
-                                        placeholder="Password Confirmation" required>
+                                        placeholder="" required>
                                     <span id="togglePasswordConfirmation"
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
@@ -164,7 +164,7 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
-                                            I agree to the  <a style="text-decoration:none" href="https://projectinbox.ai/privacy-policy">Privacy Policy</a> and <a style="text-decoration:none" href="https://projectinbox.ai/terms-conditions">Terms Of Service</a> 
+                                            I agree to the  <a style="text-decoration:none;" class="theme-text" href="https://projectinbox.ai/privacy-policy">Privacy Policy</a> and <a style="text-decoration:none" class="theme-text" href="https://projectinbox.ai/terms-conditions">Terms Of Service</a> 
                                         </label>
                                     </div>
                                 </div>

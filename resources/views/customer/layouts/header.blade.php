@@ -32,13 +32,13 @@
 
         <div class="d-none d-md-block">
             <a href="{{ url('customer/pricing') }}"
-                class="btn btn-primary animate-gradient btn-sm me-2 d-flex align-items-center gap-1"><i
+                class="btn btn-primary animate-gradient btn-sm d-flex align-items-center gap-1"><i
                     class="ti ti-building-store"></i>
                 Buy More Inboxes</a>
         </div>
         </div>
 
-        
+
         {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-moon-stars fs-5"></i>
@@ -50,7 +50,6 @@
                             class="ti ti-moon-stars fs-6"></i> Dark</a></li>
             </ul>
         </div> --}}
-
 
 
         <div class="dropdown notification-dropdown">
@@ -105,7 +104,7 @@
         @endif
 
         <div>
-            <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+            <h6 class="mb-0 text-capitalize">{{ $user->name ?? 'N/A' }}</h6>
             <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
         </div>
     </div>
