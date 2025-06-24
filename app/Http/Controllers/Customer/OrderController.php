@@ -734,24 +734,24 @@ class OrderController extends Controller
             }
             
             // Create order tracking record at the end
-            // if($request->edit_id && $request->order_id) {
-            //     // For existing orders, update or create tracking record
-            //     $order->orderTracking()->updateOrCreate(
-            //         ['order_id' => $order->id],
-            //         [
-            //             'cron_run_time' => now(),
-            //             'inboxes_per_domain' => $request->inboxes_per_domain,
-            //             'total_inboxes' => $calculatedTotalInboxes
-            //         ]
-            //     );
+            if($request->edit_id && $request->order_id) {
+                // For existing orders, update or create tracking record
+                $order->orderTracking()->updateOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'cron_run_time' => now(),
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'total_inboxes' => $calculatedTotalInboxes
+                    ]
+                );
                 
-            //     Log::info('Order tracking record updated for edited order', [
-            //         'order_id' => $order->id,
-            //         'status' => $status,
-            //         'total_inboxes' => $calculatedTotalInboxes,
-            //         'inboxes_per_domain' => $request->inboxes_per_domain
-            //     ]);
-            // }
+                Log::info('Order tracking record updated for edited order', [
+                    'order_id' => $order->id,
+                    'status' => $status,
+                    'total_inboxes' => $calculatedTotalInboxes,
+                    'inboxes_per_domain' => $request->inboxes_per_domain
+                ]);
+            }
             
             // First check 
             return response()->json([
