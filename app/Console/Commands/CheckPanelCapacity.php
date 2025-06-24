@@ -118,19 +118,18 @@ class CheckPanelCapacity extends Command
         }
         
         return 0;
-    }
-      /**
+    }    /**
      * Get available panel space
      */
     
     private function getAvailablePanelSpace(): int
     {
         $panels = Panel::where('is_active', 1)
-                      ->where('remaining_limit', 1790)
+                      ->where('remaining_limit', '>', 0)
                       ->get();
         $totalAvailableSpace = 0;
         
-        $this->info("📋 Found {$panels->count()} active panel(s) with remaining_limit = 1790:");
+        $this->info("📋 Found {$panels->count()} active panel(s) with available space:");
         
         foreach ($panels as $panel) {
             $availableSpace = $panel->remaining_limit;
