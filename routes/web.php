@@ -93,6 +93,8 @@ Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\Master
 //cron controller
 Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(function () {
     Route::get('/auto_cancel_subscription', 'cancelSusbscriptons');
+    Route::get('/test-panel-capacity', 'testPanelCapacityCheck')->name('test.panel.capacity');
+    Route::get('/panel-capacity-test', 'showPanelCapacityTest')->name('panel.capacity.test.page');
 });
 
 Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('customer.subscription.success');

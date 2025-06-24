@@ -730,9 +730,8 @@ class OrderController extends Controller
             // status is pending then pannelCreationAndOrderSplitOnPannels
             if($status == 'pending'){
                 // panel creation
-                $this->pannelCreationAndOrderSplitOnPannels($order);
+                // $this->pannelCreationAndOrderSplitOnPannels($order);
             }
-            
             // Create order tracking record at the end
             if($request->edit_id && $request->order_id) {
                 // For existing orders, update or create tracking record
