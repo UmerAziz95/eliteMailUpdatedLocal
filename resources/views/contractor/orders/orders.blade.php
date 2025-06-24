@@ -511,6 +511,7 @@
 
     @push('scripts')
     <script>
+
         let orders = [];
         let currentFilters = {};
         let currentPage = 1;
@@ -640,7 +641,8 @@
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
             container.style.gap = '1rem';
             
-            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            container.innerHTML = 
+                `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
@@ -667,7 +669,8 @@
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
                 container.style.gap = '1rem';
                 
-                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                container.innerHTML = 
+                    `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                         <i class="fas fa-inbox text-white mb-3" style="font-size: 3rem;"></i>
                         <h5>No Orders Found</h5>
                         <p class="mb-3">No orders match your current filters.</p>
@@ -750,8 +753,8 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <h6>Order #${order.order_id}</h6>
                         <div>
-                        ${order.status_manage_by_admin}
-                        ${createTimerBadge(order)}
+                            ${order.status_manage_by_admin}
+                            ${createTimerBadge(order)}
                         </div>
                     </div>
 

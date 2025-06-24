@@ -551,7 +551,7 @@
         // Initialize DataTable
         let emailTable = $('#email-configuration').DataTable({
             responsive: true,
-            paging: false,
+            paging: true,
             searching: false,
             info: false,
             dom: 'frtip',

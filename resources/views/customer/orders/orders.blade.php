@@ -136,13 +136,15 @@
 @section('content')
 <!-- Draft Orders Notification -->
 @if(isset($draftOrders) && $draftOrders > 0)
-    <div class="alert alert-warning alert-dismissible fade show draft-alert" role="alert" style="background-color: rgba(255, 166, 0, 0.359); color: #fff; border: 2px solid orange;">
+    <div class="alert alert-warning alert-dismissible fade show draft-alert py-2" role="alert" style="background-color: rgba(255, 166, 0, 0.359); color: #fff; border: 2px solid orange;">
         <i class="ti ti-alert-triangle me-2 alert-icon"></i>
-        <strong>Draft Orders Alert:</strong> You have {{ $draftOrders }} order{{ $draftOrders > 1 ? 's' : '' }} available in drafts. 
-        Please complete or review these draft orders.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <strong>Draft Order{{ $draftOrders != 1 ? 's' : '' }} Alert:</strong> 
+        You have {{ $draftOrders }} draft order{{ $draftOrders != 1 ? 's' : '' }} available in drafts. 
+        Please submit the relevant details to complete the order{{ $draftOrders != 1 ? 's' : '' }}.
+        <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 @endif
+
 
 <section class="py-3">
 
@@ -468,31 +470,31 @@
                 autoWidth: false,
                 dom: '<"top"f>rt<"bottom"lip><"clear">',
                 columnDefs: [{
-                        width: '10%',
+                        // width: '10%',
                         targets: 0
                     }, // ID 
                     {
-                        width: '15%',
+                        // width: '15%',
                         targets: 1
                     }, // Date
                     ...(planId ? [] : [{
-                        width: '15%',
+                        // width: '15%',
                         targets: 2
                     }]), // Plan (only for All Orders) 
                     {
-                        width: '20%',
+                        // width: '20%',
                         targets: planId ? 2 : 3
                     }, // Domain URL
                     {
-                        width: '15%',
+                        // width: '15%',
                         targets: planId ? 3 : 4
                     }, // Total Inboxes 
                     {
-                        width: '15%',
+                        // width: '15%',
                         targets: planId ? 4 : 5
                     }, // Status
                     {
-                        width: '10%',
+                        // width: '10%',
                         targets: planId ? 5 : 6
                     } // Actions
                 ],
@@ -542,7 +544,7 @@
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
-                                    <img src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 15px" alt="">
+                                    <img data-bs-toggle="tooltip" data-bs-title="Disabled tooltip" src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 15px" alt="">
                                     <span>${data}</span>    
                                 </div>
                             `;
@@ -564,8 +566,8 @@
                         data: 'action',
                         name: 'action',
                         orderable: false,
-                        searchable: false
-                    }
+                        searchable: false,
+                    },
                 ],
                 order: [
                     [1, 'desc']
@@ -578,6 +580,7 @@
             toastr.error('Error initializing table. Please refresh the page.');
         }
     }
+    
 
     $(document).ready(function() {
         try {

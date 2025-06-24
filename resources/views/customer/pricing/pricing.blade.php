@@ -173,7 +173,7 @@
                                 </div>
                             </div> --}}
 
-                            <div class="pricing-card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+                            <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
                                 <div class="inner-content d-flex flex-column justify-content-between">
                                     <div>
                                         {{-- <div class="d-flex align-items-center justify-content-center mb-0">
@@ -182,7 +182,7 @@
                                             </div>
                                         </div> --}}
                                         <div>
-                                            <h4 class="fw-bold text-white plan-name text-uppercase fs-4">
+                                            <h4 class="fw-bold text-white plan-name text-capitalize fs-4">
                                                 {{ $plan->name }}</h4>
                                             <div class="mb-3 ">
                                                 <span>
@@ -194,7 +194,7 @@
 
                                             {{-- <small class="plan-description text-capitalize opacity-75"
                                                 style="line-height: 1px !important">{{ $plan->description }}</small> --}}
-                                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1">
+                                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
                                                 ${{ number_format($plan->price, 2) }}
                                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
                                                     /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
@@ -225,13 +225,13 @@
                                                     ->first();
                                             @endphp
                                             @if ($activeSubscription)
-                                                <button class="btn text-white subscribe-btn"  data-plan-id="{{ $plan->id }}" style="background-color: rgb(5, 163, 23)">
+                                                <button class="btn text-white subscribe-btn w-100"  data-plan-id="{{ $plan->id }}" style="background-color: rgb(5, 163, 23)">
                                                     <i class="fas fa-check me-2"></i>Subscribed Plan
                                                 </button>
                                             @else
-                                                <button class="btn btn-primary subscribe-btn"
+                                                <button class="btn btn-primary subscribe-btn w-100"
                                                     data-plan-id="{{ $plan->id }}">
-                                                    Subscribe Now
+                                                    Get Started Now
                                                 </button>
                                             @endif
                                         </div>

@@ -410,7 +410,10 @@
                         </div>
                     </div>
                 </div> -->
-            <div class="col-md-4">
+
+
+
+            <div class="col-md-6">
                 <div class="card h-100 p-3">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -425,11 +428,11 @@
                             {{-- <p class="mb-0">Total Orders</p> --}}
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 g-0">
                             <div id="orderStatusChart"></div>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px">
                                 <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                                     <div
@@ -489,7 +492,7 @@
             </div>
 
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6">
                 <div class="card h-100 p-3">
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
@@ -507,7 +510,7 @@
                             </div> -->
                     </div>
                     <div class="row pt-0">
-                        <div class="col-12 d-flex flex-column gap-2">
+                        <div class="col-12 col-md-6 d-flex flex-column gap-2">
                             <div class="my-2">
                                 <h1 class="mb-0 theme-text">{{ $totalTickets ?? 0 }}</h1>
                                 {{-- <p class="mb-0">Total Tickets</p> --}}
@@ -543,15 +546,16 @@
                                 </li>
                             </ul>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <div id="ticketPieChart"></div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="col-12 col-md-4">
-                <div class="card p-3" style="max-height: 32.1rem">
+
+            <div class="col-12">
+                <div class="card p-3">
                     <div class="border-0 pb-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
                             <!-- History -->
@@ -581,9 +585,8 @@
             </div>
 
 
-            <div class="col-12">
+            {{-- <div class="col-12">
                 <div class="card p-3">
-                    <!-- heading  -->
                     <div class="border-0 d-flex justify-content-between">
                         <div class="card-title mb-0">
                             <h6 class="mb-1">Recent Activity</h6>
@@ -608,7 +611,7 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> --}}
 
 
 

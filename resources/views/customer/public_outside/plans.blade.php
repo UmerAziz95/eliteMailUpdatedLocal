@@ -272,7 +272,7 @@
     
                                             <button class="btn btn-primary py-2 border-0 subscribe-btn w-100 mt-4"
                                                 data-plan-id="{{ $plan->id }}">
-                                                <span class="btn-text">Subscribe Now</span>
+                                                <span class="btn-text">Get Started Now</span>
                                                 <span class="spinner-border spinner-border-sm d-none ms-2" role="status"
                                                     aria-hidden="true"></span>
                                             </button>
