@@ -989,7 +989,7 @@
                                                     
                                                     
                                                     <td>${order.space_assigned || 'N/A'}</td>
-                                                    <td>${calculateSplitTime(order?.order_panel_data)}</td>
+                                                    <td>${calculateSplitTime(order)}</td>
                                                     <td>${formatDate(order?.created_at)}</td>
                                                     <td>
                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
@@ -1250,30 +1250,36 @@
 
 
   // timer calculator split 
-      function calculateSplitTime(split) {
-  const order_panel = split.order_panel;
+function calculateSplitTime(split) {
 
+  const order_panel = split.order_panel_data;
   if (!order_panel || !order_panel.timer_started_at) {
     return "00:00:00";
   }
 
   const start = parseUTCDateTime(order_panel.timer_started_at);
+  if (!start || isNaN(start.getTime())) {
+    return "00:00:00";
+  }
+
   let end;
-  let statusLabel = ""; // Default empty
+  let statusLabel = "";
 
   if (order_panel.status === "completed" && order_panel.completed_at) {
     end = parseUTCDateTime(order_panel.completed_at);
+    if (!end || isNaN(end.getTime())) {
+      return "00:00:00";
+    }
     statusLabel = "completed in";
   } else if (order_panel.status === "in-progress") {
-    end = new Date(); // current time
+    end = new Date();
     statusLabel = "in-progress";
   } else {
-    // If status is neither "completed" nor "in-progress", return just zeroed time
     return "00:00:00";
   }
 
   const diffMs = end - start;
-  if (diffMs <= 0) return statusLabel ? `${statusLabel} 00:00:00` : "00:00:00";
+  if (diffMs <= 0) return `${statusLabel} 00:00:00`;
 
   const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -1282,8 +1288,9 @@
   const pad = (n) => (n < 10 ? "0" + n : n);
   const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 
-  return statusLabel ? `${statusLabel} ${formattedTime}` : formattedTime;
+  return `${formattedTime}`;
 }
+
 
 
         function parseUTCDateTime(dateStr) {

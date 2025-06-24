@@ -1,3 +1,4 @@
+
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center justify-content-center gap-2 mb-4">
         <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
@@ -40,21 +41,60 @@
         @endphp
 
         <div >
-            @foreach ($navigations as $item)
-                @if (in_array($item->name, $allowedItems))
-                    @can($item->permission)
-                        <li class="nav-item">
-                            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
-                                href="{{ route($item->route) }}">
-                                <div class="d-flex align-items-center" style="gap: 13px">
-                                    <div class="icons"><i class="{{ $item->icon }}"></i></div>
-                                    <div class="text">{{ $item->name }}</div>
-                                </div>
-                            </a>
-                        </li>
-                    @endcan
+     @foreach ($navigations as $item)
+    @if (in_array($item->name, $allowedItems))
+        @can($item->permission)
+            <li class="nav-item">
+
+                @if ($item->name === 'Orders' && !empty($item->nested_menu))
+                    {{-- Collapse Toggle --}}
+                    <a class="nav-link px-3 d-flex align-items-center justify-content-between"
+                       data-bs-toggle="collapse"
+                       href="#ordersSubmenu"
+                       role="button"
+                       aria-expanded="false"
+                       aria-controls="ordersSubmenu">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                            <div class="text">{{ $item->name }}</div>
+                        </div>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    {{-- Collapsible Submenu --}}
+                    @php
+                        $subMenus = json_decode($item->nested_menu, true);
+                    @endphp
+
+                    @if (is_array($subMenus))
+                        <ul class="nav flex-column collapse ms-4" id="ordersSubmenu">
+                            @foreach ($subMenus as $sub)
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 {{ Route::is($sub['route']) ? 'active' : '' }}"
+                                       href="{{ route($sub['route']) }}">
+                                        <i class="{{ $sub['icon'] ?? 'bi bi-dot' }}"></i> {{ $sub['name'] }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @else
+                    {{-- Regular menu item --}}
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
+                       href="{{ route($item->route) }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                            <div class="text">{{ $item->name }}</div>
+                        </div>
+                    </a>
                 @endif
-            @endforeach
+
+            </li>
+        @endcan
+    @endif
+     @endforeach
+
+
         </div>
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
         <!-- Admins -->
@@ -63,21 +103,57 @@
         @endphp
 
         @foreach ($navigations as $item)
-            @if (in_array($item->name, $excludedItems))
-                @continue
+    @if (in_array($item->name, $excludedItems))
+        @continue
+    @endif
+    @can($item->permission)
+        <li class="nav-item">
+            @if ($item->name === 'Orders' && !empty($item->nested_menu))
+                {{-- Collapse toggle for Orders --}}
+                <a class="nav-link px-3 d-flex align-items-center justify-content-between"
+                   data-bs-toggle="collapse"
+                   href="#ordersSubmenu"
+                   role="button"
+                   aria-expanded="false"
+                   aria-controls="ordersSubmenu">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                        <div class="text">{{ $item->name }}</div>
+                    </div>
+                    <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+
+                {{-- Nested submenu --}}
+                @php
+                    $subMenus = json_decode($item->nested_menu, true);
+                @endphp
+
+                @if (is_array($subMenus))
+                    <ul class="nav flex-column collapse ms-3 mt-1" id="ordersSubmenu" style="transition: all 0.3s ease;">
+                        @foreach ($subMenus as $sub)
+                            <li class="nav-item">
+                                <a class="nav-link px-3 {{ Route::is($sub['route']) ? 'active' : '' }}"
+                                   href="{{ route($sub['route']) }}">
+                                    <i class="{{ $sub['icon'] ?? 'bi bi-dot' }}"></i> {{ $sub['name'] }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            @else
+                {{-- Regular item --}}
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
+                   href="{{ route($item->route) }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                        <div class="text">{{ $item->name }}</div>
+                    </div>
+                </a>
             @endif
-            @can($item->permission)
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
-                        href="{{ route($item->route) }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="{{ $item->icon }}"></i></div>
-                            <div class="text">{{ $item->name }}</div>
-                        </div>
-                    </a>
-                </li>
-            @endcan
-        @endforeach
+        </li>
+    @endcan
+@endforeach
+
 
 
         <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>

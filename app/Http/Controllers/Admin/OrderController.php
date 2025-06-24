@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\Notification;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
+use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 class OrderController extends Controller
 {

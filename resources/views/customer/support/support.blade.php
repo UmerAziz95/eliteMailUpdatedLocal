@@ -259,7 +259,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">Total Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
+                            <h4 class="mb-0" id="pendingTicketsCount">{{ $totalTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -306,7 +306,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">In-Progress Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
+                            <h4 class="mb-0" id="pendingTicketsCount">{{ $inProgressTickets }}</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>

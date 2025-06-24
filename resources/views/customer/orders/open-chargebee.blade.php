@@ -21,7 +21,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    // subscribe plan
+    // subscribe plan n
     // function subscribePlan(planId) {
     //     $.ajax({
     //         url: `/customer/plans/${planId}/subscribe`,
