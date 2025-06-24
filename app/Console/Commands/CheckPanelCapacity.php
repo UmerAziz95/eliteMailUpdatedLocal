@@ -103,6 +103,9 @@ class CheckPanelCapacity extends Command
             
             $this->info("✅ Process completed. Status reports sent: {$sentCount}");
             
+            // Update order status to inprogress where space is available
+            $this->updateOrderStatusForAvailableSpace($availablePanelSpace);
+            
         } catch (\Exception $e) {
             $this->error("❌ Error occurred: " . $e->getMessage());
             Log::error('Panel capacity check failed', [
@@ -228,6 +231,107 @@ class CheckPanelCapacity extends Command
             'panels_needed' => $panelsNeeded,
             'total_inboxes' => $totalInboxes,
             'available_space' => $availableSpace
+        ]);
+    }
+    
+    /**
+     * Update order_tracking status to 'inprogress' for orders that have available space on panels
+     */
+    private function updateOrderStatusForAvailableSpace(int $availablePanelSpace): void
+    {
+        if ($availablePanelSpace <= 0) {
+            $this->info('ℹ️  No available panel space, skipping order status updates.');
+            return;
+        }
+        
+        // Get pending orders that can be accommodated with available space
+        $pendingOrders = OrderTracking::where('status', 'pending')
+            ->whereNotNull('total_inboxes')
+            ->where('total_inboxes', '>', 0)
+            ->orderBy('created_at', 'asc') // Process older orders first
+            ->get();
+        
+        if ($pendingOrders->isEmpty()) {
+            $this->info('ℹ️  No pending orders to update.');
+            return;
+        }
+        
+        $remainingSpace = $availablePanelSpace;
+        $updatedCount = 0;
+        $totalProcessed = 0;
+        
+        $this->info("🔄 Processing pending orders for status updates...");
+        $this->info("   Available space: {$availablePanelSpace} inboxes");
+        
+        foreach ($pendingOrders as $order) {
+            $totalProcessed++;
+            
+            if ($order->total_inboxes <= $remainingSpace) {
+                try {
+                    // Update status to inprogress
+                    $order->status = 'inprogress';
+                    $order->cron_run_time = Carbon::now();
+                    $order->save();
+                    
+                    $remainingSpace -= $order->total_inboxes;
+                    $updatedCount++;
+                    
+                    $this->info("   ✓ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Status updated to 'inprogress'");
+                    
+                } catch (\Exception $e) {
+                    $this->error("   ✗ Failed to update Order ID {$order->order_id}: " . $e->getMessage());
+                    Log::error('Failed to update order_tracking status', [
+                        'order_id' => $order->order_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space (need {$order->total_inboxes}, have {$remainingSpace})");
+            }
+            
+            // If no space left, break the loop
+            if ($remainingSpace <= 0) {
+                $this->info("   ℹ️  No remaining space, stopping order processing.");
+                break;
+            }
+        }
+        
+        $this->info("📊 Order Status Update Summary:");
+        $this->info("   Total orders processed: {$totalProcessed}");
+        $this->info("   Orders updated to 'inprogress': {$updatedCount}");
+        $this->info("   Remaining panel space: {$remainingSpace} inboxes");
+        
+        if ($updatedCount > 0) {
+            // Log the order updates
+            $this->logOrderStatusUpdates($updatedCount, $availablePanelSpace - $remainingSpace);
+        }
+    }
+    
+    /**
+     * Log order status updates
+     */
+    private function logOrderStatusUpdates(int $updatedCount, int $spaceUsed): void
+    {
+        $logFile = storage_path('logs/order-status-updates.log');
+        $logDir = dirname($logFile);
+        
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $logEntry = sprintf(
+            "[%s] Order status updates - Orders updated: %d, Space allocated: %d inboxes\n",
+            Carbon::now()->format('Y-m-d H:i:s'),
+            $updatedCount,
+            $spaceUsed
+        );
+        
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        
+        // Also log to Laravel log
+        Log::info('Order tracking status updated', [
+            'orders_updated' => $updatedCount,
+            'space_allocated' => $spaceUsed
         ]);
     }
 }
