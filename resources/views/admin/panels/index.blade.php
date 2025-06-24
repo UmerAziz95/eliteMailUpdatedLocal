@@ -1249,10 +1249,10 @@
         }
 
 
-  // timer calculator split 
+// Timer calculator split
 function calculateSplitTime(split) {
-
   const order_panel = split.order_panel_data;
+
   if (!order_panel || !order_panel.timer_started_at) {
     return "00:00:00";
   }
@@ -1263,44 +1263,37 @@ function calculateSplitTime(split) {
   }
 
   let end;
-  let statusLabel = "";
 
   if (order_panel.status === "completed" && order_panel.completed_at) {
     end = parseUTCDateTime(order_panel.completed_at);
     if (!end || isNaN(end.getTime())) {
       return "00:00:00";
     }
-    statusLabel = "completed in";
   } else if (order_panel.status === "in-progress") {
     end = new Date();
-    statusLabel = "in-progress";
   } else {
     return "00:00:00";
   }
 
   const diffMs = end - start;
-  if (diffMs <= 0) return `${statusLabel} 00:00:00`;
+  if (diffMs <= 0) return "00:00:00";
 
   const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
   const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
   const pad = (n) => (n < 10 ? "0" + n : n);
-  const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
-
-  return `${formattedTime}`;
+  return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 }
 
-
-
-        function parseUTCDateTime(dateStr) {
-        const [datePart, timePart] = dateStr.split(" ");
-        const [year, month, day] = datePart.split("-").map(Number);
-        const [hour, minute, second] = timePart.split(":").map(Number);
-        return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-        }
-
-        //timer calculator       
+// UTC datetime parser
+function parseUTCDateTime(dateStr) {
+  const [datePart, timePart] = dateStr.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+}
+   
 
 
 // timer calculator for order

@@ -3,356 +3,359 @@
 @section('title', 'Orders')
 
 @push('styles')
-    <style>
-        input,
-        .form-control,
-        .form-label {
-            font-size: 12px
-        }
+<style>
+    input,
+    .form-control,
+    .form-label {
+        font-size: 12px
+    }
 
-        small {
-            font-size: 11px
-        }
+    small {
+        font-size: 11px
+    }
 
-        .total {
-            color: var(--second-primary);
-        }
+    .total {
+        color: var(--second-primary);
+    }
 
-        .used {
-            color: #43C95C;
-        }
+    .used {
+        color: #43C95C;
+    }
 
-        .remain {
-            color: orange
-        }
+    .remain {
+        color: orange
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #6c757d;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
 
-        /* Loading state styling */
-        #loadingState {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4rem 2rem;
-        }
+    /* Loading state styling */
+    #loadingState {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
 
-        /* Fix offcanvas backdrop issues */
-        .offcanvas-backdrop {
-            transition: opacity 0.15s linear !important;
-        }
-        
-        .offcanvas-backdrop.fade {
+    /* Fix offcanvas backdrop issues */
+    .offcanvas-backdrop {
+        transition: opacity 0.15s linear !important;
+    }
+
+    .offcanvas-backdrop.fade {
+        opacity: 0;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
+    }
+
+    /* Ensure body doesn't keep backdrop classes */
+    body:not(.offcanvas-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
+
+    /* Fix any remaining backdrop elements */
+    .modal-backdrop,
+    .offcanvas-backdrop.fade:not(.show) {
+        display: none !important;
+    }
+
+    /* Domain badge styling */
+    .domain-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        margin: 0.125rem;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+
+    .domain-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Order card styling */
+    .order-card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .order-card:hover {
+        /* transform: translateY(-2px); */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Enhanced stat boxes hover effects */
+    .order-card .col-6>div {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .order-card .col-6>div:hover {
+        /* transform: translateY(-1px); */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    /* Icon animations */
+    .order-card i {
+        transition: all 0.3s ease;
+    }
+
+    .order-card:hover i {
+        transform: scale(1.1);
+    }
+
+    /* Status badge enhancement */
+    .order-card .badge {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Button enhancement */
+    .order-card button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .order-card button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+
+    /* Split content animations */
+    .collapse {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .collapse:not(.show) {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .collapse.show {
+        opacity: 1;
+        transform: translateY(0);
+        animation: splitFadeIn 0.4s ease-out;
+    }
+
+    .collapse.collapsing {
+        opacity: 0.5;
+        transform: translateY(-5px);
+    }
+
+    /* Split fade-in animation */
+    @keyframes splitFadeIn {
+        0% {
             opacity: 0;
-        }
-        
-        .offcanvas-backdrop.show {
-            opacity: 0.5;
-        }
-        
-        /* Ensure body doesn't keep backdrop classes */
-        body:not(.offcanvas-open) {
-            overflow: visible !important;
-            padding-right: 0 !important;
-        }
-          
-        /* Fix any remaining backdrop elements */
-        .modal-backdrop,
-        .offcanvas-backdrop.fade:not(.show) {
-            display: none !important;
+            transform: translateY(-15px) scale(0.98);
         }
 
-        /* Domain badge styling */
-        .domain-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            margin: 0.125rem;
-            display: inline-block;
-            transition: all 0.3s ease;
+        50% {
+            opacity: 0.7;
+            transform: translateY(-5px) scale(0.99);
         }
 
-        .domain-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        /* Order card styling */
-        .order-card {
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .order-card:hover {
-            /* transform: translateY(-2px); */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        /* Enhanced stat boxes hover effects */
-        .order-card .col-6 > div {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .order-card .col-6 > div:hover {
-            /* transform: translateY(-1px); */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-color: rgba(255, 255, 255, 0.3) !important;
-        }
-
-        /* Icon animations */
-        .order-card i {
-            transition: all 0.3s ease;
-        }
-
-        .order-card:hover i {
-            transform: scale(1.1);
-        }
-
-        /* Status badge enhancement */
-        .order-card .badge {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Button enhancement */
-        .order-card button {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .order-card button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-        }
-
-        /* Split content animations */
-        .collapse {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .collapse:not(.show) {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        .collapse.show {
+        100% {
             opacity: 1;
-            transform: translateY(0);
-            animation: splitFadeIn 0.4s ease-out;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Domain badge animations */
+    @keyframes domainFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.8);
         }
 
-        .collapse.collapsing {
-            opacity: 0.5;
-            transform: translateY(-5px);
+        50% {
+            opacity: 0.7;
+            transform: translateY(-2px) scale(0.95);
         }
 
-        /* Split fade-in animation */
-        @keyframes splitFadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-15px) scale(0.98);
-            }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 
-            50% {
-                opacity: 0.7;
-                transform: translateY(-5px) scale(0.99);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+    /* Toast animations */
+    @keyframes toastSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateX(100%) scale(0.8);
         }
 
-        /* Domain badge animations */
-        @keyframes domainFadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-10px) scale(0.8);
-            }
+        100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+    }
 
-            50% {
-                opacity: 0.7;
-                transform: translateY(-2px) scale(0.95);
-            }
+    /* Chevron rotation animation */
+    .transition-transform {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+    /* Enhanced hover effects for domain badges */
+    .domain-badge {
+        will-change: transform, box-shadow;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .domain-badge:hover {
+        transform: translateY(-3px) scale(1.08) !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+        filter: brightness(1.1);
+    }
+
+    /* Split container animations */
+    .split-container {
+        transition: all 0.3s ease;
+    }
+
+    .split-container.expanding {
+        animation: splitExpand 0.4s ease-out;
+    }
+
+    @keyframes splitExpand {
+        0% {
+            transform: scale(0.98);
         }
 
-        /* Toast animations */
-        @keyframes toastSlideIn {
-            0% {
-                opacity: 0;
-                transform: translateX(100%) scale(0.8);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
+        50% {
+            transform: scale(1.02);
         }
 
-        /* Chevron rotation animation */
-        .transition-transform {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        100% {
+            transform: scale(1);
         }
+    }
 
-        /* Enhanced hover effects for domain badges */
-        .domain-badge {
-            will-change: transform, box-shadow;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
+    /* Timer badge styling */
+    .timer-badge {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 11px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        letter-spacing: 0.5px;
+        min-width: 70px;
+        justify-content: center;
+        margin-left: 8px;
+    }
 
-        .domain-badge:hover {
-            transform: translateY(-3px) scale(1.08) !important;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
-            filter: brightness(1.1);
-        }
+    /* Timer states */
+    .timer-badge.positive {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-color: rgba(40, 167, 69, 0.3);
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    }
 
-        /* Split container animations */
-        .split-container {
-            transition: all 0.3s ease;
-        }
+    .timer-badge.negative {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+        color: white;
+        border-color: rgba(220, 53, 69, 0.3);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        animation: pulse-red 2s infinite;
+    }
 
-        .split-container.expanding {
-            animation: splitExpand 0.4s ease-out;
-        }
+    .timer-badge.completed {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        border-color: rgba(108, 117, 125, 0.3);
+        box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+    }
 
-        @keyframes splitExpand {
-            0% {
-                transform: scale(0.98);
-            }
-            50% {
-                transform: scale(1.02);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        /* Timer badge styling */
-        .timer-badge {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 11px;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-            letter-spacing: 0.5px;
-            min-width: 70px;
-            justify-content: center;
-            margin-left: 8px;
-        }
-
-        /* Timer states */
-        .timer-badge.positive {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            border-color: rgba(40, 167, 69, 0.3);
-            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
-        }
-
-        .timer-badge.negative {
-            background: linear-gradient(135deg, #dc3545, #fd7e14);
-            color: white;
-            border-color: rgba(220, 53, 69, 0.3);
+    /* Pulse animation for overdue timers */
+    @keyframes pulse-red {
+        0% {
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
-            animation: pulse-red 2s infinite;
         }
 
-        .timer-badge.completed {
-            background: linear-gradient(135deg, #6c757d, #495057);
-            color: white;
-            border-color: rgba(108, 117, 125, 0.3);
-            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+        50% {
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+            transform: scale(1.02);
         }
 
-        /* Pulse animation for overdue timers */
-        @keyframes pulse-red {
-            0% {
-                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
-            }
-            50% {
-                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
-                transform: scale(1.02);
-            }
-            100% {
-                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
-            }
+        100% {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
         }
+    }
 
-        /* Timer icon styling */
-        .timer-icon {
-            font-size: 10px;
-            margin-right: 2px;
-        }
+    /* Timer icon styling */
+    .timer-icon {
+        font-size: 10px;
+        margin-right: 2px;
+    }
 
-        /* Hover effects */
-        .timer-badge:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-    </style>
-    <<style>
-            .anim_card {
+    /* Hover effects */
+    .timer-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+</style>
+<<style>
+    .anim_card {
     background-color: var(--secondary-color);
     color: var(--light-color);
     border: 1px solid #99999962;
     border-radius: 8px;
     position: relative;
     opacity: 1;
-}
-.anim_card .order_detail {
+    }
+    .anim_card .order_detail {
     width: 100%;
     height: 14rem;
     overflow: hidden;
     border: 1px solid #86868654
-}
-.anim_card .order_detail .card_content {
+    }
+    .anim_card .order_detail .card_content {
     width: 100%;
     transition: .5s;
-}
+    }
 
-.card_content {
+    .card_content {
     transform: translateX(30%);
-}
+    }
 
-.anim_card:hover .order_detail .card_content {
+    .anim_card:hover .order_detail .card_content {
     opacity: .9;
     transform: translateX(0%);
-}
+    }
 
-.anim_card .flip_details {
+    .anim_card .flip_details {
     position: absolute;
     top: 0;
     left: 0;
@@ -364,47 +367,47 @@
     transform-origin: left;
     transform: perspective(2000px) rotateY(0deg);
     z-index: 2;
-}
+    }
 
-.anim_card .flip_details::after {
+    .anim_card .flip_details::after {
     content: "";
     position: absolute;
     top: 0;
     right: -5px;
     width: 0px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.602); 
+    background: rgba(255, 255, 255, 0.602);
     border-radius: 0 5px 5px 0;
     transition: width 0.3s ease;
-}
+    }
 
-.anim_card:hover .flip_details {
+    .anim_card:hover .flip_details {
     transform: perspective(2000px) rotateY(-91deg);
-    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px, 
-                rgba(255, 255, 255, 0.3) 0px 7px 13px -3px, 
-                rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
-pointer-events: none
-}
+    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
+    rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
+    rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
+    pointer-events: none
+    }
 
-.anim_card:hover .flip_details::after {
+    .anim_card:hover .flip_details::after {
     width: 102px;
     background-color: #9a9a9a81;
     pointer-events: none;
-}
+    }
 
-.anim_card .flip_details .center {
+    .anim_card .flip_details .center {
     padding: 20px;
     background-color: var(--secondary-color);
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-}
+    }
     </style>
-@endpush
+    @endpush
 
-@section('content')
+    @section('content')
     <section class="py-3">
-        
+
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -444,17 +447,21 @@ pointer-events: none
                             <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
                         </div>
                         <div class="col-12 text-end">
-                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                            <button type="button" id="resetFilters"
+                                class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                            <button type="submit" id="submitBtn"
+                                class="btn btn-primary btn-sm border-0 px-3">Search</button>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>  
+        </div>
         <!-- Grid Cards (Dynamic) -->
-        <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+        <div id="ordersContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
             <!-- Loading state -->
-            <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            <div id="loadingState"
+                style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -466,19 +473,22 @@ pointer-events: none
         <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
             <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
                 <span id="loadMoreText">Load More</span>
-                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                    style="display: none;">
                     <span class="visually-hidden">Loading...</span>
                 </span>
             </button>
             <div id="paginationInfo" class="mt-2 text-light small">
-                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalOrders">0</span> orders
+                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
+                    id="totalOrders">0</span> orders
             </div>
         </div>
 
-    </section> 
-    
+    </section>
+
     <!-- Order Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
+        aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
@@ -497,9 +507,9 @@ pointer-events: none
             </div>
         </div>
     </div>
-@endsection
+    @endsection
 
-@push('scripts')
+    @push('scripts')
     <script>
         let orders = [];
         let currentFilters = {};
@@ -1288,8 +1298,8 @@ pointer-events: none
 
 
 
-        // split timer calculator
-        function calculateSplitTime(split) {
+      // Split timer calculator
+function calculateSplitTime(split) {
   const order_panel = split.order_panel;
 
   if (!order_panel || !order_panel.timer_started_at) {
@@ -1298,41 +1308,32 @@ pointer-events: none
 
   const start = parseUTCDateTime(order_panel.timer_started_at);
   let end;
-  let statusLabel = ""; // Default empty
 
   if (order_panel.status === "completed" && order_panel.completed_at) {
     end = parseUTCDateTime(order_panel.completed_at);
-    statusLabel = "completed in";
   } else if (order_panel.status === "in-progress") {
     end = new Date(); // current time
-    statusLabel = "in-progress";
   } else {
-    // If status is neither "completed" nor "in-progress", return just zeroed time
-    return "00:00:00";
+    return "00:00:00"; // unknown status
   }
 
   const diffMs = end - start;
-  if (diffMs <= 0) return statusLabel ? `${statusLabel} 00:00:00` : "00:00:00";
+  if (diffMs <= 0) return "00:00:00";
 
   const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
   const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
   const pad = (n) => (n < 10 ? "0" + n : n);
-  const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
-
-  return statusLabel ? `${formattedTime}` : formattedTime;
+  return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 }
 
-
-        function parseUTCDateTime(dateStr) {
-        const [datePart, timePart] = dateStr.split(" ");
-        const [year, month, day] = datePart.split("-").map(Number);
-        const [hour, minute, second] = timePart.split(":").map(Number);
-        return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-        }
-
-        //timer calculator
+function parseUTCDateTime(dateStr) {
+  const [datePart, timePart] = dateStr.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+}
 
 
 
@@ -1929,4 +1930,4 @@ pointer-events: none
             setInterval(updateAllTimers, 1000); // Update every 1 second
         });
     </script>
-@endpush
+    @endpush

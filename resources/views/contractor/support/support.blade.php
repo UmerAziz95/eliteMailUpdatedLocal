@@ -56,7 +56,7 @@
     }
 
     /* h5 {
-                                font-size: 18px
+                                font-size: 18px;
                             } */
 
     .form-check {
@@ -133,7 +133,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Total Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 fs-2" id="totalTicketsCount">{{ $totalTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="totalTicketsCount">0</h1>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -156,7 +156,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Open Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 fs-2" id="pendingTicketsCount">{{ $pendingTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="openTicketsCount">0</h1>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -180,7 +180,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">In-Progress</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 fs-2" id="inProgressTicketsCount">{{ $inProgressTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="inProgressTicketsCount">0</h1>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -204,7 +204,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Closed Tickets</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h1 class="mb-0 fs-2" id="completedTicketsCount">{{ $completedTickets }}</h1>
+                                <h1 class="mb-0 fs-2" id="closedTickets">0</h1>
                                 <p class=" mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -432,9 +432,9 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-3">
                 <h5 class="card-title mb-0">Support Tickets</h5>
-                @if($unassignedTickets->count() > 0)
+                {{-- @if($unassignedTickets->count() > 0)
                 <span class="badge bg-info unassigned-badge">{{ $unassignedTickets->count() }} Unassigned</span>
-                @endif
+                @endif --}}
             </div>
         </div>
 
@@ -515,9 +515,9 @@
                     dataSrc: function(json) {
                         if (json.counters) {
                             $('#totalTicketsCount').text(json.counters.totalTickets);
-                            $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                            $('#openTicketsCount').text(json.counters.openTickets);
                             $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
-                            $('#completedTicketsCount').text(json.counters.completedTickets);
+                            $('#closedTicketsCount').text(json.counters.closedTickets);
                         }
                         return json.data;
                     },
