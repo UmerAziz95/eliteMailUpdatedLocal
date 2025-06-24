@@ -19,9 +19,9 @@ class Kernel extends ConsoleKernel
                  ->runInBackground()
                  ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
-        // Check panel capacity every 30 minutes
+        // Check panel capacity every 10 minutes
         $schedule->command('panels:check-capacity')
-                 ->everyThirtyMinutes()
+                 ->everyTenMinutes()
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));

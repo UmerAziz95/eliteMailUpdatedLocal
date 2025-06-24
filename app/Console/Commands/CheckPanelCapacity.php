@@ -6,10 +6,12 @@ use Illuminate\Console\Command;
 use App\Models\OrderTracking;
 use App\Models\Panel;
 use App\Models\User;
+use App\Models\Order;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Http\Controllers\Customer\OrderController;
 
 class CheckPanelCapacity extends Command
 {
@@ -120,6 +122,7 @@ class CheckPanelCapacity extends Command
       /**
      * Get available panel space
      */
+    
     private function getAvailablePanelSpace(): int
     {
         $panels = Panel::where('is_active', 1)
@@ -264,25 +267,61 @@ class CheckPanelCapacity extends Command
         $this->info("   Available space: {$availablePanelSpace} inboxes");
         
         foreach ($pendingOrders as $order) {
-            $totalProcessed++;
-            
+            $totalProcessed++;            
             if ($order->total_inboxes <= $remainingSpace) {
                 try {
-                    // Update status to inprogress
-                    $order->status = 'inprogress';
+                    // Get the actual Order model for panel split creation
+                    $orderModel = Order::find($order->order_id);
+                    
+                    if ($orderModel) {
+                        // Create panel splits before updating status
+                        $this->info("   🔄 Creating panel splits for Order ID {$order->order_id}...");
+                        
+                        try {
+                            $orderController = new OrderController();
+                            $orderController->pannelCreationAndOrderSplitOnPannels($orderModel);
+                            $this->info("   ✓ Panel splits created successfully for Order ID {$order->order_id}");
+                            
+                            // Log successful panel split creation
+                            Log::info('Panel splits created for order', [
+                                'order_id' => $order->order_id,
+                                'total_inboxes' => $order->total_inboxes,
+                                'created_at' => Carbon::now()
+                            ]);
+                            
+                        } catch (\Exception $splitException) {
+                            $this->error("   ✗ Failed to create panel splits for Order ID {$order->order_id}: " . $splitException->getMessage());
+                            Log::error('Failed to create panel splits', [
+                                'order_id' => $order->order_id,
+                                'error' => $splitException->getMessage(),
+                                'trace' => $splitException->getTraceAsString()
+                            ]);
+                            // Continue with status update even if split creation fails
+                        }
+                    } else {
+                        $this->warn("   ⚠ Order model not found for Order ID {$order->order_id} - skipping panel split creation");
+                        Log::warning('Order model not found for panel split creation', [
+                            'order_tracking_id' => $order->id,
+                            'order_id' => $order->order_id
+                        ]);
+                    }
+                    
+                    // Update status to completed
+                    $order->status = 'completed';
                     $order->cron_run_time = Carbon::now();
                     $order->save();
                     
                     $remainingSpace -= $order->total_inboxes;
                     $updatedCount++;
                     
-                    $this->info("   ✓ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Status updated to 'inprogress'");
+                    $this->info("   ✓ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Status updated to 'completed'");
                     
                 } catch (\Exception $e) {
                     $this->error("   ✗ Failed to update Order ID {$order->order_id}: " . $e->getMessage());
                     Log::error('Failed to update order_tracking status', [
                         'order_id' => $order->order_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                 }
             } else {
@@ -295,10 +334,9 @@ class CheckPanelCapacity extends Command
                 break;
             }
         }
-        
-        $this->info("📊 Order Status Update Summary:");
+          $this->info("📊 Order Status Update Summary:");
         $this->info("   Total orders processed: {$totalProcessed}");
-        $this->info("   Orders updated to 'inprogress': {$updatedCount}");
+        $this->info("   Orders updated to 'completed': {$updatedCount}");
         $this->info("   Remaining panel space: {$remainingSpace} inboxes");
         
         if ($updatedCount > 0) {
