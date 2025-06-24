@@ -511,7 +511,6 @@
 
     @push('scripts')
     <script>
-
         let orders = [];
         let currentFilters = {};
         let currentPage = 1;
