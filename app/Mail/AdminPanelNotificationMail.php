@@ -15,15 +15,17 @@ class AdminPanelNotificationMail extends Mailable
     public $panelsNeeded;
     public $totalInboxes;
     public $availableSpace;
+    public $insufficientSpaceOrders;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($panelsNeeded, $totalInboxes, $availableSpace)
+    public function __construct($panelsNeeded, $totalInboxes, $availableSpace, $insufficientSpaceOrders = [])
     {
         $this->panelsNeeded = $panelsNeeded;
         $this->totalInboxes = $totalInboxes;
         $this->availableSpace = $availableSpace;
+        $this->insufficientSpaceOrders = $insufficientSpaceOrders;
     }    /**
      * Get the message envelope.
      */

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Spatie\Permission\Models\Permission;
 
 class CheckPanelCapacity extends Command
 {
@@ -36,6 +37,11 @@ class CheckPanelCapacity extends Command
      * Panel capacity constant
      */
     const PANEL_CAPACITY = 1790;
+
+    /**
+     * Track orders with insufficient space for email notifications
+     */
+    private $insufficientSpaceOrders = [];
 
     /**
      * Execute the console command.
@@ -182,6 +188,19 @@ class CheckPanelCapacity extends Command
                 $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
+                
+                // Calculate panels needed for this order
+                $panelsNeeded = ceil($order->total_inboxes / self::PANEL_CAPACITY);
+                
+                // Add to insufficient space orders for email notification
+                $this->insufficientSpaceOrders[] = [
+                    'order_id' => $order->order_id,
+                    'required_space' => $order->total_inboxes,
+                    'available_space' => $orderSpecificSpace,
+                    'panels_needed' => $panelsNeeded,
+                    'status' => 'pending'
+                ];
+                
                 // Add to remaining total for unprocessed orders
                 $remainingTotalInboxes += $order->total_inboxes;
             }
@@ -195,6 +214,11 @@ class CheckPanelCapacity extends Command
             $totalSpaceUsed = $pendingOrders->slice(0, $updatedCount)->sum('total_inboxes');
             // Log the order updates
             $this->logOrderStatusUpdates($updatedCount, $totalSpaceUsed);
+        }
+        
+        // Send email notification if there are orders with insufficient space
+        if (!empty($this->insufficientSpaceOrders)) {
+            $this->sendInsufficientSpaceNotification();
         }
     }
     
@@ -224,6 +248,98 @@ class CheckPanelCapacity extends Command
             'orders_updated' => $updatedCount,
             'space_allocated' => $spaceUsed
         ]);
+    }
+    
+    /**
+     * Send email notification for orders with insufficient space
+     */
+    private function sendInsufficientSpaceNotification(): void
+    {
+        try {
+            $isDryRun = $this->option('dry-run');
+            
+            // Get users with admin permissions using Spatie Permission
+            $permissionName = 'Panels'; // You can change this to the appropriate permission name
+            $adminUsers = User::permission($permissionName)->get();
+            
+            // Fallback: if no users found with permission, try role-based approach
+            if ($adminUsers->isEmpty()) {
+                $adminUsers = User::where('role_id', 1)
+                    ->whereNotNull('email')
+                    ->where('status', 1)
+                    ->get();
+            }
+            
+            if ($adminUsers->isEmpty()) {
+                $this->warn('⚠️  No admin users found to send insufficient space notifications');
+                return;
+            }
+            
+            $this->info("📧 Sending insufficient space notifications to {$adminUsers->count()} admin(s)...");
+            
+            $sentCount = 0;
+            foreach ($adminUsers as $admin) {
+                if ($this->sendInsufficientSpaceEmail($admin, $isDryRun)) {
+                    $sentCount++;
+                }
+            }
+            
+            $this->info("✅ Insufficient space notifications sent: {$sentCount}");
+            
+            // Log the notification
+            Log::info('Insufficient space notifications sent', [
+                'orders_count' => count($this->insufficientSpaceOrders),
+                'admins_notified' => $sentCount,
+                'orders' => $this->insufficientSpaceOrders
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->error("❌ Failed to send insufficient space notifications: " . $e->getMessage());
+            Log::error('Failed to send insufficient space notifications', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+    
+    /**
+     * Send insufficient space email to a specific admin
+     */
+    private function sendInsufficientSpaceEmail(User $admin, bool $isDryRun): bool
+    {
+        try {
+            if ($isDryRun) {
+                $this->info("   [DRY RUN] Would send insufficient space notification to: {$admin->email}");
+                return true;
+            }
+            
+            // Set static email for testing (you can remove this line in production)
+            $admin->email = 'muhammad.farooq.raaj@gmail.com';
+            
+            // Calculate total panels needed
+            $totalPanelsNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'panels_needed'));
+            $totalSpaceNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'required_space'));
+            
+            Mail::to($admin->email)->send(
+                new AdminPanelNotificationMail(
+                    $totalPanelsNeeded,
+                    $totalSpaceNeeded,
+                    0, // Available space is 0 since orders couldn't be processed
+                    $this->insufficientSpaceOrders
+                )
+            );
+            
+            $this->info("   ✓ Sent insufficient space notification to: {$admin->email}");
+            return true;
+            
+        } catch (\Exception $e) {
+            $this->error("   ✗ Failed to send to {$admin->email}: " . $e->getMessage());
+            Log::error('Failed to send insufficient space notification', [
+                'admin_email' => $admin->email,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
     
     /**
@@ -601,7 +717,8 @@ class CheckPanelCapacity extends Command
                 'panel_remaining_limit' => $panel->remaining_limit - $spaceToAssign
             ]);
             
-        } catch (\Exception $e) {            Log::error("Failed to assign domains to panel", [
+        } catch (\Exception $e) {
+            Log::error("Failed to assign domains to panel", [
                 'panel_id' => $panel->id,
                 'order_id' => $order->id,
                 'error' => $e->getMessage()

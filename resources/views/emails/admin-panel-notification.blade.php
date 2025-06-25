@@ -45,6 +45,22 @@
             margin-top: 0;
             color: #007bff;
         }
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background-color: white;
+        }
+        .order-table th,
+        .order-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .order-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
         .footer {
             margin-top: 30px;
             text-align: center;
@@ -65,7 +81,7 @@
         <div class="stats">
             <h3>Current Statistics</h3>
             <p><strong>Total Pending Inboxes:</strong> {{ number_format($totalInboxes) }}</p>
-            <p><strong>Available Panel Space:</strong> {{ number_format($availableSpace) }}</p>
+            <!-- <p><strong>Available Panel Space:</strong> {{ number_format($availableSpace) }}</p> -->
             @if($panelsNeeded > 0)
                 <p><strong>Panels Needed:</strong> {{ $panelsNeeded }}</p>
                 <p><strong>Status:</strong> <span style="color: #dc3545; font-weight: bold;">⚠️ ACTION REQUIRED</span></p>
@@ -79,6 +95,34 @@
         @if($panelsNeeded > 0)
         <h3>Required Action</h3>
         <p>Please create <strong>{{ $panelsNeeded }} new panel(s)</strong> to ensure sufficient capacity for the pending inbox allocations.</p>
+        
+        @if(!empty($insufficientSpaceOrders))
+        <h4>Orders Requiring Immediate Attention:</h4>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Required Space (Inboxes)</th>
+                    <!-- <th>Available Space</th> -->
+                    <th>Panels Needed</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($insufficientSpaceOrders as $order)
+                <tr>
+                    <td>{{ $order['order_id'] }}</td>
+                    <td>{{ number_format($order['required_space']) }}</td>
+                    <!-- <td>{{ number_format($order['available_space']) }}</td> -->
+                    <td><strong>{{ $order['panels_needed'] }}</strong></td>
+                    <td><span style="color: #dc3545;">{{ strtoupper($order['status']) }}</span></td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        <p><strong>Summary:</strong> {{ count($insufficientSpaceOrders) }} orders cannot be processed due to insufficient panel space. Total {{ $panelsNeeded }} panels needed.</p>
+        @endif
+        
         @else
         <h3>No Action Required</h3>
         <p>Current panel capacity is sufficient to handle all pending inbox requests.</p>
