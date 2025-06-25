@@ -13,6 +13,61 @@
         display: inline-block;
         margin-right: 10px;
     }
+
+    .tour-btn {
+        position: absolute;
+        top: -3.5%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        height: 35px;
+        width: 210px;
+        border-radius: 0 0 100px 100px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+        transition: all ease .4s;
+        background-color: var(--second-primary);
+    }
+
+    .tour-btn::after {
+        content: 'Start Tour';
+        text-transform: uppercase;
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        /* font-size: 18px; */
+        font-weight: 900;
+        color: #fff;
+        transform: translate(-50%, -50%);
+    }
+
+    .tour-btn:hover {
+        top: 0;
+    }
+
+    .tour-btn:hover .fa-arrow-down {
+
+    }
+
+    .tour-btn .fa-arrow-down {
+        animation: wobble 1s infinite linear alternate-reverse;
+        position: absolute;
+        bottom: -45%;
+        left: 48%;
+        transform: translate(-50%, 0);
+        rotate: 180deg
+    }
+
+    @keyframes wobble {
+        from {
+            transform: translateY(0);
+        }
+        to {
+            transform: translateY(4px);
+        }
+    }
+
 </style>
 
 <header class="d-flex align-items-center justify-content-between justify-content-xl-end rounded-3">
@@ -20,6 +75,7 @@
         aria-controls="offcanvasExample">
         <i class="fa-solid fa-bars"></i>
     </div>
+
     {{-- <button type="button" class="bg-transparent border-0 d-flex align-items-center gap-3" data-bs-toggle="modal"
         data-bs-target="#search">
         <i class="fa-solid fa-magnifying-glass fs-5"></i> Search
@@ -27,18 +83,18 @@
 
     <div class="d-flex align-items-center gap-3">
 
-        <div class="d-flex gap-2 align-items-center">
-            <button class="tour-btn btn btn-primary btn-sm border-0 animate-gradient px-3" id="start-tour">Want To Start Tour</button>
+        <button class="tour-btn border-0 animate-gradient pb-1" id="start-tour">
+            <i class="fa-solid fa-arrow-down text-white" style="font-size: 16px"></i>
+        </button>
 
         <div class="d-none d-md-block">
             <a href="{{ url('customer/pricing') }}"
-                class="btn btn-primary animate-gradient btn-sm me-2 d-flex align-items-center gap-1"><i
+                class="btn btn-primary animate-gradient btn-sm d-flex align-items-center gap-1"><i
                     class="ti ti-building-store"></i>
                 Buy More Inboxes</a>
         </div>
-        </div>
 
-        
+
         {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-moon-stars fs-5"></i>
@@ -50,7 +106,6 @@
                             class="ti ti-moon-stars fs-6"></i> Dark</a></li>
             </ul>
         </div> --}}
-
 
 
         <div class="dropdown notification-dropdown">
@@ -105,7 +160,7 @@
         @endif
 
         <div>
-            <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+            <h6 class="mb-0 text-capitalize">{{ $user->name ?? 'N/A' }}</h6>
             <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
         </div>
     </div>

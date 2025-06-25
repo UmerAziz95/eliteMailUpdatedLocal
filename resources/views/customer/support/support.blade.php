@@ -4,6 +4,12 @@
 
 @push('styles')
 <style>
+  #description-editor .ql-editor.ql-blank::before {
+    color: white;       /* Change to any color you want */
+    opacity: 1;         /* Ensure full visibility */
+  }
+</style>
+<style>
     .form-check {
         padding-left: 0 !important
     }
@@ -250,7 +256,7 @@
 @endpush
 
 @section('content')
-<section class="py-3">
+<section class="py-3" data-page="support">
 
     <div class="counters mb-4">
         <div class="card p-3 counter_1">
@@ -259,7 +265,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">Total Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="pendingTicketsCount">{{ $totalTickets }}</h4>
+                            <h4 class="mb-0" id="totalTicketsCount">0</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -282,7 +288,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">Open Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="pendingTicketsCount">{{ $pendingTickets }}</h4>
+                            <h4 class="mb-0" id="openTickets">0</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -306,7 +312,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">In-Progress Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="pendingTicketsCount">{{ $inProgressTickets }}</h4>
+                            <h4 class="mb-0" id="inProgressTicketsCount">0</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -329,7 +335,7 @@
                     <div class="content-left">
                         <h6 class="text-heading">Closed Tickets</h6>
                         <div class="d-flex align-items-center my-1">
-                            <h4 class="mb-0" id="completedTicketsCount">{{ $completedTickets }}</h4>
+                            <h4 class="mb-0" id="closedTicketsCount">0</h4>
                             <p class="mb-0"></p>
                         </div>
                         <small class="mb-0"></small>
@@ -422,6 +428,7 @@
         </div>
     </div> --}}
 
+
     <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
@@ -485,6 +492,8 @@
             </div>
         </div>
     </div>
+
+
     <div class="card p-3">
         <div class="table-responsive">
             <table id="ticketsTable" class=" w-100">
@@ -646,9 +655,9 @@ $(document).ready(function() {
                 // Update counters when data is received
                 if (json.counters) {
                     $('#totalTicketsCount').text(json.counters.totalTickets);
-                    $('#pendingTicketsCount').text(json.counters.pendingTickets);
+                    $('#openTickets').text(json.counters.openTickets);
                     $('#inProgressTicketsCount').text(json.counters.inProgressTickets);
-                    $('#completedTicketsCount').text(json.counters.completedTickets);
+                    $('#closedTicketsCount').text(json.counters.closedTickets);
                 }
                 return json.data;
             }
@@ -675,7 +684,10 @@ $(document).ready(function() {
             { data: 'action', name: 'action', orderable: false, searchable: false }
         ]
     });
-    let createTicketButton = `<button class="m-btn py-2 px-4 rounded-2 border-0" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+
+    
+    let createTicketButton = `
+            <button class="m-btn py-2 px-4 rounded-2 border-0 create-ticket" data-bs-toggle="modal" data-bs-target="#createTicketModal">
                 <i class="fa-solid fa-plus me-2"></i>Create New Ticket
             </button>`;
     // append the button to the top of the table filter

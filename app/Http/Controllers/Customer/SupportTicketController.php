@@ -23,17 +23,17 @@ class SupportTicketController extends Controller
             ->get();
             
         $totalTickets = $tickets->count();
-        $pendingTickets = $tickets->where('status', 'open')->count();
+        $openTickets = $tickets->where('status', 'open')->count();
        
         $inProgressTickets = $tickets->where('status', 'in_progress')->count();
       
-        $completedTickets = $tickets->where('status', 'closed')->count();
+        $closedTickets = $tickets->where('status', 'closed')->count();
         
         return view('customer.support.support', compact(
             'totalTickets', 
-            'pendingTickets', 
+            'openTickets', 
             'inProgressTickets', 
-            'completedTickets'
+            'closedTickets'
         ));
     }
 
@@ -240,9 +240,9 @@ class SupportTicketController extends Controller
         // Get updated counters
         $updatedCounts = [
             'totalTickets' => SupportTicket::where('user_id', Auth::id())->count(),
-            'pendingTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'open')->count(),
+            'openTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'open')->count(),
             'inProgressTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'in_progress')->count(),
-            'completedTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'closed')->count()
+            'closedTickets' => SupportTicket::where('user_id', Auth::id())->where('status', 'closed')->count()
         ];
 
         return DataTables::of($tickets)

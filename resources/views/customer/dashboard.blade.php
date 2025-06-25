@@ -153,10 +153,10 @@
         }
 
         /* .draft-alert:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-                            transition: all 0.3s ease;
-                        } */
+                                    transform: translateY(-2px);
+                                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                                    transition: all 0.3s ease;
+                                } */
 
         .draft-alert .alert-icon {
             animation: bounce 1s infinite;
@@ -256,8 +256,8 @@
         }
 
         /* h6 {
-                        font-family: "Montserrat"
-                    } */
+                                font-family: "Montserrat"
+                            } */
     </style>
 @endpush
 
@@ -267,8 +267,8 @@
         <div class="alert alert-warning alert-dismissible fade show draft-alert py-2 rounded-1" role="alert"
             style="background-color: rgba(255, 166, 0, 0.414); color: #fff; border: 2px solid orange;">
             <i class="ti ti-alert-triangle me-2 alert-icon"></i>
-            <strong>Draft Orders Alert:</strong> You have {{ $draftOrders }} order{{ $draftOrders > 1 ? 's' : '' }}
-            available in drafts.
+            <strong>Draft Order{{ $draftOrders != 1 ? 's' : '' }} Alert:</strong>
+            You have {{ $draftOrders }} draft order{{ $draftOrders != 1 ? 's' : '' }}.
             <a href="{{ route('customer.orders') }}" class="text-warning alert-link">View your orders</a> to complete them.
             <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
                 aria-label="Close"></button>
@@ -276,16 +276,19 @@
     @endif
 
 
-    <section class="py-0" data-page="dashboard" >
+
+
+    <section class="py-0" data-page="dashboard">
 
         <h4>Dashboard</h4>
         <p>Welcome to your dashbaord. Here you can see your stats.</p>
 
-        <div class="reward p-3 rounded-2 mb-4" style="background-color: #4a3aff36; border: 1px solid var(--second-primary);">
+        <div class="reward p-3 rounded-2 mb-4"
+            style="background-color: #4a3aff36; border: 1px solid var(--second-primary);">
             <h5>
-                Earn Rewards with Project Inboxes!
+                Earn Rewards with Project Inbox!
             </h5>
-            <p>Signup for a affiliate program today and start earning for every referral.</p>
+            <p>Signup for our affiliate program today and earn monthly recurring revenue for LIFETIME of your referrals!</p>
             <a href="https://64gytyjw1wv.typeform.com/to/RekicwnC">
                 <button class="btn btn-primary btn-sm rounded-1 border-0 px-3">Join Now!</button>
             </a>
@@ -586,7 +589,7 @@
                         <table id="ordersTable" class=" w-100">
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
+                                    <th style="min-width: 1.4rem !important">ID</th>
                                     <th>Date</th>
                                     <th>Plan</th>
                                     <th>Domain Url</th>
@@ -941,7 +944,7 @@
                             return `
                                 <div class="d-flex gap-1 align-items-center opacity-50">
                                     <i class="ti ti-calendar-month"></i>
-                                    <span>${data}</span>    
+                                    <span class="text-nowrap">${data}</span>    
                                 </div>
                             `;
                         }
@@ -1174,6 +1177,5 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
-
     </script>
 @endpush

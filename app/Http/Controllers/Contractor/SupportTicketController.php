@@ -25,17 +25,18 @@ class SupportTicketController extends Controller
             ->whereNull('assigned_to')
             ->get();
         
-        $totalTickets = $assignedTickets->count();
-        $pendingTickets = $assignedTickets->where('status', 'open')->count();
+        $totalTickets = $assignedTickets ->count();
+        $openTickets = $assignedTickets->where('status', 'open')->count();
         $inProgressTickets = $assignedTickets->where('status', 'in_progress')->count();
-        $completedTickets = $assignedTickets->where('status', 'closed')->count();
+        $closedTickets = $assignedTickets->where('status', 'closed')->count();
         
         return view('contractor.support.support', compact(
             'totalTickets', 
-            'pendingTickets', 
+            'openTickets', 
             'inProgressTickets', 
-            'completedTickets',
-            'unassignedTickets'
+            'closedTickets',
+            'unassignedTickets',
+           
         ));
     }
 
@@ -207,16 +208,15 @@ class SupportTicketController extends Controller
             ->where('assigned_to', Auth::id());
             
         $counters = [
-            'totalTickets' => $assignedTickets->count(),
-            'pendingTickets' => (clone $assignedTickets)->where('status', 'open')->count(),
-            'inProgressTickets' => (clone $assignedTickets)->where('status', 'in_progress')->count(),
-            'completedTickets' => (clone $assignedTickets)->where('status', 'closed')->count(),
+            'totalTickets' => SupportTicket::where('assigned_to', Auth::id())->count(),
+            'openTickets' => SupportTicket::where('status', 'open')->where('assigned_to', Auth::id())->count(),
+            'inProgressTickets' => SupportTicket::where('status', 'in_progress') ->where('assigned_to', Auth::id())->count(),
+            'closedTickets' => SupportTicket::where('status', 'closed') ->where('assigned_to', Auth::id())->count()
         ];
 
         $tickets = SupportTicket::with(['user', 'order'])
             ->where(function($query) {
-                $query->where('assigned_to', Auth::id())
-                      ->orWhereNull('assigned_to');
+                $query->where('assigned_to', Auth::id());
             })
             ->when(Auth::user()->role_id == 4, function($query) {
                 // For contractors, only show order-related tickets

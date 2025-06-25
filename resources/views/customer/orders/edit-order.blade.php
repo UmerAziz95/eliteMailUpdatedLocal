@@ -117,17 +117,17 @@
     <input type="hidden" name="order_id" value="{{ isset($order) ? $order->id : '' }}">
     <input type="hidden" name="edit_id" value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
 
-    <section class="py-3 overflow-hidden">
+    <section class="py-3 overflow-hidden" data-page="edit-order">
         <div class="card p-3">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="mb-0">Domains & hosting platform</h5>
-                <button type="button" class="m-btn py-1 px-3 rounded-2 border-0" id="orderImportBtn">
+                <button type="button" class="m-btn py-1 px-3 rounded-2 border-0 import-btn" id="orderImportBtn">
                     <i class="fa-solid fa-file-import"></i>
                     Import Order
                 </button>
             </div>
 
-            <div class="mb-3">
+            <div class="domain-forwarding mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
                 <input type="text" id="forwarding" name="forwarding_url" class="form-control" value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}" required />
                 <div class="invalid-feedback" id="forwarding-error"></div>
@@ -135,7 +135,7 @@
                     send us – could be your main website, blog post, etc.)</p>
             </div>
 
-            <div class="mb-3">
+            <div class="domain-hosting mb-3">
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
@@ -168,11 +168,11 @@
                 <div class="invalid-feedback" id="other-platform-error"></div>
             </div> -->
 
-            <div id="platform-fields-container">
+            <div class="platform" id="platform-fields-container">
                 <!-- Dynamic platform fields will be inserted here -->
             </div>
 
-            <div class="mb-3">
+            <div class="domains mb-3">
                 <label for="domains">
                     Domains * 
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
@@ -192,7 +192,7 @@
             <div class="row g-3 mt-4">
                 <h5 class="mb-2">Sending Platforms/ Sequencer</h5>
 
-                <div class="col-md-12">
+                <div class="sending-platform col-md-12">
                     <label>Sending Platform</label>
                     <select id="sending_platform" name="sending_platform" class="form-control" required>
                         @foreach($sendingPlatforms as $platform)
@@ -207,7 +207,7 @@
                         you use to send emails)</p>
                 </div>
 
-                <div id="sending-platform-fields">
+                <div class="sending-platform-fields" id="sending-platform-fields">
                     <!-- Dynamic sending platform fields will be inserted here -->
                 </div>
 
@@ -215,7 +215,7 @@
 
                 
 
-                <div class="col-md-6">
+                <div class="inboxes-per-domain col-md-6">
                     <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
                         <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 1 ? 'selected' : '' }}>1</option>
@@ -224,14 +224,15 @@
                     </select>
                     <p class="note">(How many email accounts per domain - the maximum is 3)</p>
                 </div>
-                <div class="col-md-6">
+                 
+                <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
                     <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required 
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
                 <!-- Remaining Inboxes Progress Bar -->
-                <div class="col-md-12">
+                <div class="col-md-12 remaining">
                     <div class="mb-3">
                         <label>Remaining Inboxes</label>
                         <div class="progress" style="height: 25px; background-color: #2a2a2a;">
@@ -245,14 +246,14 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 first-name">
                     <label>First Name</label>
                     <input type="text" name="first_name" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->first_name : '' }}" required>
                     <div class="invalid-feedback" id="first_name-error"></div>
                     <p class="note">(First name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 last-name">
                     <label>Last Name</label>
                     <input type="text" name="last_name" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->last_name : '' }}" required>
                     <div class="invalid-feedback" id="last_name-error"></div>
@@ -273,7 +274,7 @@
                 </div>
 
                 <!-- Dynamic prefix variants container -->
-                <div id="prefix-variants-container" class="row g-3 mt-4">
+                <div id="prefix-variants-container" class="row g-3 mt-4 prefix-variants">
                     <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
@@ -286,13 +287,13 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6" style="display: none;">
+                <div class="col-md-6 profile-picture" style="display: none;">
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 email-password">
                     <label>Email Persona - Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="email_persona_password" name="email_persona_password" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}" required>
@@ -301,13 +302,13 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 email-picture-link">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 master-inbox">
                     <label>Centralized master inbox email</label>
                     <input type="email" name="master_inbox_email" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
@@ -349,7 +350,7 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0">
+                    <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0 purchase-btn">
                         <i class="fa-solid fa-cart-shopping"></i>
                         Purchase Accounts
                     </button>

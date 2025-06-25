@@ -329,7 +329,7 @@ textarea:focus {
 }
 
 .animate-gradient {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.452), rgba(255, 255, 255, 0));
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.452) , rgba(255, 255, 255, 0));
     background-size: 200% 100%;
     background-position: -100% 0;
     animation: shine 3s infinite linear;
@@ -351,11 +351,11 @@ textarea:focus {
 
 @keyframes shine {
     0% {
-        background-position: -100% 0;
+        background-position: -100%;
     }
 
     100% {
-        background-position: 100% 0;
+        background-position: 100%;
     }
 }
 
@@ -423,6 +423,8 @@ footer {
 
 .shepherd-text {
     background-color: var(--secondary-color);
+    /* background-color: #007bff39; */
+    backdrop-filter: blur(10px);
     color: var(--light-color);
 }
 
@@ -854,6 +856,12 @@ thead {
 .offcanvas {
     background-color: var(--secondary-color);
     color: var(--light-color);
+    border: 1px solid #94949463 !important;
+}
+
+.offcanvas-header {
+    background-color: var(--filter-color);
+    border-bottom: 2px solid var(--second-primary);
 }
 
 .modal-close-btn {

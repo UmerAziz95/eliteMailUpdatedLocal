@@ -475,14 +475,18 @@ class PlanController extends Controller
                     ]
                 ]);
 
-                // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderCreatedMail(
+                 //to super admin
+      
+               $superAdmins = User::where('role_id', 1)->get(); // Only super admins (role_id = 1)
+
+                foreach ($superAdmins as $superAdmin) {
+                    Mail::to($superAdmin->email)->queue(new OrderCreatedMail(
                         $order,
                         $user,
                         true
                     ));
-                
+                }
+
                 
 
             } catch (\Exception $e) {

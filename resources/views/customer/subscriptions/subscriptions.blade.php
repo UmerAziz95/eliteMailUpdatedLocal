@@ -44,7 +44,7 @@
 @endpush
 
 @section('content')
-<section class="py-3">
+<section class="py-3" data-page="subscription">
     <div class="row mb-4">
         <div class="counters col-xl-6">
             <div class="card p-3 counter_1">
