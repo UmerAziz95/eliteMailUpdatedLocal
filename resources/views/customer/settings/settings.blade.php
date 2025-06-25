@@ -131,9 +131,12 @@
                     <div class="user-avatar-section">
                         <div class="d-flex align-items-center flex-column">
                             <div class="position-relative">
-                                <img class="img-fluid rounded mb-4" id="profile-image"
-                                    src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                                    height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                <div>
+                                    <img class="img-fluid rounded mb-4" id="profile-image"
+                                        src="{{ Auth::user()->profile_image ? asset('https://cdn-icons-png.flaticon.com/128/456/456283.png' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/456/456283.png' }}"
+                                        height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                </div>
+
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
                                         <i class="ti ti-pencil"></i>

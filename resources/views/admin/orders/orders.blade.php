@@ -250,6 +250,7 @@
 @endpush
 
 @section('content')
+
 <section class="py-3">
 
     <div class="row gy-3 mb-4">
