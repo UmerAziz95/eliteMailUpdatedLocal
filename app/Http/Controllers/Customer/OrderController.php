@@ -106,6 +106,8 @@ class OrderController extends Controller
             'draftOrders'
         ));
     }
+
+    
     // edit
     public function edit($id)
     {
@@ -354,31 +356,37 @@ class OrderController extends Controller
 
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) use ($request) {
-                    if ($request->has('for_import') && $request->for_import) {
-                        // Import action button
-                        return '<button class="btn btn-sm btn-primary import-order-btn" data-order-id="' . $order->id . '" title="Import this order data">
-                                    <i class="fa-solid fa-file-import"></i> Import
-                                </button>';
-                    } else {
-                        // Check if order has rejected order panels for conditional button
-                        $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
-                        // Default action buttons
-                        return '<div class="dropdown">
-                                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
-                                        aria-expanded="false">
-                                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
-                                            <i class="fa-solid fa-eye"></i> View</a></li>
-                                        ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ? '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
-                                            <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') . '
-                                        ' . ($hasRejectedPanels ? '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
-                                            <i class="fa-solid fa-tools"></i> Fixed Domains Split</a></li>' : '') . '
-                                    </ul>
-                                </div>';
-                    }
-                })
+    if ($request->has('for_import') && $request->for_import) {
+        return '<button class="btn btn-sm btn-primary import-order-btn" data-order-id="' . $order->id . '" title="Import this order data">
+                    <i class="fa-solid fa-file-import"></i> Import
+                </button>';
+    } else {
+        $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
+        return '<div class="dropdown">
+                    <button class="p-0 bg-transparent border-0 dropdown-toggle position-relative"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                        <span id="tooltip-anchor-' . $order->id . '"
+                              class="position-absolute top-0 start-100 translate-middle-y"
+                              data-bs-toggle="tooltip"
+                              title="Order Actions"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
+                            <i class="fa-solid fa-eye"></i> View</a></li>' .
+                        (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ?
+                            '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') .
+                        ($hasRejectedPanels ?
+                            '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
+                                <i class="fa-solid fa-tools"></i> Fixed Domains Split</a></li>' : '') .
+                    '</ul>
+                </div>';
+                }
+            })
+
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
                 })

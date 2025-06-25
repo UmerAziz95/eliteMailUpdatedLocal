@@ -442,150 +442,125 @@
         window.location.href = `{{ url('/customer/orders/${id}/view') }}`;
     }
 
-    function initDataTable(planId = '') {
-        console.log('Initializing DataTable for planId:', planId);
-        var tableId = planId ? `#myTable-${planId}` : '#myTable';
-        console.log('Looking for table with selector:', tableId);
-        var $table = $(tableId);
-        if (!$table.length) {
-            console.error('Table not found with selector:', tableId);
-            return null;
-        }
-        console.log('Found table:', $table);
+function initDataTable(planId = '') {
+    const tableId = planId ? `#myTable-${planId}` : '#myTable';
+    const $table = $(tableId);
 
-        try {
-            var table = $table.DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: {
-                    details: {
-                        display: $.fn.dataTable.Responsive.display.modal({
-                            header: function(row) {
-                                return 'Order Details';
-                            }
-                        }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+    if (!$table.length) return;
+
+    try {
+        const table = $table.DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function (row) {
+                            return 'Order Details';
+                        }
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                }
+            },
+            autoWidth: false,
+            dom: '<"top"f>rt<"bottom"lip><"clear">',
+            columnDefs: [
+                { targets: 0 },
+                { targets: 1 },
+                ...(planId ? [] : [{ targets: 2 }]),
+                { targets: planId ? 2 : 3 },
+                { targets: planId ? 3 : 4 },
+                { targets: planId ? 4 : 5 },
+                { targets: planId ? 5 : 6 }
+            ],
+            ajax: {
+                url: "{{ route('customer.orders.data') }}",
+                type: "GET",
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                },
+                data: function (d) {
+                    d.plan_id = planId || '';
+                    d.orderId = $('#orderIdFilter').val();
+                    d.status = $('#statusFilter').val();
+                    d.email = $('#emailFilter').val();
+                    d.domain = $('#domainFilter').val();
+                    d.totalInboxes = $('#totalInboxesFilter').val();
+                    d.startDate = $('#startDate').val();
+                    d.endDate = $('#endDate').val();
+                    return d;
+                }
+            },
+            columns: [
+                { data: 'id', name: 'orders.id' },
+                {
+                    data: 'created_at',
+                    name: 'orders.created_at',
+                    render: function (data) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center opacity-50">
+                                <i class="ti ti-calendar-month"></i>
+                                <span>${data}</span>
+                            </div>
+                        `;
                     }
                 },
-                autoWidth: false,
-                dom: '<"top"f>rt<"bottom"lip><"clear">',
-                columnDefs: [{
-                        // width: '10%',
-                        targets: 0
-                    }, // ID 
-                    {
-                        // width: '15%',
-                        targets: 1
-                    }, // Date
-                    ...(planId ? [] : [{
-                        // width: '15%',
-                        targets: 2
-                    }]), // Plan (only for All Orders) 
-                    {
-                        // width: '20%',
-                        targets: planId ? 2 : 3
-                    }, // Domain URL
-                    {
-                        // width: '15%',
-                        targets: planId ? 3 : 4
-                    }, // Total Inboxes 
-                    {
-                        // width: '15%',
-                        targets: planId ? 4 : 5
-                    }, // Status
-                    {
-                        // width: '10%',
-                        targets: planId ? 5 : 6
-                    } // Actions
-                ],
-                ajax: {
-                    url: "{{ route('customer.orders.data') }}",
-                    type: "GET",
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'Accept': 'application/json'
-                    },
-                    data: function(d) {
-                        // Make sure planId is properly set in the request
-                        d.plan_id = planId || '';
-
-                        // Add other parameters
-                        d.orderId = $('#orderIdFilter').val();
-                        d.status = $('#statusFilter').val();
-                        d.email = $('#emailFilter').val();
-                        d.domain = $('#domainFilter').val();
-                        d.totalInboxes = $('#totalInboxesFilter').val();
-                        d.startDate = $('#startDate').val();
-                        d.endDate = $('#endDate').val();
-
-                        console.log('DataTables request parameters:', d);
-                        return d;
+                ...(planId ? [] : [{
+                    data: 'plan_name',
+                    name: 'plans.name',
+                    render: function (data) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center">
+                                <img src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 15px" alt="">
+                                <span>${data}</span>
+                            </div>
+                        `;
                     }
-                },
-                columns: [{
-                        data: 'id',
-                        name: 'orders.id'
-                    },
-                    {
-                        data: 'created_at',
-                        name: 'orders.created_at',
-                        render: function(data, type, row) {
-                            return `
-                                <div class="d-flex gap-1 align-items-center opacity-50">
-                                    <i class="ti ti-calendar-month"></i>
-                                    <span>${data}</span>    
-                                </div>
-                            `;
-                        }
-                    },
-                    ...(planId ? [] : [{
-                        data: 'plan_name',
-                        name: 'plans.name',
-                        render: function(data, type, row) {
-                            return `
-                                <div class="d-flex gap-1 align-items-center">
-                                    <img data-bs-toggle="tooltip" data-bs-title="Disabled tooltip" src="https://cdn-icons-png.flaticon.com/128/11890/11890970.png" style="width: 15px" alt="">
-                                    <span>${data}</span>    
-                                </div>
-                            `;
-                        }
-                    }]),
-                    {
-                        data: 'domain_forwarding_url',
-                        name: 'domain_forwarding_url'
-                    },
-                    {
-                        data: 'total_inboxes',
-                        name: 'total_inboxes'
-                    },
-                    {
-                        data: 'status',
-                        name: 'orders.status'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false,
-                    },
-                ],
-                order: [
-                    [1, 'desc']
-                ]
-            });
+                }]),
+                { data: 'domain_forwarding_url', name: 'domain_forwarding_url' },
+                { data: 'total_inboxes', name: 'total_inboxes' },
+                { data: 'status', name: 'orders.status' },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }
+            ],
+            order: [[1, 'desc']],
+            createdRow: function (row, data) {
+                const $tooltipAnchor = $(row).find(`#tooltip-anchor-${data.id}`);
+                if ($tooltipAnchor.length) {
+                    const tooltipInstance = new bootstrap.Tooltip($tooltipAnchor[0], {
+                        trigger: 'manual',
+                        placement: 'right'
+                    });
 
-            return table;
-        } catch (error) {
-            console.error('Error initializing DataTable:', error);
-            toastr.error('Error initializing table. Please refresh the page.');
-        }
+                    $(row).on('mouseenter', () => tooltipInstance.show());
+                    $(row).on('mouseleave', () => tooltipInstance.hide());
+                }
+            },
+            drawCallback: function () {
+                $('[data-bs-toggle="tooltip"]').tooltip(); // Bootstrap native init
+            }
+        });
+
+        return table;
+
+    } catch (error) {
+        console.error('Error initializing DataTable:', error);
+        toastr.error('Error initializing table. Please refresh the page.');
     }
+}
+
+
+
     
 
     $(document).ready(function() {
         try {
-            console.log('Document ready, initializing tables');
-
+        
             // Initialize DataTables object to store all table instances
             window.orderTables = {};
 

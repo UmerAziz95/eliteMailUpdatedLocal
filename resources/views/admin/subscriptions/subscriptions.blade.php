@@ -97,7 +97,7 @@
                 <!-- {{-- //card body --}} -->
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
-                        <h6 class="text-heading">Cancel Subscriptions</h6>
+                        <h6 class="text-heading">Cancelled Subscriptions</h6>
                         <div class="d-flex align-items-center my-1">
                             <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                             <p class="text-success mb-0"></p>
