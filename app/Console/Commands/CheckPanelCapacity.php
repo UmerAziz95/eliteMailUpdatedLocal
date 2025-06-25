@@ -55,7 +55,7 @@ class CheckPanelCapacity extends Command
         
         try {            
             // Update order status to completed where space is available
-            $this->updateOrderStatusForAvailableSpace();
+            // $this->updateOrderStatusForAvailableSpace();
             
         } catch (\Exception $e) {
             $this->error("❌ Error occurred: " . $e->getMessage());
