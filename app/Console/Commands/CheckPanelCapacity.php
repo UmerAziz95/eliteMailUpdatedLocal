@@ -83,102 +83,6 @@ class CheckPanelCapacity extends Command
         
         return $totalAvailableSpace;
     }
-    /**
-     * Get admin users with role_id = 1
-     */
-    private function getAdminUsers()
-    {
-        $users = User::where('role_id', 1)
-            ->whereNotNull('email')
-            ->where('status', 1)
-            ->get();
-            
-        $this->info("👥 Found {$users->count()} admin user(s) with role_id = 1:");
-        foreach ($users as $user) {
-            // set static email
-            $user->email = 'muhammad.farooq.raaj@gmail.com';
-            // Display user info
-            $this->info("   - {$user->name} ({$user->email})");
-        }
-        
-        return $users;
-    }
-    
-    /**
-     * Check if notification has been sent today
-     */
-    private function hasNotificationBeenSentToday(int $panelsNeeded): bool
-    {
-        // Check logs for today's notifications
-        $today = Carbon::today();
-        $logFile = storage_path('logs/panel-notifications.log');
-        
-        if (!file_exists($logFile)) {
-            return false;
-        }
-        
-        $todayString = $today->format('Y-m-d');
-        $logContent = file_get_contents($logFile);
-        
-        return strpos($logContent, "[$todayString]") !== false;
-    }
-    
-    /**
-     * Send notification to admin
-     */
-    private function sendNotificationToAdmin(User $admin, int $panelsNeeded, int $totalInboxes, int $availableSpace, bool $isDryRun): bool
-    {
-        try {
-            if ($isDryRun) {
-                $this->info("   [DRY RUN] Would send to: {$admin->email}");
-                return true;
-            }
-            
-            Mail::to($admin->email)->send(
-                new AdminPanelNotificationMail($panelsNeeded, $totalInboxes, $availableSpace)
-            );
-            
-            $this->info("   ✓ Sent to: {$admin->email}");
-            return true;
-            
-        } catch (\Exception $e) {
-            $this->error("   ✗ Failed to send to {$admin->email}: " . $e->getMessage());
-            Log::error('Failed to send panel notification', [
-                'admin_email' => $admin->email,
-                'error' => $e->getMessage()
-            ]);
-            return false;
-        }
-    }
-    
-    /**
-     * Log notification sent
-     */
-    private function logNotificationSent(int $panelsNeeded, int $totalInboxes, int $availableSpace): void
-    {
-        $logFile = storage_path('logs/panel-notifications.log');
-        $logDir = dirname($logFile);
-        
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-          $logEntry = sprintf(
-            "[%s] Panel status report sent - Panels needed: %d, Total inboxes: %d, Available space: %d\n",
-            Carbon::now()->format('Y-m-d H:i:s'),
-            $panelsNeeded,
-            $totalInboxes,
-            $availableSpace
-        );
-        
-        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
-        
-        // Also log to Laravel log
-        Log::info('Panel capacity status report sent', [
-            'panels_needed' => $panelsNeeded,
-            'total_inboxes' => $totalInboxes,
-            'available_space' => $availableSpace
-        ]);
-    }
     
     /**
      * Update order_tracking status to 'inprogress' for orders that have available space on panels
@@ -294,45 +198,7 @@ class CheckPanelCapacity extends Command
         if ($updatedCount > 0) {
             // Log the order updates
             $this->logOrderStatusUpdates($updatedCount, $availablePanelSpace - $remainingSpace);
-        }
-        
-        $this->sendAdminNotificationAfterProcessing($remainingTotalInboxes, $remainingSpace);
-    }
-      /**
-     * Send admin notification after processing orders
-     */
-    private function sendAdminNotificationAfterProcessing(int $totalInboxesNeeded, int $availablePanelSpace): void
-    {
-        // Calculate how many panels we need
-        $shortfall = max(0, $totalInboxesNeeded - $availablePanelSpace);
-        $panelsNeeded = $shortfall > 0 ? ceil($shortfall / self::PANEL_CAPACITY) : 0;
-        
-        $this->info("📧 Sending admin notification after order processing...");
-        $this->info("   Panels needed: {$panelsNeeded}");
-        $this->info("   Total inboxes needed: {$totalInboxesNeeded}");
-        $this->info("   Available space: {$availablePanelSpace}");
-        
-        // Get admin users
-        $adminUsers = $this->getAdminUsers();
-        
-        if ($adminUsers->isEmpty()) {
-            $this->warn('⚠️  No admin users found with role_id = 1');
-            return;
-        }
-        
-        // Send notifications to admins
-        $sentCount = 0;
-        foreach ($adminUsers as $admin) {
-            if ($this->sendNotificationToAdmin($admin, $panelsNeeded, $totalInboxesNeeded, $availablePanelSpace, false)) {
-                $sentCount++;
-            }
-        }
-        
-        // Log the notification sent
-        $this->logNotificationSent($panelsNeeded, $totalInboxesNeeded, $availablePanelSpace);
-        
-        $this->info("✅ Admin notifications sent: {$sentCount}");
-    }
+        }    }
     
     /**
      * Log order status updates
