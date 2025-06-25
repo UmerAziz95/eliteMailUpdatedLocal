@@ -37,7 +37,6 @@ class CheckPanelCapacity extends Command
     /**
      * Execute the console command.
      */
-    
     public function handle()
     {
         $isDryRun = $this->option('dry-run');
@@ -49,72 +48,8 @@ class CheckPanelCapacity extends Command
             // Get available panel capacity first
             $availablePanelSpace = $this->getAvailablePanelSpace();
             $this->info("📦 Available panel space: {$availablePanelSpace}");
-            
             // Update order status to completed where space is available
             $this->updateOrderStatusForAvailableSpace($availablePanelSpace);
-            
-            // Get updated available panel space after processing orders
-            $updatedAvailablePanelSpace = $this->getAvailablePanelSpace();
-            $this->info("📦 Updated available panel space: {$updatedAvailablePanelSpace}");
-            
-            // Get remaining pending orders from order_tracking table
-            $pendingOrders = OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->get();
-            
-            // Calculate total inboxes needed (can be 0 if no pending orders)
-            $totalInboxesNeeded = $pendingOrders->sum('total_inboxes');
-            $this->info("📊 Total inboxes needed: {$totalInboxesNeeded}");
-            
-            if ($pendingOrders->isEmpty()) {
-                $this->info('ℹ️  No pending orders found, but sending status report anyway.');
-            }
-            
-            // Calculate how many panels we need (always calculate, even if sufficient)
-            $shortfall = max(0, $totalInboxesNeeded - $updatedAvailablePanelSpace);
-            $panelsNeeded = $shortfall > 0 ? ceil($shortfall / self::PANEL_CAPACITY) : 0;
-            
-            if ($shortfall > 0) {
-                $this->warn("⚠️  Panel capacity shortfall detected!");
-                $this->warn("   Shortfall: {$shortfall} inboxes");
-                $this->warn("   Panels needed: {$panelsNeeded}");
-            } else {
-                $this->info('✅ Sufficient panel capacity available.');
-            }
-              
-            // Always send notification to admins (removed daily limit check for regular monitoring)
-            // Only check daily limit if not forced and not dry-run and panels are actually needed
-            if (!$isForce && !$isDryRun && $panelsNeeded > 0 && $this->hasNotificationBeenSentToday($panelsNeeded)) {
-                $this->info('ℹ️  Panel creation notification already sent today. Use --force to override.');
-                $this->info('ℹ️  Sending regular status report instead...');
-            }
-            
-            // Get admin users
-            $adminUsers = $this->getAdminUsers();
-              
-            if ($adminUsers->isEmpty()) {
-                $this->warn('⚠️  No admin users found with role_id = 1');
-                $this->info('ℹ️  Panel status report completed, but no admins to notify.');
-                return 0; // Exit gracefully, this is not an error condition
-            }
-            
-            $this->info("📧 Sending status report to {$adminUsers->count()} admin(s)...");
-            
-            // Send notifications
-            $sentCount = 0;
-            foreach ($adminUsers as $admin) {
-                if ($this->sendNotificationToAdmin($admin, $panelsNeeded, $totalInboxesNeeded, $updatedAvailablePanelSpace, $isDryRun)) {
-                    $sentCount++;
-                }
-            }
-              
-            if (!$isDryRun) {
-                // Log the status report sent
-                $this->logNotificationSent($panelsNeeded, $totalInboxesNeeded, $updatedAvailablePanelSpace);
-            }
-            
-            $this->info("✅ Process completed. Status reports sent: {$sentCount}");
             
         } catch (\Exception $e) {
             $this->error("❌ Error occurred: " . $e->getMessage());
@@ -129,7 +64,7 @@ class CheckPanelCapacity extends Command
     }    
     /**
      * Get available panel space
-     */
+    */
     
     private function getAvailablePanelSpace(): int
     {
@@ -248,7 +183,6 @@ class CheckPanelCapacity extends Command
     /**
      * Update order_tracking status to 'inprogress' for orders that have available space on panels
      */
-    // on this function get need panels and pending inboxes at the end of the fucntion then send mail to admin remove mail at the above function
     private function updateOrderStatusForAvailableSpace(int $availablePanelSpace): void
     {
         if ($availablePanelSpace <= 0) {
@@ -271,6 +205,7 @@ class CheckPanelCapacity extends Command
         $remainingSpace = $availablePanelSpace;
         $updatedCount = 0;
         $totalProcessed = 0;
+        $remainingTotalInboxes = 0;
         
         $this->info("🔄 Processing pending orders for status updates...");
         $this->info("   Available space: {$availablePanelSpace} inboxes");
@@ -332,17 +267,25 @@ class CheckPanelCapacity extends Command
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
+                    // Add to remaining total if failed to update
+                    $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space (need {$order->total_inboxes}, have {$remainingSpace})");
+                // Add to remaining total for unprocessed orders
+                $remainingTotalInboxes += $order->total_inboxes;
             }
             
-            // If no space left, break the loop
+            // If no space left, add remaining orders to total
             if ($remainingSpace <= 0) {
+                // Add remaining orders in the collection to the total
+                $remainingOrdersInLoop = $pendingOrders->slice($totalProcessed);
+                $remainingTotalInboxes += $remainingOrdersInLoop->sum('total_inboxes');
+                
                 $this->info("   ℹ️  No remaining space, stopping order processing.");
                 break;
             }
-        }
+        }        
         $this->info("📊 Order Status Update Summary:");
         $this->info("   Total orders processed: {$totalProcessed}");
         $this->info("   Orders updated to 'completed': {$updatedCount}");
@@ -352,6 +295,43 @@ class CheckPanelCapacity extends Command
             // Log the order updates
             $this->logOrderStatusUpdates($updatedCount, $availablePanelSpace - $remainingSpace);
         }
+        
+        $this->sendAdminNotificationAfterProcessing($remainingTotalInboxes, $remainingSpace);
+    }
+      /**
+     * Send admin notification after processing orders
+     */
+    private function sendAdminNotificationAfterProcessing(int $totalInboxesNeeded, int $availablePanelSpace): void
+    {
+        // Calculate how many panels we need
+        $shortfall = max(0, $totalInboxesNeeded - $availablePanelSpace);
+        $panelsNeeded = $shortfall > 0 ? ceil($shortfall / self::PANEL_CAPACITY) : 0;
+        
+        $this->info("📧 Sending admin notification after order processing...");
+        $this->info("   Panels needed: {$panelsNeeded}");
+        $this->info("   Total inboxes needed: {$totalInboxesNeeded}");
+        $this->info("   Available space: {$availablePanelSpace}");
+        
+        // Get admin users
+        $adminUsers = $this->getAdminUsers();
+        
+        if ($adminUsers->isEmpty()) {
+            $this->warn('⚠️  No admin users found with role_id = 1');
+            return;
+        }
+        
+        // Send notifications to admins
+        $sentCount = 0;
+        foreach ($adminUsers as $admin) {
+            if ($this->sendNotificationToAdmin($admin, $panelsNeeded, $totalInboxesNeeded, $availablePanelSpace, false)) {
+                $sentCount++;
+            }
+        }
+        
+        // Log the notification sent
+        $this->logNotificationSent($panelsNeeded, $totalInboxesNeeded, $availablePanelSpace);
+        
+        $this->info("✅ Admin notifications sent: {$sentCount}");
     }
     
     /**
