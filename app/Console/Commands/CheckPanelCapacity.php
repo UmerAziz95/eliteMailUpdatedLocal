@@ -48,11 +48,8 @@ class CheckPanelCapacity extends Command
         $this->info('🔍 Starting panel capacity check...');
         
         try {            
-            // Get available panel capacity first
-            $availablePanelSpace = $this->getAvailablePanelSpace();
-            $this->info("📦 Available panel space: {$availablePanelSpace}");
             // Update order status to completed where space is available
-            $this->updateOrderStatusForAvailableSpace($availablePanelSpace);
+            $this->updateOrderStatusForAvailableSpace();
             
         } catch (\Exception $e) {
             $this->error("❌ Error occurred: " . $e->getMessage());
@@ -65,38 +62,43 @@ class CheckPanelCapacity extends Command
         
         return 0;
     }    
-    /**
-     * Get available panel space
-    */
     
-    private function getAvailablePanelSpace(): int
+    /**
+     * Get available panel space for specific order size
+     */
+    private function getAvailablePanelSpaceForOrder(int $orderSize): int
     {
-        $panels = Panel::where('is_active', 1)
-                      ->where('remaining_limit', '>', 0)
-                      ->get();
-        $totalAvailableSpace = 0;
-        
-        $this->info("📋 Found {$panels->count()} active panel(s) with available space:");
-        
-        foreach ($panels as $panel) {
-            $availableSpace = $panel->remaining_limit;
-            $totalAvailableSpace += $availableSpace;
-            $this->info("   Panel ID {$panel->id}: {$availableSpace} remaining");
+        if ($orderSize >= 1790) {
+            // For large orders, prioritize full 1790 capacity panels
+            $fullCapacityPanels = Panel::where('is_active', 1)
+                                      ->where('remaining_limit', 1790)
+                                      ->get();
+            
+            $fullCapacitySpace = $fullCapacityPanels->sum('remaining_limit');
+
+            $this->info("🔍 Available space for large order ({$orderSize} inboxes):");
+            $this->info("   Full capacity panels: {$fullCapacityPanels->count()} panels, {$fullCapacitySpace} space");
+            return $fullCapacitySpace;
+            
+        } else {
+            // For smaller orders, use any panel with remaining space
+            $availablePanels = Panel::where('is_active', 1)
+                                   ->where('remaining_limit', '>', 0)
+                                   ->get();
+            
+            $totalSpace = $availablePanels->sum('remaining_limit');
+            
+            $this->info("🔍 Available space for small order ({$orderSize} inboxes): {$totalSpace} total space");
+
+            return $totalSpace;
         }
-        
-        return $totalAvailableSpace;
     }
     
     /**
-     * Update order_tracking status to 'inprogress' for orders that have available space on panels
+     * Update order_tracking status to 'completed' for orders that have available space on panels
      */
-    private function updateOrderStatusForAvailableSpace(int $availablePanelSpace): void
+    private function updateOrderStatusForAvailableSpace(): void
     {
-        if ($availablePanelSpace <= 0) {
-            $this->info('ℹ️  No available panel space, skipping order status updates.');
-            return;
-        }
-        
         // Get pending orders that can be accommodated with available space
         $pendingOrders = OrderTracking::where('status', 'pending')
             ->whereNotNull('total_inboxes')
@@ -108,18 +110,20 @@ class CheckPanelCapacity extends Command
             $this->info('ℹ️  No pending orders to update.');
             return;
         }
-        
-        $remainingSpace = $availablePanelSpace;
+
         $updatedCount = 0;
         $totalProcessed = 0;
         $remainingTotalInboxes = 0;
         
         $this->info("🔄 Processing pending orders for status updates...");
-        $this->info("   Available space: {$availablePanelSpace} inboxes");
         
         foreach ($pendingOrders as $order) {
             $totalProcessed++;            
-            if ($order->total_inboxes <= $remainingSpace) {
+            
+            // Get order-specific available space
+            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+            
+            if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
                     // Get the actual Order model for panel split creation
                     $orderModel = Order::find($order->order_id);
@@ -160,7 +164,6 @@ class CheckPanelCapacity extends Command
                     $order->cron_run_time = Carbon::now();
                     $order->save();
                     
-                    $remainingSpace -= $order->total_inboxes;
                     $updatedCount++;
                     
                     $this->info("   ✓ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Status updated to 'completed'");
@@ -176,28 +179,22 @@ class CheckPanelCapacity extends Command
                     $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
-                $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space (need {$order->total_inboxes}, have {$remainingSpace})");
+                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+                $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
+                $this->warn("     Order-specific available space: {$orderSpecificSpace}");
                 // Add to remaining total for unprocessed orders
                 $remainingTotalInboxes += $order->total_inboxes;
-            }
-            
-            // If no space left, add remaining orders to total
-            if ($remainingSpace <= 0) {
-                // Add remaining orders in the collection to the total
-                $remainingOrdersInLoop = $pendingOrders->slice($totalProcessed);
-                $remainingTotalInboxes += $remainingOrdersInLoop->sum('total_inboxes');
-                
-                $this->info("   ℹ️  No remaining space, stopping order processing.");
-                break;
             }
         }        
         $this->info("📊 Order Status Update Summary:");
         $this->info("   Total orders processed: {$totalProcessed}");
         $this->info("   Orders updated to 'completed': {$updatedCount}");
-        $this->info("   Remaining panel space: {$remainingSpace} inboxes");
         
-        if ($updatedCount > 0) {            // Log the order updates
-            $this->logOrderStatusUpdates($updatedCount, $availablePanelSpace - $remainingSpace);
+        if ($updatedCount > 0) {
+            // Calculate total space used by successful orders
+            $totalSpaceUsed = $pendingOrders->slice(0, $updatedCount)->sum('total_inboxes');
+            // Log the order updates
+            $this->logOrderStatusUpdates($updatedCount, $totalSpaceUsed);
         }
     }
     
@@ -521,7 +518,7 @@ class CheckPanelCapacity extends Command
     }
     
     /**
-     * Find suitable existing panel with sufficient space
+     * Find suitable existing panel with sufficient space based on order size
      */
     private function findSuitablePanel($spaceNeeded)
     {
@@ -532,7 +529,7 @@ class CheckPanelCapacity extends Command
     }
     
     /**
-     * Find existing 1790 panel with sufficient space
+     * Find existing 1790 panel with sufficient space - prioritize full capacity panels
      */
     private function findExisting1790Panel($spaceNeeded)
     {
