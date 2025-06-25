@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserWelcomeMail;
 use App\Mail\EmailVerificationMail;
+use App\Mail\UserRegisteredMail;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
 use ChargeBee\ChargeBee\Models\Customer;
@@ -342,11 +343,25 @@ class AuthController extends Controller
         $verificationLink =url('/plans/public/' . $encrypted);
         
 
+//to user
         try {
+            Log::info("sending email to user: ".$user->email);
             Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
         } catch (\Exception $e) {
             Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
         }
+
+        //to super admin
+        try {
+        Log::info("sending email to super admins");
+        $superAdmins = User::whereIn('role_id', [1])->get(); // Get both role 1 & 2
+        foreach ($superAdmins as $superAdmin) {
+            Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+        }
+        } catch (\Exception $e) {
+            Log::error('Failed to send registration email to admin. Error: ' . $e->getMessage());
+        }
+
 
         return response()->json([
             'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',

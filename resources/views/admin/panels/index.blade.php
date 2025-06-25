@@ -1250,16 +1250,16 @@
 
 
   // timer calculator split 
-function calculateSplitTime(split) {
-  const order_panel = split.order_panel_data;
-  if (!order_panel || !order_panel.timer_started_at) {
-    return "00:00:00";
-  }
+    function calculateSplitTime(split) {
+    const order_panel = split.order_panel_data;
+    if (!order_panel || !order_panel.timer_started_at) {
+        return "00:00:00";
+    }
 
-  const start = parseUTCDateTime(order_panel.timer_started_at);
-  if (!start || isNaN(start.getTime())) {
-    return "00:00:00";
-  }
+    const start = parseUTCDateTime(order_panel.timer_started_at);
+    if (!start || isNaN(start.getTime())) {
+        return "00:00:00";
+    }
 
   let end;
   let statusLabel = "";

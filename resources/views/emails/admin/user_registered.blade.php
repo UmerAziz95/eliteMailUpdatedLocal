@@ -122,6 +122,7 @@
             position: relative;
             overflow: hidden;
             animation: slideIn 0.6s ease-out forwards;
+            border-radius: 15px;
         }
 
         .welcome-header::before {
@@ -151,6 +152,19 @@
             z-index: 1;
         }
 
+        .logo-circle {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--white-color);
+            animation: pulse 2s infinite;
+        }
+
         .content {
             background: linear-gradient(145deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.12) 100%);
             padding: clamp(20px, 4vw, 30px);
@@ -163,35 +177,44 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
+        .content p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+            font-size: clamp(14px, 1.1vw, 16px);
+        }
+
         .detail-card {
             background: rgba(115, 103, 240, 0.08);
             border-radius: 12px;
             padding: 25px;
             margin: 20px 0;
             border: 1px solid rgba(115, 103, 240, 0.15);
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.4s;
         }
 
         .detail-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(115, 103, 240, 0.1);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
         }
 
         .detail-label {
-            color: var(--second-primary);
-            font-weight: 500;
             font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .detail-value {
+            font-size: 14px;
             color: var(--text-primary);
             font-weight: 600;
-            font-size: 14px;
         }
 
         .btn-primary {
@@ -216,6 +239,56 @@
             box-shadow: 0 8px 25px rgba(115, 103, 240, 0.3);
         }
 
+        .highlight-text {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 25px 0;
+            animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.6s;
+        }
+
+        .feature-item {
+            background: rgba(115, 103, 240, 0.05);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(115, 103, 240, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-2px);
+            background: rgba(115, 103, 240, 0.08);
+        }
+
+        .feature-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white-color);
+        }
+
+        .feature-text {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
         .footer {
             margin: 40px 0 0 0;
             padding: 32px 40px;
@@ -226,6 +299,8 @@
             position: relative;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             animation: fadeIn 0.8s ease-out forwards;
+            animation-delay: 0.8s;
+            border-radius: 15px;
         }
 
         .footer::before {
@@ -241,11 +316,44 @@
                     transparent 100%);
         }
 
-        .highlight-text {
+        .footer p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+            font-size: clamp(13px, 1vw, 14px);
+
+        }
+
+        .footer .highlight-text {
+            font-size: 15px;
             background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
+
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .social-link {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--second-primary);
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-2px);
         }
 
         @media only screen and (max-width: 768px) {
@@ -260,106 +368,91 @@
                 min-height: 100vh;
             }
 
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
             .btn-primary {
                 width: 100%;
                 text-align: center;
                 padding: 18px 24px;
+                background-color: #6254e8;
+                box-shadow: 0 4px 15px rgba(115, 103, 240, 0.2);
+                transition: all 0.3s ease;
+                animation: borderGlow 2s infinite;
+                text-align: center;
             }
 
             .welcome-header {
-                padding: 30px 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+                margin: -20px -20px 40px -20px;
+                padding: 40px;
+                background: linear-gradient(145deg, rgba(115, 103, 240, 0.15) 0%, rgba(115, 103, 240, 0.05) 100%);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                position: relative;
+                overflow: hidden;
+                animation: slideIn 0.6s ease-out forwards;
+            }
+
+            .welcome-header::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(to right,
+                        transparent 0%,
+                        rgba(255, 255, 255, 0.2) 50%,
+                        transparent 100%);
             }
 
             .welcome-header h2 {
-                font-size: clamp(20px, 5vw, 24px);
+                color: var(--white-color);
+                font-size: 32px;
+                font-weight: 800;
+                margin: 0;
+                background: linear-gradient(135deg, #ffffff 0%, #7367ef 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: -0.02em;
+                text-shadow: 0 2px 10px rgba(115, 103, 240, 0.3);
+                position: relative;
+                z-index: 1;
             }
 
             .content {
                 border-radius: 12px;
             }
-
-            .detail-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
         }
     </style>
 </head>
 
-<body>
-    <div class="container">
-        {{-- <div class="welcome-header"> --}}
-            <div style="text-align: center " class="text-center w-100 bg-info mb-3">
-                <h2 class="text-center" style="text-align: center">Order Successful!</h2>
+<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+    <div class="container"
+        style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px;">
+
+        {{-- <div class="welcome-header" style="text-align: center;"> --}}
+            <div class="" style="text-align: center;">
+                <h2 style="color: #333;">A New User Registered</h2>
+            </div>
+            <div style="text-align: center; padding: 20px 0;">
+                <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo"
+                    style="max-width: 200px; height: auto;">
             </div>
 
-          <div class="content" style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-    
-    <!-- Logo centered and padded -->
-    <div style="text-align: center; padding: 20px 0;">
-        <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo" style="max-width: 200px; height: auto;">
-    </div>
+            <div class="content" style="margin-top: 20px; color: #555; padding-left: 20px;">
 
-    <p style="font-size: 16px; color: #333;">Dear {{ $user->name }},</p>
-
-    <!-- isAdminNotification -->
-    @if($user->role_id !==1)
-    @if($isAdminNotification)
-        <p style="font-size: 14px; color: #333;">A new order has been created.</p>
-    @else
-        <p style="font-size: 14px; color: #333;">Thank you for your order! Your order has been successfully created.</p>
-    @endif
-    @endif
-
-    <!-- Order Details Table -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; color: #333;">
-        <thead>
-            <tr>
-                <th colspan="2" style="text-align: left; padding: 10px; background-color: #f7f7f7; border: 1px solid #ddd;">
-                    Order Details
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Number:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">#{{ $order->id }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Plan:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->plan->name ?? "N/A" }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Amount:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">${{ number_format($order->amount, 2) }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Payment Status:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status) }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Status:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status_manage_by_admin) }}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Created At:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->created_at->toString() }}</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
+                <p>User Id {{ $user->id }},</p>
+                <p>User Name {{ $user->name }},</p>
+                <p>Email <a href="mailto:{{ $user->email }}">{{ $user->email }}</a>,</p>
+                <p>Registered at {{ $user->created_at }},</p>
+            </div>
 
             <div class="footer" style="margin-top: 40px; text-align: center; font-size: 13px; color: #999;">
-                <p>
-                    If you have any questions or need help, feel free to contact at
-                    <a href="mailto:support@projectinbox.ai" style="color: #999; text-decoration: underline;">
-                        support@projectinbox.ai
-                    </a>
-                </p>
-                <p>
-                    Best regards,<br>
                     The <strong>{{ config('app.name') }}</strong> Team
                 </p>
             </div>

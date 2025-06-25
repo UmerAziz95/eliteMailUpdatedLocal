@@ -937,7 +937,7 @@
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
-                                    class="form-control phone-number-mask" placeholder="202 555 0111"
+                                    class="form-control phone-number-mask" placeholder="Enter phone number"
                                     value="{{ Auth::user()->phone }}">
                             </div>
                         </div>
