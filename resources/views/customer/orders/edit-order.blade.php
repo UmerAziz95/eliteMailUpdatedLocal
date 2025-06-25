@@ -959,12 +959,17 @@ function calculateTotalInboxes() {
     
     return totalInboxes;
 }
-
 // Global function for updating price display based on total inboxes
 function updatePriceDisplay(totalInboxes) {
     const currentPlan = @json($plan);
     const orderInfo = @json(optional($order)->reorderInfo->first());
-    const TOTAL_INBOXES = orderInfo ? orderInfo.total_inboxes : 0;
+    
+    // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+    let TOTAL_INBOXES = 0;
+    if (currentPlan && currentPlan.max_inbox !== undefined) {
+        TOTAL_INBOXES = currentPlan.max_inbox; // 0 means unlimited
+    }
+    
     const submitButton = $('button[type="submit"]');
     let priceHtml = '';
     
@@ -984,7 +989,8 @@ function updatePriceDisplay(totalInboxes) {
             <h6><span class="theme-text">Discount:</span> 0%</h6>
             <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
         `;
-    } else if (currentPlan && totalInboxes > TOTAL_INBOXES && TOTAL_INBOXES > 0) {
+    } else if (currentPlan && TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+        // Plan limit exceeded (only show if plan has a limit, i.e., max_inbox > 0)
         priceHtml = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
@@ -998,6 +1004,15 @@ function updatePriceDisplay(totalInboxes) {
         if (submitButton.length) {
             submitButton.prop('disabled', true);
             submitButton.hide();
+        }
+        
+        // Show toastr warning for plan limit exceeded (but not during import)
+        if (!isImporting) {
+            toastr.warning(`Plan limit exceeded! Your plan supports ${TOTAL_INBOXES} inboxes but you're requesting ${totalInboxes}.`, 'Plan Limit Exceeded', {
+                timeOut: 6000,
+                closeButton: true,
+                progressBar: true
+            });
         }
     } else if (currentPlan) {
         const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
@@ -1040,18 +1055,16 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         currentInboxes = uniqueDomains.length * inboxesPerDomain;
     }
     
-    // Get max limit - try to get from current order first, then from plan
+    // Get max limit - use plan limits, not orderInfo.total_inboxes
     const orderInfo = @json(optional($order)->reorderInfo->first());
     const planInfo = @json($plan ?? null);
     let maxInboxes = 0;
     
-    if (orderInfo && orderInfo.total_inboxes) {
-        maxInboxes = orderInfo.total_inboxes;
-    } else if (planInfo && planInfo.max_inbox) {
-        maxInboxes = planInfo.max_inbox;
+    if (planInfo && planInfo.max_inbox !== undefined) {
+        maxInboxes = planInfo.max_inbox; // 0 means unlimited
     }
     
-    // Calculate percentage used
+    // Calculate percentage used (only if plan has limits)
     const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
     
     // Update progress bar elements
@@ -1069,28 +1082,54 @@ function updateRemainingInboxesBar(currentInboxes = null) {
     progressBar.attr('aria-valuemax', 100);
     
     // Update text display
-    progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
-    
-    // Update color and note based on usage
-    if (percentageUsed >= 100) {
-        progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-        progressNote.html('(Limit reached)');
-    } else if (percentageUsed >= 90) {
-        progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
-        progressNote.html('(Critical: Nearly at limit)');
-    } else if (percentageUsed >= 75) {
-        progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
-        progressNote.html('(Warning: Approaching limit)');
-    } else if (percentageUsed >= 50) {
-        progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
-        progressNote.html('(Moderate usage)');
+    if (maxInboxes === 0) {
+        // Unlimited plan
+        progressText.text(`${currentInboxes} inboxes used (Unlimited Plan)`);
+        progressBar.css('width', '0%'); // Don't show progress for unlimited
+        progressNote.html('(Unlimited usage)');
+        progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
     } else {
-        progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-        progressNote.html('(Current usage)');
+        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        
+        // Update color and note based on usage
+        if (percentageUsed >= 100) {
+            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+            progressNote.html('(Limit reached)');
+        } else if (percentageUsed >= 90) {
+            progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
+            progressNote.html('(Critical: Nearly at limit)');
+        } else if (percentageUsed >= 75) {
+            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+            progressNote.html('(Warning: Approaching limit)');
+        } else if (percentageUsed >= 50) {
+            progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
+            progressNote.html('(Moderate usage)');
+        } else {
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            progressNote.html('(Current usage)');
+        }
     }
 }
 
 $(document).ready(function() {
+    // Show plan limit information
+    const planInfo = @json($plan ?? null);
+    if (planInfo) {
+        if (planInfo.max_inbox === 0) {
+            toastr.info('You have an unlimited plan. No inbox limits apply.', 'Unlimited Plan', {
+                timeOut: 4000,
+                closeButton: true,
+                progressBar: true
+            });
+        } else {
+            toastr.info(`Your plan allows up to ${planInfo.max_inbox} inboxes.`, 'Plan Limit', {
+                timeOut: 4000,
+                closeButton: true,
+                progressBar: true
+            });
+        }
+    }
+
     // Initialize Order Import Modal
     $('#orderImportBtn').on('click', function() {
         initializeOrdersImportTable();
@@ -1331,6 +1370,9 @@ $(document).ready(function() {
     }
     
     function populateFormWithOrderData(orderData) {
+        // Set import flag to prevent toastr notifications during import
+        isImporting = true;
+        
         // Clear any existing validation errors
         $('.is-invalid').removeClass('is-invalid');
         $('.invalid-feedback').text('');
@@ -1419,7 +1461,32 @@ $(document).ready(function() {
             }, 200);
         }, 600);
         
-        toastr.success('Order data imported successfully!');
+        // Clear import flag after a delay to ensure all operations are complete
+        setTimeout(() => {
+            isImporting = false;
+            
+            // Check if imported data exceeds plan limits and show appropriate notification
+            const finalDomains = $('#domains').val();
+            const finalInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+            const planInfo = @json($plan ?? null);
+            
+            if (finalDomains && planInfo && planInfo.max_inbox > 0) {
+                const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
+                const totalInboxes = domainsArray.length * finalInboxesPerDomain;
+                
+                if (totalInboxes > planInfo.max_inbox) {
+                    toastr.warning(`Order imported successfully, but it exceeds your plan limit (${totalInboxes} inboxes vs ${planInfo.max_inbox} allowed).`, 'Import Complete - Plan Limit Exceeded', {
+                        timeOut: 8000,
+                        closeButton: true,
+                        progressBar: true
+                    });
+                } else {
+                    toastr.success('Order data imported successfully!');
+                }
+            } else {
+                toastr.success('Order data imported successfully!');
+            }
+        }, 1000);
         
     }
     
@@ -1455,6 +1522,11 @@ $(document).ready(function() {
     }
     
     function checkDomainCutting() {
+        // Don't auto-trim during import
+        if (isImporting) {
+            return;
+        }
+        
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         
@@ -1469,14 +1541,14 @@ $(document).ready(function() {
         // Get current order's total inboxes limit from reorder_info or plan
         const orderInfo = @json(optional($order)->reorderInfo->first());
         const planInfo = @json($plan ?? null);
-        let TOTAL_INBOXES = 0;
         
-        if (orderInfo && orderInfo.total_inboxes) {
-            TOTAL_INBOXES = orderInfo.total_inboxes;
-        } else if (planInfo && planInfo.max_inbox) {
-            TOTAL_INBOXES = planInfo.max_inbox;
+        // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+        let TOTAL_INBOXES = 0;
+        if (planInfo && planInfo.max_inbox !== undefined) {
+            TOTAL_INBOXES = planInfo.max_inbox; // 0 means unlimited
         }
         
+        // Only enforce limits if plan has a limit (max_inbox > 0)
         if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
             // Automatically trim domains to fit within plan limit
             const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
@@ -1511,6 +1583,62 @@ $(document).ready(function() {
 });  // Close the first $(document).ready() block
 // Second document ready block for existing functionality
 $(document).ready(function() {
+    // Flag to prevent multiple popups for the same limit exceeded situation
+    let limitExceededShown = false;
+    // Flag to prevent toastr notifications during import
+    let isImporting = false;
+    
+    // Function to validate domains format only (without limit checking)
+    function validateDomainsFormat() {
+        const domainsField = $('#domains');
+        const domainsText = domainsField.val();
+        // Reset validation state
+        domainsField.removeClass('is-invalid');
+        $('#domains-error').text('');
+        
+        if (!domainsText.trim()) {
+            calculateTotalInboxes();
+            return;
+        }
+        
+        let domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        if (domains.length > 0) {
+            // Check for duplicates
+            const seen = new Set();
+            const duplicates = domains.filter(domain => {
+                if (seen.has(domain)) {
+                    return true;
+                }
+                seen.add(domain);
+                return false;
+            });
+
+            if (duplicates.length > 0) {
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
+                calculateTotalInboxes();
+                return;
+            }
+            
+            // Updated domain format validation to handle multi-level domains
+            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+            const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+            
+            if (invalidDomains.length > 0) {
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                calculateTotalInboxes();
+                return;
+            }
+        }
+        
+        // Update total inboxes calculation
+        calculateTotalInboxes();
+    }
     // Function to validate and auto-trim domains - centralized logic
     function validateAndTrimDomains() {
         const domainsField = $('#domains');
@@ -1566,36 +1694,62 @@ $(document).ready(function() {
             // Get current order's total inboxes limit from reorder_info or plan
             const orderInfo = @json(optional($order)->reorderInfo->first());
             const planInfo = @json($plan ?? null);
-            let TOTAL_INBOXES = 0;
             
-            if (orderInfo && orderInfo.total_inboxes) {
-                TOTAL_INBOXES = orderInfo.total_inboxes;
-            } else if (planInfo && planInfo.max_inbox) {
-                TOTAL_INBOXES = planInfo.max_inbox;
+            // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+            let TOTAL_INBOXES = 0;
+            if (planInfo && planInfo.max_inbox !== undefined) {
+                TOTAL_INBOXES = planInfo.max_inbox; // 0 means unlimited
             }
             
+            // Only enforce limits if plan has a limit (max_inbox > 0)
             if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-                // Automatically trim domains to fit within plan limit
-                const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                const removedCount = domains.length - maxDomainsAllowed;
+                // Don't show notifications during import
+                if (isImporting) {
+                    return; // Exit early during import
+                }
                 
-                // Update the field value with trimmed domains
-                domainsField.val(trimmedDomains.join('\n'));
-                // Show notification about the automatic trimming
-                toastr.warning(`${removedCount} domains were automatically removed. Your plan limit is ${TOTAL_INBOXES} inboxes.`, 'Domains Auto-Trimmed', {
-                    timeOut: 5000,
-                    closeButton: true,
-                    progressBar: true
-                });
-                // swal notification
-                Swal.fire({
-                    title: 'Domains Automatically Trimmed',
-                    html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
-                    icon: 'info',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#3085d6'
-                });
+                // Show popup warning but don't auto-trim (only show once per session)
+                if (!limitExceededShown) {
+                    limitExceededShown = true;
+                    const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                    const excessDomains = domains.length - maxDomainsAllowed;
+                    
+                    // Show warning popup without auto-trimming
+                    Swal.fire({
+                        title: 'Plan Limit Exceeded!',
+                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
+                               You need to remove <strong>${excessDomains}</strong> domains or upgrade your plan.<br><br>
+                               <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
+                        icon: 'warning',
+                        confirmButtonText: 'I Understand',
+                        confirmButtonColor: '#f0ad4e',
+                        showCancelButton: true,
+                        cancelButtonText: 'Remove Excess Domains',
+                        cancelButtonColor: '#dc3545'
+                    }).then((result) => {
+                        if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
+                            // User chose to remove excess domains
+                            const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                            domainsField.val(trimmedDomains.join('\n'));
+                            toastr.success(`${excessDomains} domains were removed to fit your plan limit.`, 'Domains Trimmed');
+                            calculateTotalInboxes();
+                        }
+                        // Reset flag after popup is closed
+                        limitExceededShown = false;
+                    });
+                }
+                
+                // Show toastr warning as well (but less frequently and not during import)
+                if (!limitExceededShown && !isImporting) {
+                    toastr.warning(`Plan limit exceeded! You have ${totalInboxes} inboxes but your plan supports ${TOTAL_INBOXES}.`, 'Plan Limit Exceeded', {
+                        timeOut: 6000,
+                        closeButton: true,
+                        progressBar: true
+                    });
+                }
+            } else {
+                // Reset flag when within limits
+                limitExceededShown = false;
             }
         }
         
@@ -1784,9 +1938,10 @@ $(document).ready(function() {
         
         return totalInboxes;
     }
-    // Domain validation with auto-trimming - using centralized function
+    // Domain validation with auto-trimming - using centralized function (less aggressive for input)
     $('#domains').on('input', function() {
-        validateAndTrimDomains();
+        // Only validate format, don't show limit popups on input
+        validateDomainsFormat();
     });
     
     // Add event listener for inboxes per domain changes with domain validation
@@ -1804,6 +1959,11 @@ $(document).ready(function() {
     
     // Add change event handler for domains field to handle auto-trimming when content changes
     $('#domains').on('change', function() {
+        validateAndTrimDomains();
+    });
+
+    // Add focusout event handler for domains field to show popup when user leaves the field
+    $('#domains').on('focusout', function() {
         validateAndTrimDomains();
     });
 
