@@ -87,7 +87,7 @@ class CheckPanelCapacity extends Command
             return $fullCapacitySpace;
             
         } else {
-            // For smaller orders, use any panel with remaining space
+            // For smaller orders, use any panel with remaining space   
             $availablePanels = Panel::where('is_active', 1)
                                    ->where('remaining_limit', '>', 0)
                                    ->get();

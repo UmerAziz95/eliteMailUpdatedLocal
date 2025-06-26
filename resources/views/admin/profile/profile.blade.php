@@ -107,7 +107,7 @@
     }
 @endphp
 
-<div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
+                        <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
                               @if ($user->profile_image)
                                     <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
                                         style="inline-size: 160px; border-radius: 50%" alt="user image"
@@ -120,7 +120,7 @@
                                         <i class="fa-regular fa-user" style="font-size: 64px !important"></i>
                                     </div>
                                 @endif 
-</div>
+                         </div>
 
                         <div class="flex-grow-1 mt-3">
                             <div
