@@ -1698,7 +1698,7 @@ $(document).ready(function() {
             
             if (invalidDomains.length > 0) {
                 domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, sub.example.com, example.co.uk`);
                 calculateTotalInboxes();
                 return;
             }
