@@ -514,7 +514,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
     public function store(Request $request)
     {
         try {
@@ -595,7 +594,7 @@ class OrderController extends Controller
                     }
                 }
             }
-            $status = 'draft'; // Default status for new orders
+            $status = 'pending'; // Default status for new orders
             // persona_password set 123
             $request->persona_password = '123';
             // Calculate number of domains and total inboxes
@@ -606,16 +605,20 @@ class OrderController extends Controller
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
             
-            // // Verify plan can support the total inboxes
-            // $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
-                        
-            // if (!$canHandle) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
-            //     ], 422);
-            // }
-
+            // Validate plan minimum inbox requirement
+            if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
+                $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
+                return response()->json([
+                    'success' => false,
+                    'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
+                    'errors' => [
+                        'domains' => [
+                            "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
+                        ]
+                    ]
+                ], 422);
+            }
+            
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
@@ -626,16 +629,39 @@ class OrderController extends Controller
             if($request->edit_id && $request->order_id){
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
-                if($plan && $calculatedTotalInboxes > $TOTAL_INBOXES){
+                // if($plan && $calculatedTotalInboxes > $TOTAL_INBOXES){
+                //     return response()->json([
+                //         'success' => false,
+                //         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
+                //     ], 422);
+                // }
+                // Verify plan can support the total inboxes
+                $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
+                            
+                if (!$canHandle) {
                     return response()->json([
                         'success' => false,
                         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
                     ], 422);
                 }
-                $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 
+                // Validate plan minimum inbox requirement for edit orders
+                if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
+                    $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
+                        'errors' => [
+                            'domains' => [
+                                "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
+                            ]
+                        ]
+                    ], 422);
+                }
+                
+                $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 // Set status based on whether total_inboxes equals calculated total from request domains
-                $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
+                // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
                 
                 $order->update([
                     'status_manage_by_admin' => $status,
@@ -662,7 +688,9 @@ class OrderController extends Controller
                         'sending_platform' => $request->sending_platform,
                         'sequencer_login' => $request->sequencer_login,
                         'sequencer_password' => $request->sequencer_password,
-                        // 'total_inboxes' => $calculatedTotalInboxes,
+                        'total_inboxes' => $calculatedTotalInboxes,
+                        // initial_total_inboxes
+                        'initial_total_inboxes' => $reorderInfo->initial_total_inboxes == 0 ? $reorderInfo->total_inboxes : $reorderInfo->initial_total_inboxes, // Store initial total inboxes at reorder time
                         'inboxes_per_domain' => $request->inboxes_per_domain,
                         'first_name' => $request->first_name,
                         'last_name' => $request->last_name,
@@ -744,32 +772,30 @@ class OrderController extends Controller
                     // Continue execution - don't let email failure stop the process
                 }
             }
-            
             // status is pending then pannelCreationAndOrderSplitOnPannels
             if($status == 'pending'){
                 // panel creation
-                $this->pannelCreationAndOrderSplitOnPannels($order);
+                // $this->pannelCreationAndOrderSplitOnPannels($order);
             }
-            
             // Create order tracking record at the end
-            // if($request->edit_id && $request->order_id) {
-            //     // For existing orders, update or create tracking record
-            //     $order->orderTracking()->updateOrCreate(
-            //         ['order_id' => $order->id],
-            //         [
-            //             'cron_run_time' => now(),
-            //             'inboxes_per_domain' => $request->inboxes_per_domain,
-            //             'total_inboxes' => $calculatedTotalInboxes
-            //         ]
-            //     );
+            if($request->edit_id && $request->order_id) {
+                // For existing orders, update or create tracking record
+                $order->orderTracking()->updateOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'cron_run_time' => now(),
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'total_inboxes' => $calculatedTotalInboxes
+                    ]
+                );
                 
-            //     Log::info('Order tracking record updated for edited order', [
-            //         'order_id' => $order->id,
-            //         'status' => $status,
-            //         'total_inboxes' => $calculatedTotalInboxes,
-            //         'inboxes_per_domain' => $request->inboxes_per_domain
-            //     ]);
-            // }
+                Log::info('Order tracking record updated for edited order', [
+                    'order_id' => $order->id,
+                    'status' => $status,
+                    'total_inboxes' => $calculatedTotalInboxes,
+                    'inboxes_per_domain' => $request->inboxes_per_domain
+                ]);
+            }
             
             // First check 
             return response()->json([

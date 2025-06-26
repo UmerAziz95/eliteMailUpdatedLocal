@@ -189,11 +189,11 @@
                                 <span class="opacity-50">{{ Auth::user()->role->name }}</span>
                             </li>
 
-                            <li class="d-flex align-items-center mb-4">
+                            <!-- <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-phone-call"></i>
                                 <span class="fw-semibold mx-2">Contact:</span>
                                 <span class="opacity-50">{{ Auth::user()->phone ?? 'N/A' }}</span>
-                            </li>
+                            </li> -->
 
                             <li class="d-flex align-items-center">
                                 <i class="ti ti-mail"></i>

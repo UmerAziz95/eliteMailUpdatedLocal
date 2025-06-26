@@ -95,5 +95,70 @@ class CronController extends Controller
     {
         return Carbon::parse($startDate)->addMonth(); // Adjust this logic as per your actual subscription cycle
     }
+
+    /**
+     * Test route to run the panel capacity check command
+     */
+    public function testPanelCapacityCheck(Request $request)
+    {
+        try {
+            $isDryRun = $request->has('dry_run') && $request->dry_run == '1';
+            $isForce = $request->has('force') && $request->force == '1';
+            
+            // Build command options
+            $options = [];
+            if ($isDryRun) {
+                $options['--dry-run'] = true;
+            }
+            if ($isForce) {
+                $options['--force'] = true;
+            }
+            
+            // Capture output using output buffering
+            ob_start();
+            
+            try {
+                // Execute the command using Laravel's Artisan facade
+                $returnCode = \Illuminate\Support\Facades\Artisan::call('panels:check-capacity', $options);
+                $output = \Illuminate\Support\Facades\Artisan::output();
+            } catch (\Exception $e) {
+                $output = 'Command execution failed: ' . $e->getMessage();
+                $returnCode = 1;
+            }
+            
+            ob_end_clean();
+            
+            // Split output into lines for better display
+            $outputLines = array_filter(explode("\n", trim($output)));
+            
+            return response()->json([
+                'success' => $returnCode === 0,
+                'command' => 'panels:check-capacity ' . implode(' ', array_keys($options)),
+                'return_code' => $returnCode,
+                'output' => $outputLines,
+                'raw_output' => $output,
+                'options' => [
+                    'dry_run' => $isDryRun,
+                    'force' => $isForce
+                ],
+                'timestamp' => Carbon::now()->format('Y-m-d H:i:s')
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'timestamp' => Carbon::now()->format('Y-m-d H:i:s')
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the panel capacity test page
+     */
+    public function showPanelCapacityTest()
+    {
+        return view('test.panel-capacity');
+    }
 }
 

@@ -936,14 +936,14 @@
 
 
 
-                        <div class="col-12 col-md-12">
+                        <!-- <div class="col-12 col-md-12">
                             <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                             <div class="input-group">
                                 <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
                                     class="form-control phone-number-mask" placeholder="Enter phone number"
                                     value="{{ Auth::user()->phone }}">
                             </div>
-                        </div>
+                        </div> -->
 
 
 

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('order_tracking', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->string('status')->default('pending');
+            $table->string('status')->default('pending'); // pending, inprogress, completed, cancelled
             $table->timestamp('cron_run_time')->nullable();
             $table->integer('inboxes_per_domain')->default(1);
             $table->integer('total_inboxes')->default(0);
