@@ -261,10 +261,9 @@ class CheckPanelCapacity extends Command
             // Get users with admin permissions using Spatie Permission
             $permissionName = 'Panels'; // You can change this to the appropriate permission name
             $adminUsers = User::permission($permissionName)->get();
-            
             // Fallback: if no users found with permission, try role-based approach
             if ($adminUsers->isEmpty()) {
-                $adminUsers = User::where('role_id', 1)
+                $adminUsers = User::whereIn('role_id', [1, 2])
                     ->whereNotNull('email')
                     ->where('status', 1)
                     ->get();
@@ -312,9 +311,6 @@ class CheckPanelCapacity extends Command
                 $this->info("   [DRY RUN] Would send insufficient space notification to: {$admin->email}");
                 return true;
             }
-            
-            // Set static email for testing (you can remove this line in production)
-            $admin->email = 'muhammad.farooq.raaj@gmail.com';
             
             // Calculate total panels needed
             $totalPanelsNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'panels_needed'));
