@@ -639,7 +639,7 @@
             pageLength: 10,         // Show 10 rows per page
             lengthMenu: [10, 25, 50, 100], // Optional dropdown for page length
             ordering: true,         // Enable column sorting
-            searching: true,        // Enable search box
+            searching: false,        // Enable search box
             scrollX: true,          // Enable horizontal scroll if needed
             processing: true,       // Show processing indicator
             ajax: {
