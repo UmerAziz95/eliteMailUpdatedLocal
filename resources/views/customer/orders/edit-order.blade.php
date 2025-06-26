@@ -1026,11 +1026,11 @@ function updatePriceDisplay(totalInboxes) {
         
         // Show toastr warning for plan limit exceeded (but not during import)
         if (!isImporting) {
-            toastr.warning(`Plan limit exceeded! Your plan supports ${TOTAL_INBOXES} inboxes but you're requesting ${totalInboxes}.`, 'Plan Limit Exceeded', {
-                timeOut: 6000,
-                closeButton: true,
-                progressBar: true
-            });
+            // toastr.warning(`Plan limit exceeded! Your plan supports ${TOTAL_INBOXES} inboxes but you're requesting ${totalInboxes}.`, 'Plan Limit Exceeded', {
+            //     timeOut: 6000,
+            //     closeButton: true,
+            //     progressBar: true
+            // });
         }
     } else if (currentPlan) {
         const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
@@ -1868,11 +1868,11 @@ $(document).ready(function() {
                 
                 // Show toastr warning as well (but less frequently and not during import)
                 if (!limitExceededShown && !isImporting) {
-                    toastr.warning(`Plan limit exceeded! You have ${totalInboxes} inboxes but your plan supports ${TOTAL_INBOXES}.`, 'Plan Limit Exceeded', {
-                        timeOut: 6000,
-                        closeButton: true,
-                        progressBar: true
-                    });
+                    // toastr.warning(`Plan limit exceeded! You have ${totalInboxes} inboxes but your plan supports ${TOTAL_INBOXES}.`, 'Plan Limit Exceeded', {
+                    //     timeOut: 6000,
+                    //     closeButton: true,
+                    //     progressBar: true
+                    // });
                 }
             } else {
                 // Reset flag when within max limits
