@@ -504,7 +504,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
     public function store(Request $request)
     {
         try {
@@ -596,8 +595,20 @@ class OrderController extends Controller
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
             
+            // Validate plan minimum inbox requirement
+            if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
+                $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
+                return response()->json([
+                    'success' => false,
+                    'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
+                    'errors' => [
+                        'domains' => [
+                            "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
+                        ]
+                    ]
+                ], 422);
+            }
             
-
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
@@ -623,6 +634,21 @@ class OrderController extends Controller
                         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
                     ], 422);
                 }
+                
+                // Validate plan minimum inbox requirement for edit orders
+                if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
+                    $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
+                        'errors' => [
+                            'domains' => [
+                                "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
+                            ]
+                        ]
+                    ], 422);
+                }
+                
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 // Set status based on whether total_inboxes equals calculated total from request domains
                 // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
@@ -736,7 +762,6 @@ class OrderController extends Controller
                     // Continue execution - don't let email failure stop the process
                 }
             }
-            
             // status is pending then pannelCreationAndOrderSplitOnPannels
             if($status == 'pending'){
                 // panel creation

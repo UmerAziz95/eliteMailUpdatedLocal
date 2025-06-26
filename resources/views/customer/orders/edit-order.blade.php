@@ -1891,11 +1891,11 @@ $(document).ready(function() {
                     
                     // Show toastr warning if not during import
                     if (!isImporting) {
-                        toastr.warning(`Below plan minimum! You have ${totalInboxes} inboxes but need at least ${minInboxes}.`, 'Below Plan Minimum', {
-                            timeOut: 6000,
-                            closeButton: true,
-                            progressBar: true
-                        });
+                        // toastr.warning(`Below plan minimum! You have ${totalInboxes} inboxes but need at least ${minInboxes}.`, 'Below Plan Minimum', {
+                        //     timeOut: 6000,
+                        //     closeButton: true,
+                        //     progressBar: true
+                        // });
                     }
                 } else {
                     // Clear domain errors if within valid range and no other errors
@@ -2398,7 +2398,7 @@ $(document).ready(function() {
                         firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                         setTimeout(() => {
                             firstErrorField.focus();
-                        }, 500);
+                        }, 1500);
                     }
                     
                     Swal.fire({
