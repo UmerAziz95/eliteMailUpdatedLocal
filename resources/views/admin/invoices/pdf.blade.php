@@ -99,10 +99,6 @@
     </style>
 </head>
 
-@php
-dd($invoice);
-
-@endphp
 
 <body>
     <table width="100%" style="margin-bottom: 30px; vertical-align: top;">
