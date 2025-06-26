@@ -347,7 +347,7 @@ class CheckPanelCapacity extends Command
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
             
-            // Get the reorder info for this order
+            // Get the reorder info for this orders
             $reorderInfo = $order->reorderInfo()->first();
             
             if (!$reorderInfo) {
