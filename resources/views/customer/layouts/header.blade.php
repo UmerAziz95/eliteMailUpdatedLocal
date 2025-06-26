@@ -16,7 +16,7 @@
 
     .tour-btn {
         position: absolute;
-        top: -3.5%;
+        top: -25px;
         left: 50%;
         transform: translate(-50%, 0);
         height: 35px;
@@ -53,7 +53,7 @@
     .tour-btn .fa-arrow-down {
         animation: wobble 1s infinite linear alternate-reverse;
         position: absolute;
-        bottom: -45%;
+        bottom: -17px;
         left: 48%;
         transform: translate(-50%, 0);
         rotate: 180deg
