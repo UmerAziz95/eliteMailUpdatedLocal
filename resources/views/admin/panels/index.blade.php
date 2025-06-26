@@ -695,11 +695,12 @@
     function updateCounters(data) {
         const totalOrders = data.length;
         const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
-        const totalPanels = data.reduce((sum, item) => sum + (item.inboxes_per_domain || 0), 0);
+        console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes);
+        const panelsRequired = Math.ceil(totalInboxes / 1790);
 
         $('#orders_counter').text(totalOrders);
         $('#inboxes_counter').text(totalInboxes);
-        $('#panels_counter').text(totalPanels);
+        $('#panels_counter').text(panelsRequired);
     }
 
     let panels = [];

@@ -530,13 +530,12 @@ class PanelController extends Controller
             return response()->json(['message' => 'Failed to retrieve panel'], 500);
         }
     }
-
     public function getOrderTrackingData(Request $request)
     {
         try {
-            \Log::info('OrderTracking API called');
+            // \Log::info('OrderTracking API called');
             
-            $query = OrderTracking::with(['order.user', 'order.plan'])
+            $query = OrderTracking::with(['order.user', 'order.plan', 'order.reorderInfo'])
                 ->where('status', 'pending')
                 ->orderBy('created_at', 'desc');
 
@@ -548,15 +547,14 @@ class PanelController extends Controller
                 $order = $tracking->order;
                 $domainUrl = 'N/A';
                 
-                if ($order && $order->meta) {
-                    if (is_array($order->meta) && isset($order->meta['domain'])) {
-                        $domainUrl = $order->meta['domain'];
-                    } elseif (is_string($order->meta)) {
-                        $meta = json_decode($order->meta, true);
-                        $domainUrl = $meta['domain'] ?? 'N/A';
+                // First try to get domain from reorder_infos table
+                if ($order && $order->reorderInfo && $order->reorderInfo->isNotEmpty()) {
+                    $reorderInfo = $order->reorderInfo->first();
+                    // If still no domain found, try forwarding_url
+                    if ($reorderInfo->forwarding_url) {
+                        $domainUrl = $reorderInfo->forwarding_url;
                     }
                 }
-                
                 return [
                     'id' => $order->id ?? 'N/A',
                     'order_id' => $tracking->order_id,
