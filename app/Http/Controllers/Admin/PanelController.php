@@ -10,6 +10,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserOrderPanelAssignment; 
+use App\Models\OrderTracking;
 
 class PanelController extends Controller
 {
@@ -527,6 +528,61 @@ class PanelController extends Controller
             return response()->json(['message' => 'Panel not found'], 404);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to retrieve panel'], 500);
+        }
+    }
+
+    public function getOrderTrackingData(Request $request)
+    {
+        try {
+            \Log::info('OrderTracking API called');
+            
+            $query = OrderTracking::with(['order.user', 'order.plan'])
+                ->where('status', 'pending')
+                ->orderBy('created_at', 'desc');
+
+            $orderTrackingRecords = $query->get();
+            \Log::info('Found ' . $orderTrackingRecords->count() . ' order tracking records');
+
+            // Get paginated results
+            $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
+                $order = $tracking->order;
+                $domainUrl = 'N/A';
+                
+                if ($order && $order->meta) {
+                    if (is_array($order->meta) && isset($order->meta['domain'])) {
+                        $domainUrl = $order->meta['domain'];
+                    } elseif (is_string($order->meta)) {
+                        $meta = json_decode($order->meta, true);
+                        $domainUrl = $meta['domain'] ?? 'N/A';
+                    }
+                }
+                
+                return [
+                    'id' => $order->id ?? 'N/A',
+                    'order_id' => $tracking->order_id,
+                    'date' => $order && $order->created_at ? $order->created_at->format('Y-m-d') : 'N/A',
+                    'plan' => $order && $order->plan ? $order->plan->name : 'N/A',
+                    'domain_url' => $domainUrl,
+                    'total' => $tracking->total_inboxes ?? 0,
+                    'inboxes_per_domain' => $tracking->inboxes_per_domain ?? 0,
+                    'status' => $tracking->status ?? 'pending',
+                    'cron_run_time' => $tracking->cron_run_time ? $tracking->cron_run_time->format('Y-m-d H:i:s') : 'N/A',
+                ];
+            });
+
+            \Log::info('Processed ' . $orderTrackingData->count() . ' records');
+
+            return response()->json([
+                'success' => true,
+                'data' => $orderTrackingData
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getOrderTrackingData: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order tracking data: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

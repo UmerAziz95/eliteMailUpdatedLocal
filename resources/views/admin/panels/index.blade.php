@@ -405,7 +405,6 @@
             </form>
         </div>
     </div>
-
     <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="secondOffcanvas" aria-labelledby="secondOffcanvasLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="secondOffcanvasLabel">Panel</h5>
@@ -419,7 +418,7 @@
                             <div class="content-left">
                                 <h6 class="text-heading">Number of Orders</h6>
                                 <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <h4 class="mb-0 me-2 fs-2" id="orders_counter">0</h4>
                                     <p class="text-success mb-0"></p>
                                 </div>
                                 <small class="mb-0"></small>
@@ -435,9 +434,9 @@
                     <div>
                         <div class="d-flex align-items-start justify-content-between">
                             <div class="content-left">
-                                <h6 class="text-heading">Number of Inbxes</h6>
+                                <h6 class="text-heading">Number of Inboxes</h6>
                                 <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <h4 class="mb-0 me-2 fs-2" id="inboxes_counter">0</h4>
                                     <p class="text-success mb-0"></p>
                                 </div>
                                 <small class="mb-0"></small>
@@ -455,7 +454,7 @@
                             <div class="content-left">
                                 <h6 class="text-heading">Panels Required</h6>
                                 <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                    <h4 class="mb-0 me-2 fs-2" id="panels_counter">0</h4>
                                     <p class="text-success mb-0"></p>
                                 </div>
                                 <small class="mb-0"></small>
@@ -480,17 +479,8 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody class="overflow-y-auto">
-                        @for ($i = 0; $i < 100; $i++)
-                            <tr >
-                                <td>#123456</td>
-                                <td>2025-06-24</td>
-                                <td>Business Pro</td>
-                                <td>example.com</td>
-                                <td>10</td>
-                                <td><span class="badge bg-label-success rounded-1 px-2 py-1">Active</span></td>
-                            </tr>
-                        @endfor
+                    <tbody class="overflow-y-auto" id="orderTrackingTableBody">
+                        <!-- Dynamic data will be loaded here -->
                     </tbody>
                     
                 </table>
@@ -629,20 +619,90 @@
             scroll: true     // allows scrolling while multiple are open
         });
         secondOffcanvas.show();
+        
+        // Initialize DataTable when offcanvas is shown
+        setTimeout(function() {
+            initializeOrderTrackingTable();
+        }, 300); // Small delay to ensure offcanvas is fully shown
     });
 
-    $(document).ready(function () {
-        $('#myTable').DataTable({
+    let orderTrackingTable = null;
+
+    function initializeOrderTrackingTable() {
+        // Destroy existing table if it exists
+        if (orderTrackingTable) {
+            orderTrackingTable.destroy();
+        }
+
+        // Initialize DataTable
+        orderTrackingTable = $('#myTable').DataTable({
             pageLength: 10,         // Show 10 rows per page
             lengthMenu: [10, 25, 50, 100], // Optional dropdown for page length
             ordering: true,         // Enable column sorting
             searching: true,        // Enable search box
-            scrollX: true           // Enable horizontal scroll if needed
+            scrollX: true,          // Enable horizontal scroll if needed
+            processing: true,       // Show processing indicator
+            ajax: {
+                url: '/admin/panels/order-tracking',
+                type: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                dataSrc: function(json) {
+                    if (json.success) {
+                        // Update counters
+                        updateCounters(json.data);
+                        return json.data;
+                    } else {
+                        console.error('Error fetching data:', json.message);
+                        return [];
+                    }
+                }
+            },
+            columns: [
+                { data: 'order_id', title: 'Order ID', render: function(data) { return '#' + data; } },
+                { data: 'date', title: 'Date' },
+                { data: 'plan', title: 'Plan' },
+                { data: 'domain_url', title: 'Domain URL' },
+                { data: 'total', title: 'Total' },
+                { 
+                    data: 'status', 
+                    title: 'Status',
+                    render: function(data) {
+                        let badgeClass = 'bg-label-secondary';
+                        switch(data) {
+                            case 'completed':
+                                badgeClass = 'bg-label-success';
+                                break;
+                            case 'active':
+                                badgeClass = 'bg-label-success';
+                                break;
+                            case 'pending':
+                                badgeClass = 'bg-label-warning';
+                                break;
+                            case 'failed':
+                                badgeClass = 'bg-label-danger';
+                                break;
+                        }
+                        return '<span class="badge ' + badgeClass + ' rounded-1 px-2 py-1">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
+                    }
+                }
+            ]
         });
-    });
+    }
+    // Function to update counters
+    function updateCounters(data) {
+        const totalOrders = data.length;
+        const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
+        const totalPanels = data.reduce((sum, item) => sum + (item.inboxes_per_domain || 0), 0);
 
+        $('#orders_counter').text(totalOrders);
+        $('#inboxes_counter').text(totalInboxes);
+        $('#panels_counter').text(totalPanels);
+    }
 
-        let panels = [];
+    let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
         let currentPage = 1;
