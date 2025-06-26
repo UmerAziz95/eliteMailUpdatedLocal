@@ -407,7 +407,7 @@
     </div>
     <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="secondOffcanvas" aria-labelledby="secondOffcanvasLabel">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="secondOffcanvasLabel">Panel</h5>
+            <h5 class="offcanvas-title" id="secondOffcanvasLabel">Order Awaited Panel Allocation</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
