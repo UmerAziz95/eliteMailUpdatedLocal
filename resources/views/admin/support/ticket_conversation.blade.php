@@ -4,9 +4,15 @@
 
 @push('styles')
 <style>
+    .ql-blank::placeholder {
+       color: #999 !important;
+    }
+</style>
+<style>
     #message .ql-editor.ql-blank::before {
         color: #bebec2;
-        opacity: 1; /* Make sure it's fully visible */
+        opacity: 1;
+        /* Make sure it's fully visible */
     }
 </style>
 <style>

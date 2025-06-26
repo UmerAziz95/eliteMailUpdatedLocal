@@ -3,6 +3,13 @@
 @section('title', 'Support')
 
 @push('styles')
+
+<style>
+    #description-editor .ql-editor {
+        color: #fff !important;
+    }
+</style>
+
 <style>
   #description-editor .ql-editor.ql-blank::before {
     color: white;       /* Change to any color you want */

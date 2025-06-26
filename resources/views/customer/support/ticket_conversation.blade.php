@@ -4,6 +4,11 @@
 
 @push('styles')
 <style>
+   .ql-editor::before {
+    color: #999 !important;
+}
+</style>
+<style>
     .chat-container {
         max-height: 600px;
         overflow-y: auto;
@@ -131,6 +136,11 @@
         background-color: rgba(157, 255, 0, 0.261) !important;
         color: rgb(13, 220, 13) !important;
         border-radius: 2px !important
+    }
+</style>
+<style>
+     .ql-editor p {
+        color: #fff !important;
     }
 </style>
 @endpush
@@ -318,7 +328,7 @@
             ['clean']
         ]
     },
-    placeholder: 'Type your message here...'
+    placeholder: 'Type your message...'
 });
 </script>
 <script>

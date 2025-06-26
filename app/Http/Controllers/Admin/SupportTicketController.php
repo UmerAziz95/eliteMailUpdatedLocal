@@ -36,6 +36,7 @@ class SupportTicketController extends Controller
         $ticket = SupportTicket::with(['replies.user', 'user'])->findOrFail($id);
         return view('admin.support.ticket_conversation', compact('ticket'));
     }
+   
 
     public function reply(Request $request, $ticketId)
     {

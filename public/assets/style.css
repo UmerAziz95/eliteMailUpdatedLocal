@@ -84,6 +84,34 @@ html.dark-theme .logo-light {
 
 }
 
+.actions .board span {
+    transition: all ease .4s;
+    opacity: 0;
+}
+
+.even .board {
+    background-color: #292d42 !important;
+}
+
+.actions .board {
+    border-radius: 50px;
+    min-width: 60px;
+}
+
+.actions:hover .board span {
+    opacity: 1;
+}
+
+.actions,
+.action-icon {
+    transition: all ease .4s;
+}
+
+.actions:hover .action-icon {
+    /* opacity: 1; */
+    transform: translateX(230%);
+}
+
 table {
     /* border-collapse: separate !important;
     border-spacing: 0px 15px !important; */
@@ -129,7 +157,8 @@ a {
     }
 }
 
-.counter_1 h6, .counter_2 h6 {
+.counter_1 h6,
+.counter_2 h6 {
     font-size: 14px;
     margin-bottom: 0 !important;
 }
@@ -329,7 +358,7 @@ textarea:focus {
 }
 
 .animate-gradient {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.452) , rgba(255, 255, 255, 0));
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.452), rgba(255, 255, 255, 0));
     background-size: 200% 100%;
     background-position: -100% 0;
     animation: shine 3s infinite linear;
@@ -360,9 +389,9 @@ textarea:focus {
 }
 
 
-.dropdown button:hover {
+/* .dropdown button:hover {
     background-color: #97979735 !important;
-}
+} */
 
 .dropdown-item,
 .input-group-text {
@@ -482,7 +511,7 @@ footer {
         border-bottom: 2px solid #ffffff6a;
         opacity: .4;
     }
-    
+
     .nav-link::after {
         content: "";
         position: absolute;
@@ -493,18 +522,18 @@ footer {
         background-color: var(--white-color);
         transition: width 0.5s ease;
     }
-    
+
     .nav-link:hover {
         /* background-color: #ffffff1b; */
         /* border-radius: 4px; */
         color: var(--white-color);
         opacity: .6;
     }
-    
+
     .nav-link:hover::after {
         width: 100%;
     }
-    
+
     .nav-link.active {
         /* background-color: var(--second-primary); */
         /* border-radius: 4px; */
@@ -512,7 +541,7 @@ footer {
         border-bottom: 2px solid #fff;
         opacity: 1;
     }
-    
+
 
     .icons {
         width: 14px;
@@ -1039,6 +1068,7 @@ table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
 .text-danger {
     color: #dc3545 !important;
 }
+
 .input-group-text {
     display: flex;
     align-items: center;

@@ -133,7 +133,7 @@
                             <div class="position-relative">
                                 <div>
                                     <img class="img-fluid rounded mb-4" id="profile-image"
-                                        src="{{ Auth::user()->profile_image ? asset('https://cdn-icons-png.flaticon.com/128/456/456283.png' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/456/456283.png' }}"
+                                        src="{{ Auth::user()->profile_image ? asset('https://cdn-icons-png.flaticon.com/128/3237/3237472.png' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}"
                                         height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 </div>
 

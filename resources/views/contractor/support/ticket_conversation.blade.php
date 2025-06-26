@@ -5,7 +5,7 @@
 @push('styles')
 <style>
     #message .ql-editor.ql-blank::before {
-        color: white;
+        color: #999 !important;
         opacity: 1;
     }
 </style>
