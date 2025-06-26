@@ -99,6 +99,11 @@
     </style>
 </head>
 
+@php
+dd($invoice);
+exit();
+@endphp
+
 <body>
     <table width="100%" style="margin-bottom: 30px; vertical-align: top;">
         <tr>
@@ -106,31 +111,33 @@
             <td width="50%" style="vertical-align: top;">
                 <div style="display: block;">
                     <img src="{{ public_path('assets/logo/logo_white_back.png') }}" alt="Logo"
-                         style="height: 80px; width: auto; display: block; margin-bottom: 10px;">
+                        style="height: 80px; width: auto; display: block; margin-bottom: 10px;">
                     <p style="margin: 0; font-size: 14px; line-height: 1.4;">
-                       <strong>Billing Address</strong>
+                        <strong>Billing Address</strong>
                         <br>
-                       {{ $$invoice->user->billing_address ?? "N/A" }}<br>
+                        {{ $$invoice->user->billing_address ?? "N/A" }}<br>
                         {{ $$invoice->user->email ?? "N/A" }}
                     </p>
                 </div>
             </td>
-    
+
             <!-- RIGHT: Invoice summary -->
             <td width="50%" style="vertical-align: top; text-align: right;">
                 <h2 style="margin: 0 0 10px;">INVOICE</h2>
                 <p style="margin: 4px 0;"><strong>Invoice #</strong> {{ $invoice->chargebee_invoice_id }}</p>
                 <p style="margin: 4px 0;"><strong>Invoice Date</strong> {{ $invoice->created_at->format('M d, Y') }}</p>
-                <p style="margin: 4px 0;"><strong>Invoice Amount</strong> ${{ number_format($invoice->amount, 2) }} (USD)</p>
+                <p style="margin: 4px 0;"><strong>Invoice Amount</strong> ${{ number_format($invoice->amount, 2) }}
+                    (USD)</p>
                 <p style="margin: 4px 0;"><strong>Customer ID</strong> {{ $invoice->user->id }}</p>
-                <p style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold; margin: 4px 0;">
+                <p
+                    style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold; margin: 4px 0;">
                     {{ strtoupper($invoice->status) }}
                 </p>
             </td>
         </tr>
     </table>
-    
-    
+
+
     <div class="billing-section">
         <div>
             <strong>BILLED TO</strong><br>
