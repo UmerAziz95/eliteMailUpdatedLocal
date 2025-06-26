@@ -101,7 +101,7 @@
 
 @php
 dd($invoice);
-exit();
+
 @endphp
 
 <body>
