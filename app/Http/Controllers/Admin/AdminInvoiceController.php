@@ -279,6 +279,7 @@ class AdminInvoiceController extends Controller
             $invoice = Invoice::with(['user', 'order.plan'])
                 ->where('chargebee_invoice_id', $invoiceId)
                 ->firstOrFail();
+                dd($invoice);
 
             // Generate PDF using dompdf  
             $pdf = \PDF::loadView('admin.invoices.pdf', compact('invoice'));

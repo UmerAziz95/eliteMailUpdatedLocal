@@ -336,6 +336,7 @@
     });
 
     function downloadInvoice(invoiceId) {
+        
 
         window.location.href = `/admin/invoices/${invoiceId}/download`;
     }
