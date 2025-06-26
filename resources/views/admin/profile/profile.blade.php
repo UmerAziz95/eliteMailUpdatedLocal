@@ -108,16 +108,18 @@
 @endphp
 
 <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
-    @if ($user->profile_image)
-        <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
-            style="inline-size: 160px; border-radius: 50%" alt="user image"
-            class="d-block user-profile-img">
-    @else
-        <div class="d-flex justify-content-center align-items-center text-white fw-bold mx-auto"
-            style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: #5750bf;">
-            {{ $initials }}
-        </div>
-    @endif
+                              @if ($user->profile_image)
+                                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                                        style="inline-size: 160px; border-radius: 50%" alt="user image"
+                                        class="d-block h-auto user-profile-img">
+                                    {{-- <i class="fa-regular fa-user fs-2"></i> --}}
+                                @else
+                                    <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                                        style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: var(--second-primary);">
+                                        {{-- {{ $initials }} --}}
+                                        <i class="fa-regular fa-user" style="font-size: 64px !important"></i>
+                                    </div>
+                                @endif 
 </div>
 
                         <div class="flex-grow-1 mt-3">

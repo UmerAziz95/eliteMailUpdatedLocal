@@ -89,7 +89,7 @@
                     <div class="d-flex align-items-center flex-column">
                         <div class="position-relative">
                             <img class="img-fluid mb-4" id="profile-image"
-                                src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
+                                src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}"
                                 height="150" width="150" alt="User avatar" style="cursor: pointer; border-radius: 50%"
                                 onclick="$('#profile-image-input').click();">
                             <div class="position-absolute" style="bottom: 20px; right: 10px">
@@ -1173,6 +1173,7 @@
                             $('.login-user-profile').attr('src', response.image_url);
                             toastr.success('Profile image updated successfully');
                             $('#cropperModal').modal('hide');
+                            window.location.reload();
                         }
                     },
                     error: function(xhr) {

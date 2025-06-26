@@ -143,10 +143,10 @@
 
                             <div class="flex-shrink-0 mx-sm-0 mx-auto">
                                 @if ($user->profile_image)
-                                    {{-- <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
                                         style="inline-size: 160px; border-radius: 50%" alt="user image"
-                                        class="d-block h-auto user-profile-img"> --}}
-                                    <i class="fa-regular fa-user fs-2"></i>
+                                        class="d-block h-auto user-profile-img">
+                                    {{-- <i class="fa-regular fa-user fs-2"></i> --}}
                                 @else
                                     <div class="d-flex justify-content-center align-items-center text-white fw-bold"
                                         style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: var(--second-primary);">

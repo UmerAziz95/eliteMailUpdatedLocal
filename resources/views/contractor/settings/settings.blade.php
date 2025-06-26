@@ -131,16 +131,9 @@
                 <div class="card-body pt-12">
                     <div class="user-avatar-section">
                         <div class="d-flex align-items-center flex-column">
-                            <div class="position-relative">
-                                <img class="img-fluid rounded mb-4" id="profile-image"
-                                    src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/avatars/1.png' }}"
-                                    height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
-                                <div class="position-absolute bottom-0 end-0">
-                                    <label for="profile-image-input" class="btn btn-sm btn-primary rounded-circle">
-                                        <i class="ti ti-edit"></i>
-                                    </label>
+                           <div>
+                                    <img class="img-fluid rounded mb-4" id="profile-image" src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}" height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 </div>
-                            </div>
                             <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                             <div class="user-info text-center">
                                 <h5>{{ Auth::user()->name }}</h5>
@@ -954,6 +947,7 @@
                             $('.login-user-profile').attr('src', response.image_url);
                             toastr.success('Profile image updated successfully');
                             $('#cropperModal').modal('hide');
+                            window.location.reload();
                         }
                     },
                     error: function(xhr) {

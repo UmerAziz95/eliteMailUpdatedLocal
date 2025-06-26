@@ -132,9 +132,7 @@
                         <div class="d-flex align-items-center flex-column">
                             <div class="position-relative">
                                 <div>
-                                    <img class="img-fluid rounded mb-4" id="profile-image"
-                                        src="{{ Auth::user()->profile_image ? asset('https://cdn-icons-png.flaticon.com/128/3237/3237472.png' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}"
-                                        height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
+                                    <img class="img-fluid rounded mb-4" id="profile-image" src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}" height="120" width="120" alt="User avatar" style="cursor: pointer;" onclick="$('#profile-image-input').click();">
                                 </div>
 
                                 <div class="position-absolute bottom-0 end-0">
@@ -1097,11 +1095,8 @@
 
                             // Show success message
                             toastr.success('Profile updated successfully');
-
-                            // Reload page to reflect changes
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
+                             window.location.reload();
+                           
                         }
                     },
                     error: function(xhr) {
@@ -1292,6 +1287,7 @@
                             $('.login-user-profile').attr('src', response.image_url);
                             toastr.success('Profile image updated successfully');
                             $('#cropperModal').modal('hide');
+                            window.location.reload();
                         }
                     },
                     error: function(xhr) {
