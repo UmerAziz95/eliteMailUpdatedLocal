@@ -352,7 +352,7 @@
                 <div class="d-flex gap-2">
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0 purchase-btn">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        Purchase Accounts
+                        Purchase Inboxes
                     </button>
                 </div>
             </div>
