@@ -362,6 +362,7 @@ class OrderController extends Controller
                 </button>';
     } else {
         $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
+        $pulse_effect= $order->status_manage_by_admin == 'draft' ? 'pulse-effect' : '';
         return '<div class="dropdown">
         
                     <button class="p-0 bg-transparent border-0"
@@ -374,7 +375,7 @@ class OrderController extends Controller
                                 <span class="text-white">Click</span>
                             </div>
 
-                            <div class="action-icon pulse-effect"
+                            <div class="action-icon '.$pulse_effect.' "
                                 style="position: absolute; left: 0; top: -1px; z-index: 2; background-color: orange; height: 20px; width: 20px; border-radius: 50px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-chevron-right text-dark font-bold"></i>
                             </div>
