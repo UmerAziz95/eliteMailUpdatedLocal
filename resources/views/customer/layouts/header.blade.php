@@ -81,10 +81,6 @@
 
     <div class="d-flex align-items-center gap-3">
 
-        <button class="tour-btn border-0 animate-gradient pb-1" id="start-tour">
-            <i class="fa-solid fa-arrow-down text-white" style="font-size: 16px"></i>
-        </button>
-
         <div class="d-none d-md-block">
             <a href="{{ url('customer/pricing') }}"
                 class="btn btn-primary animate-gradient btn-sm d-flex align-items-center gap-1"><i
