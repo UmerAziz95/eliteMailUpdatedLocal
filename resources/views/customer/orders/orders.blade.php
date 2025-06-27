@@ -135,7 +135,7 @@
 
 @section('content')
 <!-- Draft Orders Notification -->
-@if(isset($draftOrders) && $draftOrders > 0)
+<!-- @if(isset($draftOrders) && $draftOrders > 0)
     <div class="alert alert-warning alert-dismissible fade show draft-alert py-2" role="alert" style="background-color: rgba(255, 166, 0, 0.359); color: #fff; border: 2px solid orange;">
         <i class="ti ti-alert-triangle me-2 alert-icon"></i>
         <strong>Draft Order{{ $draftOrders != 1 ? 's' : '' }} Alert:</strong> 
@@ -143,7 +143,32 @@
         Please submit the relevant details to complete the order{{ $draftOrders != 1 ? 's' : '' }}.
         <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-@endif
+@endif -->
+<!-- Draft Orders Notification -->
+    @if (isset($draftOrders) && $draftOrders > 0)
+        <div id="draftAlert" class="alert alert-warning alert-dismissible fade show draft-alert py-2 rounded-1" role="alert"
+            style="background-color: rgba(255, 166, 0, 0.414); color: #fff; border: 2px solid orange;">
+            <i class="ti ti-alert-triangle me-2 alert-icon"></i>
+            <strong>Draft Order{{ $draftOrders != 1 ? 's' : '' }} Alert:</strong>
+            You have {{ $draftOrders }} draft order{{ $draftOrders != 1 ? 's' : '' }}.
+            <a href="{{ route('customer.orders') }}" class="text-warning alert-link">View your order{{ $draftOrders != 1 ? 's' : '' }}</a> to complete {{ $draftOrders != 1 ? 'them' : 'it' }}.
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div>
+    @endif
+
+    <!-- Rejected Orders Notification (Initially Hidden) -->
+    @if (isset($rejectOrders) && $rejectOrders > 0)
+        <div id="rejectedAlert" class="alert alert-danger alert-dismissible fade draft-alert py-2 rounded-1 mt-2" 
+             role="alert" style="background-color: rgba(255, 82, 82, 0.414); color: #fff; border: 2px solid #dc3545; display: none;">
+            <i class="ti ti-x-circle me-2 alert-icon"></i>
+            <strong>Rejected Order{{ $rejectOrders != 1 ? 's' : '' }} Alert:</strong>
+            You have {{ $rejectOrders }} rejected order{{ $rejectOrders != 1 ? 's' : '' }}.
+            <a href="{{ route('customer.orders') }}" class="text-danger alert-link" style="color: #ffcccb !important;">View your order{{ $rejectOrders != 1 ? 's' : '' }}</a> for more details.
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div>
+    @endif
 
 
 <section class="py-3" data-page="orders">
@@ -441,7 +466,88 @@
     function viewOrder(id) {
         window.location.href = `{{ url('/customer/orders/${id}/view') }}`;
     }
-
+// Handle alert transitions - Repeating cycle every 3 seconds
+            const draftAlert = document.getElementById('draftAlert');
+            const rejectedAlert = document.getElementById('rejectedAlert');
+            let alertInterval = null;
+            
+            // Check if both alerts exist
+            if (draftAlert && rejectedAlert) {
+                let currentAlert = 'draft'; // Start with draft
+                
+                // Function to switch between alerts
+                function switchAlerts() {
+                    if (currentAlert === 'draft') {
+                        // Switch to rejected alert
+                        draftAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        draftAlert.style.opacity = '0';
+                        draftAlert.style.transform = 'translateX(-100%)';
+                        
+                        setTimeout(function() {
+                            draftAlert.style.display = 'none';
+                            rejectedAlert.style.display = 'block';
+                            rejectedAlert.style.opacity = '0';
+                            rejectedAlert.style.transform = 'translateX(-100%)';
+                            
+                            setTimeout(function() {
+                                rejectedAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                rejectedAlert.style.opacity = '1';
+                                rejectedAlert.style.transform = 'translateX(0)';
+                                rejectedAlert.classList.add('show');
+                            }, 50);
+                        }, 500);
+                        
+                        currentAlert = 'rejected';
+                    } else {
+                        // Switch to draft alert
+                        rejectedAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        rejectedAlert.style.opacity = '0';
+                        rejectedAlert.style.transform = 'translateX(-100%)';
+                        
+                        setTimeout(function() {
+                            rejectedAlert.style.display = 'none';
+                            rejectedAlert.classList.remove('show');
+                            draftAlert.style.display = 'block';
+                            draftAlert.style.opacity = '0';
+                            draftAlert.style.transform = 'translateX(-100%)';
+                            
+                            setTimeout(function() {
+                                draftAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                draftAlert.style.opacity = '1';
+                                draftAlert.style.transform = 'translateX(0)';
+                            }, 50);
+                        }, 500);
+                        
+                        currentAlert = 'draft';
+                    }
+                }
+                
+                // Start the repeating cycle every 3 seconds
+                alertInterval = setInterval(switchAlerts, 20000);
+                
+                // Add click handlers to stop cycling when user dismisses an alert
+                const draftCloseBtn = draftAlert.querySelector('.btn-close');
+                const rejectedCloseBtn = rejectedAlert.querySelector('.btn-close');
+                
+                if (draftCloseBtn) {
+                    draftCloseBtn.addEventListener('click', function() {
+                        clearInterval(alertInterval);
+                    });
+                }
+                
+                if (rejectedCloseBtn) {
+                    rejectedCloseBtn.addEventListener('click', function() {
+                        clearInterval(alertInterval);
+                    });
+                }
+            }
+            // If only rejected alert exists but no draft alert, show it immediately
+            else if (rejectedAlert && !draftAlert) {
+                rejectedAlert.style.display = 'block';
+                setTimeout(function() {
+                    rejectedAlert.classList.add('show');
+                }, 50);
+            }
 function initDataTable(planId = '') {
     const tableId = planId ? `#myTable-${planId}` : '#myTable';
     const $table = $(tableId);
