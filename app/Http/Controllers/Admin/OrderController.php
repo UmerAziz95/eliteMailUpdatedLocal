@@ -315,6 +315,7 @@ class OrderController extends Controller
                         END
                     ) = ?', [$request->totalInboxes]);
                 });
+
             }
 
             if ($request->has('startDate') && $request->startDate != '') {
@@ -1039,31 +1040,175 @@ class OrderController extends Controller
     public function getSplitEmails($orderPanelId)
     {
         try {
-            // Verify the contractor has access to this order panel
-            $orderPanel = OrderPanel::with(['order'])
-                ->findOrFail($orderPanelId);
+            // Log the request for debugging
+            Log::info('Getting split emails for order panel ID: ' . $orderPanelId);
 
-            // Get emails for this specific order panel split
-            $emails = OrderEmail::with(['orderSplit'])
-                ->where('order_id', $orderPanel->order_id)
-                ->whereHas('orderSplit', function($query) use ($orderPanelId) {
-                    $query->where('order_panel_id', $orderPanelId);
-                })
-                ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
-                ->get();
+            // Validate input
+            if (!is_numeric($orderPanelId) || $orderPanelId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid order panel ID',
+                    'data' => []
+                ], 400);
+            }
+
+            // Verify the order panel exists
+            $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->find($orderPanelId);
+            
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found',
+                    'data' => []
+                ], 404);
+            }
+
+            // Check if order exists
+            if (!$orderPanel->order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found for this panel',
+                    'data' => []
+                ], 404);
+            }
+
+            // Initialize emails collection
+            $emails = collect();
+            
+            // Try different approaches to get emails
+            try {
+                // Method 1: Try with relationship
+                $emails = OrderEmail::query()
+                    ->where('order_id', $orderPanel->order_id)
+                    ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                        $query->where('order_panel_id', $orderPanelId);
+                    })
+                    ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                    ->get();
+                    
+            } catch (\Exception $relationshipError) {
+                Log::warning('Relationship query failed, trying alternative approach: ' . $relationshipError->getMessage());
+                
+                // Method 2: Fallback - Get emails by split IDs
+                if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                    $splitIds = $orderPanel->orderPanelSplits->pluck('id')->toArray();
+                    
+                    $emails = OrderEmail::query()
+                        ->where('order_id', $orderPanel->order_id)
+                        ->whereIn('order_split_id', $splitIds)
+                        ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                        ->get();
+                } else {
+                    // Method 3: Get all emails for this order as last resort
+                    $emails = OrderEmail::query()
+                        ->where('order_id', $orderPanel->order_id)
+                        ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                        ->get();
+                }
+            }
+
+            Log::info('Found ' . $emails->count() . ' emails for order panel ID: ' . $orderPanelId);
 
             return response()->json([
                 'success' => true,
                 'data' => $emails,
-                'order_panel_id' => $orderPanelId
+                'order_panel_id' => (int)$orderPanelId,
+                'count' => $emails->count()
             ]);
 
         } catch (\Exception $e) {
-           return response()->json([
+            Log::error('Error in getSplitEmails function: ' . $e->getMessage(), [
+                'order_panel_id' => $orderPanelId,
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching emails: ' . $e->getMessage(),
+                'data' => [],
+                'error_details' => [
+                    'file' => basename($e->getFile()),
+                    'line' => $e->getLine()
+                ]
+            ], 500);
+        }
+    }
+
+    /**
+     * Alternative method to get emails with better error handling
+     */
+    public function getSplitEmailsAlternative($orderPanelId)
+    {
+        try {
+            Log::info('Getting split emails (alternative method) for order panel ID: ' . $orderPanelId);
+
+            // Verify the order panel exists
+            $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->find($orderPanelId);
+            
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found',
+                    'data' => []
+                ], 404);
+            }
+
+            // Check if order exists
+            if (!$orderPanel->order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found for this panel',
+                    'data' => []
+                ], 404);
+            }
+
+            // First try to get emails through the relationship
+            $emails = collect();
+            
+            try {
+                $emails = OrderEmail::query()
+                    ->where('order_id', $orderPanel->order_id)
+                    ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                        $query->where('order_panel_id', $orderPanelId);
+                    })
+                    ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                    ->get();
+            } catch (\Exception $relationshipError) {
+                Log::warning('Relationship query failed, trying alternative approach: ' . $relationshipError->getMessage());
+                
+                // Fallback: Get all emails for this order and filter by split
+                $splitIds = $orderPanel->orderPanelSplits->pluck('id')->toArray();
+                
+                $emails = OrderEmail::query()
+                    ->where('order_id', $orderPanel->order_id)
+                    ->whereIn('order_split_id', $splitIds)
+                    ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                    ->get();
+            }
+
+            Log::info('Found ' . $emails->count() . ' emails for order panel ID: ' . $orderPanelId);
+
+            return response()->json([
                 'success' => true,
-                'data'=> null,
-                'message' => 'Error fetching emails: ' . $e->getMessage()
-            ], 200);
+                'data' => $emails,
+                'order_panel_id' => $orderPanelId,
+                'count' => $emails->count(),
+                'method' => 'alternative'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getSplitEmailsAlternative function: ' . $e->getMessage(), [
+                'order_panel_id' => $orderPanelId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching emails: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
         }
     }
 
@@ -1179,5 +1324,79 @@ class OrderController extends Controller
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
-  
+    /**
+     * Debug method to check relationships and data integrity
+     */
+    public function debugSplitEmails($orderPanelId)
+    {
+        try {
+            $debug = [
+                'order_panel_id' => $orderPanelId,
+                'order_panel_exists' => false,
+                'order_exists' => false,
+                'splits_count' => 0,
+                'emails_count' => 0,
+                'relationships' => []
+            ];
+
+            // Check if order panel exists
+            $orderPanel = OrderPanel::find($orderPanelId);
+            if ($orderPanel) {
+                $debug['order_panel_exists'] = true;
+                $debug['order_panel_data'] = [
+                    'id' => $orderPanel->id,
+                    'order_id' => $orderPanel->order_id,
+                    'panel_id' => $orderPanel->panel_id,
+                    'status' => $orderPanel->status
+                ];
+
+                // Check if order exists
+                if ($orderPanel->order) {
+                    $debug['order_exists'] = true;
+                    $debug['order_data'] = [
+                        'id' => $orderPanel->order->id,
+                        'user_id' => $orderPanel->order->user_id,
+                        'status' => $orderPanel->order->status_manage_by_admin
+                    ];
+                }
+
+                // Check splits
+                $splits = OrderPanelSplit::where('order_panel_id', $orderPanelId)->get();
+                $debug['splits_count'] = $splits->count();
+                $debug['splits_data'] = $splits->toArray();
+
+                // Check emails
+                if ($orderPanel->order_id) {
+                    $allEmails = OrderEmail::where('order_id', $orderPanel->order_id)->get();
+                    $debug['emails_count'] = $allEmails->count();
+                    $debug['all_emails'] = $allEmails->toArray();
+
+                    // Try to get emails with relationship
+                    try {
+                        $relationshipEmails = OrderEmail::whereHas('orderSplit', function($query) use ($orderPanelId) {
+                            $query->where('order_panel_id', $orderPanelId);
+                        })->get();
+                        $debug['relationship_emails_count'] = $relationshipEmails->count();
+                        $debug['relationship_emails'] = $relationshipEmails->toArray();
+                    } catch (\Exception $e) {
+                        $debug['relationship_error'] = $e->getMessage();
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'debug_info' => $debug
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debug error: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    // ...existing code...
 }
