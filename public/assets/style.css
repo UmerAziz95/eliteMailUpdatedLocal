@@ -108,9 +108,30 @@ html.dark-theme .logo-light {
 }
 
 .actions:hover .action-icon {
-    /* opacity: 1; */
     transform: translateX(230%);
 }
+
+@keyframes pulseAnimation {
+    0% {
+        scale: 0.8;
+    }
+
+    70% {
+        scale: 1;
+    }
+
+    100% {
+        scale: 0.8;
+    }
+}
+
+.pulse-effect {
+    animation: pulseAnimation 1.5s infinite;
+    background-color: #ec2f2f !important;
+}
+
+
+
 
 table {
     /* border-collapse: separate !important;
@@ -1090,21 +1111,3 @@ table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
     color: #ffffff;
     letter-spacing: 3px;
 }
-
-@keyframes pulseAnimation {
-    0% {
-      transform: scale(.8);
-    }
-    70% {
-      transform: scale(1.2);
-    }
-    100% {
-      transform: scale(.8);
-    }
-  }
-  
-  .pulse-effect {
-    animation: pulseAnimation 1.5s infinite;
-    background-color: #ec2f2f !important;
-  }
-  

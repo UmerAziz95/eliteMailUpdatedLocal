@@ -276,6 +276,9 @@
     @endif
 
 
+    <button class="tour-btn border-0 animate-gradient pb-1" id="start-tour">
+        <i class="fa-solid fa-arrow-down text-white" style="font-size: 16px"></i>
+    </button>
 
 
     <section class="py-0" data-page="dashboard">
