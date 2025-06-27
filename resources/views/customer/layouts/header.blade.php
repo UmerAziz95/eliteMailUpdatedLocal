@@ -46,9 +46,7 @@
         top: 0;
     }
 
-    .tour-btn:hover .fa-arrow-down {
-
-    }
+    .tour-btn:hover .fa-arrow-down {}
 
     .tour-btn .fa-arrow-down {
         animation: wobble 1s infinite linear alternate-reverse;
@@ -63,11 +61,11 @@
         from {
             transform: translateY(0);
         }
+
         to {
             transform: translateY(4px);
         }
     }
-
 </style>
 
 <header class="d-flex align-items-center justify-content-between justify-content-xl-end rounded-3">
@@ -118,10 +116,10 @@
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
                     style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
-                    
+
                     <div>
-                        <i class="fa-regular fa-envelope fs-5"></i>
-                        <i class="fa-solid fa-envelope-open-text fs-5"></i>
+                        <i class="fa-regular fa-envelope fs-5 markReadToAllNotification"></i>
+                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"></i>
                     </div>
                 </div>
                 <div id="notificationList">
@@ -135,75 +133,74 @@
             </ul>
         </div>
 
-@php
-    $user = Auth::user();
+        @php
+        $user = Auth::user();
 
-    if ($user && !empty($user->name)) {
+        if ($user && !empty($user->name)) {
         $initials = collect(explode(' ', $user->name))
-            ->filter()
-            ->map(fn($word) => strtoupper(substr($word, 0, 1)))
-            ->take(2)
-            ->implode('');
-    } else {
+        ->filter()
+        ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+        ->take(2)
+        ->implode('');
+        } else {
         $initials = strtoupper(substr($user->email ?? 'N/A', 0, 2));
-    }
-@endphp
+        }
+        @endphp
 
-<div class="dropdown">
-    <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        @if ($user && $user->profile_image)
-            <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
-                style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
-                alt="User Image">
-        @else
-            <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
-                {{-- {{ $initials }} --}}
-                <i class="fa-regular fa-user fs-6"></i>
-            </div>
-        @endif
-
-        <div>
-            <h6 class="mb-0 text-capitalize">{{ $user->name ?? 'N/A' }}</h6>
-            <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
-        </div>
-    </div>
-
-    <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
-        <div class="profile d-flex align-items-center gap-2 px-2">
-            @if ($user && $user->profile_image)
-                <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
-                    style="border-radius: 50%" height="40" width="40" class="object-fit-cover login-user-profile"
-                    alt="User Image">
-            @else
+        <div class="dropdown">
+            <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-1" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                @if ($user && $user->profile_image)
+                <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}" style="border-radius: 50%"
+                    height="40" width="40" class="object-fit-cover login-user-profile" alt="User Image">
+                @else
                 <div class="d-flex justify-content-center align-items-center text-white fw-bold"
                     style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
                     {{-- {{ $initials }} --}}
                     <i class="fa-regular fa-user fs-6"></i>
                 </div>
-            @endif
+                @endif
 
-            <div>
-                <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
-                <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
+                <div>
+                    <h6 class="mb-0 text-capitalize">{{ $user->name ?? 'N/A' }}</h6>
+                    <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
+                </div>
             </div>
-        </div>
-        <hr>
 
-        <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                href="/customer/profile"><i class="ti ti-user"></i> My Profile</a></li>
-        <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                href="/customer/settings"><i class="ti ti-settings"></i> Settings</a></li>
-        <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                href="{{ url('customer/pricing') }}"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
+            <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
+                <div class="profile d-flex align-items-center gap-2 px-2">
+                    @if ($user && $user->profile_image)
+                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}" style="border-radius: 50%"
+                        height="40" width="40" class="object-fit-cover login-user-profile" alt="User Image">
+                    @else
+                    <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                        style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
+                        {{-- {{ $initials }} --}}
+                        <i class="fa-regular fa-user fs-6"></i>
+                    </div>
+                    @endif
 
-        <div class="logout-btn">
-            <a href="{{ route('logout') }}" class="btn btn-danger w-100" style="font-size: 13px">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
+                    <div>
+                        <h6 class="mb-0">{{ $user->name ?? 'N/A' }}</h6>
+                        <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
+                    </div>
+                </div>
+                <hr>
+
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="/customer/profile"><i class="ti ti-user"></i> My Profile</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="/customer/settings"><i class="ti ti-settings"></i> Settings</a></li>
+                <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
+                        href="{{ url('customer/pricing') }}"><i class="ti ti-currency-dollar"></i> Pricing</a></li>
+
+                <div class="logout-btn">
+                    <a href="{{ route('logout') }}" class="btn btn-danger w-100" style="font-size: 13px">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </ul>
         </div>
-    </ul>
-</div>
 
     </div>
 </header>
@@ -234,7 +231,7 @@
                         </div>
                     </a>
                 </li> --}}
-        
+
                 <!-- Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.dashboard') ? 'active' : '' }}"
@@ -245,8 +242,8 @@
                         </div>
                     </a>
                 </li>
-        
-        
+
+
                 <!-- Orders -->
                 <!-- <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
@@ -257,7 +254,7 @@
                         </div>
                     </a>
                 </li> -->
-        
+
                 <!-- pricing -->
                 <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.orders') ? 'active' : '' }}"
@@ -268,7 +265,7 @@
                         </div>
                     </a>
                 </li>
-        
+
                 <!-- Support -->
                 <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
@@ -306,7 +303,9 @@
                     <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
                     <small class="text-white">Click here to buy more inboxes</small>
                 </div>
-                <a style="background-color: #1D2239; font-size: 12px;" class="mt-1 border-0 rounded-2 py-2 px-4 text-white animate-gradient" href="{{ route('customer.pricing') }}">Buy Now</a>
+                <a style="background-color: #1D2239; font-size: 12px;"
+                    class="mt-1 border-0 rounded-2 py-2 px-4 text-white animate-gradient"
+                    href="{{ route('customer.pricing') }}">Buy Now</a>
             </div>
         </aside>
     </div>
@@ -459,4 +458,44 @@
         })
         .catch(error => console.error('Error:', error));
     }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const markReadButton = document.querySelector('.markReadToAllNotification');
+
+    if (markReadButton) {
+        markReadButton.addEventListener('click', function () {
+            if (!confirm("Are you sure you want to mark all notifications as read?")) return;
+
+            fetch('/notifications/mark-all-as-read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update notification count
+                    updateNotificationCount();
+
+                    // Remove all unread badges
+                    document.querySelectorAll('.dropdown-notifications-read').forEach(el => el.remove());
+
+                    // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        });
+    }
+});
 </script>
