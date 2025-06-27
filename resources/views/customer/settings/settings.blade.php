@@ -202,7 +202,7 @@
                     <div class="info-container">
                         <ul class="list-unstyled mb-6">
                             <li class="mb-2">
-                                <span class="h6">Username:</span>
+                                <span class="h6">Full Name:</span>
                                 <span class="opacity-50 small fw-light">{{ Auth::user()->name }}</span>
                             </li>
                             <li class="mb-2">
@@ -1330,7 +1330,7 @@
                     </div>
                     <form id="editUserForm" class="row gy-3">
                         <div class="col-12 col-md-12">
-                            <label class="form-label" for="modalEditUserFirstName">Username</label>
+                            <label class="form-label" for="modalEditUserFirstName">Full Name</label>
                             <input type="text" id="modalEditUserFirstName" name="modalEditUserFirstName"
                                 class="form-control" placeholder="John" value="{{ Auth::user()->name }}">
                         </div>
