@@ -411,24 +411,24 @@
                                     @endif
                                 </div>
                                 <div class="d-flex flex-column gap-1">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ route('customer.subscriptions.view') }}" class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Next Billing Date</small>
                                         <small
                                             class="mb-0">{{ isset($subscription) && $subscription->next_billing_date
                                                 ? \Carbon\Carbon::parse($subscription->next_billing_date)->format('M d, Y')
                                                 : 'N/A' }}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    </a>
+                                    <a href="{{ route('customer.subscriptions.view') }}" class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Last Billing Date</small>
                                         <small
                                             class="mb-0">{{ isset($subscription) && $subscription->last_billing_date
                                                 ? \Carbon\Carbon::parse($subscription->last_billing_date)->format('M d, Y')
                                                 : 'N/A' }}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    </a>
+                                    <a href="{{ route('customer.subscriptions.view') }}" class="d-flex justify-content-between align-items-center">
                                         <small style="font-size: 12px" class="theme-text">Billing Period</small>
                                         <small class="mb-0">Monthly</small>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -482,7 +482,7 @@
                             </span>
                         </div>
                     </div>
-                    <div class="card-body px-3 pt-0">
+                    <a href="{{ route('customer.orders') }}" class="card-body px-3 pt-0">
                         <div class="mt-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <small class="mb-0 opacity-75">Pending Orders</small>
@@ -505,7 +505,7 @@
                                     role="progressbar"></div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 
@@ -535,7 +535,7 @@
 
                             <ul class="p-0 m-0 gap-1"
                                 style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));">
-                                <li style="background-color: #8d8d8d2c"
+                                <a href="{{ route('customer.support') }}" style="background-color: #8d8d8d2c"
                                     class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
                                     <div class="badge rounded-1 bg-label-primary p-1">
                                         <i class="ti ti-ticket theme-text fs-5"></i>
@@ -544,8 +544,8 @@
                                         <h6 style="font-size: 11px" class="mb-0 text-nowrap small">Open</h6>
                                         <p class="small opacity-75 mb-0">{{ $newTickets ?? 0 }}</p>
                                     </div>
-                                </li>
-                                <li style="background-color: #8d8d8d2c"
+                                </a>
+                                <a href="{{ route('customer.support') }}" style="background-color: #8d8d8d2c"
                                     class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
                                     <div class="badge rounded-1 bg-label-info p-1">
                                         <i class="ti ti-circle-check fs-5 text-info"></i>
@@ -554,8 +554,8 @@
                                         <h6 style="font-size: 11px" class="mb-0 text-nowrap small">In-Progress</h6>
                                         <p class="small opacity-75 mb-0">{{ $pendingTickets ?? 0 }}</p>
                                     </div>
-                                </li>
-                                <li style="background-color: #8d8d8d2c"
+                                </a>
+                                <a href="{{ route('customer.support') }}" style="background-color: #8d8d8d2c"
                                     class="d-flex gap-2 align-items-start p-1 rounded-1 w-100">
                                     <div class="badge rounded-1 bg-label-success p-1">
                                         <i class="ti ti-circle-check fs-5 success"></i>
@@ -564,7 +564,7 @@
                                         <h6 style="font-size: 11px" class="mb-0 text-nowrap small">Closed</h6>
                                         <p class="small opacity-75 mb-0">{{ $resolvedTickets ?? 0 }}</p>
                                     </div>
-                                </li>
+                                </a>
                             </ul>
                         </div>
                     </div>
