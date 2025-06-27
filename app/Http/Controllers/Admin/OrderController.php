@@ -1221,7 +1221,7 @@ class OrderController extends Controller
             // Find the order panel split
             $orderPanelSplit = OrderPanelSplit::with([
                 'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
-                    $query->where('contractor_id', auth()->id());
+                    // $query->where('contractor_id', auth()->id());
                 }
             ])->findOrFail($splitId);
 
