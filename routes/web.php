@@ -50,10 +50,9 @@ use Illuminate\Support\Facades\DB;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// test section
 
 
-//logs for application
+// logs for application
 Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
 Route::view('/plans', 'plans');
@@ -69,7 +68,7 @@ Route::get('/test-admin', [AuthController::class, 'testAdmin'])->name('test.admi
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 
-// // Note: Password Reset Routes
+// Note: Password Reset Routes
 Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
@@ -77,7 +76,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
 Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
 Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
-//verfiy email address
+// verfiy email address
 Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
 Route::get('/resend-verfication-code/{encrypted}', [AuthController::class, 'resendVerificationEmail'])->name('resend.verification');
 Route::post('/verify-email', [AuthController::class, 'VerifyEmailNow'])->name('verify.email.code');
@@ -158,8 +157,6 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
-        // Route::post('/orders/panel/emails', [AdminOrderController::class, 'storeSplitEmails']);
-        // Route::delete('/orders/panel/emails/{id}', [AdminOrderController::class, 'deleteSplitEmail']);
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
@@ -176,7 +173,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/role',[CustomRolePermissionController::class,'index'])->name('role.index');
         Route::get('/role/create',[CustomRolePermissionController::class,'index'])->name('role.create');
         Route::post('/role/store',[CustomRolePermissionController::class,'store'])->name('role.store');
-       Route::get('/roles/{id}', [CustomRolePermissionController::class, 'getRole'])->name('roles.get');
+        Route::get('/roles/{id}', [CustomRolePermissionController::class, 'getRole'])->name('roles.get');
         Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
         Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');
         //payments
@@ -192,13 +189,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/support/tickets/{id}', [App\Http\Controllers\Admin\SupportTicketController::class, 'show'])->name('support.tickets.show');
         Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Admin\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
         Route::patch('/support/tickets/{id}/status', [App\Http\Controllers\Admin\SupportTicketController::class, 'updateStatus'])->name('support.tickets.status');
-        // /subscription-stats?type=${type} Admin/DashboardController
         Route::get('/subscription-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getSubscriptionStats'])->name('subscription.stats');
-        // /revenue-stats?type=${type} Admin/DashboardController
         Route::get('/revenue-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueStats'])->name('revenue.stats');
-        // /ticket-stats?period=${period} Admin/DashboardController
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
-        // /revenue-totals Admin/DashboardController
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
         
         //panels
@@ -219,8 +212,6 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::class, 'updateProfileImage'])->name('profile.update.image');
 
-// Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
-// Route::get('customer/orders/reorder/{order_id?}', [App\Http\Controllers\Customer\OrderController::class, 'reorder'])->name('customer.orders.reorder');
 // Info: Customer Access
 Route::get('/customer/orders/new-order/{id}/{encrypted?}', [CustomerOrderController::class, 'newOrder'])->name('customer.orders.new.order');
 Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->group(function () {
@@ -288,7 +279,6 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/support/tickets/orders', [App\Http\Controllers\Customer\SupportTicketController::class, 'getUserOrders'])->name('support.tickets.orders');
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
-    // Route::post('/update-address', 'Customer\ProfileController@updateAddress')->name('address.update');
     Route::post('/update-address', [App\Http\Controllers\Customer\ProfileController::class, 'updateAddress'])->name('address.update');
     
 
@@ -304,9 +294,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [ContractorOrderController::class, 'getOrders'])->name('orders.data');
     Route::post('/update-order-status', [ContractorOrderController::class, 'updateStatus'])->name('orders.update.status');
-    // contractor.invoices.data
     Route::get('/invoices/data', [ContractorOrderController::class, 'getInvoices'])->name('invoices.data');
-    // contractor.orders.reorder
     Route::get('/orders/reorder/{order_id}', [ContractorOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/order/status/process', [ContractorOrderController::class, 'orderStatusProcess'])->name('order.status.process');
     Route::post('/order-panel/status/process', [ContractorOrderController::class, 'orderPanelStatusProcess'])->name('order.panel.status.process');
@@ -369,9 +357,6 @@ Route::get('/reset_password', function () {
     return view('admin/auth/reset_password');
 });
 
-// Route::get('/admins', function () {
-//     return view('admin/admins/admins');
-// });
 
 Route::get('/customers', function () {
     return view('admin/customers/customers');
@@ -381,9 +366,6 @@ Route::get('/contractor', function () {
     return view('admin/contractor/contractor');
 });
 
-// Route::get('/roles', function () {
-//     return view('admin/roles/roles');
-// });
 
 Route::get('/permissions', function () {
     return view('admin/permissions/permissions');
@@ -422,11 +404,17 @@ Route::get('/chargebee/webhook', function () {
 });
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
-// https://1c24-2407-aa80-314-d317-c9e3-2893-ed60-51c0.ngrok-free.app/webhook/payment/done
 Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
 Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
 
 
+// Notification routes
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
+Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
 
 
 
@@ -435,21 +423,6 @@ Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanContr
 Route::get('/delete-order', [App\Http\Controllers\Customer\OrderController::class, 'deleteAllOrderNullPlanID'])->name('delete.order');
 // Fixed Order Status to lowercase
 Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\OrderController::class, 'updateOrderStatusToLowerCase'])->name('updateOrderStatusToLowerCase');
-
-// Notification routes
-// Route::middleware('auth')->group(function () {
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
-    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
-    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
-    // Removing duplicate route that conflicts with notifications/{id}/mark-read
-    // Route::post('/notifications/{notification}/mark-as-read', function(\App\Models\Notification $notification) {
-    //     $notification->update(['is_read' => true]);
-    //     return response()->json(['message' => 'success']);
-    // })->middleware('auth');
-    Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
-    Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
-// });
 
 // Temporary test route to verify panel assignment data
 Route::get('/test-panel-assignments', function() {
