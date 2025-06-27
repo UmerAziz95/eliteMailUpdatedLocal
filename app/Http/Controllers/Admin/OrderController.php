@@ -1041,9 +1041,6 @@ class OrderController extends Controller
         try {
             // Verify the contractor has access to this order panel
             $orderPanel = OrderPanel::with(['order'])
-                ->whereHas('userOrderPanelAssignments', function($query) {
-                    // $query->where('contractor_id', auth()->id());
-                })
                 ->findOrFail($orderPanelId);
 
             // Get emails for this specific order panel split

@@ -810,8 +810,6 @@
                                 <thead>
                                     <tr>
                                         <th>Invoice #</th>
-                                        <th>Date</th>
-                                        <th>Due Date</th>
                                         <th>Amount</th>
                                         <th>Paid At</th>
                                         <th>Status</th>
@@ -862,14 +860,6 @@
                                             name: 'chargebee_invoice_id'
                                         },
                                         {
-                                            data: 'created_at',
-                                            name: 'created_at'
-                                        },
-                                        {
-                                            data: 'created_at',
-                                            name: 'created_at'
-                                        },
-                                        {
                                             data: 'amount',
                                             name: 'amount'
                                         },
@@ -893,7 +883,7 @@
                                         }
                                     ],
                                     order: [
-                                        [1, 'desc']
+                                        [0, 'desc']
                                     ],
                                     drawCallback: function(settings) {
                                         if (settings.json && settings.json.error) {
