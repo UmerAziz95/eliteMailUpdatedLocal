@@ -118,7 +118,11 @@
                 <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
                     style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
-                    <i class="fa-regular fa-envelope fs-5"></i>
+                    
+                    <div>
+                        <i class="fa-regular fa-envelope fs-5"></i>
+                        <i class="fa-solid fa-envelope-open-text fs-5"></i>
+                    </div>
                 </div>
                 <div id="notificationList">
                     <!-- Notifications will be loaded here dynamically -->

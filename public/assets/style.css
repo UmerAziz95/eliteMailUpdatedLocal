@@ -1083,3 +1083,10 @@ table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th.dtr-control:before {
     border: var(--bs-border-width) solid #5a5d6f;
     border-radius: var(--bs-border-radius);
 }
+
+.text-shadow {
+    font-weight: 900;
+    text-shadow: 1px 0px 0px #515050, 2px 0px 0px #515050, 3px 0px 0px #515050;
+    color: #ffffff;
+    letter-spacing: 3px;
+}
