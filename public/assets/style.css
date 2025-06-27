@@ -116,7 +116,7 @@ html.dark-theme .logo-light {
         scale: 0.8;
     }
 
-    70% {
+    50% {
         scale: 1;
     }
 
@@ -126,7 +126,7 @@ html.dark-theme .logo-light {
 }
 
 .pulse-effect {
-    animation: pulseAnimation 1.5s infinite;
+    animation: pulseAnimation .7s infinite;
     background-color: #ec2f2f !important;
 }
 
