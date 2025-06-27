@@ -584,6 +584,16 @@
                                                         {{-- <i class="ti ti-check"></i> --}}
                                                         <div>
                                                             <i class="fa-regular fa-envelope fs-5"></i>
+                                                            {{-- <i class="fa-solid fa-envelope-open-text fs-5"></i> --}}
+                                                        </div>
+                                                    </button>
+                                                @endif
+                                                @if ($notification->is_read)
+                                                    <button class="btn btn-sm btn-icon m-btn mark-as-read"
+                                                        data-id="{{ $notification->id }}" title="Mark as UnRead">
+                                                        {{-- <i class="ti ti-check"></i> --}}
+                                                        <div>
+                                                            {{-- <i class="fa-regular fa-envelope fs-5"></i> --}}
                                                             <i class="fa-solid fa-envelope-open-text fs-5"></i>
                                                         </div>
                                                     </button>
@@ -1727,6 +1737,7 @@
                         button.remove();
                         // Show success message
                         toastr.success(response.message || 'Notification marked as read');
+                        window.location.reload();
                     } else {
                         toastr.error(response.message || 'Failed to mark notification as read');
                     }

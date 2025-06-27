@@ -114,10 +114,15 @@
                     <h6 class="mb-0">Notifications</h6>
 
                     <div>
-                        <i class="fa-regular fa-envelope fs-5 markReadToAllNotification"></i>
-                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"></i>
+                        <i class="p-2 fa-regular fa-envelope fs-5 markReadToAllNotification" data-bs-toggle="tooltip"
+                            title="Mark all as read"></i>
+
+                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"
+                            data-bs-toggle="tooltip" title="Mark all as unread"></i>
                     </div>
                 </div>
+
+
                 <div id="notificationList">
                     <!-- Notifications will be loaded here dynamically -->
                 </div>
@@ -161,7 +166,10 @@
                     <h6 class="mb-0 text-capitalize">{{ $user->name ?? 'N/A' }}</h6>
                     <p class="small mb-0">{{ $user->email ?? 'N/A' }}</p>
                 </div>
+
             </div>
+
+
 
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
@@ -183,6 +191,8 @@
                 </div>
                 <hr>
 
+
+
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
                         href="/customer/profile"><i class="ti ti-user"></i> My Profile</a></li>
                 <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
@@ -197,7 +207,8 @@
                 </div>
             </ul>
         </div>
-
+        <a class="bold p-1 text-danger" href="{{route('logout')}}"><img src="{{ asset('assets/logo/power-off.png') }}"
+                width="30" alt="Sign out"></a>
     </div>
 </header>
 
@@ -458,29 +469,51 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
     const markReadButton = document.querySelector('.markReadToAllNotification');
-
     if (markReadButton) {
         markReadButton.addEventListener('click', function () {
-            if (!confirm("Are you sure you want to mark all notifications as read?")) return;
-
-            fetch('/notifications/mark-all-as-read', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({})
+            fetch('notifications/mark-all-as-read', {
+                method: 'GET',
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update notification count
-                    updateNotificationCount();
-
-                    // Remove all unread badges
+                    toastr.success(data.message)
+                     console.log(data)
+                   // updateNotificationCount();
+                      window.location.reload();
+                
                     document.querySelectorAll('.dropdown-notifications-read').forEach(el => el.remove());
-
                     // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        });
+    }
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const markUnReadButton = document.querySelector('.markUnReadToAllNotification');
+    if (markUnReadButton) {
+        markUnReadButton.addEventListener('click', function () {
+            fetch('notifications/mark-all-as-unread', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                   toastr.success(data.message)
+                    
+                    // updateNotificationCount();
+                     window.location.reload();
+                                // Close the dropdown
                     const dropdownMenu = document.getElementById('notificationDropdown');
                     const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
                     if (bsDropdown) {

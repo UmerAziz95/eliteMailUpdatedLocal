@@ -1,6 +1,6 @@
 <aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
     <div class="d-flex align-items-center justify-content-center gap-2" style="margin-bottom: 1.15rem">
-        <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
+        <a href="https://projectinbox.ai"><img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light"></a>
         <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
     </div>
     <!-- <div class="form-check" id="toggle-btn" style="position: absolute; right: 10px; top: 25px">

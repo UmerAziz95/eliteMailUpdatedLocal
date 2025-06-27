@@ -26,8 +26,8 @@ class NotificationController extends Controller
             //     return response()->json(['error' => 'You are not authorized to mark this notification as read'], 403);
             // }
 
-            $notification->update(['is_read' => true]);
-
+            
+$notification->update(['is_read' => !$notification->is_read]);
             if (request()->wantsJson() || request()->ajax()) {
                 return response()->json([
                     'success' => true, 
@@ -135,5 +135,37 @@ class NotificationController extends Controller
             });
 
         return response()->json(['notifications' => $notifications]);
+    }
+
+
+    public function markAllAsReadNoti(Request $request){
+        $userId = auth()->id();
+        $notifications = Notification::where('user_id', $userId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+     
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as read successfully'
+            ]);
+        
+
+       
+    }
+    public function markAllAsUnReadNoti(Request $request){
+        $userId = auth()->id();
+        $notifications = Notification::where('user_id', $userId)
+            ->where('is_read', true)
+            ->update(['is_read' => false]);
+
+      
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as unread successfully'
+            ]);
+        
+
+       
     }
 }

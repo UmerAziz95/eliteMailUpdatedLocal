@@ -203,9 +203,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
         Route::post('/panels/create', [AdminPanelController::class, 'createPanel'])->name('panels.create');
+       
+      
 
-
-        
     }); 
 
 });
@@ -483,3 +483,10 @@ Route::get('/cron/run-draft-notifications', function () {
         ], 500);
     }
 })->name('cron.run-draft-notifications');
+
+//
+  //notification markers
+        Route::get('/customer/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('notifications.mark-all-as-read');
+        Route::get('/customer/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('notifications.mark-all-as-unread');
+        Route::get('/notifications/mark-all-as-read/{id}',[NotificationController::class, 'markAllAsReadById'])->name('notifications.mark-all-as-read-by-id');
+        Route::get('/notifications/mark-all-as-unread/{id}',[NotificationController::class, 'markAllAsUnRead'])->name('notifications.mark-all-as-unread-by-id');
