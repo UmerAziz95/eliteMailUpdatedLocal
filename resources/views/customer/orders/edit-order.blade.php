@@ -1889,6 +1889,7 @@ $(document).ready(function() {
                         <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
                     `);
                     
+
                     // Show toastr warning if not during import
                     if (!isImporting) {
                         // toastr.warning(`Below plan minimum! You have ${totalInboxes} inboxes but need at least ${minInboxes}.`, 'Below Plan Minimum', {

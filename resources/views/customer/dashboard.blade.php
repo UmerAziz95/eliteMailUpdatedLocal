@@ -139,6 +139,7 @@
             position: relative;
             overflow: hidden;
             margin-top: 15px;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
         }
 
         .draft-alert::before {
@@ -150,6 +151,35 @@
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             animation: shimmer 3s infinite;
+        }
+
+        /* Smooth transitions for alert switching */
+        .draft-alert.fade-out {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+
+        .draft-alert.fade-in {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Rejected Orders Alert - Red variant */
+        .alert-danger.draft-alert {
+            border-color: #dc3545 !important;
+        }
+
+        .alert-danger.draft-alert .alert-link {
+            color: #ffcccb !important;
+            text-decoration: none;
+        }
+
+        .alert-danger.draft-alert .alert-link::after {
+            background-color: #dc3545 !important;
+        }
+
+        .alert-danger.draft-alert .alert-link:hover {
+            color: #fff !important;
         }
 
         /* .draft-alert:hover {
@@ -262,14 +292,28 @@
 @endpush
 
 @section('content')
+
     <!-- Draft Orders Notification -->
     @if (isset($draftOrders) && $draftOrders > 0)
-        <div class="alert alert-warning alert-dismissible fade show draft-alert py-2 rounded-1" role="alert"
+        <div id="draftAlert" class="alert alert-warning alert-dismissible fade show draft-alert py-2 rounded-1" role="alert"
             style="background-color: rgba(255, 166, 0, 0.414); color: #fff; border: 2px solid orange;">
             <i class="ti ti-alert-triangle me-2 alert-icon"></i>
             <strong>Draft Order{{ $draftOrders != 1 ? 's' : '' }} Alert:</strong>
             You have {{ $draftOrders }} draft order{{ $draftOrders != 1 ? 's' : '' }}.
-            <a href="{{ route('customer.orders') }}" class="text-warning alert-link">View your orders</a> to complete them.
+            <a href="{{ route('customer.orders') }}" class="text-warning alert-link">View your order{{ $draftOrders != 1 ? 's' : '' }}</a> to complete {{ $draftOrders != 1 ? 'them' : 'it' }}.
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div>
+    @endif
+
+    <!-- Rejected Orders Notification (Initially Hidden) -->
+    @if (isset($rejectedOrders) && $rejectedOrders > 0)
+        <div id="rejectedAlert" class="alert alert-danger alert-dismissible fade draft-alert py-2 rounded-1 mt-2" 
+             role="alert" style="background-color: rgba(255, 82, 82, 0.414); color: #fff; border: 2px solid #dc3545; display: none;">
+            <i class="ti ti-x-circle me-2 alert-icon"></i>
+            <strong>Rejected Order{{ $rejectedOrders != 1 ? 's' : '' }} Alert:</strong>
+            You have {{ $rejectedOrders }} rejected order{{ $rejectedOrders != 1 ? 's' : '' }}.
+            <a href="{{ route('customer.orders') }}" class="text-danger alert-link" style="color: #ffcccb !important;">View your orders</a> for more details.
             <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
                 aria-label="Close"></button>
         </div>
@@ -978,203 +1022,286 @@
                     [1, 'desc']
                 ]
             });
-        });
 
-        // DataTable initialization code
-        function initDataTable(planId = '') {
-            console.log('Initializing DataTable for planId:', planId);
-            const tableId = '#myTable';
-            const $table = $(tableId);
-
-            if (!$table.length) {
-                console.error('Table not found with selector:', tableId);
-                return null;
+            // Handle alert transitions - Repeating cycle every 3 seconds
+            const draftAlert = document.getElementById('draftAlert');
+            const rejectedAlert = document.getElementById('rejectedAlert');
+            let alertInterval = null;
+            
+            // Check if both alerts exist
+            if (draftAlert && rejectedAlert) {
+                let currentAlert = 'draft'; // Start with draft
+                
+                // Function to switch between alerts
+                function switchAlerts() {
+                    if (currentAlert === 'draft') {
+                        // Switch to rejected alert
+                        draftAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        draftAlert.style.opacity = '0';
+                        draftAlert.style.transform = 'translateX(-100%)';
+                        
+                        setTimeout(function() {
+                            draftAlert.style.display = 'none';
+                            rejectedAlert.style.display = 'block';
+                            rejectedAlert.style.opacity = '0';
+                            rejectedAlert.style.transform = 'translateX(-100%)';
+                            
+                            setTimeout(function() {
+                                rejectedAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                rejectedAlert.style.opacity = '1';
+                                rejectedAlert.style.transform = 'translateX(0)';
+                                rejectedAlert.classList.add('show');
+                            }, 50);
+                        }, 500);
+                        
+                        currentAlert = 'rejected';
+                    } else {
+                        // Switch to draft alert
+                        rejectedAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        rejectedAlert.style.opacity = '0';
+                        rejectedAlert.style.transform = 'translateX(-100%)';
+                        
+                        setTimeout(function() {
+                            rejectedAlert.style.display = 'none';
+                            rejectedAlert.classList.remove('show');
+                            draftAlert.style.display = 'block';
+                            draftAlert.style.opacity = '0';
+                            draftAlert.style.transform = 'translateX(-100%)';
+                            
+                            setTimeout(function() {
+                                draftAlert.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                draftAlert.style.opacity = '1';
+                                draftAlert.style.transform = 'translateX(0)';
+                            }, 50);
+                        }, 500);
+                        
+                        currentAlert = 'draft';
+                    }
+                }
+                
+                // Start the repeating cycle every 3 seconds
+                alertInterval = setInterval(switchAlerts, 20000);
+                
+                // Add click handlers to stop cycling when user dismisses an alert
+                const draftCloseBtn = draftAlert.querySelector('.btn-close');
+                const rejectedCloseBtn = rejectedAlert.querySelector('.btn-close');
+                
+                if (draftCloseBtn) {
+                    draftCloseBtn.addEventListener('click', function() {
+                        clearInterval(alertInterval);
+                    });
+                }
+                
+                if (rejectedCloseBtn) {
+                    rejectedCloseBtn.addEventListener('click', function() {
+                        clearInterval(alertInterval);
+                    });
+                }
+            }
+            // If only rejected alert exists but no draft alert, show it immediately
+            else if (rejectedAlert && !draftAlert) {
+                rejectedAlert.style.display = 'block';
+                setTimeout(function() {
+                    rejectedAlert.classList.add('show');
+                }, 50);
             }
 
-            try {
-                const table = $table.DataTable({
-                    processing: true,
-                    serverSide: true,
-                    responsive: {
-                        details: {
-                            display: $.fn.dataTable.Responsive.display.modal({
-                                header: function(row) {
-                                    return 'Activity Details';
-                                }
+            // DataTable initialization code
+            function initDataTable(planId = '') {
+                console.log('Initializing DataTable for planId:', planId);
+                const tableId = '#myTable';
+                const $table = $(tableId);
+
+                if (!$table.length) {
+                    console.error('Table not found with selector:', tableId);
+                    return null;
+                }
+
+                try {
+                    const table = $table.DataTable({
+                        processing: true,
+                        serverSide: true,
+                        responsive: {
+                            details: {
+                                display: $.fn.dataTable.Responsive.display.modal({
+                                    header: function(row) {
+                                        return 'Activity Details';
+                                    }
                             }),
                             renderer: $.fn.dataTable.Responsive.renderer.tableAll()
                         }
-                    },
-                    autoWidth: false,
-                    dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
-                    ajax: {
-                        url: "{{ route('specific.logs') }}",
-                        type: "GET",
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                            'Accept': 'application/json'
                         },
-                        data: function(d) {
-                            d.plan_id = planId;
-                            d.user_name = $('#user_name_filter').val();
-                            d.email = $('#email_filter').val();
-                            d.status = $('#status_filter').val();
-                        },
-                        error: function(xhr, error, thrown) {
-                            console.error('DataTables error:', error);
-                            console.error('Server response:', xhr.responseText);
+                        autoWidth: false,
+                        dom: '<"top"f>rt<"bottom"lip><"clear">', // expose filter (f) and move others
+                        ajax: {
+                            url: "{{ route('specific.logs') }}",
+                            type: "GET",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                                'Accept': 'application/json'
+                            },
+                            data: function(d) {
+                                d.plan_id = planId;
+                                d.user_name = $('#user_name_filter').val();
+                                d.email = $('#email_filter').val();
+                                d.status = $('#status_filter').val();
+                            },
+                            error: function(xhr, error, thrown) {
+                                console.error('DataTables error:', error);
+                                console.error('Server response:', xhr.responseText);
 
-                            if (xhr.status === 401) {
-                                window.location.href = "{{ route('login') }}";
-                            } else if (xhr.status === 403) {
-                                toastr.error('You do not have permission to view this data');
-                            } else {
-                                toastr.error('Error loading data: ' + error);
+                                if (xhr.status === 401) {
+                                    window.location.href = "{{ route('login') }}";
+                                } else if (xhr.status === 403) {
+                                    toastr.error('You do not have permission to view this data');
+                                } else {
+                                    toastr.error('Error loading data: ' + error);
+                                }
                             }
-                        }
-                    },
-                    columns: [{
-                            data: 'id',
-                            name: 'id'
                         },
-                        {
-                            data: 'action_type',
-                            name: 'action_type'
-                        },
-                        {
-                            data: 'description',
-                            name: 'description',
-                            render: function(data, type, row) {
-                                return `
-                                    <div class="d-flex align-items-center text-nowrap">
-                                        <div class="me-1 rounded-1 d-flex align-items-center justify-content-center">
-                                            <i style="color: var(--green-color); font-size: 14px" class="ti ti-file-description "></i>
+                        columns: [{
+                                data: 'id',
+                                name: 'id'
+                            },
+                            {
+                                data: 'action_type',
+                                name: 'action_type'
+                            },
+                            {
+                                data: 'description',
+                                name: 'description',
+                                render: function(data, type, row) {
+                                    return `
+                                        <div class="d-flex align-items-center text-nowrap">
+                                            <div class="me-1 rounded-1 d-flex align-items-center justify-content-center">
+                                                <i style="color: var(--green-color); font-size: 14px" class="ti ti-file-description "></i>
+                                            </div>
+                                            <span>${data}</span>
                                         </div>
-                                        <span>${data}</span>
-                                    </div>
-                                `;
-                            }
-                        },
-                        {
-                            data: 'performed_by',
-                            name: 'performed_by',
-                            render: function(data, type, row) {
-                                return `
-                                    <div class="d-flex align-items-center text-nowrap px-2 rounded-1" style= "border: 1px solid #00F2FF; width: fit-content">
-                                        <span style="color: #00F2FF; font-size: 11px">${data}</span>
-                                    </div>
-                                `;
-                            }
-                        },
-                        {
-                            data: 'performed_on_type',
-                            name: 'performed_on_type',
-                            render: function(data, type, row) {
-                                return `
-                                    <div class="d-flex align-items-start gap-1">
-                                        <img src="https://cdn-icons-png.flaticon.com/128/3641/3641988.png" style="width: 15px" alt="">
-                                        <span>${data}</span>    
-                                    </div>
-                                `;
-                            }
-                        },
-                        {
-                            data: 'performed_on',
-                            name: 'performed_on'
-                        },
-                        {
-                            data: 'ip',
-                            name: 'ip'
-                        },
-                        {
-                            data: 'user_agent',
-                            name: 'user_agent'
-                        },
-                        // { data: 'action', name: 'action', orderable: false, searchable: false }
-                    ],
-                    columnDefs: [{
-                            width: '10%',
-                            targets: 0
-                        }, // ID
-                        {
-                            width: '15%',
-                            targets: 1
-                        }, // Action Type
-                        {
-                            width: '20%',
-                            targets: 2
-                        }, // Description 
-                        {
-                            width: '10%',
-                            targets: 3
-                        }, // Performed By
-                        {
-                            width: '10%',
-                            targets: 4
-                        }, // Performed On Type
-                        {
-                            width: '10%',
-                            targets: 5
-                        }, // Performed On Id
-                        {
-                            width: '15%',
-                            targets: 6
-                        }, // Extra Data
-                        {
-                            width: '10%',
-                            targets: 7
-                        } // User Agent
-                    ],
-                    order: [
-                        [1, 'desc']
-                    ],
-                    drawCallback: function(settings) {
-                        const counters = settings.json?.counters;
+                                    `;
+                                }
+                            },
+                            {
+                                data: 'performed_by',
+                                name: 'performed_by',
+                                render: function(data, type, row) {
+                                    return `
+                                        <div class="d-flex align-items-center text-nowrap px-2 rounded-1" style= "border: 1px solid #00F2FF; width: fit-content">
+                                            <span style="color: #00F2FF; font-size: 11px">${data}</span>
+                                        </div>
+                                    `;
+                                }
+                            },
+                            {
+                                data: 'performed_on_type',
+                                name: 'performed_on_type',
+                                render: function(data, type, row) {
+                                    return `
+                                        <div class="d-flex align-items-start gap-1">
+                                            <img src="https://cdn-icons-png.flaticon.com/128/3641/3641988.png" style="width: 15px" alt="">
+                                            <span>${data}</span>    
+                                        </div>
+                                    `;
+                                }
+                            },
+                            {
+                                data: 'performed_on',
+                                name: 'performed_on'
+                            },
+                            {
+                                data: 'ip',
+                                name: 'ip'
+                            },
+                            {
+                                data: 'user_agent',
+                                name: 'user_agent'
+                            },
+                            // { data: 'action', name: 'action', orderable: false, searchable: false }
+                        ],
+                        columnDefs: [{
+                                width: '10%',
+                                targets: 0
+                            }, // ID
+                            {
+                                width: '15%',
+                                targets: 1
+                            }, // Action Type
+                            {
+                                width: '20%',
+                                targets: 2
+                            }, // Description 
+                            {
+                                width: '10%',
+                                targets: 3
+                            }, // Performed By
+                            {
+                                width: '10%',
+                                targets: 4
+                            }, // Performed On Type
+                            {
+                                width: '10%',
+                                targets: 5
+                            }, // Performed On Id
+                            {
+                                width: '15%',
+                                targets: 6
+                            }, // Extra Data
+                            {
+                                width: '10%',
+                                targets: 7
+                            } // User Agent
+                        ],
+                        order: [
+                            [1, 'desc']
+                        ],
+                        drawCallback: function(settings) {
+                            const counters = settings.json?.counters;
 
-                        if (counters) {
-                            $('#total_counter').text(counters.total);
-                            $('#active_counter').text(counters.active);
-                            $('#inactive_counter').text(counters.inactive);
+                            if (counters) {
+                                $('#total_counter').text(counters.total);
+                                $('#active_counter').text(counters.active);
+                                $('#inactive_counter').text(counters.inactive);
+                            }
+
+                            $('[data-bs-toggle="tooltip"]').tooltip();
+                            this.api().columns.adjust();
+                            this.api().responsive?.recalc();
+                        },
+                        initComplete: function() {
+                            console.log('Table initialization complete');
+                            this.api().columns.adjust();
+                            this.api().responsive?.recalc();
                         }
+                    });
 
-                        $('[data-bs-toggle="tooltip"]').tooltip();
-                        this.api().columns.adjust();
-                        this.api().responsive?.recalc();
-                    },
-                    initComplete: function() {
-                        console.log('Table initialization complete');
-                        this.api().columns.adjust();
-                        this.api().responsive?.recalc();
-                    }
-                });
-
-                // Optional loading indicator
-                table.on('processing.dt', function(e, settings, processing) {
-                    const wrapper = $(tableId + '_wrapper');
-                    if (processing) {
-                        wrapper.addClass('loading');
-                        if (!wrapper.find('.dt-loading').length) {
-                            wrapper.append('<div class="dt-loading">Loading...</div>');
+                    // Optional loading indicator
+                    table.on('processing.dt', function(e, settings, processing) {
+                        const wrapper = $(tableId + '_wrapper');
+                        if (processing) {
+                            wrapper.addClass('loading');
+                            if (!wrapper.find('.dt-loading').length) {
+                                wrapper.append('<div class="dt-loading">Loading...</div>');
+                            }
+                        } else {
+                            wrapper.removeClass('loading');
+                            wrapper.find('.dt-loading').remove();
                         }
-                    } else {
-                        wrapper.removeClass('loading');
-                        wrapper.find('.dt-loading').remove();
-                    }
-                });
+                    });
 
-                return table;
-            } catch (error) {
-                console.error('Error initializing DataTable:', error);
-                toastr.error('Error initializing table. Please refresh the page.');
+                    return table;
+                } catch (error) {
+                    console.error('Error initializing DataTable:', error);
+                    toastr.error('Error initializing table. Please refresh the page.');
+                }
+
             }
+            initDataTable();
 
-        }
-        initDataTable();
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
+            document.addEventListener('DOMContentLoaded', function() {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
             });
         });
     </script>
