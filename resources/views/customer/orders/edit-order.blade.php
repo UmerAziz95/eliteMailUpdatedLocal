@@ -1884,15 +1884,15 @@ $(document).ready(function() {
                     const maxInboxes = planInfo.max_inbox || 'Unlimited';
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
+                        <br><small>Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
                     `);
                     
 
                     // Show toastr warning if not during import
                     if (!isImporting) {
-                        // toastr.warning(`Below plan minimum! You have ${totalInboxes} inboxes but need at least ${minInboxes}.`, 'Below Plan Minimum', {
+                        // toastr.warning(`You're below the minimum plan limit. Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.`, 'Below Plan Minimum', {
                         //     timeOut: 6000,
                         //     closeButton: true,
                         //     progressBar: true
