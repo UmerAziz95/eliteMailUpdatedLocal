@@ -248,8 +248,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+			<p class="small">Click <strong>Import Order</strong> to quickly load order data from a file.</p>
+			<p class="small">This is useful when you have multiple inboxes or domain data ready in a structured format.</p>
+		`,
 		attachTo: { element: '.import-btn', on: 'bottom' },
 		buttons: [
 			{ text: 'Cancel', action() { return this.cancel(); }, classes: 'shepherd-button-secondary' },
@@ -258,8 +260,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+			<p class="small">Enter the <strong>Domain Forwarding Destination URL</strong>.</p>
+			<p class="small">This is where visitors will be redirected when they access your project domain.</p>
+		`,
 		attachTo: { element: '.domain-forwarding', on: 'bottom' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -268,8 +272,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Select your <strong>Domain Hosting Platform</strong> (e.g., GoDaddy, Namecheap).</p>
+  <p class="small">This helps the system identify how to interact with your domain settings.</p>
+`,
 		attachTo: { element: '.domain-hosting', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -278,8 +284,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Provide your login credentials for the selected hosting platform.</p>
+  <p class="small">This allows automated access when necessary.</p>
+`,
 		attachTo: { element: '.platform', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -288,8 +296,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Add the list of <strong>Domains</strong> you want to use in this order.</p>
+  <p class="small">You can paste them all in bulk (comma-separated). Make sure to stay within your plan’s inbox limit.</p>
+`,
 		attachTo: { element: '.domains', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -298,8 +308,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Choose the <strong>Email Sending Platform</strong> you want to connect (e.g., Mailgun, SendGrid).</p>
+  <p class="small">This is the service used to send campaign emails from the project.</p>
+`,
 		attachTo: { element: '.sending-platform', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -308,8 +320,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Enter the <strong>API credentials</strong> for your sending platform.</p>
+  <p class="small">Include your sequencer login and password to allow email automation.</p>
+`,
 		attachTo: { element: '.sending-platform-fields', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -318,8 +332,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Define how many <strong>inboxes per domain</strong> you need.</p>
+  <p class="small">This helps balance deliverability across multiple inboxes.</p>
+`,
 		attachTo: { element: '.inboxes-per-domain', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -328,8 +344,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Set the <strong>Total Number of Inboxes</strong> for this order.</p>
+  <p class="small">This value should match or be less than your current available limit.</p>
+`,
 		attachTo: { element: '.total-inbox', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -338,8 +356,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">This bar shows your <strong>Remaining Inbox Limit</strong>.</p>
+  <p class="small">If you exceed your plan quota, you’ll need to upgrade or reduce the number of inboxes.</p>
+`,
 		attachTo: { element: '.remaining', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -348,8 +368,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Enter the <strong>First Name</strong> to be used for this email identity.</p>
+  <p class="small">This name will appear in the "From" field of emails sent.</p>
+`,
 		attachTo: { element: '.first-name', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -358,8 +380,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Enter the <strong>Last Name</strong> of the email sender.</p>
+  <p class="small">Along with the first name, this creates a more personalized identity.</p>
+`,
 		attachTo: { element: '.last-name', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -368,8 +392,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Select an <strong>Inbox Prefix Variant</strong> (e.g., info@, mail@, support@).</p>
+  <p class="small">This defines how inbox addresses will be formatted.</p>
+`,
 		attachTo: { element: '.prefix-variants', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -378,8 +404,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Set the <strong>Email Account Password</strong> to secure inbox access.</p>
+  <p class="small">Make sure it meets the minimum security requirements.</p>
+`,
 		attachTo: { element: '.email-password', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -388,8 +416,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Optionally add a <strong>Profile Picture Link</strong> for the email persona.</p>
+  <p class="small">This will be used in supported email clients for better visual identity.</p>
+`,
 		attachTo: { element: '.email-picture-link', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -398,8 +428,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Enter the <strong>Master Inbox or Contact Email</strong>.</p>
+  <p class="small">This is where you will receive important alerts or communication summaries.</p>
+`,
 		attachTo: { element: '.master-inbox', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },
@@ -408,8 +440,10 @@ function initializeEditOrder() {
 	});
 
 	tour.addStep({
-		title: 'Creating a project mailbox Tour',
-		text: 'Creating a project mailbox tour is easy. too! Just create a "Tour" instance, and add as many steps as you want.',
+		text: `
+  <p class="small">Click <strong>Purchase</strong> to finalize and create the mailboxes for this order.</p>
+  <p class="small">Make sure all fields are correctly filled in before proceeding.</p>
+`,
 		attachTo: { element: '.purchase-btn', on: 'top' },
 		buttons: [
 			{ text: 'Back', action() { return this.back(); }, classes: 'shepherd-button-secondary' },

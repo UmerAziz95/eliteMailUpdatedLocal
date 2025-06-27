@@ -374,14 +374,13 @@ class OrderController extends Controller
                                 <span class="text-white">Click</span>
                             </div>
 
-                            <div class="action-icon"
+                            <div class="action-icon pulse-effect"
                                 style="position: absolute; left: 0; top: -1px; z-index: 2; background-color: orange; height: 20px; width: 20px; border-radius: 50px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-chevron-right text-dark font-bold"></i>
                             </div>
+
                         </div>
-
                     </button>
-
 
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
