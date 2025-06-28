@@ -132,7 +132,7 @@
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Profile Picture URL</span>
-                            <span>{{ $order->reorderInfo->first()->profile_picture_link ?? 'N/A' }}</span>
+                            <span>{{ $order->reorderInfo->first()->email_persona_picture_link ?? 'N/A' }}</span>
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Email Persona Password</span>
