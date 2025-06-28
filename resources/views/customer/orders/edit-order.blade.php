@@ -2355,6 +2355,24 @@ $(document).ready(function() {
                         timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
+                        // Send a separate request to run panel capacity check
+                        $.ajax({
+                            url: '{{ route("customer.orders.run-panel-capacity-check") }}',
+                            method: 'POST',
+                            data: {
+                                order_id: response.order_id || '',
+                                user_id: response.user_id || '',
+                                _token: $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function(capacityResponse) {
+                                console.log('Panel capacity check completed:', capacityResponse);
+                            },
+                            error: function(xhr) {
+                                console.log('Panel capacity check failed:', xhr.responseJSON);
+                                // Don't show error to user as it's a background process
+                            }
+                        });
+                        
                         window.location.href = "{{ route('customer.orders') }}";
                     });
                 } else {

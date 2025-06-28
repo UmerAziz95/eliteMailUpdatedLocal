@@ -219,6 +219,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/dashboard', [App\Http\Controllers\Customer\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/orders/reorder/{order_id}', [CustomerOrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/reorder', [CustomerOrderController::class, 'store'])->name('orders.reorder.store');
+    Route::post('/orders/run-panel-capacity-check', [CustomerOrderController::class, 'runPanelCapacityCheck'])->name('orders.run-panel-capacity-check');
     Route::get('/orders/{id}/view', [CustomerOrderController::class, 'view'])->name('orders.view');
     // customer.order.edit
     Route::get('/orders/{id}/edit', [CustomerOrderController::class, 'edit'])->name('order.edit');
