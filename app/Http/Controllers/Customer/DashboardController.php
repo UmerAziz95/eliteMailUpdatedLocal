@@ -71,6 +71,9 @@ class DashboardController extends Controller
         $draftOrders = $user->orders()
             ->where('status_manage_by_admin', 'draft')
             ->count();
+        $rejectedOrders = $user->orders()
+            ->where('status_manage_by_admin', 'reject')
+            ->count();
 
         // Get ticket statistics
         $totalTickets = $user->tickets()->count();
@@ -94,6 +97,7 @@ class DashboardController extends Controller
             'pendingOrders',
             'completedOrders',
             'draftOrders',
+            'rejectedOrders',
             'totalTickets',
             'pendingTickets',
             'resolvedTickets',

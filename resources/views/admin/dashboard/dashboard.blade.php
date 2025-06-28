@@ -223,10 +223,66 @@
 <section class="py-3 ">
     <div class="row gy-4">
 
+        
+
+        <!-- Panel Capacity Alert -->
+        @php
+            // Get pending orders that require panel capacity
+            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
+            
+            $insufficientSpaceOrders = [];
+            $totalPanelsNeeded = 0;
+            
+            foreach ($pendingOrders as $order) {
+                // Calculate available space for this order
+                $availableSpace = 0;
+                if ($order->total_inboxes >= 1790) {
+                    // For large orders, check full capacity panels
+                    $availableSpace = \App\Models\Panel::where('is_active', 1)
+                        ->where('remaining_limit', 1790)
+                        ->sum('remaining_limit');
+                } else {
+                    // For smaller orders, check any available space
+                    $availableSpace = \App\Models\Panel::where('is_active', 1)
+                        ->where('remaining_limit', '>', 0)
+                        ->sum('remaining_limit');
+                }
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    $panelsNeeded = ceil($order->total_inboxes / 1790);
+                    $insufficientSpaceOrders[] = $order;
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+        @endphp
+
+        @if($totalPanelsNeeded > 0)
+        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+            <i class="ti ti-server me-2 alert-icon"></i>
+            <strong>Panel Capacity Alert:</strong>
+            {{ $totalPanelsNeeded }} new panel{{ $totalPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
+            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div>
+        @elseif(count($pendingOrders) > 0)
+        <!-- <div id="panelCapacityAlert" class="alert alert-success alert-dismissible fade show py-2 rounded-1" role="alert"
+            style="background-color: rgba(40, 167, 69, 0.2); color: #fff; border: 2px solid #28a745;">
+            <i class="ti ti-check-circle me-2 alert-icon"></i>
+            <strong>Panel Capacity Status:</strong>
+            Sufficient panel capacity available for {{ count($pendingOrders) }} pending order{{ count($pendingOrders) != 1 ? 's' : '' }}.
+            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">View Panels</a>
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div> -->
+        @endif
         <div class="col-md-6">
             @include('admin.dashboard.slider')
         </div>
-
         <div class="col-md-6">
             @include('admin.dashboard.counter')
         </div>

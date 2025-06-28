@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
 
@@ -803,6 +804,7 @@ class OrderController extends Controller
                 'message' => $message,
                 'plan_id' => $request->plan_id,
                 'user_id' => $request->user_id,
+                'order_id' => isset($order) ? $order->id : null,
                 'status' => $status
             ]);
 
@@ -821,6 +823,57 @@ class OrderController extends Controller
             ], 422);
         }
     }
+    
+    /**
+     * Run panel capacity check after successful order update
+     */
+    public function runPanelCapacityCheck(Request $request)
+    {
+        try {
+            // Validate that the request has required fields
+            $request->validate([
+                'order_id' => 'nullable|integer',
+                'user_id' => 'nullable|integer'
+            ]);
+            
+            Log::info('Panel capacity check requested via AJAX', [
+                'order_id' => $request->input('order_id'),
+                'user_id' => $request->input('user_id'),
+                'authenticated_user' => auth()->id(),
+                'timestamp' => now()
+            ]);
+            
+            // Run the artisan command
+            Artisan::call('panels:check-capacity');
+            
+            // Get the command output
+            $output = Artisan::output();
+            
+            Log::info('Panel capacity check completed successfully', [
+                'output' => $output
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel capacity check completed successfully',
+                'output' => $output
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to run panel capacity check: ' . $e->getMessage(), [
+                'order_id' => $request->input('order_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to run panel capacity check',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // pannelCreationAndOrderSplitOnPannels
     public function pannelCreationAndOrderSplitOnPannels($order)
     {

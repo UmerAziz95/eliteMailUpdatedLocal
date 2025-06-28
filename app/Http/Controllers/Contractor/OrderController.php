@@ -1007,6 +1007,7 @@ class OrderController extends Controller
     {
         return $this->splitStatuses[strtolower($status)] ?? 'secondary';
     }
+
     public function orderPanelStatusProcess(Request $request)
     {
         $request->validate([
@@ -1029,7 +1030,7 @@ class OrderController extends Controller
             
             // Get the order panel with all necessary relationships
             $orderPanel = OrderPanel::with(['order', 'order.user', 'userOrderPanelAssignments'])->findOrFail($request->order_panel_id);
-           $commingStatus=$request->marked_status;
+            $commingStatus=$request->marked_status;
            if($commingStatus == 'in-progress') {
                $orderPanel->timer_started_at = now();
             }
@@ -1080,6 +1081,41 @@ class OrderController extends Controller
             $oldStatus = $orderPanel->status;
             $newStatus = strtolower($request->marked_status);
             $reason = $request->reason ? $request->reason . " (Reason given by) " . Auth::user()->name : null;
+
+            // If status is being set to completed, validate that all emails are added
+            if ($newStatus === 'completed') {
+                // Get all order panel splits for this order panel
+                $orderPanelSplits = \App\Models\OrderPanelSplit::where('order_panel_id', $orderPanel->id)->get();
+                
+                $totalExpectedEmails = 0;
+                $totalActualEmails = 0;
+                
+                foreach ($orderPanelSplits as $split) {
+                    // Calculate expected emails for this split
+                    $domainsCount = 0;
+                    if (is_array($split->domains)) {
+                        $domainsCount = count($split->domains);
+                    } elseif ($split->domains) {
+                        $domainsCount = 1;
+                    }
+                    
+                    $expectedEmailsForSplit = $domainsCount * $split->inboxes_per_domain;
+                    $totalExpectedEmails += $expectedEmailsForSplit;
+                    
+                    // Count actual emails for this split
+                    $actualEmailsForSplit = \App\Models\OrderEmail::where('order_split_id', $split->id)->count();
+                    $totalActualEmails += $actualEmailsForSplit;
+                }
+                
+                if ($totalActualEmails < $totalExpectedEmails) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot mark as completed. Please add all emails first. Expected: {$totalExpectedEmails}, Current: {$totalActualEmails}",
+                        'expected_emails' => $totalExpectedEmails,
+                        'current_emails' => $totalActualEmails
+                    ], 422);
+                }
+            }
 
             // Update order panel status
             $orderPanel->update([

@@ -1009,10 +1009,12 @@ function updatePriceDisplay(totalInboxes) {
         `;
     } else if (currentPlan && TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
         // Plan limit exceeded (only show if plan has a limit, i.e., max_inbox > 0)
+        const minInboxes = currentPlan.min_inbox || 1;
+        const maxInboxes = TOTAL_INBOXES;
         priceHtml = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Plan Limit Exceeded!</strong> Your current plan supports ${TOTAL_INBOXES} inboxes, but you're requesting ${totalInboxes} inboxes.
+                <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.
                 <br><small>Please upgrade your plan or reduce the number of domains.</small>
             </div>
             <h6><span class="theme-text">Original Price:</span> <small>Exceeds plan limit</small></h6>
@@ -1026,7 +1028,7 @@ function updatePriceDisplay(totalInboxes) {
         
         // Show toastr warning for plan limit exceeded (but not during import)
         if (!isImporting) {
-            // toastr.warning(`Plan limit exceeded! Your plan supports ${TOTAL_INBOXES} inboxes but you're requesting ${totalInboxes}.`, 'Plan Limit Exceeded', {
+            // toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.`, 'Plan Limit Exceeded', {
             //     timeOut: 6000,
             //     closeButton: true,
             //     progressBar: true
@@ -1503,11 +1505,10 @@ $(document).ready(function() {
                     // Show domains-error div for exceeding maximum
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Plan Limit Exceeded!</strong> 
-                        You have ${totalInboxes} inboxes but your plan allows up to ${maxInboxes} inboxes.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
+                        <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.
+                        <br><small>Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
                     `);
-                    toastr.warning(`Order imported but exceeds plan limit (${totalInboxes} vs ${maxInboxes} allowed).`, 'Import Complete - Plan Limit Exceeded', {
+                    toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.`, 'Import Complete - Plan Limit Exceeded', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -1715,9 +1716,8 @@ $(document).ready(function() {
                 if (maxInboxes > 0 && totalInboxes > maxInboxes) {
                     domainsField.addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Plan Limit Exceeded!</strong> 
-                        You have ${totalInboxes} inboxes but your plan allows ${minInboxes || 1}-${maxInboxes} inboxes.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
+                        <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.
+                        <br><small>Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
                     `);
                     calculateTotalInboxes();
                     return;
@@ -1806,9 +1806,8 @@ $(document).ready(function() {
                 const maxInboxes = planInfo.max_inbox || TOTAL_INBOXES;
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Plan Limit Exceeded!</strong> 
-                    You have ${totalInboxes} inboxes but your plan allows ${minInboxes}-${maxInboxes} inboxes.
-                    <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
+                    <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.
+                    <br><small>Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
                 `);
                 
                 // During import, just return early
@@ -1868,7 +1867,7 @@ $(document).ready(function() {
                 
                 // Show toastr warning as well (but less frequently and not during import)
                 if (!limitExceededShown && !isImporting) {
-                    // toastr.warning(`Plan limit exceeded! You have ${totalInboxes} inboxes but your plan supports ${TOTAL_INBOXES}.`, 'Plan Limit Exceeded', {
+                    // toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${planInfo.min_inbox || 1} to ${TOTAL_INBOXES} inboxes.`, 'Plan Limit Exceeded', {
                     //     timeOut: 6000,
                     //     closeButton: true,
                     //     progressBar: true
@@ -1884,14 +1883,15 @@ $(document).ready(function() {
                     const maxInboxes = planInfo.max_inbox || 'Unlimited';
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
+                        <br><small>Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
                     `);
                     
+
                     // Show toastr warning if not during import
                     if (!isImporting) {
-                        // toastr.warning(`Below plan minimum! You have ${totalInboxes} inboxes but need at least ${minInboxes}.`, 'Below Plan Minimum', {
+                        // toastr.warning(`You're below the minimum plan limit. Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.`, 'Below Plan Minimum', {
                         //     timeOut: 6000,
                         //     closeButton: true,
                         //     progressBar: true
@@ -2134,9 +2134,8 @@ $(document).ready(function() {
             if (planInfo.max_inbox > 0 && totalInboxes > planInfo.max_inbox) {
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Plan Limit Exceeded!</strong> 
-                    You have ${totalInboxes} inboxes but your plan allows ${planInfo.min_inbox || 1}-${planInfo.max_inbox} inboxes.
-                    <br><small>Current: ${totalInboxes} | Plan Range: ${planInfo.min_inbox || 1} - ${planInfo.max_inbox} inboxes</small>
+                    <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${planInfo.min_inbox || 1} to ${planInfo.max_inbox} inboxes.
+                    <br><small>Plan Range: ${planInfo.min_inbox || 1} - ${planInfo.max_inbox} inboxes</small>
                 `);
                 console.log('Plan limit exceeded error displayed');
             } else if (planInfo.min_inbox > 0 && totalInboxes < planInfo.min_inbox) {
@@ -2356,6 +2355,24 @@ $(document).ready(function() {
                         timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
+                        // Send a separate request to run panel capacity check
+                        $.ajax({
+                            url: '{{ route("customer.orders.run-panel-capacity-check") }}',
+                            method: 'POST',
+                            data: {
+                                order_id: response.order_id || '',
+                                user_id: response.user_id || '',
+                                _token: $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function(capacityResponse) {
+                                console.log('Panel capacity check completed:', capacityResponse);
+                            },
+                            error: function(xhr) {
+                                console.log('Panel capacity check failed:', xhr.responseJSON);
+                                // Don't show error to user as it's a background process
+                            }
+                        });
+                        
                         window.location.href = "{{ route('customer.orders') }}";
                     });
                 } else {

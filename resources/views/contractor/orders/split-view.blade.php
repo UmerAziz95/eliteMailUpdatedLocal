@@ -434,6 +434,7 @@
 <script>
     // Open status modal with proper event handling
     $('#openStatusModal').on('click', function(e) {
+        console.log("ok");
         e.preventDefault();
         e.stopPropagation();
         
@@ -614,15 +615,15 @@
     });
 
     // Additional fallback handler for the submit button
-    $(document).on('click', '#cancelSubscriptionForm button[type="submit"]', function(e) {
-        console.log('Submit button clicked directly');
+    // $(document).on('click', '#cancelSubscriptionForm button[type="submit"]', function(e) {
+    //     console.log('Submit button clicked directly');
         
-        // Trigger form submission if it hasn't been triggered yet
-        const form = $('#cancelSubscriptionForm');
-        if (form.length) {
-            form.trigger('submit');
-        }
-    });
+    //     // Trigger form submission if it hasn't been triggered yet
+    //     const form = $('#cancelSubscriptionForm');
+    //     if (form.length) {
+    //         form.trigger('submit');
+    //     }
+    // });
     
     // Debug modal events
     $('#cancel_subscription').on('shown.bs.modal', function() {
