@@ -1029,7 +1029,7 @@ class OrderController extends Controller
             
             // Get the order panel with all necessary relationships
             $orderPanel = OrderPanel::with(['order', 'order.user', 'userOrderPanelAssignments'])->findOrFail($request->order_panel_id);
-           $commingStatus=$request->marked_status;
+            $commingStatus=$request->marked_status;
            if($commingStatus == 'in-progress') {
                $orderPanel->timer_started_at = now();
             }
