@@ -104,7 +104,7 @@ class ProfileController extends Controller
                             "city" => $request->modalAddressCity,
                             "state" => $request->modalAddressState ?? "",
                             "zip" => $request->modalAddressZipCode,
-                            "country" => $countryCode
+                            "country" => $countryCode                           
                         ]
                     ]);
                     
@@ -524,7 +524,7 @@ class ProfileController extends Controller
             'Zimbabwe' => 'ZW'
         ];
 
-        // Return the country code if found, otherwise return the original country name
+        // Return the country code if found, otherwise return the original country namex
         // This fallback ensures ChargeBee still gets a value even if the exact mapping isn't found
         return $countries[$country] ?? $country;
     }
