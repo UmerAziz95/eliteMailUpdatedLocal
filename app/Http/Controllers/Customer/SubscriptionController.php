@@ -171,7 +171,6 @@ class SubscriptionController extends Controller
                 })
                 ->addColumn('action', function ($subscription) {
                     return '<div class="dropdown">
-
                                 <button class="p-0 bg-transparent border-0"
                                         type="button"
                                         data-bs-toggle="dropdown"

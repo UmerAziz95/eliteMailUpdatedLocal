@@ -177,7 +177,7 @@
                                 </div>
                             </div>
                         </div> -->
-                        <div class="price-display-section">
+                        <div class="price-display-section card p-3">
                             @if(isset($order->plan) && $order->plan)
                                 @php
                                     $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : 0;
@@ -193,9 +193,9 @@
                                         <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{ $order->plan->duration }})</small></span>
                                     </div>
                                 </div>
-                                <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
+                                <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
                                 <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
-                                <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
+                                <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
                             @else
                                 <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small></h6>
                                 <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>

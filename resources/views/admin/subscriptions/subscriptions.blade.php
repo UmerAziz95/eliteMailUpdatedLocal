@@ -342,7 +342,7 @@
                 render: function(data, type, row) {
                     return `
                         <div class="d-flex align-items-center gap-1">
-                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
                             <span>${data}</span>    
                         </div>
                     `;
@@ -353,7 +353,7 @@
                     render: function(data, type, row) {
                         return `
                             <div class="d-flex align-items-center gap-1">
-                                <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                <i style= "color: #00BBFF"; class="ti ti-mail fs-6"></i>
                                 <span style= "color: #00BBFF";>${data}</span>    
                             </div>
                         `;
@@ -380,7 +380,7 @@
                             break;
                     }
 
-                    return `<span class="${statusClass} text-capitalize">${data}</span>`;
+                    return `<span class="${statusClass} text-capitalize py-0">${data}</span>`;
                 }
             },
 
@@ -390,7 +390,7 @@
                 render: function(data, type, row) {
                     return `
                         <div class="d-flex align-items-center gap-1">
-                            <i class="ti ti-calendar-month fs-5"></i>
+                            <i class="ti ti-calendar-month fs-6"></i>
                             <span>${data}</span>
                         </div>
                     `;
@@ -402,7 +402,7 @@
                 render: function(data, type, row) {
                     return `
                         <div class="d-flex align-items-center gap-1">
-                            <i class="ti ti-calendar-month fs-5"></i>
+                            <i class="ti ti-calendar-month fs-6"></i>
                             <span>${data}</span>
                         </div>
                     `;
@@ -520,7 +520,7 @@
                 data: 'amount', name: 'amount' ,
                 render: function(data, type, row) {
                     return `
-                        <i class="ti ti-currency-dollar text-warning"></i>
+                        <i class="ti ti-currency-dollar text-warning fs-6"></i>
                         <span class="text-warning">${data}</span>
                     `;
                 }
@@ -530,7 +530,7 @@
                 render: function(data, type, row) {
                     return `
                         <div class="d-flex align-items-center gap-1">
-                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 35px" alt="">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
                             <span>${data}</span>    
                         </div>
                     `;
@@ -541,7 +541,7 @@
                     render: function(data, type, row) {
                         return `
                             <div class="d-flex align-items-center gap-1">
-                                <i style= "color: #00BBFF"; class="ti ti-mail fs-5"></i>
+                                <i style= "color: #00BBFF"; class="ti ti-mail fs-6"></i>
                                 <span style= "color: #00BBFF";>${data}</span>    
                             </div>
                         `;
