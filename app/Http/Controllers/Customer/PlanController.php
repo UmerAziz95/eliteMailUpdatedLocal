@@ -68,8 +68,8 @@ class PlanController extends Controller
             }
             // Check if user is already logged in or fetch by email
             $user = Auth::check() ? auth()->user() : User::where('email', $email)->first();
-            // Login and create session 
-            //  Auth::login($user);
+             // Login and create session 
+             //  Auth::login($user);
             // dd(auth()->user()); 
          
             if (!$user) {
@@ -204,6 +204,18 @@ class PlanController extends Controller
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
+            $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
+
+            //shipping address
+            $firstName = $shippingAddress['first_name'] ?? '';
+            $lastName = $shippingAddress['last_name'] ?? '';
+            $line1 = $shippingAddress['line1'] ?? '';
+            $line2 = $shippingAddress['line2'] ?? '';
+            $city = $shippingAddress['city'] ?? '';
+            $state = $shippingAddress['state'] ?? '';
+            $country = $shippingAddress['country'] ?? '';
+            $zip = $shippingAddress['zip'] ?? '';
+            $validationStatus = $shippingAddress['validation_status'] ?? '';
             $plan_id = null;
             $charge_plan_id = null;
 
@@ -227,6 +239,14 @@ class PlanController extends Controller
             }
             // dd($subscription, $customer, $invoice, $plan_id, $charge_plan_id);
             $user = auth()->user();
+            $user->billing_address=$line1;
+            $user->billing_address2=$line2;
+            $user->billing_city=$city;
+            $user->billing_state=$state;
+            $user->billing_country=$country;
+            $user->billing_zip=$zip;
+            $user->billing_address_syn=1;
+            $user->save(); 
             // dd($user);
             if (!$subscription || !$customer || !$invoice) {
                 return response()->json([

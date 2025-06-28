@@ -1069,11 +1069,11 @@
                 </div>
                 <form id="addNewAddressForm" class="row g-6">
                     <!-- billing_company -->
-                    <div class="col-12 mb-3">
+                    {{-- <div class="col-12 mb-3">
                         <label class="form-label" for="modalAddressCompany">Company Name</label>
                         <input type="text" id="modalAddressCompany" name="modalAddressCompany" class="form-control"
                             placeholder="" value="{{ Auth::user()->billing_company ?? '' }}">
-                    </div>
+                    </div> --}}
                     <div class="col-md-12 mb-3">
                         <label>Country</label>
                         <select id="modalcountry" name="modalcountry" class="form-control" required="">
@@ -1295,11 +1295,11 @@
                             placeholder="" value="{{ Auth::user()->billing_address2 ?? '' }}">
                     </div>
 
-                    <div class="col-12 col-md-6 mb-3">
+                    {{-- <div class="col-12 col-md-6 mb-3">
                         <label class="form-label" for="modalAddressLandmark">Landmark</label>
                         <input type="text" id="modalAddressLandmark" name="modalAddressLandmark" class="form-control"
                             placeholder="" value="{{ Auth::user()->billing_landmark ?? '' }}">
-                    </div>
+                    </div> --}}
 
                     <div class="col-12 col-md-6 mb-3">
                         <label class="form-label" for="modalAddressCity">City</label>
@@ -1929,6 +1929,7 @@
                         const card = response.card;
                         if (response.payment_sources && response.payment_sources.length > 0) {
                             let cardHtml = '';
+                            const user_name=@json(Auth::user()->name);
                             response.payment_sources.forEach(source => {
                                 if (source.type === 'card' && source.status === 'valid' && source
                                     .card) {
@@ -1937,8 +1938,8 @@
                                         <div class="credit-card p-3 mb-4 card border-0">
                                             <div class="card-body" style="position: relative; z-index: 10;">
                                                 <div class="d-flex align-items-center justify-content-between">
-                                                    <h5 class="text-white">Credit Card</h5>
-                                                    <h6 class="text-white"><i>VISA</i></h6>    
+                                                   
+                                                   
                                                 </div>
                                                 <img  src="{{asset('assets/logo/sim.jpg')}}" width="40" class="rounded-2 my-2" alt="">
                                                 <div class="mb-2 d-flex justify-content-between align-items-center">
@@ -1951,7 +1952,7 @@
                                                 </div>
     
                                                 <div class="d-flex align-items-center justify-content-between" >
-                                                    <h6 class="text-shadow">HAMZA ASHFAQ</h6>
+                                                     <h5 class="text-white">${user_name}</h5>
                                                     <span class="number small">Expires ${source.card.expiry_month}/${source.card.expiry_year}</span>    
                                                 </div>    
                                             </div>
