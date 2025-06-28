@@ -185,15 +185,15 @@ class InvoiceController extends Controller
                 ->addColumn('action', function($invoice) {
                     $viewUrl = route('customer.invoices.show', $invoice->chargebee_invoice_id);
                     $downloadUrl = route('customer.invoices.download', $invoice->chargebee_invoice_id);
-                    return '<div class="dropdown">
-                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="' . $viewUrl . '">View</a></li>
-                            <li><a class="dropdown-item" href="' . $downloadUrl . '">Download</a></li>
-                        </ul>
-                    </div>';
+                    return `<div class="dropdown">
+                                <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="' . $viewUrl . '">View</a></li>
+                                    <li><a class="dropdown-item" href="' . $downloadUrl . '">Download</a></li>
+                                </ul>
+                            </div>`;
                 })
                 ->editColumn('created_at', function($invoice) {
                     return $invoice->created_at ? $invoice->created_at->format('d F, Y') : '';

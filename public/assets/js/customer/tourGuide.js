@@ -18,21 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
 			initializeOrder();
 			break;
 
-		case "edit-order":
-			initializeEditOrder();
-			break;
+		// case "edit-order":
+		// 	initializeEditOrder();
+		// 	break;
 
-		case "support":
-			initializeSupport();
-			break;
+		// case "support":
+		// 	initializeSupport();
+		// 	break;
 
-		case "subscription":
-			initializeSubscription();
-			break;
+		// case "subscription":
+		// 	initializeSubscription();
+		// 	break;
 
-		case "invoices":
-			initializeInvoices();
-			break;
+		// case "invoices":
+		// 	initializeInvoices();
+		// 	break;
 
 		default:
 			console.warn("No tour configured for this page.");
