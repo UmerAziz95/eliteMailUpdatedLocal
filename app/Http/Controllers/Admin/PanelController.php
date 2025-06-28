@@ -9,6 +9,8 @@ use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use App\Models\UserOrderPanelAssignment; 
 use App\Models\OrderTracking;
 
@@ -580,6 +582,56 @@ class PanelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching order tracking data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Run panel capacity check after successful panel creation
+     */
+    public function runPanelCapacityCheck(Request $request)
+    {
+        try {
+            // Validate that the request has optional fields
+            $request->validate([
+                'panel_id' => 'nullable|integer',
+                'admin_id' => 'nullable|integer'
+            ]);
+            
+            Log::info('Panel capacity check requested via admin AJAX', [
+                'panel_id' => $request->input('panel_id'),
+                'admin_id' => $request->input('admin_id'),
+                'authenticated_admin' => auth()->id(),
+                'timestamp' => now()
+            ]);
+            
+            // Run the artisan command
+            Artisan::call('panels:check-capacity');
+            
+            // Get the command output
+            $output = Artisan::output();
+            
+            Log::info('Panel capacity check completed successfully via admin request', [
+                'output' => $output
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel capacity check completed successfully',
+                'output' => $output
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to run panel capacity check from admin panel: ' . $e->getMessage(), [
+                'panel_id' => $request->input('panel_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to run panel capacity check',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

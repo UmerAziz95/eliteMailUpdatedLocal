@@ -205,6 +205,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
         Route::post('/panels/create', [AdminPanelController::class, 'createPanel'])->name('panels.create');
+        Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
        
       
 
