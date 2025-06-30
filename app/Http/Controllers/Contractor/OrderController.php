@@ -256,7 +256,32 @@ class OrderController extends Controller
         
         return view('contractor.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
     }
+    // getOrdersHistory get last 5 orders
+    public function getOrdersHistory(Request $request)
+    {
+        try {
+            $contractorId = auth()->id();
+            $orders = UserOrderPanelAssignment::with(['order.user', 'order.plan'])
+                ->where('contractor_id', $contractorId)
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
 
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error fetching order history', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     public function getOrders(Request $request)
     {
         try {

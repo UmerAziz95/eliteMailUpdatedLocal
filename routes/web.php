@@ -205,6 +205,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
         Route::post('/panels/create', [AdminPanelController::class, 'createPanel'])->name('panels.create');
+        Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
        
       
 
@@ -304,6 +305,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/order/panel/email/bulk-import', [ContractorOrderController::class, 'orderSplitImportProcess'])->name('order.panel.email.bulkImport');
     
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/orders-history', [App\Http\Controllers\Contractor\DashboardController::class, 'getOrdersHistory'])->name('orders.history');
     
     Route::get('/pricing', function () {
         return view('contractor.pricing.pricing');
