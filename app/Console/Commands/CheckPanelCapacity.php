@@ -34,9 +34,18 @@ class CheckPanelCapacity extends Command
     protected $description = 'Check pending orders and send regular status reports to all admins about panel capacity';
 
     /**
-     * Panel capacity constant
+     * Panel capacity
      */
-    const PANEL_CAPACITY = 1790;
+    public $PANEL_CAPACITY;
+    
+    /**
+     * Constructor to initialize dynamic properties
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+    }
     /**
      * Track orders with insufficient space for email notifications
      */
@@ -73,10 +82,10 @@ class CheckPanelCapacity extends Command
      */
     private function getAvailablePanelSpaceForOrder(int $orderSize): int
     {
-        if ($orderSize >= self::PANEL_CAPACITY) {
+        if ($orderSize >= $this->PANEL_CAPACITY) {
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = Panel::where('is_active', 1)
-                                      ->where('remaining_limit', self::PANEL_CAPACITY)
+                                      ->where('remaining_limit', $this->PANEL_CAPACITY)
                                       ->get();
             
             $fullCapacitySpace = $fullCapacityPanels->sum('remaining_limit');
@@ -189,7 +198,7 @@ class CheckPanelCapacity extends Command
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
                 
                 // Calculate panels needed for this order
-                $panelsNeeded = ceil($order->total_inboxes / self::PANEL_CAPACITY);
+                $panelsNeeded = ceil($order->total_inboxes / $this->PANEL_CAPACITY);
                 
                 // Add to insufficient space orders for email notification
                 $this->insufficientSpaceOrders[] = [
@@ -367,7 +376,7 @@ class CheckPanelCapacity extends Command
             ]);
             
             // Decision point: >= PANEL_CAPACITY creates new panels, < PANEL_CAPACITY tries to use existing panels
-            if ($totalSpaceNeeded >= self::PANEL_CAPACITY) {
+            if ($totalSpaceNeeded >= $this->PANEL_CAPACITY) {
                 $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);
             } else {
                 // Try to find existing panel with sufficient space
@@ -401,7 +410,7 @@ class CheckPanelCapacity extends Command
      */
     private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
     {
-        if ($spaceNeeded > self::PANEL_CAPACITY) {
+        if ($spaceNeeded > $this->PANEL_CAPACITY) {
             // Split across multiple panels - but first check for existing PANEL_CAPACITY panels
             $this->splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $spaceNeeded);
         } else {
@@ -431,7 +440,7 @@ class CheckPanelCapacity extends Command
         $domainsProcessed = 0;
         
         while ($remainingSpace > 0 && $domainsProcessed < count($domains) && $splitNumber <= 20) { // Safety check to prevent infinite loops
-            $spaceForThisPanel = min(self::PANEL_CAPACITY, $remainingSpace);
+            $spaceForThisPanel = min($this->PANEL_CAPACITY, $remainingSpace);
             
             // Calculate maximum domains that can fit in this panel without exceeding capacity
             $maxDomainsForThisPanel = floor($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
@@ -487,7 +496,7 @@ class CheckPanelCapacity extends Command
             
             // If no suitable existing panel found, create new PANEL_CAPACITY panel
             if (!$panel) {
-                $panel = $this->createSinglePanel(self::PANEL_CAPACITY);
+                $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
                 Log::info("Created new PANEL_CAPACITY panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                     'remaining_space' => $remainingSpace,
                     'space_needed' => $actualSpaceUsed,
@@ -525,7 +534,7 @@ class CheckPanelCapacity extends Command
             ]);
             
             // Create additional panel for remaining domains
-            $panel = $this->createSinglePanel(self::PANEL_CAPACITY);
+            $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
         }
         
@@ -550,7 +559,7 @@ class CheckPanelCapacity extends Command
         
         if ($availablePanels->isEmpty()) {
             // No available panels, create new one
-            $panel = $this->createSinglePanel(self::PANEL_CAPACITY);
+            $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $totalSpaceNeeded, 1);
             Log::info("No available panels found, created new panel #{$panel->id} for order #{$order->id}");
             return;
@@ -608,7 +617,7 @@ class CheckPanelCapacity extends Command
             ]);
             
             if (!empty($remainingDomains)) {
-                $panel = $this->createSinglePanel(self::PANEL_CAPACITY);
+                $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
                 Log::info("Created additional panel #{$panel->id} for remaining domains in order #{$order->id}", [
                     'remaining_domains' => count($remainingDomains),
@@ -645,7 +654,7 @@ class CheckPanelCapacity extends Command
     private function findExisting1790Panel($spaceNeeded)
     {
         return Panel::where('is_active', true)
-            ->where('limit', self::PANEL_CAPACITY)
+            ->where('limit', $this->PANEL_CAPACITY)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();
@@ -654,8 +663,12 @@ class CheckPanelCapacity extends Command
     /**
      * Create a single panel with specified capacity
      */
-    private function createSinglePanel($capacity = self::PANEL_CAPACITY)
+    private function createSinglePanel($capacity = null)
     {
+        if ($capacity === null) {
+            $capacity = $this->PANEL_CAPACITY;
+        }
+        
         $panel = Panel::create([
             'auto_generated_id' => 'PANEL_' . strtoupper(uniqid()),
             'title' => 'Auto Generated Panel - ' . date('Y-m-d H:i:s'),
