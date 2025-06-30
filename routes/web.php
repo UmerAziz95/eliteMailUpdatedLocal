@@ -495,4 +495,8 @@ Route::get('/cron/run-draft-notifications', function () {
         Route::get('/customer/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('notifications.mark-all-as-unread');
         Route::get('/notifications/mark-all-as-read/{id}',[NotificationController::class, 'markAllAsReadById'])->name('notifications.mark-all-as-read-by-id');
         Route::get('/notifications/mark-all-as-unread/{id}',[NotificationController::class, 'markAllAsUnRead'])->name('notifications.mark-all-as-unread-by-id');
-
+  
+        //notification markers
+        Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
+        Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
+       

@@ -113,13 +113,21 @@
                     style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
 
-                    <div>
-                        <i class="p-2 fa-regular fa-envelope fs-5 markReadToAllNotification" data-bs-toggle="tooltip"
-                            title="Mark all as read"></i>
+                   <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
+                    style="background-color: var(--secondary-color); z-index: 10">
+                    {{-- <h6 class="mb-0">Notifications</h6> --}}
 
-                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"
-                            data-bs-toggle="tooltip" title="Mark all as unread"></i>
+                    <!-- Add d-flex & gap-2 here -->
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="p-2 fa-regular fa-envelope fs-5 markReadToAllNotification" 
+                        data-bs-toggle="tooltip" 
+                        title="Mark all as read"></i>
+
+                        <i class="p-2 fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification" 
+                        data-bs-toggle="tooltip" 
+                        title="Mark all as unread"></i>
                     </div>
+                </div>
                 </div>
 
 
@@ -398,6 +406,7 @@
         fetch('/notifications/list')
             .then(response => response.json())
             .then(data => {
+                handleToggleNotificationReadUnreadBtn(data?.notifications);
                 const notificationList = document.getElementById('notificationList');
                 notificationList.innerHTML = data.notifications.map(notification => `
                     <hr class="my-0">
@@ -438,6 +447,33 @@
             })
             .catch(error => console.error('Error loading notifications:', error));
     }
+
+function handleToggleNotificationReadUnreadBtn(notifications) {
+    const unreadCount = notifications.filter(notification => !notification.is_read).length;
+    const totalCount = notifications.length;
+    const readCount = totalCount - unreadCount;
+
+    const markReadBtn = document.querySelector('.markReadToAllNotification');
+    const markUnreadBtn = document.querySelector('.markUnReadToAllNotification');
+
+    // Show/hide buttons based on read/unread state
+    if (readCount > 0 && unreadCount > 0) {
+        // Some read, some unread → show both
+        markReadBtn.style.display = 'block';
+        markUnreadBtn.style.display = 'block';
+    } else if (unreadCount === 0) {
+        // All are read → show only "Mark all as Unread"
+        markReadBtn.style.display = 'none';
+        markUnreadBtn.style.display = 'block';
+    } else if (readCount === 0) {
+        // All are unread → show only "Mark all as Read"
+        markReadBtn.style.display = 'block';
+        markUnreadBtn.style.display = 'none';
+    }
+}
+
+
+
 
     function handleNotificationRead() {
         const notificationId = this.dataset.id;
