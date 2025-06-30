@@ -76,7 +76,8 @@ class MasterPlanController extends Controller
             'volume_items.*.price.required' => 'Price is required for all volume items.',
             'volume_items.*.price.numeric' => 'Price must be a valid number.',
             'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
-        ]);        // Additional validation and cleaning of volume items data
+        ]);        
+        // Additional validation and cleaning of volume items data
         $volumeItems = collect($request->volume_items)->map(function ($item) {
             $volumeItem = [
                 'name' => trim($item['name'] ?? ''),

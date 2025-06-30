@@ -48,48 +48,47 @@ class OrderController extends Controller
     {
         $this->statuses = Status::pluck('badge', 'name')->toArray();
     }
-  public function index()
-{
-    $plans = Plan::all();
-    $userId = auth()->id();
-    $orders = Order::all();
-    $statuses = $this->statuses;
+    public function index()
+    {
+        $plans = Plan::all();
+        $userId = auth()->id();
+        $orders = Order::all();
+        $statuses = $this->statuses;
 
-    $totalOrders = $orders->count();
+        $totalOrders = $orders->count();
 
-    $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
-    $rejectOrders = $orders->where('status_manage_by_admin', 'reject')->count();
-    $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
-    $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
-    $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
-    $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
+        $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
+        $rejectOrders = $orders->where('status_manage_by_admin', 'reject')->count();
+        $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
+        $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
+        $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
+        $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
 
-    $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
-    $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
+        $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
+        $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
 
-    $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
-    $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
+        $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
 
-    $percentageChange = $previousWeekOrders > 0 
-        ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
-        : 0;
+        $percentageChange = $previousWeekOrders > 0 
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+            : 0;
 
-    return view('admin.orders.orders', compact(
-        'plans', 
-        'totalOrders', 
-        'pendingOrders', 
-        'rejectOrders',
-        'inProgressOrders',
-        'cancelledOrders',
-        'completedOrders',
-        'draftOrders', 
-        'percentageChange',
-        'statuses'
-    ));
-}
+        return view('admin.orders.orders', compact(
+            'plans', 
+            'totalOrders', 
+            'pendingOrders', 
+            'rejectOrders',
+            'inProgressOrders',
+            'cancelledOrders',
+            'completedOrders',
+            'draftOrders', 
+            'percentageChange',
+            'statuses'
+        ));
+    }
 
     // neworder
- 
     private function calculateNextBillingDate($currentDate, $billingPeriod, $billingPeriodUnit)
     {
         $date = Carbon::createFromTimestamp($currentDate);
@@ -150,121 +149,6 @@ class OrderController extends Controller
 
     public function getOrders(Request $request)
     {
-        // try {
-        //     $orders = Order::query()
-        //         ->with(['user', 'plan','reorderInfo'])
-        //         ->select('orders.*')
-        //         ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id');
-
-        //     if ($request->has('plan_id') && $request->plan_id != '') {
-        //         $orders->where('orders.plan_id', $request->plan_id);
-        //     }
-
-        //     return DataTables::of($orders)
-        //     ->addColumn('action', function ($order) {
-        //         $user = auth()->user();
-            
-        //         $viewButton = '<a href="' . route('admin.orders.view', $order->id) . '" class="btn btn-sm btn-primary">View</a>';
-            
-        //         if ($user->hasPermissionTo('Mod')) {
-        //             // Show only the View button if user has 'Mod' permission
-        //             return '<div style="display: flex; gap: 6px;">' . $viewButton . '</div>';
-        //         }
-            
-        //         $markStatusButton = '<a href="#" class="btn btn-sm btn-secondary markStatus" id="markStatus" data-id="' . $order->chargebee_subscription_id . '" data-status="' . $order->status_manage_by_admin . '" data-reason="' . $order->reason . '" >Mark Status</a>';
-            
-        //         return '
-        //             <div style="display: flex; gap: 6px;">
-        //                 ' . $viewButton . '
-        //                 ' . $markStatusButton . '
-        //             </div>
-        //         ';
-        //     })
-            
-        //         ->editColumn('created_at', function ($order) {
-        //             return $order->created_at ? $order->created_at->format('d-F-Y') : '';
-        //         })
-        //         ->editColumn('status_manage_by_admin', function ($order) {
-        //             return $order->status_manage_by_admin ? $order->status_manage_by_admin : '';
-        //         })
-        //         ->editColumn('total_inboxes', function ($order) {
-        //             return $order->reorderInfo->first()?->total_inboxes ?? '';
-        //         })               
-        //         ->rawColumns(['status']) // Important to render HTML
-                
-        //         ->addColumn('email', function ($order) {
-        //             return $order->user ? $order->user->email : 'N/A';
-        //         })
-        //         ->addColumn('name', function ($order) {
-        //             return $order->user ? $order->user->name : 'N/A';
-        //         })
-        //         ->addColumn('domain_forwarding_url', function ($order) {
-        //             return $order->user ? $order->user->domain_forwarding_url : 'N/A';
-        //         })
-        //         ->addColumn('plan_name', function ($order) {
-        //             return $order->plan ? $order->plan->name : 'N/A';
-        //         })
-        //         ->filterColumn('email', function($query, $keyword) {
-        //             $query->whereHas('user', function($q) use ($keyword) {
-        //                 $q->where('email', 'like', "%{$keyword}%");
-        //             });
-        //         })
-        //         ->filterColumn('domain_forwarding_url', function($query, $keyword) {
-        //             $query->whereHas('user', function($q) use ($keyword) {
-        //                 $q->where('domain_forwarding_url', 'like', "%{$keyword}%");
-        //             });
-        //         })
-        //         ->filterColumn('plan_name', function($query, $keyword) {
-        //             $query->whereHas('plan', function($q) use ($keyword) {
-        //                 $q->where('name', 'like', "%{$keyword}%");
-        //             });
-        //         })
-        //         ->filterColumn('total_inboxes', function($query, $keyword) {
-        //             $query->whereHas('reorderInfo', function($q) use ($keyword) {
-        //                 $q->where('total_inboxes', 'like', "%{$keyword}%");
-        //             });
-        //         })
-        //         ->orderColumn('email', function($query, $direction) {
-        //             $query->orderBy(
-        //                 User::select('email')
-        //                     ->whereColumn('users.id', 'orders.user_id')
-        //                     ->latest()
-        //                     ->take(1),
-        //                 $direction
-        //             );
-        //         })
-        //         ->orderColumn('domain_forwarding_url', function($query, $direction) {
-        //             $query->orderBy(
-        //                 User::select('domain_forwarding_url')
-        //                     ->whereColumn('users.id', 'orders.user_id')
-        //                     ->latest()
-        //                     ->take(1),
-        //                 $direction
-        //             );
-        //         })
-        //         ->orderColumn('plan_name', function($query, $direction) {
-        //             $query->orderBy(
-        //                 Plan::select('name')
-        //                     ->whereColumn('plans.id', 'orders.plan_id')
-        //                     ->latest()
-        //                     ->take(1),
-        //                 $direction
-        //             );
-        //         })
-        //         ->rawColumns(['action','status'])
-        //         ->make(true);
-        // } catch (Exception $e) {
-        //     Log::error('Error in getOrders', [
-        //         'error' => $e->getMessage(),
-        //         'trace' => $e->getTraceAsString()
-        //     ]);
-
-        //     return response()->json([
-        //         'error' => true,
-        //         'message' => 'Error loading orders: ' . $e->getMessage()
-        //     ], 500);
-        // }
-        
         try {
             $orders = Order::query()
                 ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits'])
@@ -607,140 +491,24 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
-  
 
- 
-//   public function subscriptionCancelProcess(Request $request)
-//   {
-     
-//       $request->validate([
-//           'chargebee_subscription_id' => 'required|string',
-//           'reason' => 'nullable|string',
-//           'marked_status'=>'required|string'
-         
-//       ]);
+    public function getEndExpiryDate($startDate)
+    {
+        // $startDate = '2025-04-21 07:02:48'; // Example start date
+        $currentDate = Carbon::now(); // Get current date
+        $startDateCarbon = Carbon::parse($startDate);
 
-//       $user = auth()->user();
-//       $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)
-//           ->first();
+        // Calculate the difference in months
+        $monthsToAdd = $currentDate->diffInMonths($startDateCarbon); // Difference in months
 
-//       if (!$subscription || $subscription->status !== 'active') {
-//           return response()->json([
-//               'success' => false,
-//               'message' => 'No active subscription found'
-//           ], 404);
-//       }
+        // Calculate the next expiry date
+        $expiryDate = $startDateCarbon
+            ->addMonths(++$monthsToAdd) // Add the dynamic number of months
+            ->subDay()  // Subtract 1 day
+            ->format('Y-m-d H:i:s');
 
-//       try {
-//           if($request->marked_status=="Reject" ||$request->marked_status=="Cancelled" ){
-//           $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
-//               "end_of_term" => false,
-//               "credit_option" => "none",
-//               "unbilled_charges_option" => "delete",
-//               "account_receivables_handling" => "no_action"
-//           ]);
-
-//           $subscriptionData = $result->subscription();
-//           $invoiceData = $result->invoice();
-//           $customerData = $result->customer();
-
-//           if ($result->subscription()->status === 'cancelled') {
-//               // Update subscription status and end date
-//               $subscription->update([
-//                   'status' => 'cancelled',
-//                   'cancellation_at' => now(),
-//                   'reason' => $request->reason,
-//                   'end_date' => $this->getEndExpiryDate($subscription->start_date),
-//               ]);
-
-//               // Update user status
-//               $user->update([
-//                   'subscription_status' => 'cancelled',
-//                   'subscription_id' => null,
-//                   'plan_id' => null
-//               ]);
-
-//               // Update order status
-//               $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-//               if ($order) {
-//                   $order->update([
-//                       'status_manage_by_admin' => 'cancelled',
-//                   ]);
-//               }
-
-//               try {
-//                   // Send email to user
-//                   // Mail::to($user->email)
-//                   //     ->queue(new SubscriptionCancellationMail(
-//                   //         $subscription, 
-//                   //         $user, 
-//                   //         $request->reason
-//                   //     ));
-
-//                   // Send email to admin
-//                   // Mail::to(config('mail.admin_address', 'admin@example.com'))
-//                   //     ->queue(new SubscriptionCancellationMail(
-//                   //         $subscription, 
-//                   //         $user, 
-//                   //         $request->reason,
-//                   //         true
-//                   //     ));
-//               } catch (\Exception $e) {
-//                   // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
-//                   // Continue execution since the subscription was already cancelled
-//               }
-
-//               return response()->json([
-//                   'success' => true,
-//                   'message' => 'Subscription cancelled successfully'
-//               ]);
-//           }
-//         }
-//         else{
-           
-//             // Update order status
-//             $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-//             if ($order) {
-//                 $order->update([
-//                     'status_manage_by_admin' =>$request->marked_status,
-//                 ]);
-//             }
-
-
-//         }
-
-//           return response()->json([
-//               'success' => false,
-//               'message' => 'Failed to cancel subscription in payment gateway'
-//           ], 500);
-//       } catch (\Exception $e) {
-//           \Log::error('Error cancelling subscription: ' . $e->getMessage());
-//           return response()->json([
-//               'success' => false,
-//               'message' => 'Failed to cancel subscription: ' . $e->getMessage()
-//           ], 500);
-//       }
-//   }
-
-
-  public function getEndExpiryDate($startDate)
-  {
-      // $startDate = '2025-04-21 07:02:48'; // Example start date
-      $currentDate = Carbon::now(); // Get current date
-      $startDateCarbon = Carbon::parse($startDate);
-
-      // Calculate the difference in months
-      $monthsToAdd = $currentDate->diffInMonths($startDateCarbon); // Difference in months
-
-      // Calculate the next expiry date
-      $expiryDate = $startDateCarbon
-          ->addMonths(++$monthsToAdd) // Add the dynamic number of months
-          ->subDay()  // Subtract 1 day
-          ->format('Y-m-d H:i:s');
-
-      return $expiryDate; // Outputs the dynamically calculated expiry date
-  }
+        return $expiryDate; // Outputs the dynamically calculated expiry date
+    }
     public function indexCard()
     {
         $plans = Plan::where('is_active', true)->get();
