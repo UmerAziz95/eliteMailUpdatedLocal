@@ -301,14 +301,14 @@
         <img src="{{ asset('/assets/logo/mail-logo-projectinox.png') }}" alt="Project Inbox Logo" style="max-width: 200px; height: auto;">
     </div>
 
-    <p style="font-size: 16px; color: #333;">Dear {{ $user->name }},</p>
+    <p style="font-size: 16px; color: #999;">Dear {{ $user->name }},</p>
 
     <!-- isAdminNotification -->
     @if($user->role_id !==1)
     @if($isAdminNotification)
-        <p style="font-size: 14px; color: #333;">A new order has been created.</p>
+        <p style="font-size: 14px; color: #999;">A new order has been created.</p>
     @else
-        <p style="font-size: 14px; color: #333;">Thank you for your order! Your order has been successfully created.</p>
+        <p style="font-size: 14px;color: #999;">Thank you for your order! Your order has been successfully created.</p>
     @endif
     @endif
 
@@ -323,28 +323,28 @@
         </thead>
         <tbody>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Number:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">#{{ $order->id }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Order Number:</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">#{{ $order->id }}</td>
             </tr>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Plan:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->plan->name ?? "N/A" }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Plan:</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">{{ $order->plan->name ?? "N/A" }}</td>
             </tr>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Amount:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">${{ number_format($order->amount, 2) }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Amount:</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">${{ number_format($order->amount, 2) }}</td>
             </tr>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Payment Status:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status) }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Payment Status:</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status) }}</td>
             </tr>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Status:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status_manage_by_admin) }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Order Status:</td>
+                <td style=" color: #999; padding: 10px; border: 1px solid #eee;">{{ ucfirst($order->status_manage_by_admin) }}</td>
             </tr>
             <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">Order Created At:</td>
-                <td style="padding: 10px; border: 1px solid #eee;">{{ $order->created_at->toString() }}</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">Order Created At:</td>
+                <td style="color: #999; padding: 10px; border: 1px solid #eee;">{{ $order->created_at->toString() }}</td>
             </tr>
         </tbody>
     </table>

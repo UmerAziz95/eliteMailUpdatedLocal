@@ -11,7 +11,7 @@
     .form-select {
         background-color: #1e1e1e !important;
     }
-    
+
     /* Invalid state styling */
     .form-control.is-invalid,
     .form-select.is-invalid {
@@ -33,8 +33,8 @@
     }
 
     /* Show invalid feedback when field has is-invalid class */
-    .is-invalid + .invalid-feedback,
-    .is-invalid ~ .invalid-feedback {
+    .is-invalid+.invalid-feedback,
+    .is-invalid~.invalid-feedback {
         display: block !important;
     }
 
@@ -67,7 +67,7 @@
     .password-wrapper {
         position: relative;
     }
-    
+
     .password-toggle {
         position: absolute;
         right: 10px;
@@ -93,7 +93,7 @@
         margin-top: 0.25rem;
     }
 
-    .is-invalid + .validation-message {
+    .is-invalid+.validation-message {
         display: block;
     }
 
@@ -109,8 +109,15 @@
     }
 
     @keyframes pulseCount {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
     }
 
     #domain-count-text {
@@ -133,7 +140,8 @@
     <input type="hidden" name="plan_id" value="{{ $plan->id ?? '' }}">
     <!-- order_id -->
     <input type="hidden" name="order_id" value="{{ isset($order) ? $order->id : '' }}">
-    <input type="hidden" name="edit_id" value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
+    <input type="hidden" name="edit_id"
+        value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
 
     <section class="py-3 overflow-hidden" data-page="edit-order">
         <div class="card p-3">
@@ -147,7 +155,9 @@
 
             <div class="domain-forwarding mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
-                <input type="text" id="forwarding" name="forwarding_url" class="form-control" value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}" required />
+                <input type="text" id="forwarding" name="forwarding_url" class="form-control"
+                    value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}"
+                    required />
                 <div class="invalid-feedback" id="forwarding-error"></div>
                 <p class="note mb-0">(A link where you'd like to drive the traffic from the domains you
                     send us – could be your main website, blog post, etc.)</p>
@@ -157,13 +167,13 @@
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
-                        <option value="{{ $platform->value }}" 
-                            data-fields='@json($platform->fields)'
-                            data-requires-tutorial="{{ $platform->requires_tutorial }}"
-                            data-tutorial-link="{{ $platform->tutorial_link }}"
-                            {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform === $platform->value) ? ' selected' : '' }}>
-                            {{ $platform->name }}
-                        </option>
+                    <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
+                        data-requires-tutorial="{{ $platform->requires_tutorial }}"
+                        data-tutorial-link="{{ $platform->tutorial_link }}" {{ (optional(optional($order)->
+                        reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
+                        $platform->value) ? ' selected' : '' }}>
+                        {{ $platform->name }}
+                    </option>
                     @endforeach
                 </select>
                 <div class="invalid-feedback" id="hosting-error"></div>
@@ -174,7 +184,8 @@
             <div id="tutorial_section" class="mb-3" style="display: none;">
                 <div class="">
                     <p class="mb-0">
-                        <strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account:
+                        <strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to
+                        your hosting account:
                         <a href="#" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>
                     </p>
                 </div>
@@ -192,10 +203,11 @@
 
             <div class="domains mb-3">
                 <label for="domains">
-                    Domains * 
+                    Domains *
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
                 </label>
-                <textarea id="domains" name="domains" class="form-control" rows="8" required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
+                <textarea id="domains" name="domains" class="form-control" rows="8"
+                    required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
@@ -214,11 +226,11 @@
                     <label>Sending Platform</label>
                     <select id="sending_platform" name="sending_platform" class="form-control" required>
                         @foreach($sendingPlatforms as $platform)
-                            <option value="{{ $platform->value }}" 
-                                data-fields='@json($platform->fields)'
-                                {{ (optional(optional($order)->reorderInfo)->count() > 0 && $order->reorderInfo->first()->sending_platform === $platform->value) ? ' selected' : '' }}>
-                                {{ $platform->name }}
-                            </option>
+                        <option value="{{ $platform->value }}" data-fields='@json($platform->fields)' {{
+                            (optional(optional($order)->reorderInfo)->count() > 0 &&
+                            $order->reorderInfo->first()->sending_platform === $platform->value) ? ' selected' : '' }}>
+                            {{ $platform->name }}
+                        </option>
                         @endforeach
                     </select>
                     <p class="note">(We upload and configure the email accounts for you - its a software
@@ -231,21 +243,24 @@
 
                 <h5 class="mb-2 mt-5">Email Account Information</h5>
 
-                
+
 
                 <div class="inboxes-per-domain col-md-6">
                     <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
-                        <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 1 ? 'selected' : '' }}>1</option>
-                        <option value="2" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 2 ? 'selected' : '' }}>2</option>
-                        <option value="3" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain == 3 ? 'selected' : '' }}>3</option>
+                        <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
+                            == 1 ? 'selected' : '' }}>1</option>
+                        <option value="2" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
+                            == 2 ? 'selected' : '' }}>2</option>
+                        <option value="3" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
+                            == 3 ? 'selected' : '' }}>3</option>
                     </select>
                     <p class="note">(How many email accounts per domain - the maximum is 3)</p>
                 </div>
-                 
+
                 <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
-                    <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required 
+                    <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
@@ -254,9 +269,9 @@
                     <div class="mb-3">
                         <label>Remaining Inboxes</label>
                         <div class="progress" style="height: 25px; background-color: #2a2a2a;">
-                            <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar" 
-                                 style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
-                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar"
+                                style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
+                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                                 <span id="remaining-inboxes-text">0 / 0 inboxes used</span>
                             </div>
                         </div>
@@ -266,14 +281,18 @@
 
                 <div class="col-md-6 first-name">
                     <label>First Name</label>
-                    <input type="text" name="first_name" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->first_name : '' }}" required>
+                    <input type="text" name="first_name" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->first_name : '' }}"
+                        required>
                     <div class="invalid-feedback" id="first_name-error"></div>
                     <p class="note">(First name that you wish to use on the inbox profile)</p>
                 </div>
 
                 <div class="col-md-6 last-name">
                     <label>Last Name</label>
-                    <input type="text" name="last_name" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->last_name : '' }}" required>
+                    <input type="text" name="last_name" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->last_name : '' }}"
+                        required>
                     <div class="invalid-feedback" id="last_name-error"></div>
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
@@ -281,13 +300,15 @@
                 <!-- Hidden original prefix variant fields -->
                 <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 1</label>
-                    <input type="text" name="prefix_variant_1" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
+                    <input type="text" name="prefix_variant_1" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_1-error"></div>
                 </div>
 
                 <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 2</label>
-                    <input type="text" name="prefix_variant_2" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
+                    <input type="text" name="prefix_variant_2" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
                 </div>
 
@@ -307,14 +328,18 @@
 
                 <div class="col-md-6 profile-picture" style="display: none;">
                     <label>Profile Picture Link</label>
-                    <input type="url" name="profile_picture_link" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
+                    <input type="url" name="profile_picture_link" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>
                 </div>
 
                 <div class="col-md-6 email-password">
                     <label>Email Persona - Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="email_persona_password" name="email_persona_password" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}" required>
+                        <input type="password" id="email_persona_password" name="email_persona_password"
+                            class="form-control"
+                            value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}"
+                            required>
                         <div class="invalid-feedback" id="email_persona_password-error"></div>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
@@ -322,13 +347,15 @@
 
                 <div class="col-md-6 email-picture-link">
                     <label>Email Persona - Profile Picture Link</label>
-                    <input type="url" name="email_persona_picture_link" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
+                    <input type="url" name="email_persona_picture_link" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
                 <div class="col-md-6 master-inbox">
                     <label>Centralized master inbox email</label>
-                    <input type="email" name="master_inbox_email" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
+                    <input type="email" name="master_inbox_email" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
                     <p class="note">(This is optional - if you want to forward all email inboxes to a
                         specific email, enter above)</p>
@@ -339,31 +366,38 @@
 
                     <div class="mb-3">
                         <label for="additional_info">Additional Information / Context *</label>
-                        <textarea id="additional_info" name="additional_info" class="form-control" rows="8">{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->additional_info : '' }}</textarea>
+                        <textarea id="additional_info" name="additional_info" class="form-control"
+                            rows="8">{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->additional_info : '' }}</textarea>
                     </div>
                 </div>
 
                 <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
-                    <input type="text" name="coupon_code" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->coupon_code : '' }}">
+                    <input type="text" name="coupon_code" class="form-control"
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->coupon_code : '' }}">
                 </div>
 
                 <!-- Price display section -->
                 <div class="price-display-section" style="display: none;">
                     @if(isset($plan))
-                        @php
-                            $totalInboxes = 0;
-                            if (isset($order) && optional($order->reorderInfo)->count() > 0) {
-                                $totalInboxes = $order->reorderInfo->first()->total_inboxes;
-                            }
-                            $originalPrice = $plan->price * $totalInboxes;
-                        @endphp
-                        <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }} ({{ $totalInboxes }} x ${{ number_format($plan->price, 2) }} <small>/{{ $plan->duration }})</small></h6>
-                        <h6><span class="theme-text">Discount:</span> 0%</h6>
-                        <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $plan->duration }}</small></h6>
+                    @php
+                    $totalInboxes = 0;
+                    if (isset($order) && optional($order->reorderInfo)->count() > 0) {
+                    $totalInboxes = $order->reorderInfo->first()->total_inboxes;
+                    }
+                    $originalPrice = $plan->price * $totalInboxes;
+                    @endphp
+                    <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }} ({{
+                        $totalInboxes }} x ${{ number_format($plan->price, 2) }} <small>/{{ $plan->duration }})</small>
+                    </h6>
+                    <h6><span class="theme-text">Discount:</span> 0%</h6>
+                    <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{
+                            $plan->duration }}</small></h6>
                     @else
-                        <h6><span class="theme-text">Original Price:</span> <small>Price will be calculated based on selected plan</small></h6>
-                        <h6><span class="theme-text">Total:</span> <small>Total will be calculated based on selected plan</small></h6>
+                    <h6><span class="theme-text">Original Price:</span> <small>Price will be calculated based on
+                            selected plan</small></h6>
+                    <h6><span class="theme-text">Total:</span> <small>Total will be calculated based on selected
+                            plan</small></h6>
                     @endif
                 </div>
 
@@ -378,73 +412,73 @@
     </section>
 </form>
 <!-- Order Import Modal -->
-    <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content order-import-modal">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="orderImportModalLabel">
-                        <div class="d-flex align-items-center">
-                            <div class="modal-icon-wrapper me-3">
-                                <i class="fa-solid fa-file-import"></i>
-                            </div>
-                            <div>
-                                <span class="modal-title-main">Import Order Data</span>
-                                <small class="modal-subtitle d-block">Select an existing order to populate form data</small>
-                            </div>
+<div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content order-import-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderImportModalLabel">
+                    <div class="d-flex align-items-center">
+                        <div class="modal-icon-wrapper me-3">
+                            <i class="fa-solid fa-file-import"></i>
                         </div>
-                    </h5>
-                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
-                        <i class="fa-solid fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="import-description">
-                        <div class="d-flex align-items-start">
-                            <div class="info-icon me-3">
-                                <i class="fa-solid fa-info-circle"></i>
-                            </div>
-                            <div>
-                                <p class="mb-2"><strong>How it works:</strong></p>
-                                <ul class="import-steps">
-                                    <li>Browse your existing orders in the table below</li>
-                                    <li>Click "Import" on any order to copy its data</li>
-                                    <li>All form fields will be automatically populated</li>
-                                    <li>Review and modify the imported data as needed</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <span class="modal-title-main">Import Order Data</span>
+                            <small class="modal-subtitle d-block">Select an existing order to populate form data</small>
                         </div>
                     </div>
-                    
-                    <div class="table-container">
-                        <div class="table-responsive">
-                            <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
-                                <thead>
-                                    <tr>
-                                        <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
-                                        <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
-                                        <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
-                                        <th><i class="fa-solid fa-signal me-1"></i>Status</th>
-                                        <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
-                                        <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
+                </h5>
+                <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="import-description">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon me-3">
+                            <i class="fa-solid fa-info-circle"></i>
+                        </div>
+                        <div>
+                            <p class="mb-2"><strong>How it works:</strong></p>
+                            <ul class="import-steps">
+                                <li>Browse your existing orders in the table below</li>
+                                <li>Click "Import" on any order to copy its data</li>
+                                <li>All form fields will be automatically populated</li>
+                                <li>Review and modify the imported data as needed</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
-                <!-- <div class="modal-footer">
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
+                                    <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
+                                    <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
+                                    <th><i class="fa-solid fa-signal me-1"></i>Status</th>
+                                    <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
+                                    <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="modal-footer">
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
                         <i class="fa-solid fa-times me-2"></i>
                         Cancel
                     </button>
                 </div> -->
-            </div>
         </div>
     </div>
+</div>
 
-    <style>
+<style>
     /* Modal Animation and Styling */
     .order-import-modal {
         background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
@@ -460,6 +494,7 @@
             opacity: 0;
             transform: translateY(-50px) scale(0.9);
         }
+
         to {
             opacity: 1;
             transform: translateY(0) scale(1);
@@ -482,7 +517,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
         pointer-events: none;
     }
 
@@ -498,8 +533,15 @@
     }
 
     @keyframes iconPulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
     }
 
     .modal-icon-wrapper i {
@@ -511,7 +553,7 @@
         color: white;
         font-size: 1.4rem;
         font-weight: 600;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .modal-subtitle {
@@ -561,7 +603,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
         pointer-events: none;
     }
 
@@ -607,7 +649,7 @@
         border-radius: 12px;
         /* padding: 20px;
         border: 1px solid #404040; */
-        box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     /* Enhanced responsive table wrapper for horizontal scrolling */
@@ -650,13 +692,16 @@
 
     /* Table content styling for better horizontal scrolling */
     .import-table {
-        min-width: 800px; /* Ensure minimum width to trigger horizontal scrolling */
-        white-space: nowrap; /* Prevent text wrapping in cells */
+        min-width: 800px;
+        /* Ensure minimum width to trigger horizontal scrolling */
+        white-space: nowrap;
+        /* Prevent text wrapping in cells */
     }
 
     .import-table th,
     .import-table td {
-        min-width: 120px; /* Set minimum column width */
+        min-width: 120px;
+        /* Set minimum column width */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -665,17 +710,20 @@
     /* Specific column width adjustments */
     .import-table th:first-child,
     .import-table td:first-child {
-        min-width: 80px; /* Order ID column */
+        min-width: 80px;
+        /* Order ID column */
     }
 
     .import-table th:nth-child(2),
     .import-table td:nth-child(2) {
-        min-width: 150px; /* Plan column */
+        min-width: 150px;
+        /* Plan column */
     }
 
     .import-table th:nth-child(6),
     .import-table td:nth-child(6) {
-        min-width: 120px; /* Action column */
+        min-width: 120px;
+        /* Action column */
     }
 
     /* Scroll indicators for better UX */
@@ -702,7 +750,7 @@
         transition: opacity 0.3s ease;
         pointer-events: auto;
         z-index: 10;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     .scroll-indicator-left {
@@ -758,7 +806,7 @@
     .import-table tbody tr:hover {
         background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .import-table tbody td {
@@ -843,33 +891,35 @@
         .order-import-modal .modal-header {
             padding: 15px 20px;
         }
-        
+
         .modal-title-main {
             font-size: 1.2rem;
         }
-        
+
         .order-import-modal .modal-body {
             padding: 20px;
         }
-        
+
         .import-description {
             padding: 15px;
         }
-        
+
         .table-container {
             /* padding: 15px; */
         }
 
         /* Enhanced mobile horizontal scrolling */
         .table-responsive {
-            margin: 0 -15px; /* Extend to modal edges on mobile */
+            margin: 0 -15px;
+            /* Extend to modal edges on mobile */
             border-radius: 0;
             border-left: none;
             border-right: none;
         }
 
         .import-table {
-            min-width: 900px; /* Increased minimum width for mobile */
+            min-width: 900px;
+            /* Increased minimum width for mobile */
         }
 
         /* Make scrollbar more prominent on mobile */
@@ -903,7 +953,8 @@
 
     @media (max-width: 480px) {
         .import-table {
-            min-width: 1000px; /* Even wider on very small screens */
+            min-width: 1000px;
+            /* Even wider on very small screens */
         }
 
         .import-table th,
@@ -929,6 +980,7 @@
             opacity: 0;
             transform: translateX(-20px);
         }
+
         to {
             opacity: 1;
             transform: translateX(0);
@@ -936,18 +988,32 @@
     }
 
     /* Stagger animation for multiple rows */
-    .import-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
-    .import-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
-    .import-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
-    .import-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
-    .import-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
-    </style>
+    .import-table tbody tr:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .import-table tbody tr:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .import-table tbody tr:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+
+    .import-table tbody tr:nth-child(4) {
+        animation-delay: 0.4s;
+    }
+
+    .import-table tbody tr:nth-child(5) {
+        animation-delay: 0.5s;
+    }
+</style>
 
 @endsection
 
 @push('scripts')
 <script>
-// Global function for calculating total inboxes and updating price - accessible from import functionality
+    // Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
     const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
@@ -2441,27 +2507,72 @@ $(document).ready(function() {
         const container = $('#prefix-variants-container');
         container.empty();
         
+        // <p class="note">(Prefix variant ${i} for email persona)</p>
         // Get existing prefix variant values from old fields or database
         const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
         
-        for (let i = 1; i <= count; i++) {
-            const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
-                                (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
-                                (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
-            
-            const fieldHtml = `
-                <div class="col-md-6">
-                    <label>Email Persona - Prefix Variant ${i}</label>
-                    <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                           value="${existingValue}" ${i === 1 ? 'required' : ''}>
-                    <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
-                    <p class="note">(Prefix variant ${i} for email persona)</p>
-                </div>
-            `;
-            container.append(fieldHtml);
-        }
+       for (let i = 1; i <= count; i++) {
+    const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+        (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
+        (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+
+    // Determine example prefix text based on iteration
+    let examplePrefix = 'john';
+    if (i === 2) {
+        examplePrefix = 'johnsmith';
+    } else if (i === 3) {
+        examplePrefix = 'j';
     }
 
+    const fieldHtml = `
+        <div class="col-md-6">
+            <label>Email Persona - Prefix Variant ${i}</label>
+            <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                   value="${existingValue}" ${i === 1 ? 'required' : ''}>
+            <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+            <p class="note">
+                Enter the email prefix for variant ${i} (the part before @). 
+                For example, in "<strong>${examplePrefix}@example.com</strong>", 
+                "<strong>${examplePrefix}</strong>" is the prefix. 
+                You currently have chosen <strong>${count}</strong> inboxes/prefix variants per domain.
+            </p>
+        </div>
+    `;
+    
+    container.append(fieldHtml);
+}
+
+        container.find('input').on('input', function () {
+        const values = [];
+        const seen = new Set();
+        let hasDuplicate = false;
+
+        container.find('input').each(function () {
+            const val = $(this).val().trim();
+            values.push(val);
+
+            if (val !== '' && seen.has(val)) {
+                hasDuplicate = true;
+                $(this).addClass('is-invalid');
+                $(this).siblings('.invalid-feedback').text('Same Prefixes are not allowed.');
+            } else {
+                seen.add(val);
+                $(this).removeClass('is-invalid');
+                $(this).siblings('.invalid-feedback').text('');
+            }
+        });
+
+        // Optionally: show a toast or alert for global feedback
+        // if (hasDuplicate) alert("Duplicate prefix variants are not allowed.");
+        });
+
+        
+    }
+
+    // 🔁 After generating all fields, bind change event
+    
+
+    
     // Handle inboxes per domain change event
     $('#inboxes_per_domain').on('change', function() {
         const inboxesPerDomain = parseInt($(this).val()) || 1;
