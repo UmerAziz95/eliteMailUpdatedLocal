@@ -268,12 +268,12 @@
         <div class="content">
             <div class="alert-banner">
                 <h3>Draft Order Pending</h3>
-                <p>This order has been in draft status and requires your attention</p>
+                <p>The order is in draft status and requires your attention</p>
             </div>
 
             <p>Dear {{ $user->name }},</p>
-            <p>Your order <strong>#{{ $order->id }}</strong> has been in draft status for some time and requires your attention to proceed.</p>
-            <p>Please review your order details and take the necessary action to complete or update your order status.</p>
+            <p>Your order <strong>#{{ $order->id }}</strong> is currently in draft status and requires your attention to proceed.</p>
+            <p>Please log in to your account, navigate to the Orders tab, and edit the draft order to complete it accordingly.</p>
 
             <div class="detail-card">
                 <div class="detail-row">
