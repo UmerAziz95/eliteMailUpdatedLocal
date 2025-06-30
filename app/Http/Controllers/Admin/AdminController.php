@@ -132,12 +132,6 @@ class AdminController extends Controller
                 };
                 return $order;
             });
-        // dd([
-        //     'totalCustomers'=>$totalCustomers,
-        //     'totalContractors'=>$totalContractors,
-        //     'totalInboxesSold'=>$totalInboxesSold,
-        //     'recentOrders'=>$recentOrders
-        // ]);
         return view('admin.dashboard.dashboard', compact(
             'totalCustomers',
             'totalContractors', 
