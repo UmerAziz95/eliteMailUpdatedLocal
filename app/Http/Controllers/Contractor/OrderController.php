@@ -2052,7 +2052,11 @@ class OrderController extends Controller
 
             // Calculate totals
             $domainsCount = count($domains);
-            $inboxesPerDomain = count($prefixVariants);
+            // $inboxesPerDomain = count($prefixVariants);
+            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1; // Default to 1 if not set
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1; // Ensure at least 1 inbox per domain
+            }
             $totalInboxes = $domainsCount * $inboxesPerDomain;
 
             $filename = "order_{$order->id}_split_{$splitId}_emails.csv";
