@@ -1949,6 +1949,7 @@ class OrderController extends Controller
     /**
      * Export CSV file with domains data for a specific order panel split
      */
+    
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
@@ -1956,13 +1957,13 @@ class OrderController extends Controller
             $orderPanelSplit = OrderPanelSplit::with([
                 'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
                     $query->where('contractor_id', auth()->id());
-                }
+                },
+                'orderPanel.panel'
             ])->findOrFail($splitId);
 
             // Check if contractor has access to this split
             $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
-            
             // Allow access if order is unassigned (available for all contractors)
             if ($order->assigned_to === null) {
                 $hasAccess = true;
@@ -2018,6 +2019,11 @@ class OrderController extends Controller
                 return back()->with('error', 'No domains data found for this split.');
             }
 
+            // Calculate totals
+            $domainsCount = count($domains);
+            $inboxesPerDomain = $orderPanelSplit->inboxes_per_domain ?? 1;
+            $totalInboxes = $domainsCount * $inboxesPerDomain;
+
             $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
 
             $headers = [
@@ -2025,27 +2031,40 @@ class OrderController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($domains, $orderPanelSplit, $order) {
+            $callback = function () use ($domains, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
 
-                // Add CSV headers with more detailed information
+                // Add CSV headers once at the top
                 fputcsv($file, [
-                    'Domain', 
-                    // 'Order ID', 
-                    // 'Split ID', 
-                    // 'Panel ID', 
-                    // 'Inboxes per Domain'
+                    'Order_ID', 
+                    'Panel_ID', 
+                    'Split_ID', 
+                    'Inboxes_Per_Domain', 
+                    'Domains_Count', 
+                    'Total_Inboxes', 
+                    'Status', 
+                    'Created_At'
                 ]);
 
-                // Add data rows
+                // Add single data row with summary information
+                fputcsv($file, [
+                    $order->id,
+                    $orderPanelSplit->orderPanel->id,
+                    $orderPanelSplit->id,
+                    $inboxesPerDomain,
+                    $domainsCount,
+                    $totalInboxes,
+                    $orderPanelSplit->orderPanel->status ?? 'pending',
+                    $orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : ''
+                ]);
+
+                // Add empty row for separation
+                fputcsv($file, []);
+                // Add domains header
+                fputcsv($file, ['Domain']);
+                // Add domains data
                 foreach ($domains as $domain) {
-                    fputcsv($file, [
-                        $domain,
-                        // $order->id,
-                        // $orderPanelSplit->id,
-                        // $orderPanelSplit->panel_id,
-                        // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
-                    ]);
+                    fputcsv($file, [$domain]);
                 }
 
                 fclose($file);
