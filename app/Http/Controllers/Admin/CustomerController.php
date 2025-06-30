@@ -59,32 +59,6 @@ class CustomerController extends Controller
                             data-id="' . $row->id . '" ' . $checked . ' ' . $disabled . '>
                     </div>';
                 })
-
-                //  <span class="ms-2 ' . ($row->status == 1 ? 'text-success' : 'text-danger') . '">' . ucfirst($statusText) . '</span>
-                // ->addColumn('action', function ($row) {
-                //     $user = auth()->user();
-                
-                //     // If the user has 'Mod' permission, hide the action buttons
-                //     if ($user->hasPermissionTo('Mod')) {
-                //         return ' <button class="bg-transparent p-0 border-0 mx-2 view-btn" data-id="' . $row->id . '">
-                //                 <i class="fa-regular fa-eye"></i>'; // or return only view icon if needed
-                //     }
-                
-                //     return '
-                //         <div class="d-flex align-items-center gap-2">
-
-                //             <div class="dropdown">
-                //                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                //                     <i class="fa-solid fa-ellipsis-vertical"></i>
-                //                 </button>
-                //                 <ul class="dropdown-menu">
-                //                     <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">View</a></li>
-                //                 </ul>
-                //             </div>
-                //         </div>
-                //     ';
-                // })
-                
                 ->rawColumns(['role', 'status', 'action'])
                 ->with([
                     'counters' => [

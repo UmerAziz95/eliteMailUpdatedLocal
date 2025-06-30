@@ -24,104 +24,8 @@ class PanelController extends Controller
 
         return view('admin.panels.index');
     }    
-    // public function getPanelsData(Request $request)
-    // {
-    //     try {
-    //         $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
-    //             ->withCount('order_panels as total_orders');
-
-    //         // Apply filters if provided
-    //         if ($request->filled('panel_id')) {
-    //             // PNL-35 remove string PNL
-    //             $request->panel_id = str_replace('PNL-', '', $request->panel_id);
-    //             $query->where('id', 'like', '%' . $request->panel_id . '%');
-    //         }
-
-    //         if ($request->filled('min_inbox_limit')) {
-    //             $query->where('limit', '>=', $request->min_inbox_limit);
-    //         }
-
-    //         if ($request->filled('max_inbox_limit')) {
-    //             $query->where('limit', '<=', $request->max_inbox_limit);
-    //         }
-
-    //         if ($request->filled('min_remaining')) {
-    //             $query->where('remaining_limit', '>=', $request->min_remaining);
-    //         }
-
-    //         if ($request->filled('max_remaining')) {
-    //             $query->where('remaining_limit', '<=', $request->max_remaining);
-    //         }
-
-    //         // Apply ordering
-    //         $order = $request->get('order', 'desc');
-    //         $query->orderBy('created_at', $order);
-
-    //         // Pagination parameters
-    //         $perPage = $request->get('per_page', 12); // Default 12 panels per page
-    //         $page = $request->get('page', 1);
-            
-    //         // Get paginated results
-    //         $paginatedPanels = $query->paginate($perPage, ['*'], 'page', $page);
-
-    //         // Format panels data for the frontend
-    //         $panelsData = $paginatedPanels->getCollection()->map(function ($panel) {
-    //             $used = $panel->limit - $panel->remaining_limit;
-                
-    //             // Get recent orders for this panel
-    //             $recentOrders = OrderPanel::with('order')
-    //                 ->where('panel_id', $panel->id)
-    //                 ->orderBy('created_at', 'desc')
-    //                 // ->limit(5)
-    //                 ->get();
-    //             // dd('ok');
-    //             return [
-    //                 'id' => $panel->id,
-    //                 'auto_generated_id' => $panel->auto_generated_id,
-    //                 'title' => $panel->title,
-    //                 'description' => $panel->description,
-    //                 'limit' => $panel->limit,
-    //                 'used' => $used,
-    //                 'remaining_limit' => $panel->remaining_limit,
-    //                 'is_active' => $panel->is_active,
-    //                 'created_by' => $panel->created_by,
-    //                 'created_at' => $panel->created_at,
-    //                 'total_orders' => $panel->total_orders,
-    //                 'recent_orders' => $recentOrders->map(function ($orderPanel) {
-    //                     return [
-    //                         'id' => $orderPanel->order->id ?? 'N/A',
-    //                         'space_assigned' => $orderPanel->space_assigned,
-    //                         'status' => $orderPanel->status,
-    //                         'created_at' => $orderPanel->created_at,
-    //                         'order_id' => $orderPanel->order->id ?? null,
-    //                     ];
-    //                 }),
-    //                 'usage_percentage' => $panel->limit > 0 ? round(($used / $panel->limit) * 100, 2) : 0,
-    //             ];
-    //         });
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'data' => $panelsData,
-    //             'pagination' => [
-    //                 'current_page' => $paginatedPanels->currentPage(),
-    //                 'last_page' => $paginatedPanels->lastPage(),
-    //                 'per_page' => $paginatedPanels->perPage(),
-    //                 'total' => $paginatedPanels->total(),
-    //                 'has_more_pages' => $paginatedPanels->hasMorePages(),
-    //                 'from' => $paginatedPanels->firstItem(),
-    //                 'to' => $paginatedPanels->lastItem()
-    //             ]
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error fetching panels data: ' . $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-      public function getPanelsData(Request $request)
+    
+    public function getPanelsData(Request $request)
     {
         try {
             $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
@@ -171,7 +75,6 @@ class PanelController extends Controller
                     ->orderBy('created_at', 'desc')
                     // ->limit(5)
                     ->get();
-                // dd('ok');
                 return [
                     'id' => $panel->id,
                     'auto_generated_id' => $panel->auto_generated_id,
@@ -393,8 +296,8 @@ class PanelController extends Controller
     }
 
 
-    public function getOrdersSplits(Request $request, $orderId){
-
+    public function getOrdersSplits(Request $request, $orderId)
+    {
         try{
            
             $order= Order::find($orderId);
@@ -407,12 +310,6 @@ class PanelController extends Controller
             $orderPanel = OrderPanel::with(['panel','orderPanelSplits','order.reorderInfo'])
                 ->where('order_id', $orderId)
                 ->get(); 
-            //  $panel = Panel::findOrFail($panelId);
-            
-            // $orders = OrderPanel::with(['order.user', 'order.reorderInfo', 'orderPanelSplits'])
-            //     ->where('panel_id', $panelId)
-            //     ->orderBy('created_at', 'desc')
-            //     ->get();
             return response()->json([
                 'success'=>true,
                 'data'=>$orderPanel
