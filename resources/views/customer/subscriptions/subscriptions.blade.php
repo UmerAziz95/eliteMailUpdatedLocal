@@ -48,7 +48,7 @@
     <div class="row mb-4">
         <div class="counters col-xl-6">
             <div class="card p-3 counter_1">
-                <div>
+                <div> 
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <h6 class="text-heading">Total Subscriptions</h6>

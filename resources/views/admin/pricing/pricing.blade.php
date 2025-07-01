@@ -9,7 +9,8 @@
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
 
-        .invalid-feedback, .range-error {
+        .invalid-feedback,
+        .range-error {
             display: block !important;
             width: 100%;
             margin-top: 0.25rem;
@@ -34,7 +35,7 @@
 
         .pricing-card {
             background-color: var(--secondary-color);
-            box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px;
+            /* box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px; */
             border-radius: 10px;
             padding: 30px;
             text-align: center;
@@ -47,7 +48,7 @@
         }
 
         .pricing-card:hover {
-            box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15);
+            /* box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15); */
             transform: translateY(-10px);
         }
 
@@ -180,6 +181,52 @@
                 transform: scale(1);
             }
         }
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .price {
+            background-color: #000;
+            border: 3px solid #fff;
+            width: fit-content;
+            height: 150px;
+            width: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            bottom: -55px;
+        }
+
+        /* .subscribe-btn, .btn {
+                box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+            } */
+
+        @media (max-width: 1400px) {
+            .pricing-card {
+                padding: 40px 30px;
+            }
+
+            li {
+                font-size: 12px !important
+            }
+
+            small {
+                font-size: 10px !important
+            }
+        }
+
+        @media (min-width: 1400px) {
+            .plans {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 30px;
+            }
+        }
     </style>
 @endpush
 
@@ -210,56 +257,84 @@
         </div>
 
         <!-- <div class="d-flex flex-column align-items-center justify-content-center">
-                <h2 class="text-center fw-bold">Manage Plans</h2>
-                <p class="text-center">Create and manage subscription plans</p>
-                @if (!auth()->user()->hasPermissionTo('Mod'))
-                @if (auth()->user()->role_id != 5)
+                    <h2 class="text-center fw-bold">Manage Plans</h2>
+                    <p class="text-center">Create and manage subscription plans</p>
+                    @if (!auth()->user()->hasPermissionTo('Mod'))
+                    @if (auth()->user()->role_id != 5)
     <button id="addNew" data-bs-target="#addPlan" data-bs-toggle="modal" class="m-btn rounded-1 border-0 py-2 px-4">
-                    <i class="fa-solid fa-plus"></i> Add New Plan
-                </button>
+                        <i class="fa-solid fa-plus"></i> Add New Plan
+                    </button>
     @endif
-                @endif
-            </div> -->
+                    @endif
+                </div> -->
 
         <div class="row mt-5" id="plans-container">
             @foreach ($plans as $plan)
-                <div class="col-sm-6 col-lg-4  mb-5" id="plan-{{ $plan->id }}">
-                    <div
-                        class="pricing-card h-100 d-flex flex-column justify-content-between {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                        <div>
-                            <h5 class="fw-semibold plan-name text-capitalize fs-6">{{ $plan->name }}</h5>
-                            <h2 class="fw-bold plan-price fs-4">${{ number_format($plan->price, 2) }} <span
-                                    class="fw-light" style="font-size: 13px">/{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }} per
-                                    inboxes</span>
-                            </h2>
-                            <p class="plan-description text-capitalize small">{{ $plan->description }}</p>
-                            <hr>
-                            <div class="mb-2">
-                                {{ $plan->min_inbox }} {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}
-                                <strong>Inboxes</strong>
+                <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
+                    <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+                        <div class="inner-content d-flex flex-column justify-content-between">
+                            <div>
+                                {{-- <div class="d-flex align-items-center justify-content-center mb-0">
+                                    <div class="plan-header">
+                                        <h6 class="fs-6 text-uppercase fw-bold">{{ $plan->name }}</h6>
+                                    </div>
+                                </div> --}}
+                                <div class="text-start">
+                                    <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
+                                        {{ $plan->name }}</h4>
+                                    <div class="mb-3 ">
+                                        <span>
+                                            <span class="number">{{ $plan->min_inbox }}
+                                                {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
+                                            Inboxes
+                                        </span>
+                                    </div>
+    
+                                    {{-- <small class="plan-description text-capitalize opacity-75"
+                                        style="line-height: 1px !important">{{ $plan->description }}</small> --}}
+                                    <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
+                                        ${{ number_format($plan->price, 2) }}
+                                        <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
+                                            /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
+                                            per Inboxes
+                                        </span>
+                                    </h2>
+                                    <ul class="list-unstyled features-list text-start">
+                                        @foreach ($plan->features as $feature)
+                                            <li style="font-size: 14px"
+                                                class="mb-2 d-flex align-items-center gap-2">
+                                                <div>
+                                                    <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
+                                                        width="20" alt="">
+                                                </div>
+                                                {{ $feature->title }} {{ $feature->pivot->value }}
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+    
+                                {{-- <div class="text-center mt-4">
+                                    @php
+                                        $activeSubscription = auth()
+                                            ->user()
+                                            ->subscription()
+                                            ->where('plan_id', $plan->id)
+                                            ->where('status', 'active')
+                                            ->first();
+                                    @endphp
+                                    @if ($activeSubscription)
+                                        <button class="btn text-white subscribe-btn w-100"  data-plan-id="{{ $plan->id }}" style="background-color: rgb(5, 163, 23)">
+                                            <i class="fas fa-check me-2"></i>Subscribed Plan
+                                        </button>
+                                    @else
+                                        <button class="btn btn-primary subscribe-btn w-100"
+                                            data-plan-id="{{ $plan->id }}">
+                                            Get Started Now
+                                        </button>
+                                    @endif
+                                </div> --}}
                             </div>
-                            <ul class="list-unstyled features-list">
-                                @foreach ($plan->features as $feature)
-                                    <li style="font-size: 13px" class="mb-2">
-                                        <i class="fas fa-check text-success"></i>
-                                        {{ $feature->title }} {{ $feature->pivot->value }}
-                                    </li>
-                                @endforeach
-                            </ul>
                         </div>
-                        <!-- @if (!auth()->user()->hasPermissionTo('Mod') && auth()->user()->role_id != 5)
-    <div class="d-flex gap-2">
-                            <button data-bs-target="#editPlan{{ $plan->id }}" data-bs-toggle="modal"
-                                class="{{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'grey-btn' : 'm-btn' }} rounded-1 border-0 py-2 px-4 w-100">
-                                <i class="fa-regular fa-pen-to-square"></i> Edit
-                            </button>
-                            <button type="button" class="btn btn-danger rounded-1 py-2 px-4 w-100 delete-plan-btn"
-                                data-id="{{ $plan->id }}">
-                                <i class="fa-regular fa-trash-can"></i> Delete
-                            </button>
-                        </div>
-    @endif -->
-
                     </div>
                 </div>
 
@@ -307,21 +382,24 @@
                                         </div>
                                         <div class="col-md-12">
                                             <h5 class="mt-2">Inbox Limits</h5>
-                                            <div class="row">                                        <div class="col-md-6">
-                                            <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
-                                            <input type="number" class="form-control mb-3"
-                                                id="min_inbox{{ $plan->id }}" name="min_inbox"
-                                                value="{{ $plan->min_inbox }}" min="1" step="1" required>
-                                            <small class="text-muted">Must be 1 or greater</small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
-                                                unlimited):</label>
-                                            <input type="number" class="form-control mb-3"
-                                                id="max_inbox{{ $plan->id }}" name="max_inbox"
-                                                value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1" required>
-                                            <small class="text-muted">Use 0 for unlimited</small>
-                                        </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
+                                                    <input type="number" class="form-control mb-3"
+                                                        id="min_inbox{{ $plan->id }}" name="min_inbox"
+                                                        value="{{ $plan->min_inbox }}" min="1" step="1"
+                                                        required>
+                                                    <small class="text-muted">Must be 1 or greater</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
+                                                        unlimited):</label>
+                                                    <input type="number" class="form-control mb-3"
+                                                        id="max_inbox{{ $plan->id }}" name="max_inbox"
+                                                        value="{{ $plan->max_inbox ?? 0 }}" min="0"
+                                                        step="1" required>
+                                                    <small class="text-muted">Use 0 for unlimited</small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -625,61 +703,69 @@
 
 
             // Real-time validation for plan form inputs
-            $(document).on('input', 'input[name="price"], input[name="min_inbox"], input[name="max_inbox"]', function() {
-                const $input = $(this);
-                const value = $input.val();
-                const fieldName = $input.attr('name');
-                
-                // Remove any existing error styling
-                $input.removeClass('is-invalid');
-                $input.siblings('.invalid-feedback').remove();
-                
-                // Skip validation if field is empty (will be caught during form submission)
-                if (value === '') {
-                    return;
-                }
-                
-                // Validate based on field type
-                if (fieldName === 'price') {
-                    const numValue = parseFloat(value);
-                    if (isNaN(numValue) || numValue < 0) {
-                        $input.addClass('is-invalid');
-                        $input.after('<div class="invalid-feedback">Price must be a valid number (0 or greater)</div>');
+            $(document).on('input', 'input[name="price"], input[name="min_inbox"], input[name="max_inbox"]',
+                function() {
+                    const $input = $(this);
+                    const value = $input.val();
+                    const fieldName = $input.attr('name');
+
+                    // Remove any existing error styling
+                    $input.removeClass('is-invalid');
+                    $input.siblings('.invalid-feedback').remove();
+
+                    // Skip validation if field is empty (will be caught during form submission)
+                    if (value === '') {
+                        return;
                     }
-                } else if (fieldName === 'min_inbox') {
-                    const numValue = parseInt(value);
-                    if (isNaN(numValue) || numValue <= 0) {
-                        $input.addClass('is-invalid');
-                        $input.after('<div class="invalid-feedback">Min inboxes must be a whole number greater than 0</div>');
+
+                    // Validate based on field type
+                    if (fieldName === 'price') {
+                        const numValue = parseFloat(value);
+                        if (isNaN(numValue) || numValue < 0) {
+                            $input.addClass('is-invalid');
+                            $input.after(
+                                '<div class="invalid-feedback">Price must be a valid number (0 or greater)</div>'
+                                );
+                        }
+                    } else if (fieldName === 'min_inbox') {
+                        const numValue = parseInt(value);
+                        if (isNaN(numValue) || numValue <= 0) {
+                            $input.addClass('is-invalid');
+                            $input.after(
+                                '<div class="invalid-feedback">Min inboxes must be a whole number greater than 0</div>'
+                                );
+                        }
+                    } else if (fieldName === 'max_inbox') {
+                        const numValue = parseInt(value);
+                        if (isNaN(numValue) || numValue < 0) {
+                            $input.addClass('is-invalid');
+                            $input.after(
+                                '<div class="invalid-feedback">Max inboxes must be a whole number (0 for unlimited)</div>'
+                                );
+                        }
                     }
-                } else if (fieldName === 'max_inbox') {
-                    const numValue = parseInt(value);
-                    if (isNaN(numValue) || numValue < 0) {
-                        $input.addClass('is-invalid');
-                        $input.after('<div class="invalid-feedback">Max inboxes must be a whole number (0 for unlimited)</div>');
-                    }
-                }
-                
-                // Validate range for min/max inputs
-                validateInboxRange($input);
-            });
+
+                    // Validate range for min/max inputs
+                    validateInboxRange($input);
+                });
 
             // Validate min/max inbox range relationship
             function validateInboxRange($changedInput) {
                 const $form = $changedInput.closest('form');
                 const minInput = $form.find('input[name="min_inbox"]');
                 const maxInput = $form.find('input[name="max_inbox"]');
-                
+
                 const minVal = parseInt(minInput.val());
                 const maxVal = parseInt(maxInput.val());
-                
+
                 // Clear any existing range validation errors
                 minInput.siblings('.range-error').remove();
                 maxInput.siblings('.range-error').remove();
-                
+
                 // Only validate if both fields have valid values
                 if (!isNaN(minVal) && !isNaN(maxVal) && maxVal !== 0 && minVal > maxVal) {
-                    const errorMsg = '<div class="range-error text-danger small mt-1">Min inboxes cannot be greater than max inboxes</div>';
+                    const errorMsg =
+                        '<div class="range-error text-danger small mt-1">Min inboxes cannot be greater than max inboxes</div>';
                     minInput.after(errorMsg);
                     maxInput.after(errorMsg);
                     minInput.addClass('is-invalid');
@@ -691,24 +777,24 @@
             function validateFormCompleteness($form, formType = 'plan') {
                 let errors = [];
                 let hasEmptyFields = false;
-                
+
                 if (formType === 'masterplan') {
                     // Validate master plan basic info
                     const planName = $('#masterPlanExternalName').val().trim();
                     const description = $('#masterPlanDescription').val().trim();
-                    
+
                     if (!planName) {
                         errors.push('Plan name is required');
                         $('#masterPlanExternalName').addClass('is-invalid');
                         hasEmptyFields = true;
                     }
-                    
+
                     if (!description) {
                         errors.push('Plan description is required');
                         $('#masterPlanDescription').addClass('is-invalid');
                         hasEmptyFields = true;
                     }
-                    
+
                     // Validate volume tiers
                     const volumeItems = collectVolumeItems();
                     if (volumeItems.length === 0) {
@@ -720,12 +806,15 @@
                                 errors.push(`Tier ${index + 1}: Name is required`);
                                 hasEmptyFields = true;
                             }
-                            if (item.min_inbox === null || item.min_inbox === undefined || item.min_inbox <= 0) {
-                                errors.push(`Tier ${index + 1}: Valid min inboxes is required (must be > 0)`);
+                            if (item.min_inbox === null || item.min_inbox === undefined || item.min_inbox <=
+                                0) {
+                                errors.push(
+                                    `Tier ${index + 1}: Valid min inboxes is required (must be > 0)`);
                                 hasEmptyFields = true;
                             }
                             if (item.max_inbox === null || item.max_inbox === undefined) {
-                                errors.push(`Tier ${index + 1}: Max inboxes is required (use 0 for unlimited)`);
+                                errors.push(
+                                    `Tier ${index + 1}: Max inboxes is required (use 0 for unlimited)`);
                                 hasEmptyFields = true;
                             }
                             if (item.price === null || item.price === undefined || item.price < 0) {
@@ -742,11 +831,12 @@
                         'min_inbox': 'Min inboxes',
                         'max_inbox': 'Max inboxes'
                     };
-                    
+
                     Object.keys(requiredFields).forEach(fieldName => {
-                        const $field = $form.find(`input[name="${fieldName}"], textarea[name="${fieldName}"]`);
+                        const $field = $form.find(
+                            `input[name="${fieldName}"], textarea[name="${fieldName}"]`);
                         const value = $field.val();
-                        
+
                         if (!value || value.trim() === '') {
                             errors.push(`${requiredFields[fieldName]} is required`);
                             $field.addClass('is-invalid');
@@ -755,28 +845,32 @@
                             errors.push('Min inboxes must be greater than 0');
                             $field.addClass('is-invalid');
                             hasEmptyFields = true;
-                        } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseInt(value) < 0) {
+                        } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseInt(value) <
+                            0) {
                             errors.push(`${requiredFields[fieldName]} cannot be negative`);
                             $field.addClass('is-invalid');
                             hasEmptyFields = true;
                         }
                     });
                 }
-                
+
                 if (hasEmptyFields) {
                     const errorMessage = `<strong>Form validation failed:</strong><br>• ${errors.join('<br>• ')}`;
                     showErrorToast(errorMessage);
-                    
+
                     // Scroll to first invalid field
                     const $firstInvalid = $('.is-invalid').first();
                     if ($firstInvalid.length) {
-                        $firstInvalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        $firstInvalid[0].scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
                         $firstInvalid.focus();
                     }
-                    
+
                     return false;
                 }
-                
+
                 return true;
             }
 
@@ -784,7 +878,7 @@
             $(document).on('submit', 'form', function(e) {
                 const $form = $(this);
                 const hasInvalidInputs = $form.find('.is-invalid').length > 0;
-                
+
                 if (hasInvalidInputs) {
                     e.preventDefault();
                     showErrorToast('Please fix all validation errors before submitting the form.');
@@ -796,10 +890,10 @@
             $(document).on('input blur', 'input[required], textarea[required]', function() {
                 const $field = $(this);
                 const value = $field.val().trim();
-                
+
                 // Remove previous validation classes
                 $field.removeClass('is-invalid is-valid');
-                
+
                 if (value === '') {
                     // Field is empty - show as invalid only on blur or if it was previously filled
                     if (event.type === 'blur' || $field.data('was-filled')) {
@@ -808,12 +902,13 @@
                 } else {
                     // Field has value - mark as valid and remember it was filled
                     $field.addClass('is-valid').data('was-filled', true);
-                    
+
                     // Additional validation for specific field types
                     const fieldName = $field.attr('name');
                     if (fieldName === 'min_inbox' && parseInt(value) <= 0) {
                         $field.removeClass('is-valid').addClass('is-invalid');
-                    } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseFloat(value) < 0) {
+                    } else if ((fieldName === 'max_inbox' || fieldName === 'price') && parseFloat(value) <
+                        0) {
                         $field.removeClass('is-valid').addClass('is-invalid');
                     }
                 }
@@ -1030,15 +1125,15 @@
             // Submit new plan form
             $('#addPlanForm').submit(function(e) {
                 e.preventDefault();
-                
+
                 // Clear any previous validation styling
                 $(this).find('.is-invalid').removeClass('is-invalid');
-                
+
                 // Validate form completeness
                 if (!validateFormCompleteness($(this), 'plan')) {
                     return;
                 }
-                
+
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
@@ -1092,15 +1187,15 @@
             // Submit edit plan form
             $('.edit-plan-form').submit(function(e) {
                 e.preventDefault();
-                
+
                 // Clear any previous validation styling
                 $(this).find('.is-invalid').removeClass('is-invalid');
-                
+
                 // Validate form completeness
                 if (!validateFormCompleteness($(this), 'plan')) {
                     return;
                 }
-                
+
                 const planId = $(this).data('id');
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
@@ -1525,7 +1620,8 @@
                             // Generate internal name from external name instead of using stored value
                             const generatedInternalName = generateInternalName(response.name || '');
                             $('#masterPlanInternalName').val(generatedInternalName);
-                            $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
+                            $('#internalNamePreview').text(generatedInternalName ||
+                            'plan_name_preview');
                             $('#masterPlanDescription').val(response.description || '');
                         }
                     })
@@ -1541,7 +1637,7 @@
 
                 // Clear any previous validation styling
                 $('.is-invalid').removeClass('is-invalid');
-                
+
                 // Validate form completeness first
                 if (!validateFormCompleteness(null, 'masterplan')) {
                     button.prop('disabled', false).text('Save Master Plan');
@@ -1583,7 +1679,8 @@
                     }
 
                     // Check for missing price value or if it's negative
-                    if (item.price === undefined || item.price === null || item.price === '' || item.price < 0) {
+                    if (item.price === undefined || item.price === null || item.price === '' || item.price <
+                        0) {
                         showErrorToast(`Tier ${i + 1} price is required and must be 0 or greater.`);
                         button.prop('disabled', false).text('Save Master Plan');
                         return;
@@ -1800,7 +1897,7 @@
                 const externalName = $(this).val();
                 const internalName = generateInternalName(externalName);
                 $('#masterPlanInternalName').val(internalName);
-                
+
                 // Update preview
                 $('#internalNamePreview').text(internalName || 'plan_name_preview');
             });
@@ -1960,7 +2057,8 @@
                 // Special validation for min_inbox - must be at least 1
                 if ($(this).hasClass('volume-min-inbox') && intValue === 0) {
                     $(this).val('');
-                    showErrorToast('Min inboxes must be 1 or greater. Use Auto-Fix to create proper ranges.');
+                    showErrorToast(
+                        'Min inboxes must be 1 or greater. Use Auto-Fix to create proper ranges.');
                     return;
                 }
 
@@ -1974,37 +2072,37 @@
             // Add similar validation for regular plan inputs
             $(document).on('input', 'input[name="min_inbox"]', function() {
                 let value = $(this).val();
-                
+
                 if (value === '') {
                     return;
                 }
-                
+
                 let intValue = parseInt(value);
-                
+
                 if (isNaN(intValue) || intValue <= 0) {
                     $(this).val('');
                     showErrorToast('Min inboxes must be 1 or greater.');
                     return;
                 }
-                
+
                 $(this).val(intValue);
             });
 
             $(document).on('input', 'input[name="max_inbox"]', function() {
                 let value = $(this).val();
-                
+
                 if (value === '') {
                     return;
                 }
-                
+
                 let intValue = parseInt(value);
-                
+
                 if (isNaN(intValue) || intValue < 0) {
                     $(this).val('');
                     showErrorToast('Max inboxes must be 0 or greater (0 = unlimited).');
                     return;
                 }
-                
+
                 $(this).val(intValue);
             });
 
@@ -2491,7 +2589,7 @@
                     const minInboxVal = $item.find('.volume-min-inbox').val();
                     const maxInboxVal = $item.find('.volume-max-inbox').val();
                     const priceVal = $item.find('.volume-price').val();
-                    
+
                     // Parse values, treating empty strings appropriately
                     const name = nameVal ? nameVal.trim() : '';
                     const minInbox = minInboxVal === '' ? null : (parseInt(minInboxVal) || 0);
@@ -2781,20 +2879,26 @@
                         <!-- Basic Information -->
                         <div class="card mb-4 p-3">
                             <div>
-                                <h6 class="mb-0 theme-text"><i class="fa-solid fa-info-circle me-2"></i>Basic Information</h6>
+                                <h6 class="mb-0 theme-text"><i class="fa-solid fa-info-circle me-2"></i>Basic Information
+                                </h6>
                             </div>
                             <div>
-                    
-                                <div class="row">                                <div class="col-md-12 mb-2">
-                                    <div>
-                                        <label for="masterPlanExternalName" class="form-label">Plan Name <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="masterPlanExternalName"
-                                            required>
-                                        <small class="opacity-50" style="display: none;">This will be shown to customers</small>
-                                        <small class="text-muted d-block mt-1" style="display: none !important;">Internal name: <span id="internalNamePreview" class="text-primary">plan_name_preview</span></small>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-2">
+                                        <div>
+                                            <label for="masterPlanExternalName" class="form-label">Plan Name <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="masterPlanExternalName"
+                                                required>
+                                            <small class="opacity-50" style="display: none;">This will be shown to
+                                                customers</small>
+                                            <small class="text-muted d-block mt-1"
+                                                style="display: none !important;">Internal name: <span
+                                                    id="internalNamePreview"
+                                                    class="text-primary">plan_name_preview</span></small>
+                                        </div>
                                     </div>
-                                </div>
                                     <div class="col-md-6 mb-2" style="display: none;">
                                         <div>
                                             <input type="hidden" class="form-control" id="masterPlanInternalName">
@@ -2809,72 +2913,97 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Tier Creation Instructions -->
                         <div class="card mb-3">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-8">
-                                        <h6 class="theme-text mb-0"><i class="fa-solid fa-layer-group me-2"></i>Understanding Volume
+                                        <h6 class="theme-text mb-0"><i
+                                                class="fa-solid fa-layer-group me-2"></i>Understanding Volume
                                             Tiers</h6>
-                                        <small class="mb-3">Volume pricing allows you to offer different rates based on the
-                                            number of inboxes. Each tier covers a specific range of inbox quantities.</small>
+                                        <small class="mb-3">Volume pricing allows you to offer different rates based on
+                                            the
+                                            number of inboxes. Each tier covers a specific range of inbox
+                                            quantities.</small>
 
-                                        <h6 class="mt-3"><i class="fa-solid fa-chart-line me-2 text-success"></i>Step-by-Step Guide</h6>
+                                        <h6 class="mt-3"><i
+                                                class="fa-solid fa-chart-line me-2 text-success"></i>Step-by-Step Guide
+                                        </h6>
                                         <ol class="mb-3">
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Click "Add Tier"</strong> to create a new pricing tier</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Min Inbox:</strong> The starting number of inboxes for this tier
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Click "Add
+                                                    Tier"</strong> to create a new pricing tier</li>
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Min Inbox:</strong>
+                                                The starting number of inboxes for this tier
                                                 (e.g., 1, 11, 51)</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Max Inbox:</strong> The ending number of inboxes (e.g., 10, 50,
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Max Inbox:</strong>
+                                                The ending number of inboxes (e.g., 10, 50,
                                                 100) or 0 for unlimited</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Price:</strong> The monthly price per inbox for this tier</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Add Features:</strong> Select specific features available in this
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Set Price:</strong> The
+                                                monthly price per inbox for this tier</li>
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Add Features:</strong>
+                                                Select specific features available in this
                                                 tier</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Use Auto-Fix:</strong> Automatically order tiers and fix any range
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Use Auto-Fix:</strong>
+                                                Automatically order tiers and fix any range
                                                 issues</li>
                                         </ol>
 
                                         <h6><i class="fa-solid fa-lightbulb me-2 text-warning"></i>Best Practices</h6>
                                         <ul class="mb-0">
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Start from 1:</strong> First tier should start from 1 inbox</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>No Gaps:</strong> Ensure continuous coverage (e.g., 1-10, 11-50,
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Start from 1:</strong>
+                                                First tier should start from 1 inbox</li>
+                                            <li style="font-size: 12px" class="opacity-75"><strong>No Gaps:</strong>
+                                                Ensure continuous coverage (e.g., 1-10, 11-50,
                                                 51-∞)</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Unlimited Tier:</strong> Always include one tier with max_inbox = 0
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Unlimited
+                                                    Tier:</strong> Always include one tier with max_inbox = 0
                                                 for unlimited</li>
-                                            <li style="font-size: 12px" class="opacity-75"><strong>Price Scaling:</strong> Generally, price per inbox decreases as
+                                            <li style="font-size: 12px" class="opacity-75"><strong>Price Scaling:</strong>
+                                                Generally, price per inbox decreases as
                                                 volume increases</li>
                                         </ul>
                                     </div>
                                     <div class="col-md-4">
-                                        <div style="background-color: var(--second-primary)" class="text-white p-3 rounded">
+                                        <div style="background-color: var(--second-primary)"
+                                            class="text-white p-3 rounded">
                                             <h6 class="">
                                                 <i class="fa-solid fa-calculator"></i> Example Tiers
                                             </h6>
                                             <div class="small">
                                                 <div style="border-bottom: 1px solid #ffffff3d" class="pb-2 mb-2">
                                                     <strong>Tier 1: Starter</strong><br>
-                                                    <small class="">Range:</small> <small class="opacity-50">1-10 inboxes</small><br>
-                                                    <small class="">Price:</small> <small class="opacity-50">$5.00/inbox/month</small>
+                                                    <small class="">Range:</small> <small class="opacity-50">1-10
+                                                        inboxes</small><br>
+                                                    <small class="">Price:</small> <small
+                                                        class="opacity-50">$5.00/inbox/month</small>
                                                 </div>
                                                 <div style="border-bottom: 1px solid #ffffff3d" class="pb-2 mb-2">
                                                     <strong>Tier 2: Business</strong><br>
-                                                    <small class="">Range:</small> <small class="opacity-50">11-50 inboxes</small><br>
-                                                    <small class="">Price:</small> <small class="opacity-50">$4.00/inbox/month</small>
+                                                    <small class="">Range:</small> <small class="opacity-50">11-50
+                                                        inboxes</small><br>
+                                                    <small class="">Price:</small> <small
+                                                        class="opacity-50">$4.00/inbox/month</small>
                                                 </div>
                                                 <div style="border-bottom: 1px solid #ffffff3d" class="pb-2 mb-2">
                                                     <strong>Tier 3: Enterprise</strong><br>
-                                                    <small class="">Range:</small> <small class="opacity-50">51-100 inboxes</small><br>
-                                                    <small class="">Price:</small> <small class="opacity-50">$3.00/inbox/month</small>
+                                                    <small class="">Range:</small> <small class="opacity-50">51-100
+                                                        inboxes</small><br>
+                                                    <small class="">Price:</small> <small
+                                                        class="opacity-50">$3.00/inbox/month</small>
                                                 </div>
                                                 <div>
                                                     <strong>Tier 4: Unlimited</strong><br>
-                                                    <small class="">Range:</small> <small class="opacity-50">101-∞ inboxes</small><br>
-                                                    <small class="">Price:</small> <small class="opacity-50">$2.50/inbox/month</small>
+                                                    <small class="">Range:</small> <small class="opacity-50">101-∞
+                                                        inboxes</small><br>
+                                                    <small class="">Price:</small> <small
+                                                        class="opacity-50">$2.50/inbox/month</small>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div style="background-color: var(--second-primary)" class="text-white p-3 rounded mt-3">
+                                        <div style="background-color: var(--second-primary)"
+                                            class="text-white p-3 rounded mt-3">
                                             <h6><i class="fa-solid fa-magic me-2"></i>Auto-Fix Features</h6>
                                             <ul class="small mb-0 ps-3">
                                                 <li style="font-size: 12px">Creates unlimited tier if missing</li>
@@ -2894,15 +3023,15 @@
                                             </div>
                                             <small>
                                                 <strong>Range Rules:</strong>
-                                            Ranges must be continuous with no gaps. For example: 1-10, 11-50, 51-∞.
-                                            The last tier should always be unlimited (max = 0) to handle any quantity.
+                                                Ranges must be continuous with no gaps. For example: 1-10, 11-50, 51-∞.
+                                                The last tier should always be unlimited (max = 0) to handle any quantity.
                                             </small>
                                         </div>
                                         <!-- <div class="col-md-4 text-end">
-                                                        <small class="text-muted">
-                                                            <i class="fa-solid fa-clock me-1"></i>Auto-saves every change
-                                                        </small>
-                                                    </div> -->
+                                                            <small class="text-muted">
+                                                                <i class="fa-solid fa-clock me-1"></i>Auto-saves every change
+                                                            </small>
+                                                        </div> -->
                                     </div>
                                 </div>
                             </div>
@@ -2910,9 +3039,11 @@
                         <!-- Volume Items -->
                         <div class="card p-3">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="theme-text"><i class="fa-solid fa-layer-group me-2"></i>Volume Pricing Tiers</h6>
+                                <h6 class="theme-text"><i class="fa-solid fa-layer-group me-2"></i>Volume Pricing Tiers
+                                </h6>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-info me-2 text-white" id="autoFixRanges">
+                                    <button type="button" class="btn btn-sm btn-info me-2 text-white"
+                                        id="autoFixRanges">
                                         <i class="fa-solid fa-magic"></i> Auto-Fix Ranges
                                     </button>
                                     <button type="button" class="btn btn-sm btn-primary border-0" id="addVolumeItem">
@@ -2942,7 +3073,8 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm border-0" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary btn-sm border-0"
+                        data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary btn-sm border-0" id="saveMasterPlan">
                         <i class="fa-solid fa-save me-2"></i>Save Plan
                     </button>

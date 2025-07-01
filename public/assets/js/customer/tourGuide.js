@@ -149,6 +149,21 @@ function initializeDashboardTour() {
 		]
 	});
 
+	tour.on('start', () => {
+		const btn = document.getElementById("start-tour");
+		if (btn) btn.disabled = true;
+	});
+
+	tour.on('complete', () => {
+		const btn = document.getElementById("start-tour");
+		if (btn) btn.disabled = false;
+	});
+
+	tour.on('cancel', () => {
+		const btn = document.getElementById("start-tour");
+		if (btn) btn.disabled = false;
+	});
+
 	// Manual start button (optional)
 	const startTourButton = document.getElementById("start-tour");
 	if (startTourButton) {
