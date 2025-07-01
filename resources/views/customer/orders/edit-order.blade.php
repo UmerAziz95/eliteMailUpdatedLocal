@@ -268,16 +268,29 @@
                 <div class="col-md-12 remaining">
                     <div class="mb-3">
                         <label>Remaining Inboxes</label>
-                        <div class="progress" style="height: 25px; background-color: #2a2a2a;">
+
+                        <div class="progress position-relative" style="height: 25px;
+               background: linear-gradient(135deg, #f5f5f5, #eaeaea);
+               border-radius: 6px;">
+
                             <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar"
-                                style="background: linear-gradient(45deg, #28a745, #20c997); color: white; font-weight: 600;"
-                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                <span id="remaining-inboxes-text">0 / 0 inboxes used</span>
+                                style="width: 0%; background: linear-gradient(45deg, #28a745, #20c997); border-radius: 6px;">
                             </div>
+
+                            <!-- Centered Texts -->
+                            <span id="remaining-inboxes-text" class="position-absolute w-100 text-center"
+                                style="color: #333; font-weight: 600; line-height: 25px;">
+                                0 / 0 inboxes used
+                            </span>
                         </div>
+
                         <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
                     </div>
+
+
+
                 </div>
+
 
                 <div class="col-md-6 first-name">
                     <label>First Name</label>
@@ -2503,46 +2516,60 @@ $(document).ready(function() {
     });
 
     // Dynamic prefix variant functionality
-    function generatePrefixVariantFields(count) {
-        const container = $('#prefix-variants-container');
-        container.empty();
-        
-        // <p class="note">(Prefix variant ${i} for email persona)</p>
-        // Get existing prefix variant values from old fields or database
-        const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
-        
-       for (let i = 1; i <= count; i++) {
-    const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
-        (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
-        (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+   function generatePrefixVariantFields(count) {
+    const container = $('#prefix-variants-container');
+    container.empty();
+     const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
 
-    // Determine example prefix text based on iteration
-    let examplePrefix = 'john';
-    if (i === 2) {
-        examplePrefix = 'johnsmith';
-    } else if (i === 3) {
-        examplePrefix = 'j';
+    for (let i = 1; i <= count; i++) {
+        const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+            (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
+            (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+
+        // Determine example prefix and note based on iteration
+        let examplePrefix = '';
+        let noteHtml = '';
+
+        if (i === 1) {
+            examplePrefix = 'john';
+            noteHtml = `
+                <p class="note">
+                    Enter the email prefix for variant ${i} (the part before @). 
+                    For example, in "<strong>${examplePrefix}@example.com</strong>", 
+                    "<strong>${examplePrefix}</strong>" is the prefix. 
+                    You currently have chosen <strong>${count}</strong> inboxes/prefix variants per domain.
+                </p>
+            `;
+        } else if (i === 2) {
+            examplePrefix = 'john.smith';
+            noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
+        } else if (i === 3) {
+            examplePrefix = 'j.smith';
+            noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
+        }
+
+        const fieldHtml = `
+            <div class="col-md-6">
+                <label>Email Persona - Prefix Variant ${i}</label>
+                <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                    value="${existingValue}"  required}>
+                <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                ${noteHtml}
+            </div>
+        `;
+
+        container.append(fieldHtml);
     }
 
-    const fieldHtml = `
-        <div class="col-md-6">
-            <label>Email Persona - Prefix Variant ${i}</label>
-            <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                   value="${existingValue}" ${i === 1 ? 'required' : ''}>
-            <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
-            <p class="note">
-                Enter the email prefix for variant ${i} (the part before @). 
-                For example, in "<strong>${examplePrefix}@example.com</strong>", 
-                "<strong>${examplePrefix}</strong>" is the prefix. 
-                You currently have chosen <strong>${count}</strong> inboxes/prefix variants per domain.
-            </p>
-        </div>
-    `;
-    
-    container.append(fieldHtml);
-}
+    //highlight the prefix note on fucus input
+            container.find('input').on('focus', function () {
+            $(this).siblings('.note').css('color', 'blue');
+        }).on('blur', function () {
+            $(this).siblings('.note').css('color', ''); // Reset to default
+        });
 
-        container.find('input').on('input', function () {
+    // Validate prefix variants for duplicates
+    container.find('input').on('input', function () {
         const values = [];
         const seen = new Set();
         let hasDuplicate = false;
@@ -2561,18 +2588,12 @@ $(document).ready(function() {
                 $(this).siblings('.invalid-feedback').text('');
             }
         });
+    });
+}
 
-        // Optionally: show a toast or alert for global feedback
-        // if (hasDuplicate) alert("Duplicate prefix variants are not allowed.");
-        });
-
-        
-    }
 
     // 🔁 After generating all fields, bind change event
-    
 
-    
     // Handle inboxes per domain change event
     $('#inboxes_per_domain').on('change', function() {
         const inboxesPerDomain = parseInt($(this).val()) || 1;
