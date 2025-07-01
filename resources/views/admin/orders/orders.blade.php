@@ -2361,7 +2361,9 @@ pointer-events: none
 
                     <div class="d-flex flex-column gap-1">
                     <span class="fw-bold">${order.customer_name}</span>
-                    <small>Total Inbox: ${order.total_inboxes}</small>
+                    <small>
+                        Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Split${order.splits_count === 1 ? '' : 's'}
+                    </small>
                     </div>
                 </div>
 

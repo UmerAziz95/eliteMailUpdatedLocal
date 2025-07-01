@@ -983,39 +983,146 @@ class OrderController extends Controller
     /**
      * Export CSV file with domains data for a specific order panel split
      */
+    // public function exportCsvSplitDomainsById($splitId)
+    // {
+    //     try {
+    //         // Find the order panel split
+    //         $orderPanelSplit = OrderPanelSplit::with([
+    //             'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+    //                 // $query->where('contractor_id', auth()->id());
+    //             }
+    //         ])->findOrFail($splitId);
+
+    //         // Check if contractor has access to this split
+    //         $hasAccess = false;
+    //         $order = $orderPanelSplit->orderPanel->order;
+            
+    //         // Allow access if order is unassigned (available for all contractors)
+    //         if ($order->assigned_to === null) {
+    //             $hasAccess = true;
+    //         }
+    //         // Or if the contractor is assigned to this order
+    //         else if ($order->assigned_to == auth()->id()) {
+    //             $hasAccess = true;
+    //         } else {
+    //             // Check if contractor has access to any split of this order
+    //             foreach ($order->orderPanels as $orderPanel) {
+    //                 if ($orderPanel->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0) {
+    //                     $hasAccess = true;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+
+    //         if (!$hasAccess) {
+    //             return back()->with('error', 'You do not have access to this order split.');
+    //         }
+
+    //         // Get domains from the split
+    //         $domains = [];
+    //         if ($orderPanelSplit->domains) {
+    //             if (is_array($orderPanelSplit->domains)) {
+    //                 $domains = $orderPanelSplit->domains;
+    //             } else if (is_string($orderPanelSplit->domains)) {
+    //                 // Handle case where domains might be stored as comma-separated string
+    //                 $domains = array_map('trim', explode(',', $orderPanelSplit->domains));
+    //                 $domains = array_filter($domains); // Remove empty values
+    //             }
+                
+    //             // Flatten array if it contains nested arrays or objects
+    //             $flatDomains = [];
+    //             foreach ($domains as $domain) {
+    //                 if (is_array($domain) || is_object($domain)) {
+    //                     // Handle case where domain data is nested
+    //                     if (is_object($domain) && isset($domain->domain)) {
+    //                         $flatDomains[] = $domain->domain;
+    //                     } else if (is_array($domain) && isset($domain['domain'])) {
+    //                         $flatDomains[] = $domain['domain'];
+    //                     } else if (is_string($domain)) {
+    //                         $flatDomains[] = $domain;
+    //                     }
+    //                 } else if (is_string($domain)) {
+    //                     $flatDomains[] = $domain;
+    //                 }
+    //             }
+    //             $domains = $flatDomains;
+    //         }
+
+    //         if (empty($domains)) {
+    //             return back()->with('error', 'No domains data found for this split.');
+    //         }
+
+    //         $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
+
+    //         $headers = [
+    //             'Content-Type' => 'text/csv',
+    //             'Content-Disposition' => "attachment; filename=\"$filename\"",
+    //         ];
+
+    //         $callback = function () use ($domains, $orderPanelSplit, $order) {
+    //             $file = fopen('php://output', 'w');
+
+    //             // Add CSV headers with more detailed information
+    //             fputcsv($file, [
+    //                 'Domain', 
+    //                 // 'Order ID', 
+    //                 // 'Split ID', 
+    //                 // 'Panel ID', 
+    //                 // 'Inboxes per Domain'
+    //             ]);
+
+    //             // Add data rows
+    //             foreach ($domains as $domain) {
+    //                 fputcsv($file, [
+    //                     $domain,
+    //                     // $order->id,
+    //                     // $orderPanelSplit->id,
+    //                     // $orderPanelSplit->panel_id,
+    //                     // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
+    //                 ]);
+    //             }
+
+    //             fclose($file);
+    //         };
+
+    //         return Response::stream($callback, 200, $headers);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error exporting CSV domains by split ID: ' . $e->getMessage());
+    //         return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+    //     }
+    // }
+    /**
+     * Export CSV file with domains data for a specific order panel split
+     */
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
             // Find the order panel split
             $orderPanelSplit = OrderPanelSplit::with([
-                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
-                    // $query->where('contractor_id', auth()->id());
-                }
+                'orderPanel.order.reorderInfo',
+                'orderPanel.panel'
             ])->findOrFail($splitId);
 
-            // Check if contractor has access to this split
-            $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
-            
-            // Allow access if order is unassigned (available for all contractors)
-            if ($order->assigned_to === null) {
-                $hasAccess = true;
-            }
-            // Or if the contractor is assigned to this order
-            else if ($order->assigned_to == auth()->id()) {
-                $hasAccess = true;
-            } else {
-                // Check if contractor has access to any split of this order
-                foreach ($order->orderPanels as $orderPanel) {
-                    if ($orderPanel->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0) {
-                        $hasAccess = true;
-                        break;
+
+            // Get prefix variants from reorder info
+            $prefixVariants = [];
+            $reorderInfo = $order->reorderInfo->first();
+            if ($reorderInfo && $reorderInfo->prefix_variants) {
+                if (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
+                } else if (is_string($reorderInfo->prefix_variants)) {
+                    $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decodedPrefixes)) {
+                        $prefixVariants = array_values(array_filter($decodedPrefixes));
                     }
                 }
             }
 
-            if (!$hasAccess) {
-                return back()->with('error', 'You do not have access to this order split.');
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['pre01', 'pre02', 'pre03'];
             }
 
             // Get domains from the split
@@ -1051,35 +1158,65 @@ class OrderController extends Controller
             if (empty($domains)) {
                 return back()->with('error', 'No domains data found for this split.');
             }
+            // dd($order->id);
+            // Generate emails with prefixes and random passwords
+            $emailData = [];
+            foreach ($domains as $domain) {
+                foreach ($prefixVariants as $prefix) {
+                    $emailData[] = [
+                        'domain' => $domain,
+                        'email' => $prefix . '@' . $domain,
+                        'password' => $this->customEncrypt($order->id) // Custom encryption for password
+                    ];
+                }
+            }
 
-            $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
+            // Calculate totals
+            $domainsCount = count($domains);
+            // $inboxesPerDomain = count($prefixVariants);
+            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1; // Default to 1 if not set
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1; // Ensure at least 1 inbox per domain
+            }
+            $totalInboxes = $domainsCount * $inboxesPerDomain;
+
+            $filename = "order_{$order->id}_split_{$splitId}_emails.csv";
 
             $headers = [
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($domains, $orderPanelSplit, $order) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
-
-                // Add CSV headers with more detailed information
+                // Add CSV headers once at the top
                 fputcsv($file, [
-                    'Domain', 
-                    // 'Order ID', 
-                    // 'Split ID', 
-                    // 'Panel ID', 
-                    // 'Inboxes per Domain'
+                    '',
+                    'Order_ID: ' . $order->id,
                 ]);
 
-                // Add data rows
-                foreach ($domains as $domain) {
-                    fputcsv($file, [
-                        $domain,
-                        // $order->id,
-                        // $orderPanelSplit->id,
-                        // $orderPanelSplit->panel_id,
-                        // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
-                    ]);
+                fputcsv($file, [
+                    '',
+                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
+                ]);
+                fputcsv($file, [
+                    '',
+                    'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
+                ]);
+                fputcsv($file, [
+                    '',
+                    'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
+                ]);
+
+                // Add empty row for separation
+                fputcsv($file, []);
+                
+                // Add email data headers
+                fputcsv($file, ['Domain', 'Email', 'Password']);
+                
+                // Add email data
+                foreach ($emailData as $data) {
+                    fputcsv($file, [$data['domain'], $data['email'], $data['password']]);
                 }
 
                 fclose($file);
@@ -1091,6 +1228,44 @@ class OrderController extends Controller
             Log::error('Error exporting CSV domains by split ID: ' . $e->getMessage());
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
+    }
+    // Custom encryption function for passwords
+    
+    private function customEncrypt($orderId)
+    {
+        // Convert order ID to exactly 8 character password with one uppercase, lowercase, special char, and number
+        $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
+        
+        // Use order ID as seed for consistent password generation
+        mt_srand($orderId);
+        
+        // Generate password with requirements
+        $password = '';
+        $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)]; // 1 uppercase
+        $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)]; // 1 lowercase
+        $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];     // 1 number
+        $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)]; // 1 special char
+        
+        // Fill remaining 4 characters with mix of all character types
+        $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
+        for ($i = 4; $i < 8; $i++) {
+            $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
+        }
+        
+        // Shuffle using seeded random generator instead of str_shuffle
+        $passwordArray = str_split($password);
+        for ($i = count($passwordArray) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            // Swap characters
+            $temp = $passwordArray[$i];
+            $passwordArray[$i] = $passwordArray[$j];
+            $passwordArray[$j] = $temp;
+        }
+        
+        return implode('', $passwordArray);
     }
     /**
      * Debug method to check relationships and data integrity
