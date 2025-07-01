@@ -1956,13 +1956,14 @@ class OrderController extends Controller
             $orderPanelSplit = OrderPanelSplit::with([
                 'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
                     $query->where('contractor_id', auth()->id());
-                }
+                },
+                'orderPanel.order.reorderInfo',
+                'orderPanel.panel'
             ])->findOrFail($splitId);
 
             // Check if contractor has access to this split
             $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
-            
             // Allow access if order is unassigned (available for all contractors)
             if ($order->assigned_to === null) {
                 $hasAccess = true;
@@ -1982,6 +1983,25 @@ class OrderController extends Controller
 
             if (!$hasAccess) {
                 return back()->with('error', 'You do not have access to this order split.');
+            }
+
+            // Get prefix variants from reorder info
+            $prefixVariants = [];
+            $reorderInfo = $order->reorderInfo->first();
+            if ($reorderInfo && $reorderInfo->prefix_variants) {
+                if (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
+                } else if (is_string($reorderInfo->prefix_variants)) {
+                    $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decodedPrefixes)) {
+                        $prefixVariants = array_values(array_filter($decodedPrefixes));
+                    }
+                }
+            }
+
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['pre01', 'pre02', 'pre03'];
             }
 
             // Get domains from the split
@@ -2018,34 +2038,64 @@ class OrderController extends Controller
                 return back()->with('error', 'No domains data found for this split.');
             }
 
-            $filename = "order_{$order->id}_split_{$splitId}_domains.csv";
+            // Generate emails with prefixes and random passwords
+            $emailData = [];
+            foreach ($domains as $domain) {
+                foreach ($prefixVariants as $prefix) {
+                    $emailData[] = [
+                        'domain' => $domain,
+                        'email' => $prefix . '@' . $domain,
+                        'password' => $this->generateRandomPassword()
+                    ];
+                }
+            }
+
+            // Calculate totals
+            $domainsCount = count($domains);
+            // $inboxesPerDomain = count($prefixVariants);
+            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1; // Default to 1 if not set
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1; // Ensure at least 1 inbox per domain
+            }
+            $totalInboxes = $domainsCount * $inboxesPerDomain;
+
+            $filename = "order_{$order->id}_split_{$splitId}_emails.csv";
 
             $headers = [
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($domains, $orderPanelSplit, $order) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
-
-                // Add CSV headers with more detailed information
+                // Add CSV headers once at the top
                 fputcsv($file, [
-                    'Domain', 
-                    // 'Order ID', 
-                    // 'Split ID', 
-                    // 'Panel ID', 
-                    // 'Inboxes per Domain'
+                    '',
+                    'Order_ID: ' . $order->id,
                 ]);
 
-                // Add data rows
-                foreach ($domains as $domain) {
-                    fputcsv($file, [
-                        $domain,
-                        // $order->id,
-                        // $orderPanelSplit->id,
-                        // $orderPanelSplit->panel_id,
-                        // $orderPanelSplit->inboxes_per_domain ?? 'N/A'
-                    ]);
+                fputcsv($file, [
+                    '',
+                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id.' Split_ID: ' . $orderPanelSplit->id,
+                ]);
+                fputcsv($file, [
+                    '',
+                    'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
+                ]);
+                fputcsv($file, [
+                    '',
+                    'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
+                ]);
+
+                // Add empty row for separation
+                fputcsv($file, []);
+                
+                // Add email data headers
+                fputcsv($file, ['Domain', 'Email', 'Password']);
+                
+                // Add email data
+                foreach ($emailData as $data) {
+                    fputcsv($file, [$data['domain'], $data['email'], $data['password']]);
                 }
 
                 fclose($file);
@@ -2057,5 +2107,21 @@ class OrderController extends Controller
             Log::error('Error exporting CSV domains by split ID: ' . $e->getMessage());
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Generate a random password
+     */
+    private function generateRandomPassword($length = 12)
+    {
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        $charactersLength = strlen($characters);
+        $randomPassword = '';
+        
+        for ($i = 0; $i < $length; $i++) {
+            $randomPassword .= $characters[rand(0, $charactersLength - 1)];
+        }
+        
+        return $randomPassword;
     }
 }
