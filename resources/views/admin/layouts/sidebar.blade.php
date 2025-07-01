@@ -13,10 +13,9 @@
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->
 
-
-
+        <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Overview</p>
         @can('Dashboard')
-            <li class="nav-item mb-2">
+            <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.dashboard') ? 'active' : '' }}"
                     href="{{ route('admin.dashboard') }}">
                     <div class="d-flex align-items-center" style="gap: 13px">
@@ -34,7 +33,7 @@
                     <div class="text">Orders</div>
                 </div>
         </button> --}}
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Orders</p>
+        <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p>
 
         @php
             $allowedItems = ['Plans', 'Orders', 'Subscriptions', 'Invoices', 'Panels'];
@@ -60,7 +59,7 @@
 @endforeach
 
 {{-- USERS SECTION --}}
-<p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
+<p class="text-white text fw-lighter mt-4 text-uppercase" style="font-size: 13px;">Users</p>
 
 @php
     $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices', 'Panels'];
@@ -86,7 +85,7 @@
 
 
 
-        <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
+        <p class="text-white text fw-lighter mt-4 text-uppercase" style="font-size: 13px;">misc</p>
         <!-- Support -->
 
 
