@@ -33,7 +33,7 @@ class MigrationBackupServiceProvider extends ServiceProvider
         $password = config('database.connections.mysql.password');
         $host = config('database.connections.mysql.host');
 
-        $command = "mysqldump -h {$host} -u {$username} -p\"{$password}\" {$database} > \"{$path}\"";
+       $command = "mysqldump --no-tablespaces -h {$host} -u {$username} -p\"{$password}\" {$database} > \"{$path}\"";
         exec($command, $output, $returnVar);
 
         if ($returnVar === 0) {
