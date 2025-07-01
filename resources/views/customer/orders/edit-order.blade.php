@@ -270,14 +270,14 @@
                         <label>Remaining Inboxes</label>
 
                         <div class="progress position-relative" style="height: 25px;
-               background: linear-gradient(135deg, #f5f5f5, #eaeaea);
-               border-radius: 6px;">
+                            background: linear-gradient(135deg, #f5f5f5, #eaeaea);
+                            border-radius: 6px;">
 
                             <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar"
                                 style="width: 0%; background: linear-gradient(45deg, #28a745, #20c997); border-radius: 6px;">
                             </div>
 
-                            <!-- Centered Texts -->
+                            <!-- Centered Text -->
                             <span id="remaining-inboxes-text" class="position-absolute w-100 text-center"
                                 style="color: #333; font-weight: 600; line-height: 25px;">
                                 0 / 0 inboxes used
@@ -286,9 +286,6 @@
 
                         <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
                     </div>
-
-
-
                 </div>
 
 
