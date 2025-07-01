@@ -313,7 +313,7 @@
                                     </ul>
                                 </div>
     
-                                <div class="text-center mt-4">
+                                {{-- <div class="text-center mt-4">
                                     @php
                                         $activeSubscription = auth()
                                             ->user()
@@ -332,7 +332,7 @@
                                             Get Started Now
                                         </button>
                                     @endif
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
