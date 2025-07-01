@@ -485,6 +485,16 @@
                                         <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $cancelledOrders ?? 0 }}</p>
                                     </div>
                                 </li>
+                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                                    <div class="badge p-1 rounded bg-label-secondary border border-secondary">
+                                        <i class="ti ti-hourglass-empty fs-6 text-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Queued</h6>
+                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $queuedOrders ?? 0 }}</p>
+                                    </div>
+                                </li>
+                                <!--  -->
                             </ul>
                         </div>
                     </div>
@@ -886,7 +896,7 @@
             const orderStatusChart = new ApexCharts(document.querySelector("#orderStatusChart"),
             orderStatusOptions);
             orderStatusChart.render();
-
+            
             // Initialize orders DataTable
             const ordersTable = $('#ordersTable').DataTable({
                 responsive: {
@@ -901,8 +911,13 @@
                 },
                 processing: true,
                 serverSide: true,
+                pageLength: 5,
+                lengthChange: false,
+                searching: false,
+                info: false,
+                paging: false,
                 ajax: {
-                    url: "{{ route('contractor.orders.data') }}",
+                    url: "{{ route('contractor.orders.history') }}",
                     data: function(d) {
                         // Add any filters here if needed
                     }
@@ -913,19 +928,19 @@
                     },
                     {
                         data: 'name',
-                        name: 'users.name',
+                        name: 'name',
                         render: function(data, type, row) {
                             return `
                                 <div class="d-flex gap-1 align-items-center">
                                     <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
-                                    <span>${data}</span>    
+                                    <span>${data || 'N/A'}</span>    
                                 </div>
                             `;
                         }
                     },
                     {
                         data: 'plan_name',
-                        name: 'plans.name'
+                        name: 'plan_name'
                     },
                     {
                         data: 'total_inboxes',
@@ -933,11 +948,11 @@
                     },
                     {
                         data: 'status',
-                        name: 'orders.status'
+                        name: 'status'
                     },
                     {
                         data: 'created_at',
-                        name: 'orders.created_at'
+                        name: 'created_at'
                     },
                     // {data: 'action', name: 'action', orderable: false, searchable: false}
                 ],

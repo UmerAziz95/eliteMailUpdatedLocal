@@ -326,7 +326,7 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 </style>
-<<style>
+<style>
     .anim_card {
     background-color: var(--secondary-color);
     color: var(--light-color);
@@ -1090,14 +1090,15 @@
                             ${(() => {
                                 const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
                                 if (unallocatedSplits.length > 0) {
+                                   
                                     return `
                                         <button class="btn btn-success btn-sm px-3 py-2" 
-                                                onclick="assignOrderToMe(${orderInfo.id})"
+                                                onclick="assignOrderToMe(${orderInfo?.id})"
                                                 id="assignOrderBtn"
                                                 style="font-size: 11px;">
                                             <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
                                             Assign Order to Me
-                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
+                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits?.length}</span>
                                         </button>
                                     `;
                                 } else {
@@ -1117,6 +1118,8 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
+                                <th scope="col">Panel Id</th>
+                                <th scope="col">Panel Title</th>
                                 <th scope="col">Split Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
@@ -1127,10 +1130,12 @@
                         </thead>
                         <tbody>
                             ${splits.map((split, index) => `
-                            ${console.log(split)}
-                            ${console.log("hello split")}
+                              ${console.log('Rendering split:', split)}
+
                                 <tr>
                                     <th scope="row">${index + 1}</th>
+                                     <td>${split?.panel_id || 'N/A'}</td>
+                                     <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>

@@ -239,8 +239,6 @@
             </ul>
 
             <div class="tab-content mt-4" id="myTabContent">
-
-
                 <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
                     tabindex="0">
                     <div class="card mb-4 p-3">
@@ -388,19 +386,34 @@
                                             <td><span class="badge bg-label-{{ $notification->type === 'order_status_change' ? 'warning' : 'info' }}">{{ str_replace('_', ' ', ucfirst($notification->type)) }}</span></td>
                                             <td>{{ $notification->created_at->diffForHumans() }}</td>
                                             <td>
-                                                @if($notification->is_read)
-                                                    <span class="badge bg-label-success">Read</span>
-                                                @else
-                                                    <span class="badge bg-label-warning readToggle">Unread</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if(!$notification->is_read)
-                                                    <button class="btn btn-sm btn-icon m-btn mark-as-read" data-id="{{ $notification->id }}" title="Mark as Read">
-                                                        <i class="ti ti-check"></i>
-                                                    </button>
-                                                @endif
-                                            </td>
+                                        @if ($notification->is_read)
+                                        <span class="badge bg-label-success">Read</span>
+                                        @else
+                                        <span class="badge bg-label-warning readToggle">Unread</span>
+                                        @endif
+                                          </td>
+                                             <td>
+                                        @if (!$notification->is_read)
+                                        <button class="btn btn-sm btn-icon m-btn mark-as-read"
+                                            data-id="{{ $notification->id }}" title="Mark as Read">
+                                            {{-- <i class="ti ti-check"></i> --}}
+                                            <div>
+                                                <i class="fa-regular fa-envelope fs-5"></i>
+                                                {{-- <i class="fa-solid fa-envelope-open-text fs-5"></i> --}}
+                                            </div>
+                                        </button>
+                                        @endif
+                                        @if ($notification->is_read)
+                                        <button class="btn btn-sm btn-icon m-btn mark-as-read"
+                                            data-id="{{ $notification->id }}" title="Mark as UnRead">
+                                            {{-- <i class="ti ti-check"></i> --}}
+                                            <div>
+                                                {{-- <i class="fa-regular fa-envelope fs-5"></i> --}}
+                                                <i class="fa-solid fa-envelope-open-text fs-5"></i>
+                                            </div>
+                                        </button>
+                                        @endif
+                                    </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -978,10 +991,10 @@
         });
 
         // Handle mark as read functionality
-        $('.mark-as-read').on('click', function() {
+     $('.mark-as-read').on('click', function() {
             const button = $(this);
             const notificationId = button.data('id');
-            
+
             $.ajax({
                 url: `/notifications/${notificationId}/mark-read`,
                 type: 'POST',
@@ -991,11 +1004,13 @@
                 success: function(response) {
                     if (response.success) {
                         // Update the status badge
-                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
+                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning')
+                            .addClass('bg-label-success').text('Read');
                         // Remove the mark as read button
                         button.remove();
                         // Show success message
                         toastr.success(response.message || 'Notification marked as read');
+                        window.location.reload();
                     } else {
                         toastr.error(response.message || 'Failed to mark notification as read');
                     }

@@ -56,11 +56,22 @@
             </div>
             <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;"
                 id="notificationDropdown">
-                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
+               <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
                     style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
-                    <i class="fa-regular fa-envelope fs-5"></i>
+
+                    <!-- Add d-flex & gap-2 here -->
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="p-2 fa-regular fa-envelope fs-5 markReadToAllNotification" 
+                        data-bs-toggle="tooltip" 
+                        title="Mark all as read"></i>
+
+                        <i class="p-2 fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification" 
+                        data-bs-toggle="tooltip" 
+                        title="Mark all as unread"></i>
+                    </div>
                 </div>
+
                 <div id="notificationList">
                     <!-- Notifications will be loaded here dynamically -->
                 </div>
@@ -234,167 +245,7 @@
                 </li>
 
 
-                {{-- <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Users</p>
-                <!-- Admins -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('admins') ? 'active' : '' }}"
-                        href="{{ url('admins') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-user fs-5"></i></div>
-                            <div class="text">Admins</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Users -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('customers') ? 'active' : '' }}"
-                        href="{{ url('customers') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-headphones fs-5"></i></div>
-                            <div class="text">Customers</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Contractors -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contractor') ? 'active' : '' }}"
-                        href="{{ url('contractor') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-contract fs-5"></i></div>
-                            <div class="text">Contractors</div>
-                        </div>
-                    </a>
-                </li>
-
-                <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Roles and Permissions
-                </p>
-                <!-- Roles -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('roles') ? 'active' : '' }}"
-                        href="{{ url('roles') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-circles fs-5"></i></div>
-                            <div class="text">Roles</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Permissions -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('permissions') ? 'active' : '' }}"
-                        href="{{ url('permissions') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-pointer-pause fs-5"></i></div>
-                            <div class="text">Permissions</div>
-                        </div>
-                    </a>
-                </li>
-
-                <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Website settings</p>
-                <!-- Pages -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
-                        data-bs-toggle="collapse" href="#pages" role="button" aria-expanded="false">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-clipboard fs-5"></i></div>
-                            <div class="text">Pages</div>
-                        </div>
-                        <i class="fa-solid fa-chevron-right rotate-icon"></i>
-                    </a>
-                    <ul class="collapse list-unstyled" id="pages">
-                        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                                href="{{ url('/') }}"><span class="circle"></span> Faq</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                                href="{{ url('/') }}"><span class="circle"></span> Pricing</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                                href="{{ url('/') }}"><span class="circle"></span> Teams</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center" style="gap: 13px"
-                                href="{{ url('/') }}"><span class="circle"></span> Projects</a></li>
-                    </ul>
-                </li>
-
-                <!-- Front Pages -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center justify-content-between toggle-btn"
-                        data-bs-toggle="collapse" href="#front_pages" role="button" aria-expanded="false">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-brand-pagekit fs-5"></i></div>
-                            <div class="text">Front Pages</div>
-                        </div>
-                        <i class="fa-solid fa-chevron-right rotate-icon"></i>
-                    </a>
-                    <ul class="collapse list-unstyled" id="front_pages">
-                        <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                                    class="circle"></span> Home</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                                    class="circle"></span> Why Us</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                                    class="circle"></span> Pricing</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                                    class="circle"></span> Contact</a></li>
-                        <li><a class="nav-link px-3 d-flex align-items-center gap-1" href="{{ url('/') }}"><span
-                                    class="circle"></span> Testimonials</a></li>
-                    </ul>
-                </li>
-
-                <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">payments</p>
-                <!-- Pricing -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
-                        href="{{ url('pricing') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                            <div class="text">Pricing</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Payments -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('payments') ? 'active' : '' }}"
-                        href="{{ url('payments') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-wallet fs-5"></i></div>
-                            <div class="text">Payments</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Orders -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('orders') ? 'active' : '' }}"
-                        href="{{ url('orders') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-details"></i></div>
-                            <div class="text">Orders</div>
-                        </div>
-                    </a>
-                </li>
-
-                <p class="px-3 text fw-lighter my-2 text-uppercase" style="font-size: 13px;">misc</p>
-                <!-- Support -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('contact_us') ? 'active' : '' }}"
-                        href="{{ url('contact_us') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-address-book fs-5"></i></div>
-                            <div class="text">Contact Us</div>
-                        </div>
-                    </a>
-                </li>
-
-                <!-- Support -->
-                <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ request()->is('support') ? 'active' : '' }}"
-                        href="{{ url('support') }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
-                            <div class="text">Support</div>
-                        </div>
-                    </a>
-                </li> --}}
+               
             </ul>
         </aside>
     </div>
@@ -427,6 +278,7 @@
         fetch('/notifications/list')
             .then(response => response.json())
             .then(data => {
+                handleToggleNotificationReadUnreadBtn(data?.notifications);
                 const notificationList = document.getElementById('notificationList');
                 notificationList.innerHTML = data.notifications.map(notification => `
                     <hr class="my-0">
@@ -467,6 +319,31 @@
             })
             .catch(error => console.error('Error loading notifications:', error));
     }
+    
+function handleToggleNotificationReadUnreadBtn(notifications) {
+    const unreadCount = notifications.filter(notification => !notification.is_read).length;
+    const totalCount = notifications.length;
+    const readCount = totalCount - unreadCount;
+
+    const markReadBtn = document.querySelector('.markReadToAllNotification');
+    const markUnreadBtn = document.querySelector('.markUnReadToAllNotification');
+
+    // Show/hide buttons based on read/unread state
+    if (readCount > 0 && unreadCount > 0) {
+        // Some read, some unread → show both
+        markReadBtn.style.display = 'block';
+        markUnreadBtn.style.display = 'block';
+    } else if (unreadCount === 0) {
+        // All are read → show only "Mark all as Unread"
+        markReadBtn.style.display = 'none';
+        markUnreadBtn.style.display = 'block';
+    } else if (readCount === 0) {
+        // All are unread → show only "Mark all as Read"
+        markReadBtn.style.display = 'block';
+        markUnreadBtn.style.display = 'none';
+    }
+}
+
 
     function handleNotificationRead() {
         const notificationId = this.dataset.id;
@@ -503,4 +380,66 @@
             loadNotifications();
         });
     });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const markReadButton = document.querySelector('.markReadToAllNotification');
+    if (markReadButton) {
+        markReadButton.addEventListener('click', function () {
+            fetch('notifications/mark-all-as-read', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success(data.message)
+                     console.log(data)
+                   // updateNotificationCount();
+                      window.location.reload();
+                
+                    document.querySelectorAll('.dropdown-notifications-read').forEach(el => el.remove());
+                    // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        });
+    }
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const markUnReadButton = document.querySelector('.markUnReadToAllNotification');
+    if (markUnReadButton) {
+        markUnReadButton.addEventListener('click', function () {
+            fetch('notifications/mark-all-as-unread', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                   toastr.success(data.message)
+                    
+                    // updateNotificationCount();
+                     window.location.reload();
+                                // Close the dropdown
+                    const dropdownMenu = document.getElementById('notificationDropdown');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        });
+    }
+});
 </script>

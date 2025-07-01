@@ -2477,6 +2477,24 @@ $('#submitPanelFormBtn').on('click', function(e) {
         toastr.success("Panel created successfully!");
         $('#panelFormModal').modal('hide');
         loadPanels(); // Reload panels after creation
+        
+        // Run panel capacity check after successful panel creation
+        $.ajax({
+            url: '{{ route("admin.panels.run-capacity-check") }}',
+            method: 'POST',
+            data: {
+                panel_id: response.panel_id || '',
+                admin_id: response.admin_id || '',
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(capacityResponse) {
+                console.log('Panel capacity check completed:', capacityResponse);
+            },
+            error: function(xhr) {
+                console.log('Panel capacity check failed:', xhr.responseJSON);
+                // Don't show error to user as it's a background process
+            }
+        });
     },
     error: function(xhr) {
         toastr.error("Failed to create panel. Please try again.");

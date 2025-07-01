@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'ProjectInbox')</title>
-        <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
 
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -92,7 +92,7 @@
     @stack('scripts')
 
     <script>
-        // Global AJAX request handler
+        // Global AJAX request handlers
         $(document).ajaxStart(function() {
             // Find the submit button in the form being submitted
             const $form = $('form:has(input:focus, select:focus, textarea:focus)');
@@ -104,11 +104,11 @@
         });
 
         $(document).ajaxComplete(function() {
-            // Re-enable all submit buttons
+            // Re-enable all submit buttons   
             $('button[type="submit"]').removeClass('btn-loading').prop('disabled', false);
         });
 
-        // Handle form submissions
+        // Handle form submissions 
         $(document).on('submit', 'form', function() {
             const $btn = $(this).find('button[type="submit"]');
             $btn.addClass('btn-loading');

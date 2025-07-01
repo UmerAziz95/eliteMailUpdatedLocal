@@ -272,19 +272,19 @@
                 <div class="card-body">
                     <h6 class="card-title">Ticket Information</h6>
                     <div class="mb-3">
-                        <small class="text-muted">Customer</small>
+                        <small class="text-light">Customer</small>
                         <p>{{ $ticket->user->name }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Email</small>
+                        <small class="text-light">Email</small>
                         <p>{{ $ticket->user->email }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Category</small>
+                        <small class="text-light">Category</small>
                         <p>{{ ucfirst($ticket->category) }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Priority</small>
+                        <small class="text-light">Priority</small>
                         <p>
                             <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'success') }}">
                                 {{ ucfirst($ticket->priority) }}
@@ -292,11 +292,11 @@
                         </p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Created</small>
+                        <small class="text-light">Created</small>
                         <p>{{ $ticket->created_at->format('M d, Y H:i') }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Last Updated</small>
+                        <small class="text-light">Last Updated</small>
                         <p>{{ $ticket->updated_at->format('M d, Y H:i') }}</p>
                     </div>
                 </div>
