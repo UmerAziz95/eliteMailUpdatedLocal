@@ -432,43 +432,38 @@
                             {{-- Old Password --}}
 
                             <div class="row gx-6">
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
+                                <!-- Old Password -->
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="oldPassword">Old Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" id="oldPassword" name="oldPassword"
-                                            placeholder="············">
-                                    </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                                    </div>
+                                    <input class="form-control" type="password" id="oldPassword" name="oldPassword" placeholder="············" style="padding-right: 40px;">
+                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="oldPassword"
+                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                    <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
-
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
+                            
+                                <!-- New Password -->
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="newPassword">New Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" id="newPassword" name="newPassword"
-                                            placeholder="············">
-                                    </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                                    </div>
+                                    <input class="form-control" type="password" id="newPassword" name="newPassword" placeholder="············" style="padding-right: 40px;">
+                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="newPassword"
+                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                    <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
-
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
+                            
+                                <!-- Confirm Password -->
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="confirmPassword">Confirm New Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" name="confirmPassword"
-                                            id="confirmPassword" placeholder="············">
-                                    </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                                    </div>
+                                    <input class="form-control" type="password" id="confirmPassword" name="confirmPassword" placeholder="············" style="padding-right: 40px;">
+                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="confirmPassword"
+                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                    <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
+                            
                                 <div>
-                                    <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change
-                                        Password</button>
+                                    <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change Password</button>
                                 </div>
                             </div>
+                            
 
                             <input type="hidden">
                         </form>
@@ -1486,6 +1481,19 @@
 
 @push('scripts')
 <script>
+    document.querySelectorAll('.toggle-password').forEach(icon => {
+        icon.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const isHidden = input.type === 'password';
+
+            input.type = isHidden ? 'text' : 'password';
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    });
+
+    
     $(document).ready(function() {
             var table = $('#myTable').DataTable();
             // Initialize DataTable for notifications

@@ -126,7 +126,6 @@
                 <!-- About User -->
                 <div class="card mb-4 profile-card p-3">
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        {{-- <p class="card-text text-uppercase opacity-75 fw-lighter">About</p> --}}
                         <div class="d-flex flex-column align-items-center">
                             @php
                                 $user = Auth::user();
@@ -170,8 +169,6 @@
                                     </ul>
                                 </div>
                             </div>
-                            {{-- <div class="flex-grow-1 mt-3">
-                            </div> --}}
                         </div>
 
                         <ul class="mb-0">

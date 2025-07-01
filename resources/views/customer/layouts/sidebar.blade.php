@@ -25,6 +25,7 @@
             </li> --}}
 
             <!-- Dashboard -->
+            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Overview</p>
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.dashboard') ? 'active' : '' }}"
                     href="{{ route('customer.dashboard') }}">
@@ -48,6 +49,7 @@
             </li> -->
 
             <!-- pricing -->
+            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p>
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.orders') ? 'active' : '' }}"
                     href="{{ route('customer.orders') }}">
@@ -58,16 +60,6 @@
                 </a>
             </li>
 
-            <!-- Support -->
-            <li class="nav-item">
-                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
-                    href="{{ route('customer.support') }}">
-                    <div class="d-flex align-items-center" style="gap: 13px">
-                        <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
-                        <div class="text">Support</div>
-                    </div>
-                </a>
-            </li>
             <!-- Subscriptions -->
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.subscriptions.view') ? 'active' : '' }}"
@@ -78,13 +70,26 @@
                     </div>
                 </a>
             </li>
-            <!-- invoices -->
-            <li class="nav-item">
+
+             <!-- invoices -->
+             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.invoices.index') ? 'active' : '' }}"
                     href="{{ route('customer.invoices.index') }}">
                     <div class="d-flex align-items-center" style="gap: 13px">
                         <div class="icons"><i class="ti ti-file-invoice fs-5"></i></div>
                         <div class="text">Invoices</div>
+                    </div>
+                </a>
+            </li>
+
+            <!-- Support -->
+            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">organization</p>
+            <li class="nav-item">
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
+                    href="{{ route('customer.support') }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="ti ti-device-mobile-question fs-5"></i></div>
+                        <div class="text">Support</div>
                     </div>
                 </a>
             </li>
@@ -103,13 +108,14 @@
     </div>
 
     <div>
-        <a href="/customer/settings" class="text-uppercase nav-link w-100 d-flex align-items-center gap-2">
+        <a href="/customer/settings" class="nav-link fs-6 w-100 d-flex align-items-center gap-2">
             <i class="fa-solid fa-gear fs-6"></i>
             Settings
         </a>
-        <a href="{{ route('logout') }}" class="text-uppercase  w-100 d-flex align-items-center gap-2 text-danger mb-0">
+
+        <a href="{{ route('logout') }}" class=" w-100 d-flex align-items-center gap-2 text-danger mb-0">
             <i class="fa-solid fa-right-from-bracket fs-6"></i>
-            logout
+            Logout
         </a>
     </div>
 </aside>

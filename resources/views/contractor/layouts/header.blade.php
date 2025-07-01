@@ -37,7 +37,7 @@
             </ul>
         </div> -->
 
-        <div class="dropdown">
+        {{-- <div class="dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-moon-stars fs-5"></i>
             </div>
@@ -47,7 +47,7 @@
                 <li><a class="dropdown-item d-flex align-items-center gap-1" id="dark-theme" href="#"><i
                             class="ti ti-moon-stars fs-6"></i> Dark</a></li>
             </ul>
-        </div>
+        </div> --}}
 
         <div class="dropdown notification-dropdown">
             <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"

@@ -79,7 +79,7 @@
     }
 
     /* Domain badge styling */
-    .domain-badge {
+    /* .domain-badge {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: 1px solid rgba(102, 126, 234, 0.3);
         color: white;
@@ -89,7 +89,7 @@
         margin: 0.125rem;
         display: inline-block;
         transition: all 0.3s ease;
-    }
+    } */
 
     .domain-badge:hover {
         transform: translateY(-2px);
@@ -148,7 +148,7 @@
     }
 
     /* Split content animations */
-    .collapse {
+    /* .collapse {
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -166,10 +166,10 @@
     .collapse.collapsing {
         opacity: 0.5;
         transform: translateY(-5px);
-    }
+    } */
 
     /* Split fade-in animation */
-    @keyframes splitFadeIn {
+    /* @keyframes splitFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-15px) scale(0.98);
@@ -184,10 +184,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Domain badge animations */
-    @keyframes domainFadeIn {
+    /* @keyframes domainFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-10px) scale(0.8);
@@ -202,10 +202,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Toast animations */
-    @keyframes toastSlideIn {
+    /* @keyframes toastSlideIn {
         0% {
             opacity: 0;
             transform: translateX(100%) scale(0.8);
@@ -215,7 +215,7 @@
             opacity: 1;
             transform: translateX(0) scale(1);
         }
-    }
+    } */
 
     /* Chevron rotation animation */
     .transition-transform {
@@ -243,7 +243,7 @@
         animation: splitExpand 0.4s ease-out;
     }
 
-    @keyframes splitExpand {
+    /* @keyframes splitExpand {
         0% {
             transform: scale(0.98);
         }
@@ -255,7 +255,7 @@
         100% {
             transform: scale(1);
         }
-    }
+    } */
 
     /* Timer badge styling */
     .timer-badge {
@@ -382,7 +382,7 @@
     }
 
     .anim_card:hover .flip_details {
-    transform: perspective(2000px) rotateY(-91deg);
+    transform: perspective(2000px) rotateY(-90deg);
     box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
     rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
     rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
@@ -1258,7 +1258,7 @@
                                 ${splits.map((split, index) => `
                                     <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
                                         <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
-                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                             style="background: var(--second-primary); cursor: pointer;"
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
@@ -1568,7 +1568,7 @@ function parseUTCDateTime(dateStr) {
                 .map((domain, index) => `
                     <span class="domain-badge" style="
                         display: inline-block;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background-color: var(--filter-color);
                         color: white;
                         padding: 4px 8px;
                         margin: 2px 2px;
@@ -1576,12 +1576,10 @@ function parseUTCDateTime(dateStr) {
                         font-size: 11px;
                         font-weight: 500;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        animation: domainFadeIn 0.3s ease-out ${index * 0.001}s both;
                         transition: all 0.3s ease;
                         cursor: pointer;
                     " 
-                    onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'"
-                    onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'"
+                    onmouseover="this.style.transform='translateY(-2px)';"
                     title="Click to copy: ${domain}"
                     onclick="copyToClipboard('${domain}')">
                         <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
@@ -1667,12 +1665,12 @@ function parseUTCDateTime(dateStr) {
                     });
                     
                     // Animate domain badges within the split with staggered delay
-                    setTimeout(() => {
-                        const domainBadges = content.querySelectorAll('.domain-badge');
-                        domainBadges.forEach((badge, index) => {
-                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-                        });
-                    }, 200);
+                    // setTimeout(() => {
+                    //     const domainBadges = content.querySelectorAll('.domain-badge');
+                    //     domainBadges.forEach((badge, index) => {
+                    //         badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+                    //     });
+                    // }, 200);
                 }
             }
         }
@@ -1706,9 +1704,9 @@ function parseUTCDateTime(dateStr) {
             });
             
             // Initialize domain badge animations for visible splits only
-            document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
-                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-            });
+            // document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
+            //     badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+            // });
         }
 
         // Function to copy all domains from a split container by extracting them from the DOM

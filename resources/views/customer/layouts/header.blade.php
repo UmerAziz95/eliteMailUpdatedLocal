@@ -113,21 +113,14 @@
                     style="background-color: var(--secondary-color); z-index: 10">
                     <h6 class="mb-0">Notifications</h6>
 
-                   <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
-                    style="background-color: var(--secondary-color); z-index: 10">
-                    {{-- <h6 class="mb-0">Notifications</h6> --}}
-
                     <!-- Add d-flex & gap-2 here -->
                     <div class="d-flex align-items-center gap-2">
-                        <i class="p-2 fa-regular fa-envelope fs-5 markReadToAllNotification" 
-                        data-bs-toggle="tooltip" 
-                        title="Mark all as read"></i>
+                        <i class="fa-regular fa-envelope fs-5 markReadToAllNotification" data-bs-toggle="tooltip"
+                            title="Mark all as read"></i>
 
-                        <i class="p-2 fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification" 
-                        data-bs-toggle="tooltip" 
-                        title="Mark all as unread"></i>
+                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"
+                            data-bs-toggle="tooltip" title="Mark all as unread"></i>
                     </div>
-                </div>
                 </div>
 
 
@@ -143,31 +136,31 @@
         </div>
 
         @php
-        $user = Auth::user();
+            $user = Auth::user();
 
-        if ($user && !empty($user->name)) {
-        $initials = collect(explode(' ', $user->name))
-        ->filter()
-        ->map(fn($word) => strtoupper(substr($word, 0, 1)))
-        ->take(2)
-        ->implode('');
-        } else {
-        $initials = strtoupper(substr($user->email ?? 'N/A', 0, 2));
-        }
+            if ($user && !empty($user->name)) {
+                $initials = collect(explode(' ', $user->name))
+                    ->filter()
+                    ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+                    ->take(2)
+                    ->implode('');
+            } else {
+                $initials = strtoupper(substr($user->email ?? 'N/A', 0, 2));
+            }
         @endphp
 
         <div class="dropdown">
             <div class="bg-transparent border-0 p-0 d-flex align-items-center gap-1" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false">
                 @if ($user && $user->profile_image)
-                <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}" style="border-radius: 50%"
-                    height="40" width="40" class="object-fit-cover login-user-profile" alt="User Image">
+                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}" style="border-radius: 50%"
+                        height="40" width="40" class="object-fit-cover login-user-profile" alt="User Image">
                 @else
-                <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                    style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
-                    {{-- {{ $initials }} --}}
-                    <i class="fa-regular fa-user fs-6"></i>
-                </div>
+                    <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                        style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
+                        {{-- {{ $initials }} --}}
+                        <i class="fa-regular fa-user fs-6"></i>
+                    </div>
                 @endif
 
                 <div>
@@ -182,14 +175,15 @@
             <ul class="dropdown-menu px-2 py-3" style="min-width: 200px">
                 <div class="profile d-flex align-items-center gap-2 px-2">
                     @if ($user && $user->profile_image)
-                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}" style="border-radius: 50%"
-                        height="40" width="40" class="object-fit-cover login-user-profile" alt="User Image">
+                        <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                            style="border-radius: 50%" height="40" width="40"
+                            class="object-fit-cover login-user-profile" alt="User Image">
                     @else
-                    <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                        style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
-                        {{-- {{ $initials }} --}}
-                        <i class="fa-regular fa-user fs-6"></i>
-                    </div>
+                        <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                            style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
+                            {{-- {{ $initials }} --}}
+                            <i class="fa-regular fa-user fs-6"></i>
+                        </div>
                     @endif
 
                     <div>
@@ -215,8 +209,8 @@
                 </div>
             </ul>
         </div>
-        <a class="bold p-1 text-danger" href="{{route('logout')}}"><img src="{{ asset('assets/logo/power-off.png') }}"
-                width="30" alt="Sign out"></a>
+        <a class="bold p-1 text-danger" href="{{ route('logout') }}"><img
+                src="{{ asset('assets/logo/power-off.png') }}" width="30" alt="Sign out"></a>
     </div>
 </header>
 
@@ -347,59 +341,59 @@
         // });
         // Add notification dropdown event listener
         const notificationDropdownEl = document.querySelector('.notification-dropdown');
-        notificationDropdownEl.addEventListener('show.bs.dropdown', function () {
+        notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
             loadNotifications();
         });
 
         // Initial notification count update
         updateNotificationCount();
-        
+
         // Update notifications every 30 seconds
         setInterval(updateNotificationCount, 30000);
     });
 
     function updateNotificationCount() {
         fetch('/notifications/unread-count', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (response.status === 401) {
-                // Unauthorized - ignore silently
-                return;
-            }
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (!data || data.error) return;
-            
-            const bellIcon = document.querySelector('.ti-bell');
-            if (!bellIcon) return;
-            
-            const count = data.count;
-            const existingDot = bellIcon.querySelector('.notification-dot');
-            
-            if (count > 0) {
-                if (!existingDot) {
-                    const dot = document.createElement('span');
-                    dot.className = 'notification-dot badge-dot position-absolute';
-                    dot.style.top = '0';
-                    dot.style.right = '0';
-                    dot.style.transform = 'translate(50%, -50%)';
-                    bellIcon.appendChild(dot);
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-            } else if (existingDot) {
-                existingDot.remove();
-            }
-        })
-        .catch(error => {
-            // Silently fail to avoid disrupting the user experience
-            console.error('Error fetching notification count:', error);
-        });
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // Unauthorized - ignore silently
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data || data.error) return;
+
+                const bellIcon = document.querySelector('.ti-bell');
+                if (!bellIcon) return;
+
+                const count = data.count;
+                const existingDot = bellIcon.querySelector('.notification-dot');
+
+                if (count > 0) {
+                    if (!existingDot) {
+                        const dot = document.createElement('span');
+                        dot.className = 'notification-dot badge-dot position-absolute';
+                        dot.style.top = '0';
+                        dot.style.right = '0';
+                        dot.style.transform = 'translate(50%, -50%)';
+                        bellIcon.appendChild(dot);
+                    }
+                } else if (existingDot) {
+                    existingDot.remove();
+                }
+            })
+            .catch(error => {
+                // Silently fail to avoid disrupting the user experience
+                console.error('Error fetching notification count:', error);
+            });
     }
 
     function loadNotifications() {
@@ -448,29 +442,29 @@
             .catch(error => console.error('Error loading notifications:', error));
     }
 
-function handleToggleNotificationReadUnreadBtn(notifications) {
-    const unreadCount = notifications.filter(notification => !notification.is_read).length;
-    const totalCount = notifications.length;
-    const readCount = totalCount - unreadCount;
+    function handleToggleNotificationReadUnreadBtn(notifications) {
+        const unreadCount = notifications.filter(notification => !notification.is_read).length;
+        const totalCount = notifications.length;
+        const readCount = totalCount - unreadCount;
 
-    const markReadBtn = document.querySelector('.markReadToAllNotification');
-    const markUnreadBtn = document.querySelector('.markUnReadToAllNotification');
+        const markReadBtn = document.querySelector('.markReadToAllNotification');
+        const markUnreadBtn = document.querySelector('.markUnReadToAllNotification');
 
-    // Show/hide buttons based on read/unread state
-    if (readCount > 0 && unreadCount > 0) {
-        // Some read, some unread → show both
-        markReadBtn.style.display = 'block';
-        markUnreadBtn.style.display = 'block';
-    } else if (unreadCount === 0) {
-        // All are read → show only "Mark all as Unread"
-        markReadBtn.style.display = 'none';
-        markUnreadBtn.style.display = 'block';
-    } else if (readCount === 0) {
-        // All are unread → show only "Mark all as Read"
-        markReadBtn.style.display = 'block';
-        markUnreadBtn.style.display = 'none';
+        // Show/hide buttons based on read/unread state
+        if (readCount > 0 && unreadCount > 0) {
+            // Some read, some unread → show both
+            markReadBtn.style.display = 'block';
+            markUnreadBtn.style.display = 'block';
+        } else if (unreadCount === 0) {
+            // All are read → show only "Mark all as Unread"
+            markReadBtn.style.display = 'none';
+            markUnreadBtn.style.display = 'block';
+        } else if (readCount === 0) {
+            // All are unread → show only "Mark all as Read"
+            markReadBtn.style.display = 'block';
+            markUnreadBtn.style.display = 'none';
+        }
     }
-}
 
 
 
@@ -478,47 +472,19 @@ function handleToggleNotificationReadUnreadBtn(notifications) {
     function handleNotificationRead() {
         const notificationId = this.dataset.id;
         fetch(`/notifications/${notificationId}/mark-as-read`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                // Update notification count
-                updateNotificationCount();
-                // Remove the unread badge
-                this.remove();
-                // Close the dropdown
-                const dropdownMenu = document.getElementById('notificationDropdown');
-                const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
-                if (bsDropdown) {
-                    bsDropdown.hide();
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
                 }
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const markReadButton = document.querySelector('.markReadToAllNotification');
-    if (markReadButton) {
-        markReadButton.addEventListener('click', function () {
-            fetch('notifications/mark-all-as-read', {
-                method: 'GET',
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    toastr.success(data.message)
-                     console.log(data)
-                   // updateNotificationCount();
-                      window.location.reload();
-                
-                    document.querySelectorAll('.dropdown-notifications-read').forEach(el => el.remove());
+                if (data.message) {
+                    // Update notification count
+                    updateNotificationCount();
+                    // Remove the unread badge
+                    this.remove();
                     // Close the dropdown
                     const dropdownMenu = document.getElementById('notificationDropdown');
                     const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
@@ -527,40 +493,69 @@ function handleToggleNotificationReadUnreadBtn(notifications) {
                     }
                 }
             })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
-            });
-        });
+            .catch(error => console.error('Error:', error));
     }
-});
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const markUnReadButton = document.querySelector('.markUnReadToAllNotification');
-    if (markUnReadButton) {
-        markUnReadButton.addEventListener('click', function () {
-            fetch('notifications/mark-all-as-unread', {
-                method: 'GET',
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                   toastr.success(data.message)
-                    
-                    // updateNotificationCount();
-                     window.location.reload();
-                                // Close the dropdown
-                    const dropdownMenu = document.getElementById('notificationDropdown');
-                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
-                    if (bsDropdown) {
-                        bsDropdown.hide();
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
+    document.addEventListener('DOMContentLoaded', function() {
+        const markReadButton = document.querySelector('.markReadToAllNotification');
+        if (markReadButton) {
+            markReadButton.addEventListener('click', function() {
+                fetch('notifications/mark-all-as-read', {
+                        method: 'GET',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            toastr.success(data.message)
+                            console.log(data)
+                            // updateNotificationCount();
+                            window.location.reload();
+
+                            document.querySelectorAll('.dropdown-notifications-read').forEach(el =>
+                                el.remove());
+                            // Close the dropdown
+                            const dropdownMenu = document.getElementById('notificationDropdown');
+                            const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                            if (bsDropdown) {
+                                bsDropdown.hide();
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error marking all notifications as read:', error);
+                    });
             });
-        });
-    }
-});
+        }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const markUnReadButton = document.querySelector('.markUnReadToAllNotification');
+        if (markUnReadButton) {
+            markUnReadButton.addEventListener('click', function() {
+                fetch('notifications/mark-all-as-unread', {
+                        method: 'GET',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            toastr.success(data.message)
+
+                            // updateNotificationCount();
+                            window.location.reload();
+                            // Close the dropdown
+                            const dropdownMenu = document.getElementById('notificationDropdown');
+                            const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
+                            if (bsDropdown) {
+                                bsDropdown.hide();
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error marking all notifications as read:', error);
+                    });
+            });
+        }
+    });
 </script>
