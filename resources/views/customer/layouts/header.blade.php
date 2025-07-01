@@ -22,7 +22,7 @@
         height: 35px;
         width: 210px;
         border-radius: 0 0 100px 100px;
-        z-index: 9999;
+        z-index: 100;
         display: flex;
         flex-direction: column;
         justify-content: end;
