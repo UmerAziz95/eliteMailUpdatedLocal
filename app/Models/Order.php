@@ -82,5 +82,10 @@ class Order extends Model
     {
         return $this->hasOne(OrderTracking::class);
     }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
     
 }

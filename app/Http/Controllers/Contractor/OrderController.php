@@ -189,11 +189,20 @@ class OrderController extends Controller
             'invoice', 
             'reorderInfo',
             'plan',
+            'supportTickets',
             'orderPanels.userOrderPanelAssignments' => function($query) {
                 $query->with(['orderPanel', 'orderPanelSplit'])
                       ->where('contractor_id', auth()->id());
             }
         ])->findOrFail($id);
+        
+        // Parse the meta field to extract tickets data
+        if ($order->meta) {
+            $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
+            $order->meta = $metaData ?: [];
+        } else {
+            $order->meta = [];
+        }
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
         

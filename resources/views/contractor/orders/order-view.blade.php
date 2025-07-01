@@ -979,34 +979,57 @@
         <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab" tabindex="0">
             <div class="card p-3">
                 <div class="table-responsive">
+                    
                     <table id="myTable" class="display w-100">
                         <thead>
                             <tr>
-                                <th>Tags</th>
+                                <th>Category</th>
                                 <th>Ticket #</th>
                                 <th>Created At</th>
                                 <th>Status</th>
-                                <th>Type</th>
+                                <th>Priority</th>
                                 <th>Order #</th>
-                                <th>Subscription #</th>
-                                <th>Notes</th>
+                                <!-- <th>Subscription #</th>
+                                <th>Description</th> -->
                             </tr>
                         </thead>
                         <tbody>
-                            @if(isset($order->meta['tickets']))
-                            @foreach($order->meta['tickets'] as $ticket)
+                            
+                            @if($order->supportTickets && $order->supportTickets->count() > 0)
+                            @foreach($order->supportTickets as $ticket)
                             <tr>
-                                <td>{{ $ticket['tags'] ?? 'N/A' }}</td>
-                                <td>{{ $ticket['number'] ?? 'N/A' }}</td>
-                                <td>{{ isset($ticket['created_at']) ?
-                                    \Carbon\Carbon::parse($ticket['created_at'])->format('d M, Y') : 'N/A' }}</td>
-                                <td>{{ $ticket['status'] ?? 'N/A' }}</td>
-                                <td>{{ $ticket['type'] ?? 'N/A' }}</td>
-                                <td>{{ $ticket['order_id'] ?? 'N/A' }}</td>
-                                <td>{{ $ticket['subscription_id'] ?? 'N/A' }}</td>
-                                <td>{{ $ticket['notes'] ?? 'N/A' }}</td>
+                                <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ route('contractor.support.tickets.show', $ticket->id) }}" 
+                                       class="text-primary text-decoration-none">
+                                        {{ $ticket->ticket_number ?? 'N/A' }}
+                                    </a>
+                                </td>
+                                <td>{{ $ticket->created_at ? 
+                                    $ticket->created_at->format('d M, Y') : 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
+                                        {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
+                                        {{ ucfirst($ticket->priority) ?? 'N/A' }}
+                                    </span>
+                                </td>
+                                <td>{{ $ticket->order_id ?? 'N/A' }}</td>
+                                <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
+                                <td>
+                                    <span title="{{ $ticket->description }}">
+                                        {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
+                                    </span>
+                                </td> -->
                             </tr>
                             @endforeach
+                            @else
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">No tickets found for this order</td>
+                            </tr>
                             @endif
                         </tbody>
                     </table>
