@@ -1776,6 +1776,7 @@ class OrderController extends Controller
     /**
      * Bulk import emails for split panel
      */
+    
     public function orderSplitImportProcess(Request $request)
     {
         // Validate file and order_panel_id
@@ -1820,25 +1821,41 @@ class OrderController extends Controller
 
             $csv = array_map('str_getcsv', file($filePath));
 
-            if (empty($csv) || count($csv) < 2) {
+            if (empty($csv)) {
                 return response()->json([
-                    'message' => 'The uploaded file is empty or lacks data.'
+                    'message' => 'The uploaded file is empty.'
                 ], 400);
             }
 
-            // Get the header and validate required columns
-            $headers = array_map('trim', $csv[0]);
-            $requiredColumns = ['name', 'email', 'password'];
-            $missingColumns = array_diff($requiredColumns, $headers);
+            // Find the header row (look for Domain, Email, Password)
+            $headerRowIndex = -1;
+            $headers = [];
             
-            if (!empty($missingColumns)) {
+            for ($i = 0; $i < count($csv); $i++) {
+                $row = array_map('trim', $csv[$i]);
+                // Check if this row contains the expected headers
+                if (in_array('Domain', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                    $headerRowIndex = $i;
+                    $headers = $row;
+                    break;
+                }
+            }
+            
+            if ($headerRowIndex === -1) {
                 return response()->json([
-                    'message' => 'File format is incorrect. Missing required columns: ' . implode(', ', $missingColumns),
-                    'required_format' => 'CSV file must contain columns: name, email, password'
+                    'message' => 'File format is incorrect. Could not find header row with Domain, Email, Password columns.',
+                    'required_format' => 'CSV file must contain columns: Domain, Email, Password'
                 ], 400);
             }
 
-            unset($csv[0]);
+            // Remove all rows up to and including the header
+            $csv = array_slice($csv, $headerRowIndex + 1);
+            
+            if (empty($csv)) {
+                return response()->json([
+                    'message' => 'No data rows found after header.'
+                ], 400);
+            }
            
             if (count($csv) > $request->split_total_inboxes) {
                 return response()->json([
@@ -1866,18 +1883,22 @@ class OrderController extends Controller
 
                 $data = array_combine($headers, $row);
                 
-                // Validate required fields
-                if (empty(trim($data['name'] ?? ''))) {
-                    $errors[] = "Row {$rowNumber}: Name is required";
+                // Validate required fields - map Domain to name for storage
+                $domain = trim($data['Domain'] ?? '');
+                $email = trim($data['Email'] ?? '');
+                $password = trim($data['Password'] ?? '');
+                
+                if (empty($domain)) {
+                    $errors[] = "Row {$rowNumber}: Domain is required";
                     continue;
                 }
                 
-                if (empty(trim($data['email'] ?? '')) || !filter_var(trim($data['email']), FILTER_VALIDATE_EMAIL)) {
+                if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = "Row {$rowNumber}: Valid email is required";
                     continue;
                 }
                 
-                if (empty(trim($data['password'] ?? ''))) {
+                if (empty($password)) {
                     $errors[] = "Row {$rowNumber}: Password is required";
                     continue;
                 }
@@ -1887,9 +1908,9 @@ class OrderController extends Controller
                     'user_id' => $orderPanel->order->user_id,
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
-                    'name' => trim($data['name']),
-                    'email' => trim($data['email']),
-                    'password' => trim($data['password']),
+                    'name' => $domain, // Store domain as name
+                    'email' => $email,
+                    'password' => $password,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -2037,7 +2058,7 @@ class OrderController extends Controller
             if (empty($domains)) {
                 return back()->with('error', 'No domains data found for this split.');
             }
-
+            // dd($order->id);
             // Generate emails with prefixes and random passwords
             $emailData = [];
             foreach ($domains as $domain) {
@@ -2045,7 +2066,7 @@ class OrderController extends Controller
                     $emailData[] = [
                         'domain' => $domain,
                         'email' => $prefix . '@' . $domain,
-                        'password' => $this->generateRandomPassword()
+                        'password' => $this->customEncrypt($order->id) // Custom encryption for password
                     ];
                 }
             }
@@ -2076,7 +2097,7 @@ class OrderController extends Controller
 
                 fputcsv($file, [
                     '',
-                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id.' Split_ID: ' . $orderPanelSplit->id,
+                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
                 ]);
                 fputcsv($file, [
                     '',
@@ -2108,20 +2129,42 @@ class OrderController extends Controller
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
-
-    /**
-     * Generate a random password
-     */
-    private function generateRandomPassword($length = 12)
+    // Custom encryption function for passwords
+    
+    private function customEncrypt($orderId)
     {
-        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-        $charactersLength = strlen($characters);
-        $randomPassword = '';
+        // Convert order ID to exactly 8 character password with one uppercase, lowercase, special char, and number
+        $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
         
-        for ($i = 0; $i < $length; $i++) {
-            $randomPassword .= $characters[rand(0, $charactersLength - 1)];
+        // Use order ID as seed for consistent password generation
+        mt_srand($orderId);
+        
+        // Generate password with requirements
+        $password = '';
+        $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)]; // 1 uppercase
+        $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)]; // 1 lowercase
+        $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];     // 1 number
+        $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)]; // 1 special char
+        
+        // Fill remaining 4 characters with mix of all character types
+        $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
+        for ($i = 4; $i < 8; $i++) {
+            $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
         }
         
-        return $randomPassword;
+        // Shuffle using seeded random generator instead of str_shuffle
+        $passwordArray = str_split($password);
+        for ($i = count($passwordArray) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            // Swap characters
+            $temp = $passwordArray[$i];
+            $passwordArray[$i] = $passwordArray[$j];
+            $passwordArray[$j] = $temp;
+        }
+        
+        return implode('', $passwordArray);
     }
 }
