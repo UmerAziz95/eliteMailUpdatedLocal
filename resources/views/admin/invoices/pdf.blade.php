@@ -155,10 +155,12 @@
             <p style="margin: 4px 0;"><strong>Customer Name:</strong> {{ $invoice->user->name }}</p>
             <p style="margin: 4px 0;"><strong>Invoice Amount:</strong> ${{ number_format($invoice->amount, 2) }} (USD)</p>
             <p style="margin: 4px 0;"><strong>Invoice Date:</strong> {{ $invoice->created_at->format('M d, Y') }}</p>
-            <p style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }};
-                      font-weight: bold; margin: 4px 0; text-transform: uppercase;">
-                {{ $invoice->status }}
-            </p>
+            <p style="margin: 4px 0;">
+                    <strong>Payment Status:</strong>
+                    <span style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold;">
+                        {{ ucfirst($invoice->status) }}
+                    </span>
+                </p>
 
             <!-- Subscription Info -->
             <div style="margin-top: 30px;">
@@ -172,9 +174,6 @@
         </td>
     </tr>
 </table>
-
-
-
 <!-- Subscription -->
    
 
