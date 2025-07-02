@@ -12,6 +12,7 @@ class OrderEmail extends Model
         'order_split_id',
         'contractor_id',
         'name',
+        'last_name',
         'email',
         'password',
         'profile_picture',

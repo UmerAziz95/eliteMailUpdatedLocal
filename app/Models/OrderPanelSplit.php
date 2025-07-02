@@ -17,6 +17,7 @@ class OrderPanelSplit extends Model
         'order_id',
         'inboxes_per_domain',
         'domains',
+        'uploaded_file_path',
     ];
 
     protected $casts = [
