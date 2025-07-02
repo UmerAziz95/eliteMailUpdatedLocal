@@ -1137,24 +1137,29 @@ class OrderController extends Controller
             $firstName = 'N/A';
             $lastName = 'N/A';
 
-            if ($order->meta) {
-                $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
+            // if ($order->meta) {
+            //     $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
                 
-                // Check billing_address first (from invoice)
-                if (isset($metaData['invoice']['billing_address'])) {
-                    $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
-                    $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
-                }
-                // Fallback to customer data
-                elseif (isset($metaData['customer'])) {
-                    $firstName = $metaData['customer']['first_name'] ?? $firstName;
-                    $lastName = $metaData['customer']['last_name'] ?? $lastName;
-                }
-                // Another fallback to shipping_address
-                elseif (isset($metaData['invoice']['shipping_address'])) {
-                    $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
-                    $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
-                }
+            //     // Check billing_address first (from invoice)
+            //     if (isset($metaData['invoice']['billing_address'])) {
+            //         $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
+            //     }
+            //     // Fallback to customer data
+            //     elseif (isset($metaData['customer'])) {
+            //         $firstName = $metaData['customer']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['customer']['last_name'] ?? $lastName;
+            //     }
+            //     // Another fallback to shipping_address
+            //     elseif (isset($metaData['invoice']['shipping_address'])) {
+            //         $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
+            //     }
+            // }
+            // first_name and last_name get from this table reorder_infos
+            if ($order->reorderInfo && $order->reorderInfo->first()) {
+                $firstName = $order->reorderInfo->first()->first_name ?? $firstName;
+                $lastName = $order->reorderInfo->first()->last_name ?? $lastName;
             }
 
             // Get prefix variants from reorder info
