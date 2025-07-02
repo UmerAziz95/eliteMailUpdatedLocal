@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <title>Invoice #{{ $invoice->chargebee_invoice_id }}</title>
     <style>
-        @page {
+        @page {   
             margin: 1cm;
         }
 
@@ -101,56 +101,81 @@
 
 
 <body>
-    <table width="100%" style="margin-bottom: 30px; vertical-align: top;">
-        <tr>
-            <!-- LEFT: Logo and company info -->
-            <td width="50%" style="vertical-align: top;">
-                <div style="display: block;">
-                    <img src="{{ public_path('assets/logo/logo_white_back.png') }}" alt="Logo"
-                        style="height: 80px; width: auto; display: block; margin-bottom: 10px;">
-                    <p style="margin: 0; font-size: 14px; line-height: 1.4;">
-                        <strong>Billing Address</strong>
-                        <br>
-                        {{ $$invoice->user->billing_address ?? "N/A" }}<br>
-                        {{ $$invoice->user->email ?? "N/A" }}
-                    </p>
-                </div>
-            </td>
+<table width="100%" style="margin-bottom: 30px; font-family: Arial, sans-serif;">
+    <tr>
+        <!-- LEFT SIDE: Logo + Address Sections -->
+        <td width="50%" style="vertical-align: top; text-align: left; font-size: 14px; line-height: 1.6;">
+            <!-- Logo -->
+            <div style="margin-bottom: 15px;">
+                <img src="{{ public_path('assets/logo/invoice-logo.jpg') }}" alt="Logo"
+                     style="height: 30px; width: 200px; display: block;">
+            </div>
 
-            <!-- RIGHT: Invoice summary -->
-            <td width="50%" style="vertical-align: top; text-align: right;">
-                <h2 style="margin: 0 0 10px;">INVOICE</h2>
-                <p style="margin: 4px 0;"><strong>Invoice #</strong> {{ $invoice->chargebee_invoice_id }}</p>
-                <p style="margin: 4px 0;"><strong>Invoice Date</strong> {{ $invoice->created_at->format('M d, Y') }}</p>
-                <p style="margin: 4px 0;"><strong>Invoice Amount</strong> ${{ number_format($invoice->amount, 2) }}
-                    (USD)</p>
-                <p style="margin: 4px 0;"><strong>Customer ID</strong> {{ $invoice->user->id }}</p>
-                <p
-                    style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold; margin: 4px 0;">
-                    {{ strtoupper($invoice->status) }}
+ <!-- From -->
+             <div style="margin-bottom: 15px;">
+                <strong style="display: block; margin-bottom: 4px;">From</strong>
+                PROJECT INBOX<br>
+                Business Street<br>
+                Suite 456<br>
+                New York, NY 10001<br>
+                support@projectinbox.ai<br>
+                +1 (555) 123-4567
+            </div>
+
+
+            <!-- Billed To -->
+            <div style="margin-bottom: 15px;">
+                <strong style="display: block; margin-bottom: 4px;">Billed To</strong>
+                {{ $invoice->user->name }}<br>
+                {{ $invoice->user->email }}<br>
+                @if($invoice->user->phone)
+                    {{ $invoice->user->phone }}
+                @endif
+                 {{ $invoice->user->billing_address ?? 'N/A' }}<br>
+                {{ $invoice->user->email ?? 'N/A' }}
+            </div>
+ <!-- Billing Address -->
+              {{-- <div style="margin-bottom: 15px;">
+                <strong style="display: block; margin-bottom: 4px;">Billing Address</strong>
+                {{ $invoice->user->billing_address ?? 'N/A' }}<br>
+                {{ $invoice->user->email ?? 'N/A' }}
+            </div> --}}
+           
+           
+        </td>
+
+        <!-- RIGHT SIDE: Invoice Summary + Subscription -->
+        <td width="50%" style="vertical-align: top; text-align: right; font-size: 14px; line-height: 1.6;">
+            <!-- Invoice Header -->
+            <h2 style="margin: 0 0 10px; font-size: 24px;">INVOICE</h2>
+
+            <!-- Invoice Info -->
+            <p style="margin: 4px 0;"><strong>Invoice ID:</strong> {{ $invoice->chargebee_invoice_id }}</p>
+            <p style="margin: 4px 0;"><strong>Customer ID:</strong> {{ $invoice->user->id }}</p>
+            <p style="margin: 4px 0;"><strong>Customer Name:</strong> {{ $invoice->user->name }}</p>
+            <p style="margin: 4px 0;"><strong>Invoice Amount:</strong> ${{ number_format($invoice->amount, 2) }} (USD)</p>
+            <p style="margin: 4px 0;"><strong>Invoice Date:</strong> {{ $invoice->created_at->format('M d, Y') }}</p>
+            <p style="margin: 4px 0;">
+                    <strong>Payment Status:</strong>
+                    <span style="color: {{ $invoice->status === 'paid' ? '#28a745' : '#ffc107' }}; font-weight: bold;">
+                        {{ ucfirst($invoice->status) }}
+                    </span>
                 </p>
-            </td>
-        </tr>
-    </table>
 
-
-    <div class="billing-section">
-        <div>
-            <strong>BILLED TO</strong><br>
-            {{ $invoice->user->name }}<br>
-            {{ $invoice->user->email }}<br>
-            @if($invoice->user->phone)
-            {{ $invoice->user->phone }}
-            @endif
-        </div>
-        <div style="text-align: right;">
-            <strong>SUBSCRIPTION</strong><br>
-            ID {{ $invoice->order->subscription_id ?? 'N/A' }}<br>
-            Billing Period {{ $invoice->order->created_at->format('M d, Y') }} - {{
-            $invoice->order->created_at->addMonth()->format('M d, Y') }}<br>
-            Next Billing Date {{ $invoice->order->created_at->addMonth()->format('M d, Y') }}
-        </div>
-    </div>
+            <!-- Subscription Info -->
+            <div style="margin-top: 30px;">
+                <strong style="display: block; margin-bottom: 4px;">SUBSCRIPTION</strong>
+                <strong>ID:</strong> {{ $invoice->order->chargebee_subscription_id ?? 'N/A' }}<br>
+                <strong>Billing Period:</strong>
+                {{ $invoice->order->created_at->format('M d, Y') }} -
+                {{ $invoice->order->created_at->addMonth()->format('M d, Y') }}<br>
+                <strong>Next Billing Date:</strong> {{ $invoice->order->created_at->addMonth()->format('M d, Y') }}
+            </div>
+        </td>
+    </tr>
+</table>
+<!-- Subscription -->
+   
 
     <table class="invoice-table">
         <thead>

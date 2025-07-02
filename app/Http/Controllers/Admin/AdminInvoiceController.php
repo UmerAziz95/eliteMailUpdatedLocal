@@ -282,7 +282,8 @@ class AdminInvoiceController extends Controller
                
 
             // Generate PDF using dompdf  
-            $pdf = \PDF::loadView('admin.invoices.pdf', compact('invoice'));
+            // return view('admin.invoices.pdf', compact('invoice'));
+             $pdf = \PDF::loadView('admin.invoices.pdf', compact('invoice'));
             
             // Generate filename
             $filename = 'invoice_' . $invoiceId . '.pdf';
