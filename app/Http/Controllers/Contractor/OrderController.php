@@ -2303,4 +2303,58 @@ class OrderController extends Controller
         
         return implode('', $passwordArray);
     }
+
+    // order.panel.email.downloadCsv
+    /**
+     * Download CSV from this table order_panel_split (uploaded_file_path)
+     */
+    public function downloadPanelCsv($orderPanelId)
+    {
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with([
+                'order.user',
+                'order.reorderInfo',
+                'orderPanelSplits',
+                'userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                }
+            ])->whereHas('userOrderPanelAssignments', function($query) {
+                $query->where('contractor_id', auth()->id());
+            })->findOrFail($orderPanelId);
+
+            // Get the order panel split
+            $orderPanelSplit = $orderPanel->orderPanelSplits->first();
+            
+            if (!$orderPanelSplit) {
+                return back()->with('error', 'No split data found for this panel.');
+            }
+
+            // Check if uploaded file exists
+            if (!$orderPanelSplit->uploaded_file_path) {
+                return back()->with('error', 'No uploaded file found for this panel split.');
+            }
+
+            // Get the full file path
+            $filePath = storage_path('app/public/' . $orderPanelSplit->uploaded_file_path);
+            
+            // Check if file actually exists on disk
+            if (!file_exists($filePath)) {
+                return back()->with('error', 'Uploaded file not found on server.');
+            }
+
+            // Get original filename or generate one
+            $originalFilename = basename($orderPanelSplit->uploaded_file_path);
+            $downloadFilename = "order_{$orderPanel->order_id}_panel_{$orderPanelId}_" . $originalFilename;
+
+            // Return file download response
+            return response()->download($filePath, $downloadFilename, [
+                'Content-Type' => 'text/csv',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading panel CSV file: ' . $e->getMessage());
+            return back()->with('error', 'Error downloading CSV: ' . $e->getMessage());
+        }
+    }
 }

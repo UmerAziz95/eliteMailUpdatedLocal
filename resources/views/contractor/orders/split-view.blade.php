@@ -55,6 +55,7 @@
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                
                                 <i class="fa-regular fa-envelope"></i>
                             </div>
                             Email configurations
@@ -266,6 +267,28 @@
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
+                            
+                            <!-- @php
+                                // Get the uploaded file path from order panel splits
+                                $uploadedFilePath = null;
+                                if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                                    foreach ($orderPanel->orderPanelSplits as $split) {
+                                        if ($split->uploaded_file_path) {
+                                            $uploadedFilePath = $split->uploaded_file_path;
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp -->
+                            
+                            <!-- @if($uploadedFilePath)
+                                <a href="{{ route('contractor.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
+                                   class="btn btn-outline-success me-2" 
+                                   title="Download uploaded CSV file">
+                                    <i class="fa-solid fa-download me-1"></i> Download CSV
+                                </a>
+                            @endif -->
+                            
                             <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
                             </button>
