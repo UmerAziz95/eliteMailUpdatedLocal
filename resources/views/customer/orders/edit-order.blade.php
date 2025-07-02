@@ -1800,8 +1800,8 @@ $(document).ready(function() {
                 } else if (minInboxes > 0 && totalInboxes < minInboxes) {
                     domainsField.addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
                         <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
                     `);
                     calculateTotalInboxes();
@@ -2217,8 +2217,8 @@ $(document).ready(function() {
             } else if (planInfo.min_inbox > 0 && totalInboxes < planInfo.min_inbox) {
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Below Plan Minimum!</strong> 
-                    You have ${totalInboxes} inboxes but your plan requires at least ${planInfo.min_inbox} inboxes.
+                    <strong>You're below the minimum plan limit.</strong> 
+                    Your current count is ${totalInboxes} inboxes, but your plan requires at least ${planInfo.min_inbox}.
                     <br><small>Current: ${totalInboxes} | Plan Range: ${planInfo.min_inbox} - ${planInfo.max_inbox || 'Unlimited'} inboxes</small>
                 `);
                 console.log('Below minimum error displayed');
