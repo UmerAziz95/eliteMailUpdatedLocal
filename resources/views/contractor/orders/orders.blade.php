@@ -1132,8 +1132,6 @@
                         </thead>
                         <tbody>
                             ${splits.map((split, index) => `
-                              ${console.log('Rendering split:', split)}
-
                                 <tr>
                                     <th scope="row">${index + 1}</th>
                                      <td>${split?.panel_id || 'N/A'}</td>
