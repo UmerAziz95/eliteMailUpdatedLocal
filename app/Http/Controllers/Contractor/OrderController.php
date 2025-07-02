@@ -1587,7 +1587,7 @@ class OrderController extends Controller
                 $emails = $emails->where('order_split_id', $orderPanelSplit->id);
             }
 
-            $emails = $emails->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+            $emails = $emails->select('id', 'name', 'last_name', 'email', 'password', 'order_split_id', 'contractor_id')
                 ->get();
 
             return response()->json([
@@ -1622,6 +1622,7 @@ class OrderController extends Controller
                 'order_panel_id' => 'required|exists:order_panel,id',
                 'emails' => 'required|array',
                 'emails.*.name' => 'required|string|max:255',
+                'emails.*.last_name' => 'nullable|string|max:255',
                 'emails.*.email' => 'required|email|max:255',
                 'emails.*.password' => 'required|string|min:6',
             ]);
@@ -1685,6 +1686,7 @@ class OrderController extends Controller
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
                     'name' => $emailData['name'],
+                    'last_name' => $emailData['last_name'] ?? null,
                     'email' => $emailData['email'],
                     'password' => $emailData['password'],
                     'profile_picture' => $emailData['profile_picture'] ?? null,
@@ -1811,7 +1813,7 @@ class OrderController extends Controller
 
             // Get the first order panel split (assuming one split per panel for now)
             $orderPanelSplit = $orderPanel->orderPanelSplits->first();
-
+            // dd($orderPanelSplit);
             if (!$orderPanelSplit) {
                 return response()->json(['message' => 'No order panel split found'], 404);
             }
@@ -1835,14 +1837,20 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Find the header row (look for Domain, Email, Password)
+            // Find the header row (look for First Name, Last Name, Email, Password)
             $headerRowIndex = -1;
             $headers = [];
             
             for ($i = 0; $i < count($csv); $i++) {
                 $row = array_map('trim', $csv[$i]);
                 // Check if this row contains the expected headers
-                if (in_array('Domain', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                if (in_array('First Name', $row) && in_array('Last Name', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                    $headerRowIndex = $i;
+                    $headers = $row;
+                    break;
+                }
+                // Fallback to old format (Domain, Email, Password)
+                elseif (in_array('Domain', $row) && in_array('Email', $row) && in_array('Password', $row)) {
                     $headerRowIndex = $i;
                     $headers = $row;
                     break;
@@ -1851,8 +1859,8 @@ class OrderController extends Controller
             
             if ($headerRowIndex === -1) {
                 return response()->json([
-                    'message' => 'File format is incorrect. Could not find header row with Domain, Email, Password columns.',
-                    'required_format' => 'CSV file must contain columns: Domain, Email, Password'
+                    'message' => 'File format is incorrect. Could not find header row with required columns.',
+                    'required_format' => 'CSV file must contain columns: First Name, Last Name, Email, Password OR Domain, Email, Password'
                 ], 400);
             }
 
@@ -1871,6 +1879,23 @@ class OrderController extends Controller
                     'count' => count($csv)
                 ], 400);
             }
+
+            // Save the uploaded file to server
+            $uploadedFileName = 'order_' . $orderPanel->order_id . '_panel_' . $orderPanel->id . '_split_' . $orderPanelSplit->id . '_' . time() . '.csv';
+            $uploadPath = 'uploads/order_files/';
+            
+            // Create directory if it doesn't exist
+            if (!file_exists(storage_path('app/public/' . $uploadPath))) {
+                mkdir(storage_path('app/public/' . $uploadPath), 0755, true);
+            }
+            
+            // Save file to storage
+            $savedFilePath = $uploadPath . $uploadedFileName;
+            $file->storeAs('public/' . $uploadPath, $uploadedFileName);
+            // Update order panel split with file path
+            $orderPanelSplit->update([
+                'uploaded_file_path' => $savedFilePath
+            ]);
 
             // Delete existing emails for this specific order panel split
             OrderEmail::where('order_id', $orderPanel->order_id)
@@ -1891,13 +1916,29 @@ class OrderController extends Controller
 
                 $data = array_combine($headers, $row);
                 
-                // Validate required fields - map Domain to name for storage
-                $domain = trim($data['Domain'] ?? '');
-                $email = trim($data['Email'] ?? '');
-                $password = trim($data['Password'] ?? '');
+                // Validate required fields - handle both new and old formats
+                $firstName = '';
+                $lastName = '';
+                $email = '';
+                $password = '';
                 
-                if (empty($domain)) {
-                    $errors[] = "Row {$rowNumber}: Domain is required";
+                // New format (First Name, Last Name, Email, Password)
+                if (isset($data['First Name']) && isset($data['Last Name'])) {
+                    $firstName = trim($data['First Name'] ?? '');
+                    $lastName = trim($data['Last Name'] ?? '');
+                    $email = trim($data['Email'] ?? '');
+                    $password = trim($data['Password'] ?? '');
+                }
+                // Old format (Domain, Email, Password) - use Domain as firstName
+                elseif (isset($data['Domain'])) {
+                    $firstName = trim($data['Domain'] ?? '');
+                    $lastName = 'N/A';
+                    $email = trim($data['Email'] ?? '');
+                    $password = trim($data['Password'] ?? '');
+                }
+                
+                if (empty($firstName)) {
+                    $errors[] = "Row {$rowNumber}: First Name is required";
                     continue;
                 }
                 
@@ -1916,7 +1957,8 @@ class OrderController extends Controller
                     'user_id' => $orderPanel->order->user_id,
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
-                    'name' => $domain, // Store domain as name
+                    'name' => $firstName, // Store firstName as name
+                    'last_name' => $lastName, // Store lastName separately
                     'email' => $email,
                     'password' => $password,
                     'created_at' => now(),
@@ -1965,7 +2007,8 @@ class OrderController extends Controller
             
             return response()->json([
                 'message' => 'Emails imported successfully for panel split.',
-                'count' => count($emails)
+                'count' => count($emails),
+                'file_saved' => $savedFilePath
             ]);
 
         } catch (\Exception $e) {

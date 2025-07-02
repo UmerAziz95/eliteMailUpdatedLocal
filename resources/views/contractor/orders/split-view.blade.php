@@ -296,7 +296,8 @@
                     <table id="email-configuration" class="display w-100">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
                                 <th>Email</th>
                                 <th>Password</th>
                                 <th>Action</th>
@@ -331,8 +332,8 @@
                 </h6>
                 <div class="row text-muted" id="csvInstructions">
                     <p class="text-danger">Only .csv files are accepted.</p>
-                    <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
-                        <strong>email</strong>, and <strong>password</strong>.
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>,
+                        <strong>Last Name</strong>, <strong>Email</strong>, and <strong>Password</strong>.
                     </p>
                     <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                 Sample File</strong></a></p>
@@ -728,10 +729,11 @@
             autoWidth: false,
             deferRender: true, // Improve performance and reduce blocking
             columnDefs: [
-                { width: '30%', targets: 0 }, // Name column
-                { width: '30%', targets: 1 }, // Email column
-                { width: '30%', targets: 2 }, // Password column
-                { width: '10%', targets: 3 }  // Action column
+                { width: '20%', targets: 0 }, // First Name column
+                { width: '20%', targets: 1 }, // Last Name column
+                { width: '25%', targets: 2 }, // Email column
+                { width: '25%', targets: 3 }, // Password column
+                { width: '10%', targets: 4 }  // Action column
             ],
             responsive: {
                 details: {
@@ -753,7 +755,13 @@
                 { 
                     data: 'name',
                     render: function(data, type, row) {
-                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
+                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter first name">`;
+                    }
+                },
+                { 
+                    data: 'last_name',
+                    render: function(data, type, row) {
+                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
                     }
                 },
                 { 
@@ -820,6 +828,7 @@
 
             emailTable.row.add({
                 name: '',
+                last_name: '',
                 email: '',
                 password: '',
                 id: ''
@@ -834,21 +843,28 @@
             $(emailTable.rows().nodes()).each(function() {
                 const row = $(this);
                 const nameField = row.find('.name');
+                const lastNameField = row.find('.last_name');
                 const emailField = row.find('.email');
                 const passwordField = row.find('.password');
 
                 // Reset validation classes
                 nameField.removeClass('is-invalid');
+                lastNameField.removeClass('is-invalid');
                 emailField.removeClass('is-invalid');
                 passwordField.removeClass('is-invalid');
 
                 const name = nameField.val()?.trim();
+                const lastName = lastNameField.val()?.trim();
                 const email = emailField.val()?.trim();
                 const password = passwordField.val()?.trim();
 
                 // Validate fields
                 if (!name) {
                     nameField.addClass('is-invalid');
+                    isValid = false;
+                }
+                if (!lastName) {
+                    lastNameField.addClass('is-invalid');
                     isValid = false;
                 }
                 if (!email) {
@@ -860,8 +876,8 @@
                     isValid = false;
                 }
 
-                if (name && email && password) {
-                    emailsToSave.push({ name, email, password });
+                if (name && lastName && email && password) {
+                    emailsToSave.push({ name, last_name: lastName, email, password });
                 }
             });
 
