@@ -358,7 +358,7 @@
                 <div class="col-md-6 email-picture-link">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} " required>
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
@@ -2549,7 +2549,7 @@ $(document).ready(function() {
             <div class="col-md-6">
                 <label>Email Persona - Prefix Variant ${i}</label>
                 <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                    value="${existingValue}"  required}>
+                    value="${existingValue}" required>
                 <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
                 ${noteHtml}
             </div>
