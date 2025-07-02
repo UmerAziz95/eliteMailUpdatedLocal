@@ -243,6 +243,7 @@ class AdminInvoiceController extends Controller
             return response()->json(['error' => 'Error loading invoices'], 500);
         }
     }
+    
     public function show($invoiceId)
     {
         try {
