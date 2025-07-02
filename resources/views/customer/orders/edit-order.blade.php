@@ -1593,8 +1593,8 @@ $(document).ready(function() {
                     // Show domains-error div for below minimum
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
                         <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
                     `);
                     toastr.warning(`Order imported but below plan minimum (${totalInboxes} vs ${minInboxes} required).`, 'Import Complete - Below Plan Minimum', {
