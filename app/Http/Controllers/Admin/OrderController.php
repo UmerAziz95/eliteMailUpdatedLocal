@@ -1095,6 +1095,33 @@ class OrderController extends Controller
     /**
      * Export CSV file with domains data for a specific order panel split
      */
+    // Add these columns at the end with empty data
+    // Password Hash Function [UPLOAD ONLY],
+    // Org Unit Path [Required, 
+    // New Primary Email [UPLOAD ONLY], 
+    // Recovery Email, 
+    // Home Secondary Email,
+    // Work Secondary Email,
+    // Recovery Phone [MUST BE IN THE E.164 FORMAT],
+    // Work Phone,
+    // Home Phone,
+    // Mobile Phone,
+    // Work Address,
+    // Home Address,
+    // Employee ID,
+    // Employee Type,
+    // Employee Title,
+    // Manager Email,
+    // Department,
+    // Cost Center,
+    // Building ID,
+    // Floor Name,
+    // Floor Section,
+    // Change Password at Next Sign-In,
+    // New Status [UPLOAD ONLY],
+    // New Licenses [UPLOAD ONLY],
+    // Advanced Protection Program enrollment
+
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
@@ -1105,6 +1132,30 @@ class OrderController extends Controller
             ])->findOrFail($splitId);
 
             $order = $orderPanelSplit->orderPanel->order;
+
+            // Get first and last name from order meta
+            $firstName = 'N/A';
+            $lastName = 'N/A';
+
+            if ($order->meta) {
+                $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
+                
+                // Check billing_address first (from invoice)
+                if (isset($metaData['invoice']['billing_address'])) {
+                    $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
+                    $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
+                }
+                // Fallback to customer data
+                elseif (isset($metaData['customer'])) {
+                    $firstName = $metaData['customer']['first_name'] ?? $firstName;
+                    $lastName = $metaData['customer']['last_name'] ?? $lastName;
+                }
+                // Another fallback to shipping_address
+                elseif (isset($metaData['invoice']['shipping_address'])) {
+                    $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
+                    $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
+                }
+            }
 
             // Get prefix variants from reorder info
             $prefixVariants = [];
@@ -1187,7 +1238,7 @@ class OrderController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes, $firstName, $lastName) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
                 fputcsv($file, [
@@ -1211,12 +1262,72 @@ class OrderController extends Controller
                 // Add empty row for separation
                 fputcsv($file, []);
                 
-                // Add email data headers
-                fputcsv($file, ['Domain', 'Email', 'Password']);
+                // Add email data headers with additional columns
+                fputcsv($file, [
+                    'First Name', 
+                    'Last Name',
+                    'Email', 
+                    'Password',
+                    'Password Hash Function [UPLOAD ONLY]',
+                    'Org Unit Path [Required]',
+                    'New Primary Email [UPLOAD ONLY]',
+                    'Recovery Email',
+                    'Home Secondary Email',
+                    'Work Secondary Email',
+                    'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
+                    'Work Phone',
+                    'Home Phone',
+                    'Mobile Phone',
+                    'Work Address',
+                    'Home Address',
+                    'Employee ID',
+                    'Employee Type',
+                    'Employee Title',
+                    'Manager Email',
+                    'Department',
+                    'Cost Center',
+                    'Building ID',
+                    'Floor Name',
+                    'Floor Section',
+                    'Change Password at Next Sign-In',
+                    'New Status [UPLOAD ONLY]',
+                    'New Licenses [UPLOAD ONLY]',
+                    'Advanced Protection Program enrollment'
+                ]);
                 
-                // Add email data
+                // Add email data with empty values for additional columns
                 foreach ($emailData as $data) {
-                    fputcsv($file, [$data['domain'], $data['email'], $data['password']]);
+                    fputcsv($file, [
+                        $firstName, // First Name
+                        $lastName, // Last Name
+                        $data['email'], 
+                        $data['password'],
+                        '', // Password Hash Function [UPLOAD ONLY]
+                        '/', // Org Unit Path [Required]
+                        '', // New Primary Email [UPLOAD ONLY]
+                        '', // Recovery Email
+                        '', // Home Secondary Email
+                        '', // Work Secondary Email
+                        '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
+                        '', // Work Phone
+                        '', // Home Phone
+                        '', // Mobile Phone
+                        '', // Work Address
+                        '', // Home Address
+                        '', // Employee ID
+                        '', // Employee Type
+                        '', // Employee Title
+                        '', // Manager Email
+                        '', // Department
+                        '', // Cost Center
+                        '', // Building ID
+                        '', // Floor Name
+                        '', // Floor Section
+                        '', // Change Password at Next Sign-In
+                        '', // New Status [UPLOAD ONLY]
+                        '', // New Licenses [UPLOAD ONLY]
+                        ''  // Advanced Protection Program enrollment
+                    ]);
                 }
 
                 fclose($file);
