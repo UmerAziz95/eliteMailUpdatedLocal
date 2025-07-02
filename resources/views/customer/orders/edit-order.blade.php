@@ -2560,7 +2560,7 @@ $(document).ready(function() {
 
     //highlight the prefix note on fucus input
             container.find('input').on('focus', function () {
-            $(this).siblings('.note').css('color', 'blue');
+            $(this).siblings('.note').css('color', 'orange');
         }).on('blur', function () {
             $(this).siblings('.note').css('color', ''); // Reset to default
         });

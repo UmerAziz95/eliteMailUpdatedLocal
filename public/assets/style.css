@@ -127,7 +127,12 @@ html.dark-theme .logo-light {
 
 .pulse-effect {
     animation: pulseAnimation .7s infinite;
-    background-color: #ec2f2f !important;
+    background-color: #ff00003c !important;
+    border: 2px solid red !important;
+}
+
+.pulse-effect .fa-chevron-right {
+    color: red !important;
 }
 
 
@@ -848,6 +853,7 @@ select option {
 
 .table>:not(caption)>*>* {
     color: var(--light-color) !important;
+    border-bottom-width: 0px !important;
 }
 
 .bg-label-primary {
