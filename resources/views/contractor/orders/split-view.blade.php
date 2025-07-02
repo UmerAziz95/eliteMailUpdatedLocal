@@ -263,12 +263,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div>
-                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                            <button id="addBulkEmail" class="btn btn-primary me-2 btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
                             
-                            <!-- @php
+                            @php
                                 // Get the uploaded file path from order panel splits
                                 $uploadedFilePath = null;
                                 if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
@@ -279,15 +279,15 @@
                                         }
                                     }
                                 }
-                            @endphp -->
+                            @endphp
                             
-                            <!-- @if($uploadedFilePath)
+                            @if($uploadedFilePath)
                                 <a href="{{ route('contractor.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
-                                   class="btn btn-outline-success me-2" 
+                                   class="btn btn-outline-success me-2 btn-sm" 
                                    title="Download uploaded CSV file">
                                     <i class="fa-solid fa-download me-1"></i> Download CSV
                                 </a>
-                            @endif -->
+                            @endif
                             
                             <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
@@ -297,14 +297,14 @@
                             </button> -->
                         </div>
                     </div>
-                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                    <div class="email-stats d-flex align-items-center gap-2 bg- rounded p-2">
                         <div class="badge rounded-circle bg-primary p-2">
                             <i class="fa-solid fa-envelope text-white"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0">Email Accounts</h6>
+                            <h6 class="mb-0 small">Email Accounts</h6>
                             <div class="d-flex align-items-center gap-2">
-                                <span id="totalRowCount" class="fw-bold">0</span>
+                                <span id="totalRowCount" class="fw-bold small">0</span>
                                 <div class="progress" style="width: 100px; height: 6px;">
                                     <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
                                         style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
