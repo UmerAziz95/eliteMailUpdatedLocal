@@ -55,6 +55,7 @@
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                
                                 <i class="fa-regular fa-envelope"></i>
                             </div>
                             Email configurations
@@ -262,10 +263,32 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div>
-                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                            <button id="addBulkEmail" class="btn btn-primary me-2 btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
+                            
+                            @php
+                                // Get the uploaded file path from order panel splits
+                                $uploadedFilePath = null;
+                                if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                                    foreach ($orderPanel->orderPanelSplits as $split) {
+                                        if ($split->uploaded_file_path) {
+                                            $uploadedFilePath = $split->uploaded_file_path;
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp
+                            
+                            @if($uploadedFilePath)
+                                <a href="{{ route('contractor.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
+                                   class="btn btn-outline-success me-2 btn-sm" 
+                                   title="Download uploaded CSV file">
+                                    <i class="fa-solid fa-download me-1"></i> Download CSV
+                                </a>
+                            @endif
+                            
                             <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
                             </button>
@@ -274,14 +297,14 @@
                             </button> -->
                         </div>
                     </div>
-                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                    <div class="email-stats d-flex align-items-center gap-2 bg- rounded p-2">
                         <div class="badge rounded-circle bg-primary p-2">
                             <i class="fa-solid fa-envelope text-white"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0">Email Accounts</h6>
+                            <h6 class="mb-0 small">Email Accounts</h6>
                             <div class="d-flex align-items-center gap-2">
-                                <span id="totalRowCount" class="fw-bold">0</span>
+                                <span id="totalRowCount" class="fw-bold small">0</span>
                                 <div class="progress" style="width: 100px; height: 6px;">
                                     <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
                                         style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
@@ -296,7 +319,8 @@
                     <table id="email-configuration" class="display w-100">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
                                 <th>Email</th>
                                 <th>Password</th>
                                 <th>Action</th>
@@ -331,8 +355,8 @@
                 </h6>
                 <div class="row text-muted" id="csvInstructions">
                     <p class="text-danger">Only .csv files are accepted.</p>
-                    <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
-                        <strong>email</strong>, and <strong>password</strong>.
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>,
+                        <strong>Last Name</strong>, <strong>Email</strong>, and <strong>Password</strong>.
                     </p>
                     <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                 Sample File</strong></a></p>
@@ -728,10 +752,11 @@
             autoWidth: false,
             deferRender: true, // Improve performance and reduce blocking
             columnDefs: [
-                { width: '30%', targets: 0 }, // Name column
-                { width: '30%', targets: 1 }, // Email column
-                { width: '30%', targets: 2 }, // Password column
-                { width: '10%', targets: 3 }  // Action column
+                { width: '20%', targets: 0 }, // First Name column
+                { width: '20%', targets: 1 }, // Last Name column
+                { width: '25%', targets: 2 }, // Email column
+                { width: '25%', targets: 3 }, // Password column
+                { width: '10%', targets: 4 }  // Action column
             ],
             responsive: {
                 details: {
@@ -753,7 +778,13 @@
                 { 
                     data: 'name',
                     render: function(data, type, row) {
-                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
+                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter first name">`;
+                    }
+                },
+                { 
+                    data: 'last_name',
+                    render: function(data, type, row) {
+                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
                     }
                 },
                 { 
@@ -820,6 +851,7 @@
 
             emailTable.row.add({
                 name: '',
+                last_name: '',
                 email: '',
                 password: '',
                 id: ''
@@ -834,21 +866,28 @@
             $(emailTable.rows().nodes()).each(function() {
                 const row = $(this);
                 const nameField = row.find('.name');
+                const lastNameField = row.find('.last_name');
                 const emailField = row.find('.email');
                 const passwordField = row.find('.password');
 
                 // Reset validation classes
                 nameField.removeClass('is-invalid');
+                lastNameField.removeClass('is-invalid');
                 emailField.removeClass('is-invalid');
                 passwordField.removeClass('is-invalid');
 
                 const name = nameField.val()?.trim();
+                const lastName = lastNameField.val()?.trim();
                 const email = emailField.val()?.trim();
                 const password = passwordField.val()?.trim();
 
                 // Validate fields
                 if (!name) {
                     nameField.addClass('is-invalid');
+                    isValid = false;
+                }
+                if (!lastName) {
+                    lastNameField.addClass('is-invalid');
                     isValid = false;
                 }
                 if (!email) {
@@ -860,8 +899,8 @@
                     isValid = false;
                 }
 
-                if (name && email && password) {
-                    emailsToSave.push({ name, email, password });
+                if (name && lastName && email && password) {
+                    emailsToSave.push({ name, last_name: lastName, email, password });
                 }
             });
 

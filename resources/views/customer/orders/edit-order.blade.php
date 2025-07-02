@@ -358,7 +358,7 @@
                 <div class="col-md-6 email-picture-link">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }}">
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} " required>
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
@@ -1593,8 +1593,8 @@ $(document).ready(function() {
                     // Show domains-error div for below minimum
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
                         <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
                     `);
                     toastr.warning(`Order imported but below plan minimum (${totalInboxes} vs ${minInboxes} required).`, 'Import Complete - Below Plan Minimum', {
@@ -1800,8 +1800,8 @@ $(document).ready(function() {
                 } else if (minInboxes > 0 && totalInboxes < minInboxes) {
                     domainsField.addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Below Plan Minimum!</strong> 
-                        You have ${totalInboxes} inboxes but your plan requires at least ${minInboxes} inboxes.
+                        <strong>You're below the minimum plan limit.</strong> 
+                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
                         <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
                     `);
                     calculateTotalInboxes();
@@ -2217,8 +2217,8 @@ $(document).ready(function() {
             } else if (planInfo.min_inbox > 0 && totalInboxes < planInfo.min_inbox) {
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Below Plan Minimum!</strong> 
-                    You have ${totalInboxes} inboxes but your plan requires at least ${planInfo.min_inbox} inboxes.
+                    <strong>You're below the minimum plan limit.</strong> 
+                    Your current count is ${totalInboxes} inboxes, but your plan requires at least ${planInfo.min_inbox}.
                     <br><small>Current: ${totalInboxes} | Plan Range: ${planInfo.min_inbox} - ${planInfo.max_inbox || 'Unlimited'} inboxes</small>
                 `);
                 console.log('Below minimum error displayed');
@@ -2549,7 +2549,7 @@ $(document).ready(function() {
             <div class="col-md-6">
                 <label>Email Persona - Prefix Variant ${i}</label>
                 <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                    value="${existingValue}"  required}>
+                    value="${existingValue}" required>
                 <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
                 ${noteHtml}
             </div>

@@ -1587,7 +1587,7 @@ class OrderController extends Controller
                 $emails = $emails->where('order_split_id', $orderPanelSplit->id);
             }
 
-            $emails = $emails->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+            $emails = $emails->select('id', 'name', 'last_name', 'email', 'password', 'order_split_id', 'contractor_id')
                 ->get();
 
             return response()->json([
@@ -1622,6 +1622,7 @@ class OrderController extends Controller
                 'order_panel_id' => 'required|exists:order_panel,id',
                 'emails' => 'required|array',
                 'emails.*.name' => 'required|string|max:255',
+                'emails.*.last_name' => 'nullable|string|max:255',
                 'emails.*.email' => 'required|email|max:255',
                 'emails.*.password' => 'required|string|min:6',
             ]);
@@ -1685,6 +1686,7 @@ class OrderController extends Controller
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
                     'name' => $emailData['name'],
+                    'last_name' => $emailData['last_name'] ?? null,
                     'email' => $emailData['email'],
                     'password' => $emailData['password'],
                     'profile_picture' => $emailData['profile_picture'] ?? null,
@@ -1785,7 +1787,6 @@ class OrderController extends Controller
     /**
      * Bulk import emails for split panel
      */
-    
     public function orderSplitImportProcess(Request $request)
     {
         // Validate file and order_panel_id
@@ -1812,7 +1813,7 @@ class OrderController extends Controller
 
             // Get the first order panel split (assuming one split per panel for now)
             $orderPanelSplit = $orderPanel->orderPanelSplits->first();
-
+            // dd($orderPanelSplit);
             if (!$orderPanelSplit) {
                 return response()->json(['message' => 'No order panel split found'], 404);
             }
@@ -1836,14 +1837,20 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Find the header row (look for Domain, Email, Password)
+            // Find the header row (look for First Name, Last Name, Email, Password)
             $headerRowIndex = -1;
             $headers = [];
             
             for ($i = 0; $i < count($csv); $i++) {
                 $row = array_map('trim', $csv[$i]);
                 // Check if this row contains the expected headers
-                if (in_array('Domain', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                if (in_array('First Name', $row) && in_array('Last Name', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                    $headerRowIndex = $i;
+                    $headers = $row;
+                    break;
+                }
+                // Fallback to old format (Domain, Email, Password)
+                elseif (in_array('Domain', $row) && in_array('Email', $row) && in_array('Password', $row)) {
                     $headerRowIndex = $i;
                     $headers = $row;
                     break;
@@ -1852,8 +1859,8 @@ class OrderController extends Controller
             
             if ($headerRowIndex === -1) {
                 return response()->json([
-                    'message' => 'File format is incorrect. Could not find header row with Domain, Email, Password columns.',
-                    'required_format' => 'CSV file must contain columns: Domain, Email, Password'
+                    'message' => 'File format is incorrect. Could not find header row with required columns.',
+                    'required_format' => 'CSV file must contain columns: First Name, Last Name, Email, Password OR Domain, Email, Password'
                 ], 400);
             }
 
@@ -1872,6 +1879,23 @@ class OrderController extends Controller
                     'count' => count($csv)
                 ], 400);
             }
+
+            // Save the uploaded file to server
+            $uploadedFileName = 'order_' . $orderPanel->order_id . '_panel_' . $orderPanel->id . '_split_' . $orderPanelSplit->id . '_' . time() . '.csv';
+            $uploadPath = 'uploads/order_files/';
+            
+            // Create directory if it doesn't exist
+            if (!file_exists(storage_path('app/public/' . $uploadPath))) {
+                mkdir(storage_path('app/public/' . $uploadPath), 0755, true);
+            }
+            
+            // Save file to storage
+            $savedFilePath = $uploadPath . $uploadedFileName;
+            $file->storeAs('public/' . $uploadPath, $uploadedFileName);
+            // Update order panel split with file path
+            $orderPanelSplit->update([
+                'uploaded_file_path' => $savedFilePath
+            ]);
 
             // Delete existing emails for this specific order panel split
             OrderEmail::where('order_id', $orderPanel->order_id)
@@ -1892,13 +1916,29 @@ class OrderController extends Controller
 
                 $data = array_combine($headers, $row);
                 
-                // Validate required fields - map Domain to name for storage
-                $domain = trim($data['Domain'] ?? '');
-                $email = trim($data['Email'] ?? '');
-                $password = trim($data['Password'] ?? '');
+                // Validate required fields - handle both new and old formats
+                $firstName = '';
+                $lastName = '';
+                $email = '';
+                $password = '';
                 
-                if (empty($domain)) {
-                    $errors[] = "Row {$rowNumber}: Domain is required";
+                // New format (First Name, Last Name, Email, Password)
+                if (isset($data['First Name']) && isset($data['Last Name'])) {
+                    $firstName = trim($data['First Name'] ?? '');
+                    $lastName = trim($data['Last Name'] ?? '');
+                    $email = trim($data['Email'] ?? '');
+                    $password = trim($data['Password'] ?? '');
+                }
+                // Old format (Domain, Email, Password) - use Domain as firstName
+                elseif (isset($data['Domain'])) {
+                    $firstName = trim($data['Domain'] ?? '');
+                    $lastName = 'N/A';
+                    $email = trim($data['Email'] ?? '');
+                    $password = trim($data['Password'] ?? '');
+                }
+                
+                if (empty($firstName)) {
+                    $errors[] = "Row {$rowNumber}: First Name is required";
                     continue;
                 }
                 
@@ -1917,7 +1957,8 @@ class OrderController extends Controller
                     'user_id' => $orderPanel->order->user_id,
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
-                    'name' => $domain, // Store domain as name
+                    'name' => $firstName, // Store firstName as name
+                    'last_name' => $lastName, // Store lastName separately
                     'email' => $email,
                     'password' => $password,
                     'created_at' => now(),
@@ -1966,7 +2007,8 @@ class OrderController extends Controller
             
             return response()->json([
                 'message' => 'Emails imported successfully for panel split.',
-                'count' => count($emails)
+                'count' => count($emails),
+                'file_saved' => $savedFilePath
             ]);
 
         } catch (\Exception $e) {
@@ -1994,6 +2036,35 @@ class OrderController extends Controller
             // Check if contractor has access to this split
             $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
+
+            // Get first and last name from order meta
+            $firstName = 'N/A';
+            $lastName = 'N/A';
+            // first_name and last_name get from this table reorder_infos
+            if ($order->reorderInfo && $order->reorderInfo->first()) {
+                $firstName = $order->reorderInfo->first()->first_name ?? $firstName;
+                $lastName = $order->reorderInfo->first()->last_name ?? $lastName;
+            }
+            // if ($order->meta) {
+            //     $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
+                
+            //     // Check billing_address first (from invoice)
+            //     if (isset($metaData['invoice']['billing_address'])) {
+            //         $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
+            //     }
+            //     // Fallback to customer data
+            //     elseif (isset($metaData['customer'])) {
+            //         $firstName = $metaData['customer']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['customer']['last_name'] ?? $lastName;
+            //     }
+            //     // Another fallback to shipping_address
+            //     elseif (isset($metaData['invoice']['shipping_address'])) {
+            //         $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
+            //         $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
+            //     }
+            // }
+            // dd($firstName, $lastName);
             // Allow access if order is unassigned (available for all contractors)
             if ($order->assigned_to === null) {
                 $hasAccess = true;
@@ -2096,7 +2167,7 @@ class OrderController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes, $firstName, $lastName) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
                 fputcsv($file, [
@@ -2120,12 +2191,72 @@ class OrderController extends Controller
                 // Add empty row for separation
                 fputcsv($file, []);
                 
-                // Add email data headers
-                fputcsv($file, ['Domain', 'Email', 'Password']);
+                // Add email data headers with additional columns
+                fputcsv($file, [
+                    'First Name', 
+                    'Last Name',
+                    'Email', 
+                    'Password',
+                    'Password Hash Function [UPLOAD ONLY]',
+                    'Org Unit Path [Required]',
+                    'New Primary Email [UPLOAD ONLY]',
+                    'Recovery Email',
+                    'Home Secondary Email',
+                    'Work Secondary Email',
+                    'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
+                    'Work Phone',
+                    'Home Phone',
+                    'Mobile Phone',
+                    'Work Address',
+                    'Home Address',
+                    'Employee ID',
+                    'Employee Type',
+                    'Employee Title',
+                    'Manager Email',
+                    'Department',
+                    'Cost Center',
+                    'Building ID',
+                    'Floor Name',
+                    'Floor Section',
+                    'Change Password at Next Sign-In',
+                    'New Status [UPLOAD ONLY]',
+                    'New Licenses [UPLOAD ONLY]',
+                    'Advanced Protection Program enrollment'
+                ]);
                 
-                // Add email data
+                // Add email data with empty values for additional columns
                 foreach ($emailData as $data) {
-                    fputcsv($file, [$data['domain'], $data['email'], $data['password']]);
+                    fputcsv($file, [
+                        $firstName, // First Name
+                        $lastName, // Last Name
+                        $data['email'], 
+                        $data['password'],
+                        '', // Password Hash Function [UPLOAD ONLY]
+                        '/', // Org Unit Path [Required]
+                        '', // New Primary Email [UPLOAD ONLY]
+                        '', // Recovery Email
+                        '', // Home Secondary Email
+                        '', // Work Secondary Email
+                        '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
+                        '', // Work Phone
+                        '', // Home Phone
+                        '', // Mobile Phone
+                        '', // Work Address
+                        '', // Home Address
+                        '', // Employee ID
+                        '', // Employee Type
+                        '', // Employee Title
+                        '', // Manager Email
+                        '', // Department
+                        '', // Cost Center
+                        '', // Building ID
+                        '', // Floor Name
+                        '', // Floor Section
+                        '', // Change Password at Next Sign-In
+                        '', // New Status [UPLOAD ONLY]
+                        '', // New Licenses [UPLOAD ONLY]
+                        ''  // Advanced Protection Program enrollment
+                    ]);
                 }
 
                 fclose($file);
@@ -2175,5 +2306,59 @@ class OrderController extends Controller
         }
         
         return implode('', $passwordArray);
+    }
+
+    // order.panel.email.downloadCsv
+    /**
+     * Download CSV from this table order_panel_split (uploaded_file_path)
+     */
+    public function downloadPanelCsv($orderPanelId)
+    {
+        try {
+            // Verify the contractor has access to this order panel
+            $orderPanel = OrderPanel::with([
+                'order.user',
+                'order.reorderInfo',
+                'orderPanelSplits',
+                'userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                }
+            ])->whereHas('userOrderPanelAssignments', function($query) {
+                $query->where('contractor_id', auth()->id());
+            })->findOrFail($orderPanelId);
+
+            // Get the order panel split
+            $orderPanelSplit = $orderPanel->orderPanelSplits->first();
+            
+            if (!$orderPanelSplit) {
+                return back()->with('error', 'No split data found for this panel.');
+            }
+
+            // Check if uploaded file exists
+            if (!$orderPanelSplit->uploaded_file_path) {
+                return back()->with('error', 'No uploaded file found for this panel split.');
+            }
+
+            // Get the full file path
+            $filePath = storage_path('app/public/' . $orderPanelSplit->uploaded_file_path);
+            
+            // Check if file actually exists on disk
+            if (!file_exists($filePath)) {
+                return back()->with('error', 'Uploaded file not found on server.');
+            }
+
+            // Get original filename or generate one
+            $originalFilename = basename($orderPanelSplit->uploaded_file_path);
+            $downloadFilename = "order_{$orderPanel->order_id}_panel_{$orderPanelId}_" . $originalFilename;
+
+            // Return file download response
+            return response()->download($filePath, $downloadFilename, [
+                'Content-Type' => 'text/csv',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading panel CSV file: ' . $e->getMessage());
+            return back()->with('error', 'Error downloading CSV: ' . $e->getMessage());
+        }
     }
 }
