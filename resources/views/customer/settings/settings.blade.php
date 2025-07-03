@@ -222,37 +222,37 @@
                 <div class="info-container">
                     <ul class="list-unstyled mb-6">
                         <li class="mb-2">
-                            <span class="h6">Username:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->name }}</span>
+                            <span class="fs-6">Username:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->name }}</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">Email:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->email }}</span>
+                            <span class="fs-6">Email:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->email }}</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">Status:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->status == '1' ? 'Active' :
+                            <span class="fs-6">Status:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->status == '1' ? 'Active' :
                                 'In-Active' }}</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">Role:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->role->name }}</span>
+                            <span class="fs-6">Role:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->role->name }}</span>
                         </li>
                         {{-- <li class="mb-2">
-                            <span class="h6">Tax id:</span>
-                            <span class="opacity-50 small fw-light">Tax-8965</span>
+                            <span class="fs-6">Tax id:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">Tax-8965</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">plans:</span>
-                            <span class="opacity-50 small fw-light">(123) 456-7890</span>
+                            <span class="fs-6">plans:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">(123) 456-7890</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">Languages:</span>
-                            <span class="opacity-50 small fw-light">French</span>
+                            <span class="fs-6">Languages:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">French</span>
                         </li>
                         <li class="mb-2">
-                            <span class="h6">Country:</span>
-                            <span class="opacity-50 small fw-light">England</span>
+                            <span class="fs-6">Country:</span>
+                            <span class="opacity-50 text-capitaize small fw-light">England</span>
                         </li> --}}
                     </ul>
 
@@ -307,19 +307,24 @@
                 <ul class="list-unstyled g-2 my-4">
                     <li class="mb-2 d-flex align-items-center">
                         <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                        <small>Total Inboxes: {{ $latestOrder->reorderInfo->first()->total_inboxes }}</small>
+                        <span class="small">
+                            Total Inboxes: 
+                            <span class="text-white">{{ $latestOrder->reorderInfo->first()->total_inboxes }}</span>
+                        </span>
                     </li>
                     <li class="mb-2 d-flex align-items-center">
                         <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                        <small>Inboxes per Domain:
-                            {{ $latestOrder->reorderInfo->first()->inboxes_per_domain }}</small>
+                        <span class="small">
+                            Inboxes per Domain:
+                            <span class="text-white">{{ $latestOrder->reorderInfo->first()->inboxes_per_domain }}</span>
+                        </span>
                     </li>
                     <li class="mb-2 d-flex align-items-center">
                         <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
-                        <small>Status: <small
-                                class="badge rounded-1 py-1 bg-{{ $latestOrder->status_manage_by_admin == 'completed' ? 'success' : ($latestOrder->status_manage_by_admin == 'pending' ? 'warning' : 'info') }}">
+                        <span class="small">Status: <span
+                                class="rounded-1 small py-1 text-{{ $latestOrder->status_manage_by_admin == 'completed' ? 'success' : ($latestOrder->status_manage_by_admin == 'pending' ? 'warning' : 'info') }}">
                                 {{ ucfirst($latestOrder->status_manage_by_admin) }}
-                            </small></small>
+                            </span></span>
                     </li>
                 </ul>
                 @endif
