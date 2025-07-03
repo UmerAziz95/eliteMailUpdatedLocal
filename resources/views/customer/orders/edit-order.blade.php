@@ -38,7 +38,7 @@
         display: block !important;
     }
 
-    /* Enhanced styling for domains error with plan limits */
+    /* Enhanced styling for domains error with order limits */
     #domains-error {
         background-color: rgba(220, 53, 69, 0.1);
         border: 1px solid rgba(220, 53, 69, 0.2);
@@ -284,7 +284,7 @@
                             </span>
                         </div>
 
-                        <p class="note" id="remaining-inboxes-note">(Shows your current plan usage)</p>
+                        <p class="note" id="remaining-inboxes-note">(Shows your current order usage)</p>
                     </div>
                 </div>
 
@@ -1058,10 +1058,10 @@ function updatePriceDisplay(totalInboxes) {
     const currentPlan = @json($plan);
     const orderInfo = @json(optional($order)->reorderInfo->first());
     
-    // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+    // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
     let TOTAL_INBOXES = 0;
-    if (currentPlan && currentPlan.max_inbox !== undefined) {
-        TOTAL_INBOXES = currentPlan.max_inbox; // 0 means unlimited
+    if (orderInfo && orderInfo.total_inboxes !== undefined) {
+        TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
     }
     
     const submitButton = $('button[type="submit"]');
@@ -1084,31 +1084,20 @@ function updatePriceDisplay(totalInboxes) {
             <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
         `;
     } else if (currentPlan && TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-        // Plan limit exceeded (only show if plan has a limit, i.e., max_inbox > 0)
-        const minInboxes = currentPlan.min_inbox || 1;
-        const maxInboxes = TOTAL_INBOXES;
+        // Order limit exceeded (only show if order has a limit, i.e., total_inboxes > 0)
         priceHtml = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.
-                <br><small>Please upgrade your plan or reduce the number of domains.</small>
+                <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} inboxes.
+                <br><small>Please reduce the number of domains.</small>
             </div>
-            <h6><span class="theme-text">Original Price:</span> <small>Exceeds plan limit</small></h6>
+            <h6><span class="theme-text">Original Price:</span> <small>Exceeds order limit</small></h6>
             <h6><span class="theme-text">Discount:</span> 0%</h6>
-            <h6><span class="theme-text">Total:</span> <small>Please upgrade plan</small></h6>
+            <h6><span class="theme-text">Total:</span> <small>Please reduce domains</small></h6>
         `;
         if (submitButton.length) {
             submitButton.prop('disabled', true);
             submitButton.hide();
-        }
-        
-        // Show toastr warning for plan limit exceeded (but not during import)
-        if (!isImporting) {
-            // toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.`, 'Plan Limit Exceeded', {
-            //     timeOut: 6000,
-            //     closeButton: true,
-            //     progressBar: true
-            // });
         }
     } else if (currentPlan) {
         const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
@@ -1151,16 +1140,15 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         currentInboxes = uniqueDomains.length * inboxesPerDomain;
     }
     
-    // Get max limit - use plan limits, not orderInfo.total_inboxes
+    // Get max limit - use orderInfo.total_inboxes
     const orderInfo = @json(optional($order)->reorderInfo->first());
-    const planInfo = @json($plan ?? null);
     let maxInboxes = 0;
     
-    if (planInfo && planInfo.max_inbox !== undefined) {
-        maxInboxes = planInfo.max_inbox; // 0 means unlimited
+    if (orderInfo && orderInfo.total_inboxes !== undefined) {
+        maxInboxes = orderInfo.total_inboxes; // Use order's total inbox limit
     }
     
-    // Calculate percentage used (only if plan has limits)
+    // Calculate percentage used (only if order has limits)
     const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
     
     // Update progress bar elements
@@ -1179,8 +1167,8 @@ function updateRemainingInboxesBar(currentInboxes = null) {
     
     // Update text display
     if (maxInboxes === 0) {
-        // Unlimited plan
-        progressText.text(`${currentInboxes} inboxes used (Unlimited Plan)`);
+        // Unlimited order
+        progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
         progressBar.css('width', '0%'); // Don't show progress for unlimited
         progressNote.html('(Unlimited usage)');
         progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
@@ -1208,17 +1196,17 @@ function updateRemainingInboxesBar(currentInboxes = null) {
 }
 
 $(document).ready(function() {
-    // Show plan limit information
-    const planInfo = @json($plan ?? null);
-    if (planInfo) {
-        if (planInfo.max_inbox === 0) {
-            toastr.info('You have an unlimited plan. No inbox limits apply.', 'Unlimited Plan', {
+    // Show order limit information
+    const orderInfo = @json(optional($order)->reorderInfo->first());
+    if (orderInfo && orderInfo.total_inboxes) {
+        if (orderInfo.total_inboxes === 0) {
+            toastr.info('This order has unlimited inboxes. No inbox limits apply.', 'Unlimited Order', {
                 timeOut: 4000,
                 closeButton: true,
                 progressBar: true
             });
         } else {
-            toastr.info(`Your plan allows up to ${planInfo.max_inbox} inboxes.`, 'Plan Limit', {
+            toastr.info(`This order allows up to ${orderInfo.total_inboxes} inboxes.`, 'Order Limit', {
                 timeOut: 4000,
                 closeButton: true,
                 progressBar: true
@@ -1564,40 +1552,24 @@ $(document).ready(function() {
         setTimeout(() => {
             isImporting = false;
             
-            // Check if imported data exceeds plan limits and show appropriate notification
+            // Check if imported data exceeds order limits and show appropriate notification
             const finalDomains = $('#domains').val();
             const finalInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-            const planInfo = @json($plan ?? null);
+            const orderInfo = @json(optional($order)->reorderInfo->first());
             
-            if (finalDomains && planInfo) {
+            if (finalDomains && orderInfo) {
                 const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
                 const totalInboxes = domainsArray.length * finalInboxesPerDomain;
                 
-                // Clear any existing domain errors if within limits
-                const minInboxes = planInfo.min_inbox || 0;
-                const maxInboxes = planInfo.max_inbox || 0;
-                
-                if (maxInboxes > 0 && totalInboxes > maxInboxes) {
-                    // Show domains-error div for exceeding maximum
+                // Check if imported data exceeds order limits
+                if (orderInfo.total_inboxes > 0 && totalInboxes > orderInfo.total_inboxes) {
+                    // Show domains-error div for exceeding order limit
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.
-                        <br><small>Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
+                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${orderInfo.total_inboxes} inboxes.
+                        <br><small>Order Limit: ${orderInfo.total_inboxes} inboxes</small>
                     `);
-                    toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.`, 'Import Complete - Plan Limit Exceeded', {
-                        timeOut: 8000,
-                        closeButton: true,
-                        progressBar: true
-                    });
-                } else if (minInboxes > 0 && totalInboxes < minInboxes) {
-                    // Show domains-error div for below minimum
-                    $('#domains').addClass('is-invalid');
-                    $('#domains-error').html(`
-                        <strong>You're below the minimum plan limit.</strong> 
-                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
-                    `);
-                    toastr.warning(`Order imported but below plan minimum (${totalInboxes} vs ${minInboxes} required).`, 'Import Complete - Below Plan Minimum', {
+                    toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${orderInfo.total_inboxes} inboxes.`, 'Import Complete - Order Limit Exceeded', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -1609,7 +1581,7 @@ $(document).ready(function() {
                     toastr.success('Order data imported successfully!');
                 }
             } else {
-                // Clear domain errors if no plan info
+                // Clear domain errors if no order info
                 $('#domains').removeClass('is-invalid');
                 $('#domains-error').text('');
                 toastr.success('Order data imported successfully!');
@@ -1666,19 +1638,18 @@ $(document).ready(function() {
         
         const totalInboxes = domains.length * inboxesPerDomain;
         
-        // Get current order's total inboxes limit from reorder_info or plan
+        // Get current order's total inboxes limit from reorder_info
         const orderInfo = @json(optional($order)->reorderInfo->first());
-        const planInfo = @json($plan ?? null);
         
-        // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+        // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
         let TOTAL_INBOXES = 0;
-        if (planInfo && planInfo.max_inbox !== undefined) {
-            TOTAL_INBOXES = planInfo.max_inbox; // 0 means unlimited
+        if (orderInfo && orderInfo.total_inboxes !== undefined) {
+            TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
         }
         
-        // Only enforce limits if plan has a limit (max_inbox > 0)
+        // Only enforce limits if order has a limit (total_inboxes > 0)
         if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-            // Automatically trim domains to fit within plan limit
+            // Automatically trim domains to fit within order limit
             const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
             const trimmedDomains = domains.slice(0, maxDomainsAllowed);
             const removedCount = domains.length - maxDomainsAllowed;
@@ -1717,7 +1688,7 @@ $(document).ready(function() {
             // Show notification about the automatic trimming
             Swal.fire({
                 title: 'Domains Automatically Trimmed',
-                html: `<strong>${removedCount}</strong> domains were automatically removed because your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
+                html: `<strong>${removedCount}</strong> domains were automatically removed because your order limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#3085d6'
@@ -1779,35 +1750,6 @@ $(document).ready(function() {
                 calculateTotalInboxes();
                 return;
             }
-            
-            // Check plan limits during input validation (without popups)
-            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-            const totalInboxes = domains.length * inboxesPerDomain;
-            const planInfo = @json($plan ?? null);
-            
-            if (planInfo) {
-                const minInboxes = planInfo.min_inbox || 0;
-                const maxInboxes = planInfo.max_inbox || 0;
-                
-                if (maxInboxes > 0 && totalInboxes > maxInboxes) {
-                    domainsField.addClass('is-invalid');
-                    $('#domains-error').html(`
-                        <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes || 1} to ${maxInboxes} inboxes.
-                        <br><small>Plan Range: ${minInboxes || 1} - ${maxInboxes} inboxes</small>
-                    `);
-                    calculateTotalInboxes();
-                    return;
-                } else if (minInboxes > 0 && totalInboxes < minInboxes) {
-                    domainsField.addClass('is-invalid');
-                    $('#domains-error').html(`
-                        <strong>You're below the minimum plan limit.</strong> 
-                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
-                        <br><small>Current: ${totalInboxes} | Plan Range: ${minInboxes} - ${maxInboxes || 'Unlimited'} inboxes</small>
-                    `);
-                    calculateTotalInboxes();
-                    return;
-                }
-            }
         }
         
         // Update total inboxes calculation
@@ -1862,28 +1804,25 @@ $(document).ready(function() {
                 return;
             }
             
-            // Auto-trim domains if they exceed plan limit
+            // Auto-trim domains if they exceed order limit
             const totalInboxes = domains.length * inboxesPerDomain;
             
-            // Get current order's total inboxes limit from reorder_info or plan
+            // Get current order's total inboxes limit from reorder_info
             const orderInfo = @json(optional($order)->reorderInfo->first());
-            const planInfo = @json($plan ?? null);
             
-            // Calculate TOTAL_INBOXES based on plan limits, not orderInfo.total_inboxes
+            // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
             let TOTAL_INBOXES = 0;
-            if (planInfo && planInfo.max_inbox !== undefined) {
-                TOTAL_INBOXES = planInfo.max_inbox; // 0 means unlimited
+            if (orderInfo && orderInfo.total_inboxes !== undefined) {
+                TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
             }
             
-            // Only enforce limits if plan has a limit (max_inbox > 0)
+            // Only enforce limits if order has a limit (total_inboxes > 0)
             if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-                // Always show plan range in domains-error div when limit exceeded
-                const minInboxes = planInfo.min_inbox || 1;
-                const maxInboxes = planInfo.max_inbox || TOTAL_INBOXES;
+                // Always show order limit in domains-error div when limit exceeded
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${minInboxes} to ${maxInboxes} inboxes.
-                    <br><small>Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
+                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} inboxes.
+                    <br><small>Order Limit: ${TOTAL_INBOXES} inboxes</small>
                 `);
                 
                 // During import, just return early
@@ -1898,9 +1837,9 @@ $(document).ready(function() {
                     
                     // Show warning popup without auto-trimming
                     Swal.fire({
-                        title: 'Plan Limit Exceeded!',
-                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but your plan limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
-                               You need to remove <strong>${excessDomains}</strong> domains or upgrade your plan.<br><br>
+                        title: 'Order Limit Exceeded!',
+                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
+                               You need to remove <strong>${excessDomains}</strong> domains.<br><br>
                                <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
                         icon: 'warning',
                         confirmButtonText: 'I Understand',
@@ -1934,51 +1873,20 @@ $(document).ready(function() {
                                 }
                             }, 100);
                             
-                            toastr.success(`${excessDomains} domains were removed to fit your plan limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} inboxes).`, 'Domains Trimmed');
+                            toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} inboxes).`, 'Domains Trimmed');
                         }
                         // Reset flag after popup is closed
                         limitExceededShown = false;
                     });
                 }
-                
-                // Show toastr warning as well (but less frequently and not during import)
-                if (!limitExceededShown && !isImporting) {
-                    // toastr.warning(`Plan Limit Exceeded — You currently have ${totalInboxes} inboxes, but your plan supports only ${planInfo.min_inbox || 1} to ${TOTAL_INBOXES} inboxes.`, 'Plan Limit Exceeded', {
-                    //     timeOut: 6000,
-                    //     closeButton: true,
-                    //     progressBar: true
-                    // });
-                }
             } else {
-                // Reset flag when within max limits
+                // Reset flag when within order limits
                 limitExceededShown = false;
                 
-                // Check if below minimum plan limit (always check, not just during import)
-                if (planInfo && planInfo.min_inbox > 0 && totalInboxes < planInfo.min_inbox) {
-                    const minInboxes = planInfo.min_inbox;
-                    const maxInboxes = planInfo.max_inbox || 'Unlimited';
-                    $('#domains').addClass('is-invalid');
-                    $('#domains-error').html(`
-                        <strong>You're below the minimum plan limit.</strong> 
-                        Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.
-                        <br><small>Plan Range: ${minInboxes} - ${maxInboxes} inboxes</small>
-                    `);
-                    
-
-                    // Show toastr warning if not during import
-                    if (!isImporting) {
-                        // toastr.warning(`You're below the minimum plan limit. Your current count is ${totalInboxes} inboxes, but your plan requires at least ${minInboxes}.`, 'Below Plan Minimum', {
-                        //     timeOut: 6000,
-                        //     closeButton: true,
-                        //     progressBar: true
-                        // });
-                    }
-                } else {
-                    // Clear domain errors if within valid range and no other errors
-                    if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid')) {
-                        $('#domains').removeClass('is-invalid');
-                        $('#domains-error').text('');
-                    }
+                // Clear domain errors if within valid range and no other errors
+                if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid')) {
+                    $('#domains').removeClass('is-invalid');
+                    $('#domains-error').text('');
                 }
             }
         }
@@ -2200,35 +2108,27 @@ $(document).ready(function() {
     // Initial validation and calculation
     validateAndTrimDomains();
     
-    // Debug function to test plan limit display (can be called from browser console)
-    window.testPlanLimitDisplay = function(totalInboxes) {
-        const planInfo = @json($plan ?? null);
-        if (planInfo) {
-            console.log('Plan Info:', planInfo);
+    // Debug function to test order limit display (can be called from browser console)
+    window.testOrderLimitDisplay = function(totalInboxes) {
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        if (orderInfo) {
+            console.log('Order Info:', orderInfo);
             console.log('Testing with totalInboxes:', totalInboxes);
             
-            if (planInfo.max_inbox > 0 && totalInboxes > planInfo.max_inbox) {
+            if (orderInfo.total_inboxes > 0 && totalInboxes > orderInfo.total_inboxes) {
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Plan Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but your plan supports only ${planInfo.min_inbox || 1} to ${planInfo.max_inbox} inboxes.
-                    <br><small>Plan Range: ${planInfo.min_inbox || 1} - ${planInfo.max_inbox} inboxes</small>
+                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${orderInfo.total_inboxes} inboxes.
+                    <br><small>Order Limit: ${orderInfo.total_inboxes} inboxes</small>
                 `);
-                console.log('Plan limit exceeded error displayed');
-            } else if (planInfo.min_inbox > 0 && totalInboxes < planInfo.min_inbox) {
-                $('#domains').addClass('is-invalid');
-                $('#domains-error').html(`
-                    <strong>You're below the minimum plan limit.</strong> 
-                    Your current count is ${totalInboxes} inboxes, but your plan requires at least ${planInfo.min_inbox}.
-                    <br><small>Current: ${totalInboxes} | Plan Range: ${planInfo.min_inbox} - ${planInfo.max_inbox || 'Unlimited'} inboxes</small>
-                `);
-                console.log('Below minimum error displayed');
+                console.log('Order limit exceeded error displayed');
             } else {
                 $('#domains').removeClass('is-invalid');
                 $('#domains-error').text('');
                 console.log('Within valid range - errors cleared');
             }
         } else {
-            console.log('No plan info available');
+            console.log('No order info available');
         }
     };
     
