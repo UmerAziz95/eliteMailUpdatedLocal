@@ -407,6 +407,50 @@ pointer-events: none
 }
 
     </style>
+
+
+<style>
+    .flip-card {
+      position: relative;
+      width: 15px;
+      height: 15px;
+      perspective: 1000px;
+      font-family: "Space Grotesk";
+    }
+    
+    .flip-inner {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease-in-out;
+    }
+    
+    .flip-front,
+    .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+      border-radius: 2px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* border: 1px solid #aaa; */
+    }
+    
+    .flip-front {
+      z-index: 2;
+    }
+    
+    .flip-back {
+      transform: rotateX(180deg);
+    }
+</style>
 @endpush
 
 @section('content')
@@ -539,23 +583,70 @@ pointer-events: none
             </div>
         </div>  
 
+        <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+            @for ($i = 0; $i < 10; $i++)
+            <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid orange">
+                <div style="position: relative; z-index: 9;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <h6 class="mb-0">#92</h6>
+                            <span class="text-warning small">
+                                <i class="fa-solid fa-spinner text-warning"></i>
+                                Pending
+                            </span>
+                        </div>
+    
+                        <div id="flip-timer-{{ $i }}" class="flip-timer" style="display: flex; gap: 4px;"></div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    </div>
+    
+                    <div class="d-flex flex-column gap-0">
+                        <h6 class="mb-0">
+                            Total Inboxes : <span class="text-white number ">5000</span>
+                        </h6>
+                        <small>Splits : <span class="text-white number">03</span></small>
+                    </div>
+    
+                    <div class="my-4">
+                        <div class="content-line d-flex align-items-center justify-content-between">
+                            <div class="d-flex flex-column">
+                                <small>Inboxes/Domain</small>
+                                <small class="small">100</small>
+                            </div>
+                            <div class="d-flex flex-column align-items-end">
+                                <small>Total Domains</small>
+                                <small class="small">5000</small>
+                            </div>
+                        </div>
+        
+                        <div class="d-flex align-items-center mt-1">
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                            <span style="height: 1px; width: 100%; background-color: orange;"></span>
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                        </div>
+                    </div>
+    
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-1">
+                            <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="">
+                            <div class="d-flex flex-column gap-0">
+                                <h6 class="mb-0">Hamza Ashfaq</h6>
+                                <small>7/3/2025</small>
+                            </div>
+                        </div>
+    
+                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
+                            onclick="viewOrderSplits(${order.order_id})" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#order-splits-view"
+                        >
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endfor
+        </div>
 
         <!-- Grid Cards (Dynamic) -->
         <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
@@ -1976,4 +2067,100 @@ pointer-events: none
             setTimeout(updateAllTimers, 500);
         });
     </script>
+
+
+
+<script>
+    function createFlipCard(initial) {
+      const card = document.createElement('div');
+      card.className = 'flip-card';
+      card.innerHTML = `
+        <div class="flip-inner">
+          <div class="flip-front">${initial}</div>
+          <div class="flip-back">${initial}</div>
+        </div>
+      `;
+      return card;
+    }
+  
+    function updateFlipCard(card, newVal) {
+      const inner = card.querySelector('.flip-inner');
+      const front = card.querySelector('.flip-front');
+      const back = card.querySelector('.flip-back');
+  
+      if (front.textContent === newVal) return;
+  
+      back.textContent = newVal;
+      inner.style.transform = 'rotateX(180deg)';
+  
+      setTimeout(() => {
+        front.textContent = newVal;
+        inner.style.transition = 'none';
+        inner.style.transform = 'rotateX(0deg)';
+        setTimeout(() => {
+          inner.style.transition = 'transform 0.6s ease-in-out';
+        }, 20);
+      }, 600);
+    }
+  
+    function startTimer(containerId, durationSeconds) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+  
+      const digitElements = [];
+  
+      const formatTime = (s) => {
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const sec = (s % 60).toString().padStart(2, '0');
+        return h + m + sec;
+      };
+  
+      const initial = formatTime(durationSeconds);
+      for (let i = 0; i < initial.length; i++) {
+        const card = createFlipCard(initial[i]);
+        container.appendChild(card);
+        digitElements.push(card);
+  
+        if (i === 1 || i === 3) {
+          const colon = document.createElement('div');
+          colon.textContent = ':';
+          colon.style.cssText = 'font-size: 20px; line-height: 10px; color: white;';
+          container.appendChild(colon);
+        }
+      }
+  
+      let current = durationSeconds;
+  
+      function update() {
+        if (current < 0) return clearInterval(timer);
+  
+        if (current <= 3600) {
+          container.classList.add('time-danger');
+        } else {
+          container.classList.remove('time-danger');
+        }
+  
+        const timeStr = formatTime(current);
+        for (let i = 0; i < 6; i++) {
+          updateFlipCard(digitElements[i], timeStr[i]);
+        }
+        current--;
+      }
+  
+      update();
+      const timer = setInterval(update, 1000);
+    }
+  
+    // Init all timers after DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Example: run 10 timers with different or same durations
+      for (let i = 0; i < 10; i++) {
+        const timerId = `flip-timer-${i}`;
+        const duration = 1 * 60 * 60; // or set different duration if needed
+        startTimer(timerId, duration);
+      }
+    });
+  </script>
+    
 @endpush

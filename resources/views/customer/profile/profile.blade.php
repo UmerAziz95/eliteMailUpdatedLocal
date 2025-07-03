@@ -174,28 +174,28 @@
                         <ul class="mb-0">
                             <li class="d-flex align-items-center mb-4"><i class="ti ti-user"></i><span
                                     class="fw-semibold mx-2">Full Name:</span> <span
-                                    class="opacity-50">{{ Auth::user()->name }}</span></li>
+                                    class="opacity-50 text-capitalize">{{ Auth::user()->name }}</span></li>
                             <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-check"></i>
                                 <span class="fw-semibold mx-2">Status:</span>
-                                <span class="opacity-50">{{ Auth::user()->status == '1' ? 'Active' : 'In-Active' }}</span>
+                                <span class="opacity-50 text-capitalize">{{ Auth::user()->status == '1' ? 'Active' : 'In-Active' }}</span>
                             </li>
                             <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-crown"></i>
                                 <span class="fw-semibold mx-2">Role:</span>
-                                <span class="opacity-50">{{ Auth::user()->role->name }}</span>
+                                <span class="opacity-50 text-capitalize">{{ Auth::user()->role->name }}</span>
                             </li>
 
                             <!-- <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-phone-call"></i>
                                 <span class="fw-semibold mx-2">Contact:</span>
-                                <span class="opacity-50">{{ Auth::user()->phone ?? 'N/A' }}</span>
+                                <span class="opacity-50 text-capitalize">{{ Auth::user()->phone ?? 'N/A' }}</span>
                             </li> -->
 
                             <li class="d-flex align-items-center">
                                 <i class="ti ti-mail"></i>
                                 <span class="fw-semibold mx-2">Email:</span>
-                                <span class="opacity-50">{{ Auth::user()->email }}</span>
+                                <span class="opacity-50 text-capitalize">{{ Auth::user()->email }}</span>
                             </li>
                         </ul>
 

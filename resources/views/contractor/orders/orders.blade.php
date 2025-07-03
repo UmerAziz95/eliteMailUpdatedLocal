@@ -53,6 +53,10 @@
         padding: 4rem 2rem;
     }
 
+    /* span {
+        font-size: 13px !important
+    } */
+
     /* Fix offcanvas backdrop issues */
     .offcanvas-backdrop {
         transition: opacity 0.15s linear !important;
@@ -369,7 +373,7 @@
     z-index: 2;
     }
 
-    .anim_card .flip_details::after {
+    /* .anim_card .flip_details::after {
     content: "";
     position: absolute;
     top: 0;
@@ -379,7 +383,7 @@
     background: rgba(255, 255, 255, 0.602);
     border-radius: 0 5px 5px 0;
     transition: width 0.3s ease;
-    }
+    } */
 
     .anim_card:hover .flip_details {
     transform: perspective(2000px) rotateY(-90deg);
@@ -403,6 +407,52 @@
     transform: translateY(-50%);
     }
     </style>
+
+<style>
+    .flip-card {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      perspective: 1000px;
+      font-family: "Space Grotesk";
+    }
+    
+    .flip-inner {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease-in-out;
+    }
+    
+    .flip-front,
+    .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+      border-radius: 4px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #aaa;
+    }
+    
+    .flip-front {
+      z-index: 2;
+    }
+    
+    .flip-back {
+      transform: rotateX(180deg);
+    }
+</style>
+    
+    
+    
     @endpush
 
     @section('content')
@@ -421,6 +471,7 @@
                     <small>Click here to open advance search for orders</small>
                 </div>
             </div>
+
             <div class="row collapse" id="filter_1">
                 <form id="filterForm">
                     <div class="row">
@@ -455,7 +506,10 @@
                     </div>
                 </form>
             </div>
+
         </div>
+
+
         <!-- Grid Cards (Dynamic) -->
         <div id="ordersContainer"
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
@@ -468,6 +522,9 @@
                 <p class="mt-2 mb-0">Loading orders...</p>
             </div>
         </div>
+
+        {{-- <div id="flip-timer" style="display: flex; gap: 10px; background: #111; padding: 20px;"></div> --}}
+
 
         <!-- Load More Button -->
         <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
@@ -484,18 +541,19 @@
             </div>
         </div>
 
+
     </section>
 
     <!-- Order Details Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
         aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header">
+        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
             <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times"></i>
+            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times fs-5"></i>
             </button>
         </div>
-        <div class="offcanvas-body">
+        <div class="offcanvas-body pt-2">
             <div id="orderSplitsContainer">
                 <!-- Dynamic content will be loaded here -->
                 <div id="splitsLoadingState" class="text-center py-5">
@@ -510,6 +568,12 @@
     @endsection
 
     @push('scripts')
+   
+        
+        
+        
+
+
     <script>
         let orders = [];
         let currentFilters = {};
@@ -1097,16 +1161,16 @@
                                         <button class="btn btn-success btn-sm px-3 py-2" 
                                                 onclick="assignOrderToMe(${orderInfo?.id})"
                                                 id="assignOrderBtn"
-                                                style="font-size: 11px;">
-                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                                                style="font-size: 13px;">
+                                            <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
                                             Assign Order to Me
                                             <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits?.length}</span>
                                         </button>
                                     `;
                                 } else {
                                     return `
-                                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
-                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                                        <span class="bg-success rounded-1 px-3 py-2 text-white" style="font-size: 13px;">
+                                            <i class="fas fa-check me-1" style="font-size: 12px;"></i>
                                             All Splits Assigned
                                         </span>
                                     `;
@@ -1115,11 +1179,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive mb-4">
-                    <table class="table table-striped table-hover">
+                <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
+                    <table class="table table-striped table-hover position-sticky top-0">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
+                                <th scope="col">Split ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
                                 <th scope="col">Split Status</th>
@@ -1132,19 +1197,22 @@
                         </thead>
                         <tbody>
                             ${splits.map((split, index) => `
-                              ${console.log('Rendering split:', split)}
-
                                 <tr>
                                     <th scope="row">${index + 1}</th>
+                                    <td>
+                                        <span class="badge bg-primary" style="font-size: 10px;">
+                                            SPL-${split.id || 'N/A'}
+                                        </span>
+                                    </td>
                                      <td>${split?.panel_id || 'N/A'}</td>
                                      <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
-                                        <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                        <span class="py-1 px-2 rounded-1 text-white text-capitalize ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
                                     
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
                                     <td>
-                                        <span class="badge bg-success" style="font-size: 10px;">
+                                        <span class="py-1 px-2 rounded-1 border border-success success" style="font-size: 10px;">
                                             ${split.domains_count || 0} domain(s)
                                         </span>
                                     </td>
@@ -1152,10 +1220,10 @@
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
+                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
                                         </div>
@@ -1167,7 +1235,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <div class="card p-3 mb-3">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -1177,14 +1245,17 @@
                             </h6>
 
                             <div class="d-flex align-items-center justify-content-between">
-                                <span>${(() => {
+                                <span style="font-size: 12px">${(() => {
                                     const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
                                     const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
                                     const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
                                     
                                     let splitDetails = '';
                                     splits.forEach((split, index) => {
-                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                        splitDetails += `
+                                            <br>
+                                            <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                                Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                     });
                                     
                                     return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
@@ -1193,21 +1264,21 @@
                              
                             <hr>
                             <div class="d-flex flex-column">
-                                <span class="opacity-50">Prefix Variants</span>
-                                ${renderPrefixVariants(reorderInfo)}
+                                <span class="opacity-50 small">Prefix Variants</span>
+                                <small>${renderPrefixVariants(reorderInfo)}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50">Profile Picture URL</span>
-                                <span>${reorderInfo?.profile_picture_link || 'N/A'}</span>
+                                <span class="opacity-50 small">Profile Picture URL</span>
+                                <small>${reorderInfo?.profile_picture_link || 'N/A'}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50">Email Persona Password</span>
-                                <span>${reorderInfo?.email_persona_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Email Persona Password</span>
+                                <small>${reorderInfo?.email_persona_password || 'N/A'}</small>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-7">
                         <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -1217,50 +1288,53 @@
                             </h6>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Hosting Platform</span>
-                                <span>${reorderInfo?.hosting_platform || 'N/A'}</span>
+                                <span class="opacity-50 small">Hosting Platform</span>
+                                <small>${reorderInfo?.hosting_platform || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Platform Login</span>
-                                <span>${reorderInfo?.platform_login || 'N/A'}</span>
+                                <span class="opacity-50 small">Platform Login</span>
+                                <small>${reorderInfo?.platform_login || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Platform Password</span>
-                                <span>${reorderInfo?.platform_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Platform Password</span>
+                                <small>${reorderInfo?.platform_password || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                <span>${reorderInfo?.forwarding_url || 'N/A'}</span>
+                                <span class="opacity-50 small">Domain Forwarding Destination URL</span>
+                                <small>${reorderInfo?.forwarding_url || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending Platform</span>
-                                <span>${reorderInfo?.sending_platform || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending Platform</span>
+                                <small>${reorderInfo?.sending_platform || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending platform Sequencer - Login</span>
-                                <span>${reorderInfo?.sequencer_login || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending platform Sequencer - Login</span>
+                                <small>${reorderInfo?.sequencer_login || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending platform Sequencer - Password</span>
-                                <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending platform Sequencer - Password</span>
+                                <small>${reorderInfo?.sequencer_password || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column">
-                                <span class="opacity-50 mb-3">
-                                    <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
-                                </span>
+                                <h6 class="d-flex align-items-center gap-1">
+                                    <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                        <i class="fa-solid fa-globe"></i>
+                                    </div>
+                                   <span>All Domains & Splits</span>
+                                </h6>
                                 
                                 <!-- Order Splits Domains -->
                                 ${splits.map((split, index) => `
-                                    <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
+                                    <div class="domain-split-container mb-3">
                                         <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
-                                             style="background: var(--second-primary); cursor: pointer;"
+                                             style="background: var(--filter-color); cursor: pointer; border: 1px solid var(--second-primary)"
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
@@ -1572,11 +1646,12 @@ function parseUTCDateTime(dateStr) {
                         display: inline-block;
                         background-color: var(--filter-color);
                         color: white;
+                        min-width: 7rem;
                         padding: 4px 8px;
                         margin: 2px 2px;
                         border-radius: 12px;
-                        font-size: 11px;
-                        font-weight: 500;
+                        font-size: 10px;
+                        font-weight: 200;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                         transition: all 0.3s ease;
                         cursor: pointer;
@@ -1936,5 +2011,88 @@ function parseUTCDateTime(dateStr) {
             // Update timers every second for real-time countdown
             setInterval(updateAllTimers, 1000); // Update every 1 second
         });
+    </script>
+
+
+<script>
+    function createFlipCard(initial) {
+      const card = document.createElement('div');
+      card.className = 'flip-card';
+      card.innerHTML = `
+        <div class="flip-inner">
+          <div class="flip-front">${initial}</div>
+          <div class="flip-back">${initial}</div>
+        </div>
+      `;
+      return card;
+    }
+    
+    function updateFlipCard(card, newVal) {
+      const inner = card.querySelector('.flip-inner');
+      const front = card.querySelector('.flip-front');
+      const back = card.querySelector('.flip-back');
+    
+      if (front.textContent === newVal) return;
+    
+      // Set up new value before flip
+      back.textContent = newVal;
+    
+      // Flip animation
+      inner.style.transform = 'rotateX(180deg)';
+    
+      setTimeout(() => {
+        // Reset values after flip
+        front.textContent = newVal;
+        inner.style.transition = 'none';
+        inner.style.transform = 'rotateX(0deg)';
+        setTimeout(() => {
+          inner.style.transition = 'transform 0.6s ease-in-out';
+        }, 20);
+      }, 600);
+    }
+    
+    function startTimer(durationSeconds) {
+      const container = document.getElementById('flip-timer');
+      const digitElements = [];
+    
+      const formatTime = (s) => {
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const sec = (s % 60).toString().padStart(2, '0');
+        return h + m + sec;
+      };
+    
+      // Create 6 flip cards (HHMMSS)
+      const initial = formatTime(durationSeconds);
+      for (let i = 0; i < initial.length; i++) {
+        const card = createFlipCard(initial[i]);
+        container.appendChild(card);
+        digitElements.push(card);
+    
+        // Add colons
+        if (i === 1 || i === 3) {
+          const colon = document.createElement('div');
+          colon.textContent = ':';
+          colon.style.cssText = 'font-size: 24px; line-height: 20px; color: white;';
+          container.appendChild(colon);
+        }
+      }
+    
+      let current = durationSeconds;
+      function update() {
+        if (current < 0) return clearInterval(timer);
+        const timeStr = formatTime(current);
+        for (let i = 0; i < 6; i++) {
+          updateFlipCard(digitElements[i], timeStr[i]);
+        }
+        current--;
+      }
+    
+      update();
+      const timer = setInterval(update, 1000);
+    }
+    
+    // Example: 24 hours
+    startTimer(24 * 60 * 60);
     </script>
     @endpush

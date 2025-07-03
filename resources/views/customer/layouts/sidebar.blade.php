@@ -25,7 +25,7 @@
             </li> --}}
 
             <!-- Dashboard -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Overview</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Overview</p> --}}
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.dashboard') ? 'active' : '' }}"
                     href="{{ route('customer.dashboard') }}">
@@ -49,7 +49,7 @@
             </li> -->
 
             <!-- pricing -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p> --}}
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.orders') ? 'active' : '' }}"
                     href="{{ route('customer.orders') }}">
@@ -83,7 +83,7 @@
             </li>
 
             <!-- Support -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">organization</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">organization</p> --}}
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
                     href="{{ route('customer.support') }}">
@@ -94,26 +94,26 @@
                 </a>
             </li>
         </ul>
-
-        <div style="background-color: var(--second-primary); border: 2px solid #7669ff;"
-            class="py-4 px-3 rounded-3 my-3">
-            <div class="d-flex flex-column mb-3">
-                <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
-                <small class="text-white opacity-75">Click here to buy more inboxes</small>
-            </div>
-            <a style="background-color: var(--second-primary); font-size: 12px;"
-                class="mt-1 shadow border-0 rounded-2 py-2 px-4 text-white animate-gradient"
-                href="{{ route('customer.pricing') }}">Buy Now</a>
+    </div>
+    
+    <div style="background-color: var(--second-primary); border: 2px solid #7669ff;"
+        class="py-4 px-3 rounded-3 my-3">
+        <div class="d-flex flex-column mb-3">
+            <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
+            <small class="text-white opacity-75">Click here to buy more inboxes</small>
         </div>
+        <a style="background-color: var(--second-primary); font-size: 12px;"
+            class="mt-1 shadow border-0 rounded-2 py-2 px-4 text-white animate-gradient"
+            href="{{ route('customer.pricing') }}">Buy Now</a>
     </div>
 
     <div>
-        <a href="/customer/settings" class="nav-link fs-6 w-100 d-flex align-items-center gap-2">
+        <a href="/customer/settings" class="nav-link fs-6 py-2 mb-0 px-3 d-flex align-items-center gap-2">
             <i class="fa-solid fa-gear fs-6"></i>
             Settings
         </a>
 
-        <a href="{{ route('logout') }}" class=" w-100 d-flex align-items-center gap-2 text-danger mb-0">
+        <a href="{{ route('logout') }}" class=" py-2 px-3 nav-link mt-0 d-flex align-items-center gap-2 text-danger mb-0">
             <i class="fa-solid fa-right-from-bracket fs-6"></i>
             Logout
         </a>
