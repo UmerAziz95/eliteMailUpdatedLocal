@@ -11,7 +11,7 @@
         </div> -->
         <ul class="nav flex-column list-unstyled mt-4">
             <!-- Dashboard -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Overview</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Overview</p> --}}
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.dashboard') ? 'active' : '' }}"
                     href="{{ route('contractor.dashboard') }}">
@@ -24,7 +24,7 @@
     
     
             <!-- Orders -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Product</p> --}}
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.orders') ? 'active' : '' }}"
                     href="{{ route('contractor.orders') }}">
@@ -69,7 +69,7 @@
             </li>   
     
             <!-- Support -->
-            <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p>
+            {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Product</p> --}}
     
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.support') ? 'active' : '' }}"
@@ -125,17 +125,17 @@
         </ul>
     </div>
 
-    <div>
-        <a href="/contractor/settings" class="nav-link fs-6 w-100 d-flex align-items-center gap-2">
+    {{-- <div>
+        <a href="/contractor/settings" class="nav-link fs-6 mb-0 px-3 py-2 d-flex align-items-center gap-2">
             <i class="fa-solid fa-gear fs-6"></i>
             Settings
         </a>
 
-        <a href="{{ route('logout') }}" class=" w-100 d-flex align-items-center gap-2 text-danger mb-0">
+        <a href="{{ route('logout') }}" class="px-3 py-2 mt-0 nav-link d-flex align-items-center gap-2 text-danger mb-0">
             <i class="fa-solid fa-right-from-bracket fs-6"></i>
             Logout
         </a>
-    </div>
+    </div> --}}
 </aside>
 
 <script>
