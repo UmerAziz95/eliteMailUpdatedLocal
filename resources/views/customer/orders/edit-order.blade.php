@@ -204,23 +204,7 @@
                 <!-- Dynamic platform fields will be inserted here -->
             </div>
 
-            <div class="domains mb-3">
-                <label for="domains">
-                    Domains *
-                    <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
-                </label>
-                <textarea id="domains" name="domains" class="form-control" rows="8"
-                    required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
-                <div class="invalid-feedback" id="domains-error"></div>
-                <small class="note">
-                    Please enter each domain on a new line and ensure you double-check the number of domains you submit
-                    <br>
-                    <span class="text-info" style="display: none;">
-                        <i class="fa-solid fa-info-circle me-1"></i>
-                        Total domains: <strong id="domain-count-text">0</strong>
-                    </span>
-                </small>
-            </div>
+            
 
             <div class="row g-3 mt-4">
                 <h5 class="mb-2">Sending Platforms/ Sequencer</h5>
@@ -266,6 +250,23 @@
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
+                <div class="domains mb-3">
+                <label for="domains">
+                    Domains *
+                    <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
+                </label>
+                <textarea id="domains" name="domains" class="form-control" rows="8"
+                    required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
+                <div class="invalid-feedback" id="domains-error"></div>
+                <small class="note">
+                    Please enter each domain on a new line and ensure you double-check the number of domains you submit
+                    <br>
+                    <span class="text-info" style="display: none;">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Total domains: <strong id="domain-count-text">0</strong>
+                    </span>
+                </small>
+            </div>
                 <!-- Remaining Inboxes Progress Bar -->
                 <div class="col-md-12 remaining">
                     <div class="mb-3">
