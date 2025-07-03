@@ -2682,11 +2682,14 @@ pointer-events: none
                     </div>
                 </div>
             </div>
-            <div class="table-responsive mb-4">
+            <div class="table-responsive mb-4"> 
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
                             <th scope="col">#</th>
+                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel ID</th>
+                            <th scope="col">Panel Title</th>
                             <th scope="col">Split Status</th>
                             <th scope="col">Inboxes/Domain</th>
                             <th scope="col">Total Domains</th>
@@ -2700,6 +2703,21 @@ pointer-events: none
                        
                             <tr>
                                 <th scope="row">${index + 1}</th>
+                                <td>
+                                    <span class="badge bg-primary" style="font-size: 10px;">
+                                        SPL-${split.id || 'N/A'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info" style="font-size: 10px;">
+                                        PNL-${split.panel_id || 'N/A'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-truncate" style="max-width: 150px; display: inline-block;" title="${split.panel_title || 'N/A'}">
+                                        ${split.panel_title || 'N/A'}
+                                    </span>
+                                </td>
                                 <td>
                                     <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                 </td>
