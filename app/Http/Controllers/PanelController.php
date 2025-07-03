@@ -22,7 +22,7 @@ class PanelController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->ajax()) {
+        if ($request->ajax()) {     
             try {
                 $data = Panel::with('users')->latest()->get();
                 return DataTables::of($data)

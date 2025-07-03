@@ -145,7 +145,6 @@
 
             <div class="row g-3 mt-4">
                 <h5 class="mb-2">Sending Platforms/ Sequencer</h5>
-
                 <div class="col-md-12">
                     <label>Sending Platform</label>
                     <select id="sending_platform" name="sending_platform" class="form-control" required>
@@ -267,7 +266,7 @@
                     <input type="text" name="coupon_code" class="form-control" value="">
                 </div>
 
-                <!-- Price display section -->
+                <!-- Price display section --> 
                 <div class="price-display-section">
                     @if(isset($plan))
                         @php
@@ -346,7 +345,7 @@ $(document).ready(function() {
                 container.append(generateField(name, field));
             });
             
-            // Reinitialize password toggles for new fields
+            // Reinitialize password toggles for new field
             initializePasswordToggles();
         }
         

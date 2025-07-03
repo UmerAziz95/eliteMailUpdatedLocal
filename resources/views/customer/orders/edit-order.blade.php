@@ -358,7 +358,8 @@
                 <div class="col-md-6 email-picture-link">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} " required>
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} "
+                        required>
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
@@ -421,6 +422,7 @@
         </div>
     </section>
 </form>
+
 <!-- Order Import Modal -->
 <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -478,7 +480,7 @@
                     </div>
                 </div>
             </div>
-            <!-- <div class="modal-footer">
+            <!-- <div class="modal-footer"> 
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
                         <i class="fa-solid fa-times me-2"></i>
                         Cancel

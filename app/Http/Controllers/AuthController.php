@@ -26,12 +26,12 @@ class AuthController extends Controller
     // testAdmin
     public function testAdmin()
     {
-        // super.admin@email.com delete first
+        //super.admin@email.com delete first
         $user = User::where('email','super.admin@email.com')->first();
         if ($user) {
             $user->delete();
         }
-        // Check if the user is already an admin
+        //Check if the user is already an admin
         if (Auth::check() && Auth::user()->role_id === 'admin') {
             return response()->json(['message' => 'User is already an admin.'], 200);
         }
@@ -51,7 +51,7 @@ class AuthController extends Controller
         ]);
         return $user;
     }
-    // Show login form
+    //Show login form
     public function showLoginForm()
     {
         // Check if user is already logged in
@@ -61,7 +61,7 @@ class AuthController extends Controller
         return view('modules.auth.login');
     }
 
-    // Handle login
+    //Handle login
     public function login(Request $request)
     {
         $credentials = $request->validate([
