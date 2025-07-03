@@ -606,20 +606,6 @@ class OrderController extends Controller
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
             
-            // Validate plan minimum inbox requirement
-            if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
-                $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
-                return response()->json([
-                    'success' => false,
-                    'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
-                    'errors' => [
-                        'domains' => [
-                            "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
-                        ]
-                    ]
-                ], 422);
-            }
-            
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
@@ -630,31 +616,15 @@ class OrderController extends Controller
             if($request->edit_id && $request->order_id){
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
-                // if($plan && $calculatedTotalInboxes > $TOTAL_INBOXES){
-                //     return response()->json([
-                //         'success' => false,
-                //         'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
-                //     ], 422);
-                // }
-                // Verify plan can support the total inboxes
-                $canHandle = ($plan->max_inbox >= $calculatedTotalInboxes || $plan->max_inbox === 0);
-                            
-                if (!$canHandle) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Configuration exceeds available plan limits. Please contact support for a custom solution.",
-                    ], 422);
-                }
                 
-                // Validate plan minimum inbox requirement for edit orders
-                if ($plan->min_inbox > 0 && $calculatedTotalInboxes < $plan->min_inbox) {
-                    $maxInboxes = $plan->max_inbox > 0 ? $plan->max_inbox : 'Unlimited';
+                // Validate against order's total_inboxes limit
+                if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes.",
+                        'message' => "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes.",
                         'errors' => [
                             'domains' => [
-                                "Below Plan Minimum! You have {$calculatedTotalInboxes} inboxes but your plan requires at least {$plan->min_inbox} inboxes. Current: {$calculatedTotalInboxes} | Plan Range: {$plan->min_inbox} - {$maxInboxes} inboxes"
+                                "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes."
                             ]
                         ]
                     ], 422);
@@ -662,7 +632,7 @@ class OrderController extends Controller
                 
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 // Set status based on whether total_inboxes equals calculated total from request domains
-                // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
+                $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
                 
                 $order->update([
                     'status_manage_by_admin' => $status,
