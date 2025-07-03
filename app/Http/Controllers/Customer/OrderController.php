@@ -628,10 +628,13 @@ class OrderController extends Controller
                         ]
                     ], 422);
                 }
-                
+                // "currentInboxes" => "3332" "max_inboxes" => "5000"
+                $currentInboxes = $request->current_inboxes ?? 0;
+                $maxInboxes = $request->max_inboxes ?? 0;
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 // Set status based on whether total_inboxes equals calculated total from request domains
-                $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
+                // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
+                $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
                 
                 $order->update([
                     'status_manage_by_admin' => $status,
@@ -658,7 +661,7 @@ class OrderController extends Controller
                         'sending_platform' => $request->sending_platform,
                         'sequencer_login' => $request->sequencer_login,
                         'sequencer_password' => $request->sequencer_password,
-                        'total_inboxes' => $calculatedTotalInboxes,
+                        'total_inboxes' => ($maxInboxes == $currentInboxes) ? $calculatedTotalInboxes : $reorderInfo->total_inboxes,
                         // initial_total_inboxes
                         'initial_total_inboxes' => $reorderInfo->initial_total_inboxes == 0 ? $reorderInfo->total_inboxes : $reorderInfo->initial_total_inboxes, // Store initial total inboxes at reorder time
                         'inboxes_per_domain' => $request->inboxes_per_domain,

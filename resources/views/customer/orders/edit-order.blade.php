@@ -142,6 +142,9 @@
     <input type="hidden" name="order_id" value="{{ isset($order) ? $order->id : '' }}">
     <input type="hidden" name="edit_id"
         value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
+    <!-- Hidden fields for current and max inboxes -->
+    <input type="hidden" name="current_inboxes" id="current_inboxes" value="0">
+    <input type="hidden" name="max_inboxes" id="max_inboxes" value="0">
 
     <section class="py-3 overflow-hidden" data-page="edit-order">
         <div class="card p-3">
@@ -257,7 +260,6 @@
                     </select>
                     <p class="note">(How many email accounts per domain - the maximum is 3)</p>
                 </div>
-
                 <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
                     <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required
@@ -1160,6 +1162,10 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         maxInboxes = maxDomainsAllowed * inboxesPerDomain;
     }
     
+    // Update hidden form fields for server submission
+    $('#current_inboxes').val(currentInboxes);
+    $('#max_inboxes').val(maxInboxes);
+    
     // Calculate percentage used (only if order has limits)
     const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
     
@@ -1196,7 +1202,7 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         } else {
             progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
         }
-        
+         
         // Update color and note based on usage
         if (percentageUsed >= 100) {
             progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
