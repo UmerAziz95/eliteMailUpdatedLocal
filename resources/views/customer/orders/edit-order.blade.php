@@ -1061,7 +1061,13 @@ function updatePriceDisplay(totalInboxes) {
     // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
     let TOTAL_INBOXES = 0;
     if (orderInfo && orderInfo.total_inboxes !== undefined) {
-        TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
+        const rawTotalInboxes = orderInfo.total_inboxes;
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        // Calculate maximum usable inboxes based on inboxes_per_domain
+        // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+        const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+        TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
     }
     
     const submitButton = $('button[type="submit"]');
@@ -1145,7 +1151,13 @@ function updateRemainingInboxesBar(currentInboxes = null) {
     let maxInboxes = 0;
     
     if (orderInfo && orderInfo.total_inboxes !== undefined) {
-        maxInboxes = orderInfo.total_inboxes; // Use order's total inbox limit
+        const rawTotalInboxes = orderInfo.total_inboxes;
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        
+        // Calculate maximum usable inboxes based on inboxes_per_domain
+        // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+        const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+        maxInboxes = maxDomainsAllowed * inboxesPerDomain;
     }
     
     // Calculate percentage used (only if order has limits)
@@ -1173,7 +1185,17 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         progressNote.html('(Unlimited usage)');
         progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
     } else {
-        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        // Get the raw total and inboxes per domain for display
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+        const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : maxInboxes;
+        
+        // Show both usable and total if they differ
+        if (rawTotal > maxInboxes) {
+            progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used (${rawTotal} total, ${inboxesPerDomain} per domain)`);
+        } else {
+            progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+        }
         
         // Update color and note based on usage
         if (percentageUsed >= 100) {
@@ -1561,15 +1583,22 @@ $(document).ready(function() {
                 const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
                 const totalInboxes = domainsArray.length * finalInboxesPerDomain;
                 
+                // Calculate maximum usable inboxes based on inboxes_per_domain
+                let usableInboxes = 0;
+                if (orderInfo.total_inboxes > 0) {
+                    const maxDomainsAllowed = Math.floor(orderInfo.total_inboxes / finalInboxesPerDomain);
+                    usableInboxes = maxDomainsAllowed * finalInboxesPerDomain;
+                }
+                
                 // Check if imported data exceeds order limits
-                if (orderInfo.total_inboxes > 0 && totalInboxes > orderInfo.total_inboxes) {
+                if (usableInboxes > 0 && totalInboxes > usableInboxes) {
                     // Show domains-error div for exceeding order limit
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${orderInfo.total_inboxes} inboxes.
-                        <br><small>Order Limit: ${orderInfo.total_inboxes} inboxes</small>
+                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${usableInboxes} usable inboxes (${orderInfo.total_inboxes} total with ${finalInboxesPerDomain} inboxes per domain).
+                        <br><small>Usable Limit: ${usableInboxes} inboxes</small>
                     `);
-                    toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${orderInfo.total_inboxes} inboxes.`, 'Import Complete - Order Limit Exceeded', {
+                    toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${usableInboxes} usable inboxes.`, 'Import Complete - Order Limit Exceeded', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -1644,7 +1673,12 @@ $(document).ready(function() {
         // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
         let TOTAL_INBOXES = 0;
         if (orderInfo && orderInfo.total_inboxes !== undefined) {
-            TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
+            const rawTotalInboxes = orderInfo.total_inboxes;
+            
+            // Calculate maximum usable inboxes based on inboxes_per_domain
+            // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+            const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+            TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
         }
         
         // Only enforce limits if order has a limit (total_inboxes > 0)
@@ -1686,9 +1720,12 @@ $(document).ready(function() {
             }, 100);
             
             // Show notification about the automatic trimming
+            const orderInfo = @json(optional($order)->reorderInfo->first());
+            const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : TOTAL_INBOXES;
+            
             Swal.fire({
                 title: 'Domains Automatically Trimmed',
-                html: `<strong>${removedCount}</strong> domains were automatically removed because your order limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br>`,
+                html: `<strong>${removedCount}</strong> domains were automatically removed because your order limit is <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#3085d6'
@@ -1813,16 +1850,24 @@ $(document).ready(function() {
             // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
             let TOTAL_INBOXES = 0;
             if (orderInfo && orderInfo.total_inboxes !== undefined) {
-                TOTAL_INBOXES = orderInfo.total_inboxes; // Use order's total inbox limit
+                const rawTotalInboxes = orderInfo.total_inboxes;
+                
+                // Calculate maximum usable inboxes based on inboxes_per_domain
+                // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+                const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
             }
             
             // Only enforce limits if order has a limit (total_inboxes > 0)
             if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                // Get original total for display
+                const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : TOTAL_INBOXES;
+                
                 // Always show order limit in domains-error div when limit exceeded
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} inboxes.
-                    <br><small>Order Limit: ${TOTAL_INBOXES} inboxes</small>
+                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.
+                    <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
                 `);
                 
                 // During import, just return early
@@ -1838,7 +1883,7 @@ $(document).ready(function() {
                     // Show warning popup without auto-trimming
                     Swal.fire({
                         title: 'Order Limit Exceeded!',
-                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order limit is <strong>${TOTAL_INBOXES}</strong> inboxes.<br><br>
+                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
                                You need to remove <strong>${excessDomains}</strong> domains.<br><br>
                                <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
                         icon: 'warning',
@@ -1873,7 +1918,7 @@ $(document).ready(function() {
                                 }
                             }, 100);
                             
-                            toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} inboxes).`, 'Domains Trimmed');
+                            toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
                         }
                         // Reset flag after popup is closed
                         limitExceededShown = false;

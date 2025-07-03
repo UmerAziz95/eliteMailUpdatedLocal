@@ -570,7 +570,6 @@ class OrderController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
-            
             // Additional validation for prefix variants based on inboxes_per_domain
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
