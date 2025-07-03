@@ -584,6 +584,7 @@ pointer-events: none
         </div>  
 
         <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+            @for ($i = 0; $i < 10; $i++)
             <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid orange">
                 <div style="position: relative; z-index: 9;">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -595,12 +596,15 @@ pointer-events: none
                             </span>
                         </div>
     
-                        <div id="flip-timer" style="display: flex; gap: 4px; "></div>
+                        <div id="flip-timer-{{ $i }}" class="flip-timer" style="display: flex; gap: 4px;"></div>
 
                     </div>
     
-                    <div>
-                        <h6 class="mb-0">Total Inboxes: 5000</h6>
+                    <div class="d-flex flex-column gap-0">
+                        <h6 class="mb-0">
+                            Total Inboxes : <span class="text-white number ">5000</span>
+                        </h6>
+                        <small>Splits : <span class="text-white number">03</span></small>
                     </div>
     
                     <div class="my-4">
@@ -641,6 +645,7 @@ pointer-events: none
                     </div>
                 </div>
             </div>
+            @endfor
         </div>
 
         <!-- Grid Cards (Dynamic) -->
@@ -2065,85 +2070,97 @@ pointer-events: none
 
 
 
-    <script>
-        function createFlipCard(initial) {
-        const card = document.createElement('div');
-        card.className = 'flip-card';
-        card.innerHTML = `
-            <div class="flip-inner">
-            <div class="flip-front">${initial}</div>
-            <div class="flip-back">${initial}</div>
-            </div>
-        `;
-        return card;
-        }
-        
-        function updateFlipCard(card, newVal) {
-        const inner = card.querySelector('.flip-inner');
-        const front = card.querySelector('.flip-front');
-        const back = card.querySelector('.flip-back');
-        
-        if (front.textContent === newVal) return;
-        
-        // Set up new value before flip
-        back.textContent = newVal;
-        
-        // Flip animation
-        inner.style.transform = 'rotateX(180deg)';
-        
+<script>
+    function createFlipCard(initial) {
+      const card = document.createElement('div');
+      card.className = 'flip-card';
+      card.innerHTML = `
+        <div class="flip-inner">
+          <div class="flip-front">${initial}</div>
+          <div class="flip-back">${initial}</div>
+        </div>
+      `;
+      return card;
+    }
+  
+    function updateFlipCard(card, newVal) {
+      const inner = card.querySelector('.flip-inner');
+      const front = card.querySelector('.flip-front');
+      const back = card.querySelector('.flip-back');
+  
+      if (front.textContent === newVal) return;
+  
+      back.textContent = newVal;
+      inner.style.transform = 'rotateX(180deg)';
+  
+      setTimeout(() => {
+        front.textContent = newVal;
+        inner.style.transition = 'none';
+        inner.style.transform = 'rotateX(0deg)';
         setTimeout(() => {
-            // Reset values after flip
-            front.textContent = newVal;
-            inner.style.transition = 'none';
-            inner.style.transform = 'rotateX(0deg)';
-            setTimeout(() => {
-            inner.style.transition = 'transform 0.6s ease-in-out';
-            }, 20);
-        }, 600);
+          inner.style.transition = 'transform 0.6s ease-in-out';
+        }, 20);
+      }, 600);
+    }
+  
+    function startTimer(containerId, durationSeconds) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+  
+      const digitElements = [];
+  
+      const formatTime = (s) => {
+        const h = Math.floor(s / 3600).toString().padStart(2, '0');
+        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const sec = (s % 60).toString().padStart(2, '0');
+        return h + m + sec;
+      };
+  
+      const initial = formatTime(durationSeconds);
+      for (let i = 0; i < initial.length; i++) {
+        const card = createFlipCard(initial[i]);
+        container.appendChild(card);
+        digitElements.push(card);
+  
+        if (i === 1 || i === 3) {
+          const colon = document.createElement('div');
+          colon.textContent = ':';
+          colon.style.cssText = 'font-size: 20px; line-height: 10px; color: white;';
+          container.appendChild(colon);
         }
-        
-        function startTimer(durationSeconds) {
-        const container = document.getElementById('flip-timer');
-        const digitElements = [];
-        
-        const formatTime = (s) => {
-            const h = Math.floor(s / 3600).toString().padStart(2, '0');
-            const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
-            const sec = (s % 60).toString().padStart(2, '0');
-            return h + m + sec;
-        };
-        
-        // Create 6 flip cards (HHMMSS)
-        const initial = formatTime(durationSeconds);
-        for (let i = 0; i < initial.length; i++) {
-            const card = createFlipCard(initial[i]);
-            container.appendChild(card);
-            digitElements.push(card);
-        
-            // Add colons
-            if (i === 1 || i === 3) {
-            const colon = document.createElement('div');
-            colon.textContent = ':';
-            colon.style.cssText = 'font-size: 20px; line-height: 10px; color: white;';
-            container.appendChild(colon);
-            }
+      }
+  
+      let current = durationSeconds;
+  
+      function update() {
+        if (current < 0) return clearInterval(timer);
+  
+        if (current <= 3600) {
+          container.classList.add('time-danger');
+        } else {
+          container.classList.remove('time-danger');
         }
-        
-        let current = durationSeconds;
-        function update() {
-            if (current < 0) return clearInterval(timer);
-            const timeStr = formatTime(current);
-            for (let i = 0; i < 6; i++) {
-            updateFlipCard(digitElements[i], timeStr[i]);
-            }
-            current--;
+  
+        const timeStr = formatTime(current);
+        for (let i = 0; i < 6; i++) {
+          updateFlipCard(digitElements[i], timeStr[i]);
         }
-        
-        update();
-        const timer = setInterval(update, 1000);
-        }
-        
-        // Example: 24 hours
-        startTimer(24 * 60 * 60);
-    </script>
+        current--;
+      }
+  
+      update();
+      const timer = setInterval(update, 1000);
+    }
+  
+    // Init all timers after DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Example: run 10 timers with different or same durations
+      for (let i = 0; i < 10; i++) {
+        const timerId = `flip-timer-${i}`;
+        const duration = 1 * 60 * 60; // or set different duration if needed
+        startTimer(timerId, duration);
+      }
+    });
+  </script>
+    
 @endpush
