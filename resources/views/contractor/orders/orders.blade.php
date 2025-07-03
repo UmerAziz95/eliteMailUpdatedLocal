@@ -1184,6 +1184,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
+                                <th scope="col">Split ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
                                 <th scope="col">Split Status</th>
@@ -1198,6 +1199,11 @@
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
+                                    <td>
+                                        <span class="badge bg-primary" style="font-size: 10px;">
+                                            SPL-${split.id || 'N/A'}
+                                        </span>
+                                    </td>
                                      <td>${split?.panel_id || 'N/A'}</td>
                                      <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
