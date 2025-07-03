@@ -425,6 +425,7 @@ pointer-events: none
       transform-style: preserve-3d;
       transition: transform 0.6s ease-in-out;
     }
+    
     .flip-front,
     .flip-back {
       position: absolute;
