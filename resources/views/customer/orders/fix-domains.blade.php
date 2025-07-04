@@ -14,9 +14,8 @@
             </div>
         </div>
         <div class="mt-3">
-            <h5 class="mb-3">Fix Domains {{--Split - Order #{{ $order->id }} --}}</h5>
-            <p class="text-white">Update domains for rejected order panels. You can modify the domains but the total count
-                must remain the same.</p>
+            <h5 class="mb-3">Review & Fix Domain Details {{--Split - Order #{{ $order->id }} --}}</h5>
+            <p class="text-white">Your order could not be processed due to incorrect or incomplete domain information. Please review the provided note, correct the details, and resubmit to continue.</p>
 
             <!-- Validation Summary -->
             <div class="alert alert-info d-none" id="validation-summary">

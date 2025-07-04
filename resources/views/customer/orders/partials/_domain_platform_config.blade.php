@@ -1,4 +1,43 @@
 {{-- Domain Forwarding and Platform Configuration Section --}}
+
+@if (isset($rejectedPanels) && $rejectedPanels->count() > 0)
+    @foreach ($rejectedPanels as $rejectedPanel)
+        @if ($rejectedPanel->note)
+            <div class="mb-4">
+                <div class="alert border-0 shadow-lg panel-rejection-alert"
+                    style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
+                    <!-- Animated background pattern -->
+                    <div class="alert-pattern"></div>
+
+                    <div class="d-flex align-items-start position-relative" style="z-index: 2;">
+                        <div class="alert-icon-wrapper me-3">
+                            <i class="fa-solid fa-exclamation-triangle fa-2x text-white"
+                                style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading mb-2 text-white fw-bold">
+                                {{-- <i class="fa-solid fa-server me-2"></i> --}}
+                                {{-- Panel #{{ $rejectedPanel->id }} - --}} Rejection Notice
+                            </h6>
+                            <div class="rejection-note-content">
+                                <p class="mb-0 text-white fw-medium small">
+                                    {{ $rejectedPanel->note }}
+                                </p>
+                            </div>
+                            <div class="mt-3">
+                                <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
+                                    <i class="fa-solid fa-clock me-1"></i>
+                                    Action Required
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endforeach
+@endif
+
 <div class="card mb-4 p-3">
     <div>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -89,7 +128,7 @@
                 <div class="invalid-feedback" id="sending_platform-error"></div>
                 <small>
                     <i class="fa-solid fa-info-circle me-1"></i>
-                    We upload and configure the email accounts for you - it's a software you use to send emails
+                    Please select the cold email platform you would like us to install the inboxes on
                 </small>
             </div>
 
@@ -101,44 +140,6 @@
     </div>
 </div>
 
-@if (isset($rejectedPanels) && $rejectedPanels->count() > 0)
-    @foreach ($rejectedPanels as $rejectedPanel)
-        @if ($rejectedPanel->note)
-            <div class="mb-4">
-                <div class="alert border-0 shadow-lg panel-rejection-alert"
-                    style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
-                    <!-- Animated background pattern -->
-                    <div class="alert-pattern"></div>
-
-                    <div class="d-flex align-items-start position-relative" style="z-index: 2;">
-                        <div class="alert-icon-wrapper me-3">
-                            <i class="fa-solid fa-exclamation-triangle fa-2x text-white"
-                                style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="alert-heading mb-2 text-white fw-bold">
-                                {{-- <i class="fa-solid fa-server me-2"></i> --}}
-                                {{-- Panel #{{ $rejectedPanel->id }} - --}} Rejection Notice
-                            </h6>
-                            <div class="rejection-note-content">
-                                <p class="mb-0 text-white fw-medium small">
-                                    {{ $rejectedPanel->note }}
-                                </p>
-                            </div>
-                            <div class="mt-3">
-                                <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
-                                    <i class="fa-solid fa-clock me-1"></i>
-                                    Action Required
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-    @endforeach
-@endif
-
 {{-- Additional Styles --}}
 @push('styles')
     <style>
@@ -148,17 +149,17 @@
         }
 
         /* .panel-rejection-alert::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
-        border-radius: 14px;
-        z-index: -1;
-        animation: borderAnimation 3s linear infinite;
-    } */
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            border-radius: 14px;
+            z-index: -1;
+            animation: borderAnimation 3s linear infinite;
+        } */
 
         .alert-pattern {
             position: absolute;
@@ -191,34 +192,34 @@
         }
 
         /* @keyframes pulseGlow {
-        0% {
-            box-shadow:
-                0 4px 20px rgba(220, 53, 69, 0.4),
-                0 0 0 0 rgba(220, 53, 69, 0.4);
+            0% {
+                box-shadow:
+                    0 4px 20px rgba(220, 53, 69, 0.4),
+                    0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+            100% {
+                box-shadow:
+                    0 8px 30px rgba(220, 53, 69, 0.6),
+                    0 0 0 10px rgba(220, 53, 69, 0);
+            }
         }
-        100% {
-            box-shadow:
-                0 8px 30px rgba(220, 53, 69, 0.6),
-                0 0 0 10px rgba(220, 53, 69, 0);
+
+        @keyframes borderAnimation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-    }
 
-    @keyframes borderAnimation {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+        @keyframes patternMove {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(-10px) translateY(-5px); }
+            50% { transform: translateX(10px) translateY(-10px); }
+            75% { transform: translateX(-5px) translateY(5px); }
+        }
 
-    @keyframes patternMove {
-        0%, 100% { transform: translateX(0) translateY(0); }
-        25% { transform: translateX(-10px) translateY(-5px); }
-        50% { transform: translateX(10px) translateY(-10px); }
-        75% { transform: translateX(-5px) translateY(5px); }
-    }
-
-    @keyframes iconBounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    } */
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        } */
 
         .platform-field {
             transition: all 0.3s ease;

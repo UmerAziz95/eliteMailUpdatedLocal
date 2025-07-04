@@ -390,7 +390,6 @@ Route::get('/contact_us', function () {
 
 
 
-
 Route::get('/profile', function () {
     return view('admin/profile/profile');
 })->name('profile');
@@ -398,6 +397,10 @@ Route::get('/profile', function () {
 Route::get('/settings', function () {
     return view('admin/settings/settings');
 });
+
+Route::get('/order_queue', function () {
+    return view('admin/orderQueue/order_queue');
+})->name('admin.orderQueue.order_queue');
 
 
     
