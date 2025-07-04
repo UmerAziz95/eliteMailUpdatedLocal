@@ -1209,7 +1209,7 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         }
          
         // Update color and note based on usage
-        if (percentageUsed >= 100) {
+        if (percentageUsed > 100) {
             progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
             progressNote.html('(Limit reached)');
         } else if (percentageUsed >= 90) {
