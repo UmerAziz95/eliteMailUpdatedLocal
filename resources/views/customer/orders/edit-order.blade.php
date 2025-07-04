@@ -1977,7 +1977,7 @@ $(document).ready(function() {
                 }
             }
             
-            // Prioritize configuration error over order limit exceeded
+            // Handle configuration error vs regular order limit exceeded
             if (isConfigurationError) {
                 // Configuration error: order has limit but can't fit any domains with current inboxes per domain
                 $('#domains').addClass('is-invalid');
@@ -1987,8 +1987,51 @@ $(document).ready(function() {
                 if (isImporting) {
                     return;
                 }
-                // Don't show popup for configuration errors, just the validation message
-            } else if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                
+                // For configuration errors, show a specific dialog when user has domains that need to be cleared
+                if (domains.length > 0 && !limitExceededShown) {
+                    limitExceededShown = true;
+                    Swal.fire({
+                        title: 'Configuration Issue',
+                        html: `<strong>Cannot create domains with current settings.</strong><br><br>
+                               Your order limit is <strong>${orderInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
+                               You currently have <strong>${domains.length}</strong> domains that need to be removed.<br><br>
+                               <small>Please reduce inboxes per domain or contact support to increase your order limit.</small>`,
+                        icon: 'warning',
+                        confirmButtonText: 'Clear All Domains',
+                        confirmButtonColor: '#dc3545',
+                        showCancelButton: true,
+                        cancelButtonText: 'Keep Domains',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Clear all domains
+                            domainsField.val('');
+                            
+                            // Clear the error message and update validation
+                            $('#domains').removeClass('is-invalid');
+                            $('#domains-error').text('');
+                            
+                            // Recalculate totals after clearing
+                            if (typeof calculateTotalInboxes === 'function') {
+                                calculateTotalInboxes();
+                            }
+                            
+                            // Update other UI elements
+                            if (typeof countDomains === 'function') {
+                                countDomains();
+                            }
+                            if (typeof updateRemainingInboxesBar === 'function') {
+                                updateRemainingInboxesBar();
+                            }
+                            
+                            toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
+                        }
+                        // Reset flag after popup is closed
+                        limitExceededShown = false;
+                    });
+                }
+            } else if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES && !isConfigurationError) {
                 // Get original total for display
                 const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : TOTAL_INBOXES;
                 
@@ -2259,6 +2302,8 @@ $(document).ready(function() {
     
     // Add event listener for inboxes per domain changes with domain validation
     $('#inboxes_per_domain').on('input change', function() {
+        // Reset the limit exceeded flag when user changes inboxes per domain
+        limitExceededShown = false;
         validateAndTrimDomains();
     });
     
