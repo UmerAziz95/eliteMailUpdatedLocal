@@ -172,8 +172,9 @@
                         </div>
 
                         <ul class="mb-0">
-                            <li class="d-flex align-items-center mb-4"><i class="ti ti-user"></i><span
-                                    class="fw-semibold mx-2">Full Name:</span> <span
+                            <li class="d-flex align-items-center mb-4"><i class="ti ti-user"></i>
+                            <span class="fw-semibold mx-2">First Name:</span>
+                                <span
                                     class="opacity-50 text-capitalize">{{ Auth::user()->name }}</span></li>
                             <li class="d-flex align-items-center mb-4">
                                 <i class="ti ti-check"></i>

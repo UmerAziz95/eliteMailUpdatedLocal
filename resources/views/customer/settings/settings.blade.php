@@ -187,7 +187,7 @@
                         </div>
                         <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
                         <div class="user-info text-center">
-                            <h5 class="text-capitalize">{{ Auth::user()->name }}</h5>
+                            <h5 class="text-capitalize">{{ ucwords(Auth::user()->name) }}</h5>
                             <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
                         </div>
                     </div>
@@ -222,8 +222,8 @@
                 <div class="info-container">
                     <ul class="list-unstyled mb-6">
                         <li class="mb-2">
-                            <span class="fs-6">Username:</span>
-                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->name }}</span>
+                            <span class="fs-6">First Name:</span>
+                            <span class="opacity-50 text-capitalize small fw-light">{{ ucwords(Auth::user()->name) }}</span>
                         </li>
                         <li class="mb-2">
                             <span class="fs-6">Email:</span>
