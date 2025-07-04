@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use App\Models\UserOrderPanelAssignment; 
 use App\Models\OrderTracking;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PanelController extends Controller
 {
@@ -358,25 +360,44 @@ class PanelController extends Controller
     {
         try {
             $data = $request->validate([
-                'panel_title' => 'nullable|string|max:255',
+                'panel_title' => 'required|string|max:255',
                 'panel_description' => 'nullable|string',
                 'panel_status' => 'in:0,1',
                 'panel_limit' => 'required|integer|min:1',
-                
             ]);
 
             $panel = Panel::create([
-                'title' => $data['panel_title'] ?? null,
-                'description' => $data['panel_description'] ?? null,
+                'title' => $data['panel_title'],
+                'description' => $data['panel_description'],
                 'is_active' => $data['panel_status'] ?? 1,
                 'limit' => $data['panel_limit'],
-                'created_by' => auth()->user()->name, // Assuming the user is authenticated
+                'created_by' => auth()->user()->name,
             ]);
-            return response()->json(['message' => 'Panel created successfully', 'panel' => $panel], 201);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel created successfully', 
+                'panel' => $panel
+            ], 201);
+
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create panel'], 500);
+            Log::error('Failed to create panel: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create panel: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -395,13 +416,37 @@ class PanelController extends Controller
 
             $panel->update($data);
 
-            return response()->json(['message' => 'Panel updated successfully', 'panel' => $panel]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel updated successfully', 
+                'panel' => $panel
+            ], 200);
+
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Panel not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel not found'
+            ], 404);
+
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update panel'], 500);
+            Log::error('Failed to update panel: ' . $e->getMessage(), [
+                'panel_id' => $id,
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update panel: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -410,11 +455,29 @@ class PanelController extends Controller
         try {
             $panel = Panel::findOrFail($id);
             $panel->delete();
-            return response()->json(['message' => 'Panel deleted successfully']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel deleted successfully'
+            ], 200);
+
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Panel not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel not found'
+            ], 404);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to delete panel'], 500);
+            Log::error('Failed to delete panel: ' . $e->getMessage(), [
+                'panel_id' => $id,
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete panel: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -422,11 +485,29 @@ class PanelController extends Controller
     {
         try {
             $panel = Panel::with('users')->findOrFail($id);
-            return response()->json($panel);
+            
+            return response()->json([
+                'success' => true,
+                'panel' => $panel
+            ], 200);
+
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Panel not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel not found'
+            ], 404);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to retrieve panel'], 500);
+            Log::error('Failed to retrieve panel: ' . $e->getMessage(), [
+                'panel_id' => $id,
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve panel: ' . $e->getMessage()
+            ], 500);
         }
     }
     public function getOrderTrackingData(Request $request)

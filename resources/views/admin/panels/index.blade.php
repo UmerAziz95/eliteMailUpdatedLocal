@@ -338,7 +338,7 @@
                         <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
                             value="">
                         <label>Limit:</label>
-                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790">
+                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" readonly>
                         <label>Status:</label>
                         <select class="form-control mb-3" name="panel_status" id="panel_status" required>
                             <option value="1">
@@ -382,14 +382,14 @@
                 </button>
             </div>
             <form id="panelForm" class="">
-                <label for="panel_title">Panel title:</label>
-                <input type="text" class="form-control mb-3" id="panel_title" name="panel_title" value="">
+                <label for="panel_title">Panel title: <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="panel_title" name="panel_title" value="" required maxlength="255">
 
-                <label for="panel_description">Panel Description:</label>
+                <label for="panel_description" class="mt-3">Panel Description:</label>
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
-                <label for="panel_limit">Limit:</label>
-                <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790">
+                <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -2455,13 +2455,85 @@
 
 <script>
     $('#createPanelBtn').on('click', function() {
-    var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
-    modal.show();
-});
+        // Clear form and validation errors when opening modal
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
+        modal.show();
+    });
+
+    // Clear form when modal is hidden
+    $('#panelFormModal').on('hidden.bs.modal', function() {
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+    });
+
+    // Function to close all open offcanvas elements
+    function closeAllOffcanvas() {
+        // Get all offcanvas elements
+        const offcanvasElements = document.querySelectorAll('.offcanvas');
+        
+        offcanvasElements.forEach(function(offcanvasElement) {
+            // Check if the offcanvas is currently shown
+            if (offcanvasElement.classList.contains('show')) {
+                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                if (offcanvasInstance) {
+                    offcanvasInstance.hide();
+                }
+            }
+        });
+        
+        // Clean up any remaining backdrop elements
+        setTimeout(function() {
+            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Ensure body classes are removed
+            document.body.classList.remove('offcanvas-open', 'modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, 300);
+    }
 
 $('#submitPanelFormBtn').on('click', function(e) {
     e.preventDefault();
+    
+    // Clear any previous error styling
+    $('.form-control').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
     const form = $('#panelForm');
+    let isValid = true;
+    
+    // Validate panel title
+    const panelTitle = $('#panel_title').val().trim();
+    if (!panelTitle) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
+        isValid = false;
+    } else if (panelTitle.length > 255) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
+        isValid = false;
+    }
+    
+    // Validate panel limit
+    const panelLimit = $('#panel_limit').val();
+    if (!panelLimit || parseInt(panelLimit) < 1) {
+        $('#panel_limit').addClass('is-invalid');
+        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+        isValid = false;
+    }
+    
+    // If validation fails, stop here
+    if (!isValid) {
+        toastr.error('Please correct the validation errors');
+        return;
+    }
+    
     const formData = new FormData(form[0]);
     console.log(formData);
   $.ajax({
@@ -2475,8 +2547,17 @@ $('#submitPanelFormBtn').on('click', function(e) {
     },
     success: function(response) {
         toastr.success("Panel created successfully!");
-        $('#panelFormModal').modal('hide');
-        loadPanels(); // Reload panels after creation
+        
+        // Close all open offcanvas elements
+        closeAllOffcanvas();
+        
+        // Clear and reset the form
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        // Reload panels list with current filters
+        loadPanels(currentFilters, 1, false);
         
         // Run panel capacity check after successful panel creation
         $.ajax({
@@ -2497,9 +2578,82 @@ $('#submitPanelFormBtn').on('click', function(e) {
         });
     },
     error: function(xhr) {
-        toastr.error("Failed to create panel. Please try again.");
+        console.log('Error response:', xhr.responseJSON);
+        
+        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+            // Handle validation errors
+            let errorMessages = [];
+            Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                if (Array.isArray(xhr.responseJSON.errors[key])) {
+                    errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+                } else {
+                    errorMessages.push(xhr.responseJSON.errors[key]);
+                }
+            });
+            
+            // Display all validation errors
+            errorMessages.forEach(function(message) {
+                toastr.error(message);
+            });
+            
+        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+            // Handle other error messages
+            toastr.error(xhr.responseJSON.message);
+        } else {
+            // Fallback error message
+            toastr.error("Failed to create panel. Please try again.");
+        }
     }
 });
 });
+
+// Load More button event handler
+$('#loadMoreBtn').on('click', function() {
+    loadMorePanels();
+});
+
+// Filter form submission
+$('#filterForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    // Disable submit button to prevent multiple requests
+    document.getElementById('submitBtn').disabled = true;
+    
+    // Get form data
+    const formData = new FormData(this);
+    const filters = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+            filters[key] = value.trim();
+        }
+    }
+    
+    // Update current filters and reset pagination
+    currentFilters = filters;
+    currentPage = 1;
+    
+    // Load panels with new filters
+    loadPanels(filters, 1, false);
+});
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('filterForm').reset();
+    currentFilters = {};
+    currentPage = 1;
+    loadPanels({}, 1, false);
+}
+
+$('#resetFilters').on('click', function() {
+    resetFilters();
+});
+
+// Initialize on document ready
+$(document).ready(function() {
+    // Load initial panels
+    loadPanels();
+});
+
 </script>
 @endpush

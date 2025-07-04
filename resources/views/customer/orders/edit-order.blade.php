@@ -1213,13 +1213,16 @@ function updateRemainingInboxesBar(currentInboxes = null) {
             progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
             progressNote.html('(Limit reached)');
         } else if (percentageUsed >= 90) {
-            progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            // progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
             progressNote.html('(Critical: Nearly at limit)');
         } else if (percentageUsed >= 75) {
-            progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            // progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
             progressNote.html('(Warning: Approaching limit)');
         } else if (percentageUsed >= 50) {
-            progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            // progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
             progressNote.html('(Moderate usage)');
         } else {
             progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
