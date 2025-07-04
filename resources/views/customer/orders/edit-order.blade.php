@@ -145,6 +145,8 @@
     <!-- Hidden fields for current and max inboxes -->
     <input type="hidden" name="current_inboxes" id="current_inboxes" value="0">
     <input type="hidden" name="max_inboxes" id="max_inboxes" value="0">
+    <!-- Draft flag for incomplete orders -->
+    <input type="hidden" name="is_draft" id="is_draft" value="0">
 
     <section class="py-3 overflow-hidden" data-page="edit-order">
         <div class="card p-3">
@@ -2352,6 +2354,56 @@ $(document).ready(function() {
             return false;
         }
 
+        // Check if total inboxes are not fully completed
+        const currentTotalInboxes = parseInt($('#total_inboxes').val()) || 0;
+        const orderInfo = @json(optional($order)->reorderInfo->first());
+        let originalTotalInboxes = 0;
+        
+        if (orderInfo && orderInfo.total_inboxes !== undefined) {
+            originalTotalInboxes = parseInt(orderInfo.total_inboxes) || 0;
+        }
+
+        // If current inboxes are less than original, show confirmation dialog
+        if (originalTotalInboxes > 0 && currentTotalInboxes < originalTotalInboxes) {
+            Swal.fire({
+                title: 'Incomplete Order',
+                html: `
+                    <p>Your total inboxes are not fully completed:</p>
+                    <p><strong>Original Total:</strong> ${originalTotalInboxes} inboxes</p>
+                    <p><strong>Current Total:</strong> ${currentTotalInboxes} inboxes</p>
+                    <p>Are you sure you want to continue?</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: 'Save as Draft',
+                denyButtonText: 'Continue Anyway',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#6c757d',
+                denyButtonColor: '#0d6efd',
+                cancelButtonColor: '#dc3545'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Save as draft
+                    $('#is_draft').val('1');
+                    submitForm();
+                } else if (result.isDenied) {
+                    // Continue anyway (keep original total)
+                    $('#total_inboxes').val(originalTotalInboxes);
+                    $('#is_draft').val('0');
+                    submitForm();
+                }
+                // If cancelled, do nothing
+            });
+            return false;
+        }
+
+        // If validation passes and no confirmation needed, submit directly
+        submitForm();
+    });
+
+    // Function to handle the actual form submission
+    function submitForm() {
         // Show loading indicator
         Swal.fire({
             title: 'Updating Order...',
@@ -2370,7 +2422,7 @@ $(document).ready(function() {
         $.ajax({
             url: '{{ route("customer.orders.reorder.store") }}',
             method: 'POST',
-            data: $(this).serialize(),
+            data: $('#editOrderForm').serialize(),
             success: function(response) {
                 Swal.close();
                 if (response.success) {
@@ -2464,7 +2516,7 @@ $(document).ready(function() {
                 }
             }
         });
-    });
+    }
 
     // Dynamic prefix variant functionality
    function generatePrefixVariantFields(count) {
