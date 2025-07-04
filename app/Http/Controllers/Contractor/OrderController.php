@@ -2037,34 +2037,6 @@ class OrderController extends Controller
             $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
 
-            // Get first and last name from order meta
-            $firstName = 'N/A';
-            $lastName = 'N/A';
-            // first_name and last_name get from this table reorder_infos
-            if ($order->reorderInfo && $order->reorderInfo->first()) {
-                $firstName = $order->reorderInfo->first()->first_name ?? $firstName;
-                $lastName = $order->reorderInfo->first()->last_name ?? $lastName;
-            }
-            // if ($order->meta) {
-            //     $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
-                
-            //     // Check billing_address first (from invoice)
-            //     if (isset($metaData['invoice']['billing_address'])) {
-            //         $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
-            //     }
-            //     // Fallback to customer data
-            //     elseif (isset($metaData['customer'])) {
-            //         $firstName = $metaData['customer']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['customer']['last_name'] ?? $lastName;
-            //     }
-            //     // Another fallback to shipping_address
-            //     elseif (isset($metaData['invoice']['shipping_address'])) {
-            //         $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
-            //     }
-            // }
-            // dd($firstName, $lastName);
             // Allow access if order is unassigned (available for all contractors)
             if ($order->assigned_to === null) {
                 $hasAccess = true;
@@ -2086,16 +2058,32 @@ class OrderController extends Controller
                 return back()->with('error', 'You do not have access to this order split.');
             }
 
-            // Get prefix variants from reorder info
+            // Get prefix variants and their details from reorder info
             $prefixVariants = [];
+            $prefixVariantDetails = [];
             $reorderInfo = $order->reorderInfo->first();
-            if ($reorderInfo && $reorderInfo->prefix_variants) {
-                if (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
-                } else if (is_string($reorderInfo->prefix_variants)) {
-                    $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
-                    if (is_array($decodedPrefixes)) {
-                        $prefixVariants = array_values(array_filter($decodedPrefixes));
+            
+            if ($reorderInfo) {
+                // Get prefix variants
+                if ($reorderInfo->prefix_variants) {
+                    if (is_array($reorderInfo->prefix_variants)) {
+                        $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
+                    } else if (is_string($reorderInfo->prefix_variants)) {
+                        $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
+                        if (is_array($decodedPrefixes)) {
+                            $prefixVariants = array_values(array_filter($decodedPrefixes));
+                        }
+                    }
+                }
+                
+                // Get prefix variant details
+                if ($reorderInfo->prefix_variants_details) {
+                    $decodedDetails = is_string($reorderInfo->prefix_variants_details) 
+                        ? json_decode($reorderInfo->prefix_variants_details, true) 
+                        : $reorderInfo->prefix_variants_details;
+                        
+                    if (is_array($decodedDetails)) {
+                        $prefixVariantDetails = $decodedDetails;
                     }
                 }
             }
@@ -2138,22 +2126,33 @@ class OrderController extends Controller
             if (empty($domains)) {
                 return back()->with('error', 'No domains data found for this split.');
             }
-            // dd($order->id);
-            // Generate emails with prefixes and random passwords
+
+            // Generate emails with prefixes and corresponding first/last names
             $emailData = [];
             foreach ($domains as $domain) {
-                foreach ($prefixVariants as $prefix) {
+                foreach ($prefixVariants as $index => $prefix) {
+                    // Get first and last name for this prefix variant
+                    $prefixKey = 'prefix_variant_' . ($index + 1);
+                    $firstName = 'N/A';
+                    $lastName = 'N/A';
+                    
+                    if (isset($prefixVariantDetails[$prefixKey])) {
+                        $firstName = $prefixVariantDetails[$prefixKey]['first_name'] ?? 'N/A';
+                        $lastName = $prefixVariantDetails[$prefixKey]['last_name'] ?? 'N/A';
+                    }
+                    
                     $emailData[] = [
                         'domain' => $domain,
                         'email' => $prefix . '@' . $domain,
-                        'password' => $this->customEncrypt($order->id) // Custom encryption for password
+                        'password' => $this->customEncrypt($order->id), // Custom encryption for password
+                        'first_name' => $firstName,
+                        'last_name' => $lastName
                     ];
                 }
             }
 
             // Calculate totals
             $domainsCount = count($domains);
-            // $inboxesPerDomain = count($prefixVariants);
             $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1; // Default to 1 if not set
             if ($inboxesPerDomain <= 0) {
                 $inboxesPerDomain = 1; // Ensure at least 1 inbox per domain
@@ -2167,7 +2166,7 @@ class OrderController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes, $firstName, $lastName) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
                 fputcsv($file, [
@@ -2224,11 +2223,11 @@ class OrderController extends Controller
                     'Advanced Protection Program enrollment'
                 ]);
                 
-                // Add email data with empty values for additional columns
+                // Add email data with corresponding first/last names for each prefix variant
                 foreach ($emailData as $data) {
                     fputcsv($file, [
-                        $firstName, // First Name
-                        $lastName, // Last Name
+                        $data['first_name'], // First Name from prefix variant details
+                        $data['last_name'], // Last Name from prefix variant details
                         $data['email'], 
                         $data['password'],
                         '', // Password Hash Function [UPLOAD ONLY]
