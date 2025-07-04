@@ -334,20 +334,20 @@
                 </div>
 
 
-                <div class="col-md-6 first-name">
+                <div class="col-md-6 first-name" style="display:none;">
                     <label>First Name</label>
                     <input type="text" name="first_name" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->first_name : '' }}"
-                        required>
+                        >
                     <div class="invalid-feedback" id="first_name-error"></div>
                     <p class="note">(First name that you wish to use on the inbox profile)</p>
                 </div>
 
-                <div class="col-md-6 last-name">
+                <div class="col-md-6 last-name" style="display:none;">
                     <label>Last Name</label>
                     <input type="text" name="last_name" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->last_name : '' }}"
-                        required>
+                        >
                     <div class="invalid-feedback" id="last_name-error"></div>
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
                 </div>
@@ -389,23 +389,21 @@
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>
                 </div>
 
-                <div class="col-md-6 email-password">
+                <div class="col-md-6 email-password" style="display:none;">
                     <label>Email Persona - Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="email_persona_password" name="email_persona_password"
                             class="form-control"
-                            value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}"
-                            required>
+                            value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}">
                         <div class="invalid-feedback" id="email_persona_password-error"></div>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
                 </div>
 
-                <div class="col-md-6 email-picture-link">
+                <div class="col-md-6 email-picture-link" style="display:none;">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} "
-                        required>
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} ">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
