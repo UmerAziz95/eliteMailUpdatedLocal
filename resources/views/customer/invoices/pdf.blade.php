@@ -125,7 +125,7 @@
                     {{ $invoice->user->phone }}
                 @endif
                  {{ $invoice->user->billing_address ?? 'N/A' }}<br>
-                {{ $invoice->user->email ?? 'N/A' }}
+                
             </div>
             </td>
 

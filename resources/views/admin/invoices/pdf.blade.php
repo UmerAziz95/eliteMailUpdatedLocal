@@ -131,8 +131,7 @@
                 @if($invoice->user->phone)
                     {{ $invoice->user->phone }}
                 @endif
-                 {{ $invoice->user->billing_address ?? 'N/A' }}<br>
-                {{ $invoice->user->email ?? 'N/A' }}
+                 {{ $invoice->user->billing_address ?? 'N/A' }}<br> 
             </div>
  <!-- Billing Address -->
               {{-- <div style="margin-bottom: 15px;">

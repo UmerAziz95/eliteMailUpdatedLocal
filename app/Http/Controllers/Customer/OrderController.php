@@ -363,8 +363,7 @@ class OrderController extends Controller
                 </button>';
     } else {
         $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
-        $pulse_effect= $order->status_manage_by_admin == 'draft' ? 'pulse-effect' : '';
-        return '<div class="dropdown">
+        $pulse_effect = in_array(strtolower($order->status_manage_by_admin), ['draft', 'reject']) ? 'pulse-effect' : '';        return '<div class="dropdown">
         
                     <button class="p-0 bg-transparent border-0"
                             type="button"
@@ -393,7 +392,7 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') .
                         ($hasRejectedPanels ?
                             '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
-                                <i class="fa-solid fa-tools"></i> Fixed Domains Split</a></li>' : '') .
+                                <i class="fa-solid fa-tools"></i> Fix Order</a></li>' : '') .
                     '</ul>
                 </div>';
                 }

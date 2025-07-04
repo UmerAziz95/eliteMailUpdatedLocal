@@ -15,12 +15,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'instantly',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -31,12 +31,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'prospi',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -48,12 +48,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'smartlead',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -65,12 +65,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'lemlist',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -82,12 +82,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'pipl',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -99,12 +99,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'replyio',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -116,12 +116,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'hothawk',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -133,12 +133,12 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'other',
                 'fields' => [
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]
@@ -149,22 +149,22 @@ class SendingPlatformSeeder extends Seeder
                 'value' => 'bison',
                 'fields' => [
                     'bison_url' => [
-                        'label' => 'Sending Platform - Your Unique Bison URL',
+                        'label' => 'Cold email platform - Your Unique Bison URL',
                         'type' => 'url',
                         'required' => true
                     ],
                     'bison_workspace' => [
-                        'label' => 'Sending Platform - Bison Workspace Name',
+                        'label' => 'Cold email platform - Bison Workspace Name',
                         'type' => 'text',
                         'required' => true
                     ],
                     'sequencer_login' => [
-                        'label' => 'Sending plateform Sequencer - Login',
+                        'label' => 'Cold email platform - Login',
                         'type' => 'email',
                         'required' => true
                     ],
                     'sequencer_password' => [
-                        'label' => 'Sending plateform Sequencer - Password',
+                        'label' => 'Cold email platform - Password',
                         'type' => 'password',
                         'required' => true
                     ]

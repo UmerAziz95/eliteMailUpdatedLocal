@@ -280,8 +280,10 @@
                 <div class="card-body">
                     <h6 class="card-title">Ticket Information</h6>
                     <div class="mb-3">
+                        @if(!$ticket->category=="Order")
                         <small class="opacity-50">Category</small>
                         <p class="small">{{ ucfirst($ticket->category) }}</p>
+                        @endif
                     </div>
                     <div class="mb-3">
                         <small class="opacity-50">Priority</small>

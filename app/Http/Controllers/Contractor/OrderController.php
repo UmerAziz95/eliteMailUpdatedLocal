@@ -1114,7 +1114,7 @@ class OrderController extends Controller
 
             $oldStatus = $orderPanel->status;
             $newStatus = strtolower($request->marked_status);
-            $reason = $request->reason ? $request->reason . " (Reason given by) " . Auth::user()->name : null;
+            $reason = $request->reason ? $request->reason : null;
 
             // If status is being set to completed, validate that all emails are added
             if ($newStatus === 'completed') {
