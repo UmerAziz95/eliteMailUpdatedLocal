@@ -204,8 +204,7 @@
                     value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}"
                     required />
                 <div class="invalid-feedback" id="forwarding-error"></div>
-                <p class="note mb-0">(A link where you'd like to drive the traffic from the domains you
-                    send us – could be your main website, blog post, etc.)</p>
+                <p class="note mb-0">(This is usually your VSL, lead capture form, or main website. It’s where prospects will land if they go to one of your domains that you provide us. Please enter a full URL (e.g. https://yourdomain.com).)</p>
             </div>
 
             <div class="domain-hosting mb-3">
@@ -262,8 +261,7 @@
                         </option>
                         @endforeach
                     </select>
-                    <p class="note">(We upload and configure the email accounts for you - its a software
-                        you use to send emails)</p>
+                    <p class="note">(Please select the cold email platform you would like us to install the inboxes on)</p>
                 </div>
 
                 <div class="sending-platform-fields" id="sending-platform-fields">
@@ -284,7 +282,7 @@
                         <option value="3" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
                             == 3 ? 'selected' : '' }}>3</option>
                     </select>
-                    <p class="note">(How many email accounts per domain - the maximum is 3)</p>
+                    <p class="note">(How many email accounts you would like us to create per domain - the maximum is 3)</p>
                 </div>
                 <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
