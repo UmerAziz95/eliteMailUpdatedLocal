@@ -583,7 +583,7 @@ pointer-events: none
             </div>
         </div>  
 
-        <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+        <div class="mb-4" style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
             @for ($i = 0; $i < 10; $i++)
             <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid orange">
                 <div style="position: relative; z-index: 9;">
