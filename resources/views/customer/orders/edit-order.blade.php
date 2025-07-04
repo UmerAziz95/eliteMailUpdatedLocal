@@ -130,9 +130,49 @@
     #domains:focus {
         box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
     }
+
+    /* Prefix Variant Section Styling */
+    .prefix-variant-section .card {
+        background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+        border: 1px solid #404040;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .prefix-variant-section .card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .prefix-variant-section h6 {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #404040;
+    }
+
+    .prefix-variant-section .form-control {
+        background-color: #1e1e1e !important;
+        border-color: #555;
+        transition: border-color 0.3s ease;
+    }
+
+    .prefix-variant-section .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    }
+
+    .prefix-variant-section .note {
+        font-size: 0.875em;
+        color: #6c757d;
+        margin-top: 0.25rem;
+        margin-bottom: 0;
+    }
 </style>
 @endpush
-
 @section('content')
 <form id="editOrderForm" novalidate>
     @csrf
@@ -329,6 +369,7 @@
 
                 <!-- Dynamic prefix variants container -->
                 <div id="prefix-variants-container" class="row g-3 mt-4 prefix-variants">
+                    <h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>
                     <!-- Dynamic prefix variant fields will be inserted here -->
                 </div>
 
@@ -1547,6 +1588,35 @@ $(document).ready(function() {
             }
         }
         
+        // Populate prefix variants details if available
+        if (reorderInfo.prefix_variants_details) {
+            try {
+                const prefixVariantsDetails = typeof reorderInfo.prefix_variants_details === 'string' 
+                    ? JSON.parse(reorderInfo.prefix_variants_details) 
+                    : reorderInfo.prefix_variants_details;
+                
+                Object.keys(prefixVariantsDetails).forEach(variantKey => {
+                    const details = prefixVariantsDetails[variantKey];
+                    if (details) {
+                        // Populate first name
+                        if (details.first_name) {
+                            $(`input[name="prefix_variants_details[${variantKey}][first_name]"]`).val(details.first_name);
+                        }
+                        // Populate last name
+                        if (details.last_name) {
+                            $(`input[name="prefix_variants_details[${variantKey}][last_name]"]`).val(details.last_name);
+                        }
+                        // Populate profile link
+                        if (details.profile_link) {
+                            $(`input[name="prefix_variants_details[${variantKey}][profile_link]"]`).val(details.profile_link);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not parse prefix variants details:', e);
+            }
+        }
+        
         // Populate dynamic platform fields
         setTimeout(() => {
             populateDynamicFields(reorderInfo);
@@ -2525,13 +2595,22 @@ $(document).ready(function() {
    function generatePrefixVariantFields(count) {
     const container = $('#prefix-variants-container');
     container.empty();
-     const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
+    
+    // Add header
+    container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
+    
+    const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
+    const existingPrefixVariantsDetails = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants_details ?? []);
 
     for (let i = 1; i <= count; i++) {
         const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
             (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
             (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
 
+        // Get existing values for the detailed fields
+        const detailsKey = `prefix_variant_${i}`;
+        const existingDetails = existingPrefixVariantsDetails[detailsKey] || {};
+        
         // Determine example prefix and note based on iteration
         let examplePrefix = '';
         let noteHtml = '';
@@ -2555,32 +2634,64 @@ $(document).ready(function() {
         }
 
         const fieldHtml = `
-            <div class="col-md-6">
-                <label>Email Persona - Prefix Variant ${i}</label>
-                <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                    value="${existingValue}" required>
-                <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
-                ${noteHtml}
+            <div class="col-12 prefix-variant-section" data-variant="${i}">
+                <div class="card p-3 mb-3" style="background-color: #2a2a2a; border: 1px solid #404040;">
+                    <h6 class="mb-3 text-info">Prefix Variant ${String(i).padStart(2, '0')}</h6>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label>Email Prefix ${i} *</label>
+                            <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                                value="${existingValue}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                            ${noteHtml}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label>First Name</label>
+                            <input type="text" name="prefix_variants_details[prefix_variant_${i}][first_name]" 
+                                class="form-control" value="${existingDetails.first_name || ''}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}_first_name-error"></div>
+                            <p class="note">First name for this email persona</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label>Last Name</label>
+                            <input type="text" name="prefix_variants_details[prefix_variant_${i}][last_name]" 
+                                class="form-control" value="${existingDetails.last_name || ''}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}_last_name-error"></div>
+                            <p class="note">Last name for this email persona</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label>Profile Picture Link</label>
+                            <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
+                                class="form-control" value="${existingDetails.profile_link || ''}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
+                            <p class="note">Profile picture URL for this persona</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
         container.append(fieldHtml);
     }
 
-    //highlight the prefix note on fucus input
-            container.find('input').on('focus', function () {
-            $(this).siblings('.note').css('color', 'orange');
-        }).on('blur', function () {
-            $(this).siblings('.note').css('color', ''); // Reset to default
-        });
+    //highlight the prefix note on focus input
+    container.find('input').on('focus', function () {
+        $(this).siblings('.note').css('color', 'orange');
+    }).on('blur', function () {
+        $(this).siblings('.note').css('color', ''); // Reset to default
+    });
 
     // Validate prefix variants for duplicates
-    container.find('input').on('input', function () {
+    container.find('input[name*="prefix_variants[prefix_variant_"]').on('input', function () {
         const values = [];
         const seen = new Set();
         let hasDuplicate = false;
 
-        container.find('input').each(function () {
+        container.find('input[name*="prefix_variants[prefix_variant_"]').each(function () {
             const val = $(this).val().trim();
             values.push(val);
 

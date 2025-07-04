@@ -555,6 +555,16 @@ class OrderController extends Controller
                 'prefix_variants.prefix_variant_1' => 'required|string|max:50',
                 'prefix_variants.prefix_variant_2' => 'nullable|string|max:50',
                 'prefix_variants.prefix_variant_3' => 'nullable|string|max:50',
+                'prefix_variants_details' => 'required|array|min:1',
+                'prefix_variants_details.prefix_variant_1.first_name' => 'required|string|max:50',
+                'prefix_variants_details.prefix_variant_1.last_name' => 'required|string|max:50',
+                'prefix_variants_details.prefix_variant_1.profile_link' => 'required|url|max:255',
+                'prefix_variants_details.prefix_variant_2.first_name' => 'nullable|string|max:50',
+                'prefix_variants_details.prefix_variant_2.last_name' => 'nullable|string|max:50',
+                'prefix_variants_details.prefix_variant_2.profile_link' => 'nullable|url|max:255',
+                'prefix_variants_details.prefix_variant_3.first_name' => 'nullable|string|max:50',
+                'prefix_variants_details.prefix_variant_3.last_name' => 'nullable|string|max:50',
+                'prefix_variants_details.prefix_variant_3.profile_link' => 'nullable|url|max:255',
                 // 'persona_password' => 'required|string|min:3',
                 'profile_picture_link' => 'nullable|url|max:255',
                 'email_persona_password' => 'required|string|min:3',
@@ -574,6 +584,7 @@ class OrderController extends Controller
             // Additional validation for prefix variants based on inboxes_per_domain
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
+            $prefixVariantsDetails = $request->prefix_variants_details ?? [];
             
             // Validate required prefix variants based on inboxes_per_domain
             for ($i = 1; $i <= $inboxesPerDomain; $i++) {
@@ -591,6 +602,38 @@ class OrderController extends Controller
                         return response()->json([
                             'success' => false,
                             'errors' => ["prefix_variants.{$prefixKey}" => ['Only letters, numbers, dots, hyphens and underscores are allowed.']]
+                        ], 422);
+                    }
+                }
+                
+                // Validate prefix variants details for required variants
+                if (!empty($prefixVariants[$prefixKey])) {
+                    if (empty($prefixVariantsDetails[$prefixKey]['first_name'])) {
+                        return response()->json([
+                            'success' => false,
+                            'errors' => ["prefix_variants_details.{$prefixKey}.first_name" => ['First name is required for this prefix variant.']]
+                        ], 422);
+                    }
+                    
+                    if (empty($prefixVariantsDetails[$prefixKey]['last_name'])) {
+                        return response()->json([
+                            'success' => false,
+                            'errors' => ["prefix_variants_details.{$prefixKey}.last_name" => ['Last name is required for this prefix variant.']]
+                        ], 422);
+                    }
+                    
+                    if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
+                        return response()->json([
+                            'success' => false,
+                            'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
+                        ], 422);
+                    }
+                    
+                    // Validate URL format for profile link
+                    if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
+                        return response()->json([
+                            'success' => false,
+                            'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link must be a valid URL.']]
                         ], 422);
                     }
                 }
@@ -673,6 +716,7 @@ class OrderController extends Controller
                         'first_name' => $request->first_name,
                         'last_name' => $request->last_name,
                         'prefix_variants' => $request->prefix_variants,
+                        'prefix_variants_details' => $request->prefix_variants_details,
                         'persona_password' => $request->persona_password,
                         'profile_picture_link' => $request->profile_picture_link,
                         'email_persona_password' => $request->email_persona_password,
@@ -707,6 +751,7 @@ class OrderController extends Controller
                             'first_name' => $request->first_name,
                             'last_name' => $request->last_name,
                             'prefix_variants' => $request->prefix_variants,
+                            'prefix_variants_details' => $request->prefix_variants_details,
                             'persona_password' => $request->persona_password,
                             'profile_picture_link' => $request->profile_picture_link,
                             'email_persona_password' => $request->email_persona_password,
