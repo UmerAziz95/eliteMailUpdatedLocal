@@ -1085,17 +1085,13 @@ function calculateTotalInboxes() {
         .filter(domain => domain.length > 0);
         
     const uniqueDomains = [...new Set(domains)];
-    const totalInboxes = uniqueDomains.length * inboxesPerDomain;
+    const calculatedInboxes = uniqueDomains.length * inboxesPerDomain;
     
-    $('#total_inboxes').val(totalInboxes);
-    
-    // Update progress bar with current values
-    updateRemainingInboxesBar(totalInboxes);
-    
-    // Update price display with new total
-    updatePriceDisplay(totalInboxes);
-    
-    return totalInboxes;
+    // Always use calculated inboxes and apply current order limit validation
+    $('#total_inboxes').val(calculatedInboxes);
+    updateRemainingInboxesBar(calculatedInboxes);
+    updatePriceDisplay(calculatedInboxes);
+    return calculatedInboxes;
 }
 // Global function for updating price display based on total inboxes
 function updatePriceDisplay(totalInboxes) {
@@ -1177,7 +1173,7 @@ function updatePriceDisplay(totalInboxes) {
 }
 
 // Global function for updating remaining inboxes progress bar
-function updateRemainingInboxesBar(currentInboxes = null) {
+function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
     // Get current inboxes if not provided
     if (currentInboxes === null) {
         const domainsText = $('#domains').val() || '';
@@ -1190,18 +1186,23 @@ function updateRemainingInboxesBar(currentInboxes = null) {
         currentInboxes = uniqueDomains.length * inboxesPerDomain;
     }
     
-    // Get max limit - use orderInfo.total_inboxes
+    // Always use the CURRENT order's limit, not the imported order's limit
     const orderInfo = @json(optional($order)->reorderInfo->first());
     let maxInboxes = 0;
     
-    if (orderInfo && orderInfo.total_inboxes !== undefined) {
+    if (orderInfo && orderInfo.total_inboxes !== undefined && orderInfo.total_inboxes > 0) {
         const rawTotalInboxes = orderInfo.total_inboxes;
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         
-        // Calculate maximum usable inboxes based on inboxes_per_domain
-        // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
-        const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-        maxInboxes = maxDomainsAllowed * inboxesPerDomain;
+        // For very small limits (like 1 inbox), handle the case where inboxes_per_domain > total_inboxes
+        if (rawTotalInboxes < inboxesPerDomain) {
+            maxInboxes = 0; // Can't fit even 1 domain with the required inboxes per domain
+        } else {
+            // Calculate maximum usable inboxes based on inboxes_per_domain
+            // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+            const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+            maxInboxes = maxDomainsAllowed * inboxesPerDomain;
+        }
     }
     
     // Update hidden form fields for server submission
@@ -1226,45 +1227,57 @@ function updateRemainingInboxesBar(currentInboxes = null) {
     progressBar.attr('aria-valuemax', 100);
     
     // Update text display
-    if (maxInboxes === 0) {
-        // Unlimited order
-        progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
-        progressBar.css('width', '0%'); // Don't show progress for unlimited
-        progressNote.html('(Unlimited usage)');
-        progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
-    } else {
-        // Get the raw total and inboxes per domain for display
-        const orderInfo = @json(optional($order)->reorderInfo->first());
+    if (orderInfo && orderInfo.total_inboxes !== undefined && orderInfo.total_inboxes > 0) {
+        const rawTotalInboxes = orderInfo.total_inboxes;
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-        const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : maxInboxes;
         
-        // Show both usable and total if they differ
-        if (rawTotal > maxInboxes) {
-            progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used (${rawTotal} total, ${inboxesPerDomain} per domain)`);
-        } else {
-            progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
-        }
-         
-        // Update color and note based on usage
-        if (percentageUsed > 100) {
+        if (maxInboxes === 0 && rawTotalInboxes < inboxesPerDomain) {
+            // Order has a limit but can't fit any domains with current inboxes_per_domain setting
+            progressText.text(`${currentInboxes} inboxes used (Order limit: ${rawTotalInboxes}, cannot fit domains with ${inboxesPerDomain} inboxes each)`);
+            progressBar.css('width', '100%'); // Show as full because limit is exceeded
+            progressNote.html('(Reduce inboxes per domain to fit within limit)');
             progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-            progressNote.html('(Limit reached)');
-        } else if (percentageUsed >= 90) {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            // progressBar.css('background', 'linear-gradient(45deg, #fd7e14, #e55a00)');
-            progressNote.html('(Critical: Nearly at limit)');
-        } else if (percentageUsed >= 75) {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            // progressBar.css('background', 'linear-gradient(45deg, #ffc107, #e0a800)');
-            progressNote.html('(Warning: Approaching limit)');
-        } else if (percentageUsed >= 50) {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            // progressBar.css('background', 'linear-gradient(45deg, rgb(139 129 242), rgb(171 164 245))');
-            progressNote.html('(Moderate usage)');
+        } else if (maxInboxes > 0) {
+            // Normal case - show progress within limits
+            const rawTotal = rawTotalInboxes;
+            
+            // Show both usable and total if they differ
+            if (rawTotal > maxInboxes) {
+                progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used (${rawTotal} total, ${inboxesPerDomain} per domain)`);
+            } else {
+                progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
+            }
+             
+            // Update color and note based on usage
+            if (percentageUsed > 100) {
+                progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+                progressNote.html('(Limit reached)');
+            } else if (percentageUsed >= 90) {
+                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+                progressNote.html('(Critical: Nearly at limit)');
+            } else if (percentageUsed >= 75) {
+                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+                progressNote.html('(Warning: Approaching limit)');
+            } else if (percentageUsed >= 50) {
+                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+                progressNote.html('(Moderate usage)');
+            } else {
+                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+                progressNote.html('(Current usage)');
+            }
         } else {
-            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-            progressNote.html('(Current usage)');
+            // Order has 0 total_inboxes (unlimited)
+            progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
+            progressBar.css('width', '0%'); // Don't show progress for unlimited
+            progressNote.html('(Unlimited usage)');
+            progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
         }
+    } else {
+        // No limit defined for current order - show current usage only
+        progressText.text(`${currentInboxes} inboxes used (No limit defined)`);
+        progressBar.css('width', '0%'); // Don't show progress bar
+        progressNote.html('(No limit set for this order)');
+        progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
     }
 }
 
@@ -1558,6 +1571,8 @@ $(document).ready(function() {
         if (reorderInfo.sending_platform) $('#sending_platform').val(reorderInfo.sending_platform).trigger('change');
         if (reorderInfo.inboxes_per_domain) $('#inboxes_per_domain').val(reorderInfo.inboxes_per_domain).trigger('change');
         
+        // Don't import total_inboxes - always use current order's limit
+        
         // Populate email account information
         if (reorderInfo.first_name) $('input[name="first_name"]').val(reorderInfo.first_name);
         if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
@@ -1654,31 +1669,48 @@ $(document).ready(function() {
         setTimeout(() => {
             isImporting = false;
             
-            // Check if imported data exceeds order limits and show appropriate notification
+            // Check if imported data exceeds current order limits and show appropriate notification
             const finalDomains = $('#domains').val();
             const finalInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-            const orderInfo = @json(optional($order)->reorderInfo->first());
             
-            if (finalDomains && orderInfo) {
+            if (finalDomains) {
                 const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
                 const totalInboxes = domainsArray.length * finalInboxesPerDomain;
                 
-                // Calculate maximum usable inboxes based on inboxes_per_domain
-                let usableInboxes = 0;
-                if (orderInfo.total_inboxes > 0) {
-                    const maxDomainsAllowed = Math.floor(orderInfo.total_inboxes / finalInboxesPerDomain);
-                    usableInboxes = maxDomainsAllowed * finalInboxesPerDomain;
+                // Use the current order's total_inboxes value for validation (not imported)
+                const orderInfo = @json(optional($order)->reorderInfo->first());
+                let currentOrderLimit = 0;
+                let isConfigurationError = false;
+                
+                if (orderInfo && orderInfo.total_inboxes) {
+                    // Check for configuration error first (order has limit but can't fit any domains)
+                    if (orderInfo.total_inboxes > 0 && orderInfo.total_inboxes < finalInboxesPerDomain) {
+                        currentOrderLimit = 0;
+                        isConfigurationError = true;
+                    } else {
+                        const maxDomainsAllowed = Math.floor(orderInfo.total_inboxes / finalInboxesPerDomain);
+                        currentOrderLimit = maxDomainsAllowed * finalInboxesPerDomain;
+                    }
                 }
                 
-                // Check if imported data exceeds order limits
-                if (usableInboxes > 0 && totalInboxes > usableInboxes) {
-                    // Show domains-error div for exceeding order limit
+                // Prioritize configuration error over order limit exceeded
+                if (isConfigurationError) {
+                    // Configuration error: order has limit but can't fit any domains
+                    $('#domains').addClass('is-invalid');
+                    $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                    toastr.warning('Cannot create domains with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
+                        timeOut: 8000,
+                        closeButton: true,
+                        progressBar: true
+                    });
+                } else if (currentOrderLimit > 0 && totalInboxes > currentOrderLimit) {
+                    // Show domains-error div for exceeding current order limit
                     $('#domains').addClass('is-invalid');
                     $('#domains-error').html(`
-                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${usableInboxes} usable inboxes (${orderInfo.total_inboxes} total with ${finalInboxesPerDomain} inboxes per domain).
-                        <br><small>Usable Limit: ${usableInboxes} inboxes</small>
+                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.
+                        <br><small>Usable Limit: ${currentOrderLimit} inboxes</small>
                     `);
-                    toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${usableInboxes} usable inboxes.`, 'Import Complete - Order Limit Exceeded', {
+                    toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.`, 'Import Complete - Order Limit Exceeded', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -1690,7 +1722,7 @@ $(document).ready(function() {
                     toastr.success('Order data imported successfully!');
                 }
             } else {
-                // Clear domain errors if no order info
+                // Clear domain errors if no domains
                 $('#domains').removeClass('is-invalid');
                 $('#domains-error').text('');
                 toastr.success('Order data imported successfully!');
@@ -1698,7 +1730,7 @@ $(document).ready(function() {
         }, 1000);
         
     }
-    
+
     function populateDynamicFields(reorderInfo) {
         // Populate hosting platform fields
         const hostingFields = [
@@ -1747,11 +1779,10 @@ $(document).ready(function() {
         
         const totalInboxes = domains.length * inboxesPerDomain;
         
-        // Get current order's total inboxes limit from reorder_info
+        // Always use current order's total inboxes limit (not imported)
         const orderInfo = @json(optional($order)->reorderInfo->first());
-        
-        // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
         let TOTAL_INBOXES = 0;
+        
         if (orderInfo && orderInfo.total_inboxes !== undefined) {
             const rawTotalInboxes = orderInfo.total_inboxes;
             
@@ -1929,24 +1960,85 @@ $(document).ready(function() {
             
             // Calculate TOTAL_INBOXES based on orderInfo.total_inboxes
             let TOTAL_INBOXES = 0;
+            let isConfigurationError = false;
+            
             if (orderInfo && orderInfo.total_inboxes !== undefined) {
                 const rawTotalInboxes = orderInfo.total_inboxes;
                 
-                // Calculate maximum usable inboxes based on inboxes_per_domain
-                // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
-                const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-                TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
+                // Check for configuration error first (order has limit but can't fit any domains)
+                if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                    TOTAL_INBOXES = 0;
+                    isConfigurationError = true;
+                } else {
+                    // Calculate maximum usable inboxes based on inboxes_per_domain
+                    // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+                    const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                    TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
+                }
             }
             
-            // Only enforce limits if order has a limit (total_inboxes > 0)
-            if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+            // Handle configuration error vs regular order limit exceeded
+            if (isConfigurationError) {
+                // Configuration error: order has limit but can't fit any domains with current inboxes per domain
+                $('#domains').addClass('is-invalid');
+                $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                
+                // During import, just return early
+                if (isImporting) {
+                    return;
+                }
+                
+                // For configuration errors, show a specific dialog when user has domains that need to be cleared
+                if (domains.length > 0 && !limitExceededShown) {
+                    limitExceededShown = true;
+                    Swal.fire({
+                        title: 'Configuration Issue',
+                        html: `<strong>Cannot create domains with current settings.</strong><br><br>
+                               Your order limit is <strong>${orderInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
+                               You currently have <strong>${domains.length}</strong> domains that need to be removed.<br><br>
+                               <small>Please reduce inboxes per domain or contact support to increase your order limit.</small>`,
+                        icon: 'warning',
+                        confirmButtonText: 'Clear All Domains',
+                        confirmButtonColor: '#dc3545',
+                        showCancelButton: true,
+                        cancelButtonText: 'Keep Domains',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Clear all domains
+                            domainsField.val('');
+                            
+                            // Clear the error message and update validation
+                            $('#domains').removeClass('is-invalid');
+                            $('#domains-error').text('');
+                            
+                            // Recalculate totals after clearing
+                            if (typeof calculateTotalInboxes === 'function') {
+                                calculateTotalInboxes();
+                            }
+                            
+                            // Update other UI elements
+                            if (typeof countDomains === 'function') {
+                                countDomains();
+                            }
+                            if (typeof updateRemainingInboxesBar === 'function') {
+                                updateRemainingInboxesBar();
+                            }
+                            
+                            toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
+                        }
+                        // Reset flag after popup is closed
+                        limitExceededShown = false;
+                    });
+                }
+            } else if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES && !isConfigurationError) {
                 // Get original total for display
                 const rawTotal = orderInfo && orderInfo.total_inboxes ? orderInfo.total_inboxes : TOTAL_INBOXES;
                 
                 // Always show order limit in domains-error div when limit exceeded
                 $('#domains').addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.
+                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
                     <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
                 `);
                 
@@ -2005,11 +2097,12 @@ $(document).ready(function() {
                     });
                 }
             } else {
-                // Reset flag when within order limits
+                // Reset flag when within order limits or configuration error (already handled above)
                 limitExceededShown = false;
                 
                 // Clear domain errors if within valid range and no other errors
-                if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid')) {
+                // Configuration errors are already handled in the main logic above
+                if (!isConfigurationError && !$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
                     $('#domains').removeClass('is-invalid');
                     $('#domains-error').text('');
                 }
@@ -2209,6 +2302,8 @@ $(document).ready(function() {
     
     // Add event listener for inboxes per domain changes with domain validation
     $('#inboxes_per_domain').on('input change', function() {
+        // Reset the limit exceeded flag when user changes inboxes per domain
+        limitExceededShown = false;
         validateAndTrimDomains();
     });
     
@@ -2405,6 +2500,26 @@ $(document).ready(function() {
                     
                     if (!firstErrorField) {
                         firstErrorField = domainsField;
+                    }
+                } else {
+                    // Check for configuration errors (order limit too small for inboxes per domain)
+                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+                    const totalInboxes = domains.length * inboxesPerDomain;
+                    const orderInfo = @json(optional($order)->reorderInfo->first());
+                    
+                    if (orderInfo && orderInfo.total_inboxes !== undefined) {
+                        const rawTotalInboxes = orderInfo.total_inboxes;
+                        
+                        // Configuration error: order has limit but can't fit any domains with current inboxes per domain
+                        if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                            isValid = false;
+                            domainsField.addClass('is-invalid');
+                            $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                            
+                            if (!firstErrorField) {
+                                firstErrorField = domainsField;
+                            }
+                        }
                     }
                 }
             }
