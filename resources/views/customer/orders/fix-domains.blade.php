@@ -10,7 +10,7 @@
                 <i class="fa-solid fa-chevron-left"></i>
             </a>
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-warning text-dark">Rejected Panels</span>
+                <span class="badge bg-warning text-dark">Rejected Orders</span>
             </div>
         </div>
         <div class="mt-3">
@@ -47,7 +47,7 @@
                         @foreach ($panel->orderPanelSplits as $split)
                             <div class="split-section mb-4 border rounded overflow-hidden">
                                 <!-- Split Summary Header -->
-                                <div class="split-header bg-primary text-white p-3">
+                                <div class="split-header text-white p-3">
                                     <div class="row align-items-center">
                                         <div class="col-md-6">
                                             {{-- <h6 class="mb-1">
@@ -153,20 +153,16 @@
 
             .split-section:hover {
                 border-color: var(--second-primary);
-                box-shadow: 0 2px 8px rgba(87, 80, 191, 0.1);
-            }
-
-            .split-header {
-                background: var(--second-primary) !important;
+                /* box-shadow: 0 2px 8px rgba(87, 80, 191, 0.1); */
             }
 
             .domain-textarea-group {
                 transition: all 0.2s ease;
             }
 
-            .domain-textarea-group:hover {
+            /* .domain-textarea-group:hover {
                 transform: translateY(-2px);
-            }
+            } */
 
             .domain-textarea {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -180,8 +176,8 @@
 
             .domain-textarea:focus {
                 border-color: var(--second-primary);
-                box-shadow: 0 0 0 0.2rem rgba(87, 80, 191, 0.25);
-                transform: scale(1.01);
+                /* box-shadow: 0 0 0 0.2rem rgba(87, 80, 191, 0.25);
+                transform: scale(1.01); */
             }
 
             .domain-textarea.is-invalid {
@@ -200,10 +196,10 @@
             }
 
             /* Enhanced feedback for textareas */
-            .domain-textarea.is-valid {
+            /* .domain-textarea.is-valid {
                 border-color: #28a745;
                 box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
-            }
+            } */
 
             .domain-textarea {
                 line-height: 1.5;
@@ -311,7 +307,6 @@
             .card {
                 border: none;
                 /* background: var(--card-bg, #ffffff); */
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             }
 
             .alert {
@@ -321,7 +316,7 @@
             }
 
             .bg-light {
-                background-color: rgba(87, 80, 191, 0.2) !important;
+                background-color: rgba(87, 80, 191, 0.09) !important;
             }
 
             /* Enhanced Toastr styling */

@@ -133,28 +133,28 @@
 
     /* Prefix Variant Section Styling */
     .prefix-variant-section .card {
-        background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+        background-color: #ffffff04;
         border: 1px solid #404040;
         border-radius: 12px;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: rgba(125, 125, 186, 0.109) 0px 50px 100px -20px, rgb(0, 0, 0) 0px 30px 60px -20px, rgba(173, 173, 173, 0) 0px -2px 6px 0px inset;
     }
-
+/* 
     .prefix-variant-section .card:hover {
         border-color: #667eea;
         box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
         transform: translateY(-2px);
-    }
+    } */
 
-    .prefix-variant-section h6 {
+    /* .prefix-variant-section h6 {
         color: #667eea;
         font-weight: 600;
         margin-bottom: 1rem;
         padding-bottom: 0.5rem;
         border-bottom: 1px solid #404040;
-    }
+    } */
 
-    .prefix-variant-section .form-control {
+    /* .prefix-variant-section .form-control {
         background-color: #1e1e1e !important;
         border-color: #555;
         transition: border-color 0.3s ease;
@@ -170,7 +170,7 @@
         color: #6c757d;
         margin-top: 0.25rem;
         margin-bottom: 0;
-    }
+    } */
 </style>
 @endpush
 @section('content')
@@ -2746,18 +2746,11 @@ $(document).ready(function() {
 
         const fieldHtml = `
             <div class="col-12 prefix-variant-section" data-variant="${i}">
-                <div class="card p-3 mb-3" style="background-color: #2a2a2a; border: 1px solid #404040;">
-                    <h6 class="mb-3 text-info">Prefix Variant ${String(i).padStart(2, '0')}</h6>
+                <div class="card p-3 mb-3">
+                    <h6 class="mb-3 text-white">Prefix Variant ${String(i).padStart(2, '0')}</h6>
                     
                     <div class="row g-3">
-                        <div class="col-md-12">
-                            <label>Email Prefix ${i} *</label>
-                            <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                                value="${existingValue}" required>
-                            <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
-                            ${noteHtml}
-                        </div>
-                        
+
                         <div class="col-md-4">
                             <label>First Name</label>
                             <input type="text" name="prefix_variants_details[prefix_variant_${i}][first_name]" 
@@ -2780,6 +2773,14 @@ $(document).ready(function() {
                                 class="form-control" value="${existingDetails.profile_link || ''}" required>
                             <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
                             <p class="note">Profile picture URL for this persona</p>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label>Email Prefix ${i} *</label>
+                            <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                                value="${existingValue}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                            ${noteHtml}
                         </div>
                     </div>
                 </div>

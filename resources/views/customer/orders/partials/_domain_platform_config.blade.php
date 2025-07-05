@@ -107,7 +107,7 @@
         <div class="mt-5">
             <h6 class="mb-3">
                 <i class="fa-solid fa-paper-plane me-2"></i>
-                Sending Platforms / Sequencer
+                Cold Email Platform
             </h6>
 
             <div class="mb-3">
