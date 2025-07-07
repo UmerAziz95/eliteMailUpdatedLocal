@@ -582,7 +582,7 @@ pointer-events: none
                 </form>
             </div>
         </div>  
-
+        
         <div class="mb-4" style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
             @for ($i = 0; $i < 10; $i++)
             <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid orange">
@@ -885,79 +885,90 @@ pointer-events: none
         
         // Create order card HTML
         function createOrderCard(order) {
+            // Get status color for border
+            function getStatusColor(status) {
+                switch(status) {
+                    case 'completed': return '#28a745';
+                    case 'unallocated': return '#ffc107';
+                    case 'allocated': return '#17a2b8';
+                    case 'rejected': return '#dc3545';
+                    case 'in-progress': return '#007bff';
+                    default: return '#6c757d';
+                }
+            }
+
+            // Get status icon
+            function getStatusIcon(status) {
+                switch(status) {
+                    case 'completed': return 'fa-solid fa-check';
+                    case 'unallocated': return 'fa-solid fa-clock';
+                    case 'allocated': return 'fa-solid fa-user-check';
+                    case 'rejected': return 'fa-solid fa-times';
+                    case 'in-progress': return 'fa-solid fa-spinner';
+                    default: return 'fa-solid fa-question';
+                }
+            }
+
+            const statusColor = getStatusColor(order.status);
+            const statusIcon = getStatusIcon(order.status);
+
             return `
-                <div class="card p-3 d-flex flex-column gap-3 order-card">                    
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <h6 class="mb-0">Order #${order.order_id}</h6>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            ${order.status_manage_by_admin}
+                <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid ${statusColor}">
+                    <div style="position: relative; z-index: 9;">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <h6 class="mb-0">#${order.order_id}</h6>
+                                <span class="small" style="color: ${statusColor}">
+                                    <i class="${statusIcon}" style="color: ${statusColor}"></i>
+                                    ${order.status}
+                                </span>
+                            </div>
                             ${createTimerBadge(order)}
                         </div>
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
-                                    <i class="fas fa-user" style="font-size: 16px;"></i>
+
+                        <div class="d-flex flex-column gap-0">
+                            <h6 class="mb-0">
+                                Total Inboxes : <span class="text-white number">${order.total_inboxes}</span>
+                            </h6>
+                            <small>Splits : <span class="text-white number">${order.splits_count}</span></small>
+                        </div>
+
+                        <div class="my-4">
+                            <div class="content-line d-flex align-items-center justify-content-between">
+                                <div class="d-flex flex-column">
+                                    <small>Inboxes/Domain</small>
+                                    <small class="small">${order.inboxes_per_domain}</small>
                                 </div>
-                                <div class="d-flex flex-column gap-0">
-                                    <small class="opacity-75 d-block" style="font-size: 10px;">Customer</small>
-                                    <small class="fw-bold" style="font-size: 12px;">${order.customer_name}</small>
+                                <div class="d-flex flex-column align-items-end">
+                                    <small>Total Domains</small>
+                                    <small class="small">${order.total_domains}</small>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
-                                    <i class="fas fa-inbox" style="font-size: 16px;"></i>
-                                </div>
-                                <div class="d-flex flex-column gap-0">
-                                    <small class="opacity-75 d-block" style="font-size: 10px;">Total Inboxes</small>
-                                    <small class="fw-bold" style="font-size: 12px;">${order.total_inboxes}</small>
-                                </div>
+            
+                            <div class="d-flex align-items-center mt-1">
+                                <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                                <span style="height: 1px; width: 100%; background-color: ${statusColor};"></span>
+                                <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
-                                    <i class="fas fa-divide" style="font-size: 16px;"></i>
-                                </div>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-1">
+                                <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="">
                                 <div class="d-flex flex-column gap-0">
-                                    <small class="opacity-75 d-block" style="font-size: 10px;">Inboxes/Domain</small>
-                                    <small class="fw-bold" style="font-size: 12px;">${order.inboxes_per_domain}</small>
+                                    <h6 class="mb-0">${order.customer_name}</h6>
+                                    <small>${formatDate(order.created_at)}</small>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center p-2 rounded border border-secondary border-opacity-25">
-                                <div class="me-2 px-2 rounded-1 py-1" style="background-color: #8d8d8d44">
-                                    <i class="fas fa-globe" style="font-size: 16px;"></i>
-                                </div>
-                                <div class="d-flex flex-column gap-0">
-                                    <small class="opacity-75 d-block" style="font-size: 10px;">Total Domains</small>
-                                    <small class="fw-bold" style="font-size: 12px;">${order.total_domains}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-calendar-alt me-1" style="font-size: 12px;"></i>
-                            <small class="" style="font-size: 12px">${formatDate(order.created_at)}</small>
-                        </div>
-                        <button class="btn btn-sm btn-primary px-3 rounded-2 fw-bold" 
+
+                            <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
                                 onclick="viewOrderSplits(${order.order_id})" 
                                 data-bs-toggle="offcanvas" 
                                 data-bs-target="#order-splits-view"
-                                style="font-size: 11px;">
-                            <i class="fas fa-eye me-1" style="font-size: 10px;"></i>
-                            View Details
-                            <span class="badge bg-white text-primary ms-1 rounded-pill" style="font-size: 9px;">${order.splits_count}</span>
-                        </button>
+                            >
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
