@@ -39,7 +39,9 @@ class PanelController extends Controller
         try {
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
                 ->whereHas('orderPanels')
-                ->whereNull('assigned_to'); // Only show unassigned orders
+                ->whereNull('assigned_to') // Only show unassigned orders
+                // order status_manage_by_admin pending
+                ->where('status_manage_by_admin', 'pending');
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
@@ -99,6 +101,7 @@ class PanelController extends Controller
                     'id' => $order->id,
                     'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
+                    'customer_profile_image' => $order->user->profile_image ? url('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $totalDomainsCount,
