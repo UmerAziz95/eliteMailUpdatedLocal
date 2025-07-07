@@ -101,39 +101,37 @@
             </ul>
         </div> --}}
 
+<div class="dropdown notification-dropdown">
+  <div class="bg-transparent border-0 p-0" type="button" id="notificationDropdownToggle">
+    <i class="ti ti-bell fs-5"></i>
+  </div>
 
-        <div class="dropdown notification-dropdown">
-            <div class="bg-transparent border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                id="notificationDropdownToggle">
-                <i class="ti ti-bell fs-5"></i>
-            </div>
-            <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;"
-                id="notificationDropdown">
-                <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
-                    style="background-color: var(--secondary-color); z-index: 10">
-                    <h6 class="mb-0">Notifications</h6>
+  <ul class="dropdown-menu overflow-y-auto py-0" style="min-width: 370px; max-height: 24rem;"
+      id="notificationDropdown">
+    <div class="position-sticky top-0 d-flex align-items-center justify-content-between p-3"
+         style="background-color: var(--secondary-color); z-index: 10">
+      <h6 class="mb-0">Notifications</h6>
 
-                    <!-- Add d-flex & gap-2 here -->
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-regular fa-envelope fs-5 markReadToAllNotification" data-bs-toggle="tooltip"
-                            title="Mark all as read"></i>
+      <div class="d-flex align-items-center gap-2">
+        <i class="fa-regular fa-envelope fs-5 markReadToAllNotification" data-bs-toggle="tooltip"
+           title="Mark all as read"></i>
+        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"
+           data-bs-toggle="tooltip" title="Mark all as unread"></i>
+      </div>
+    </div>
 
-                        <i class="fa-solid fa-envelope-open-text fs-5 markUnReadToAllNotification"
-                            data-bs-toggle="tooltip" title="Mark all as unread"></i>
-                    </div>
-                </div>
+    <div id="notificationList">
+      <!-- Notifications will be loaded here dynamically -->
+    </div>
 
-
-                <div id="notificationList">
-                    <!-- Notifications will be loaded here dynamically -->
-                </div>
-                <div class="position-sticky bottom-0 py-2 px-3 w-100" style="background-color: var(--secondary-color)">
-                    <a href="/customer/settings"
-                        class="m-btn py-2 px-4 w-100 border-0 rounded-2 d-flex align-items-center justify-content-center">View
-                        All Notifications</a>
-                </div>
-            </ul>
-        </div>
+    <div class="position-sticky bottom-0 py-2 px-3 w-100" style="background-color: var(--secondary-color)">
+      <a href="/customer/settings"
+         class="m-btn py-2 px-4 w-100 border-0 rounded-2 d-flex align-items-center justify-content-center">
+        View All Notifications
+      </a>
+    </div>
+  </ul>
+</div>
 
         @php
             $user = Auth::user();
@@ -396,12 +394,44 @@
             });
     }
 
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('notificationDropdownToggle');
+    const dropdownInstance = new bootstrap.Dropdown(toggleBtn);
+    let isDropdownOpen = false;
+
+    toggleBtn.addEventListener('click', async function () {
+        if (!isDropdownOpen) {
+            // Load and render notifications
+            await loadNotifications();
+
+            // Show dropdown
+            dropdownInstance.show();
+            isDropdownOpen = true;
+        } else {
+            // Hide dropdown
+            dropdownInstance.hide();
+            isDropdownOpen = false;
+        }
+    });
+
+    // Detect when dropdown is hidden via clicking outside or ESC
+    document.getElementById('notificationDropdown').addEventListener('hidden.bs.dropdown', function () {
+        isDropdownOpen = false;
+    });
+
+    document.getElementById('notificationDropdown').addEventListener('shown.bs.dropdown', function () {
+        isDropdownOpen = true;
+    });
+});
+
+
     function loadNotifications() {
-        fetch('/notifications/list')
+        return fetch('/notifications/list')
             .then(response => response.json())
             .then(data => {
                 handleToggleNotificationReadUnreadBtn(data?.notifications);
                 const notificationList = document.getElementById('notificationList');
+
                 notificationList.innerHTML = data.notifications.map(notification => `
                     <hr class="my-0">
                     <li class="dropdown-item py-2">
@@ -422,7 +452,7 @@
                                     ${!notification.is_read 
                                         ? `<a href="javascript:void(0)" class="dropdown-notifications-read" data-id="${notification.id}">
                                             <span class="badge bg-danger">Unread</span>
-                                           </a>`
+                                           </a>` 
                                         : ''
                                     }
                                 </small>
@@ -434,7 +464,7 @@
                     </li>
                 `).join('');
 
-                // Reattach event listeners for mark as read buttons
+                // Reattach mark-as-read click listeners
                 document.querySelectorAll('.dropdown-notifications-read').forEach(button => {
                     button.addEventListener('click', handleNotificationRead);
                 });
@@ -443,29 +473,37 @@
     }
 
     function handleToggleNotificationReadUnreadBtn(notifications) {
-        const unreadCount = notifications.filter(notification => !notification.is_read).length;
-        const totalCount = notifications.length;
-        const readCount = totalCount - unreadCount;
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        const readCount = notifications.length - unreadCount;
 
         const markReadBtn = document.querySelector('.markReadToAllNotification');
         const markUnreadBtn = document.querySelector('.markUnReadToAllNotification');
 
-        // Show/hide buttons based on read/unread state
         if (readCount > 0 && unreadCount > 0) {
-            // Some read, some unread → show both
             markReadBtn.style.display = 'block';
             markUnreadBtn.style.display = 'block';
         } else if (unreadCount === 0) {
-            // All are read → show only "Mark all as Unread"
             markReadBtn.style.display = 'none';
             markUnreadBtn.style.display = 'block';
         } else if (readCount === 0) {
-            // All are unread → show only "Mark all as Read"
             markReadBtn.style.display = 'block';
             markUnreadBtn.style.display = 'none';
         }
     }
 
+    function handleNotificationRead(e) {
+        const id = e.currentTarget.dataset.id;
+
+        fetch(`/notifications/mark-read/${id}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(() => loadNotifications());
+    }
 
 
 
@@ -496,12 +534,13 @@
             .catch(error => console.error('Error:', error));
     }
 </script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const markReadButton = document.querySelector('.markReadToAllNotification');
         if (markReadButton) {
             markReadButton.addEventListener('click', function() {
-                fetch('notifications/mark-all-as-read', {
+                fetch('/customer/notifications/mark-all-as-read', {
                         method: 'GET',
                     })
                     .then(response => response.json())
@@ -534,7 +573,7 @@
         const markUnReadButton = document.querySelector('.markUnReadToAllNotification');
         if (markUnReadButton) {
             markUnReadButton.addEventListener('click', function() {
-                fetch('notifications/mark-all-as-unread', {
+                fetch('/customer/notifications/mark-all-as-unread', {
                         method: 'GET',
                     })
                     .then(response => response.json())
