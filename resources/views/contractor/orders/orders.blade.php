@@ -302,6 +302,22 @@
         box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
     }
 
+    .timer-badge.paused {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: #212529;
+        border-color: rgba(255, 193, 7, 0.3);
+        box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+        animation: pulse-yellow 3s infinite;
+    }
+
+    .timer-badge.paused.negative {
+        background: linear-gradient(135deg, #dc3545, #ffc107);
+        color: white;
+        border-color: rgba(220, 53, 69, 0.3);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        animation: pulse-red-yellow 3s infinite;
+    }
+
     /* Pulse animation for overdue timers */
     @keyframes pulse-red {
         0% {
@@ -311,6 +327,46 @@
         50% {
             box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
             transform: scale(1.02);
+        }
+
+        100% {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+    }
+
+    /* Pulse animation for paused timers */
+    @keyframes pulse-yellow {
+        0% {
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+        }
+
+        50% {
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+            transform: scale(1.01);
+        }
+
+        100% {
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+        }
+    }
+
+    /* Pulse animation for paused overdue timers */
+    @keyframes pulse-red-yellow {
+        0% {
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+
+        25% {
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+            transform: scale(1.01);
+        }
+
+        75% {
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
         }
 
         100% {
@@ -759,6 +815,7 @@
                 container.innerHTML = ordersHtml;
             }
         }
+
         // Create order card HTML
         function createOrderCard(order) {
             // Calculate splits table content
@@ -945,12 +1002,39 @@
         }
 
         // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt);
             const now = new Date();
             
             // Use timer_started_at if available, otherwise fall back to created_at
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
             const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
+            
+            // If timer is paused (timer_paused_at is not null), show paused state
+            if (timerPausedAt && status !== 'completed') {
+                const pausedTime = new Date(timerPausedAt);
+                const timeDiffAtPause = pausedTime - twelveHoursLater;
+                
+                if (timeDiffAtPause > 0) {
+                    // Was overdue when paused
+                    return {
+                        display: '-' + formatTimeDuration(timeDiffAtPause) + ' (Paused)',
+                        isNegative: true,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: 'paused negative'
+                    };
+                } else {
+                    // Had time remaining when paused
+                    return {
+                        display: formatTimeDuration(-timeDiffAtPause) + ' (Paused)',
+                        isNegative: false,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: 'paused positive'
+                    };
+                }
+            }
             
             // If order is completed, timer is paused - show the time it took to complete
             if (status === 'completed' && completedAt) {
@@ -1018,8 +1102,10 @@
         // Create timer badge HTML
         function createTimerBadge(order) {
             console.log(order);
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at, order.timer_paused_at);
+            const iconClass = timer.isCompleted ? 'fas fa-check' : 
+                              timer.isPaused ? 'fas fa-pause' : 
+                              (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
             
             // Create tooltip text
             let tooltip = '';
@@ -1027,6 +1113,8 @@
                 tooltip = order.completed_at 
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
+            } else if (timer.isPaused) {
+                tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(order.timer_paused_at)}`;
             } else if (timer.isNegative) {
                 tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
             } else {
@@ -1039,6 +1127,8 @@
                       data-created-at="${order.created_at}" 
                       data-status="${order.status}" 
                       data-completed-at="${order.completed_at || ''}"
+                      data-timer-started-at="${order.timer_started_at || ''}"
+                      data-timer-paused-at="${order.timer_paused_at || ''}"
                       data-tooltip="${tooltip}">
                     <i class="${iconClass} timer-icon"></i>
                     ${timer.display}
@@ -1954,14 +2044,22 @@ function parseUTCDateTime(dateStr) {
                 const status = badge.dataset.status;
                 const completedAt = badge.dataset.completedAt;
                 const timerStartedAt = badge.dataset.timerStartedAt;
+                const timerPausedAt = badge.dataset.timerPausedAt;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-                const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                // Skip updating paused orders (they don't change until resumed)
+                if (timerPausedAt && timerPausedAt !== '') {
+                    return;
+                }
+                
+                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt);
+                const iconClass = timer.isCompleted ? 'fas fa-check' : 
+                                  timer.isPaused ? 'fas fa-pause' : 
+                                  (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
                 
                 // Check if the timer display has changed to avoid unnecessary DOM updates
                 const currentDisplay = badge.textContent.trim();
@@ -1975,6 +2073,8 @@ function parseUTCDateTime(dateStr) {
                     tooltip = completedAt 
                         ? `Order completed on ${formatDate(completedAt)}` 
                         : 'Order is completed';
+                } else if (timer.isPaused) {
+                    tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerPausedAt)}`;
                 } else if (timer.isNegative) {
                     tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
                 } else {
