@@ -48,12 +48,15 @@ class DashboardController extends Controller
                 ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
                 ->sum('reorder_infos.total_inboxes');
         }
-        // Get subscription info
-        $subscription = $user->subscription;
+        // Get recent subscription info but not cancelled or rejected
+        
+        $subscription = Subscription::where('user_id', $user->id)
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->latest()
+            ->first();
         $nextBillingInfo = null;
         
         if ($subscription && $subscription->status === 'active') {
-            $subscriptionMeta = json_decode($subscription->meta ?? '[]', true);
             $nextBillingInfo = [
                 'next_billing_at' => $subscription->next_billing_date ? Carbon::parse($subscription->next_billing_date)->format('M d, Y') : 'N/A',
                 'amount' => $latestOrder->amount ?? '0.00'
