@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
-
+use Illuminate\Support\Facades\Auth;
 class OrderController extends Controller
 {
     private $statuses;
@@ -1583,6 +1584,7 @@ class OrderController extends Controller
      */
     public function updateFixedDomains(Request $request, $orderId)
     {
+        
         try {
             
             $order = Order::with(['orderPanels.orderPanelSplits', 'reorderInfo'])
@@ -1718,6 +1720,37 @@ class OrderController extends Controller
                 ]);
             }
 
+             // Create notifications
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Your order #' . $order->id . ' status has been changed to pending ',
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' =>  $split->orderPanel->id,
+                    'old_status' => "Rejected",
+                    'new_status' => "Pending",
+                    'reason' => 'Domains updated by customer',
+                    'updated_by' => Auth::id()
+                ]
+            ]);
+
+            // Notification for contractor
+            Notification::create([
+                'user_id' => $order->assigned_to,
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Order #' . $order->id . ' status changed to pending ',
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' =>  $split->orderPanel->id,
+                    'old_status' => "Rejected",
+                    'new_status' => "Pending",
+                    'reason' => 'Domains updated by customer',
+                    'updated_by' => Auth::id()
+                ]
+            ]);
             DB::commit();
 
             return response()->json([
