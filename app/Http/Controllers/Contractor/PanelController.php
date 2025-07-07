@@ -39,7 +39,9 @@ class PanelController extends Controller
         try {
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
                 ->whereHas('orderPanels')
-                ->whereNull('assigned_to'); // Only show unassigned orders
+                ->whereNull('assigned_to') // Only show unassigned orders
+                // order status_manage_by_admin pending
+                ->where('status_manage_by_admin', 'pending');
 
             // Apply filters if provided
             if ($request->filled('order_id')) {

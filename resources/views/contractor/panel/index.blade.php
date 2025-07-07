@@ -886,13 +886,14 @@ pointer-events: none
         // Create order card HTML
         function createOrderCard(order) {
             // Get status color for border
+            // pending, completed, in-progress, draft, rejected
             function getStatusColor(status) {
                 switch(status) {
                     case 'completed': return '#28a745';
-                    case 'unallocated': return '#ffc107';
-                    case 'allocated': return '#17a2b8';
-                    case 'rejected': return '#dc3545';
+                    case 'pending': return '#ffc107';
                     case 'in-progress': return '#007bff';
+                    case 'draft': return '#6c757d';
+                    case 'reject': return '#dc3545';
                     default: return '#6c757d';
                 }
             }
@@ -901,10 +902,10 @@ pointer-events: none
             function getStatusIcon(status) {
                 switch(status) {
                     case 'completed': return 'fa-solid fa-check';
-                    case 'unallocated': return 'fa-solid fa-clock';
-                    case 'allocated': return 'fa-solid fa-user-check';
-                    case 'rejected': return 'fa-solid fa-times';
+                    case 'pending': return 'fa-solid fa-spinner';
                     case 'in-progress': return 'fa-solid fa-spinner';
+                    case 'draft': return 'fa-solid fa-file-pen';
+                    case 'reject': return 'fa-solid fa-times';
                     default: return 'fa-solid fa-question';
                 }
             }
