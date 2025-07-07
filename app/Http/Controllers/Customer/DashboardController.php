@@ -51,12 +51,12 @@ class DashboardController extends Controller
         // Get recent subscription info but not cancelled or rejected
         
         $subscription = Subscription::where('user_id', $user->id)
-            ->whereNotIn('status', ['cancelled', 'rejected'])
+            // ->whereNotIn('status', ['cancelled', 'rejected'])
             ->latest()
             ->first();
         $nextBillingInfo = null;
         
-        if ($subscription && $subscription->status === 'active') {
+        if ($subscription) {
             $nextBillingInfo = [
                 'next_billing_at' => $subscription->next_billing_date ? Carbon::parse($subscription->next_billing_date)->format('M d, Y') : 'N/A',
                 'amount' => $latestOrder->amount ?? '0.00'

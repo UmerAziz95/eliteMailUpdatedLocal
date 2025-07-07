@@ -451,7 +451,7 @@
                                     @if (isset($subscription) && $subscription->status === 'active')
                                         <div class="badge rounded bg-label-success success">Active</div>
                                     @else
-                                        <div class="badge rounded bg-label-warning">No Active Plan</div>
+                                        <div class="badge rounded bg-label-danger">Cancelled</div>
                                     @endif
                                 </div>
                                 <div class="d-flex flex-column gap-1">
