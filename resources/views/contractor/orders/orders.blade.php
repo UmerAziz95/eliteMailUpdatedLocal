@@ -946,6 +946,7 @@
 
         // Calculate timer for order
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+            console.log(createdAt, status, completedAt, timerStartedAt);
             const now = new Date();
             
             // Use timer_started_at if available, otherwise fall back to created_at
@@ -1039,6 +1040,7 @@
                       data-created-at="${order.created_at}" 
                       data-status="${order.status}" 
                       data-completed-at="${order.completed_at || ''}"
+                      data-timer-started-at="${order.timer_started_at || ''}"
                       data-tooltip="${tooltip}">
                     <i class="${iconClass} timer-icon"></i>
                     ${timer.display}

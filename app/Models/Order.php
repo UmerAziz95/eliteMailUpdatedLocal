@@ -14,6 +14,7 @@ class Order extends Model
         'last_draft_notification_sent_at' => 'datetime',
         'completed_at' => 'datetime',
         'timer_started_at' => 'datetime',
+        'timer_paused_at' => 'datetime',
     ];
     protected $fillable = [
         'user_id',
@@ -30,7 +31,9 @@ class Order extends Model
         'reason',
         'last_draft_notification_sent_at',
         'completed_at',
-        'timer_started_at'
+        'timer_started_at',
+        'timer_paused_at',
+        'total_paused_seconds'
     ];
     
     // status_manage_by_admin
@@ -87,5 +90,77 @@ class Order extends Model
     {
         return $this->hasMany(SupportTicket::class);
     }
-    
+
+    /**
+     * Get the effective working time in seconds (excluding paused time)
+     */
+    public function getEffectiveWorkingTimeSeconds()
+    {
+        if (is_null($this->timer_started_at)) {
+            return 0;
+        }
+
+        $endTime = $this->completed_at ?? now();
+        $totalTime = $endTime->diffInSeconds($this->timer_started_at);
+        
+        // Subtract total paused seconds
+        $pausedTime = $this->total_paused_seconds ?? 0;
+        
+        // If currently paused, add current pause duration
+        if (!is_null($this->timer_paused_at)) {
+            $currentPauseDuration = now()->diffInSeconds($this->timer_paused_at);
+            $pausedTime += $currentPauseDuration;
+        }
+        
+        return max(0, $totalTime - $pausedTime);
+    }
+
+    /**
+     * Get the effective working time formatted as human readable string
+     */
+    public function getEffectiveWorkingTimeFormatted()
+    {
+        $seconds = $this->getEffectiveWorkingTimeSeconds();
+        
+        if ($seconds < 60) {
+            return $seconds . ' seconds';
+        } elseif ($seconds < 3600) {
+            $minutes = floor($seconds / 60);
+            $remainingSeconds = $seconds % 60;
+            return $minutes . ' minutes' . ($remainingSeconds > 0 ? ' ' . $remainingSeconds . ' seconds' : '');
+        } else {
+            $hours = floor($seconds / 3600);
+            $minutes = floor(($seconds % 3600) / 60);
+            $remainingSeconds = $seconds % 60;
+            
+            $result = $hours . ' hours';
+            if ($minutes > 0) {
+                $result .= ' ' . $minutes . ' minutes';
+            }
+            if ($remainingSeconds > 0) {
+                $result .= ' ' . $remainingSeconds . ' seconds';
+            }
+            
+            return $result;
+        }
+    }
+
+    /**
+     * Check if the timer is currently paused
+     */
+    public function isTimerPaused()
+    {
+        return !is_null($this->timer_paused_at);
+    }
+
+    /**
+     * Check if the timer is running (started but not paused or completed)
+     */
+    public function isTimerRunning()
+    {
+        return !is_null($this->timer_started_at) && 
+               is_null($this->timer_paused_at) && 
+               is_null($this->completed_at);
+    }
+
 }

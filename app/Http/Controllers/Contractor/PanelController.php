@@ -96,7 +96,6 @@ class PanelController extends Controller
                 }
                 
                 $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
-                
                 return [
                     'id' => $order->id,
                     'order_id' => $order->id,
@@ -115,6 +114,7 @@ class PanelController extends Controller
                     })(),
                     'created_at' => $order->created_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_started_at_1' => $order->timer_started_at ? $order->timer_started_at->copy()->subSeconds($order->total_paused_seconds)->toISOString() : null,
                     'completed_at' => $order->completed_at,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
