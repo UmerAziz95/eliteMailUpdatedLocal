@@ -1533,8 +1533,10 @@ class OrderController extends Controller
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
                     // 'timer_started_at' => $order->timer_started_at,
-                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->copy()->subSeconds($order->total_paused_seconds)->toISOString() : null,
-                    'timer_started_at_1' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    // 'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->copy()->subSeconds($order->total_paused_seconds)->toISOString() : null,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
