@@ -1044,6 +1044,7 @@ class OrderController extends Controller
 
     public function orderPanelStatusProcess(Request $request)
     {
+        
         $request->validate([
             'order_panel_id' => 'required|exists:order_panel,id',
             'marked_status' => 'required|string|in:' . implode(',', array_keys($this->splitStatuses)),
@@ -1186,7 +1187,7 @@ class OrderController extends Controller
                 'user_id' => $order->user_id,
                 'type' => 'order_panel_status_change',
                 'title' => 'Order Panel Status Changed',
-                'message' => 'Your order #' . $order->id . ' panel status has been changed to ' . $newStatus,
+                'message' => 'Your order #' . $order->id . ' status has been changed to ' . $newStatus,
                 'data' => [
                     'order_id' => $order->id,
                     'order_panel_id' => $orderPanel->id,
@@ -1203,7 +1204,7 @@ class OrderController extends Controller
                 'user_id' => Auth::id(),
                 'type' => 'order_panel_status_change',
                 'title' => 'Order Panel Status Changed',
-                'message' => 'Order #' . $order->id . ' panel status changed to ' . $newStatus,
+                'message' => 'Order #' . $order->id . ' status changed to ' . $newStatus,
                 'data' => [
                     'order_id' => $order->id,
                     'order_panel_id' => $orderPanel->id,

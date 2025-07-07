@@ -49,7 +49,7 @@
             </ul>
         </div> --}}
 
-       <div class="dropdown notification-dropdown">
+<div class="dropdown notification-dropdown">
   <!-- Toggle button (manual trigger) -->
   <div class="bg-transparent border-0 p-0" type="button" id="notificationDropdownToggle">
     <i class="ti ti-bell fs-5"></i>
@@ -387,42 +387,6 @@ function handleNotificationRead(e) {
     })
     .then(() => loadNotifications());
 }
-
-    function handleNotificationRead() {
-        const notificationId = this.dataset.id;
-        fetch(`/notifications/${notificationId}/mark-as-read`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    // Update the notification count
-                    updateNotificationCount();
-                    // Remove the unread badge
-                    this.remove();
-                    // Close the dropdown
-                    const dropdownMenu = document.getElementById('notificationDropdown');
-                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu);
-                    if (bsDropdown) {
-                        bsDropdown.hide();
-                    }
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    // Add event listener to load notifications when dropdown is opened
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add event listener to notification dropdown
-        const notificationDropdownEl = document.querySelector('.notification-dropdown');
-        notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
-            loadNotifications();
-        });
-    });
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
