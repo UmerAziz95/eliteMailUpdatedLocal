@@ -1002,8 +1002,8 @@
         }
 
         // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null) {
-            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt);
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
             
             // Use timer_started_at if available, otherwise fall back to created_at
@@ -1013,7 +1013,15 @@
             // If timer is paused (timer_paused_at is not null), show paused state
             if (timerPausedAt && status !== 'completed') {
                 const pausedTime = new Date(timerPausedAt);
-                const timeDiffAtPause = pausedTime - twelveHoursLater;
+                
+                // Calculate the time that had elapsed from start to when it was paused
+                const timeElapsedBeforePause = pausedTime - startTime;
+                
+                // Calculate effective time (subtract any previous paused time)
+                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+                
+                // Check if it was overdue when paused
+                const timeDiffAtPause = effectiveTimeAtPause - (12 * 60 * 60 * 1000);
                 
                 if (timeDiffAtPause > 0) {
                     // Was overdue when paused
@@ -1039,11 +1047,13 @@
             // If order is completed, timer is paused - show the time it took to complete
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - startTime;
-                const isOverdue = completionDate > twelveHoursLater;
+                const totalElapsedTime = completionDate - startTime;
+                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+                const twelveHours = 12 * 60 * 60 * 1000;
+                const isOverdue = effectiveWorkingTime > twelveHours;
                 
                 return {
-                    display: formatTimeDuration(timeTaken),
+                    display: formatTimeDuration(effectiveWorkingTime),
                     isNegative: isOverdue,
                     isCompleted: true,
                     class: 'completed'
@@ -1063,7 +1073,11 @@
             // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
             // - Counts down from 12:00:00 to 00:00:00
             // - After reaching zero, continues in negative time (overtime)
-            const timeDiff = now - twelveHoursLater;
+            // - Account for total paused time
+            const totalElapsedTime = now - startTime;
+            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const effectiveDeadline = new Date(startTime.getTime() + (12 * 60 * 60 * 1000) + (totalPausedSeconds * 1000));
+            const timeDiff = now - effectiveDeadline;
             
             if (timeDiff > 0) {
                 // Order is overdue (negative time - overtime)
@@ -1102,7 +1116,14 @@
         // Create timer badge HTML
         function createTimerBadge(order) {
             console.log(order);
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at, order.timer_paused_at);
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
             const iconClass = timer.isCompleted ? 'fas fa-check' : 
                               timer.isPaused ? 'fas fa-pause' : 
                               (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
@@ -1129,6 +1150,7 @@
                       data-completed-at="${order.completed_at || ''}"
                       data-timer-started-at="${order.timer_started_at || ''}"
                       data-timer-paused-at="${order.timer_paused_at || ''}"
+                      data-total-paused-seconds="${order.total_paused_seconds || 0}"
                       data-tooltip="${tooltip}">
                     <i class="${iconClass} timer-icon"></i>
                     ${timer.display}
@@ -2045,6 +2067,7 @@ function parseUTCDateTime(dateStr) {
                 const completedAt = badge.dataset.completedAt;
                 const timerStartedAt = badge.dataset.timerStartedAt;
                 const timerPausedAt = badge.dataset.timerPausedAt;
+                const totalPausedSeconds = parseInt(badge.dataset.totalPausedSeconds) || 0;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
@@ -2056,7 +2079,7 @@ function parseUTCDateTime(dateStr) {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt);
+                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
                 const iconClass = timer.isCompleted ? 'fas fa-check' : 
                                   timer.isPaused ? 'fas fa-pause' : 
                                   (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');

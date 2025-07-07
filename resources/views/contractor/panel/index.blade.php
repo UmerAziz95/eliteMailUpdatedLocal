@@ -2019,7 +2019,7 @@ pointer-events: none
             }
             }
         }
-        
+    
         // Update all flip timers on the page
         function updateAllTimers() {
             const flipTimers = document.querySelectorAll('.flip-timer');
