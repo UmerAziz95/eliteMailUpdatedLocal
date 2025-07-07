@@ -508,7 +508,7 @@
     
     <!-- Order Details Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header">
+        <div class="offcanvas-header" style="background-color: transparent">
             <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
                 <i class="fas fa-times"></i>
@@ -1148,10 +1148,10 @@
 
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split" target="_blank">
+                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 11px" class="me-2 btn btn-sm btn-outline-primary" title="View Split" target="_blank">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 11px" class="me-2 btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
                                         </div>
