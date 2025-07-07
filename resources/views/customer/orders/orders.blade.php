@@ -66,7 +66,7 @@
         transition: all 0.3s ease;
     } */
 
-    .draft-alert .alert-icon {
+    /* .draft-alert .alert-icon {
         animation: bounce 1s infinite;
     }
 
@@ -76,9 +76,9 @@
 
     .draft-alert .btn-close:hover {
         transform: rotate(90deg) scale(1.1);
-    }
+    } */
 
-    @keyframes slideInFromLeft {
+    /* @keyframes slideInFromLeft {
         0% {
             opacity: 0;
             transform: translateX(-100%);
@@ -91,15 +91,13 @@
 
     @keyframes pulse {
         0%, 100% {
-            /* border-color: var(--second-primary); */
         }
         50% {
-            /* border-color: #ffc107; */
             box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
         }
-    }
+    } */
 
-    @keyframes bounce {
+    /* @keyframes bounce {
         0%, 20%, 50%, 80%, 100% {
             transform: translateY(0);
         }
@@ -118,7 +116,7 @@
         100% {
             left: 100%;
         }
-    }
+    } */
 
     /* Fade out animation for dismiss */
     .draft-alert.fade {

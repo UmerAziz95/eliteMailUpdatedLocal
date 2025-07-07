@@ -32,6 +32,7 @@ class ReorderInfo extends Model
         'prefix_variant_1',
         'prefix_variant_2',
         'prefix_variants',
+        'prefix_variants_details',
         'persona_password',
         'profile_picture_link',
         'email_persona_password',
@@ -43,6 +44,7 @@ class ReorderInfo extends Model
 
     protected $casts = [
         'prefix_variants' => 'array',
+        'prefix_variants_details' => 'array',
     ];
 
     public function user()
