@@ -1000,7 +1000,6 @@
                 return 'Invalid Date';
             }
         }
-
         // Calculate timer for order
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
             console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
@@ -1260,7 +1259,15 @@
                         <div>
                             <h6>
                                 ${orderInfo.status_manage_by_admin}
-                                ${createTimerBadge(orderInfo)}
+                                ${createTimerBadge({
+                                    order_id: orderInfo.id,
+                                    created_at: orderInfo.created_at,
+                                    status: orderInfo.status,
+                                    completed_at: orderInfo.completed_at,
+                                    timer_started_at: orderInfo.timer_started_at,
+                                    timer_paused_at: orderInfo.timer_paused_at,
+                                    total_paused_seconds: orderInfo.total_paused_seconds
+                                })}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>

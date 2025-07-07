@@ -190,6 +190,9 @@ class PanelController extends Controller
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
                     'status' => $order->status_manage_by_admin ?? 'pending',
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
