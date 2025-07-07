@@ -113,6 +113,7 @@
                         <span>Variant {{ $i }}: {{ $variantValue }}</span>
                     @endfor
                 </div>
+                
                 <div class="d-flex flex-column mt-3">
                     <span class="opacity-50">Profile Picture URL</span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->profile_picture_link ?? 'N/A' }}</span>
