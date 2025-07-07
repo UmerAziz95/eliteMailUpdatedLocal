@@ -48,7 +48,6 @@ class DashboardController extends Controller
                 ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
                 ->sum('reorder_infos.total_inboxes');
         }
-
         // Get subscription info
         $subscription = $user->subscription;
         $nextBillingInfo = null;

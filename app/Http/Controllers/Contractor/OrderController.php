@@ -1141,14 +1141,14 @@ class OrderController extends Controller
                     $totalActualEmails += $actualEmailsForSplit;
                 }
                 
-                if ($totalActualEmails < $totalExpectedEmails) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Cannot mark as completed. Please add all emails first. Expected: {$totalExpectedEmails}, Current: {$totalActualEmails}",
-                        'expected_emails' => $totalExpectedEmails,
-                        'current_emails' => $totalActualEmails
-                    ], 422);
-                }
+                // if ($totalActualEmails < $totalExpectedEmails) {
+                //     return response()->json([
+                //         'success' => false,
+                //         'message' => "Cannot mark as completed. Please add all emails first. Expected: {$totalExpectedEmails}, Current: {$totalActualEmails}",
+                //         'expected_emails' => $totalExpectedEmails,
+                //         'current_emails' => $totalActualEmails
+                //     ], 422);
+                // }
             }
 
             // Update order panel status
