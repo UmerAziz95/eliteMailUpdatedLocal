@@ -1,4 +1,4 @@
-@extends('contractor.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Orders-Queue')
 

@@ -30,8 +30,8 @@
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.orderQueue.order_queue') ? 'active' : '' }}"
                 href="{{ route('admin.orderQueue.order_queue') }}">
                 <div class="d-flex align-items-center" style="gap: 13px">
-                    <div class="icons"><i class="ti ti-home fs-5"></i></div>
-                    <div class="text">Dashboard</div>
+                    <div class="icons"><i class="fa-brands fa-first-order"></i></div>
+                    <div class="text">Order In Queue</div>
                 </div>
             </a>
         </li>

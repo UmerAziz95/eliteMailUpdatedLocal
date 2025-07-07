@@ -97,7 +97,7 @@
     </div>
     
     <div style="background-color: var(--second-primary); border: 2px solid #7669ff;"
-        class="py-4 px-3 rounded-3 my-3">
+        class="py-4 px-3 rounded-3 my-3 mx-xxl-3">
         <div class="d-flex flex-column mb-3">
             <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
             <small class="text-white opacity-75">Click here to buy more inboxes</small>
