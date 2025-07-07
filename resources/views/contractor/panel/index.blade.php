@@ -83,7 +83,7 @@
         }
 
         /* Domain badge styling */
-        .domain-badge {
+        /* .domain-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: 1px solid rgba(102, 126, 234, 0.3);
             color: white;
@@ -93,12 +93,12 @@
             margin: 0.125rem;
             display: inline-block;
             transition: all 0.3s ease;
-        }
+        } */
 
-        .domain-badge:hover {
+        /* .domain-badge:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
+        } */
 
         /* Order card styling */
         .order-card {
@@ -108,7 +108,7 @@
 
         .order-card:hover {
             /* transform: translateY(-2px); */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            /* box-shadow: 0 4px 12px rgba(0,0,0,0.15); */
         }
 
         /* Enhanced stat boxes hover effects */
@@ -119,8 +119,8 @@
 
         .order-card .col-6 > div:hover {
             /* transform: translateY(-1px); */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-color: rgba(255, 255, 255, 0.3) !important;
+            /* box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: rgba(255, 255, 255, 0.3) !important; */
         }
 
         /* Icon animations */
@@ -228,11 +228,11 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
 
-        .domain-badge:hover {
+        /* .domain-badge:hover {
             transform: translateY(-3px) scale(1.08) !important;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
             filter: brightness(1.1);
-        }
+        } */
 
         .split-container {
             transition: all 0.3s ease;
@@ -1114,6 +1114,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="table-responsive mb-4">
                     <table class="table table-striped table-hover">
                         <thead>
@@ -1126,21 +1127,25 @@
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
                                     <td>
-                                        <span class="text-white px-2 py-1 rounded-1 ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                        <span class="text-dark px-2 py-1 rounded-1 badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
                                     
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
+
                                     <td>
                                         <span class="px-2 py-1 rounded-1 bg-success text-white" style="font-size: 10px;">
                                             ${split.domains_count || 0} domain(s)
                                         </span>
                                     </td>
+
                                     <td>${split.total_inboxes || 'N/A'}</td>
+
                                     <td>
                                         <div class="d-flex gap-1">
                                             <a href="/contractor/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split" target="_blank">
@@ -1158,7 +1163,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <div class="card p-3 mb-3">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 30px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -1184,21 +1189,21 @@
                              
                             <hr>
                             <div class="d-flex flex-column">
-                                <span class="opacity-50">Prefix Variants</span>
-                                ${renderPrefixVariants(reorderInfo)}
+                                <span class="opacity-50 small">Prefix Variants</span>
+                                <small>${renderPrefixVariants(reorderInfo)}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50">Profile Picture URL</span>
-                                <span>${reorderInfo?.profile_picture_link || 'N/A'}</span>
+                                <span class="opacity-50 small">Profile Picture URL</span>
+                                <small>${reorderInfo?.profile_picture_link || 'N/A'}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50">Email Persona Password</span>
-                                <span>${reorderInfo?.email_persona_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Email Persona Password</span>
+                                <small>${reorderInfo?.email_persona_password || 'N/A'}</small>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-7">
                         <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 30px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -1208,42 +1213,42 @@
                             </h6>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Hosting Platform</span>
-                                <span>${reorderInfo?.hosting_platform || 'N/A'}</span>
+                                <span class="opacity-50 small">Hosting Platform</span>
+                                <small>${reorderInfo?.hosting_platform || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Platform Login</span>
-                                <span>${reorderInfo?.platform_login || 'N/A'}</span>
+                                <span class="opacity-50 small">Platform Login</span>
+                                <small>${reorderInfo?.platform_login || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Platform Password</span>
-                                <span>${reorderInfo?.platform_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Platform Password</span>
+                                <small>${reorderInfo?.platform_password || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                <span>${reorderInfo?.forwarding_url || 'N/A'}</span>
+                                <span class="opacity-50 small">Domain Forwarding Destination URL</span>
+                                <small>${reorderInfo?.forwarding_url || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending Platform</span>
-                                <span>${reorderInfo?.sending_platform || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending Platform</span>
+                                <small>${reorderInfo?.sending_platform || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending platform Sequencer - Login</span>
-                                <span>${reorderInfo?.sequencer_login || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending platform Sequencer - Login</span>
+                                <small>${reorderInfo?.sequencer_login || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Sending platform Sequencer - Password</span>
-                                <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
+                                <span class="opacity-50 small">Sending platform Sequencer - Password</span>
+                                <small>${reorderInfo?.sequencer_password || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column">
-                                <span class="opacity-50 mb-3">
+                                <span class="opacity-50 small mb-3">
                                     <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
                                 </span>
                                 
@@ -1251,7 +1256,7 @@
                                 ${splits.map((split, index) => `
                                     <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
                                         <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
-                                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                             style="background-color: var(--filter-color); cursor: pointer;"
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
@@ -1269,6 +1274,7 @@
                                                 <i class="fa-solid fa-chevron-right transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                             </div>
                                         </div>
+
                                         <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
                                             <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
                                                 <div class="domains-grid">
@@ -1279,6 +1285,7 @@
                                     </div>
                                 `).join('')}
                             </div>
+
                             <div class="d-flex flex-column mt-3">
                                 <span class="opacity-50">Additional Notes</span>
                                 <span>${reorderInfo?.additional_notes || 'N/A'}</span>
@@ -1519,20 +1526,16 @@
                 .map((domain, index) => `
                     <span class="domain-badge" style="
                         display: inline-block;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background-color: var(--filter-color);
                         color: white;
+                        min-width: 8rem;
                         padding: 4px 8px;
                         margin: 2px 2px;
                         border-radius: 12px;
                         font-size: 11px;
                         font-weight: 500;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        animation: domainFadeIn 0.3s ease-out ${index * 0.001}s both;
-                        transition: all 0.3s ease;
                         cursor: pointer;
-                    " 
-                    onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'"
-                    onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'"
+                    "
                     title="Click to copy: ${domain}"
                     onclick="copyToClipboard('${domain}')">
                         <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
@@ -1618,12 +1621,12 @@
                     });
                     
                     // Animate domain badges within the split with staggered delay
-                    setTimeout(() => {
-                        const domainBadges = content.querySelectorAll('.domain-badge');
-                        domainBadges.forEach((badge, index) => {
-                            badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-                        });
-                    }, 200);
+                    // setTimeout(() => {
+                    //     const domainBadges = content.querySelectorAll('.domain-badge');
+                    //     domainBadges.forEach((badge, index) => {
+                    //         badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+                    //     });
+                    // }, 200);
                 }
             }
         }
@@ -1657,9 +1660,9 @@
             });
             
             // Initialize domain badge animations for visible splits only
-            document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
-                badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-            });
+            // document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
+            //     badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
+            // });
         }
 
         // Function to copy all domains from a split container by extracting them from the DOM

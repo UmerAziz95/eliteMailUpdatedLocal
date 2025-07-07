@@ -1180,8 +1180,8 @@
                     </div>
                 </div>
                 <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
-                    <table class="table table-striped table-hover position-sticky top-0">
-                        <thead>
+                    <table class="table table-striped table-hover position-sticky top-0 border-0">
+                        <thead class="border-0">
                             <tr>
                                 <th scope="col">#</th>
                                 <th scope="col">Split ID</th>
@@ -1656,7 +1656,6 @@ function parseUTCDateTime(dateStr) {
                         transition: all 0.3s ease;
                         cursor: pointer;
                     " 
-                    onmouseover="this.style.transform='translateY(-2px)';"
                     title="Click to copy: ${domain}"
                     onclick="copyToClipboard('${domain}')">
                         <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
