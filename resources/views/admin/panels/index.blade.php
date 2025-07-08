@@ -2742,7 +2742,7 @@ function editPanel(panelId) {
 }
 
 // Delete panel function
-function deletePanel(panelId) {
+async function deletePanel(panelId) {
     // Get panel data
     const panel = panels.find(p => p.id == panelId);
     if (!panel) {
@@ -2756,38 +2756,83 @@ function deletePanel(panelId) {
         return;
     }
     
-    // Show confirmation dialog
-    if (!confirm(`Are you sure you want to delete panel PNL-${panelId}?`)) {
-        return;
-    }
-    
-    // Send delete request
-    $.ajax({
-        url: `/admin/panels/${panelId}`,
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        success: function(response) {
-            if (response.success) {
-                toastr.success(response.message);
-                // Reload panels to reflect changes
-                loadPanels();
-            } else {
-                toastr.error(response.message || 'Failed to delete panel');
-            }
-        },
-        error: function(xhr) {
-            console.log('Error response:', xhr.responseJSON);
-            
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                toastr.error(xhr.responseJSON.message);
-            } else {
-                toastr.error('Failed to delete panel. Please try again.');
-            }
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Delete Panel?',
+            text: `Are you sure you want to delete panel PNL-${panelId}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
         }
-    });
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Deleting Panel',
+            text: 'Please wait while we delete the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send delete request
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message || 'Panel deleted successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to delete panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to delete panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
 }
 
 // Reset form for new panel creation
