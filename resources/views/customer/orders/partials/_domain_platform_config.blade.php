@@ -1,42 +1,6 @@
 {{-- Domain Forwarding and Platform Configuration Section --}}
 
-@if (isset($rejectedPanels) && $rejectedPanels->count() > 0)
-    @foreach ($rejectedPanels as $rejectedPanel)
-        @if ($rejectedPanel->note)
-            <div class="mb-4">
-                <div class="alert border-0 shadow-lg panel-rejection-alert"
-                    style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
-                    <!-- Animated background pattern -->
-                    <div class="alert-pattern"></div>
 
-                    <div class="d-flex align-items-start position-relative" style="z-index: 2;">
-                        <div class="alert-icon-wrapper me-3">
-                            <i class="fa-solid fa-exclamation-triangle fa-2x text-white"
-                                style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="alert-heading mb-2 text-white fw-bold">
-                                {{-- <i class="fa-solid fa-server me-2"></i> --}}
-                                {{-- Panel #{{ $rejectedPanel->id }} - --}} Rejection Notice
-                            </h6>
-                            <div class="rejection-note-content">
-                                <p class="mb-0 text-white fw-medium small">
-                                    {{ $rejectedPanel->note }}
-                                </p>
-                            </div>
-                            <div class="mt-3">
-                                <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
-                                    <i class="fa-solid fa-clock me-1"></i>
-                                    Action Required
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-    @endforeach
-@endif
 
 <div class="card mb-4 p-3">
     <div>
@@ -67,8 +31,7 @@
 
             <small class="">
                 <i class="fa-solid fa-info-circle me-1"></i>
-                A link or text where you'd like to drive the traffic from the domains you send us – could be your main
-                website, blog post, etc.
+                This is usually your VSL, lead capture form, or main website. It’s where prospects will land if they go to one of your domains that you provide us. Please enter a full URL (e.g. https://yourdomain.com).
             </small>
         </div>
 
@@ -137,9 +100,47 @@
                 <!-- Dynamic sending platform fields will be inserted here -->
             </div>
         </div>
-    </div>
-</div>
 
+    </div>
+
+</div>
+ @if (isset($rejectedPanels) && $rejectedPanels->count() > 0)
+    @foreach ($rejectedPanels as $rejectedPanel)
+        @if ($rejectedPanel->note)
+            <div class="mb-4">
+                <div class="alert border-0 shadow-lg panel-rejection-alert"
+                    style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
+                    <!-- Animated background pattern -->
+                    <div class="alert-pattern"></div>
+
+                    <div class="d-flex align-items-start position-relative" style="z-index: 2;">
+                        <div class="alert-icon-wrapper me-3">
+                            <i class="fa-solid fa-exclamation-triangle fa-2x text-white"
+                                style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading mb-2 text-white fw-bold">
+                                {{-- <i class="fa-solid fa-server me-2"></i> --}}
+                                {{-- Panel #{{ $rejectedPanel->id }} - --}} Rejection Reason
+                            </h6>
+                            <div class="rejection-note-content">
+                                <p class="mb-0 text-white fw-medium small">
+                                    {{ $rejectedPanel->note }}
+                                </p>
+                            </div>
+                            <div class="mt-3">
+                                <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
+                                    <i class="fa-solid fa-clock me-1"></i>
+                                    Action Required
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endforeach
+@endif
 {{-- Additional Styles --}}
 @push('styles')
     <style>
