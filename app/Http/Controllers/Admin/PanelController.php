@@ -374,6 +374,7 @@ class PanelController extends Controller
                 'description' => $data['panel_description'],
                 'is_active' => $data['panel_status'] ?? 1,
                 'limit' => $data['panel_limit'],
+                'remaining_limit' => env('PANEL_CAPACITY', 358), // Default to 358 if not set in config
                 'created_by' => auth()->user()->name,
             ]);
 
