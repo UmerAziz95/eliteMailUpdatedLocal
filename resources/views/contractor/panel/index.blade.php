@@ -1432,12 +1432,12 @@ pointer-events: none
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Sending platform Sequencer - Login</span>
+                                <span class="opacity-50 small">Cold email platform - Login</span>
                                 <small>${reorderInfo?.sequencer_login || 'N/A'}</small>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Sending platform Sequencer - Password</span>
+                                <span class="opacity-50 small">Cold email platform - Password</span>
                                 <small>${reorderInfo?.sequencer_password || 'N/A'}</small>
                             </div>
 

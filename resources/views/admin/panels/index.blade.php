@@ -1400,12 +1400,12 @@
                                                 </div>
 
                                                 <div class="d-flex flex-column mb-3">
-                                                    <span class="opacity-50">Sending platform Sequencer - Login</span>
+                                                    <span class="opacity-50">Cold email platform - Login</span>
                                                     <span>${order.reorder_info?.sequencer_login || 'N/A'}</span>
                                                 </div>
 
                                                 <div class="d-flex flex-column mb-3">
-                                                    <span class="opacity-50">Sending platform Sequencer - Password</span>
+                                                    <span class="opacity-50">Cold email platform - Password</span>
                                                     <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
                                                 </div>
 

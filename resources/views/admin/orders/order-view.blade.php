@@ -303,7 +303,10 @@
                                     @endphp
                                     @foreach($backupCodes as $backupCode)
                                     <span>{{ trim($backupCode) }}</span>
+                                   
                                     @endforeach
+                                     <span class="opacity-50">Additional Info</span>
+                                    <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
                                 </div>
                                 @endif
                             @else
