@@ -486,6 +486,7 @@
             </div>
         </div>
     </div>
+
             <!-- Panel Capacity Alert -->
         @php
             // Get pending orders that require panel capacity
@@ -506,21 +507,22 @@
             $availableSpace = 0;
             
             if ($order->total_inboxes >= $panelCapacity) {
-                // For large orders, prioritize full capacity panels
-                $availableSpace = \App\Models\Panel::where('is_active', 1)
-                ->where('remaining_limit', $panelCapacity)
-                ->sum('remaining_limit');
+            // For large orders, prioritize full capacity panels
+            $availableSpace = \App\Models\Panel::where('is_active', 1)
+            ->where('remaining_limit', $panelCapacity)
+            ->sum('remaining_limit');
             } else {
-                // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-                $availableSpace = \App\Models\Panel::where('is_active', 1)
-                ->where('remaining_limit', '>=', $inboxesPerDomain)
-                ->sum('remaining_limit');
+            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
+            $availableSpace = \App\Models\Panel::where('is_active', 1)
+            ->where('remaining_limit', '>=', $inboxesPerDomain)
+            ->sum('remaining_limit');
             }
             
             if ($order->total_inboxes > $availableSpace) {
-                $panelsNeeded = ceil($order->total_inboxes / $panelCapacity);
-                $insufficientSpaceOrders[] = $order;
-                $totalPanelsNeeded += $panelsNeeded;
+            $spaceDeficit = $order->total_inboxes - $availableSpace;
+            $panelsNeeded = ceil($spaceDeficit / $panelCapacity);
+            $insufficientSpaceOrders[] = $order;
+            $totalPanelsNeeded += $panelsNeeded;
             }
             }
         @endphp
