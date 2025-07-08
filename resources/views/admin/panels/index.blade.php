@@ -338,7 +338,7 @@
                         <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
                             value="">
                         <label>Limit:</label>
-                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" readonly>
+                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" readonly>
                         <label>Status:</label>
                         <select class="form-control mb-3" name="panel_status" id="panel_status" required>
                             <option value="1">
@@ -388,7 +388,7 @@
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
                 <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" required min="1" readonly>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -500,10 +500,10 @@
             foreach ($pendingOrders as $order) {
                 // Calculate available space for this order
                 $availableSpace = 0;
-                if ($order->total_inboxes >= 1790) {
+                if ($order->total_inboxes >= env('PANEL_CAPACITY', 358)) {
                     // For large orders, check full capacity panels
                     $availableSpace = \App\Models\Panel::where('is_active', 1)
-                        ->where('remaining_limit', 1790)
+                        ->where('remaining_limit', env('PANEL_CAPACITY', 358))
                         ->sum('remaining_limit');
                 } else {
                     // For smaller orders, check any available space
@@ -513,7 +513,7 @@
                 }
                 
                 if ($order->total_inboxes > $availableSpace) {
-                    $panelsNeeded = ceil($order->total_inboxes / 1790);
+                    $panelsNeeded = ceil($order->total_inboxes / env('PANEL_CAPACITY', 358));
                     $insufficientSpaceOrders[] = $order;
                     $totalPanelsNeeded += $panelsNeeded;
                 }
@@ -753,7 +753,7 @@
         const totalOrders = data.length;
         const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
         console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes);
-        const panelsRequired = Math.ceil(totalInboxes / 1790);
+        const panelsRequired = Math.ceil(totalInboxes / env('PANEL_CAPACITY', 358));
 
         $('#orders_counter').text(totalOrders);
         $('#inboxes_counter').text(totalInboxes);
@@ -2842,7 +2842,7 @@ function resetPanelForm() {
     $('#panelForm').removeData('action');
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
-    $('#panel_limit').val('1790'); // Reset to default
+    $('#panel_limit').val('{{env('PANEL_CAPACITY', 358)}}'); // Reset to default
 }
 
 // Initialize on document ready

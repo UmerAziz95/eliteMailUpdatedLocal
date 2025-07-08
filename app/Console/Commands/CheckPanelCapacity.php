@@ -44,7 +44,7 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 358); // Default to 358 if not set in config
     }
     /**
      * Track orders with insufficient space for email notifications
@@ -406,7 +406,7 @@ class CheckPanelCapacity extends Command
     }
     
     /**
-     * Create new panel(s) - first check for existing unused 1790 panels before creating new ones
+     * Create new panel(s) - first check for existing unused 358 panels before creating new ones
      */
     private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
     {
