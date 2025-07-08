@@ -1244,6 +1244,8 @@
             const orderInfo = data.order;
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
+            console.log('Order Info:', orderInfo);
+            console.log('reOrder Info:',reorderInfo.data_obj);
 
             // Update offcanvas title with timer
             const offcanvasTitle = document.getElementById('order-splits-viewLabel');
@@ -1482,8 +1484,15 @@
                                 `).join('')}
                             </div>
                             <div class="d-flex flex-column mt-3">
+
+
+                                <span class="opacity-50">Back up codes</span>
+                                <span>${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+
                                 <span class="opacity-50">Additional Notes</span>
-                                <span>${reorderInfo?.additional_notes || 'N/A'}</span>
+                                <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+
+                                
                             </div>
                         </div>
                     </div>

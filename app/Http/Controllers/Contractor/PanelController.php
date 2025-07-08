@@ -202,6 +202,7 @@ class PanelController extends Controller
                     })(),
                 ],
                 'reorder_info' => $reorderInfo ? [
+                    'data_obj'=> $reorderInfo,
                     'total_inboxes' => $reorderInfo->total_inboxes,
                     'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
                     'hosting_platform' => $reorderInfo->hosting_platform,
