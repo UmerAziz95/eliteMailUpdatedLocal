@@ -284,7 +284,8 @@
                             @endphp
                             @foreach($backupCodes as $backupCode)
                             <span>{{ trim($backupCode) }}</span>
-                            <span>Additional Infor: {{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
+                             <span class="opacity-50">Additional Info</span>
+                            <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
                             @endforeach
                         </div>
                         @endif

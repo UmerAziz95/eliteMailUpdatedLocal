@@ -140,10 +140,10 @@
                                 <span>N/A</span>
                             @endif
                         </div>
-                        <div class="d-flex flex-column mt-3">
+                        {{-- <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Email Persona Password</span>
                             <span>{{ $order->reorderInfo->first()->email_persona_password ?? 'N/A' }}</span>
-                        </div>
+                        </div> --}}
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Master Inbox Email</span>
                             <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
