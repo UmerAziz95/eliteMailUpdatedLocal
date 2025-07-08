@@ -80,7 +80,7 @@ class CheckPanelCapacity extends Command
     /**
      * Get available panel space for specific order size
      */
-    private function getAvailablePanelSpaceForOrder(int $orderSize): int
+    private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain): int
     {
         if ($orderSize >= $this->PANEL_CAPACITY) {
             // For large orders, prioritize full capacity panels
@@ -95,9 +95,9 @@ class CheckPanelCapacity extends Command
             return $fullCapacitySpace;
             
         } else {
-            // For smaller orders, use any panel with remaining space   
+            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
-                                   ->where('remaining_limit', '>', 0)
+                                   ->where('remaining_limit', '>=', $inboxesPerDomain)
                                    ->get();
             
             $totalSpace = $availablePanels->sum('remaining_limit');
@@ -135,7 +135,7 @@ class CheckPanelCapacity extends Command
             $totalProcessed++;            
             
             // Get order-specific available space
-            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
             
             if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
@@ -193,7 +193,7 @@ class CheckPanelCapacity extends Command
                     $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
-                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
                 
