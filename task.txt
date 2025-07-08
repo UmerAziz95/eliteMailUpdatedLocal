@@ -1,0 +1,7 @@
+
+
+
+
+task 1-text changes and validate changes 9:15am 11:30am
+task 2-notification icon style update 11:30am 12pm
+task 3-Add Column for Panel ID linked with orders split 12pm 

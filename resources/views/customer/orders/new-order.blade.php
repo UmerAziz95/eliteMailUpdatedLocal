@@ -144,7 +144,7 @@
             </div>
 
             <div class="row g-3 mt-4">
-                <h5 class="mb-2">Sending Platforms/ Sequencer</h5>
+                <h5 class="mb-2">Cold Email Platform</h5>
                 <div class="col-md-12">
                     <label>Sending Platform</label>
                     <select id="sending_platform" name="sending_platform" class="form-control" required>

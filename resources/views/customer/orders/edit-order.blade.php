@@ -248,7 +248,7 @@
             
 
             <div class="row g-3 mt-4">
-                <h5 class="mb-2">Sending Platforms/ Sequencer</h5>
+                <h5 class="mb-2">Cold Email Platform</h5>
 
                 <div class="sending-platform col-md-12">
                     <label>Sending Platform</label>

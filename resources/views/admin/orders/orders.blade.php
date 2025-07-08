@@ -1030,7 +1030,10 @@ pointer-events: none
             
                 </section> 
                 
-                <!-- Order Details Offcanvas -->
+                
+            </div>
+        </div>
+<!-- Order Details Offcanvas -->
                 <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
                     <div class="offcanvas-header">
                         <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
@@ -1050,9 +1053,6 @@ pointer-events: none
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
     </section>
 @endsection
 
@@ -1157,38 +1157,38 @@ pointer-events: none
         }
 
         // Create timer badge HTML
-        function createTimerBadge(timerData) {
-            const timer = calculateOrderTimer(timerData.created_at, timerData.status, timerData.completed_at, timerData
-                .timer_started_at);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' :
-                'fas fa-clock');
+        // function createTimerBadge(timerData) {
+        //     const timer = calculateOrderTimer(timerData.created_at, timerData.status, timerData.completed_at, timerData
+        //         .timer_started_at);
+        //     const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' :
+        //         'fas fa-clock');
 
-            // Create tooltip text
-            let tooltip = '';
-            if (timer.isCompleted) {
-                tooltip = timerData.completed_at ?
-                    `Order completed on ${formatDate(timerData.completed_at)}` :
-                    'Order is completed';
-            } else if (timer.isNegative) {
-                tooltip =
-                    `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(timerData.created_at)}`;
-            } else {
-                tooltip =
-                    `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(timerData.created_at)}`;
-            }
+        //     // Create tooltip text
+        //     let tooltip = '';
+        //     if (timer.isCompleted) {
+        //         tooltip = timerData.completed_at ?
+        //             `Order completed on ${formatDate(timerData.completed_at)}` :
+        //             'Order is completed';
+        //     } else if (timer.isNegative) {
+        //         tooltip =
+        //             `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(timerData.created_at)}`;
+        //     } else {
+        //         tooltip =
+        //             `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(timerData.created_at)}`;
+        //     }
 
-            return `
-            <span class="timer-badge ${timer.class}" 
-                  data-order-id="${timerData.order_id}" 
-                  data-created-at="${timerData.created_at}" 
-                  data-status="${timerData.status}" 
-                  data-completed-at="${timerData.completed_at || ''}"
-                  title="${tooltip}">
-                <i class="${iconClass} timer-icon"></i>
-                ${timer.display}
-            </span>
-        `;
-        }
+        //     return `
+        //     <span class="timer-badge ${timer.class}" 
+        //           data-order-id="${timerData.order_id}" 
+        //           data-created-at="${timerData.created_at}" 
+        //           data-status="${timerData.status}" 
+        //           data-completed-at="${timerData.completed_at || ''}"
+        //           title="${tooltip}">
+        //         <i class="${iconClass} timer-icon"></i>
+        //         ${timer.display}
+        //     </span>
+        // `;
+        // }
 
         function initDataTable(planId = '') {
             console.log('Initializing DataTable for planId:', planId);
@@ -1199,7 +1199,7 @@ pointer-events: none
                 console.error('Table not found with selector:', tableId);
                 return null;
             }
-            console.log('Found table:', $table);
+           
 
             try {
                 var table = $table.DataTable({
@@ -1429,9 +1429,7 @@ pointer-events: none
 
         $(document).ready(function() {
             try {
-                console.log('Document ready, initializing tables');
 
-                // Initialize DataTables object to store all table instances
                 window.orderTables = {};
 
                 // Initialize table for all orders
@@ -1514,7 +1512,24 @@ pointer-events: none
                 });
 
                 // Filter functionality
-                function applyFilters() {
+              
+
+                // Apply filters button click handler
+                $('#applyFilters').on('click', function() {
+                   
+                    applyFiltersListView();
+                });
+
+                // Clear filters
+                $('#clearFilters').on('click', function() {
+                    $('#orderIdFilter, #nameFilter, #emailFilter, #domainFilter, #totalInboxesFilter').val('');
+                    $('#statusFilter').val('');
+                    $('#startDate, #endDate').val('');
+                   
+                });
+
+
+                  function applyFiltersListView() {
                     // Clear previous event handlers
                     Object.values(window.orderTables).forEach(function(table) {
                         table.off('preXhr.dt');
@@ -1538,19 +1553,6 @@ pointer-events: none
                         }
                     });
                 }
-
-                // Apply filters button click handler
-                $('#applyFilters').on('click', function() {
-                    applyFilters();
-                });
-
-                // Clear filters
-                $('#clearFilters').on('click', function() {
-                    $('#orderIdFilter, #nameFilter, #emailFilter, #domainFilter').val('');
-                    $('#statusFilter').val('');
-                    $('#startDate, #endDate').val('');
-                    applyFilters();
-                });
 
             } catch (error) {
                 console.error('Error in document ready:', error);
@@ -1731,47 +1733,11 @@ pointer-events: none
         });
 
 
-        //filters 
-        // Filter functionality
-        function applyFilters() {
-            // Clear previous event handlers
-            Object.values(window.orderTables).forEach(function(table) {
-                table.off('preXhr.dt');
-            });
 
-            Object.values(window.orderTables).forEach(function(table) {
-                if ($(table.table().node()).is(':visible')) {
-                    // Add filter parameters
-                    table.on('preXhr.dt', function(e, settings, data) {
-                        data.orderId = $('#orderIdFilter').val();
-                        data.status = $('#statusFilter').val();
-                        data.email = $('#emailFilter').val();
-                        data.domain = $('#domainFilter').val();
-                        data.totalInboxes = $('#totalInboxesFilter').val();
-                        data.startDate = $('#startDate').val();
-                        data.endDate = $('#endDate').val();
-                    });
-
-                    table.draw();
-                }
-            });
-        }
-
-        // Apply filters button click handler
-        $('#applyFilters').on('click', function() {
-            applyFilters();
-        });
-
-        // Clear filters
-        $('#clearFilters').on('click', function() {
-            $('#orderIdFilter, #emailFilter, #domainFilter').val('');
-            $('#statusFilter').val('');
-            $('#startDate, #endDate').val('');
-            applyFilters();
-        });
+       
     </script>
 
-    //split view
+    {{-- //split view
     <script>
         $('body').on('click', '.splitView', async function(e) {
             e.preventDefault();
@@ -2101,9 +2067,18 @@ pointer-events: none
             // Update timers every second
             setInterval(updateTimers, 1000);
         });
-    </script>
+    </script> --}}
 
 
+
+
+
+
+
+
+
+
+//card view
 <script>
     let orders = [];
     let currentFilters = {};
@@ -2314,8 +2289,6 @@ pointer-events: none
                 <div class="text-end">
                 <button class="btn btn-primary px-2 py-1 rounded-1" 
                     onclick="viewOrderSplits(${order.order_id})" 
-                    data-bs-toggle="offcanvas" 
-                    data-bs-target="#order-splits-view"
                     style="font-size: 11px">
                     View More Detail
                 </button>
@@ -2576,8 +2549,10 @@ pointer-events: none
 
     // View order splits
     async function viewOrderSplits(orderId) {
+        
         try {
             // Show loading in offcanvas
+            
             const container = document.getElementById('orderSplitsContainer');
             if (container) {
                 container.innerHTML = `
@@ -2887,43 +2862,43 @@ pointer-events: none
 
 
 
-  // Split timer calculator
-function calculateSplitTime(split) {
-const order_panel = split.order_panel;
+        // Split timer calculator
+        function calculateSplitTime(split) {
+        const order_panel = split.order_panel;
 
-if (!order_panel || !order_panel.timer_started_at) {
-return "00:00:00";
-}
+        if (!order_panel || !order_panel.timer_started_at) {
+        return "00:00:00";
+        }
 
-const start = parseUTCDateTime(order_panel.timer_started_at);
-if (!start || isNaN(start.getTime())) {
-return "00:00:00";
-}
+        const start = parseUTCDateTime(order_panel.timer_started_at);
+        if (!start || isNaN(start.getTime())) {
+        return "00:00:00";
+        }
 
-let end;
+        let end;
 
-if (order_panel.status === "completed" && order_panel.completed_at) {
-end = parseUTCDateTime(order_panel.completed_at);
-if (!end || isNaN(end.getTime())) {
-  return "00:00:00";
-}
-} else if (order_panel.status === "in-progress") {
-end = new Date(); // current time
-} else {
-// If status is neither "completed" nor "in-progress"
-return "00:00:00";
-}
+        if (order_panel.status === "completed" && order_panel.completed_at) {
+        end = parseUTCDateTime(order_panel.completed_at);
+        if (!end || isNaN(end.getTime())) {
+        return "00:00:00";
+        }
+        } else if (order_panel.status === "in-progress") {
+        end = new Date(); // current time
+        } else {
+        // If status is neither "completed" nor "in-progress"
+        return "00:00:00";
+        }
 
-const diffMs = end - start;
-if (diffMs <= 0) return "00:00:00";
+        const diffMs = end - start;
+        if (diffMs <= 0) return "00:00:00";
 
-const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-const pad = (n) => (n < 10 ? "0" + n : n);
-return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
-}
+        const pad = (n) => (n < 10 ? "0" + n : n);
+        return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
+        }
 
 
     function parseUTCDateTime(dateStr) {

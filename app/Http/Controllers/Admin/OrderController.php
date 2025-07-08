@@ -244,7 +244,7 @@ class OrderController extends Controller
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="dropdown-item splitView" id="splitView"
+                            <a href="#" class="dropdown-item"  onclick="viewOrderSplits(' . $order->id . ')" 
                                 data-order-id="' . $order->id . '">
                                 <i class="fa-solid fa-columns"></i> &nbsp;Split View
                             </a>
