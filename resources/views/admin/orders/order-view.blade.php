@@ -133,17 +133,34 @@
                                     @endfor
                                 </div>
                                 <div class="d-flex flex-column mt-3">
+                                    <span class="opacity-50">Profile Picture URLs</span>
+                                    @if($order->reorderInfo->first()->prefix_variants_details)
+                                        @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
+                                            <div class="mt-1">
+                                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
+                                                @if(!empty($variant['profile_link']))
+                                                    <a href="{{ $variant['profile_link'] }}" target="_blank">{{ $variant['profile_link'] }}</a>
+                                                @else
+                                                    <span>N/A</span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <span>N/A</span>
+                                    @endif
+                                </div>
+                                <!-- <div class="d-flex flex-column mt-3">
                                     <span class="opacity-50">Profile Picture URL</span>
                                     <span>{{ $order->reorderInfo->first()->email_persona_picture_link ?? 'N/A' }}</span>
-                                </div>
+                                </div> -->
                                 {{-- <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Email Persona Password</span>
                             <span>{{ $order->reorderInfo->first()->email_persona_password ?? 'N/A' }}</span>
-                        </div>
+                        </div> --}}
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Master Inbox Email</span>
                             <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
-                        </div> --}}
+                        </div>
                             @else
                                 <div class="text-muted">No email configuration data available</div>
                             @endif
