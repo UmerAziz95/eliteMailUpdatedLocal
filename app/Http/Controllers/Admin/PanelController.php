@@ -89,6 +89,9 @@ class PanelController extends Controller
                     'created_by' => $panel->created_by,
                     'created_at' => $panel->created_at,
                     'total_orders' => $panel->total_orders,
+                    'can_edit' => $used === 0, // Can edit only if no space is used
+                    'can_delete' => $used === 0, // Can delete only if no space is used
+                    'show_edit_delete_buttons' => $panel->remaining_limit == 1790, // Show buttons only if remaining_limit is 1790
                     'recent_orders' => $recentOrders->map(function ($orderPanel) {
                         return [
                             'id' => $orderPanel->order->id ?? 'N/A',
@@ -400,19 +403,32 @@ class PanelController extends Controller
             ], 500);
         }
     }
-
     public function update(Request $request, $id)
     {
         try {
             $panel = Panel::findOrFail($id);
+            // dd($request->all());
+            // Check if panel can be edited (only if remaining_limit equals original limit - meaning no space is used)
+            $usedSpace = $panel->limit - $panel->remaining_limit;
+            if ($usedSpace > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot edit panel. Panel has used space and is assigned to orders.'
+                ], 422);
+            }
 
             $data = $request->validate([
-                'title' => 'nullable|string|max:255',
-                'description' => 'nullable|string',
-                'limit' => 'nullable|integer|min:1',
-                'is_active' => 'boolean',
+                'panel_title' => 'required|string|max:255',
+                'panel_description' => 'nullable|string',
+                'panel_limit' => 'nullable|integer|min:1',
+                'panel_status' => 'boolean',
                 'created_by' => 'nullable|string|max:255',
             ]);
+
+            // If limit is being updated, update remaining_limit accordingly
+            if (isset($data['panel_limit'])) {
+                $data['remaining_limit'] = $data['panel_limit'];
+            }
 
             $panel->update($data);
 
@@ -454,6 +470,25 @@ class PanelController extends Controller
     {
         try {
             $panel = Panel::findOrFail($id);
+            
+            // Check if panel can be deleted (only if remaining_limit equals original limit - meaning no space is used)
+            $usedSpace = $panel->limit - $panel->remaining_limit;
+            if ($usedSpace > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete panel. Panel has used space and is assigned to orders.'
+                ], 422);
+            }
+
+            // Check if panel has any order assignments
+            $hasOrders = $panel->order_panels()->count() > 0;
+            if ($hasOrders) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete panel. Panel is assigned to orders.'
+                ], 422);
+            }
+
             $panel->delete();
 
             return response()->json([
