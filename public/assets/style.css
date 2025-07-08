@@ -54,6 +54,10 @@ html {
     display: none;
 }
 
+.mark-as-read:hover {
+    background-color: var(--second-primary);
+}
+
 html.light-theme .logo-dark {
     display: block !important;
 }

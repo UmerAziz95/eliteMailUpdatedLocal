@@ -223,7 +223,8 @@
                     <ul class="list-unstyled mb-6">
                         <li class="mb-2">
                             <span class="fs-6">First Name:</span>
-                            <span class="opacity-50 text-capitalize small fw-light">{{ ucwords(Auth::user()->name) }}</span>
+                            <span class="opacity-50 text-capitalize small fw-light">{{ ucwords(Auth::user()->name)
+                                }}</span>
                         </li>
                         <li class="mb-2">
                             <span class="fs-6">Email:</span>
@@ -231,7 +232,8 @@
                         </li>
                         <li class="mb-2">
                             <span class="fs-6">Status:</span>
-                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->status == '1' ? 'Active' :
+                            <span class="opacity-50 text-capitaize small fw-light">{{ Auth::user()->status == '1' ?
+                                'Active' :
                                 'In-Active' }}</span>
                         </li>
                         <li class="mb-2">
@@ -308,7 +310,7 @@
                     <li class="mb-2 d-flex align-items-center">
                         <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
                         <span class="small">
-                            Total Inboxes: 
+                            Total Inboxes:
                             <span class="text-white">{{ $latestOrder->reorderInfo->first()->total_inboxes }}</span>
                         </span>
                     </li>
@@ -440,35 +442,39 @@
                                 <!-- Old Password -->
                                 <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="oldPassword">Old Password</label>
-                                    <input class="form-control" type="password" id="oldPassword" name="oldPassword" placeholder="············" style="padding-right: 40px;">
+                                    <input class="form-control" type="password" id="oldPassword" name="oldPassword"
+                                        placeholder="············" style="padding-right: 40px;">
                                     <i class="fa-solid fa-eye-slash toggle-password" data-target="oldPassword"
-                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
                                     <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
-                            
+
                                 <!-- New Password -->
                                 <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="newPassword">New Password</label>
-                                    <input class="form-control" type="password" id="newPassword" name="newPassword" placeholder="············" style="padding-right: 40px;">
+                                    <input class="form-control" type="password" id="newPassword" name="newPassword"
+                                        placeholder="············" style="padding-right: 40px;">
                                     <i class="fa-solid fa-eye-slash toggle-password" data-target="newPassword"
-                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
                                     <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
-                            
+
                                 <!-- Confirm Password -->
                                 <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
                                     <label class="form-label" for="confirmPassword">Confirm New Password</label>
-                                    <input class="form-control" type="password" id="confirmPassword" name="confirmPassword" placeholder="············" style="padding-right: 40px;">
+                                    <input class="form-control" type="password" id="confirmPassword"
+                                        name="confirmPassword" placeholder="············" style="padding-right: 40px;">
                                     <i class="fa-solid fa-eye-slash toggle-password" data-target="confirmPassword"
-                                       style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
+                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
                                     <div class="fv-plugins-message-container invalid-feedback"></div>
                                 </div>
-                            
+
                                 <div>
-                                    <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change Password</button>
+                                    <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change
+                                        Password</button>
                                 </div>
                             </div>
-                            
+
 
                             <input type="hidden">
                         </form>
@@ -601,7 +607,7 @@
                                     </td>
                                     <td>
                                         @if (!$notification->is_read)
-                                        <button class="btn btn-sm btn-icon m-btn mark-as-read"
+                                        <button class="btn btn-sm btn-icon mark-as-read"
                                             data-id="{{ $notification->id }}" title="Mark as Read">
                                             {{-- <i class="ti ti-check"></i> --}}
                                             <div>
@@ -611,7 +617,7 @@
                                         </button>
                                         @endif
                                         @if ($notification->is_read)
-                                        <button class="btn btn-sm btn-icon m-btn mark-as-read"
+                                        <button class="btn btn-sm btn-icon mark-as-read"
                                             data-id="{{ $notification->id }}" title="Mark as UnRead">
                                             {{-- <i class="ti ti-check"></i> --}}
                                             <div>
