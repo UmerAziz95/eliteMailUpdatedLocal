@@ -205,6 +205,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
         Route::post('/panels/create', [AdminPanelController::class, 'createPanel'])->name('panels.create');
+        Route::put('/panels/{id}', [AdminPanelController::class, 'update'])->name('panels.update');
+        Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
        
       

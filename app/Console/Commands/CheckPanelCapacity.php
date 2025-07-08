@@ -44,7 +44,7 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 358); // Default to 358 if not set in config
     }
     /**
      * Track orders with insufficient space for email notifications
@@ -80,7 +80,7 @@ class CheckPanelCapacity extends Command
     /**
      * Get available panel space for specific order size
      */
-    private function getAvailablePanelSpaceForOrder(int $orderSize): int
+    private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain): int
     {
         if ($orderSize >= $this->PANEL_CAPACITY) {
             // For large orders, prioritize full capacity panels
@@ -95,9 +95,9 @@ class CheckPanelCapacity extends Command
             return $fullCapacitySpace;
             
         } else {
-            // For smaller orders, use any panel with remaining space   
+            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
-                                   ->where('remaining_limit', '>', 0)
+                                   ->where('remaining_limit', '>=', $inboxesPerDomain)
                                    ->get();
             
             $totalSpace = $availablePanels->sum('remaining_limit');
@@ -135,7 +135,7 @@ class CheckPanelCapacity extends Command
             $totalProcessed++;            
             
             // Get order-specific available space
-            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
             
             if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
@@ -193,7 +193,7 @@ class CheckPanelCapacity extends Command
                     $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
-                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes);
+                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
                 
@@ -406,7 +406,7 @@ class CheckPanelCapacity extends Command
     }
     
     /**
-     * Create new panel(s) - first check for existing unused 1790 panels before creating new ones
+     * Create new panel(s) - first check for existing unused 358 panels before creating new ones
      */
     private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
     {
