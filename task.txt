@@ -2,6 +2,7 @@
 
 
 
-task 1-text changes and validate changes 9:15am 11:30am
+task 1-timer stop on cancel
 task 2-notification icon style update 11:30am 12pm
-task 3-Add Column for Panel ID linked with orders split 12pm 
+task 3-Add Column for Panel ID linked with orders split 12pm 2pm
+task 4-text and reject form issues resolving 2pm 4:30pm
