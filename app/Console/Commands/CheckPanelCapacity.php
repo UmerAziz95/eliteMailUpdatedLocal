@@ -39,13 +39,29 @@ class CheckPanelCapacity extends Command
     public $PANEL_CAPACITY;
     
     /**
+     * Maximum inboxes per panel split
+     * 
+     * This setting controls how orders are split across panels:
+     * - Orders <= MAX_SPLIT_CAPACITY: Try to fit in existing panels or create single panel
+     * - Orders > MAX_SPLIT_CAPACITY: Split into chunks of MAX_SPLIT_CAPACITY or less
+     * 
+     * Example with MAX_SPLIT_CAPACITY = 358:
+     * - 999 inboxes with inboxes_per_domain = 1: Creates 3 splits: 358, 358, 283
+     * - 999 inboxes with inboxes_per_domain = 2: Creates 3 splits: 358, 358, 284 (rounded to fit domains)
+     * - 999 inboxes with inboxes_per_domain = 3: Creates 3 splits: 357, 357, 285 (rounded to fit domains)
+     */
+    public $MAX_SPLIT_CAPACITY;
+    
+    /**
      * Constructor to initialize dynamic properties
      */
     public function __construct()
     {
         parent::__construct();
         $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+        $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
     }
+    
     /**
      * Track orders with insufficient space for email notifications
      */
@@ -371,15 +387,17 @@ class CheckPanelCapacity extends Command
             
             Log::info("Panel creation started for order #{$order->id}", [
                 'total_space_needed' => $totalSpaceNeeded,
+                'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
+                'panel_capacity' => $this->PANEL_CAPACITY,
                 'domain_count' => $domainCount,
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain
             ]);
             
-            // Decision point: >= PANEL_CAPACITY creates new panels, < PANEL_CAPACITY tries to use existing panels
-            if ($totalSpaceNeeded >= $this->PANEL_CAPACITY) {
+            // Decision point: >= MAX_SPLIT_CAPACITY (358) triggers splitting logic, < MAX_SPLIT_CAPACITY tries to use existing panels
+            if ($totalSpaceNeeded > $this->MAX_SPLIT_CAPACITY) {
                 $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);
             } else {
-                // Try to find existing panel with sufficient space
+                // Try to find existing panel with sufficient space for small orders (<= 358 inboxes)
                 $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
                 
                 if ($suitablePanel) {
@@ -406,32 +424,32 @@ class CheckPanelCapacity extends Command
     }
     
     /**
-     * Create new panel(s) - first check for existing unused 1790 panels before creating new ones
+     * Create new panel(s) - now uses MAX_SPLIT_CAPACITY (358) as the threshold for splitting
      */
     private function createNewPanel($order, $reorderInfo, $domains, $spaceNeeded)
     {
-        if ($spaceNeeded > $this->PANEL_CAPACITY) {
-            // Split across multiple panels - but first check for existing PANEL_CAPACITY panels
+        if ($spaceNeeded > $this->MAX_SPLIT_CAPACITY) {
+            // Split across multiple panels when order exceeds MAX_SPLIT_CAPACITY (358)
             $this->splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $spaceNeeded);
         } else {
-            // First check if there's an existing PANEL_CAPACITY panel with sufficient space
+            // Order fits within MAX_SPLIT_CAPACITY, try to find existing panel with sufficient space
             $existing1790Panel = $this->findExisting1790Panel($spaceNeeded);
             
             if ($existing1790Panel) {
                 // Use existing PANEL_CAPACITY panel instead of creating new one
                 $this->assignDomainsToPanel($existing1790Panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
-                Log::info("Used existing PANEL_CAPACITY panel #{$existing1790Panel->id} for order #{$order->id} (space needed: {$spaceNeeded})");
+                Log::info("Used existing PANEL_CAPACITY panel #{$existing1790Panel->id} for order #{$order->id} (space needed: {$spaceNeeded}, within MAX_SPLIT_CAPACITY: {$this->MAX_SPLIT_CAPACITY})");
             } else {
                 // No suitable existing PANEL_CAPACITY panel found, create new one
-                $panel = $this->createSinglePanel($spaceNeeded);
+                $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
-                Log::info("Created new panel #{$panel->id} for order #{$order->id} (no suitable PANEL_CAPACITY panel available)");
+                Log::info("Created new panel #{$panel->id} for order #{$order->id} (no suitable PANEL_CAPACITY panel available, space needed: {$spaceNeeded})");
             }
         }
     }
     
     /**
-     * Split large orders across multiple new panels
+     * Split large orders across multiple panels using MAX_SPLIT_CAPACITY chunks
      */
     private function splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
     {
@@ -440,9 +458,10 @@ class CheckPanelCapacity extends Command
         $domainsProcessed = 0;
         
         while ($remainingSpace > 0 && $domainsProcessed < count($domains) && $splitNumber <= 20) { // Safety check to prevent infinite loops
-            $spaceForThisPanel = min($this->PANEL_CAPACITY, $remainingSpace);
+            // Use MAX_SPLIT_CAPACITY instead of PANEL_CAPACITY for splitting
+            $spaceForThisPanel = min($this->MAX_SPLIT_CAPACITY, $remainingSpace);
             
-            // Calculate maximum domains that can fit in this panel without exceeding capacity
+            // Calculate maximum domains that can fit in this panel split without exceeding MAX_SPLIT_CAPACITY
             $maxDomainsForThisPanel = floor($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
             
             // Ensure we don't process more domains than remaining
@@ -451,6 +470,7 @@ class CheckPanelCapacity extends Command
             
             Log::info("Panel split calculation", [
                 'split_number' => $splitNumber,
+                'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                 'space_for_panel' => $spaceForThisPanel,
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
                 'max_domains_for_panel' => $maxDomainsForThisPanel,
@@ -573,9 +593,10 @@ class CheckPanelCapacity extends Command
             if ($remainingSpace <= 0) break;
             
             $availableSpace = $panel->remaining_limit;
-            $spaceToUse = min($availableSpace, $remainingSpace);
+            // Limit space to use based on MAX_SPLIT_CAPACITY
+            $spaceToUse = min($availableSpace, $remainingSpace, $this->MAX_SPLIT_CAPACITY);
             
-            // Calculate maximum domains that can fit in available space without exceeding capacity
+            // Calculate maximum domains that can fit in space without exceeding MAX_SPLIT_CAPACITY
             $maxDomainsForSpace = floor($spaceToUse / $reorderInfo->inboxes_per_domain);
             
             // Ensure we don't process more domains than remaining
@@ -586,11 +607,12 @@ class CheckPanelCapacity extends Command
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
             $actualSpaceUsed = count($domainSlice) * $reorderInfo->inboxes_per_domain;
             
-            // Only proceed if we can actually use this panel
-            if ($actualSpaceUsed <= $availableSpace && count($domainSlice) > 0) {
+            // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY
+            if ($actualSpaceUsed <= $availableSpace && $actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY && count($domainSlice) > 0) {
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
                 Log::info("Assigned to existing panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                     'space_used' => $actualSpaceUsed,
+                    'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                     'domains_count' => count($domainSlice),
                     'panel_remaining_before' => $availableSpace,
                     'panel_remaining_after' => $availableSpace - $actualSpaceUsed
