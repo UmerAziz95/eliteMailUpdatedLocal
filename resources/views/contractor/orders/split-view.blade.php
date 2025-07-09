@@ -207,11 +207,11 @@
                 </div>
 
                 <div class="d-flex flex-column mb-3">
-                    <span class="opacity-50">Sequencer Login</span>
+                    <span class="opacity-50">Cold email platform - Login</span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->sequencer_login }}</span>
                 </div>
                 <div class="d-flex flex-column mb-3">
-                    <span class="opacity-50">Sending plateform Sequencer - Password </span>
+                    <span class="opacity-50">Cold email platform - Password </span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->sequencer_password }}</span>
                 </div>
 
@@ -253,6 +253,8 @@
                     @foreach($backupCodes as $backupCode)
                     <span>{{ trim($backupCode) }}</span>
                     @endforeach
+                    <span class="opacity-50">Additional Notes</span>
+                     <span>{{ $orderPanel->order->reorderInfo->first()->additional_info ?? '' }}</span>
                 </div>
                 @endif
                 @else

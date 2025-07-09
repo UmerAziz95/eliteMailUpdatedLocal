@@ -1486,7 +1486,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <span class="opacity-50">Additional Notes</span>
                                 <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
 
-                                
+    
                             </div>
                         </div>
                     </div>
