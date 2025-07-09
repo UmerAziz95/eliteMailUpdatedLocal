@@ -1239,7 +1239,8 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
             console.log('Order Info:', orderInfo);
-            console.log('reOrder Info:',reorderInfo.data_obj);
+            console.log('reOrder data_obj Info:',reorderInfo.data_obj);
+            console.log('reOrder  Info:',reorderInfo);
 
             // Update offcanvas title with timer
             const offcanvasTitle = document.getElementById('order-splits-viewLabel');
@@ -1383,13 +1384,10 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <small>${renderPrefixVariants(reorderInfo)}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50 small">Profile Picture URL</span>
-                                <small>${reorderInfo?.profile_picture_link || 'N/A'}</small>
+                                <span class="opacity-50 small">Profile Picture URLsl</span>
+                             <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
                             </div>
-                            <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50 small">Email Persona Password</span>
-                                <small>${reorderInfo?.email_persona_password || 'N/A'}</small>
-                            </div>
+                           
                         </div>
                     </div>
 
@@ -1500,6 +1498,33 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 initializeChevronStates();
             }, 100);
         }
+
+function renderProfileLinksFromObject(prefixVariantsDetails) {
+    console.log(prefixVariantsDetails)
+    console.log("jjjjjjjjjjjjjjjjjjjjjjj")
+    if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
+        return `<span>N/A</span>`;
+    }
+
+    let html = '';
+
+    Object.entries(prefixVariantsDetails).forEach(([key, variant]) => {
+        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        html += `<div class="mt-1">`;
+        html += `<strong>${formattedKey}:</strong> `;
+
+        if (variant?.profile_link) {
+            html += `<a href="${variant.profile_link}" target="_blank">${variant.profile_link}</a>`;
+        } else {
+            html += `<span>N/A</span>`;
+        }
+
+        html += `</div>`;
+    });
+
+    return html;
+}
 
 
 
@@ -1787,39 +1812,40 @@ function parseUTCDateTime(dateStr) {
 
         // Helper function to render prefix variants
         function renderPrefixVariants(reorderInfo) {
-            if (!reorderInfo) return '<span>N/A</span>';
-            
-            let variants = [];
-            
-            // Check if we have the new prefix_variants JSON format
-            if (reorderInfo.prefix_variants) {
-                try {
-                    const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
-                        ? JSON.parse(reorderInfo.prefix_variants) 
-                        : reorderInfo.prefix_variants;
-                    
-                    Object.keys(prefixVariants).forEach((key, index) => {
-                        if (prefixVariants[key]) {
-                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
-                        }
-                    });
-                } catch (e) {
-                    console.warn('Could not parse prefix variants:', e);
+    if (!reorderInfo) return '<div>N/A</div>';
+
+    let variants = [];
+
+    // Check if we have the new prefix_variants JSON format
+    if (reorderInfo.prefix_variants) {
+        try {
+            const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                ? JSON.parse(reorderInfo.prefix_variants) 
+                : reorderInfo.prefix_variants;
+
+            Object.keys(prefixVariants).forEach((key, index) => {
+                if (prefixVariants[key]) {
+                    variants.push(`<div>Variant ${index + 1}: ${prefixVariants[key]}</div>`);
                 }
-            }
-            
-            // Fallback to old individual fields if new format is empty
-            if (variants.length === 0) {
-                if (reorderInfo.prefix_variant_1) {
-                    variants.push(`<span>Variant 1: ${reorderInfo.prefix_variant_1}</span>`);
-                }
-                if (reorderInfo.prefix_variant_2) {
-                    variants.push(`<span>Variant 2: ${reorderInfo.prefix_variant_2}</span>`);
-                }
-            }
-            
-            return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
+            });
+        } catch (e) {
+            console.warn('Could not parse prefix variants:', e);
         }
+    }
+
+    // Fallback to old individual fields if new format is empty
+    if (variants.length === 0) {
+        if (reorderInfo.prefix_variant_1) {
+            variants.push(`<div>Variant 1: ${reorderInfo.prefix_variant_1}</div>`);
+        }
+        if (reorderInfo.prefix_variant_2) {
+            variants.push(`<div>Variant 2: ${reorderInfo.prefix_variant_2}</div>`);
+        }
+    }
+
+    return variants.length > 0 ? variants.join('') : '<div>N/A</div>';
+}
+
 
         // Function to toggle split sections with enhanced animations
         function toggleSplit(splitId) {
