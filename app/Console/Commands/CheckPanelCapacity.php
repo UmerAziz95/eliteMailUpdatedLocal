@@ -499,6 +499,7 @@ class CheckPanelCapacity extends Command
             } else {
                 // If no PANEL_CAPACITY panel available, check for any other existing panel with sufficient space
                 $existingPanel = Panel::where('is_active', true)
+                    ->where('limit', $this->PANEL_CAPACITY) // Ensure we are looking for PANEL_CAPACITY panels
                     ->where('remaining_limit', '>=', $actualSpaceUsed)
                     ->orderBy('remaining_limit', 'desc')
                     ->first();
@@ -573,6 +574,7 @@ class CheckPanelCapacity extends Command
     {
         // Get all panels with available space, ordered by remaining space (least first for optimal allocation)
         $availablePanels = Panel::where('is_active', true)
+            ->where('limit', $this->PANEL_CAPACITY)
             ->where('remaining_limit', '>', 0)
             ->orderBy('remaining_limit', 'desc')
             ->get();
@@ -665,11 +667,11 @@ class CheckPanelCapacity extends Command
     private function findSuitablePanel($spaceNeeded)
     {
         return Panel::where('is_active', true)
+            ->where('limit', $this->PANEL_CAPACITY)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
     }
-    
     /**
      * Find existing PANEL_CAPACITY panel with sufficient space - prioritize full capacity panels
      */
