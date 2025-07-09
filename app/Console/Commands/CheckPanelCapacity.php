@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -101,20 +100,24 @@ class CheckPanelCapacity extends Command
         if ($orderSize >= $this->PANEL_CAPACITY) {
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = Panel::where('is_active', 1)
-                                      ->where('remaining_limit', $this->PANEL_CAPACITY)
-                                      ->get();
+                                        ->where('limit', $this->PANEL_CAPACITY)
+                                        ->where('remaining_limit', $this->PANEL_CAPACITY)
+                                        ->get();
             
             $fullCapacitySpace = $fullCapacityPanels->sum('remaining_limit');
 
             $this->info("🔍 Available space for large order ({$orderSize} inboxes):");
             $this->info("   Full capacity panels: {$fullCapacityPanels->count()} panels, {$fullCapacitySpace} space");
+            // dd($orderSize, $inboxesPerDomain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY, 
+            //     "Full capacity panels: {$fullCapacityPanels->count()} panels, {$fullCapacitySpace} space");
             return $fullCapacitySpace;
             
         } else {
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
-                                   ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                   ->get();
+                                    ->where('limit', $this->PANEL_CAPACITY)
+                                    ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                    ->get();
             
             $totalSpace = $availablePanels->sum('remaining_limit');
             
@@ -558,7 +561,6 @@ class CheckPanelCapacity extends Command
             $panel = $this->createSinglePanel($this->PANEL_CAPACITY);
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
         }
-        
         if ($remainingSpace > 0) {
             Log::warning("Still have remaining space after panel creation", [
                 'order_id' => $order->id,
