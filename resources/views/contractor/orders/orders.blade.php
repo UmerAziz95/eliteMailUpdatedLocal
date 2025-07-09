@@ -1238,9 +1238,9 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             const orderInfo = data.order;
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
-            console.log('Order Info:', orderInfo);
-            console.log('reOrder data_obj Info:',reorderInfo.data_obj);
-            console.log('reOrder  Info:',reorderInfo);
+            // console.log('Order Info:', orderInfo);
+            // console.log('reOrder data_obj Info:',reorderInfo.data_obj);
+            // console.log('reOrder  Info:',reorderInfo);
 
             // Update offcanvas title with timer
             const offcanvasTitle = document.getElementById('order-splits-viewLabel');
@@ -1500,8 +1500,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
         }
 
 function renderProfileLinksFromObject(prefixVariantsDetails) {
-    console.log(prefixVariantsDetails)
-    console.log("jjjjjjjjjjjjjjjjjjjjjjj")
+    
     if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
         return `<span>N/A</span>`;
     }

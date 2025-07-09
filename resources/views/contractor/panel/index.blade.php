@@ -1263,7 +1263,9 @@ pointer-events: none
             const orderInfo = data.order;
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
-
+            // console.log('Order Info:', orderInfo);  
+            // console.log('Reorder Info:', reorderInfo);
+            // console.log('Reorder  Info data_obj:', reorderInfo.data_obj.additional_info);
             // Update offcanvas title with timer
             const offcanvasTitle = document.getElementById('order-splits-viewLabel');
             if (offcanvasTitle && orderInfo) {
@@ -1388,12 +1390,9 @@ pointer-events: none
                             </div>
                             <div class="d-flex flex-column mt-3">
                                 <span class="opacity-50 small">Profile Picture URL</span>
-                                <small>${reorderInfo?.profile_picture_link || 'N/A'}</small>
+                                <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
                             </div>
-                            <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50 small">Email Persona Password</span>
-                                <small>${reorderInfo?.email_persona_password || 'N/A'}</small>
-                            </div>
+                            
                         </div>
                     </div>
 
@@ -1481,8 +1480,12 @@ pointer-events: none
                             </div>
 
                             <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Backup Codes</span>
+                                <span>${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+                            </div>
+                            <div class="d-flex flex-column mt-3">
                                 <span class="opacity-50">Additional Notes</span>
-                                <span>${reorderInfo?.additional_notes || 'N/A'}</span>
+                                <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -1496,6 +1499,33 @@ pointer-events: none
                 initializeChevronStates();
             }, 100);
         }
+
+
+    function renderProfileLinksFromObject(prefixVariantsDetails) {
+    
+    if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
+        return `<span>N/A</span>`;
+    }
+
+    let html = '';
+
+    Object.entries(prefixVariantsDetails).forEach(([key, variant]) => {
+        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        html += `<div class="mt-1">`;
+        html += `<strong>${formattedKey}:</strong> `;
+
+        if (variant?.profile_link) {
+            html += `<a href="${variant.profile_link}" target="_blank">${variant.profile_link}</a>`;
+        } else {
+            html += `<span>N/A</span>`;
+        }
+
+        html += `</div>`;
+    });
+
+    return html;
+}
         
         // Function to copy domain to clipboard
         function copyToClipboard(text) {
@@ -1752,7 +1782,7 @@ pointer-events: none
                     
                     Object.keys(prefixVariants).forEach((key, index) => {
                         if (prefixVariants[key]) {
-                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span>`);
+                            variants.push(`<span>Variant ${index + 1}: ${prefixVariants[key]}</span><br>`);
                         }
                     });
                 } catch (e) {
