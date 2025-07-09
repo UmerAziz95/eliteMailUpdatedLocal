@@ -69,7 +69,7 @@ function initializeDashboardTour() {
 		title: 'Earn Rewards with Project Inbox',
 		text: `
 			<p class="small">Join our affiliate program and start earning monthly recurring revenue!</p>
-			<p class="small">Every time someone signs up using your referral link, you earn rewards — <strong>for a lifetime</strong>.</p>
+			<p class="small">Every time someone signs up using your referral link, you earn rewards — <strong class="text-white">for the lifetime of your referral.</strong>.</p>
 			<p class="small">Click the <strong class="text-white">'Join Now!'</strong> button to get started and access your affiliate dashboard.</p>
 		`,
 		attachTo: { element: '.reward', on: 'bottom' },
@@ -169,8 +169,9 @@ function initializeDashboardTour() {
 	if (startTourButton) {
 		startTourButton.addEventListener("click", (event) => {
 			event.preventDefault();
-			tour.start();
+			tour.show(1); // Skip first welcome step
 		});
+		
 	}
 
 	// Auto-start if first visit

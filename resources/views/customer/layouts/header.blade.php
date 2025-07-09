@@ -31,7 +31,7 @@
     }
 
     .tour-btn::after {
-        content: 'Start Tour';
+        content: 'TOUR NOW';
         text-transform: uppercase;
         position: absolute;
         top: 45%;
