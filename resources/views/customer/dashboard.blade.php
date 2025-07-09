@@ -335,7 +335,7 @@
             <h5>
                 Earn Rewards with Project Inbox!
             </h5>
-            <p>Signup for our affiliate program today and earn monthly recurring revenue for LIFETIME of your referrals!</p>
+            <p>Join our affiliate programme today and earn monthly recurring commissions for the LIFETIME of your referrals!</p>
             <a href="https://64gytyjw1wv.typeform.com/to/RekicwnC">
                 <button class="btn btn-primary btn-sm rounded-1 border-0 px-3">Join Now!</button>
             </a>
