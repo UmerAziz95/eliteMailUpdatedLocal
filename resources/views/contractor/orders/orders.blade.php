@@ -1001,101 +1001,95 @@
             }
         }
         // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
-            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
-            const now = new Date();
-            
-            // Use timer_started_at if available, otherwise fall back to created_at
-            const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
-            
-            // If timer is paused (timer_paused_at is not null), show paused state
-            if (timerPausedAt && status !== 'completed') {
-                const pausedTime = new Date(timerPausedAt);
-                
-                // Calculate the time that had elapsed from start to when it was paused
-                const timeElapsedBeforePause = pausedTime - startTime;
-                
-                // Calculate effective time (subtract any previous paused time)
-                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
-                
-                // Check if it was overdue when paused
-                const timeDiffAtPause = effectiveTimeAtPause - (12 * 60 * 60 * 1000);
-                
-                if (timeDiffAtPause > 0) {
-                    // Was overdue when paused
-                    return {
-                        display: '-' + formatTimeDuration(timeDiffAtPause) + ' (Paused)',
-                        isNegative: true,
-                        isCompleted: false,
-                        isPaused: true,
-                        class: 'paused negative'
-                    };
-                } else {
-                    // Had time remaining when paused
-                    return {
-                        display: formatTimeDuration(-timeDiffAtPause) + ' (Paused)',
-                        isNegative: false,
-                        isCompleted: false,
-                        isPaused: true,
-                        class: 'paused positive'
-                    };
-                }
-            }
-            
-            // If order is completed, timer is paused - show the time it took to complete
-            if (status === 'completed' && completedAt) {
-                const completionDate = new Date(completedAt);
-                const totalElapsedTime = completionDate - startTime;
-                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
-                const twelveHours = 12 * 60 * 60 * 1000;
-                const isOverdue = effectiveWorkingTime > twelveHours;
-                
-                return {
-                    display: formatTimeDuration(effectiveWorkingTime),
-                    isNegative: isOverdue,
-                    isCompleted: true,
-                    class: 'completed'
-                };
-            }
-            
-            // If order is completed but no completion date, just show completed
-            if (status === 'completed') {
-                return {
-                    display: 'Completed',
-                    isNegative: false,
-                    isCompleted: true,
-                    class: 'completed'
-                };
-            }
-            
-            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-            // - Counts down from 12:00:00 to 00:00:00
-            // - After reaching zero, continues in negative time (overtime)
-            // - Account for total paused time
-            const totalElapsedTime = now - startTime;
-            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
-            const effectiveDeadline = new Date(startTime.getTime() + (12 * 60 * 60 * 1000) + (totalPausedSeconds * 1000));
-            const timeDiff = now - effectiveDeadline;
-            
-            if (timeDiff > 0) {
-                // Order is overdue (negative time - overtime)
-                return {
-                    display: '-' + formatTimeDuration(timeDiff),
-                    isNegative: true,
-                    isCompleted: false,
-                    class: 'negative'
-                };
-            } else {
-                // Order still has time remaining (countdown)
-                return {
-                    display: formatTimeDuration(-timeDiff),
-                    isNegative: false,
-                    isCompleted: false,
-                    class: 'positive'
-                };
-            }
+function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+    console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+    const now = new Date();
+
+    const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
+    const twelveHours = 12 * 60 * 60 * 1000;
+
+    // ⏸ If paused OR cancelled, treat as paused
+    if ((timerPausedAt && status !== 'completed') || status === 'cancelled') {
+        const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+        const timeElapsedBeforePause = pausedTime - startTime;
+        const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+        const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+        const label = status === 'cancelled' ? '' : '';
+        const timerClass = status === 'cancelled' ? 'cancelled' : 'paused';
+
+        if (timeDiffAtPause > 0) {
+            // Was overdue
+            return {
+                display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                isNegative: true,
+                isCompleted: false,
+                isPaused: true,
+                class: `${timerClass} negative`
+            };
+        } else {
+            // Still had time left
+            return {
+                display: formatTimeDuration(-timeDiffAtPause) + label,
+                isNegative: false,
+                isCompleted: false,
+                isPaused: true,
+                class: `${timerClass} positive`
+            };
         }
+    }
+
+    // ✅ Completed (with timestamp)
+    if (status === 'completed' && completedAt) {
+        const completionDate = new Date(completedAt);
+        const totalElapsedTime = completionDate - startTime;
+        const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+        const isOverdue = effectiveWorkingTime > twelveHours;
+
+        return {
+            display: formatTimeDuration(effectiveWorkingTime),
+            isNegative: isOverdue,
+            isCompleted: true,
+            class: 'completed'
+        };
+    }
+
+    // ✅ Completed (no timestamp)
+    if (status === 'completed') {
+        return {
+            display: 'Completed',
+            isNegative: false,
+            isCompleted: true,
+            class: 'completed'
+        };
+    }
+
+    // ⏱ Active countdown or overtime
+    const totalElapsedTime = now - startTime;
+    const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+    const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+    const timeDiff = now - effectiveDeadline;
+
+    if (timeDiff > 0) {
+        // Overtime
+        return {
+            display: '-' + formatTimeDuration(timeDiff),
+            isNegative: true,
+            isCompleted: false,
+            class: 'negative'
+        };
+    } else {
+        // Still in time
+        return {
+            display: formatTimeDuration(-timeDiff),
+            isNegative: false,
+            isCompleted: false,
+            class: 'positive'
+        };
+    }
+}
+
 
         // Format time duration in countdown format (HH:MM:SS)
         function formatTimeDuration(milliseconds) {

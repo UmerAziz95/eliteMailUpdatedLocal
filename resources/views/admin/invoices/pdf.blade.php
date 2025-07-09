@@ -133,13 +133,13 @@
                 @endif
                  {{ $invoice->user->billing_address ?? 'N/A' }}<br> 
             </div>
- <!-- Billing Address -->
+
+            <!-- Billing Address -->
               {{-- <div style="margin-bottom: 15px;">
                 <strong style="display: block; margin-bottom: 4px;">Billing Address</strong>
                 {{ $invoice->user->billing_address ?? 'N/A' }}<br>
                 {{ $invoice->user->email ?? 'N/A' }}
             </div> --}}
-           
            
         </td>
 

@@ -579,6 +579,7 @@ class PlanController extends Controller
 
     public function subscriptionCancelProcess(Request $request)
     {
+        
         if ($request->remove_accounts == null || $request->remove_accounts == false) {
             $request->remove_accounts = 0;
         } else {

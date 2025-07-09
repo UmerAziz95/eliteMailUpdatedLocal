@@ -60,6 +60,10 @@ class OrderObserver
                 $order->timer_paused_at = now();
             }
             
+            if ($newStatus === 'cancelled' && !is_null($order->timer_started_at) && is_null($order->timer_paused_at)) {
+                $order->timer_paused_at = now();
+            }
+            
             // If status is changing from pending to something else (except rejected)
             if ($oldStatus === 'pending' && $newStatus !== 'pending' && $newStatus !== 'reject' && !is_null($order->timer_started_at)) {
                 // Keep timer_started_at as is - don't reset it
