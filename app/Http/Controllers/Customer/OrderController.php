@@ -922,7 +922,6 @@ class OrderController extends Controller
                 'domain_count' => $domainCount,
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain
             ]);
-            
             // Decision point: >= 1790 creates new panels, < 1790 tries to use existing panels
             if ($totalSpaceNeeded >= 1790) {
                 $this->createNewPanel($order, $reorderInfo, $domains, $totalSpaceNeeded);

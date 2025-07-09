@@ -338,7 +338,7 @@
                         <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
                             value="">
                         <label>Limit:</label>
-                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" readonly>
+                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" readonly>
                         <label>Status:</label>
                         <select class="form-control mb-3" name="panel_status" id="panel_status" required>
                             <option value="1">
@@ -367,7 +367,6 @@
             
         </div>
     </div>     --}}
-
     <div class="offcanvas offcanvas-end" tabindex="-1" data-bs-backdrop="static" id="panelFormOffcanvas" aria-labelledby="staticBackdropLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="panelFormOffcanvasLabel">Panel</h5>
@@ -389,7 +388,7 @@
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
                 <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="1790" required min="1" readonly>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -487,37 +486,44 @@
             </div>
         </div>
     </div>
+
             <!-- Panel Capacity Alert -->
         @php
             // Get pending orders that require panel capacity
             $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->get();
+            ->whereNotNull('total_inboxes')
+            ->where('total_inboxes', '>', 0)
+            ->get();
             
             $insufficientSpaceOrders = [];
             $totalPanelsNeeded = 0;
+            $panelCapacity = env('PANEL_CAPACITY', 358);
             
             foreach ($pendingOrders as $order) {
-                // Calculate available space for this order
-                $availableSpace = 0;
-                if ($order->total_inboxes >= 1790) {
-                    // For large orders, check full capacity panels
-                    $availableSpace = \App\Models\Panel::where('is_active', 1)
-                        ->where('remaining_limit', 1790)
-                        ->sum('remaining_limit');
-                } else {
-                    // For smaller orders, check any available space
-                    $availableSpace = \App\Models\Panel::where('is_active', 1)
-                        ->where('remaining_limit', '>', 0)
-                        ->sum('remaining_limit');
-                }
-                
-                if ($order->total_inboxes > $availableSpace) {
-                    $panelsNeeded = ceil($order->total_inboxes / 1790);
-                    $insufficientSpaceOrders[] = $order;
-                    $totalPanelsNeeded += $panelsNeeded;
-                }
+            // Get inboxes per domain from order details or use default
+            $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+            
+            // Calculate available space for this order based on logic
+            $availableSpace = 0;
+            
+            if ($order->total_inboxes >= $panelCapacity) {
+            // For large orders, prioritize full capacity panels
+            $availableSpace = \App\Models\Panel::where('is_active', 1)
+            ->where('remaining_limit', $panelCapacity)
+            ->sum('remaining_limit');
+            } else {
+            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
+            $availableSpace = \App\Models\Panel::where('is_active', 1)
+            ->where('remaining_limit', '>=', $inboxesPerDomain)
+            ->sum('remaining_limit');
+            }
+            
+            if ($order->total_inboxes > $availableSpace) {
+            $spaceDeficit = $order->total_inboxes - $availableSpace;
+            $panelsNeeded = ceil($spaceDeficit / $panelCapacity);
+            $insufficientSpaceOrders[] = $order;
+            $totalPanelsNeeded += $panelsNeeded;
+            }
             }
         @endphp
 
@@ -598,11 +604,16 @@
     
     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
-        <button type="button" class="btn btn-primary btn-sm border-0 px-3" data-bs-toggle="offcanvas" data-bs-target="#panelFormOffcanvas" aria-controls="staticBackdrop" data-bs-backdrop="true" data-bs-scroll="false">
+        <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
+                onclick="resetPanelForm()" 
+                data-bs-toggle="offcanvas" 
+                data-bs-target="#panelFormOffcanvas" 
+                aria-controls="staticBackdrop" 
+                data-bs-backdrop="true" 
+                data-bs-scroll="false">
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
-
     </div>
     <!-- Grid Cards (Dynamic) -->
     <div id="panelsContainer"
@@ -664,6 +675,8 @@
 
 @push('scripts')
 <script>
+    // Pass PHP values to JavaScript
+    const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 358) }};
 
     document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
         const secondOffcanvasElement = document.getElementById("secondOffcanvas");
@@ -749,7 +762,7 @@
         const totalOrders = data.length;
         const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
         console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes);
-        const panelsRequired = Math.ceil(totalInboxes / 1790);
+        const panelsRequired = Math.ceil(totalInboxes / PANEL_CAPACITY);
 
         $('#orders_counter').text(totalOrders);
         $('#inboxes_counter').text(totalInboxes);
@@ -1009,6 +1022,30 @@
             const used = panel.limit - panel.remaining_limit;
             const remaining = panel.remaining_limit;
             const totalOrders = panel.recent_orders ? panel.recent_orders.length : 0;
+            
+            // Generate edit/delete buttons only if conditions are met
+            let actionButtons = '';
+            if (panel.show_edit_delete_buttons) {
+                actionButtons = `
+                    <div class="d-flex gap-2 mt-2">
+                        ${panel.can_edit ? `
+                            <button class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                    onclick="editPanel(${panel.id})" 
+                                    title="Edit Panel">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : ''}
+                        ${panel.can_delete ? `
+                            <button class="btn btn-sm btn-outline-danger px-2 py-1" 
+                                    onclick="deletePanel(${panel.id})" 
+                                    title="Delete Panel">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="card p-3 d-flex flex-column gap-1">                    
                     <div class="d-flex align-items-center justify-content-between">
@@ -1031,6 +1068,7 @@
                             View
                         </button>                    
                     </div>
+                    ${actionButtons}
                 </div>
             `;
         }
@@ -2535,76 +2573,102 @@ $('#submitPanelFormBtn').on('click', function(e) {
     }
     
     const formData = new FormData(form[0]);
-    console.log(formData);
-  $.ajax({
-    url: "{{ url('admin/panels/create') }}",
-    method: 'POST',
-    data: formData,
-    processData: false,
-    contentType: false,
-    headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-    },
-    success: function(response) {
-        toastr.success("Panel created successfully!");
-        
-        // Close all open offcanvas elements
-        closeAllOffcanvas();
-        
-        // Clear and reset the form
-        $('#panelForm')[0].reset();
-        $('.form-control').removeClass('is-invalid');
-        $('.invalid-feedback').remove();
-        
-        // Reload panels list with current filters
-        loadPanels(currentFilters, 1, false);
-        
-        // Run panel capacity check after successful panel creation
-        $.ajax({
-            url: '{{ route("admin.panels.run-capacity-check") }}',
-            method: 'POST',
-            data: {
-                panel_id: response.panel_id || '',
-                admin_id: response.admin_id || '',
-                _token: $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(capacityResponse) {
-                console.log('Panel capacity check completed:', capacityResponse);
-            },
-            error: function(xhr) {
-                console.log('Panel capacity check failed:', xhr.responseJSON);
-                // Don't show error to user as it's a background process
-            }
-        });
-    },
-    error: function(xhr) {
-        console.log('Error response:', xhr.responseJSON);
-        
-        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-            // Handle validation errors
-            let errorMessages = [];
-            Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                if (Array.isArray(xhr.responseJSON.errors[key])) {
-                    errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
-                } else {
-                    errorMessages.push(xhr.responseJSON.errors[key]);
-                }
-            });
-            
-            // Display all validation errors
-            errorMessages.forEach(function(message) {
-                toastr.error(message);
-            });
-            
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
-            // Handle other error messages
-            toastr.error(xhr.responseJSON.message);
-        } else {
-            // Fallback error message
-            toastr.error("Failed to create panel. Please try again.");
-        }
+    const isUpdate = form.data('action') === 'update';
+    const panelId = form.data('panel-id');
+    
+    // Determine URL and method based on action
+    let url, method;
+    if (isUpdate) {
+        url = `/admin/panels/${panelId}`;
+        method = 'POST'; // Use POST with _method override for Laravel
+        formData.append('_method', 'PUT'); // Laravel method spoofing
+    } else {
+        url = "{{ url('admin/panels/create') }}";
+        method = 'POST';
     }
-});
+    
+    console.log('Submitting form:', { isUpdate, url, method });
+    
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        beforeSend: function() {
+            $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
+        },
+        success: function(response) {
+            const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
+            toastr.success(message);
+            
+            // Close all open offcanvas elements
+            closeAllOffcanvas();
+            
+            // Clear and reset the form
+            resetPanelForm();
+            $('.form-control').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+            
+            // Reload panels list with current filters
+            loadPanels(currentFilters, 1, false);
+            
+            // Run panel capacity check after successful panel creation (only for new panels)
+            if (!isUpdate) {
+                $.ajax({
+                    url: '{{ route("admin.panels.run-capacity-check") }}',
+                    method: 'POST',
+                    data: {
+                        panel_id: response.panel_id || '',
+                        admin_id: response.admin_id || '',
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(capacityResponse) {
+                        console.log('Panel capacity check completed:', capacityResponse);
+                    },
+                    error: function(xhr) {
+                        console.log('Panel capacity check failed:', xhr.responseJSON);
+                        // Don't show error to user as it's a background process
+                    }
+                });
+            }
+        },
+        error: function(xhr) {
+            console.log('Error response:', xhr.responseJSON);
+            
+            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                // Handle validation errors
+                let errorMessages = [];
+                Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                    if (Array.isArray(xhr.responseJSON.errors[key])) {
+                        errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+                    } else {
+                        errorMessages.push(xhr.responseJSON.errors[key]);
+                    }
+                });
+                
+                // Display all validation errors
+                errorMessages.forEach(function(message) {
+                    toastr.error(message);
+                });
+                
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                // Handle other error messages
+                toastr.error(xhr.responseJSON.message);
+            } else {
+                // Fallback error message
+                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
+                toastr.error(fallbackMessage);
+            }
+        },
+        complete: function() {
+            $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
+        }
+    });
 });
 
 // Load More button event handler
@@ -2649,10 +2713,156 @@ $('#resetFilters').on('click', function() {
     resetFilters();
 });
 
+// Edit panel function
+function editPanel(panelId) {
+    // Get panel data for editing
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be edited
+    if (!panel.can_edit) {
+        toastr.error('Cannot edit panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    // Populate the form with existing data
+    $('#panel_title').val(panel.title);
+    $('#panel_description').val(panel.description);
+    $('#panel_limit').val(panel.limit);
+    $('#panel_status').val(panel.is_active ? '1' : '0');
+    
+    // Change form title
+    $('#panelFormOffcanvasLabel').text('Edit Panel');
+    
+    // Store panel ID for update
+    $('#panelForm').data('panel-id', panelId);
+    $('#panelForm').data('action', 'update');
+    
+    // Change submit button text
+    $('#submitPanelFormBtn').text('Update Panel');
+    
+    // Show the offcanvas
+    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+    offcanvas.show();
+}
+
+// Delete panel function
+async function deletePanel(panelId) {
+    // Get panel data
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be deleted
+    if (!panel.can_delete) {
+        toastr.error('Cannot delete panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Delete Panel?',
+            text: `Are you sure you want to delete panel PNL-${panelId}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Deleting Panel',
+            text: 'Please wait while we delete the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send delete request
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message || 'Panel deleted successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to delete panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to delete panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Reset form for new panel creation
+function resetPanelForm() {
+    $('#panelForm')[0].reset();
+    $('#panelForm').removeData('panel-id');
+    $('#panelForm').removeData('action');
+    $('#panelFormOffcanvasLabel').text('Panel');
+    $('#submitPanelFormBtn').text('Submit');
+    $('#panel_limit').val('{{env('PANEL_CAPACITY', 358)}}'); // Reset to default
+}
+
 // Initialize on document ready
 $(document).ready(function() {
     // Load initial panels
     loadPanels();
+    
+    // Reset form when offcanvas is hidden
+    $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
+        resetPanelForm();
+    });
 });
 
 </script>
