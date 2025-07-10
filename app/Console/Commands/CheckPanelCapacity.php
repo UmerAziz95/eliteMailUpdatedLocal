@@ -348,7 +348,13 @@ class CheckPanelCapacity extends Command
             // Calculate total panels needed
             $totalPanelsNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'panels_needed'));
             $totalSpaceNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'required_space'));
-            
+            // get panel greater than max split 
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $this->PANEL_CAPACITY)
+                ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
+                ->count();
+            $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
+            $admin->email = "muhammad.farooq.raaj@gmail.com";
             Mail::to($admin->email)->send(
                 new AdminPanelNotificationMail(
                     $totalPanelsNeeded,
