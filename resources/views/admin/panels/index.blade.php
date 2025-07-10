@@ -486,68 +486,90 @@
             </div>
         </div>
     </div>
-        
-            <!-- Panel Capacity Alert -->
+        <!-- Panel Capacity Alert -->
         @php
-            // Get pending orders that require panel capacity
+            // Get panel capacity alert data using the same logic as the AJAX endpoint
             $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-            ->whereNotNull('total_inboxes')
-            ->where('total_inboxes', '>', 0)
-            ->get();
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
             
             $insufficientSpaceOrders = [];
             $totalPanelsNeeded = 0;
             $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            // Helper function to get available panel space for specific order
+            $getAvailablePanelSpaceForOrder = function(int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity) {
+                if ($orderSize >= $panelCapacity) {
+                    // For large orders, prioritize full capacity panels
+                    $fullCapacityPanels = \App\Models\Panel::where('is_active', 1)
+                                                ->where('limit', $panelCapacity)
+                                                ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                                ->get();
+                    
+                    $fullCapacitySpace = 0;
+                    foreach ($fullCapacityPanels as $panel) {
+                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
+                    }
+                    
+                    return $fullCapacitySpace;
+                    
+                } else {
+                    // For smaller orders, use any panel with remaining space that can accommodate at least one domain
+                    $availablePanels = \App\Models\Panel::where('is_active', 1)
+                                            ->where('limit', $panelCapacity)
+                                            ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                            ->get();
+                    
+                    $totalSpace = 0;
+                    foreach ($availablePanels as $panel) {
+                        $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
+                    }
+                    
+                    return $totalSpace;
+                }
+            };
             
             foreach ($pendingOrders as $order) {
-            // Get inboxes per domain from order details or use default
-            $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
-            
-            // Calculate available space for this order based on logic
-            $availableSpace = 0;
-            
-            if ($order->total_inboxes >= $panelCapacity) {
-            // For large orders, prioritize full capacity panels
-            $availableSpace = \App\Models\Panel::where('is_active', 1)
-            ->where('remaining_limit', $panelCapacity)
-            ->sum('remaining_limit');
-            } else {
-            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-            $availableSpace = \App\Models\Panel::where('is_active', 1)
-            ->where('remaining_limit', '>=', $inboxesPerDomain)
-            ->sum('remaining_limit');
+                // Get inboxes per domain from order details or use default
+                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+                
+                // Calculate available space for this order based on logic
+                $availableSpace = $getAvailablePanelSpaceForOrder(
+                    $order->total_inboxes, 
+                    $inboxesPerDomain
+                );
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    // Calculate panels needed for this order (same logic as Console Command)
+                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
+                    $insufficientSpaceOrders[] = $order;
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
             }
             
-            if ($order->total_inboxes > $availableSpace) {
-            $spaceDeficit = $order->total_inboxes - $availableSpace;
-            $panelsNeeded = ceil($spaceDeficit / $panelCapacity);
-            $insufficientSpaceOrders[] = $order;
-            $totalPanelsNeeded += $panelsNeeded;
-            }
-            }
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $availablePanelCount = \App\Models\Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
         @endphp
 
-        @if($totalPanelsNeeded > 0)
+        @if($adjustedPanelsNeeded > 0)
         <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
             style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
             <i class="ti ti-server me-2 alert-icon"></i>
             <strong>Panel Capacity Alert:</strong>
-            {{ $totalPanelsNeeded }} new panel{{ $totalPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
+            {{ $adjustedPanelsNeeded }} new panel{{ $adjustedPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
             <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
             <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
                 aria-label="Close"></button>
         </div>
-        @elseif(count($pendingOrders) > 0)
-        <!-- <div id="panelCapacityAlert" class="alert alert-success alert-dismissible fade show py-2 rounded-1" role="alert"
-            style="background-color: rgba(40, 167, 69, 0.2); color: #fff; border: 2px solid #28a745;">
-            <i class="ti ti-check-circle me-2 alert-icon"></i>
-            <strong>Panel Capacity Status:</strong>
-            Sufficient panel capacity available for {{ count($pendingOrders) }} pending order{{ count($pendingOrders) != 1 ? 's' : '' }}.
-            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">View Panels</a>
-            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                aria-label="Close"></button>
-        </div> -->
         @endif
+        
     <!-- Advanced Search Filter UI -->
     <div class="card p-3 mb-4">
         <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -1228,7 +1250,7 @@
                     <div class="text-center py-5">
                         <i class="fas fa-inbox text-muted fs-3 mb-3"></i>
                         <h5>No Orders Found</h5>
-                        <p>This panel doesn't have any orders yet.</p>
+                        <p class="mb-3">This panel doesn't have any orders yet.</p>
                     </div>
                 `;
                 return;
@@ -1305,7 +1327,6 @@
                                                     
                                                     <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${calculateSplitTime(order)}</td>
-                                                    <td>${formatDate(order?.created_at)}</td>
                                                     <td>
                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                                             onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
@@ -2489,6 +2510,73 @@
                 initializeChevronStates();
             }, 200);
         });
+        
+        // Initialize on document ready
+        $(document).ready(function() {
+            // Load initial panels
+            loadPanels();
+            
+            // Reset form when offcanvas is hidden
+            $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
+                resetPanelForm();
+            });
+            
+            // Auto-refresh panel capacity alert every 60 seconds
+            setInterval(function() {
+                refreshPanelCapacityAlert();
+            }, 60000); // 60 seconds
+        });
+
+        /**
+         * Refresh the panel capacity alert without refreshing the entire page
+         */
+        function refreshPanelCapacityAlert() {
+            $.ajax({
+                url: '{{ route("admin.panels.capacity-alert") }}',
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Update the alert section
+                        const alertContainer = $('#panelCapacityAlert').parent();
+                        
+                        if (response.show_alert) {
+                            // Show/update the alert
+                            const alertHtml = `
+                                <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+                                    style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+                                    <i class="ti ti-server me-2 alert-icon"></i>
+                                    <strong>Panel Capacity Alert:</strong>
+                                    ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
+                                    <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+                                    <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            `;
+                            
+                            if ($('#panelCapacityAlert').length) {
+                                // Update existing alert
+                                $('#panelCapacityAlert').replaceWith(alertHtml);
+                            } else {
+                                // Insert new alert after the order tracking table
+                                $('#orderTrackingTableBody').closest('.card').after(alertHtml);
+                            }
+                        } else {
+                            // Hide the alert if no longer needed
+                            $('#panelCapacityAlert').remove();
+                        }
+                        
+                        console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error refreshing panel capacity alert:', error);
+                }
+            });
+        }
 </script>
 
 <script>
@@ -2863,7 +2951,924 @@ $(document).ready(function() {
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
         resetPanelForm();
     });
+    
+    // Auto-refresh panel capacity alert every 60 seconds
+    setInterval(function() {
+        refreshPanelCapacityAlert();
+    }, 60000); // 60 seconds
 });
 
+/**
+ * Refresh the panel capacity alert without refreshing the entire page
+ */
+function refreshPanelCapacityAlert() {
+    $.ajax({
+        url: '{{ route("admin.panels.capacity-alert") }}',
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Update the alert section
+                const alertContainer = $('#panelCapacityAlert').parent();
+                
+                if (response.show_alert) {
+                    // Show/update the alert
+                    const alertHtml = `
+                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+                            <i class="ti ti-server me-2 alert-icon"></i>
+                            <strong>Panel Capacity Alert:</strong>
+                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
+                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    if ($('#panelCapacityAlert').length) {
+                        // Update existing alert
+                        $('#panelCapacityAlert').replaceWith(alertHtml);
+                    } else {
+                        // Insert new alert after the order tracking table
+                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
+                    }
+                } else {
+                    // Hide the alert if no longer needed
+                    $('#panelCapacityAlert').remove();
+                }
+                
+                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error refreshing panel capacity alert:', error);
+        }
+    });
+}
+</script>
+
+<script>
+    $('#createPanelBtn').on('click', function() {
+        // Clear form and validation errors when opening modal
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
+        modal.show();
+    });
+
+    // Clear form when modal is hidden
+    $('#panelFormModal').on('hidden.bs.modal', function() {
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+    });
+
+    // Function to close all open offcanvas elements
+    function closeAllOffcanvas() {
+        // Get all offcanvas elements
+        const offcanvasElements = document.querySelectorAll('.offcanvas');
+        
+        offcanvasElements.forEach(function(offcanvasElement) {
+            // Check if the offcanvas is currently shown
+            if (offcanvasElement.classList.contains('show')) {
+                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                if (offcanvasInstance) {
+                    offcanvasInstance.hide();
+                }
+            }
+        });
+        
+        // Clean up any remaining backdrop elements
+        setTimeout(function() {
+            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Ensure body classes are removed
+            document.body.classList.remove('offcanvas-open', 'modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, 300);
+    }
+
+$('#submitPanelFormBtn').on('click', function(e) {
+    e.preventDefault();
+    
+    // Clear any previous error styling
+    $('.form-control').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    const form = $('#panelForm');
+    let isValid = true;
+    
+    // Validate panel title
+    const panelTitle = $('#panel_title').val().trim();
+    if (!panelTitle) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
+        isValid = false;
+    } else if (panelTitle.length > 255) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
+        isValid = false;
+    }
+    
+    // Validate panel limit
+    const panelLimit = $('#panel_limit').val();
+    if (!panelLimit || parseInt(panelLimit) < 1) {
+        $('#panel_limit').addClass('is-invalid');
+        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+        isValid = false;
+    }
+    
+    // If validation fails, stop here
+    if (!isValid) {
+        toastr.error('Please correct the validation errors');
+        return;
+    }
+    
+    const formData = new FormData(form[0]);
+    const isUpdate = form.data('action') === 'update';
+    const panelId = form.data('panel-id');
+    
+    // Determine URL and method based on action
+    let url, method;
+    if (isUpdate) {
+        url = `/admin/panels/${panelId}`;
+        method = 'POST'; // Use POST with _method override for Laravel
+        formData.append('_method', 'PUT'); // Laravel method spoofing
+    } else {
+        url = "{{ url('admin/panels/create') }}";
+        method = 'POST';
+    }
+    
+    console.log('Submitting form:', { isUpdate, url, method });
+    
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        beforeSend: function() {
+            $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
+        },
+        success: function(response) {
+            const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
+            toastr.success(message);
+            
+            // Close all open offcanvas elements
+            closeAllOffcanvas();
+            
+            // Clear and reset the form
+            resetPanelForm();
+            $('.form-control').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+            
+            // Reload panels list with current filters
+            loadPanels(currentFilters, 1, false);
+            
+            // Run panel capacity check after successful panel creation (only for new panels)
+            if (!isUpdate) {
+                $.ajax({
+                    url: '{{ route("admin.panels.run-capacity-check") }}',
+                    method: 'POST',
+                    data: {
+                        panel_id: response.panel_id || '',
+                        admin_id: response.admin_id || '',
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(capacityResponse) {
+                        console.log('Panel capacity check completed:', capacityResponse);
+                    },
+                    error: function(xhr) {
+                        console.log('Panel capacity check failed:', xhr.responseJSON);
+                        // Don't show error to user as it's a background process
+                    }
+                });
+            }
+        },
+        error: function(xhr) {
+            console.log('Error response:', xhr.responseJSON);
+            
+            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                // Handle validation errors
+                let errorMessages = [];
+                Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                    if (Array.isArray(xhr.responseJSON.errors[key])) {
+                        errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+                    } else {
+                        errorMessages.push(xhr.responseJSON.errors[key]);
+                    }
+                });
+                
+                // Display all validation errors
+                errorMessages.forEach(function(message) {
+                    toastr.error(message);
+                });
+                
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                // Handle other error messages
+                toastr.error(xhr.responseJSON.message);
+            } else {
+                // Fallback error message
+                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
+                toastr.error(fallbackMessage);
+            }
+        },
+        complete: function() {
+            $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
+        }
+    });
+});
+
+// Load More button event handler
+$('#loadMoreBtn').on('click', function() {
+    loadMorePanels();
+});
+
+// Filter form submission
+$('#filterForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    // Disable submit button to prevent multiple requests
+    document.getElementById('submitBtn').disabled = true;
+    
+    // Get form data
+    const formData = new FormData(this);
+    const filters = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+            filters[key] = value.trim();
+        }
+    }
+    
+    // Update current filters and reset pagination
+    currentFilters = filters;
+    currentPage = 1;
+    
+    // Load panels with new filters
+    loadPanels(filters, 1, false);
+});
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('filterForm').reset();
+    currentFilters = {};
+    currentPage = 1;
+    loadPanels({}, 1, false);
+}
+
+$('#resetFilters').on('click', function() {
+    resetFilters();
+});
+
+// Edit panel function
+function editPanel(panelId) {
+    // Get panel data for editing
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be edited
+    if (!panel.can_edit) {
+        toastr.error('Cannot edit panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    // Populate the form with existing data
+    $('#panel_title').val(panel.title);
+    $('#panel_description').val(panel.description);
+    $('#panel_limit').val(panel.limit);
+    $('#panel_status').val(panel.is_active ? '1' : '0');
+    
+    // Change form title
+    $('#panelFormOffcanvasLabel').text('Edit Panel');
+    
+    // Store panel ID for update
+    $('#panelForm').data('panel-id', panelId);
+    $('#panelForm').data('action', 'update');
+    
+    // Change submit button text
+    $('#submitPanelFormBtn').text('Update Panel');
+    
+    // Show the offcanvas
+    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+    offcanvas.show();
+}
+
+// Delete panel function
+async function deletePanel(panelId) {
+    // Get panel data
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be deleted
+    if (!panel.can_delete) {
+        toastr.error('Cannot delete panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Delete Panel?',
+            text: `Are you sure you want to delete panel PNL-${panelId}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Deleting Panel',
+            text: 'Please wait while we delete the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send delete request
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message || 'Panel deleted successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to delete panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to delete panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Reset form for new panel creation
+function resetPanelForm() {
+    $('#panelForm')[0].reset();
+    $('#panelForm').removeData('panel-id');
+    $('#panelForm').removeData('action');
+    $('#panelFormOffcanvasLabel').text('Panel');
+    $('#submitPanelFormBtn').text('Submit');
+    $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+}
+
+// Initialize on document ready
+$(document).ready(function() {
+    // Load initial panels
+    loadPanels();
+    
+    // Reset form when offcanvas is hidden
+    $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
+        resetPanelForm();
+    });
+    
+    // Auto-refresh panel capacity alert every 60 seconds
+    setInterval(function() {
+        refreshPanelCapacityAlert();
+    }, 60000); // 60 seconds
+});
+
+/**
+ * Refresh the panel capacity alert without refreshing the entire page
+ */
+function refreshPanelCapacityAlert() {
+    $.ajax({
+        url: '{{ route("admin.panels.capacity-alert") }}',
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Update the alert section
+                const alertContainer = $('#panelCapacityAlert').parent();
+                
+                if (response.show_alert) {
+                    // Show/update the alert
+                    const alertHtml = `
+                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+                            <i class="ti ti-server me-2 alert-icon"></i>
+                            <strong>Panel Capacity Alert:</strong>
+                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
+                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    if ($('#panelCapacityAlert').length) {
+                        // Update existing alert
+                        $('#panelCapacityAlert').replaceWith(alertHtml);
+                    } else {
+                        // Insert new alert after the order tracking table
+                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
+                    }
+                } else {
+                    // Hide the alert if no longer needed
+                    $('#panelCapacityAlert').remove();
+                }
+                
+                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error refreshing panel capacity alert:', error);
+        }
+    });
+}
+</script>
+
+<script>
+    $('#createPanelBtn').on('click', function() {
+        // Clear form and validation errors when opening modal
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
+        modal.show();
+    });
+
+    // Clear form when modal is hidden
+    $('#panelFormModal').on('hidden.bs.modal', function() {
+        $('#panelForm')[0].reset();
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+    });
+
+    // Function to close all open offcanvas elements
+    function closeAllOffcanvas() {
+        // Get all offcanvas elements
+        const offcanvasElements = document.querySelectorAll('.offcanvas');
+        
+        offcanvasElements.forEach(function(offcanvasElement) {
+            // Check if the offcanvas is currently shown
+            if (offcanvasElement.classList.contains('show')) {
+                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                if (offcanvasInstance) {
+                    offcanvasInstance.hide();
+                }
+            }
+        });
+        
+        // Clean up any remaining backdrop elements
+        setTimeout(function() {
+            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Ensure body classes are removed
+            document.body.classList.remove('offcanvas-open', 'modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, 300);
+    }
+
+$('#submitPanelFormBtn').on('click', function(e) {
+    e.preventDefault();
+    
+    // Clear any previous error styling
+    $('.form-control').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    const form = $('#panelForm');
+    let isValid = true;
+    
+    // Validate panel title
+    const panelTitle = $('#panel_title').val().trim();
+    if (!panelTitle) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
+        isValid = false;
+    } else if (panelTitle.length > 255) {
+        $('#panel_title').addClass('is-invalid');
+        $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
+        isValid = false;
+    }
+    
+    // Validate panel limit
+    const panelLimit = $('#panel_limit').val();
+    if (!panelLimit || parseInt(panelLimit) < 1) {
+        $('#panel_limit').addClass('is-invalid');
+        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+        isValid = false;
+    }
+    
+    // If validation fails, stop here
+    if (!isValid) {
+        toastr.error('Please correct the validation errors');
+        return;
+    }
+    
+    const formData = new FormData(form[0]);
+    const isUpdate = form.data('action') === 'update';
+    const panelId = form.data('panel-id');
+    
+    // Determine URL and method based on action
+    let url, method;
+    if (isUpdate) {
+        url = `/admin/panels/${panelId}`;
+        method = 'POST'; // Use POST with _method override for Laravel
+        formData.append('_method', 'PUT'); // Laravel method spoofing
+    } else {
+        url = "{{ url('admin/panels/create') }}";
+        method = 'POST';
+    }
+    
+    console.log('Submitting form:', { isUpdate, url, method });
+    
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        beforeSend: function() {
+            $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
+        },
+        success: function(response) {
+            const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
+            toastr.success(message);
+            
+            // Close all open offcanvas elements
+            closeAllOffcanvas();
+            
+            // Clear and reset the form
+            resetPanelForm();
+            $('.form-control').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+            
+            // Reload panels list with current filters
+            loadPanels(currentFilters, 1, false);
+            
+            // Run panel capacity check after successful panel creation (only for new panels)
+            if (!isUpdate) {
+                $.ajax({
+                    url: '{{ route("admin.panels.run-capacity-check") }}',
+                    method: 'POST',
+                    data: {
+                        panel_id: response.panel_id || '',
+                        admin_id: response.admin_id || '',
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(capacityResponse) {
+                        console.log('Panel capacity check completed:', capacityResponse);
+                    },
+                    error: function(xhr) {
+                        console.log('Panel capacity check failed:', xhr.responseJSON);
+                        // Don't show error to user as it's a background process
+                    }
+                });
+            }
+        },
+        error: function(xhr) {
+            console.log('Error response:', xhr.responseJSON);
+            
+            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                // Handle validation errors
+                let errorMessages = [];
+                Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                    if (Array.isArray(xhr.responseJSON.errors[key])) {
+                        errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+                    } else {
+                        errorMessages.push(xhr.responseJSON.errors[key]);
+                    }
+                });
+                
+                // Display all validation errors
+                errorMessages.forEach(function(message) {
+                    toastr.error(message);
+                });
+                
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                // Handle other error messages
+                toastr.error(xhr.responseJSON.message);
+            } else {
+                // Fallback error message
+                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
+                toastr.error(fallbackMessage);
+            }
+        },
+        complete: function() {
+            $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
+        }
+    });
+});
+
+// Load More button event handler
+$('#loadMoreBtn').on('click', function() {
+    loadMorePanels();
+});
+
+// Filter form submission
+$('#filterForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    // Disable submit button to prevent multiple requests
+    document.getElementById('submitBtn').disabled = true;
+    
+    // Get form data
+    const formData = new FormData(this);
+    const filters = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+            filters[key] = value.trim();
+        }
+    }
+    
+    // Update current filters and reset pagination
+    currentFilters = filters;
+    currentPage = 1;
+    
+    // Load panels with new filters
+    loadPanels(filters, 1, false);
+});
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('filterForm').reset();
+    currentFilters = {};
+    currentPage = 1;
+    loadPanels({}, 1, false);
+}
+
+$('#resetFilters').on('click', function() {
+    resetFilters();
+});
+
+// Edit panel function
+function editPanel(panelId) {
+    // Get panel data for editing
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be edited
+    if (!panel.can_edit) {
+        toastr.error('Cannot edit panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    // Populate the form with existing data
+    $('#panel_title').val(panel.title);
+    $('#panel_description').val(panel.description);
+    $('#panel_limit').val(panel.limit);
+    $('#panel_status').val(panel.is_active ? '1' : '0');
+    
+    // Change form title
+    $('#panelFormOffcanvasLabel').text('Edit Panel');
+    
+    // Store panel ID for update
+    $('#panelForm').data('panel-id', panelId);
+    $('#panelForm').data('action', 'update');
+    
+    // Change submit button text
+    $('#submitPanelFormBtn').text('Update Panel');
+    
+    // Show the offcanvas
+    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+    offcanvas.show();
+}
+
+// Delete panel function
+async function deletePanel(panelId) {
+    // Get panel data
+    const panel = panels.find(p => p.id == panelId);
+    if (!panel) {
+        toastr.error('Panel not found');
+        return;
+    }
+    
+    // Check if panel can be deleted
+    if (!panel.can_delete) {
+        toastr.error('Cannot delete panel. Panel has used space and is assigned to orders.');
+        return;
+    }
+    
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Delete Panel?',
+            text: `Are you sure you want to delete panel PNL-${panelId}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Deleting Panel',
+            text: 'Please wait while we delete the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send delete request
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: response.message || 'Panel deleted successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to delete panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to delete panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Reset form for new panel creation
+function resetPanelForm() {
+    $('#panelForm')[0].reset();
+    $('#panelForm').removeData('panel-id');
+    $('#panelForm').removeData('action');
+    $('#panelFormOffcanvasLabel').text('Panel');
+    $('#submitPanelFormBtn').text('Submit');
+    $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+}
+
+// Initialize on document ready
+$(document).ready(function() {
+    // Load initial panels
+    loadPanels();
+    
+    // Reset form when offcanvas is hidden
+    $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
+        resetPanelForm();
+    });
+    
+    // Auto-refresh panel capacity alert every 60 seconds
+    setInterval(function() {
+        refreshPanelCapacityAlert();
+    }, 60000); // 60 seconds
+});
+
+/**
+ * Refresh the panel capacity alert without refreshing the entire page
+ */
+function refreshPanelCapacityAlert() {
+    $.ajax({
+        url: '{{ route("admin.panels.capacity-alert") }}',
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Update the alert section
+                const alertContainer = $('#panelCapacityAlert').parent();
+                
+                if (response.show_alert) {
+                    // Show/update the alert
+                    const alertHtml = `
+                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+                            <i class="ti ti-server me-2 alert-icon"></i>
+                            <strong>Panel Capacity Alert:</strong>
+                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
+                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    if ($('#panelCapacityAlert').length) {
+                        // Update existing alert
+                        $('#panelCapacityAlert').replaceWith(alertHtml);
+                    } else {
+                        // Insert new alert after the order tracking table
+                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
+                    }
+                } else {
+                    // Hide the alert if no longer needed
+                    $('#panelCapacityAlert').remove();
+                }
+                
+                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error refreshing panel capacity alert:', error);
+        }
+    });
+}
 </script>
 @endpush
