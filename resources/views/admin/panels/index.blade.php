@@ -2514,7 +2514,7 @@
         // Initialize on document ready
         $(document).ready(function() {
             // Load initial panels
-            loadPanels();
+            // loadPanels();
             
             // Reset form when offcanvas is hidden
             $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
@@ -2945,7 +2945,7 @@ function resetPanelForm() {
 // Initialize on document ready
 $(document).ready(function() {
     // Load initial panels
-    loadPanels();
+    // loadPanels();
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
@@ -3055,140 +3055,140 @@ function refreshPanelCapacityAlert() {
         }, 300);
     }
 
-$('#submitPanelFormBtn').on('click', function(e) {
-    e.preventDefault();
+// $('#submitPanelFormBtn').on('click', function(e) {
+//     e.preventDefault();
     
-    // Clear any previous error styling
-    $('.form-control').removeClass('is-invalid');
-    $('.invalid-feedback').remove();
+//     // Clear any previous error styling
+//     $('.form-control').removeClass('is-invalid');
+//     $('.invalid-feedback').remove();
     
-    const form = $('#panelForm');
-    let isValid = true;
+//     const form = $('#panelForm');
+//     let isValid = true;
     
-    // Validate panel title
-    const panelTitle = $('#panel_title').val().trim();
-    if (!panelTitle) {
-        $('#panel_title').addClass('is-invalid');
-        $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
-        isValid = false;
-    } else if (panelTitle.length > 255) {
-        $('#panel_title').addClass('is-invalid');
-        $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
-        isValid = false;
-    }
+//     // Validate panel title
+//     const panelTitle = $('#panel_title').val().trim();
+//     if (!panelTitle) {
+//         $('#panel_title').addClass('is-invalid');
+//         $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
+//         isValid = false;
+//     } else if (panelTitle.length > 255) {
+//         $('#panel_title').addClass('is-invalid');
+//         $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
+//         isValid = false;
+//     }
     
-    // Validate panel limit
-    const panelLimit = $('#panel_limit').val();
-    if (!panelLimit || parseInt(panelLimit) < 1) {
-        $('#panel_limit').addClass('is-invalid');
-        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
-        isValid = false;
-    }
+//     // Validate panel limit
+//     const panelLimit = $('#panel_limit').val();
+//     if (!panelLimit || parseInt(panelLimit) < 1) {
+//         $('#panel_limit').addClass('is-invalid');
+//         $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+//         isValid = false;
+//     }
     
-    // If validation fails, stop here
-    if (!isValid) {
-        toastr.error('Please correct the validation errors');
-        return;
-    }
+//     // If validation fails, stop here
+//     if (!isValid) {
+//         toastr.error('Please correct the validation errors');
+//         return;
+//     }
     
-    const formData = new FormData(form[0]);
-    const isUpdate = form.data('action') === 'update';
-    const panelId = form.data('panel-id');
+//     const formData = new FormData(form[0]);
+//     const isUpdate = form.data('action') === 'update';
+//     const panelId = form.data('panel-id');
     
-    // Determine URL and method based on action
-    let url, method;
-    if (isUpdate) {
-        url = `/admin/panels/${panelId}`;
-        method = 'POST'; // Use POST with _method override for Laravel
-        formData.append('_method', 'PUT'); // Laravel method spoofing
-    } else {
-        url = "{{ url('admin/panels/create') }}";
-        method = 'POST';
-    }
+//     // Determine URL and method based on action
+//     let url, method;
+//     if (isUpdate) {
+//         url = `/admin/panels/${panelId}`;
+//         method = 'POST'; // Use POST with _method override for Laravel
+//         formData.append('_method', 'PUT'); // Laravel method spoofing
+//     } else {
+//         url = "{{ url('admin/panels/create') }}";
+//         method = 'POST';
+//     }
     
-    console.log('Submitting form:', { isUpdate, url, method });
+//     console.log('Submitting form:', { isUpdate, url, method });
     
-    $.ajax({
-        url: url,
-        method: method,
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        beforeSend: function() {
-            $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
-        },
-        success: function(response) {
-            const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
-            toastr.success(message);
+//     $.ajax({
+//         url: url,
+//         method: method,
+//         data: formData,
+//         processData: false,
+//         contentType: false,
+//         headers: {
+//             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+//             'Accept': 'application/json'
+//         },
+//         beforeSend: function() {
+//             $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
+//         },
+//         success: function(response) {
+//             const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
+//             toastr.success(message);
             
-            // Close all open offcanvas elements
-            closeAllOffcanvas();
+//             // Close all open offcanvas elements
+//             closeAllOffcanvas();
             
-            // Clear and reset the form
-            resetPanelForm();
-            $('.form-control').removeClass('is-invalid');
-            $('.invalid-feedback').remove();
+//             // Clear and reset the form
+//             resetPanelForm();
+//             $('.form-control').removeClass('is-invalid');
+//             $('.invalid-feedback').remove();
             
-            // Reload panels list with current filters
-            loadPanels(currentFilters, 1, false);
+//             // Reload panels list with current filters
+//             loadPanels(currentFilters, 1, false);
             
-            // Run panel capacity check after successful panel creation (only for new panels)
-            if (!isUpdate) {
-                $.ajax({
-                    url: '{{ route("admin.panels.run-capacity-check") }}',
-                    method: 'POST',
-                    data: {
-                        panel_id: response.panel_id || '',
-                        admin_id: response.admin_id || '',
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(capacityResponse) {
-                        console.log('Panel capacity check completed:', capacityResponse);
-                    },
-                    error: function(xhr) {
-                        console.log('Panel capacity check failed:', xhr.responseJSON);
-                        // Don't show error to user as it's a background process
-                    }
-                });
-            }
-        },
-        error: function(xhr) {
-            console.log('Error response:', xhr.responseJSON);
+//             // Run panel capacity check after successful panel creation (only for new panels)
+//             if (!isUpdate) {
+//                 $.ajax({
+//                     url: '{{ route("admin.panels.run-capacity-check") }}',
+//                     method: 'POST',
+//                     data: {
+//                         panel_id: response.panel_id || '',
+//                         admin_id: response.admin_id || '',
+//                         _token: $('meta[name="csrf-token"]').attr('content')
+//                     },
+//                     success: function(capacityResponse) {
+//                         console.log('Panel capacity check completed:', capacityResponse);
+//                     },
+//                     error: function(xhr) {
+//                         console.log('Panel capacity check failed:', xhr.responseJSON);
+//                         // Don't show error to user as it's a background process
+//                     }
+//                 });
+//             }
+//         },
+//         error: function(xhr) {
+//             console.log('Error response:', xhr.responseJSON);
             
-            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                // Handle validation errors
-                let errorMessages = [];
-                Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                    if (Array.isArray(xhr.responseJSON.errors[key])) {
-                        errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
-                    } else {
-                        errorMessages.push(xhr.responseJSON.errors[key]);
-                    }
-                });
+//             if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+//                 // Handle validation errors
+//                 let errorMessages = [];
+//                 Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+//                     if (Array.isArray(xhr.responseJSON.errors[key])) {
+//                         errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+//                     } else {
+//                         errorMessages.push(xhr.responseJSON.errors[key]);
+//                     }
+//                 });
                 
-                // Display all validation errors
-                errorMessages.forEach(function(message) {
-                    toastr.error(message);
-                });
+//                 // Display all validation errors
+//                 errorMessages.forEach(function(message) {
+//                     toastr.error(message);
+//                 });
                 
-            } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                // Handle other error messages
-                toastr.error(xhr.responseJSON.message);
-            } else {
-                // Fallback error message
-                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
-                toastr.error(fallbackMessage);
-            }
-        },
-        complete: function() {
-            $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
-        }
-    });
-});
+//             } else if (xhr.responseJSON && xhr.responseJSON.message) {
+//                 // Handle other error messages
+//                 toastr.error(xhr.responseJSON.message);
+//             } else {
+//                 // Fallback error message
+//                 const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
+//                 toastr.error(fallbackMessage);
+//             }
+//         },
+//         complete: function() {
+//             $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
+//         }
+//     });
+// });
 
 // Load More button event handler
 $('#loadMoreBtn').on('click', function() {
@@ -3376,7 +3376,7 @@ function resetPanelForm() {
 // Initialize on document ready
 $(document).ready(function() {
     // Load initial panels
-    loadPanels();
+    // loadPanels();
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
@@ -3486,140 +3486,140 @@ function refreshPanelCapacityAlert() {
         }, 300);
     }
 
-$('#submitPanelFormBtn').on('click', function(e) {
-    e.preventDefault();
+// $('#submitPanelFormBtn').on('click', function(e) {
+//     e.preventDefault();
     
-    // Clear any previous error styling
-    $('.form-control').removeClass('is-invalid');
-    $('.invalid-feedback').remove();
+//     // Clear any previous error styling
+//     $('.form-control').removeClass('is-invalid');
+//     $('.invalid-feedback').remove();
     
-    const form = $('#panelForm');
-    let isValid = true;
+//     const form = $('#panelForm');
+//     let isValid = true;
     
-    // Validate panel title
-    const panelTitle = $('#panel_title').val().trim();
-    if (!panelTitle) {
-        $('#panel_title').addClass('is-invalid');
-        $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
-        isValid = false;
-    } else if (panelTitle.length > 255) {
-        $('#panel_title').addClass('is-invalid');
-        $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
-        isValid = false;
-    }
+//     // Validate panel title
+//     const panelTitle = $('#panel_title').val().trim();
+//     if (!panelTitle) {
+//         $('#panel_title').addClass('is-invalid');
+//         $('#panel_title').after('<div class="invalid-feedback">Panel title is required</div>');
+//         isValid = false;
+//     } else if (panelTitle.length > 255) {
+//         $('#panel_title').addClass('is-invalid');
+//         $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
+//         isValid = false;
+//     }
     
-    // Validate panel limit
-    const panelLimit = $('#panel_limit').val();
-    if (!panelLimit || parseInt(panelLimit) < 1) {
-        $('#panel_limit').addClass('is-invalid');
-        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
-        isValid = false;
-    }
+//     // Validate panel limit
+//     const panelLimit = $('#panel_limit').val();
+//     if (!panelLimit || parseInt(panelLimit) < 1) {
+//         $('#panel_limit').addClass('is-invalid');
+//         $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+//         isValid = false;
+//     }
     
-    // If validation fails, stop here
-    if (!isValid) {
-        toastr.error('Please correct the validation errors');
-        return;
-    }
+//     // If validation fails, stop here
+//     if (!isValid) {
+//         toastr.error('Please correct the validation errors');
+//         return;
+//     }
     
-    const formData = new FormData(form[0]);
-    const isUpdate = form.data('action') === 'update';
-    const panelId = form.data('panel-id');
+//     const formData = new FormData(form[0]);
+//     const isUpdate = form.data('action') === 'update';
+//     const panelId = form.data('panel-id');
     
-    // Determine URL and method based on action
-    let url, method;
-    if (isUpdate) {
-        url = `/admin/panels/${panelId}`;
-        method = 'POST'; // Use POST with _method override for Laravel
-        formData.append('_method', 'PUT'); // Laravel method spoofing
-    } else {
-        url = "{{ url('admin/panels/create') }}";
-        method = 'POST';
-    }
+//     // Determine URL and method based on action
+//     let url, method;
+//     if (isUpdate) {
+//         url = `/admin/panels/${panelId}`;
+//         method = 'POST'; // Use POST with _method override for Laravel
+//         formData.append('_method', 'PUT'); // Laravel method spoofing
+//     } else {
+//         url = "{{ url('admin/panels/create') }}";
+//         method = 'POST';
+//     }
     
-    console.log('Submitting form:', { isUpdate, url, method });
+//     console.log('Submitting form:', { isUpdate, url, method });
     
-    $.ajax({
-        url: url,
-        method: method,
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        beforeSend: function() {
-            $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
-        },
-        success: function(response) {
-            const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
-            toastr.success(message);
+//     $.ajax({
+//         url: url,
+//         method: method,
+//         data: formData,
+//         processData: false,
+//         contentType: false,
+//         headers: {
+//             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+//             'Accept': 'application/json'
+//         },
+//         beforeSend: function() {
+//             $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
+//         },
+//         success: function(response) {
+//             const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
+//             toastr.success(message);
             
-            // Close all open offcanvas elements
-            closeAllOffcanvas();
+//             // Close all open offcanvas elements
+//             closeAllOffcanvas();
             
-            // Clear and reset the form
-            resetPanelForm();
-            $('.form-control').removeClass('is-invalid');
-            $('.invalid-feedback').remove();
+//             // Clear and reset the form
+//             resetPanelForm();
+//             $('.form-control').removeClass('is-invalid');
+//             $('.invalid-feedback').remove();
             
-            // Reload panels list with current filters
-            loadPanels(currentFilters, 1, false);
+//             // Reload panels list with current filters
+//             loadPanels(currentFilters, 1, false);
             
-            // Run panel capacity check after successful panel creation (only for new panels)
-            if (!isUpdate) {
-                $.ajax({
-                    url: '{{ route("admin.panels.run-capacity-check") }}',
-                    method: 'POST',
-                    data: {
-                        panel_id: response.panel_id || '',
-                        admin_id: response.admin_id || '',
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(capacityResponse) {
-                        console.log('Panel capacity check completed:', capacityResponse);
-                    },
-                    error: function(xhr) {
-                        console.log('Panel capacity check failed:', xhr.responseJSON);
-                        // Don't show error to user as it's a background process
-                    }
-                });
-            }
-        },
-        error: function(xhr) {
-            console.log('Error response:', xhr.responseJSON);
+//             // Run panel capacity check after successful panel creation (only for new panels)
+//             if (!isUpdate) {
+//                 $.ajax({
+//                     url: '{{ route("admin.panels.run-capacity-check") }}',
+//                     method: 'POST',
+//                     data: {
+//                         panel_id: response.panel_id || '',
+//                         admin_id: response.admin_id || '',
+//                         _token: $('meta[name="csrf-token"]').attr('content')
+//                     },
+//                     success: function(capacityResponse) {
+//                         console.log('Panel capacity check completed:', capacityResponse);
+//                     },
+//                     error: function(xhr) {
+//                         console.log('Panel capacity check failed:', xhr.responseJSON);
+//                         // Don't show error to user as it's a background process
+//                     }
+//                 });
+//             }
+//         },
+//         error: function(xhr) {
+//             console.log('Error response:', xhr.responseJSON);
             
-            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
-                // Handle validation errors
-                let errorMessages = [];
-                Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                    if (Array.isArray(xhr.responseJSON.errors[key])) {
-                        errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
-                    } else {
-                        errorMessages.push(xhr.responseJSON.errors[key]);
-                    }
-                });
+//             if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+//                 // Handle validation errors
+//                 let errorMessages = [];
+//                 Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+//                     if (Array.isArray(xhr.responseJSON.errors[key])) {
+//                         errorMessages = errorMessages.concat(xhr.responseJSON.errors[key]);
+//                     } else {
+//                         errorMessages.push(xhr.responseJSON.errors[key]);
+//                     }
+//                 });
                 
-                // Display all validation errors
-                errorMessages.forEach(function(message) {
-                    toastr.error(message);
-                });
+//                 // Display all validation errors
+//                 errorMessages.forEach(function(message) {
+//                     toastr.error(message);
+//                 });
                 
-            } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                // Handle other error messages
-                toastr.error(xhr.responseJSON.message);
-            } else {
-                // Fallback error message
-                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
-                toastr.error(fallbackMessage);
-            }
-        },
-        complete: function() {
-            $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
-        }
-    });
-});
+//             } else if (xhr.responseJSON && xhr.responseJSON.message) {
+//                 // Handle other error messages
+//                 toastr.error(xhr.responseJSON.message);
+//             } else {
+//                 // Fallback error message
+//                 const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
+//                 toastr.error(fallbackMessage);
+//             }
+//         },
+//         complete: function() {
+//             $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');
+//         }
+//     });
+// });
 
 // Load More button event handler
 $('#loadMoreBtn').on('click', function() {
@@ -3807,7 +3807,7 @@ function resetPanelForm() {
 // Initialize on document ready
 $(document).ready(function() {
     // Load initial panels
-    loadPanels();
+    // loadPanels();
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
