@@ -223,7 +223,7 @@ class CheckPanelCapacity extends Command
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
                 
                 // Calculate panels needed for this order
-                $panelsNeeded = ceil($order->total_inboxes / $this->PANEL_CAPACITY);
+                $panelsNeeded = ceil($order->total_inboxes / $this->MAX_SPLIT_CAPACITY);
                 
                 // Add to insufficient space orders for email notification
                 $this->insufficientSpaceOrders[] = [
