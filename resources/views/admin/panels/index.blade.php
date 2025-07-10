@@ -338,7 +338,7 @@
                         <input type="text" class="form-control mb-3" id="panel_description" name="panel_description"
                             value="">
                         <label>Limit:</label>
-                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" readonly>
+                        <input type="text" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 1790)}}" readonly>
                         <label>Status:</label>
                         <select class="form-control mb-3" name="panel_status" id="panel_status" required>
                             <option value="1">
@@ -388,7 +388,7 @@
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
                 <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 358)}}" required min="1" readonly>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 1790)}}" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -486,7 +486,7 @@
             </div>
         </div>
     </div>
-
+        
             <!-- Panel Capacity Alert -->
         @php
             // Get pending orders that require panel capacity
@@ -497,7 +497,7 @@
             
             $insufficientSpaceOrders = [];
             $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 358);
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
             
             foreach ($pendingOrders as $order) {
             // Get inboxes per domain from order details or use default
@@ -676,7 +676,7 @@
 @push('scripts')
 <script>
     // Pass PHP values to JavaScript
-    const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 358) }};
+    const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 1790) }};
 
     document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
         const secondOffcanvasElement = document.getElementById("secondOffcanvas");
@@ -2851,7 +2851,7 @@ function resetPanelForm() {
     $('#panelForm').removeData('action');
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
-    $('#panel_limit').val('{{env('PANEL_CAPACITY', 358)}}'); // Reset to default
+    $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
 }
 
 // Initialize on document ready
