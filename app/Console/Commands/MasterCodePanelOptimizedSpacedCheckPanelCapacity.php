@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Permission;
 
-class CheckPanelCapacity extends Command
+class CheckPanelCapacity1 extends Command
 {
     /**
      * The name and signature of the console command.

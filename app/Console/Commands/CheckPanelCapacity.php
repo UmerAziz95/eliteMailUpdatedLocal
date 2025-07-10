@@ -105,12 +105,14 @@ class CheckPanelCapacity extends Command
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
                                         ->get();
             
-            $fullCapacitySpace = $fullCapacityPanels->sum('remaining_limit');
+            $fullCapacitySpace = 0;
+            foreach ($fullCapacityPanels as $panel) {
+                $fullCapacitySpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+            }
 
             $this->info("🔍 Available space for large order ({$orderSize} inboxes):");
             $this->info("   Full capacity panels: {$fullCapacityPanels->count()} panels, {$fullCapacitySpace} space");
-            // dd($orderSize, $inboxesPerDomain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY, 
-            //     "Full capacity panels: {$fullCapacityPanels->count()} panels, {$fullCapacitySpace} space");
+            
             return $fullCapacitySpace;
             
         } else {
@@ -120,7 +122,10 @@ class CheckPanelCapacity extends Command
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
             
-            $totalSpace = $availablePanels->sum('remaining_limit');
+            $totalSpace = 0;
+            foreach ($availablePanels as $panel) {
+                $totalSpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+            }
             
             $this->info("🔍 Available space for small order ({$orderSize} inboxes): {$totalSpace} total space");
 
@@ -156,7 +161,7 @@ class CheckPanelCapacity extends Command
             
             // Get order-specific available space
             $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
-            
+            // dd($orderSpecificSpace, $order->total_inboxes, $order->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
             if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
                     // Get the actual Order model for panel split creation
@@ -435,14 +440,17 @@ class CheckPanelCapacity extends Command
         $remainingSpace = $totalSpaceNeeded;
         $domainsProcessed = 0;
         $splitNumber = 1;
+        $usedPanelIds = []; // Track panels already used for this order
         
         // Keep looping until all domains are processed or no more panels available
         while ($remainingSpace > 0 && $domainsProcessed < count($domains)) {
             // Re-fetch available panels with updated remaining_limit for each iteration
+            // Exclude panels that have already been used for this order
             $availablePanel = Panel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
                 // ->where('remaining_limit', '>', 0)
                 ->where('remaining_limit', '>=', $reorderInfo->inboxes_per_domain)
+                ->whereNotIn('id', $usedPanelIds) // Exclude already used panels
                 ->orderBy('remaining_limit', 'desc')
                 ->first();
             
@@ -453,6 +461,8 @@ class CheckPanelCapacity extends Command
                     'remaining_space' => $remainingSpace,
                     'domains_processed' => $domainsProcessed,
                     'total_domains' => count($domains),
+                    'used_panels_count' => count($usedPanelIds),
+                    'excluded_panel_ids' => $usedPanelIds,
                     'reason' => 'no_existing_panels_available'
                 ]);
                 break;
@@ -476,12 +486,17 @@ class CheckPanelCapacity extends Command
             // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY
             if ($actualSpaceUsed <= $availableSpace && $actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY && count($domainSlice) > 0) {
                 $this->assignDomainsToPanel($availablePanel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
+                
+                // Add this panel to the used panels list to prevent reuse for this order
+                $usedPanelIds[] = $availablePanel->id;
+                
                 Log::info("Assigned to existing panel #{$availablePanel->id} (split #{$splitNumber}) for order #{$order->id}", [
                     'space_used' => $actualSpaceUsed,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                     'domains_count' => count($domainSlice),
                     'panel_remaining_before' => $availableSpace,
-                    'panel_remaining_after' => $availableSpace - $actualSpaceUsed
+                    'panel_remaining_after' => $availableSpace - $actualSpaceUsed,
+                    'used_panels_count' => count($usedPanelIds)
                 ]);
                 
                 $remainingSpace -= $actualSpaceUsed;
@@ -493,7 +508,8 @@ class CheckPanelCapacity extends Command
                     'actual_space_used' => $actualSpaceUsed,
                     'available_space' => $availableSpace,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
-                    'domains_count' => count($domainSlice)
+                    'domains_count' => count($domainSlice),
+                    'used_panels_count' => count($usedPanelIds)
                 ]);
                 break;
             }
