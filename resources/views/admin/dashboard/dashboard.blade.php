@@ -225,64 +225,89 @@
 
 
 
-            <!-- Panel Capacity Alert -->
-            @php
-                // Get pending orders that require panel capacity
-                $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                    ->whereNotNull('total_inboxes')
-                    ->where('total_inboxes', '>', 0)
-                    ->get();
-
-                $insufficientSpaceOrders = [];
-                $totalPanelsNeeded = 0;
-
-                foreach ($pendingOrders as $order) {
-                    // Calculate available space for this order
-                    $availableSpace = 0;
-                    if ($order->total_inboxes >= 1790) {
-                        // For large orders, check full capacity panels
-                        $availableSpace = \App\Models\Panel::where('is_active', 1)
-                            ->where('remaining_limit', 1790)
-                            ->sum('remaining_limit');
-                    } else {
-                        // For smaller orders, check any available space
-                        $availableSpace = \App\Models\Panel::where('is_active', 1)
-                            ->where('remaining_limit', '>', 0)
-                            ->sum('remaining_limit');
+        <!-- Panel Capacity Alert -->
+        @php
+            // Get panel capacity alert data using the same logic as the AJAX endpoint
+            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
+            
+            $insufficientSpaceOrders = [];
+            $totalPanelsNeeded = 0;
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            // Helper function to get available panel space for specific order
+            $getAvailablePanelSpaceForOrder = function(int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity) {
+                if ($orderSize >= $panelCapacity) {
+                    // For large orders, prioritize full capacity panels
+                    $fullCapacityPanels = \App\Models\Panel::where('is_active', 1)
+                                                ->where('limit', $panelCapacity)
+                                                ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                                ->get();
+                    
+                    $fullCapacitySpace = 0;
+                    foreach ($fullCapacityPanels as $panel) {
+                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
                     }
-
-                    if ($order->total_inboxes > $availableSpace) {
-                        $panelsNeeded = ceil($order->total_inboxes / 1790);
-                        $insufficientSpaceOrders[] = $order;
-                        $totalPanelsNeeded += $panelsNeeded;
+                    
+                    return $fullCapacitySpace;
+                    
+                } else {
+                    // For smaller orders, use any panel with remaining space that can accommodate at least one domain
+                    $availablePanels = \App\Models\Panel::where('is_active', 1)
+                                            ->where('limit', $panelCapacity)
+                                            ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                            ->get();
+                    
+                    $totalSpace = 0;
+                    foreach ($availablePanels as $panel) {
+                        $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
                     }
+                    
+                    return $totalSpace;
                 }
-            @endphp
+            };
+            
+            foreach ($pendingOrders as $order) {
+                // Get inboxes per domain from order details or use default
+                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+                
+                // Calculate available space for this order based on logic
+                $availableSpace = $getAvailablePanelSpaceForOrder(
+                    $order->total_inboxes, 
+                    $inboxesPerDomain
+                );
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    // Calculate panels needed for this order (same logic as Console Command)
+                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
+                    $insufficientSpaceOrders[] = $order;
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $availablePanelCount = \App\Models\Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+        @endphp
 
-            @if ($totalPanelsNeeded > 0)
-                <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1"
-                    role="alert" style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-                    <i class="ti ti-server me-2 alert-icon"></i>
-                    <strong>Panel Capacity Alert:</strong>
-                    {{ $totalPanelsNeeded }} new panel{{ $totalPanelsNeeded != 1 ? 's' : '' }} required for
-                    {{ count($insufficientSpaceOrders) }} pending
-                    order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
-                    <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create
-                    additional capacity.
-                    <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                        aria-label="Close"></button>
-                </div>
-            @elseif(count($pendingOrders) > 0)
-                <!-- <div id="panelCapacityAlert" class="alert alert-success alert-dismissible fade show py-2 rounded-1" role="alert"
-                style="background-color: rgba(40, 167, 69, 0.2); color: #fff; border: 2px solid #28a745;">
-                <i class="ti ti-check-circle me-2 alert-icon"></i>
-                <strong>Panel Capacity Status:</strong>
-                Sufficient panel capacity available for {{ count($pendingOrders) }} pending order{{ count($pendingOrders) != 1 ? 's' : '' }}.
-                <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">View Panels</a>
-                <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                    aria-label="Close"></button>
-            </div> -->
-            @endif
+        @if($adjustedPanelsNeeded > 0)
+        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
+            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
+            <i class="ti ti-server me-2 alert-icon"></i>
+            <strong>Panel Capacity Alert:</strong>
+            {{ $adjustedPanelsNeeded }} new panel{{ $adjustedPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
+            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                aria-label="Close"></button>
+        </div>
+        @endif
             <div class="col-md-6">
                 @include('admin.dashboard.slider')
             </div>
