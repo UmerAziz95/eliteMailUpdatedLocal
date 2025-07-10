@@ -94,33 +94,33 @@
                 <div class="card-body">
                     {{-- <p class="card-text text-uppercase opacity-75 fw-lighter">About</p> --}}
                     <div class="d-flex flex-column align-items-center">
-                      @php
-    $user = Auth::user();
-    if (!empty($user->name)) {
-        $initials = collect(explode(' ', $user->name))
-            ->filter()
-            ->map(fn($word) => strtoupper(substr($word, 0, 1)))
-            ->take(2)
-            ->implode('');
-    } else {
-        $initials = strtoupper(substr($user->email, 0, 2));
-    }
-@endphp
+                        @php
+                        $user = Auth::user();
+                        if (!empty($user->name)) {
+                        $initials = collect(explode(' ', $user->name))
+                        ->filter()
+                        ->map(fn($word) => strtoupper(substr($word, 0, 1)))
+                        ->take(2)
+                        ->implode('');
+                        } else {
+                        $initials = strtoupper(substr($user->email, 0, 2));
+                        }
+                        @endphp
 
                         <div class="flex-shrink-0 mx-sm-0 mx-auto" style="margin-top: -2rem">
-                              @if ($user->profile_image)
-                                    <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
-                                        style="inline-size: 160px; border-radius: 50%" alt="user image"
-                                        class="d-block h-auto user-profile-img">
-                                    {{-- <i class="fa-regular fa-user fs-2"></i> --}}
-                                @else
-                                    <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                                        style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: var(--second-primary);">
-                                        {{-- {{ $initials }} --}}
-                                        <i class="fa-regular fa-user" style="font-size: 64px !important"></i>
-                                    </div>
-                                @endif 
-                         </div>
+                            @if ($user->profile_image)
+                            <img src="{{ asset('storage/profile_images/' . $user->profile_image) }}"
+                                style="inline-size: 160px; border-radius: 50%" alt="user image"
+                                class="d-block h-auto user-profile-img">
+                            {{-- <i class="fa-regular fa-user fs-2"></i> --}}
+                            @else
+                            <div class="d-flex justify-content-center align-items-center text-white fw-bold"
+                                style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: var(--second-primary);">
+                                {{-- {{ $initials }} --}}
+                                <i class="fa-regular fa-user" style="font-size: 64px !important"></i>
+                            </div>
+                            @endif
+                        </div>
 
                         <div class="flex-grow-1 mt-3">
                             <div
@@ -145,7 +145,7 @@
                     </div>
                     <ul class="list-unstyled my-3 py-1 border rounded-2 px-2 pt-3">
                         <li class="d-flex align-items-center mb-4"><i class="ti ti-user opacity-100"></i><span
-                                class="fw-semibold mx-2 opacity-100">Full Name:</span>
+                                class="fw-semibold mx-2 opacity-100">First Name:</span>
                             <span>{{Auth::user()->name}}</span>
                         </li>
                         <li class="d-flex align-items-center mb-4">

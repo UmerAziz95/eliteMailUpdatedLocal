@@ -33,9 +33,9 @@
             <div class="border border-{{ $order->color_status2 }} rounded-2 py-1 px-2 text-{{ $order->color_status2 }} bg-transparent">
                 {{ ucfirst($order->status2 ?? 'Pending') }}
             </div>
-            <div id="exportCsvBtn" class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
+            {{-- <div id="exportCsvBtn" class="border rounded-2 py-1 text-white bg-transparent text-center" style="width: 120px">
                 <a href="javascript:;">Bulk Export</a>            
-            </div>
+            </div> --}}
         </div>
     </div>
 
@@ -45,11 +45,11 @@
                 data-bs-target="#configuration-tab-pane" type="button" role="tab"
                 aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
         </li>
-        <li class="nav-item" role="presentation">
+        {{-- <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab"
                 data-bs-target="#email-tab-pane" type="button" role="tab"
                 aria-controls="email-tab-pane" aria-selected="false">Emails</button>
-        </li>
+        </li> --}}
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
                 data-bs-target="#subscription-tab-pane" type="button" role="tab"
@@ -175,7 +175,7 @@
                         <div class="price-display-section">
                             @if(isset($order->plan) && $order->plan)
                                 @php
-                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : 0;
+                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->initial_total_inboxes : 0;
                                     $originalPrice = $order->plan->price * $totalInboxes;
                                 @endphp
                                 <div class="d-flex align-items-center gap-3">
@@ -298,7 +298,7 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab"
+        {{-- <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab"
             tabindex="0">
             <div class="col-12">
                 <div class="card p-3">
@@ -642,7 +642,7 @@
                     @endpush
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel"
             aria-labelledby="subscription-tab" tabindex="0">

@@ -135,7 +135,7 @@
                 <div class="info-container">
                     <ul class="list-unstyled mb-6">
                         <li class="mb-2">
-                            <span class="h6">Full Name:</span>
+                            <span class="h6">First Name:</span>
                             <span class="opacity-50 small fw-light">{{ Auth::user()->name }}</span>
                         </li>
                         <li class="mb-2">

@@ -638,6 +638,7 @@ class PlanController extends Controller
                     $order->update([
                         'status_manage_by_admin' => 'cancelled',
                     ]);
+                    
                 }
                 // Create a new activity log using the custom log service
                 ActivityLogService::log(

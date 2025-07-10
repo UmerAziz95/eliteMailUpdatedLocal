@@ -294,6 +294,7 @@ class OrderController extends Controller
     public function getOrders(Request $request)
     {
         try {
+           
             $contractorId = auth()->id();
             
             // Determine if we need to join users table

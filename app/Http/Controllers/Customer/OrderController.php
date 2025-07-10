@@ -364,6 +364,9 @@ class OrderController extends Controller
                 </button>';
     } else {
         $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
+        if($order->subscription->status == 'cancelled') {
+            $hasRejectedPanels = false;
+        }
         $pulse_effect = in_array(strtolower($order->status_manage_by_admin), ['draft', 'reject']) ? 'pulse-effect' : '';        return '<div class="dropdown">
         
                     <button class="p-0 bg-transparent border-0"
@@ -518,6 +521,7 @@ class OrderController extends Controller
     }
     public function store(Request $request)
     {
+       
         try {
             // Validate the request data
             $validated = $request->validate([
@@ -558,7 +562,7 @@ class OrderController extends Controller
                 'prefix_variants_details' => 'required|array|min:1',
                 'prefix_variants_details.prefix_variant_1.first_name' => 'required|string|max:50',
                 'prefix_variants_details.prefix_variant_1.last_name' => 'required|string|max:50',
-                'prefix_variants_details.prefix_variant_1.profile_link' => 'required|url|max:255',
+                'prefix_variants_details.prefix_variant_1.profile_link' => 'nullable|url|max:255',
                 'prefix_variants_details.prefix_variant_2.first_name' => 'nullable|string|max:50',
                 'prefix_variants_details.prefix_variant_2.last_name' => 'nullable|string|max:50',
                 'prefix_variants_details.prefix_variant_2.profile_link' => 'nullable|url|max:255',
@@ -622,20 +626,20 @@ class OrderController extends Controller
                         ], 422);
                     }
                     
-                    if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
-                        return response()->json([
-                            'success' => false,
-                            'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
-                        ], 422);
-                    }
+                    // if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
+                    //     return response()->json([
+                    //         'success' => false,
+                    //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
+                    //     ], 422);
+                    // }
                     
-                    // Validate URL format for profile link
-                    if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
-                        return response()->json([
-                            'success' => false,
-                            'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link must be a valid URL.']]
-                        ], 422);
-                    }
+                    // // Validate URL format for profile link
+                    // if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
+                    //     return response()->json([
+                    //         'success' => false,
+                    //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link must be a valid URL.']]
+                    //     ], 422);
+                    // }
                 }
             }
             $status = 'pending'; // Default status for new orders

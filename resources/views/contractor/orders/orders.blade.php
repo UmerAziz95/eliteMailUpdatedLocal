@@ -1384,7 +1384,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <small>${renderPrefixVariants(reorderInfo)}</small>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50 small">Profile Picture URLsl</span>
+                                <span class="opacity-50 small">Profile Picture URLS</span>
                              <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
                             </div>
                            

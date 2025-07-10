@@ -1316,6 +1316,9 @@ pointer-events: none
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
+                                 <th scope="col">Split ID</th>
+                                <th scope="col">Panel Id</th>
+                                <th scope="col">Panel Title</th>
                                 <th scope="col">Split Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
@@ -1328,6 +1331,13 @@ pointer-events: none
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
+                                      <td>
+                                        <span class="badge bg-primary" style="font-size: 10px;">
+                                            SPL-${split.id || 'N/A'}
+                                        </span>
+                                    </td>
+                                     <td>${split?.panel_id || 'N/A'}</td>
+                                     <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="text-dark px-2 py-1 rounded-1 badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>

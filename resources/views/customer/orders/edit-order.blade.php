@@ -418,7 +418,7 @@
                     <h5 class="mb-2 mt-4">Additional Assets</h5>
 
                     <div class="mb-3">
-                        <label for="additional_info">Additional Information / Context *</label>
+                        <label for="additional_info">Additional Information / Context </label>
                         <textarea id="additional_info" name="additional_info" class="form-control"
                             rows="8">{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->additional_info : '' }}</textarea>
                     </div>
@@ -2425,7 +2425,36 @@ $(document).ready(function() {
                 }
             }
         });
+
+        // domain hosting platform URL validation 
+       $('#access_tutorial').val(function() {
         
+            const value = $(this).val()?.trim();
+            let isValid = true;
+            let firstErrorField = null;
+
+            const accessTutorial = $('#access_tutorial');
+            const selectedValue = accessTutorial.val()?.trim();
+
+        if (selectedValue === 'no') {
+            setTimeout(() => {
+               accessTutorial.val('no');
+            }, 100);
+             // ensure it's explicitly set
+            accessTutorial.addClass('is-invalid');
+            accessTutorial.siblings('.invalid-feedback').text(
+                'Please review the Domain Hosting Platform - Access Tutorial and select "Yes".'
+            );
+           
+            if (!firstErrorField) {
+                firstErrorField = accessTutorial;
+            }
+
+            isValid = false;
+            
+        }
+  
+          });
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {
@@ -2747,12 +2776,12 @@ $(document).ready(function() {
         const fieldHtml = `
             <div class="col-12 prefix-variant-section" data-variant="${i}">
                 <div class="card p-3 mb-3">
-                    <h6 class="mb-3 text-white">Prefix Variant ${String(i).padStart(2, '0')}</h6>
+                    <h6 class="mb-3 text-white">Particulars Variant ${String(i).padStart(2, '0')}</h6>
                     
                     <div class="row g-3">
 
                         <div class="col-md-4">
-                            <label>First Name</label>
+                            <label>First Name*</label>
                             <input type="text" name="prefix_variants_details[prefix_variant_${i}][first_name]" 
                                 class="form-control" value="${existingDetails.first_name || ''}" required>
                             <div class="invalid-feedback" id="prefix_variant_${i}_first_name-error"></div>
@@ -2760,7 +2789,7 @@ $(document).ready(function() {
                         </div>
                         
                         <div class="col-md-4">
-                            <label>Last Name</label>
+                            <label>Last Name*</label>
                             <input type="text" name="prefix_variants_details[prefix_variant_${i}][last_name]" 
                                 class="form-control" value="${existingDetails.last_name || ''}" required>
                             <div class="invalid-feedback" id="prefix_variant_${i}_last_name-error"></div>
@@ -2770,7 +2799,7 @@ $(document).ready(function() {
                         <div class="col-md-4">
                             <label>Profile Picture Link</label>
                             <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
-                                class="form-control" value="${existingDetails.profile_link || ''}" required>
+                                class="form-control" value="${existingDetails.profile_link || ''}" >
                             <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
                             <p class="note">Profile picture URL for this persona</p>
                         </div>
@@ -2899,4 +2928,6 @@ $(document).ready(function() {
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
 </script>
+
+
 @endpush
