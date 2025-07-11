@@ -407,11 +407,24 @@ class PanelController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            Log::info('Panel update request received', [
+                'panel_id' => $id,
+                'request_data' => $request->all(),
+                'user_id' => auth()->id()
+            ]);
+
             $panel = Panel::findOrFail($id);
-            // dd($request->all());
+            
             // Check if panel can be edited (only if remaining_limit equals original limit - meaning no space is used)
             $usedSpace = $panel->limit - $panel->remaining_limit;
             if ($usedSpace > 0) {
+                Log::warning('Panel edit blocked - has used space', [
+                    'panel_id' => $id,
+                    'used_space' => $usedSpace,
+                    'limit' => $panel->limit,
+                    'remaining_limit' => $panel->remaining_limit
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot edit panel. Panel has used space and is assigned to orders.'
@@ -422,21 +435,41 @@ class PanelController extends Controller
                 'panel_title' => 'required|string|max:255',
                 'panel_description' => 'nullable|string',
                 'panel_limit' => 'nullable|integer|min:1',
-                'panel_status' => 'boolean',
-                'created_by' => 'nullable|string|max:255',
+                'panel_status' => 'nullable|in:0,1',
             ]);
 
-            // If limit is being updated, update remaining_limit accordingly
-            if (isset($data['panel_limit'])) {
-                $data['remaining_limit'] = $data['panel_limit'];
+            // Map frontend field names to database field names
+            $updateData = [
+                'title' => $data['panel_title'],
+                'description' => $data['panel_description'] ?? null,
+                'is_active' => isset($data['panel_status']) ? (int)$data['panel_status'] : 1,
+            ];
+
+            // For panel updates, we generally don't allow changing the limit
+            // Only update limit if it's different and no space has been used
+            if (isset($data['panel_limit']) && $data['panel_limit'] != $panel->limit) {
+                $updateData['limit'] = $data['panel_limit'];
+                $updateData['remaining_limit'] = $data['panel_limit'];
+                
+                Log::info('Panel limit being updated', [
+                    'panel_id' => $id,
+                    'old_limit' => $panel->limit,
+                    'new_limit' => $data['panel_limit']
+                ]);
             }
 
-            $panel->update($data);
+            $panel->update($updateData);
+
+            Log::info('Panel updated successfully', [
+                'panel_id' => $id,
+                'updated_data' => $updateData,
+                'panel_after_update' => $panel->fresh()
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Panel updated successfully', 
-                'panel' => $panel
+                'panel' => $panel->fresh()
             ], 200);
 
         } catch (ModelNotFoundException $e) {

@@ -627,12 +627,7 @@
     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
-                onclick="resetPanelForm()" 
-                data-bs-toggle="offcanvas" 
-                data-bs-target="#panelFormOffcanvas" 
-                aria-controls="staticBackdrop" 
-                data-bs-backdrop="true" 
-                data-bs-scroll="false">
+                onclick="createNewPanel()">
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
@@ -2557,12 +2552,24 @@ $('#submitPanelFormBtn').on('click', function(e) {
         isValid = false;
     }
     
-    // Validate panel limit
+    // Validate panel limit (only for new panels, not for updates since it's readonly)
     const panelLimit = $('#panel_limit').val();
-    if (!panelLimit || parseInt(panelLimit) < 1) {
-        $('#panel_limit').addClass('is-invalid');
-        $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
-        isValid = false;
+    const isUpdate = form.data('action') === 'update';
+    
+    if (!isUpdate) {
+        // Only validate limit for new panels
+        if (!panelLimit || parseInt(panelLimit) < 1) {
+            $('#panel_limit').addClass('is-invalid');
+            $('#panel_limit').after('<div class="invalid-feedback">Panel limit must be at least 1</div>');
+            isValid = false;
+        }
+    } else {
+        // For updates, ensure we have a valid limit value
+        if (!panelLimit) {
+            $('#panel_limit').addClass('is-invalid');
+            $('#panel_limit').after('<div class="invalid-feedback">Panel limit is required</div>');
+            isValid = false;
+        }
     }
     
     // If validation fails, stop here
@@ -2572,8 +2579,15 @@ $('#submitPanelFormBtn').on('click', function(e) {
     }
     
     const formData = new FormData(form[0]);
-    const isUpdate = form.data('action') === 'update';
     const panelId = form.data('panel-id');
+    
+    // Debug logging
+    console.log('Form submission details:', {
+        isUpdate: isUpdate,
+        panelId: panelId,
+        action: form.data('action'),
+        formData: Object.fromEntries(formData)
+    });
     
     // Determine URL and method based on action
     let url, method;
@@ -2672,23 +2686,6 @@ $('#submitPanelFormBtn').on('click', function(e) {
 </script>
 
 <script>
-    $('#createPanelBtn').on('click', function() {
-        // Clear form and validation errors when opening modal
-        $('#panelForm')[0].reset();
-        $('.form-control').removeClass('is-invalid');
-        $('.invalid-feedback').remove();
-        
-        var modal = new bootstrap.Modal(document.getElementById('panelFormModal'));
-        modal.show();
-    });
-
-    // Clear form when modal is hidden
-    $('#panelFormModal').on('hidden.bs.modal', function() {
-        $('#panelForm')[0].reset();
-        $('.form-control').removeClass('is-invalid');
-        $('.invalid-feedback').remove();
-    });
-
     // Function to close all open offcanvas elements
     function closeAllOffcanvas() {
         // Get all offcanvas elements
@@ -2758,40 +2755,88 @@ $('#resetFilters').on('click', function() {
 });
 
 // Edit panel function
-function editPanel(panelId) {
-    // Get panel data for editing
-    const panel = panels.find(p => p.id == panelId);
-    if (!panel) {
-        toastr.error('Panel not found');
-        return;
+async function editPanel(panelId) {
+    try {
+        console.log('Editing panel ID:', panelId);
+        console.log('Available panels:', panels);
+        
+        // First, try to get panel data from the current panels array
+        let panel = panels.find(p => p.id == panelId);
+        
+        // If not found in current array, fetch it from the server
+        if (!panel) {
+            console.log('Panel not found in local array, fetching from server...');
+            const response = await fetch(`/admin/panels/${panelId}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Panel not found: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            panel = data.panel || data.data || data;
+            console.log('Panel fetched from server:', panel);
+        }
+        
+        if (!panel) {
+            console.error('Panel data is null or undefined');
+            toastr.error('Panel not found');
+            return;
+        }
+        
+        // Check if panel can be edited
+        if (panel.can_edit === false) {
+            toastr.error('Cannot edit panel. Panel has used space and is assigned to orders.');
+            return;
+        }
+        
+        // Clear any previous validation errors
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').remove();
+        
+        // Populate the form with existing data
+        $('#panel_title').val(panel.title || '');
+        $('#panel_description').val(panel.description || '');
+        $('#panel_limit').val(panel.limit || '');
+        $('#panel_status').val(panel.is_active ? '1' : '0');
+        
+        // For editing, we want to keep the current limit but make it readonly
+        // The limit should not be changed for existing panels
+        $('#panel_limit').prop('readonly', true);
+        
+        // Change form title
+        $('#panelFormOffcanvasLabel').text('Edit Panel');
+        
+        // Store panel ID for update
+        $('#panelForm').data('panel-id', panelId);
+        $('#panelForm').data('action', 'update');
+        
+        // Change submit button text
+        $('#submitPanelFormBtn').text('Update Panel');
+        
+        console.log('Form data set for editing:', {
+            panelId: panelId,
+            action: 'update',
+            title: $('#panel_title').val(),
+            description: $('#panel_description').val(),
+            limit: $('#panel_limit').val(),
+            status: $('#panel_status').val()
+        });
+        
+        // Show the offcanvas
+        const offcanvasElement = document.getElementById('panelFormOffcanvas');
+        const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+        offcanvas.show();
+        
+    } catch (error) {
+        console.error('Error loading panel for editing:', error);
+        toastr.error(`Failed to load panel data for editing: ${error.message}`);
     }
-    
-    // Check if panel can be edited
-    if (!panel.can_edit) {
-        toastr.error('Cannot edit panel. Panel has used space and is assigned to orders.');
-        return;
-    }
-    
-    // Populate the form with existing data
-    $('#panel_title').val(panel.title);
-    $('#panel_description').val(panel.description);
-    $('#panel_limit').val(panel.limit);
-    $('#panel_status').val(panel.is_active ? '1' : '0');
-    
-    // Change form title
-    $('#panelFormOffcanvasLabel').text('Edit Panel');
-    
-    // Store panel ID for update
-    $('#panelForm').data('panel-id', panelId);
-    $('#panelForm').data('action', 'update');
-    
-    // Change submit button text
-    $('#submitPanelFormBtn').text('Update Panel');
-    
-    // Show the offcanvas
-    const offcanvasElement = document.getElementById('panelFormOffcanvas');
-    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
-    offcanvas.show();
 }
 
 // Delete panel function
@@ -2888,6 +2933,17 @@ async function deletePanel(panelId) {
     }
 }
 
+// Function to create new panel
+function createNewPanel() {
+    // Reset form for new panel creation
+    resetPanelForm();
+    
+    // Show the offcanvas
+    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+    offcanvas.show();
+}
+
 // Reset form for new panel creation
 function resetPanelForm() {
     $('#panelForm')[0].reset();
@@ -2896,6 +2952,13 @@ function resetPanelForm() {
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
     $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+    
+    // Clear any validation errors
+    $('.form-control').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    // Ensure panel_limit is readonly for new panels
+    $('#panel_limit').prop('readonly', true);
 }
 
 // Initialize on document ready
@@ -2905,7 +2968,10 @@ $(document).ready(function() {
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
-        resetPanelForm();
+        // Only reset if form is not being submitted
+        setTimeout(function() {
+            resetPanelForm();
+        }, 100);
     });
     
     // Auto-refresh panel capacity alert every 60 seconds
