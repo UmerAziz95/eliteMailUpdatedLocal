@@ -42,6 +42,8 @@ class OrderQueueController extends Controller
             } else {
                 // In-queue: all orders except draft
                 $query->where('status_manage_by_admin', '!=', 'draft');
+                // For queue orders, only include orders that have splits
+                $query->whereHas('orderPanels.orderPanelSplits');
             }
 
             // Apply filters if provided
