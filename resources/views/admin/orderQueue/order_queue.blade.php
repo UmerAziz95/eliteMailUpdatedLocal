@@ -368,7 +368,6 @@
 
 
     </section>
-
     <!-- Order Details Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
         aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
@@ -1138,8 +1137,17 @@
             
             container.innerHTML = splitsHtml;
             
-            // Initialize chevron states and animations after rendering
+            // Start timer for the order in the offcanvas and initialize other features
             setTimeout(function() {
+                // Start timer for the order displayed in the offcanvas
+                const timerId = `flip-timer-${orderInfo.order_id}-0`;
+                const timerElement = document.getElementById(timerId);
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled') {
+                    // Use the same timer starting logic as in the main cards
+                    startSingleTimer(orderInfo, false, 0);
+                }
+                
+                // Initialize chevron states and animations after rendering
                 initializeChevronStates();
             }, 100);
         }
@@ -1432,6 +1440,24 @@
                     }
                 }
             });
+        }
+
+        // Start timer for a single order (used in offcanvas)
+        function startSingleTimer(order, isDrafts, index) {
+            if (order.status === 'completed' || order.status === 'cancelled') return;
+            
+            const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
+            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+            
+            if (!timer.isCompleted) {
+                updateTimerDisplay(timerId, timer);
+                
+                // Set up interval to update timer every second
+                setInterval(() => {
+                    const updatedTimer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                    updateTimerDisplay(timerId, updatedTimer);
+                }, 1000);
+            }
         }
 
         // Update timer display
