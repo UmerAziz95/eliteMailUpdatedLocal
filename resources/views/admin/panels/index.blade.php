@@ -2552,7 +2552,6 @@
 </script>
 
 <script>
-
 $('#submitPanelFormBtn').on('click', function(e) {
     e.preventDefault();
     
@@ -2625,6 +2624,18 @@ $('#submitPanelFormBtn').on('click', function(e) {
     
     console.log('Submitting form:', { isUpdate, url, method });
     
+    // Show SweetAlert loading dialog
+    Swal.fire({
+        title: isUpdate ? 'Updating Panel' : 'Creating Panel',
+        text: isUpdate ? 'Please wait while we update the panel...' : 'Please wait while we create the panel...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     $.ajax({
         url: url,
         method: method,
@@ -2638,9 +2649,17 @@ $('#submitPanelFormBtn').on('click', function(e) {
         beforeSend: function() {
             $('#submitPanelFormBtn').prop('disabled', true).text(isUpdate ? 'Updating...' : 'Creating...');
         },
-        success: function(response) {
+        success: async function(response) {
             const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
-            toastr.success(message);
+            
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: message,
+                confirmButtonText: 'OK'
+            });
+            
             // Clear and reset the form
             resetPanelForm();
             $('.form-control').removeClass('is-invalid');
@@ -2650,29 +2669,18 @@ $('#submitPanelFormBtn').on('click', function(e) {
             loadPanels(currentFilters, 1, false);
             // initializeOrderTrackingTable
             initializeOrderTrackingTable();
-            // refresh awaiting orders
-            // Run panel capacity check after successful panel creation (only for new panels)
-            if (!isUpdate) {
-                $.ajax({
-                    url: '{{ route("admin.panels.run-capacity-check") }}',
-                    method: 'POST',
-                    data: {
-                        panel_id: response.panel_id || '',
-                        admin_id: response.admin_id || '',
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(capacityResponse) {
-                        console.log('Panel capacity check completed:', capacityResponse);
-                    },
-                    error: function(xhr) {
-                        console.log('Panel capacity check failed:', xhr.responseJSON);
-                        // Don't show error to user as it's a background process
-                    }
-                });
+            // Check if response has capacity data
+            if (response && response.capacity_data) {
+                if (response.capacity_data.adjusted_panels_needed === 0) {
+                    closeAllOffcanvas();
+                }
             }
+            refreshPanelCapacityAlerts();
         },
-        error: function(xhr) {
+        error: async function(xhr) {
             console.log('Error response:', xhr.responseJSON);
+            
+            let errorMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
             
             if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                 // Handle validation errors
@@ -2685,19 +2693,21 @@ $('#submitPanelFormBtn').on('click', function(e) {
                     }
                 });
                 
-                // Display all validation errors
-                errorMessages.forEach(function(message) {
-                    toastr.error(message);
-                });
+                // Join all error messages
+                errorMessage = errorMessages.join('\n');
                 
             } else if (xhr.responseJSON && xhr.responseJSON.message) {
                 // Handle other error messages
-                toastr.error(xhr.responseJSON.message);
-            } else {
-                // Fallback error message
-                const fallbackMessage = isUpdate ? 'Failed to update panel. Please try again.' : 'Failed to create panel. Please try again.';
-                toastr.error(fallbackMessage);
+                errorMessage = xhr.responseJSON.message;
             }
+            
+            // Close loading dialog and show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: errorMessage,
+                confirmButtonText: 'OK'
+            });
         },
         complete: function() {
             $('#submitPanelFormBtn').prop('disabled', false).text(isUpdate ? 'Update Panel' : 'Submit');

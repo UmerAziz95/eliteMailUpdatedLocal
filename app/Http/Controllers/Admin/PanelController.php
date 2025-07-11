@@ -374,14 +374,19 @@ class PanelController extends Controller
                 'description' => $data['panel_description'],
                 'is_active' => $data['panel_status'] ?? 1,
                 'limit' => $data['panel_limit'],
-                'remaining_limit' => env('PANEL_CAPACITY', 358), // Default to 358 if not set in config
+                'remaining_limit' => $data['panel_limit'], // Use the actual panel limit instead of env
                 'created_by' => auth()->user()->name,
             ]);
 
+            // Calculate needed panels after creation
+            $panelCapacityData = $this->calculatePanelCapacityNeeds();
+            // runPanelCapacityCheck
+            $this->runPanelCapacityCheck($request);
             return response()->json([
                 'success' => true,
                 'message' => 'Panel created successfully', 
-                'panel' => $panel
+                'panel' => $panel,
+                'capacity_data' => $panelCapacityData
             ], 201);
 
         } catch (ValidationException $e) {
@@ -402,6 +407,70 @@ class PanelController extends Controller
                 'success' => false,
                 'message' => 'Failed to create panel: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Calculate panel capacity needs - extracted from the blade template logic
+     */
+    private function calculatePanelCapacityNeeds()
+    {
+        try {
+            // Get pending orders that require panel capacity
+            $pendingOrders = OrderTracking::where('status', 'pending')
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
+            
+            $insufficientSpaceOrders = [];
+            $totalPanelsNeeded = 0;
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            foreach ($pendingOrders as $order) {
+                // Get inboxes per domain from order details or use default
+                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+                
+                // Calculate available space for this order based on logic
+                $availableSpace = $this->getAvailablePanelSpaceForOrder(
+                    $order->total_inboxes, 
+                    $inboxesPerDomain, 
+                    $panelCapacity, 
+                    $maxSplitCapacity
+                );
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    // Calculate panels needed for this order (same logic as Console Command)
+                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
+                    $insufficientSpaceOrders[] = $order;
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+
+            return [
+                'total_panels_needed' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'adjusted_panels_needed' => $adjustedPanelsNeeded,
+                'insufficient_orders_count' => count($insufficientSpaceOrders),
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'show_alert' => $adjustedPanelsNeeded > 0
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error calculating panel capacity needs: ' . $e->getMessage());
+            return [
+                'error' => 'Failed to calculate panel capacity needs',
+                'show_alert' => false
+            ];
         }
     }
     public function update(Request $request, $id)
