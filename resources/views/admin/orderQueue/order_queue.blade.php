@@ -200,181 +200,57 @@
         <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="in-queue-tab-pane" role="tabpanel" aria-labelledby="in-queue-tab"
                 tabindex="0">
-                <div class="mb-4"
+                <div id="ordersContainer" class="mb-4"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-
-
-                    @for ($i = 0; $i < 10; $i++)
-                        <div class="card p-3 overflow-hidden" style="border-bottom: 4px solid orange">
-                            <div style="position: relative; z-index: 9;">
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <h6 class="mb-0">#92</h6>
-                                        <span class="text-warning small">
-                                            <i class="fa-solid fa-spinner text-warning"></i>
-                                            Pending
-                                        </span>
-                                    </div>
-
-                                    <div id="flip-timer-{{ $i }}" class="flip-timer"
-                                        style="display: flex; gap: 4px;">
-                                    </div>
-
-                                </div>
-
-                                <div class="d-flex flex-column gap-0">
-                                    <h6 class="mb-0">
-                                        Total Inboxes : <span class="text-white number ">5000</span>
-                                    </h6>
-                                </div>
-
-                                <div class="my-4">
-                                    <div class="content-line d-flex align-items-center justify-content-between">
-                                        <div class="d-flex flex-column">
-                                            <small>Inboxes/Domain</small>
-                                            <small class="small">100</small>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-end">
-                                            <small>Total Domains</small>
-                                            <small class="small">5000</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center mt-1">
-                                        <span
-                                            style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                                        <span style="height: 1px; width: 100%; background-color: orange;"></span>
-                                        <span
-                                            style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-1">
-                                        <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg"
-                                            width="40" height="40" class="object-fit-cover"
-                                            style="border-radius: 50px" alt="">
-                                        <div class="d-flex flex-column gap-0">
-                                            <h6 class="mb-0">Hamza Ashfaq</h6>
-                                            <small>7/3/2025</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center justify-content-center"
-                                        style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
-                                        onclick="viewOrderSplits(${order.order_id})" data-bs-toggle="offcanvas"
-                                        data-bs-target="#order-splits-view">
-                                        <i class="fa-solid fa-chevron-right"></i>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Loading state -->
+                    <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    @endfor
+                        <p class="mt-2 mb-0">Loading orders...</p>
+                    </div>
+                </div>
 
-
-                    <!-- Load More Button -->
-                    <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-                        <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                            <span id="loadMoreText">Load More</span>
-                            <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                                style="display: none;">
-                                <span class="visually-hidden">Loading...</span>
-                            </span>
-                        </button>
-                        <div id="paginationInfo" class="mt-2 text-light small">
-                            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
-                                id="totalOrders">0</span> orders
-                        </div>
+                <!-- Load More Button -->
+                <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                        <span id="loadMoreText">Load More</span>
+                        <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationInfo" class="mt-2 text-light small">
+                        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
+                            id="totalOrders">0</span> orders
                     </div>
                 </div>
             </div>
             <div class="tab-pane fade" id="in-draft-tab-pane" role="tabpanel" aria-labelledby="in-draft-tab"
                 tabindex="0">
-                <div class="mb-4"
+                <div id="draftsContainer" class="mb-4"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-
-
-                    @for ($i = 0; $i < 10; $i++)
-                        <div class="card p-3 overflow-hidden" style="border-bottom: 4px solid rgb(0, 221, 255)">
-                            <div style="position: relative; z-index: 9;">
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <h6 class="mb-0">#92</h6>
-                                        <span class="text-info small">
-                                            <i class="fa-solid fa-spinner text-info"></i>
-                                            Draft
-                                        </span>
-                                    </div>
-
-                                    <div id="flip-timer-{{ $i }}" class="flip-timer"
-                                        style="display: flex; gap: 4px;">
-                                    </div>
-
-                                </div>
-
-                                <div class="d-flex flex-column gap-0">
-                                    <h6 class="mb-0">
-                                        Total Inboxes : <span class="text-white number ">5000</span>
-                                    </h6>
-                                </div>
-
-                                <div class="my-4">
-                                    <div class="content-line d-flex align-items-center justify-content-between">
-                                        <div class="d-flex flex-column">
-                                            <small>Inboxes/Domain</small>
-                                            <small class="small">100</small>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-end">
-                                            <small>Total Domains</small>
-                                            <small class="small">5000</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center mt-1">
-                                        <span
-                                            style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                                        <span style="height: 1px; width: 100%; background-color: rgb(0, 242, 255);"></span>
-                                        <span
-                                            style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-1">
-                                        <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg"
-                                            width="40" height="40" class="object-fit-cover"
-                                            style="border-radius: 50px" alt="">
-                                        <div class="d-flex flex-column gap-0">
-                                            <h6 class="mb-0">Hamza Ashfaq</h6>
-                                            <small>7/3/2025</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center justify-content-center"
-                                        style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
-                                        onclick="viewOrderSplits(${order.order_id})" data-bs-toggle="offcanvas"
-                                        data-bs-target="#order-splits-view">
-                                        <i class="fa-solid fa-chevron-right"></i>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Loading state -->
+                    <div id="draftsLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    @endfor
+                        <p class="mt-2 mb-0">Loading draft orders...</p>
+                    </div>
+                </div>
 
-
-                    <!-- Load More Button -->
-                    <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-                        <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                            <span id="loadMoreText">Load More</span>
-                            <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                                style="display: none;">
-                                <span class="visually-hidden">Loading...</span>
-                            </span>
-                        </button>
-                        <div id="paginationInfo" class="mt-2 text-light small">
-                            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
-                                id="totalOrders">0</span> orders
-                        </div>
+                <!-- Load More Button for Drafts -->
+                <div id="loadMoreDraftsContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreDraftsBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                        <span id="loadMoreDraftsText">Load More</span>
+                        <span id="loadMoreDraftsSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationDraftsInfo" class="mt-2 text-light small">
+                        Showing <span id="showingDraftsFrom">0</span> to <span id="showingDraftsTo">0</span> of <span
+                            id="totalDrafts">0</span> orders
                     </div>
                 </div>
             </div>
@@ -411,15 +287,657 @@
 
 @push('scripts')
     <script>
+        let orders = [];
+        let drafts = [];
+        let currentFilters = {};
+        let currentPage = 1;
+        let currentDraftsPage = 1;
+        let hasMorePages = false;
+        let hasMoreDraftsPages = false;
+        let totalOrders = 0;
+        let totalDrafts = 0;
+        let isLoading = false;
+        let isDraftsLoading = false;
+        let activeTab = 'in-queue';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial orders
+            loadOrders({}, 1, false, 'in-queue');
+            
+            // Tab change handlers
+            document.getElementById('in-queue-tab').addEventListener('click', function() {
+                activeTab = 'in-queue';
+                if (orders.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'in-queue');
+                }
+            });
+            
+            document.getElementById('in-draft-tab').addEventListener('click', function() {
+                activeTab = 'in-draft';
+                if (drafts.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'in-draft');
+                }
+            });
+
+            // Filter form handler
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const filters = Object.fromEntries(formData);
+                
+                // Remove empty filters
+                Object.keys(filters).forEach(key => {
+                    if (!filters[key]) delete filters[key];
+                });
+                
+                currentFilters = filters;
+                document.getElementById('submitBtn').disabled = true;
+                
+                if (activeTab === 'in-queue') {
+                    loadOrders(filters, 1, false, 'in-queue');
+                } else {
+                    loadOrders(filters, 1, false, 'in-draft');
+                }
+            });
+
+            // Reset filters handler
+            document.getElementById('resetFilters').addEventListener('click', function() {
+                document.getElementById('filterForm').reset();
+                currentFilters = {};
+                if (activeTab === 'in-queue') {
+                    loadOrders({}, 1, false, 'in-queue');
+                } else {
+                    loadOrders({}, 1, false, 'in-draft');
+                }
+            });
+
+            // Load more handlers
+            document.getElementById('loadMoreBtn').addEventListener('click', function() {
+                if (hasMorePages && !isLoading) {
+                    loadOrders(currentFilters, currentPage + 1, true, 'in-queue');
+                }
+            });
+
+            document.getElementById('loadMoreDraftsBtn').addEventListener('click', function() {
+                if (hasMoreDraftsPages && !isDraftsLoading) {
+                    loadOrders(currentFilters, currentDraftsPage + 1, true, 'in-draft');
+                }
+            });
+        });
+
+        // Load orders data
+        async function loadOrders(filters = {}, page = 1, append = false, type = 'in-queue') {
+            const isLoadingDrafts = type === 'in-draft';
+            
+            try {
+                if (isLoadingDrafts ? isDraftsLoading : isLoading) return;
+                
+                if (isLoadingDrafts) {
+                    isDraftsLoading = true;
+                } else {
+                    isLoading = true;
+                }
+                
+                if (!append) {
+                    if (isLoadingDrafts) {
+                        showDraftsLoading();
+                        drafts = [];
+                    } else {
+                        showLoading();
+                        orders = [];
+                    }
+                }
+                
+                if (append) {
+                    showLoadMoreSpinner(true, isLoadingDrafts);
+                }
+                
+                const params = new URLSearchParams({
+                    ...filters,
+                    type: type,
+                    page: page,
+                    per_page: 12
+                });
+                
+                const response = await fetch(`/admin/order_queue/data?${params}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch orders: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const newOrders = data.data || [];
+                
+                if (isLoadingDrafts) {
+                    if (append) {
+                        drafts = drafts.concat(newOrders);
+                    } else {
+                        drafts = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentDraftsPage = pagination.current_page || 1;
+                    hasMoreDraftsPages = pagination.has_more_pages || false;
+                    totalDrafts = pagination.total || 0;
+                    
+                    renderOrders(append, true);
+                    updatePaginationInfo(true);
+                    updateLoadMoreButton(true);
+                } else {
+                    if (append) {
+                        orders = orders.concat(newOrders);
+                    } else {
+                        orders = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentPage = pagination.current_page || 1;
+                    hasMorePages = pagination.has_more_pages || false;
+                    totalOrders = pagination.total || 0;
+                    
+                    renderOrders(append, false);
+                    updatePaginationInfo(false);
+                    updateLoadMoreButton(false);
+                }
+                
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                if (!append) {
+                    showError(error.message, isLoadingDrafts);
+                }
+            } finally {
+                if (isLoadingDrafts) {
+                    isDraftsLoading = false;
+                } else {
+                    isLoading = false;
+                }
+                
+                if (append) {
+                    showLoadMoreSpinner(false, isLoadingDrafts);
+                }
+                
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        // Show loading state
+        function showLoading() {
+            const container = document.getElementById('ordersContainer');
+            const loadingElement = document.getElementById('loadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
+        // Show drafts loading state
+        function showDraftsLoading() {
+            const container = document.getElementById('draftsContainer');
+            const loadingElement = document.getElementById('draftsLoadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
+        // Hide loading state
+        function hideLoading(isDrafts = false) {
+            const loadingElement = document.getElementById(isDrafts ? 'draftsLoadingState' : 'loadingState');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        // Show error message
+        function showError(message, isDrafts = false) {
+            hideLoading(isDrafts);
+            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
+            if (!container) return;
+            
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+            container.style.gap = '30px';
+            
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                    <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                    <h5>Error</h5>
+                    <p class="mb-3">${message}</p>
+                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${isDrafts ? 'in-draft' : 'in-queue'}')">Retry</button>
+                </div>
+            `;
+        }
+
+        // Render orders
+        function renderOrders(append = false, isDrafts = false) {
+            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
+            const ordersList = isDrafts ? drafts : orders;
+            
+            if (!append) {
+                hideLoading(isDrafts);
+            }
+            
+            if (!container) return;
+            
+            if (ordersList.length === 0 && !append) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <i class="fas fa-inbox"></i>
+                        <h5>No ${isDrafts ? 'Draft ' : ''}Orders Found</h5>
+                        <p>There are no ${isDrafts ? 'draft ' : ''}orders to display.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (!append) {
+                container.innerHTML = '';
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+            }
+            
+            const startIndex = append ? (isDrafts ? drafts.length - (drafts.length - ordersList.length) : orders.length - (orders.length - ordersList.length)) : 0;
+            const ordersToRender = append ? ordersList.slice(startIndex) : ordersList;
+            
+            ordersToRender.forEach((order, index) => {
+                const orderCard = createOrderCard(order, isDrafts, startIndex + index);
+                container.appendChild(orderCard);
+            });
+        }
+
+        // Create order card
+        function createOrderCard(order, isDrafts, index) {
+            const statusConfig = getStatusConfig(order.status);
+            const borderColor = isDrafts ? 'rgb(0, 221, 255)' : statusConfig.borderColor;
+            const statusClass = isDrafts ? 'text-info' : statusConfig.statusClass;
+            const statusIcon = isDrafts ? 'fa-solid fa-file-lines' : statusConfig.statusIcon;
+            const statusText = isDrafts ? 'Draft' : (order.status || 'Pending');
+            const lineColor = isDrafts ? 'rgb(0, 242, 255)' : statusConfig.lineColor;
+            
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card p-3 overflow-hidden';
+            cardElement.style.borderBottom = `4px solid ${borderColor}`;
+            
+            const customerImage = order.customer_image 
+                ? order.customer_image 
+                : 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg';
+            
+            cardElement.innerHTML = `
+                <div style="position: relative; z-index: 9;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <h6 class="mb-0">#${order.order_id}</h6>
+                            <span class="${statusClass} small">
+                                <i class="${statusIcon}"></i>
+                                ${statusText}
+                            </span>
+                        </div>
+                        <div id="flip-timer-${isDrafts ? 'draft-' : ''}${index}" class="flip-timer" style="display: flex; gap: 4px;"></div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-0">
+                        <h6 class="mb-0">
+                            Total Inboxes : <span class="text-white number">${order.total_inboxes || 0}</span>
+                        </h6>
+                    </div>
+
+                    <div class="my-4">
+                        <div class="content-line d-flex align-items-center justify-content-between">
+                            <div class="d-flex flex-column">
+                                <small>Inboxes/Domain</small>
+                                <small class="small">${order.inboxes_per_domain || 0}</small>
+                            </div>
+                            <div class="d-flex flex-column align-items-end">
+                                <small>Total Domains</small>
+                                <small class="small">${order.total_domains || 0}</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center mt-1">
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                            <span style="height: 1px; width: 100%; background-color: ${lineColor};"></span>
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-1">
+                            <img src="${customerImage}" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="" onerror="this.src='https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg'">
+                            <div class="d-flex flex-column gap-0">
+                                <h6 class="mb-0">${order.customer_name}</h6>
+                                <small>${formatDate(order.created_at)}</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-center" 
+                             style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
+                             onclick="viewOrderSplits(${order.order_id})" 
+                             data-bs-toggle="offcanvas" 
+                             data-bs-target="#order-splits-view">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Initialize timer for this card
+            setTimeout(() => {
+                if (order.timer_started_at && !order.completed_at) {
+                    const timerStarted = new Date(order.timer_started_at);
+                    const pausedSeconds = order.total_paused_seconds || 0;
+                    const elapsed = Math.floor((new Date() - timerStarted) / 1000) - pausedSeconds;
+                    startTimer(`flip-timer-${isDrafts ? 'draft-' : ''}${index}`, elapsed);
+                }
+            }, 100);
+            
+            return cardElement;
+        }
+
+        // Get status configuration
+        function getStatusConfig(status) {
+            const configs = {
+                'pending': {
+                    borderColor: 'orange',
+                    statusClass: 'text-warning',
+                    statusIcon: 'fa-solid fa-spinner',
+                    lineColor: 'orange'
+                },
+                'in-progress': {
+                    borderColor: '#007bff',
+                    statusClass: 'text-primary',
+                    statusIcon: 'fa-solid fa-cog fa-spin',
+                    lineColor: '#007bff'
+                },
+                'completed': {
+                    borderColor: '#28a745',
+                    statusClass: 'text-success',
+                    statusIcon: 'fa-solid fa-check',
+                    lineColor: '#28a745'
+                },
+                'cancelled': {
+                    borderColor: '#dc3545',
+                    statusClass: 'text-danger',
+                    statusIcon: 'fa-solid fa-times',
+                    lineColor: '#dc3545'
+                },
+                'expired': {
+                    borderColor: '#6c757d',
+                    statusClass: 'text-secondary',
+                    statusIcon: 'fa-solid fa-clock',
+                    lineColor: '#6c757d'
+                }
+            };
+            
+            return configs[status?.toLowerCase()] || configs['pending'];
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        // Update pagination info
+        function updatePaginationInfo(isDrafts = false) {
+            if (isDrafts) {
+                const showingFrom = document.getElementById('showingDraftsFrom');
+                const showingTo = document.getElementById('showingDraftsTo');
+                const totalOrdersEl = document.getElementById('totalDrafts');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = drafts.length > 0 ? 1 : 0;
+                    showingTo.textContent = drafts.length;
+                    totalOrdersEl.textContent = totalDrafts;
+                }
+            } else {
+                const showingFrom = document.getElementById('showingFrom');
+                const showingTo = document.getElementById('showingTo');
+                const totalOrdersEl = document.getElementById('totalOrders');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = orders.length > 0 ? 1 : 0;
+                    showingTo.textContent = orders.length;
+                    totalOrdersEl.textContent = totalOrders;
+                }
+            }
+        }
+
+        // Update load more button
+        function updateLoadMoreButton(isDrafts = false) {
+            if (isDrafts) {
+                const container = document.getElementById('loadMoreDraftsContainer');
+                if (container) {
+                    container.style.display = hasMoreDraftsPages ? 'block' : 'none';
+                }
+            } else {
+                const container = document.getElementById('loadMoreContainer');
+                if (container) {
+                    container.style.display = hasMorePages ? 'block' : 'none';
+                }
+            }
+        }
+
+        // Show load more spinner
+        function showLoadMoreSpinner(show, isDrafts = false) {
+            if (isDrafts) {
+                const button = document.getElementById('loadMoreDraftsBtn');
+                const text = document.getElementById('loadMoreDraftsText');
+                const spinner = document.getElementById('loadMoreDraftsSpinner');
+                
+                if (button && text && spinner) {
+                    button.disabled = show;
+                    text.textContent = show ? 'Loading...' : 'Load More';
+                    spinner.style.display = show ? 'inline-block' : 'none';
+                }
+            } else {
+                const button = document.getElementById('loadMoreBtn');
+                const text = document.getElementById('loadMoreText');
+                const spinner = document.getElementById('loadMoreSpinner');
+                
+                if (button && text && spinner) {
+                    button.disabled = show;
+                    text.textContent = show ? 'Loading...' : 'Load More';
+                    spinner.style.display = show ? 'inline-block' : 'none';
+                }
+            }
+        }
+
+        // View order splits
+        async function viewOrderSplits(orderId) {
+            try {
+                const container = document.getElementById('orderSplitsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div id="splitsLoadingState" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading order details...</span>
+                            </div>
+                            <p class="mt-2">Loading order details...</p>
+                        </div>
+                    `;
+                }
+
+                const response = await fetch(`/admin/order_queue/${orderId}/splits`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch order splits');
+                }
+
+                const data = await response.json();
+                renderOrderSplits(data);
+
+            } catch (error) {
+                console.error('Error loading order splits:', error);
+                const container = document.getElementById('orderSplitsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                            <h5>Error Loading Order Details</h5>
+                            <p>Failed to load order details. Please try again.</p>
+                            <button class="btn btn-primary" onclick="viewOrderSplits(${orderId})">Retry</button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Render order splits in offcanvas
+        function renderOrderSplits(data) {
+            const container = document.getElementById('orderSplitsContainer');
+            
+            if (!data.splits || data.splits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fs-3 mb-3"></i>
+                        <h5>No Splits Found</h5>
+                        <p>This order doesn't have any splits yet.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const orderInfo = data.order;
+            const reorderInfo = data.reorder_info;
+            const splits = data.splits;
+            
+            // Update offcanvas title
+            const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+            if (offcanvasTitle && orderInfo) {
+                offcanvasTitle.innerHTML = `Order Details #${orderInfo.id}`;
+            }
+
+            const splitsHtml = `
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6>${orderInfo.status_manage_by_admin}</h6>
+                            <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Split ID</th>
+                                <th scope="col">Panel ID</th>
+                                <th scope="col">Panel Title</th>
+                                <th scope="col">Split Status</th>
+                                <th scope="col">Inboxes/Domain</th>
+                                <th scope="col">Total Domains</th>
+                                <th scope="col">Total Inboxes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${splits.map((split, index) => `
+                                <tr>
+                                    <th scope="row">${index + 1}</th>
+                                    <td>
+                                        <span class="badge bg-primary" style="font-size: 10px;">
+                                            SPL-${split.id || 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td>${split?.panel_id || 'N/A'}</td>
+                                    <td>${split?.panel_title || 'N/A'}</td>
+                                    <td>
+                                        <span class="text-dark px-2 py-1 rounded-1 badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
+                                    </td>
+                                    <td>${split.inboxes_per_domain || 'N/A'}</td>
+                                    <td>
+                                        <span class="px-2 py-1 rounded-1 bg-success text-white" style="font-size: 10px;">
+                                            ${split.domains_count || 0} domain(s)
+                                        </span>
+                                    </td>
+                                    <td>${split.total_inboxes || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card p-3 mb-3">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 30px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-regular fa-envelope"></i>
+                                </div>
+                                Email configurations
+                            </h6>
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>${(() => {
+                                    const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
+                                    const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
+                                    const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
+                                    
+                                    let splitDetails = '';
+                                    splits.forEach((split, index) => {
+                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                    });
+                                    
+                                    return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                                })()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = splitsHtml;
+        }
+
+        // Get status badge class
+        function getStatusBadgeClass(status) {
+            const statusClasses = {
+                'completed': 'bg-success',
+                'in-progress': 'bg-primary',
+                'unallocated': 'bg-warning',
+                'allocated': 'bg-info',
+                'rejected': 'bg-danger'
+            };
+            return statusClasses[status?.toLowerCase()] || 'bg-secondary';
+        }
+
+        // Timer functions
         function createFlipCard(initial) {
             const card = document.createElement('div');
             card.className = 'flip-card';
             card.innerHTML = `
-        <div class="flip-inner">
-          <div class="flip-front">${initial}</div>
-          <div class="flip-back">${initial}</div>
-        </div>
-      `;
+                <div class="flip-inner">
+                    <div class="flip-front">${initial}</div>
+                    <div class="flip-back">${initial}</div>
+                </div>
+            `;
             return card;
         }
 
@@ -491,15 +1009,5 @@
             update();
             const timer = setInterval(update, 1000);
         }
-
-        // Init all timers after DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Example: run 10 timers with different or same durations
-            for (let i = 0; i < 10; i++) {
-                const timerId = `flip-timer-${i}`;
-                const duration = 1 * 60 * 60; // or set different duration if needed
-                startTimer(timerId, duration);
-            }
-        });
     </script>
 @endpush

@@ -210,7 +210,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
        
-      
+        // Order Queue Routes
+        Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
+        Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
+        Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
 
     }); 
 
@@ -400,10 +403,6 @@ Route::get('/profile', function () {
 Route::get('/settings', function () {
     return view('admin/settings/settings');
 });
-
-Route::get('/order_queue', function () {
-    return view('admin/orderQueue/order_queue');
-})->name('admin.orderQueue.order_queue');
 
 
     
