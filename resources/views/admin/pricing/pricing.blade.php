@@ -2174,7 +2174,7 @@
                     // Ensure it's a valid decimal with max 2 decimal places
                     let numValue = parseFloat(value);
                     if (!isNaN(numValue)) {
-                        $(this).val(numValue.toFixed(2));
+                        // $(this).val(numValue.toFixed(2));
                     }
                 }
             });
