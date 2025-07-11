@@ -2675,7 +2675,7 @@ $('#submitPanelFormBtn').on('click', function(e) {
                     closeAllOffcanvas();
                 }
             }
-            refreshPanelCapacityAlerts();
+            refreshPanelCapacityAlert();
         },
         error: async function(xhr) {
             console.log('Error response:', xhr.responseJSON);
@@ -2937,6 +2937,7 @@ async function deletePanel(panelId) {
             
             // Reload panels to reflect changes
             loadPanels(currentFilters, 1, false);
+            refreshPanelCapacityAlert();
         } else {
             // Show error message
             await Swal.fire({
