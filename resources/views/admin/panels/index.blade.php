@@ -783,9 +783,29 @@
     function updateCounters(data) {
         const totalOrders = data.length;
         const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
-        console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes);
-        const panelsRequired = Math.ceil(totalInboxes / PANEL_CAPACITY);
-
+        
+        // Calculate panels needed using the same logic as the PHP code
+        let totalPanelsNeeded = 0;
+        const maxSplitCapacity = {{ env('MAX_SPLIT_CAPACITY', 358) }};
+        // Calculate panels needed for each order
+        data.forEach(order => {
+            const orderInboxes = order.total || 0;
+            if (orderInboxes > 0) {
+                const panelsNeeded = Math.ceil(orderInboxes / maxSplitCapacity);
+                totalPanelsNeeded += panelsNeeded;
+            }
+        });
+        
+        // Get available panel count (this would need to be passed from server or fetched via AJAX)
+        // For now, we'll use the calculated total as panels required
+        // Get available panel count from server
+        const availablePanelCount = {{ \App\Models\Panel::where('is_active', true)->where('limit', env('PANEL_CAPACITY', 1790))->where('remaining_limit', '>=', env('MAX_SPLIT_CAPACITY', 358))->count() }};
+        
+        // Adjust total panels needed based on available panels (same logic as Console Command)
+        const panelsRequired = Math.max(0, totalPanelsNeeded - availablePanelCount);
+        
+        console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes, 'Panels Required:', panelsRequired);
+        
         $('#orders_counter').text(totalOrders);
         $('#inboxes_counter').text(totalInboxes);
         $('#panels_counter').text(panelsRequired);
@@ -2494,7 +2514,6 @@
             if (loadMoreBtn) {
                 loadMoreBtn.addEventListener('click', loadMorePanels);
             }
-            
             // Wait for ApexCharts to be available
             if (typeof ApexCharts === 'undefined') {
                 console.error('ApexCharts not loaded, waiting...');
