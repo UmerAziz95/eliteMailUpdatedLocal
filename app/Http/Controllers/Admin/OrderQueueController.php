@@ -198,7 +198,23 @@ class OrderQueueController extends Controller
                 'reorder_info' => $reorderInfo ? [
                     'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
                     'total_inboxes' => $reorderInfo->total_inboxes,
-                    'data_obj' => json_decode($reorderInfo->data_obj, true)
+                    'hosting_platform' => $reorderInfo->hosting_platform,
+                    'platform_login' => $reorderInfo->platform_login,
+                    'platform_password' => $reorderInfo->platform_password,
+                    'forwarding_url' => $reorderInfo->forwarding_url,
+                    'sending_platform' => $reorderInfo->sending_platform,
+                    'sequencer_login' => $reorderInfo->sequencer_login,
+                    'sequencer_password' => $reorderInfo->sequencer_password,
+                    'prefix_variants' => $reorderInfo->prefix_variants,
+                    'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                    'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                    'backup_codes' => $reorderInfo->backup_codes,
+                    'additional_info' => $reorderInfo->additional_info,
+                    'data_obj' => json_decode($reorderInfo->data_obj, true) ?: [
+                        'backup_codes' => $reorderInfo->backup_codes,
+                        'additional_info' => $reorderInfo->additional_info,
+                        'prefix_variants_details' => $reorderInfo->prefix_variants_details
+                    ]
                 ] : null,
                 'splits' => $splits
             ]);
