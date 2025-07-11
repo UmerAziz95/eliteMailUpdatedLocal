@@ -734,6 +734,7 @@
                 },
                 dataSrc: function(json) {
                     if (json.success) {
+                        // 
                         // Update counters
                         updateCounters(json.data);
                         return json.data;
@@ -2529,7 +2530,6 @@
 
 <script>
 
-
 $('#submitPanelFormBtn').on('click', function(e) {
     e.preventDefault();
     
@@ -2618,10 +2618,6 @@ $('#submitPanelFormBtn').on('click', function(e) {
         success: function(response) {
             const message = isUpdate ? 'Panel updated successfully!' : 'Panel created successfully!';
             toastr.success(message);
-            
-            // Close all open offcanvas elements
-            closeAllOffcanvas();
-            
             // Clear and reset the form
             resetPanelForm();
             $('.form-control').removeClass('is-invalid');
@@ -2629,7 +2625,9 @@ $('#submitPanelFormBtn').on('click', function(e) {
             
             // Reload panels list with current filters
             loadPanels(currentFilters, 1, false);
-            
+            // initializeOrderTrackingTable
+            initializeOrderTrackingTable();
+            // refresh awaiting orders
             // Run panel capacity check after successful panel creation (only for new panels)
             if (!isUpdate) {
                 $.ajax({
