@@ -734,9 +734,13 @@
                 },
                 dataSrc: function(json) {
                     if (json.success) {
-                        // 
-                        // Update counters
-                        updateCounters(json.data);
+                        // Update counters with server-calculated data
+                        if (json.counters) {
+                            console.log('Updating counters from server:', json.counters);
+                            $('#orders_counter').text(json.counters.total_orders || 0);
+                            $('#inboxes_counter').text(json.counters.total_inboxes || 0);
+                            $('#panels_counter').text(json.counters.panels_required || 0);
+                        }
                         return json.data;
                     } else {
                         console.error('Error fetching data:', json.message);
@@ -775,36 +779,55 @@
             ]
         });
     }
-    // Function to update counters
-    function updateCounters(data) {
-        const totalOrders = data.length;
-        const totalInboxes = data.reduce((sum, item) => sum + (item.total || 0), 0);
-        
-        // Calculate panels needed using the same logic as the PHP code
-        let totalPanelsNeeded = 0;
-        const maxSplitCapacity = {{ env('MAX_SPLIT_CAPACITY', 358) }};
-        // Calculate panels needed for each order
-        data.forEach(order => {
-            const orderInboxes = order.total || 0;
-            if (orderInboxes > 0) {
-                const panelsNeeded = Math.ceil(orderInboxes / maxSplitCapacity);
-                totalPanelsNeeded += panelsNeeded;
+    // Function to update counters - now using server-side calculation
+    async function updateCounters(data = null) {
+        try {
+            // If we have data with counters, use that first
+            if (data && typeof data === 'object' && data.counters) {
+                console.log('Using provided counter data:', data.counters);
+                $('#orders_counter').text(data.counters.total_orders || 0);
+                $('#inboxes_counter').text(data.counters.total_inboxes || 0);
+                $('#panels_counter').text(data.counters.panels_required || 0);
+                return;
             }
-        });
-        
-        // Get available panel count (this would need to be passed from server or fetched via AJAX)
-        // For now, we'll use the calculated total as panels required
-        // Get available panel count from server
-        const availablePanelCount = {{ \App\Models\Panel::where('is_active', true)->where('limit', env('PANEL_CAPACITY', 1790))->where('remaining_limit', '>=', env('MAX_SPLIT_CAPACITY', 358))->count() }};
-        
-        // Adjust total panels needed based on available panels (same logic as Console Command)
-        const panelsRequired = Math.max(0, totalPanelsNeeded - availablePanelCount);
-        
-        console.log('Total Orders:', totalOrders, 'Total Inboxes:', totalInboxes, 'Panels Required:', panelsRequired);
-        
-        $('#orders_counter').text(totalOrders);
-        $('#inboxes_counter').text(totalInboxes);
-        $('#panels_counter').text(panelsRequired);
+            
+            // Otherwise fetch from server
+            console.log('Fetching counters from server...');
+            const response = await fetch('/admin/panels/counters', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.counters) {
+                console.log('Counters from server:', result.counters);
+                
+                $('#orders_counter').text(result.counters.total_orders || 0);
+                $('#inboxes_counter').text(result.counters.total_inboxes || 0);
+                $('#panels_counter').text(result.counters.panels_required || 0);
+            } else {
+                console.error('Failed to fetch counters:', result.message);
+                // Fallback to 0 values if server returns error
+                $('#orders_counter').text(0);
+                $('#inboxes_counter').text(0);
+                $('#panels_counter').text(0);
+            }
+        } catch (error) {
+            console.error('Error updating counters:', error);
+            // Fallback to 0 values on error
+            $('#orders_counter').text(0);
+            $('#inboxes_counter').text(0);
+            $('#panels_counter').text(0);
+        }
     }
 
     let panels = [];
@@ -2972,9 +2995,17 @@ $(document).ready(function() {
         }, 100);
     });
     
-    // Auto-refresh panel capacity alert every 60 seconds
+    // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
         refreshPanelCapacityAlert();
+        
+        // Also refresh counters if the order tracking table exists
+        if (orderTrackingTable) {
+            orderTrackingTable.ajax.reload(null, false);
+        } else {
+            // If no table, update counters directly
+            updateCounters();
+        }
     }, 60000); // 60 seconds
 });
 

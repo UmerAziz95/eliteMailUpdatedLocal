@@ -591,6 +591,40 @@ class PanelController extends Controller
             $orderTrackingRecords = $query->get();
             \Log::info('Found ' . $orderTrackingRecords->count() . ' order tracking records');
 
+            // Calculate counters
+            $totalOrders = $orderTrackingRecords->count();
+            $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
+            
+            // Calculate panels needed using the same logic as the console command
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $totalPanelsNeeded = 0;
+            
+            foreach ($orderTrackingRecords as $tracking) {
+                $orderInboxes = $tracking->total_inboxes ?? 0;
+                if ($orderInboxes > 0) {
+                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Get available panel count (panels that can accommodate at least one split)
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
+            
+            \Log::info('Counter calculations completed', [
+                'total_orders' => $totalOrders,
+                'total_inboxes' => $totalInboxes,
+                'total_panels_needed_raw' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'panels_required' => $panelsRequired
+            ]);
+
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
                 $order = $tracking->order;
@@ -621,7 +655,17 @@ class PanelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $orderTrackingData
+                'data' => $orderTrackingData,
+                'counters' => [
+                    'total_orders' => $totalOrders,
+                    'total_inboxes' => $totalInboxes,
+                    'panels_required' => $panelsRequired,
+                    'total_panels_needed_raw' => $totalPanelsNeeded,
+                    'available_panel_count' => $availablePanelCount,
+                    'max_split_capacity' => $maxSplitCapacity,
+                    'panel_capacity' => $panelCapacity,
+                    'last_updated' => now()->toDateTimeString()
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -831,6 +875,91 @@ class PanelController extends Controller
             ]);
 
             return $totalSpace;
+        }
+    }
+
+    /**
+     * Get counters data for AJAX calls
+     */
+    public function getCounters(Request $request)
+    {
+        try {
+            $orderTrackingRecords = OrderTracking::where('status', 'pending')->get();
+            
+            $totalOrders = $orderTrackingRecords->count();
+            $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
+            
+            // Calculate panels needed using the same logic as the console command
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $totalPanelsNeeded = 0;
+            
+            foreach ($orderTrackingRecords as $tracking) {
+                $orderInboxes = $tracking->total_inboxes ?? 0;
+                if ($orderInboxes > 0) {
+                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Get available panel count
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            // Adjust total panels needed based on available panels
+            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
+            
+            return response()->json([
+                'success' => true,
+                'counters' => [
+                    'total_orders' => $totalOrders,
+                    'total_inboxes' => $totalInboxes,
+                    'panels_required' => $panelsRequired,
+                    'total_panels_needed_raw' => $totalPanelsNeeded,
+                    'available_panel_count' => $availablePanelCount,
+                    'last_updated' => now()->toDateTimeString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getCounters: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching counters: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available panel count for AJAX calls
+     */
+    public function getAvailablePanelCount(Request $request)
+    {
+        try {
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            return response()->json([
+                'success' => true,
+                'available_panels' => $availablePanelCount,
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'last_updated' => now()->toDateTimeString()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getAvailablePanelCount: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching available panel count: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
