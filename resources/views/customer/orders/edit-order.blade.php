@@ -2425,22 +2425,12 @@ $(document).ready(function() {
                 }
             }
         });
-
-        // domain hosting platform URL validation 
-       $('#access_tutorial').val(function() {
-        
-            const value = $(this).val()?.trim();
-            let isValid = true;
-            let firstErrorField = null;
-
-            const accessTutorial = $('#access_tutorial');
-            const selectedValue = accessTutorial.val()?.trim();
+        // domain hosting platform access tutorial validation 
+        const accessTutorial = $('#access_tutorial');
+        const selectedValue = accessTutorial.val()?.trim();
 
         if (selectedValue === 'no') {
-            setTimeout(() => {
-               accessTutorial.val('no');
-            }, 100);
-             // ensure it's explicitly set
+            isValid = false;
             accessTutorial.addClass('is-invalid');
             accessTutorial.siblings('.invalid-feedback').text(
                 'Please review the Domain Hosting Platform - Access Tutorial and select "Yes".'
@@ -2449,12 +2439,7 @@ $(document).ready(function() {
             if (!firstErrorField) {
                 firstErrorField = accessTutorial;
             }
-
-            isValid = false;
-            
         }
-  
-          });
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {
