@@ -200,7 +200,7 @@
         }
 
         .split-header:hover {
-            background-color: var(--second-primary) !important;
+            /* background-color: var(--second-primary) !important; */
         }
 
         .split-content {
@@ -943,7 +943,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6>
-                                ${orderInfo.status_manage_by_admin}
+                                <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin}</span>
                                 ${createTimerBadge(orderInfo, false, 0)}
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
@@ -1142,6 +1142,21 @@
             setTimeout(function() {
                 initializeChevronStates();
             }, 100);
+        }
+
+        // Get main order status badge class  
+        function getOrderStatusBadgeClass(status) {
+            
+            const statusClasses = {
+                'completed': 'bg-success text-white',
+                'pending': 'bg-warning border-warning bg-transparent text-warning',
+                'in-progress': 'bg-primary text-white border-primary text-white',
+                'draft': 'bg-secondary text-white border-secondary text-white',
+                'rejected': 'bg-danger text-white border-danger text-white',
+                'expired': 'bg-dark text-white border-dark text-white',
+                'cancelled': 'bg-danger text-white border-danger text-white'
+            };
+            return statusClasses[status?.toLowerCase()] || 'bg-secondary text-white';
         }
 
         // Get status badge class
@@ -1354,7 +1369,7 @@
                      data-timer-started-at="${order.timer_started_at || ''}"
                      data-tooltip="${tooltip}"
                      title="${tooltip}"
-                     style="display: flex; gap: 4px; align-items: center;">
+                     style="gap: 4px; align-items: center;">
                     <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
                     ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
                     <div class="flip-card" data-digit="${hours.charAt(0)}">
