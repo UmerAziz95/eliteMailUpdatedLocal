@@ -214,6 +214,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
         Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
+        Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
 
     }); 
 
@@ -505,4 +506,3 @@ Route::get('/cron/run-draft-notifications', function () {
         //notification markers
         Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
         Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
-       

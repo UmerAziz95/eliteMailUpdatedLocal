@@ -32,7 +32,6 @@
             {{ ucfirst($orderPanel->status ?? 'Pending') }}
             </div>
             <button
-            style="display:none;"
             id="openStatusModal"
             class="btn btn-outline-success btn-sm py-1 px-2">
             Change Status
@@ -369,7 +368,7 @@
 </div>
 
 <!-- Status Change Modal -->
-<div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+<div class="modal fade" id="order-split-status-update" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
     aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -384,7 +383,47 @@
                     </div>
                     Mark Status
                 </h6>
+                <form id="order_split_status_modal" action="{{ route('admin.order.panel.status.process') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" id="order_panel_id_to_update">
+                    <div class="mb-3">
+                        <div class="">
 
+                            <div class="mb-3 d-none" id="reason_wrapper">
+                                <p class="note">
+                                    Would you mind sharing the reason
+                                    for the rejection?
+                                </p>
+                                <label for="cancellation_reason">Reason *</label>
+                                <textarea id="cancellation_reason" name="reason" class="form-control"
+                                    rows="5"></textarea>
+                            </div>
+                        </div>
+                        <label class="form-label">Select Status *</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($splitStatuses as $status => $badge)
+                            <div class="form-check me-3">
+                                <input class="form-check-input marked_status" type="radio" name="marked_status"
+                                    value="{{ $status }}" id="status_{{ $loop->index }}" required>
+                                <label class="form-check-label text-{{ $badge }}" for="status_{{ $loop->index }}">
+                                    {{ ucfirst($status) }}
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">No</button>
+                        <button type="submit"
+                            class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                            I'm sure</button>
+                    </div>
+                </form>
 
 
                 
@@ -398,7 +437,7 @@
     $('#openStatusModal').on('click', function() {
         // Use the order panel ID directly since we have it from the controller
         $('#order_panel_id_to_update').val('{{ $orderPanel->id }}');
-        $('#cancel_subscription').modal('show');
+        $('#order-split-status-update').modal('show');
     });
 
     // Handle status change to show/hide reason field
@@ -414,7 +453,7 @@
     });
 
     // Handle form submission with SweetAlert
-    $('#cancelSubscriptionForm').on('submit', function(e) {
+    $('#order_split_status_modal').on('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
@@ -448,7 +487,7 @@
             contentType: false,
             success: function(response) {
                 Swal.close();
-                $('#cancel_subscription').modal('hide');
+                $('#order-split-status-update').modal('hide');
                 
                 Swal.fire({
                     icon: 'success',

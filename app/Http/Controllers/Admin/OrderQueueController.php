@@ -28,13 +28,17 @@ class OrderQueueController extends Controller
     {
         return view('admin.orderQueue.order_queue');
     }
-
+    
     public function getOrdersData(Request $request)
     {
         try {
             $type = $request->get('type', 'in-queue'); // 'in-queue' or 'in-draft'
             
             $query = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits']);
+            // type in-queue not get assiged orders
+            if ($type === 'in-queue') {
+                $query->whereNull('assigned_to');
+            }
 
             // Filter by type
             if ($type === 'in-draft') {
@@ -224,6 +228,86 @@ class OrderQueueController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching order splits: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function assignOrderToMe(Request $request, $orderId)
+    {
+        try {
+            $adminId = auth()->id();
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Get all order panels (splits) for this order that are unallocated
+            $unallocatedPanels = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->get();
+            
+            if ($unallocatedPanels->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No unallocated splits found for this order.'
+                ], 400);
+            }
+            
+            $assignedCount = 0;
+            $errors = [];
+            
+            // Assign each unallocated panel to the admin
+            foreach ($unallocatedPanels as $panel) {
+                try {
+                    // Get the order panel split id
+                    $orderPanelSplit = OrderPanelSplit::where('order_panel_id', $panel->id)->first();
+                    
+                    if ($orderPanelSplit) {
+                        // Update panel status to allocated
+                        $panel->update([
+                            'status' => 'allocated',
+                            'contractor_id' => $adminId
+                        ]);
+                        
+                        $assignedCount++;
+                    }
+                    
+                } catch (Exception $e) {
+                    $errors[] = "Failed to assign panel {$panel->id}: " . $e->getMessage();
+                    Log::error("Error assigning panel {$panel->id} to admin {$adminId}: " . $e->getMessage());
+                }
+            }
+            
+            // Assign the order to the current admin
+            $order->assigned_to = $adminId;
+            $order->save();
+            
+            // Check remaining unallocated panels
+            $remainingUnallocated = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->count();
+            
+            $message = $assignedCount > 0 
+                ? "Successfully assigned {$assignedCount} split(s) to you!" 
+                : "No new assignments were made.";
+            
+            if (!empty($errors)) {
+                $message .= " However, some errors occurred: " . implode(', ', $errors);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'assigned_count' => $assignedCount,
+                'remaining_unallocated' => $remainingUnallocated,
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error("Error in assignOrderToMe for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign order: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -257,11 +257,11 @@
             <div class="row collapse" id="filter_1">
                 <form id="filterForm">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Order ID</label>
                             <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <!-- <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Status</label>
                             <select name="status" class="form-select">
                                 <option value="">All Status</option>
@@ -270,15 +270,24 @@
                                 <option value="in-progress">In Progress</option>
                                 <option value="completed">Completed</option>
                             </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
+                        </div> -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Min Inboxes</label>
                             <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Max Inboxes</label>
                             <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
                         </div>
+                        <!-- <div class="col-md-3 mb-3">
+                            <div class="form-check" style="padding-top: 1.5rem;">
+                                <input class="form-check-input" type="checkbox" name="assigned_to_me" id="assignedToMeFilter" value="1">
+                                <label class="form-check-label" for="assignedToMeFilter">
+                                    <i class="fas fa-user me-1"></i>
+                                    Assigned to Me Only
+                                </label>
+                            </div>
+                        </div> -->
                         <div class="col-12 text-end">
                             <button type="button" id="resetFilters"
                                 class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
@@ -696,7 +705,7 @@
                             <h6 class="mb-0">#${order.order_id}</h6>
                             <span class="${statusClass} small">
                                 <i class="${statusIcon}"></i>
-                                ${statusText}
+                                ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}
                             </span>
                         </div>
                         ${createTimerBadge(order, isDrafts, index)}
@@ -940,7 +949,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6>
-                                <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin}</span>
+                                <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin.charAt(0).toUpperCase() + orderInfo.status_manage_by_admin.slice(1)}</span>
                                 ${createTimerBadge(orderInfo, false, 0)}
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
@@ -1750,6 +1759,124 @@
             
             // Show success message
             alert(`All domains from ${splitLabel} copied to clipboard!`);
+        }
+        
+        // Function to assign entire order to logged-in admin
+        async function assignOrderToMe(orderId) {
+            try {
+                // Show SweetAlert2 confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Assign Order to Yourself?',
+                    text: 'This will assign this order to you. Are you sure?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, assign to me!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                });
+
+                // If user cancels, return early
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                // Show SweetAlert2 loading dialog
+                Swal.fire({
+                    title: 'Assigning Order...',
+                    text: 'Please wait while we assign the order to you.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Show loading state on the button as backup
+                const button = document.getElementById('assignOrderBtn');
+                if (button) {
+                    const originalHtml = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Assigning Order...
+                    `;
+                }
+
+                // Make API request to assign the order (using admin route if exists, fallback to contractor route)
+                const response = await fetch(`/admin/order_queue/${orderId}/assign-to-me`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to assign order');
+                }
+
+                const data = await response.json();
+                
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Order assigned successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Update the button to show assigned state
+                if (button) {
+                    button.outerHTML = `
+                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                            Order Assigned to You
+                        </span>
+                    `;
+                }
+                
+                // Refresh the order list to reflect changes
+                setTimeout(() => {
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error assigning order:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to assign order. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                
+                // Restore button state
+                const button = document.getElementById('assignOrderBtn');
+                if (button) {
+                    button.disabled = false;
+                    // Restore original button content
+                    button.innerHTML = `
+                        <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                        Assign Order to Me
+                        <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">1</span>
+                    `;
+                }
+            }
         }
     </script>
 @endpush
