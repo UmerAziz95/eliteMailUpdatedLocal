@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Orders-Queue')
-
 @push('styles')
     <style>
         input,
@@ -936,7 +935,6 @@
                     Order Details #${orderInfo.id} 
                 `;
             }
-
             const splitsHtml = `
                 <div class="mb-4">
                     <div class="d-flex align-items-center justify-content-between">
@@ -946,6 +944,30 @@
                                 ${createTimerBadge(orderInfo, false, 0)}
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                        </div>
+                        <div>
+                            ${(() => {
+                                const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                if (unallocatedSplits.length > 0) {
+                                    return `
+                                        <button class="btn btn-success btn-sm px-3 py-2" 
+                                                onclick="assignOrderToMe(${orderInfo.id})"
+                                                id="assignOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                                            Assign Order to Me
+                                            <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
+                                        </button>
+                                    `;
+                                } else {
+                                    return `
+                                        <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
+                                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                                            All Splits Assigned
+                                        </span>
+                                    `;
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>
