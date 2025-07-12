@@ -363,7 +363,12 @@ class PanelController extends Controller
     {
         try {
             $data = $request->validate([
-                'panel_title' => 'required|string|max:255',
+                'panel_title' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    'unique:panels,title'
+                ],
                 'panel_description' => 'nullable|string',
                 'panel_status' => 'in:0,1',
                 'panel_limit' => 'required|integer|min:1',
@@ -501,7 +506,12 @@ class PanelController extends Controller
             }
 
             $data = $request->validate([
-                'panel_title' => 'required|string|max:255',
+                'panel_title' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('panels', 'title')->ignore($id)
+                ],
                 'panel_description' => 'nullable|string',
                 'panel_limit' => 'nullable|integer|min:1',
                 'panel_status' => 'nullable|in:0,1',
