@@ -160,6 +160,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+        Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
@@ -216,6 +217,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
         Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
         Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
+
+        // My Orders
+        Route::get('/my_orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
+        Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
     }); 
 
