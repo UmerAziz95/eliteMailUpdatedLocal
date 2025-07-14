@@ -363,7 +363,12 @@ class PanelController extends Controller
     {
         try {
             $data = $request->validate([
-                'panel_title' => 'required|string|max:255',
+                'panel_title' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    'unique:panels,title'
+                ],
                 'panel_description' => 'nullable|string',
                 'panel_status' => 'in:0,1',
                 'panel_limit' => 'required|integer|min:1',
@@ -374,14 +379,19 @@ class PanelController extends Controller
                 'description' => $data['panel_description'],
                 'is_active' => $data['panel_status'] ?? 1,
                 'limit' => $data['panel_limit'],
-                'remaining_limit' => env('PANEL_CAPACITY', 358), // Default to 358 if not set in config
+                'remaining_limit' => $data['panel_limit'], // Use the actual panel limit instead of env
                 'created_by' => auth()->user()->name,
             ]);
 
+            // Calculate needed panels after creation
+            $panelCapacityData = $this->calculatePanelCapacityNeeds();
+            // runPanelCapacityCheck
+            $this->runPanelCapacityCheck($request);
             return response()->json([
                 'success' => true,
                 'message' => 'Panel created successfully', 
-                'panel' => $panel
+                'panel' => $panel,
+                'capacity_data' => $panelCapacityData
             ], 201);
 
         } catch (ValidationException $e) {
@@ -404,14 +414,91 @@ class PanelController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Calculate panel capacity needs - extracted from the blade template logic
+     */
+    private function calculatePanelCapacityNeeds()
+    {
+        try {
+            // Get pending orders that require panel capacity
+            $pendingOrders = OrderTracking::where('status', 'pending')
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
+            
+            $insufficientSpaceOrders = [];
+            $totalPanelsNeeded = 0;
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            foreach ($pendingOrders as $order) {
+                // Get inboxes per domain from order details or use default
+                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+                
+                // Calculate available space for this order based on logic
+                $availableSpace = $this->getAvailablePanelSpaceForOrder(
+                    $order->total_inboxes, 
+                    $inboxesPerDomain, 
+                    $panelCapacity, 
+                    $maxSplitCapacity
+                );
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    // Calculate panels needed for this order (same logic as Console Command)
+                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
+                    $insufficientSpaceOrders[] = $order;
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+
+            return [
+                'total_panels_needed' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'adjusted_panels_needed' => $adjustedPanelsNeeded,
+                'insufficient_orders_count' => count($insufficientSpaceOrders),
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'show_alert' => $adjustedPanelsNeeded > 0
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error calculating panel capacity needs: ' . $e->getMessage());
+            return [
+                'error' => 'Failed to calculate panel capacity needs',
+                'show_alert' => false
+            ];
+        }
+    }
     public function update(Request $request, $id)
     {
         try {
+            Log::info('Panel update request received', [
+                'panel_id' => $id,
+                'request_data' => $request->all(),
+                'user_id' => auth()->id()
+            ]);
+
             $panel = Panel::findOrFail($id);
-            // dd($request->all());
+            
             // Check if panel can be edited (only if remaining_limit equals original limit - meaning no space is used)
             $usedSpace = $panel->limit - $panel->remaining_limit;
             if ($usedSpace > 0) {
+                Log::warning('Panel edit blocked - has used space', [
+                    'panel_id' => $id,
+                    'used_space' => $usedSpace,
+                    'limit' => $panel->limit,
+                    'remaining_limit' => $panel->remaining_limit
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot edit panel. Panel has used space and is assigned to orders.'
@@ -419,24 +506,49 @@ class PanelController extends Controller
             }
 
             $data = $request->validate([
-                'panel_title' => 'required|string|max:255',
+                'panel_title' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('panels', 'title')->ignore($id)
+                ],
                 'panel_description' => 'nullable|string',
                 'panel_limit' => 'nullable|integer|min:1',
-                'panel_status' => 'boolean',
-                'created_by' => 'nullable|string|max:255',
+                'panel_status' => 'nullable|in:0,1',
             ]);
 
-            // If limit is being updated, update remaining_limit accordingly
-            if (isset($data['panel_limit'])) {
-                $data['remaining_limit'] = $data['panel_limit'];
+            // Map frontend field names to database field names
+            $updateData = [
+                'title' => $data['panel_title'],
+                'description' => $data['panel_description'] ?? null,
+                'is_active' => isset($data['panel_status']) ? (int)$data['panel_status'] : 1,
+            ];
+
+            // For panel updates, we generally don't allow changing the limit
+            // Only update limit if it's different and no space has been used
+            if (isset($data['panel_limit']) && $data['panel_limit'] != $panel->limit) {
+                $updateData['limit'] = $data['panel_limit'];
+                $updateData['remaining_limit'] = $data['panel_limit'];
+                
+                Log::info('Panel limit being updated', [
+                    'panel_id' => $id,
+                    'old_limit' => $panel->limit,
+                    'new_limit' => $data['panel_limit']
+                ]);
             }
 
-            $panel->update($data);
+            $panel->update($updateData);
+
+            Log::info('Panel updated successfully', [
+                'panel_id' => $id,
+                'updated_data' => $updateData,
+                'panel_after_update' => $panel->fresh()
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Panel updated successfully', 
-                'panel' => $panel
+                'panel' => $panel->fresh()
             ], 200);
 
         } catch (ModelNotFoundException $e) {
@@ -558,6 +670,40 @@ class PanelController extends Controller
             $orderTrackingRecords = $query->get();
             \Log::info('Found ' . $orderTrackingRecords->count() . ' order tracking records');
 
+            // Calculate counters
+            $totalOrders = $orderTrackingRecords->count();
+            $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
+            
+            // Calculate panels needed using the same logic as the console command
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $totalPanelsNeeded = 0;
+            
+            foreach ($orderTrackingRecords as $tracking) {
+                $orderInboxes = $tracking->total_inboxes ?? 0;
+                if ($orderInboxes > 0) {
+                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Get available panel count (panels that can accommodate at least one split)
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
+            
+            \Log::info('Counter calculations completed', [
+                'total_orders' => $totalOrders,
+                'total_inboxes' => $totalInboxes,
+                'total_panels_needed_raw' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'panels_required' => $panelsRequired
+            ]);
+
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
                 $order = $tracking->order;
@@ -588,7 +734,17 @@ class PanelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $orderTrackingData
+                'data' => $orderTrackingData,
+                'counters' => [
+                    'total_orders' => $totalOrders,
+                    'total_inboxes' => $totalInboxes,
+                    'panels_required' => $panelsRequired,
+                    'total_panels_needed_raw' => $totalPanelsNeeded,
+                    'available_panel_count' => $availablePanelCount,
+                    'max_split_capacity' => $maxSplitCapacity,
+                    'panel_capacity' => $panelCapacity,
+                    'last_updated' => now()->toDateTimeString()
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -646,6 +802,242 @@ class PanelController extends Controller
                 'success' => false,
                 'message' => 'Failed to run panel capacity check',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get panel capacity alert data for AJAX refresh
+     * This method mirrors the logic from Console\Commands\CheckPanelCapacity.php
+     */
+    public function getCapacityAlert(Request $request)
+    {
+        try {
+            // Get pending orders that require panel capacity
+            $pendingOrders = OrderTracking::where('status', 'pending')
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->get();
+            
+            $insufficientSpaceOrders = [];
+            $totalPanelsNeeded = 0;
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            Log::info("Panel capacity alert calculation started", [
+                'pending_orders_count' => $pendingOrders->count(),
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity
+            ]);
+            
+            foreach ($pendingOrders as $order) {
+                // Get inboxes per domain from order details or use default
+                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+                
+                // Calculate available space for this order based on logic
+                $availableSpace = $this->getAvailablePanelSpaceForOrder(
+                    $order->total_inboxes, 
+                    $inboxesPerDomain, 
+                    $panelCapacity, 
+                    $maxSplitCapacity
+                );
+                
+                if ($order->total_inboxes > $availableSpace) {
+                    // Calculate panels needed for this order (same logic as Console Command)
+                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
+                    
+                    $insufficientSpaceOrders[] = [
+                        'order_id' => $order->order_id,
+                        'required_space' => $order->total_inboxes,
+                        'available_space' => $availableSpace,
+                        'panels_needed' => $panelsNeeded,
+                        'status' => 'pending'
+                    ];
+                    
+                    $totalPanelsNeeded += $panelsNeeded;
+                    
+                    Log::warning("Order requires additional panels", [
+                        'order_id' => $order->order_id,
+                        'total_inboxes' => $order->total_inboxes,
+                        'available_space' => $availableSpace,
+                        'space_deficit' => $order->total_inboxes - $availableSpace,
+                        'panels_needed' => $panelsNeeded
+                    ]);
+                }
+            }
+            
+            // Adjust total panels needed based on available panels (same logic as Console Command)
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+            
+            Log::info("Panel capacity alert calculation completed", [
+                'total_panels_needed_raw' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'adjusted_panels_needed' => $adjustedPanelsNeeded,
+                'insufficient_orders_count' => count($insufficientSpaceOrders)
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'show_alert' => $adjustedPanelsNeeded > 0,
+                'total_panels_needed' => $adjustedPanelsNeeded,
+                'total_panels_needed_raw' => $totalPanelsNeeded,
+                'available_panel_count' => $availablePanelCount,
+                'insufficient_orders_count' => count($insufficientSpaceOrders),
+                'insufficient_orders' => $insufficientSpaceOrders,
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'last_updated' => now()->toDateTimeString()
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting panel capacity alert data', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting capacity alert data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available panel space for specific order size
+     * This method mirrors the logic from Console\Commands\CheckPanelCapacity.php
+     */
+    private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain, int $panelCapacity, int $maxSplitCapacity): int
+    {
+        if ($orderSize >= $panelCapacity) {
+            // For large orders, prioritize full capacity panels
+            $fullCapacityPanels = Panel::where('is_active', 1)
+                                        ->where('limit', $panelCapacity)
+                                        ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                        ->get();
+            
+            $fullCapacitySpace = 0;
+            foreach ($fullCapacityPanels as $panel) {
+                $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
+            }
+
+            Log::info("Available space calculation for large order", [
+                'order_size' => $orderSize,
+                'inboxes_per_domain' => $inboxesPerDomain,
+                'full_capacity_panels_count' => $fullCapacityPanels->count(),
+                'total_available_space' => $fullCapacitySpace
+            ]);
+            
+            return $fullCapacitySpace;
+            
+        } else {
+            // For smaller orders, use any panel with remaining space that can accommodate at least one domain
+            $availablePanels = Panel::where('is_active', 1)
+                                    ->where('limit', $panelCapacity)
+                                    ->where('remaining_limit', '>=', $inboxesPerDomain)
+                                    ->get();
+            
+            $totalSpace = 0;
+            foreach ($availablePanels as $panel) {
+                $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
+            }
+            
+            Log::info("Available space calculation for small order", [
+                'order_size' => $orderSize,
+                'inboxes_per_domain' => $inboxesPerDomain,
+                'available_panels_count' => $availablePanels->count(),
+                'total_available_space' => $totalSpace
+            ]);
+
+            return $totalSpace;
+        }
+    }
+
+    /**
+     * Get counters data for AJAX calls
+     */
+    public function getCounters(Request $request)
+    {
+        try {
+            $orderTrackingRecords = OrderTracking::where('status', 'pending')->get();
+            
+            $totalOrders = $orderTrackingRecords->count();
+            $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
+            
+            // Calculate panels needed using the same logic as the console command
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $totalPanelsNeeded = 0;
+            
+            foreach ($orderTrackingRecords as $tracking) {
+                $orderInboxes = $tracking->total_inboxes ?? 0;
+                if ($orderInboxes > 0) {
+                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
+                    $totalPanelsNeeded += $panelsNeeded;
+                }
+            }
+            
+            // Get available panel count
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            // Adjust total panels needed based on available panels
+            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
+            
+            return response()->json([
+                'success' => true,
+                'counters' => [
+                    'total_orders' => $totalOrders,
+                    'total_inboxes' => $totalInboxes,
+                    'panels_required' => $panelsRequired,
+                    'total_panels_needed_raw' => $totalPanelsNeeded,
+                    'available_panel_count' => $availablePanelCount,
+                    'last_updated' => now()->toDateTimeString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getCounters: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching counters: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available panel count for AJAX calls
+     */
+    public function getAvailablePanelCount(Request $request)
+    {
+        try {
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            
+            $availablePanelCount = Panel::where('is_active', true)
+                ->where('limit', $panelCapacity)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            return response()->json([
+                'success' => true,
+                'available_panels' => $availablePanelCount,
+                'panel_capacity' => $panelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'last_updated' => now()->toDateTimeString()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getAvailablePanelCount: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching available panel count: ' . $e->getMessage()
             ], 500);
         }
     }

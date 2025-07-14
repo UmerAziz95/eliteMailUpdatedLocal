@@ -803,6 +803,228 @@ class OrderController extends Controller
     }
 
     /**
+     * Process panel status update
+     */
+    public function processPanelStatus(Request $request)
+    {
+        $request->validate([
+            'order_panel_id' => 'required|integer|min:1',
+            'marked_status' => 'required|string|in:' . implode(',', array_keys($this->splitStatuses)),
+            'reason' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            // Ensure user is authenticated
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must be logged in to perform this action.'
+                ], 401);
+            }
+
+            $orderPanelId = $request->order_panel_id;
+            $newStatus = strtolower($request->marked_status);
+            $reason = $request->reason;
+
+            // Find the order panel with relationships
+            $orderPanel = OrderPanel::with(['order', 'order.user'])->findOrFail($orderPanelId);
+            $oldStatus = $orderPanel->status;
+            $order = $orderPanel->order;
+
+            // Set timestamps based on status
+            if ($newStatus == 'in-progress') {
+                $orderPanel->timer_started_at = now();
+            }
+            if ($newStatus == 'completed') {
+                $orderPanel->completed_at = now();
+            }
+
+            // Update the order panel status
+            $orderPanel->status = $newStatus;
+
+            // If rejected, also update with reason
+            if ($newStatus === 'rejected' && $reason) {
+                $orderPanel->note = $reason;
+            }
+
+            $orderPanel->save();
+            // Update order status_manage_by_admin based on panel status changes
+            $this->updateOrderStatusBasedOnPanelStatus($order, $newStatus);
+            // Log the status change
+            Log::info("Order Panel Status Updated", [
+                'order_panel_id' => $orderPanelId,
+                'order_id' => $orderPanel->order_id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $reason,
+                'updated_by' => auth()->id(),
+                'updated_by_name' => auth()->user()->name ?? 'Unknown'
+            ]);
+
+            // Create activity log
+            try {
+                ActivityLogService::log(
+                    'order_panel_status_updated',
+                    'Order panel status updated: Panel ID ' . $orderPanel->id . ' for Order #' . $order->id,
+                    $orderPanel,
+                    [
+                        'order_panel_id' => $orderPanel->id,
+                        'order_id' => $order->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'updated_by' => auth()->id(),
+                        'reason' => $reason,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent')
+                    ],
+                    auth()->id()
+                );
+            } catch (Exception $e) {
+                Log::warning("Failed to create activity log: " . $e->getMessage());
+            }
+
+            // Create notifications
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_panel_status_change',
+                'title' => 'Order Panel Status Changed',
+                'message' => 'Your order #' . $order->id . ' panel status has been changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'updated_by' => auth()->id()
+                ]
+            ]);
+
+            // Send emails if needed
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order panel status change email sent', [
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send order panel status change emails: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Panel status successfully updated to '{$newStatus}'.",
+                'data' => [
+                    'order_panel_id' => $orderPanelId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error("Error updating panel status: " . $e->getMessage(), [
+                'order_panel_id' => $request->order_panel_id ?? null,
+                'new_status' => $request->marked_status ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update panel status: ' . $e->getMessage(),
+                'debug' => [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ], 500);
+        }
+    }
+    /**
+     * Update order's status_manage_by_admin based on panel status changes
+     */
+    
+    private function updateOrderStatusBasedOnPanelStatus($order, $newPanelStatus)
+    {
+        // If a panel is set to "in-progress", update order status to "in-progress"
+        if ($newPanelStatus === 'in-progress') {
+            if ($order->status_manage_by_admin !== 'in-progress') {
+                $order->update(['status_manage_by_admin' => 'in-progress']);
+            }
+        }
+        
+        // If a panel is set to "rejected", update order status to "reject"
+        if ($newPanelStatus === 'rejected') {
+            
+            if ($order->status_manage_by_admin !== 'reject') {
+                $order->update(['status_manage_by_admin' => 'reject']);
+            }
+        }
+        
+        // If a panel is set to "completed", check if all panels are completed
+        if ($newPanelStatus === 'completed') {
+            // Get all panels for this order
+            $allPanels = OrderPanel::where('order_id', $order->id)->get();
+            
+            // Check if any panel is rejected
+            $hasRejected = $allPanels->contains(function ($panel) {
+                return $panel->status === 'rejected';
+            });
+            
+            // If any panel is rejected, update order status to "reject"
+            if ($hasRejected) {
+                if ($order->status_manage_by_admin !== 'reject') {
+                    $order->update(['status_manage_by_admin' => 'reject']);
+                }
+            } else {
+                // Check if all panels are completed
+                $allCompleted = $allPanels->every(function ($panel) {
+                    return $panel->status === 'completed';
+                });
+                
+                // If all panels are completed, update order status to "completed"
+                // Otherwise, update order status to "in-progress"
+                if ($allCompleted) {
+                    if ($order->status_manage_by_admin !== 'completed') {
+                    $order->update(['status_manage_by_admin' => 'completed']);
+                    }
+                } else {
+                    if ($order->status_manage_by_admin !== 'in-progress') {
+                    $order->update(['status_manage_by_admin' => 'in-progress']);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Get emails for a specific order panel split
      */
     public function getSplitEmails($orderPanelId)
@@ -1122,56 +1344,72 @@ class OrderController extends Controller
     // New Licenses [UPLOAD ONLY],
     // Advanced Protection Program enrollment
 
+/**
+     * Export CSV file with domains data for a specific order panel split
+     */
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
             // Find the order panel split
             $orderPanelSplit = OrderPanelSplit::with([
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                },
                 'orderPanel.order.reorderInfo',
                 'orderPanel.panel'
             ])->findOrFail($splitId);
 
+            // Check if contractor has access to this split
+            $hasAccess = false;
             $order = $orderPanelSplit->orderPanel->order;
 
-            // Get first and last name from order meta
-            $firstName = 'N/A';
-            $lastName = 'N/A';
-
-            // if ($order->meta) {
-            //     $metaData = is_string($order->meta) ? json_decode($order->meta, true) : $order->meta;
-                
-            //     // Check billing_address first (from invoice)
-            //     if (isset($metaData['invoice']['billing_address'])) {
-            //         $firstName = $metaData['invoice']['billing_address']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['invoice']['billing_address']['last_name'] ?? $lastName;
-            //     }
-            //     // Fallback to customer data
-            //     elseif (isset($metaData['customer'])) {
-            //         $firstName = $metaData['customer']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['customer']['last_name'] ?? $lastName;
-            //     }
-            //     // Another fallback to shipping_address
-            //     elseif (isset($metaData['invoice']['shipping_address'])) {
-            //         $firstName = $metaData['invoice']['shipping_address']['first_name'] ?? $firstName;
-            //         $lastName = $metaData['invoice']['shipping_address']['last_name'] ?? $lastName;
+            // Allow access if order is unassigned (available for all contractors)
+            if ($order->assigned_to === null) {
+                $hasAccess = true;
+            }
+            // // Or if the contractor is assigned to this order
+            // else if ($order->assigned_to == auth()->id()) {
+            //     $hasAccess = true;
+            // } else {
+            //     // Check if contractor has access to any split of this order
+            //     foreach ($order->orderPanels as $orderPanel) {
+            //         if ($orderPanel->userOrderPanelAssignments->where('contractor_id', auth()->id())->count() > 0) {
+            //             $hasAccess = true;
+            //             break;
+            //         }
             //     }
             // }
-            // first_name and last_name get from this table reorder_infos
-            if ($order->reorderInfo && $order->reorderInfo->first()) {
-                $firstName = $order->reorderInfo->first()->first_name ?? $firstName;
-                $lastName = $order->reorderInfo->first()->last_name ?? $lastName;
-            }
 
-            // Get prefix variants from reorder info
+            // if (!$hasAccess) {
+            //     return back()->with('error', 'You do not have access to this order split.');
+            // }
+
+            // Get prefix variants and their details from reorder info
             $prefixVariants = [];
+            $prefixVariantDetails = [];
             $reorderInfo = $order->reorderInfo->first();
-            if ($reorderInfo && $reorderInfo->prefix_variants) {
-                if (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
-                } else if (is_string($reorderInfo->prefix_variants)) {
-                    $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
-                    if (is_array($decodedPrefixes)) {
-                        $prefixVariants = array_values(array_filter($decodedPrefixes));
+            
+            if ($reorderInfo) {
+                // Get prefix variants
+                if ($reorderInfo->prefix_variants) {
+                    if (is_array($reorderInfo->prefix_variants)) {
+                        $prefixVariants = array_values(array_filter($reorderInfo->prefix_variants));
+                    } else if (is_string($reorderInfo->prefix_variants)) {
+                        $decodedPrefixes = json_decode($reorderInfo->prefix_variants, true);
+                        if (is_array($decodedPrefixes)) {
+                            $prefixVariants = array_values(array_filter($decodedPrefixes));
+                        }
+                    }
+                }
+                
+                // Get prefix variant details
+                if ($reorderInfo->prefix_variants_details) {
+                    $decodedDetails = is_string($reorderInfo->prefix_variants_details) 
+                        ? json_decode($reorderInfo->prefix_variants_details, true) 
+                        : $reorderInfo->prefix_variants_details;
+                        
+                    if (is_array($decodedDetails)) {
+                        $prefixVariantDetails = $decodedDetails;
                     }
                 }
             }
@@ -1214,22 +1452,33 @@ class OrderController extends Controller
             if (empty($domains)) {
                 return back()->with('error', 'No domains data found for this split.');
             }
-            // dd($order->id);
-            // Generate emails with prefixes and random passwords
+
+            // Generate emails with prefixes and corresponding first/last names
             $emailData = [];
             foreach ($domains as $domain) {
-                foreach ($prefixVariants as $prefix) {
+                foreach ($prefixVariants as $index => $prefix) {
+                    // Get first and last name for this prefix variant
+                    $prefixKey = 'prefix_variant_' . ($index + 1);
+                    $firstName = 'N/A';
+                    $lastName = 'N/A';
+                    
+                    if (isset($prefixVariantDetails[$prefixKey])) {
+                        $firstName = $prefixVariantDetails[$prefixKey]['first_name'] ?? 'N/A';
+                        $lastName = $prefixVariantDetails[$prefixKey]['last_name'] ?? 'N/A';
+                    }
+                    
                     $emailData[] = [
                         'domain' => $domain,
                         'email' => $prefix . '@' . $domain,
-                        'password' => $this->customEncrypt($order->id) // Custom encryption for password
+                        'password' => $this->customEncrypt($order->id), // Custom encryption for password
+                        'first_name' => $firstName,
+                        'last_name' => $lastName
                     ];
                 }
             }
 
             // Calculate totals
             $domainsCount = count($domains);
-            // $inboxesPerDomain = count($prefixVariants);
             $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1; // Default to 1 if not set
             if ($inboxesPerDomain <= 0) {
                 $inboxesPerDomain = 1; // Ensure at least 1 inbox per domain
@@ -1243,7 +1492,7 @@ class OrderController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$filename\"",
             ];
 
-            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes, $firstName, $lastName) {
+            $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
                 fputcsv($file, [
@@ -1300,11 +1549,11 @@ class OrderController extends Controller
                     'Advanced Protection Program enrollment'
                 ]);
                 
-                // Add email data with empty values for additional columns
+                // Add email data with corresponding first/last names for each prefix variant
                 foreach ($emailData as $data) {
                     fputcsv($file, [
-                        $firstName, // First Name
-                        $lastName, // Last Name
+                        $data['first_name'], // First Name from prefix variant details
+                        $data['last_name'], // Last Name from prefix variant details
                         $data['email'], 
                         $data['password'],
                         '', // Password Hash Function [UPLOAD ONLY]
@@ -1456,6 +1705,4 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
-    // ...existing code...
 }

@@ -154,6 +154,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
         Route::get('/orders/{orderId}/splits', [AdminOrderController::class, 'getOrderSplits'])->name('orders.splits');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
+        Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
         // Split Panel Email routes
@@ -201,6 +202,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
         Route::get('/panels/order-tracking', [AdminPanelController::class, 'getOrderTrackingData'])->name('panels.order-tracking');
+        Route::get('/panels/capacity-alert', [AdminPanelController::class, 'getCapacityAlert'])->name('panels.capacity-alert');
         Route::get('/splits/{orderId}/orders', [AdminPanelController::class, 'getOrdersSplits'])->name('orders.splits');
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
@@ -209,7 +211,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
        
-      
+        // Order Queue Routes
+        Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
+        Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
+        Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
+        Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
 
     }); 
 
@@ -400,10 +406,6 @@ Route::get('/settings', function () {
     return view('admin/settings/settings');
 });
 
-Route::get('/order_queue', function () {
-    return view('admin/orderQueue/order_queue');
-})->name('admin.orderQueue.order_queue');
-
 
     
 Route::get('/notification', function () {
@@ -505,4 +507,3 @@ Route::get('/cron/run-draft-notifications', function () {
         //notification markers
         Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
         Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
-       
