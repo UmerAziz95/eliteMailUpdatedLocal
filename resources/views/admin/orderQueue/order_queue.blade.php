@@ -298,8 +298,7 @@
                 </form>
             </div>
         </div>
-
-
+        
         <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
@@ -310,6 +309,13 @@
                 <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
                     data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
                     aria-selected="false">in-draft</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
+                    data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
+                    aria-selected="false">
+                    <i class="fas fa-ban me-1"></i>reject orders
+                </button>
             </li>
         </ul>
 
@@ -366,6 +372,33 @@
                     <div id="paginationDraftsInfo" class="mt-2 text-light small">
                         Showing <span id="showingDraftsFrom">0</span> to <span id="showingDraftsTo">0</span> of <span
                             id="totalDrafts">0</span> orders
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="reject-orders-tab-pane" role="tabpanel" aria-labelledby="reject-orders-tab"
+                tabindex="0">
+                <div id="rejectOrdersContainer" class="mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div id="rejectOrdersLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading rejected orders...</p>
+                    </div>
+                </div>
+                <!-- Load More Button for Rejected Orders -->
+                <div id="loadMoreRejectOrdersContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreRejectOrdersBtn" class="btn btn-lg btn-danger px-4 me-2 border-0">
+                        <span id="loadMoreRejectOrdersText">Load More</span>
+                        <span id="loadMoreRejectOrdersSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationRejectOrdersInfo" class="mt-2 text-light small">
+                        Showing <span id="showingRejectOrdersFrom">0</span> to <span id="showingRejectOrdersTo">0</span> of <span
+                            id="totalRejectOrders">0</span> orders
                     </div>
                 </div>
             </div>
@@ -482,15 +515,20 @@
     <script>
         let orders = [];
         let drafts = [];
+        let rejectedOrders = [];
         let currentFilters = {};
         let currentPage = 1;
         let currentDraftsPage = 1;
+        let currentRejectOrdersPage = 1;
         let hasMorePages = false;
         let hasMoreDraftsPages = false;
+        let hasMoreRejectOrdersPages = false;
         let totalOrders = 0;
         let totalDrafts = 0;
+        let totalRejectOrders = 0;
         let isLoading = false;
         let isDraftsLoading = false;
+        let isRejectOrdersLoading = false;
         let activeTab = 'in-queue';
 
         // Initialize the page
@@ -513,6 +551,13 @@
                 }
             });
 
+            document.getElementById('reject-orders-tab').addEventListener('click', function() {
+                activeTab = 'reject-orders';
+                if (rejectedOrders.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'reject-orders');
+                }
+            });
+
             // Filter form handler
             document.getElementById('filterForm').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -529,8 +574,10 @@
                 
                 if (activeTab === 'in-queue') {
                     loadOrders(filters, 1, false, 'in-queue');
-                } else {
+                } else if (activeTab === 'in-draft') {
                     loadOrders(filters, 1, false, 'in-draft');
+                } else {
+                    loadOrders(filters, 1, false, 'reject-orders');
                 }
             });
 
@@ -540,8 +587,10 @@
                 currentFilters = {};
                 if (activeTab === 'in-queue') {
                     loadOrders({}, 1, false, 'in-queue');
-                } else {
+                } else if (activeTab === 'in-draft') {
                     loadOrders({}, 1, false, 'in-draft');
+                } else {
+                    loadOrders({}, 1, false, 'reject-orders');
                 }
             });
 
@@ -557,17 +606,26 @@
                     loadOrders(currentFilters, currentDraftsPage + 1, true, 'in-draft');
                 }
             });
+
+            document.getElementById('loadMoreRejectOrdersBtn').addEventListener('click', function() {
+                if (hasMoreRejectOrdersPages && !isRejectOrdersLoading) {
+                    loadOrders(currentFilters, currentRejectOrdersPage + 1, true, 'reject-orders');
+                }
+            });
         });
 
         // Load orders data
         async function loadOrders(filters = {}, page = 1, append = false, type = 'in-queue') {
             const isLoadingDrafts = type === 'in-draft';
+            const isLoadingRejectOrders = type === 'reject-orders';
             
             try {
-                if (isLoadingDrafts ? isDraftsLoading : isLoading) return;
+                if (isLoadingDrafts ? isDraftsLoading : (isLoadingRejectOrders ? isRejectOrdersLoading : isLoading)) return;
                 
                 if (isLoadingDrafts) {
                     isDraftsLoading = true;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = true;
                 } else {
                     isLoading = true;
                 }
@@ -576,6 +634,9 @@
                     if (isLoadingDrafts) {
                         showDraftsLoading();
                         drafts = [];
+                    } else if (isLoadingRejectOrders) {
+                        showRejectOrdersLoading();
+                        rejectedOrders = [];
                     } else {
                         showLoading();
                         orders = [];
@@ -583,7 +644,7 @@
                 }
                 
                 if (append) {
-                    showLoadMoreSpinner(true, isLoadingDrafts);
+                    showLoadMoreSpinner(true, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
                 }
                 
                 const params = new URLSearchParams({
@@ -622,6 +683,21 @@
                     renderOrders(append, true);
                     updatePaginationInfo(true);
                     updateLoadMoreButton(true);
+                } else if (isLoadingRejectOrders) {
+                    if (append) {
+                        rejectedOrders = rejectedOrders.concat(newOrders);
+                    } else {
+                        rejectedOrders = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentRejectOrdersPage = pagination.current_page || 1;
+                    hasMoreRejectOrdersPages = pagination.has_more_pages || false;
+                    totalRejectOrders = pagination.total || 0;
+                    
+                    renderOrders(append, false, true);
+                    updatePaginationInfo(false, true);
+                    updateLoadMoreButton(false, true);
                 } else {
                     if (append) {
                         orders = orders.concat(newOrders);
@@ -642,17 +718,19 @@
             } catch (error) {
                 console.error('Error loading orders:', error);
                 if (!append) {
-                    showError(error.message, isLoadingDrafts);
+                    showError(error.message, isLoadingDrafts, isLoadingRejectOrders);
                 }
             } finally {
                 if (isLoadingDrafts) {
                     isDraftsLoading = false;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = false;
                 } else {
                     isLoading = false;
                 }
                 
                 if (append) {
-                    showLoadMoreSpinner(false, isLoadingDrafts);
+                    showLoadMoreSpinner(false, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
                 }
                 
                 document.getElementById('submitBtn').disabled = false;
@@ -689,18 +767,51 @@
             }
         }
 
+        // Show reject orders loading state
+        function showRejectOrdersLoading() {
+            const container = document.getElementById('rejectOrdersContainer');
+            const loadingElement = document.getElementById('rejectOrdersLoadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
         // Hide loading state
-        function hideLoading(isDrafts = false) {
-            const loadingElement = document.getElementById(isDrafts ? 'draftsLoadingState' : 'loadingState');
+        function hideLoading(isDrafts = false, isRejectOrders = false) {
+            let loadingElement;
+            if (isRejectOrders) {
+                loadingElement = document.getElementById('rejectOrdersLoadingState');
+            } else if (isDrafts) {
+                loadingElement = document.getElementById('draftsLoadingState');
+            } else {
+                loadingElement = document.getElementById('loadingState');
+            }
             if (loadingElement) {
                 loadingElement.style.display = 'none';
             }
         }
 
         // Show error message
-        function showError(message, isDrafts = false) {
-            hideLoading(isDrafts);
-            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
+        function showError(message, isDrafts = false, isRejectOrders = false) {
+            hideLoading(isDrafts, isRejectOrders);
+            let container;
+            let containerType;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                containerType = 'reject-orders';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                containerType = 'in-draft';
+            } else {
+                container = document.getElementById('ordersContainer');
+                containerType = 'in-queue';
+            }
             if (!container) return;
             
             container.style.display = 'grid';
@@ -712,18 +823,30 @@
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
-                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${isDrafts ? 'in-draft' : 'in-queue'}')">Retry</button>
+                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${containerType}')">Retry</button>
                 </div>
             `;
         }
 
         // Render orders
-        function renderOrders(append = false, isDrafts = false) {
-            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
-            const ordersList = isDrafts ? drafts : orders;
+        function renderOrders(append = false, isDrafts = false, isRejectOrders = false) {
+            let container, ordersList, containerLabel;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                ordersList = rejectedOrders;
+                containerLabel = 'Rejected ';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                ordersList = drafts;
+                containerLabel = 'Draft ';
+            } else {
+                container = document.getElementById('ordersContainer');
+                ordersList = orders;
+                containerLabel = '';
+            }
             
             if (!append) {
-                hideLoading(isDrafts);
+                hideLoading(isDrafts, isRejectOrders);
             }
             
             if (!container) return;
@@ -732,8 +855,8 @@
                 container.innerHTML = `
                     <div class="empty-state" style="grid-column: 1 / -1;">
                         <i class="fas fa-inbox"></i>
-                        <h5>No ${isDrafts ? 'Draft ' : ''}Orders Found</h5>
-                        <p>There are no ${isDrafts ? 'draft ' : ''}orders to display.</p>
+                        <h5>No ${containerLabel}Orders Found</h5>
+                        <p>There are no ${containerLabel.toLowerCase()}orders to display.</p>
                     </div>
                 `;
                 return;
@@ -746,11 +869,18 @@
                 container.style.gap = '30px';
             }
             
-            const startIndex = append ? (isDrafts ? drafts.length - (drafts.length - ordersList.length) : orders.length - (orders.length - ordersList.length)) : 0;
+            let startIndex;
+            if (isRejectOrders) {
+                startIndex = append ? (rejectedOrders.length - (rejectedOrders.length - ordersList.length)) : 0;
+            } else if (isDrafts) {
+                startIndex = append ? (drafts.length - (drafts.length - ordersList.length)) : 0;
+            } else {
+                startIndex = append ? (orders.length - (orders.length - ordersList.length)) : 0;
+            }
             const ordersToRender = append ? ordersList.slice(startIndex) : ordersList;
             
             ordersToRender.forEach((order, index) => {
-                const orderCard = createOrderCard(order, isDrafts, startIndex + index);
+                const orderCard = createOrderCard(order, isDrafts, startIndex + index, isRejectOrders);
                 container.appendChild(orderCard);
             });
             
@@ -761,13 +891,29 @@
         }
 
         // Create order card
-        function createOrderCard(order, isDrafts, index) {
+        function createOrderCard(order, isDrafts, index, isRejectOrders = false) {
             const statusConfig = getStatusConfig(order.status);
-            const borderColor = isDrafts ? 'rgb(0, 221, 255)' : statusConfig.borderColor;
-            const statusClass = isDrafts ? 'text-info' : statusConfig.statusClass;
-            const statusIcon = isDrafts ? 'fa-solid fa-file-lines' : statusConfig.statusIcon;
-            const statusText = isDrafts ? 'Draft' : (order.status || 'Pending');
-            const lineColor = isDrafts ? 'rgb(0, 242, 255)' : statusConfig.lineColor;
+            let borderColor, statusClass, statusIcon, statusText, lineColor;
+            
+            if (isRejectOrders) {
+                borderColor = '#dc3545';
+                statusClass = 'text-danger';
+                statusIcon = 'fa-solid fa-ban';
+                statusText = 'Rejected';
+                lineColor = '#dc3545';
+            } else if (isDrafts) {
+                borderColor = 'rgb(0, 221, 255)';
+                statusClass = 'text-info';
+                statusIcon = 'fa-solid fa-file-lines';
+                statusText = 'Draft';
+                lineColor = 'rgb(0, 242, 255)';
+            } else {
+                borderColor = statusConfig.borderColor;
+                statusClass = statusConfig.statusClass;
+                statusIcon = statusConfig.statusIcon;
+                statusText = order.status || 'Pending';
+                lineColor = statusConfig.lineColor;
+            }
             
             const cardElement = document.createElement('div');
             cardElement.className = 'card p-3 overflow-hidden';
@@ -894,8 +1040,18 @@
         }
 
         // Update pagination info
-        function updatePaginationInfo(isDrafts = false) {
-            if (isDrafts) {
+        function updatePaginationInfo(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const showingFrom = document.getElementById('showingRejectOrdersFrom');
+                const showingTo = document.getElementById('showingRejectOrdersTo');
+                const totalOrdersEl = document.getElementById('totalRejectOrders');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = rejectedOrders.length > 0 ? 1 : 0;
+                    showingTo.textContent = rejectedOrders.length;
+                    totalOrdersEl.textContent = totalRejectOrders;
+                }
+            } else if (isDrafts) {
                 const showingFrom = document.getElementById('showingDraftsFrom');
                 const showingTo = document.getElementById('showingDraftsTo');
                 const totalOrdersEl = document.getElementById('totalDrafts');
@@ -919,8 +1075,13 @@
         }
 
         // Update load more button
-        function updateLoadMoreButton(isDrafts = false) {
-            if (isDrafts) {
+        function updateLoadMoreButton(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const container = document.getElementById('loadMoreRejectOrdersContainer');
+                if (container) {
+                    container.style.display = hasMoreRejectOrdersPages ? 'block' : 'none';
+                }
+            } else if (isDrafts) {
                 const container = document.getElementById('loadMoreDraftsContainer');
                 if (container) {
                     container.style.display = hasMoreDraftsPages ? 'block' : 'none';
@@ -934,27 +1095,27 @@
         }
 
         // Show load more spinner
-        function showLoadMoreSpinner(show, isDrafts = false) {
-            if (isDrafts) {
-                const button = document.getElementById('loadMoreDraftsBtn');
-                const text = document.getElementById('loadMoreDraftsText');
-                const spinner = document.getElementById('loadMoreDraftsSpinner');
-                
-                if (button && text && spinner) {
-                    button.disabled = show;
-                    text.textContent = show ? 'Loading...' : 'Load More';
-                    spinner.style.display = show ? 'inline-block' : 'none';
-                }
+        function showLoadMoreSpinner(show, type = 'orders') {
+            let button, text, spinner;
+            
+            if (type === 'reject-orders') {
+                button = document.getElementById('loadMoreRejectOrdersBtn');
+                text = document.getElementById('loadMoreRejectOrdersText');
+                spinner = document.getElementById('loadMoreRejectOrdersSpinner');
+            } else if (type === 'drafts') {
+                button = document.getElementById('loadMoreDraftsBtn');
+                text = document.getElementById('loadMoreDraftsText');
+                spinner = document.getElementById('loadMoreDraftsSpinner');
             } else {
-                const button = document.getElementById('loadMoreBtn');
-                const text = document.getElementById('loadMoreText');
-                const spinner = document.getElementById('loadMoreSpinner');
-                
-                if (button && text && spinner) {
-                    button.disabled = show;
-                    text.textContent = show ? 'Loading...' : 'Load More';
-                    spinner.style.display = show ? 'inline-block' : 'none';
-                }
+                button = document.getElementById('loadMoreBtn');
+                text = document.getElementById('loadMoreText');
+                spinner = document.getElementById('loadMoreSpinner');
+            }
+            
+            if (button && text && spinner) {
+                button.disabled = show;
+                text.textContent = show ? 'Loading...' : 'Load More';
+                spinner.style.display = show ? 'inline-block' : 'none';
             }
         }
 

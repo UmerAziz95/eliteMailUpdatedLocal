@@ -34,20 +34,20 @@ class OrderQueueController extends Controller
     public function getOrdersData(Request $request)
     {
         try {
-            $type = $request->get('type', 'in-queue'); // 'in-queue' or 'in-draft'
+            $type = $request->get('type', 'in-queue'); // 'in-queue', 'in-draft', or 'reject-orders'
             
             $query = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits']);
-            // type in-queue not get assiged orders
-            if ($type === 'in-queue') {
-                $query->whereNull('assigned_to');
-            }
-
+            
             // Filter by type
             if ($type === 'in-draft') {
                 $query->where('status_manage_by_admin', 'draft');
+            } elseif ($type === 'reject-orders') {
+                $query->where('status_manage_by_admin', 'reject');
             } else {
-                // In-queue: all orders except draft
-                $query->where('status_manage_by_admin', '!=', 'draft');
+                // In-queue: all orders except draft and rejected
+                $query->whereNotIn('status_manage_by_admin', ['draft', 'rejected']);
+                // type in-queue not get assigned orders
+                $query->whereNull('assigned_to');
                 // For queue orders, only include orders that have splits
                 $query->whereHas('orderPanels.orderPanelSplits');
             }
