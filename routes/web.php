@@ -366,6 +366,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/assigned/order/data', [ContractorOrderController::class, 'getAssignedOrdersData'])->name('panels.data');
     Route::get('/orders/{orderId}/splits', [ContractorPanelController::class, 'getOrderSplits'])->name('orders.splits');
     Route::post('/orders/{orderId}/assign-to-me', [ContractorOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
+    Route::post('/orders/{orderId}/change-status', [ContractorOrderController::class, 'changeStatus'])->name('orders.change-status');
     Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
 }); 

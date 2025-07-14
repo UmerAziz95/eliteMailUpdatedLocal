@@ -35,7 +35,9 @@ class OrderRejectionService
                 'status_manage_by_admin' => 'reject',
                 'rejected_by' => $adminId,
                 'rejected_at' => now(),
-                'reason' => $reason
+                'reason' => $reason,
+                'assigned_to' => null,
+                'completed_at' => null,
             ]);
             // reorderInfo update this total_inboxes
             $reorderInfo = $order->reorderInfo()->first();
