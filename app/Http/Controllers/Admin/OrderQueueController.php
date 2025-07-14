@@ -311,6 +311,54 @@ class OrderQueueController extends Controller
             ], 500);
         }
     }
+
+    public function rejectOrder(Request $request, $orderId)
+    {
+        try {
+            $adminId = auth()->id();
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Check if order is already rejected or completed
+            if ($order->status_manage_by_admin === 'rejected') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is already rejected.'
+                ], 400);
+            }
+            
+            if ($order->status_manage_by_admin === 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot reject a completed order.'
+                ], 400);
+            }
+            
+            // Update order status to rejected
+            $order->update([
+                'status_manage_by_admin' => 'rejected',
+                'rejected_by' => $adminId,
+                'rejected_at' => now()
+            ]);
+            
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order rejected successfully!',
+                'updated_panels' => $updatedPanels
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error("Error in rejectOrder for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reject order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     // my orders
     public function myOrders()
     {

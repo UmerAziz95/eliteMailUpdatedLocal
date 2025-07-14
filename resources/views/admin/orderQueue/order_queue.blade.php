@@ -787,6 +787,12 @@
                     statusIcon: 'fa-solid fa-times',
                     lineColor: '#dc3545'
                 },
+                'rejected': {
+                    borderColor: '#dc3545',
+                    statusClass: 'text-danger',
+                    statusIcon: 'fa-solid fa-ban',
+                    lineColor: '#dc3545'
+                },
                 'expired': {
                     borderColor: '#6c757d',
                     statusClass: 'text-secondary',
@@ -954,11 +960,14 @@
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
-                        <div>
+                        
+                        <div class="d-flex gap-2">
                             ${(() => {
                                 const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                let buttonsHtml = '';
+                                
                                 if (unallocatedSplits.length > 0) {
-                                    return `
+                                    buttonsHtml += `
                                         <button class="btn btn-success btn-sm px-3 py-2" 
                                                 onclick="assignOrderToMe(${orderInfo.id})"
                                                 id="assignOrderBtn"
@@ -969,13 +978,28 @@
                                         </button>
                                     `;
                                 } else {
-                                    return `
+                                    buttonsHtml += `
                                         <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
                                     `;
                                 }
+                                
+                                // Add reject button if order is not already rejected or completed
+                                if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
+                                    buttonsHtml += `
+                                        <button class="btn btn-danger btn-sm px-3 py-2" 
+                                                onclick="rejectOrder(${orderInfo.id})"
+                                                id="rejectOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                                            Reject Order
+                                        </button>
+                                    `;
+                                }
+                                
+                                return buttonsHtml;
                             })()}
                         </div>
                     </div>
@@ -1874,6 +1898,121 @@
                         <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
                         Assign Order to Me
                         <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">1</span>
+                    `;
+                }
+            }
+        }
+
+        // Function to reject an order
+        async function rejectOrder(orderId) {
+            try {
+                // Show SweetAlert2 confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Reject Order?',
+                    text: 'This will mark the order as rejected. This action cannot be undone. Are you sure?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, reject order!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                });
+
+                // If user cancels, return early
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                // Show SweetAlert2 loading dialog
+                Swal.fire({
+                    title: 'Rejecting Order...',
+                    text: 'Please wait while we reject the order.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Show loading state on the button as backup
+                const button = document.getElementById('rejectOrderBtn');
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Rejecting...
+                    `;
+                }
+
+                // Make API request to reject the order
+                const response = await fetch(`/admin/order_queue/${orderId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to reject order');
+                }
+
+                const data = await response.json();
+                
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Order rejected successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Update the button to show rejected state
+                if (button) {
+                    button.outerHTML = `
+                        <span class="badge bg-danger px-3 py-2" style="font-size: 11px;">
+                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                            Order Rejected
+                        </span>
+                    `;
+                }
+                
+                // Refresh the order list to reflect changes
+                setTimeout(() => {
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error rejecting order:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to reject order. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                
+                // Restore button state
+                const button = document.getElementById('rejectOrderBtn');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
                     `;
                 }
             }

@@ -15,6 +15,7 @@ class Order extends Model
         'completed_at' => 'datetime',
         'timer_started_at' => 'datetime',
         'timer_paused_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
     protected $fillable = [
         'user_id',
@@ -33,7 +34,9 @@ class Order extends Model
         'completed_at',
         'timer_started_at',
         'timer_paused_at',
-        'total_paused_seconds'
+        'total_paused_seconds',
+        'rejected_by',
+        'rejected_at'
     ];
     
     // status_manage_by_admin
