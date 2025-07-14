@@ -94,6 +94,11 @@ class Order extends Model
         return $this->hasMany(SupportTicket::class);
     }
 
+    public function rejectedBy()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
     /**
      * Get the effective working time in seconds (excluding paused time)
      */

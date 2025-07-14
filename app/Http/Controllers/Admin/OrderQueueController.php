@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\OrderRejectionService;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
+use App\Models\Panel;
 use App\Models\ReorderInfo;
 use App\Models\Status;
 use App\Models\User;
@@ -311,50 +313,41 @@ class OrderQueueController extends Controller
             ], 500);
         }
     }
-
     public function rejectOrder(Request $request, $orderId)
     {
         try {
             $adminId = auth()->id();
             
-            // Find the order
-            $order = Order::findOrFail($orderId);
+            // Use the OrderRejectionService to handle the rejection
+            $rejectionService = new OrderRejectionService();
+            $result = $rejectionService->rejectOrder($orderId, $adminId);
             
-            // Check if order is already rejected or completed
-            if ($order->status_manage_by_admin === 'rejected') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order is already rejected.'
-                ], 400);
-            }
-            
-            if ($order->status_manage_by_admin === 'completed') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot reject a completed order.'
-                ], 400);
-            }
-            
-            // Update order status to rejected
-            $order->update([
-                'status_manage_by_admin' => 'rejected',
-                'rejected_by' => $adminId,
-                'rejected_at' => now()
-            ]);
-            
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Order rejected successfully!',
-                'updated_panels' => $updatedPanels
-            ]);
+            return response()->json($result);
             
         } catch (Exception $e) {
             Log::error("Error in rejectOrder for order {$orderId}: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject order: ' . $e->getMessage()
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function canRejectOrder($orderId)
+    {
+        try {
+            $rejectionService = new OrderRejectionService();
+            $result = $rejectionService->canRejectOrder($orderId);
+            
+            return response()->json($result);
+            
+        } catch (Exception $e) {
+            Log::error("Error checking if order {$orderId} can be rejected: " . $e->getMessage());
+            
+            return response()->json([
+                'can_reject' => false,
+                'message' => 'Error checking order status: ' . $e->getMessage()
             ], 500);
         }
     }
