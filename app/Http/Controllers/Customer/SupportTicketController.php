@@ -146,6 +146,7 @@ class SupportTicketController extends Controller
         if ($ticket->status === 'closed') {
             $ticket->update(['status' => 'open']);
         }
+        
         // Create a new activity log using the custom log service
         ActivityLogService::log(
             'customer-support-ticket-reply', 

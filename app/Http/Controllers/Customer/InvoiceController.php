@@ -54,7 +54,7 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Apply order ID filter
+            // Apply order ID filters
             if ($request->orderId) {
                 $query->where('order_id', $request->orderId);
             }
@@ -182,20 +182,20 @@ class InvoiceController extends Controller
             }
             
             return DataTables::of($invoices)
-               ->addColumn('action', function($invoice) {
-    $viewUrl = route('customer.invoices.show', $invoice->chargebee_invoice_id);
-    $downloadUrl = route('customer.invoices.download', $invoice->chargebee_invoice_id);
-    return '
-        <div class="dropdown">
-            <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="' . $viewUrl . '">View</a></li>
-                <li><a class="dropdown-item" href="' . $downloadUrl . '">Download</a></li>
-            </ul>
-        </div>';
-})
+                            ->addColumn('action', function($invoice) {
+                    $viewUrl = route('customer.invoices.show', $invoice->chargebee_invoice_id);
+                    $downloadUrl = route('customer.invoices.download', $invoice->chargebee_invoice_id);
+                    return '
+                        <div class="dropdown">
+                            <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="' . $viewUrl . '">View</a></li>
+                                <li><a class="dropdown-item" href="' . $downloadUrl . '">Download</a></li>
+                            </ul>
+                        </div>';
+                })
                 ->editColumn('created_at', function($invoice) {
                     return $invoice->created_at ? $invoice->created_at->format('d F, Y') : '';
                 })
@@ -227,10 +227,10 @@ class InvoiceController extends Controller
                 })
                 ->rawColumns(['action', 'status', 'status_manage_by_admin'])
                 ->make(true);
-        } catch (Exception $e) {
-            Log::error('Error in getInvoices: ' . $e->getMessage());
-            return response()->json(['error' => 'Error loading invoices'], 500);
-        }
+                } catch (Exception $e) {
+                    Log::error('Error in getInvoices: ' . $e->getMessage());
+                    return response()->json(['error' => 'Error loading invoices'], 500);
+                }
     }
 
     /**

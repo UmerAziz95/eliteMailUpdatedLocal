@@ -26,6 +26,7 @@
         color: orange
     }
 
+
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -318,6 +319,13 @@
         animation: pulse-red-yellow 3s infinite;
     }
 
+    .timer-badge.cancelled {
+        background: linear-gradient(135deg, #858585, #8f8f8f);
+        color: white;
+        border-color: rgba(143, 143, 143, 0.3);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+    }
+
     /* Pulse animation for overdue timers */
     @keyframes pulse-red {
         0% {
@@ -388,45 +396,47 @@
 </style>
 <style>
     .anim_card {
-    background-color: var(--secondary-color);
-    color: var(--light-color);
-    border: 1px solid #99999962;
-    border-radius: 8px;
-    position: relative;
-    opacity: 1;
+        background-color: var(--secondary-color);
+        color: var(--light-color);
+        border: 1px solid #99999962;
+        border-radius: 8px;
+        position: relative;
+        opacity: 1;
     }
+
     .anim_card .order_detail {
-    width: 100%;
-    height: 14rem;
-    overflow: hidden;
-    border: 1px solid #86868654
+        width: 100%;
+        height: 14rem;
+        overflow: hidden;
+        border: 1px solid #86868654
     }
+
     .anim_card .order_detail .card_content {
-    width: 100%;
-    transition: .5s;
+        width: 100%;
+        transition: .5s;
     }
 
     .card_content {
-    transform: translateX(30%);
+        transform: translateX(30%);
     }
 
     .anim_card:hover .order_detail .card_content {
-    opacity: .9;
-    transform: translateX(0%);
+        opacity: .9;
+        transform: translateX(0%);
     }
 
     .anim_card .flip_details {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--second-primary);
-    border-radius: 10px;
-    transition: transform 0.5s ease, box-shadow 0.5s ease;
-    transform-origin: left;
-    transform: perspective(2000px) rotateY(0deg);
-    z-index: 2;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--second-primary);
+        border-radius: 10px;
+        transition: transform 0.5s ease, box-shadow 0.5s ease;
+        transform-origin: left;
+        transform: perspective(2000px) rotateY(0deg);
+        z-index: 2;
     }
 
     /* .anim_card .flip_details::after {
@@ -442,196 +452,196 @@
     } */
 
     .anim_card:hover .flip_details {
-    transform: perspective(2000px) rotateY(-90deg);
-    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
-    rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
-    rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
-    pointer-events: none
+        transform: perspective(2000px) rotateY(-90deg);
+        box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
+            rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
+            rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
+        pointer-events: none
     }
 
     .anim_card:hover .flip_details::after {
-    width: 102px;
-    background-color: #9a9a9a81;
-    pointer-events: none;
+        width: 102px;
+        background-color: #9a9a9a81;
+        pointer-events: none;
     }
 
     .anim_card .flip_details .center {
-    padding: 20px;
-    background-color: var(--secondary-color);
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+        padding: 20px;
+        background-color: var(--secondary-color);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
     }
-    </style>
+</style>
 
 <style>
     .flip-card {
-      position: relative;
-      width: 30px;
-      height: 30px;
-      perspective: 1000px;
-      font-family: "Space Grotesk";
+        position: relative;
+        width: 30px;
+        height: 30px;
+        perspective: 1000px;
+        font-family: "Space Grotesk";
     }
-    
+
     .flip-inner {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      transform-style: preserve-3d;
-      transition: transform 0.6s ease-in-out;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.6s ease-in-out;
     }
-    
+
     .flip-front,
     .flip-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
-      border-radius: 4px;
-      font-size: 24px;
-      font-weight: bold;
-      color: #222;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #aaa;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+        border-radius: 4px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #aaa;
     }
-    
+
     .flip-front {
-      z-index: 2;
+        z-index: 2;
     }
-    
+
     .flip-back {
-      transform: rotateX(180deg);
+        transform: rotateX(180deg);
     }
 </style>
-    
-    
-    
-    @endpush
 
-    @section('content')
-    <section class="py-3">
 
-        <!-- Advanced Search Filter UI -->
-        <div class="card p-3 mb-4">
-            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
-                role="button" aria-expanded="false" aria-controls="filter_1">
-                <div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
-                            width="30" alt="">
-                    </div>
-                    <small>Click here to open advance search for orders</small>
+
+@endpush
+
+@section('content')
+<section class="py-3">
+
+    <!-- Advanced Search Filter UI -->
+    <div class="card p-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
+            role="button" aria-expanded="false" aria-controls="filter_1">
+            <div>
+                <div class="d-flex gap-2 align-items-center">
+                    <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
+                    <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                        width="30" alt="">
                 </div>
+                <small>Click here to open advance search for orders</small>
             </div>
-
-            <div class="row collapse" id="filter_1">
-                <form id="filterForm">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Order ID</label>
-                            <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Status</label>
-                            <select name="status" class="form-select">
-                                <option value="">All Status</option>
-                                <option value="unallocated">Unallocated</option>
-                                <option value="allocated">Allocated</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Min Inboxes</label>
-                            <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label mb-0">Max Inboxes</label>
-                            <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
-                        </div>
-                        <div class="col-12 text-end">
-                            <button type="button" id="resetFilters"
-                                class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" id="submitBtn"
-                                class="btn btn-primary btn-sm border-0 px-3">Search</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
         </div>
 
+        <div class="row collapse" id="filter_1">
+            <form id="filterForm">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Order ID</label>
+                        <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="unallocated">Unallocated</option>
+                            <option value="allocated">Allocated</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Min Inboxes</label>
+                        <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label mb-0">Max Inboxes</label>
+                        <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="button" id="resetFilters"
+                            class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                        <button type="submit" id="submitBtn"
+                            class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
 
-        <!-- Grid Cards (Dynamic) -->
-        <div id="ordersContainer"
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
-            <!-- Loading state -->
-            <div id="loadingState"
-                style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+    </div>
+
+
+    <!-- Grid Cards (Dynamic) -->
+    <div id="ordersContainer"
+        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+        <!-- Loading state -->
+        <div id="loadingState"
+            style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0">Loading orders...</p>
+        </div>
+    </div>
+
+    {{-- <div id="flip-timer" style="display: flex; gap: 10px; background: #111; padding: 20px;"></div> --}}
+
+
+    <!-- Load More Button -->
+    <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+        <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+            <span id="loadMoreText">Load More</span>
+            <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                style="display: none;">
+                <span class="visually-hidden">Loading...</span>
+            </span>
+        </button>
+        <div id="paginationInfo" class="mt-2 text-light small">
+            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalOrders">0</span>
+            orders
+        </div>
+    </div>
+
+
+</section>
+
+<!-- Order Details Offcanvas -->
+<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
+    aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+        <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
+        <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times fs-5"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body pt-2">
+        <div id="orderSplitsContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="splitsLoadingState" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">Loading order details...</span>
                 </div>
-                <p class="mt-2 mb-0">Loading orders...</p>
-            </div>
-        </div>
-
-        {{-- <div id="flip-timer" style="display: flex; gap: 10px; background: #111; padding: 20px;"></div> --}}
-
-
-        <!-- Load More Button -->
-        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                <span id="loadMoreText">Load More</span>
-                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                    style="display: none;">
-                    <span class="visually-hidden">Loading...</span>
-                </span>
-            </button>
-            <div id="paginationInfo" class="mt-2 text-light small">
-                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
-                    id="totalOrders">0</span> orders
-            </div>
-        </div>
-
-
-    </section>
-
-    <!-- Order Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
-        aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
-            <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
-            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times fs-5"></i>
-            </button>
-        </div>
-        <div class="offcanvas-body pt-2">
-            <div id="orderSplitsContainer">
-                <!-- Dynamic content will be loaded here -->
-                <div id="splitsLoadingState" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading order details...</span>
-                    </div>
-                    <p class="mt-2">Loading order details...</p>
-                </div>
+                <p class="mt-2">Loading order details...</p>
             </div>
         </div>
     </div>
-    @endsection
+</div>
+@endsection
 
-    @push('scripts')
-   
-        
-        
-        
+@push('scripts')
 
 
-    <script>
-        let orders = [];
+
+
+
+
+<script>
+    let orders = [];
         let currentFilters = {};
         let currentPage = 1;
         let hasMorePages = false;
@@ -1117,13 +1127,24 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 order.timer_paused_at, 
                 order.total_paused_seconds
             );
-            const iconClass = timer.isCompleted ? 'fas fa-check' : 
-                              timer.isPaused ? 'fas fa-pause' : 
-                              (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-            
+
+            // Determine the icon class based on status and timer
+            let iconClass = '';
+            if (order.status === 'cancelled') {
+                iconClass = 'fas fa-exclamation-triangle'; // warning icon
+            } else if (timer.isCompleted) {
+                iconClass = 'fas fa-check';
+            } else if (timer.isPaused) {
+                iconClass = 'fas fa-pause';
+            } else {
+                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+            }
+
             // Create tooltip text
             let tooltip = '';
-            if (timer.isCompleted) {
+            if (order.status === 'cancelled') {
+                tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (timer.isCompleted) {
                 tooltip = order.completed_at 
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
@@ -1134,22 +1155,23 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             } else {
                 tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
             }
-            
+
             return `
                 <span class="timer-badge ${timer.class}" 
-                      data-order-id="${order.order_id}" 
-                      data-created-at="${order.created_at}" 
-                      data-status="${order.status}" 
-                      data-completed-at="${order.completed_at || ''}"
-                      data-timer-started-at="${order.timer_started_at || ''}"
-                      data-timer-paused-at="${order.timer_paused_at || ''}"
-                      data-total-paused-seconds="${order.total_paused_seconds || 0}"
-                      data-tooltip="${tooltip}">
+                    data-order-id="${order.order_id}" 
+                    data-created-at="${order.created_at}" 
+                    data-status="${order.status}" 
+                    data-completed-at="${order.completed_at || ''}"
+                    data-timer-started-at="${order.timer_started_at || ''}"
+                    data-timer-paused-at="${order.timer_paused_at || ''}"
+                    data-total-paused-seconds="${order.total_paused_seconds || 0}"
+                    data-tooltip="${tooltip}">
                     <i class="${iconClass} timer-icon"></i>
                     ${timer.display}
                 </span>
             `;
         }
+
 
         // View order splits
         async function viewOrderSplits(orderId) {
@@ -2168,7 +2190,7 @@ function parseUTCDateTime(dateStr) {
             // Update timers every second for real-time countdown
             setInterval(updateAllTimers, 1000); // Update every 1 second
         });
-    </script>
+</script>
 
 
 <script>
@@ -2251,5 +2273,5 @@ function parseUTCDateTime(dateStr) {
     
     // Example: 24 hours
     startTimer(24 * 60 * 60);
-    </script>
-    @endpush
+</script>
+@endpush
