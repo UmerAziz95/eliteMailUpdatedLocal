@@ -2403,15 +2403,45 @@ function parseUTCDateTime(dateStr) {
         const reason = document.getElementById('statusReason').value;
         
         if (!newStatus) {
-            alert('Please select a new status');
+            Swal.fire({
+                title: 'Validation Error',
+                text: 'Please select a new status',
+                icon: 'warning',
+                confirmButtonColor: '#f39c12'
+            });
             return;
         }
         
-        // Show loading state
-        const confirmBtn = document.getElementById('confirmStatusChange');
-        const originalText = confirmBtn.innerHTML;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
-        confirmBtn.disabled = true;
+        // Show SweetAlert2 confirmation dialog
+        const result = await Swal.fire({
+            title: 'Update Order Status?',
+            text: `Are you sure you want to change the status to "${newStatus}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, update status!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        });
+
+        // If user cancels, return early
+        if (!result.isConfirmed) {
+            return;
+        }
+        
+        // Show SweetAlert2 loading dialog
+        Swal.fire({
+            title: 'Updating Status...',
+            text: 'Please wait while we update the order status.',
+            icon: 'info',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         try {
             const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
@@ -2428,14 +2458,22 @@ function parseUTCDateTime(dateStr) {
             });
             
             if (!response.ok) {
-                throw new Error('Failed to update status');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update status');
             }
             
             const result = await response.json();
             
             if (result.success) {
-                // Show success message
-                showNotification('Status updated successfully!', 'success');
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: result.message || 'Status updated successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
                 
                 // Hide modal
                 const modalInstance = bootstrap.Modal.getInstance(modal);
@@ -2447,8 +2485,10 @@ function parseUTCDateTime(dateStr) {
                     viewOrderSplits(orderId);
                 }
                 
-                // Optionally refresh the orders list
-                // loadMoreOrders();
+                // Refresh the orders list to reflect changes
+                setTimeout(() => {
+                    loadOrders(currentFilters, 1, false);
+                }, 1000);
                 
             } else {
                 throw new Error(result.message || 'Failed to update status');
@@ -2456,11 +2496,14 @@ function parseUTCDateTime(dateStr) {
             
         } catch (error) {
             console.error('Error updating status:', error);
-            showNotification('Error updating status: ' + error.message, 'error');
-        } finally {
-            // Reset button state
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
+            
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update status. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
         }
     }
 

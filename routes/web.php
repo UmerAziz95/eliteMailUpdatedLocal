@@ -161,6 +161,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
         Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
+        Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');

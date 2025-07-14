@@ -25,6 +25,7 @@ use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 class OrderController extends Controller
 {
     private $statuses;
@@ -235,14 +236,7 @@ class OrderController extends Controller
                             </a>
                         </li>'
                         . (auth()->user()->hasPermissionTo('Mod') ? '' : '
-                        <li>
-                            <a href="#" class="dropdown-item markStatus" id="markStatus"
-                                data-id="' . $order->chargebee_subscription_id . '"
-                                data-status="' . $order->status_manage_by_admin . '"
-                                data-reason="' . $order->reason . '">
-                                <i class="fa-solid fa-flag"></i> &nbsp;Mark Status
-                            </a>
-                        </li>
+                        
                         <li>
                             <a href="#" class="dropdown-item"  onclick="viewOrderSplits(' . $order->id . ')" 
                                 data-order-id="' . $order->id . '">
@@ -1785,6 +1779,170 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to assign order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Change order status with reason and activity logging
+     */
+    public function changeStatus(Request $request, $orderId)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $adminId = Auth::id();
+            $newStatus = $request->input('status');
+            $reason = $request->input('reason');
+            
+            // If status is reject, use the OrderRejectionService
+            if ($newStatus === 'reject' || $newStatus === 'rejected') {
+                $rejectionService = new \App\Services\OrderRejectionService();
+                $result = $rejectionService->rejectOrder($orderId, $adminId, $reason);
+                
+                return response()->json($result);
+            }
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            $oldStatus = $order->status_manage_by_admin;
+            
+            // Don't allow status change if it's the same
+            if ($oldStatus === $newStatus) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is already in the selected status.'
+                ], 400);
+            }
+            
+            // Update order status using the correct column
+            $order->status_manage_by_admin = $newStatus;
+            
+            // Set completion timestamp if status is completed
+            if ($newStatus === 'completed') {
+                $order->completed_at = now();
+            }
+            
+            // Add reason if provided
+            if ($reason) {
+                $order->reason = $reason . " (Reason given by " . Auth::user()->name . ")";
+            }
+            
+            $order->save();
+            
+            // Log the activity
+            ActivityLogService::log(
+                'admin_order_status_updated',
+                "Admin changed order status from '{$oldStatus}' to '{$newStatus}'" . ($reason ? " with reason: {$reason}" : ""),
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+            
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_status_change',
+                'title' => 'Order Status Updated',
+                'message' => "Your order #{$orderId} status has been changed to {$newStatus}",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason
+                ]
+            ]);
+            
+            // Send email notifications
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order status change email sent', [
+                    'order_id' => $order->id,
+                    'assigned_to' => $order->assigned_to
+                ]);
+
+                // Send email to assigned contractor if exists
+                if($order->assigned_to){
+                    $assignedUser = User::find($order->assigned_to);
+                    if ($assignedUser) {
+                        Mail::to($assignedUser->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                true
+                            ));
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send order status change emails: ' . $e->getMessage());
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Order status successfully changed from '{$oldStatus}' to '{$newStatus}'",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeStatus for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change order status: ' . $e->getMessage()
             ], 500);
         }
     }
