@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         
-        // Get latest active order with reorder info
+        // Get latest active order with reorder info c
         $latestOrder = $user->orders()
             ->with(['reorderInfo', 'subscription', 'plan'])
             ->latest()

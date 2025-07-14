@@ -1411,7 +1411,7 @@ pointer-events: none
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                 <th scope="col">Split ID</th>
+                                <th scope="col">Split ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
                                 <th scope="col">Split Status</th>
@@ -1599,7 +1599,7 @@ pointer-events: none
             
             container.innerHTML = splitsHtml;
             
-            // Initialize chevron states and animations after rendering
+            // Initialize chevron states and animations after rendering 
             setTimeout(function() {
                 initializeChevronStates();
             }, 100);
