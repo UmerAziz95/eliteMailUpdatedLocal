@@ -105,6 +105,15 @@ class SidebarNavigationSeeder extends Seeder
                 ]
 
             ],
+            // My orders
+            [
+                'name' => 'My Orders',
+                'icon' => 'ti ti-shopping-cart fs-5',
+                'route' => 'admin.orderQueue.my_orders',
+                'permission' => 'Orders',
+                'sub_menu' => []
+            ],
+            
             [
                 'name' => 'Plans',
                 'icon' => 'ti ti-devices-dollar fs-5',

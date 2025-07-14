@@ -219,7 +219,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
 
         // My Orders
-        Route::get('/my_orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
+        Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
     }); 
