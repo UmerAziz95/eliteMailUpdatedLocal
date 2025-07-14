@@ -621,4 +621,26 @@ class PanelController extends Controller
         }
     }
 
+    public function rejectOrder(Request $request, $orderId)
+    {
+        try {
+            $contractorId = auth()->id();
+            $reason = $request->input('reason', null); // Get rejection reason from request
+            
+            // Use the OrderRejectionService to handle the rejection (same as admin)
+            $rejectionService = new \App\Services\OrderRejectionService();
+            $result = $rejectionService->rejectOrder($orderId, $contractorId, $reason);
+            
+            return response()->json($result);
+            
+        } catch (\Exception $e) {
+            Log::error("Error in rejectOrder for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

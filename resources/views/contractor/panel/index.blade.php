@@ -651,6 +651,86 @@ pointer-events: none
             </div>
         </div>
     </div>
+
+    <!-- Reject Order Modal -->
+    <div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="rejectOrderModalLabel">
+                        <i class="fas fa-times me-2"></i>Reject Order
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            This action will mark the order as rejected and cannot be undone.
+                        </div>
+                    </div>
+                    
+                    <form id="rejectOrderForm">
+                        <div class="mb-3">
+                            <label for="rejectionReason" class="form-label fw-bold">
+                                Rejection Reason <span class="text-danger">*</span>
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="rejectionReason" 
+                                name="rejection_reason"
+                                rows="4" 
+                                placeholder="Please provide a detailed reason for rejecting this order..."
+                                required
+                                minlength="5"
+                            ></textarea>
+                            <div class="form-text">Minimum 5 characters required</div>
+                            <div class="invalid-feedback" id="rejectionReasonError"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+                        <i class="fas fa-check me-1"></i>Reject Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Order Confirmation Modal -->
+    <div class="modal fade" id="rejectOrderConfirmModal" tabindex="-1" aria-labelledby="rejectOrderConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="rejectOrderConfirmModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Order Rejection
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">This will mark the order as rejected. This action cannot be undone.</p>
+                    <div class="p-3 bg-light rounded mb-3">
+                        <strong>Rejection Reason:</strong><br>
+                        <em id="confirmRejectionReason"></em>
+                    </div>
+                    <p class="mb-0">Are you sure you want to proceed?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="finalRejectBtn">
+                        <i class="fas fa-ban me-1"></i>Yes, Reject Order!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -1131,7 +1211,7 @@ pointer-events: none
                      data-timer-started-at="${order.timer_started_at || ''}"
                      data-tooltip="${tooltip}"
                      title="${tooltip}"
-                     style="display: flex; gap: 4px; align-items: center;">
+                     style="gap: 4px; align-items: center;">
                     <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
                     ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
                     <div class="flip-card" data-digit="${hours.charAt(0)}">
@@ -1284,12 +1364,14 @@ pointer-events: none
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
+                        
                         <div>
                             ${(() => {
                                 const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                let buttonsHtml = '';
                                 if (unallocatedSplits.length > 0) {
-                                    return `
-                                        <button class="btn btn-success btn-sm px-3 py-2" 
+                                    buttonsHtml += `
+                                        <button class="btn btn-success btn-sm px-3 py-2 me-2" 
                                                 onclick="assignOrderToMe(${orderInfo.id})"
                                                 id="assignOrderBtn"
                                                 style="font-size: 11px;">
@@ -1299,13 +1381,26 @@ pointer-events: none
                                         </button>
                                     `;
                                 } else {
-                                    return `
-                                        <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
+                                    buttonsHtml += `
+                                        <span class="btn btn-primary rounded-1 px-3 py-2 me-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
                                     `;
                                 }
+                                // Add reject button if order is not already rejected or completed
+                                if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
+                                    buttonsHtml += `
+                                        <button class="btn btn-danger btn-sm px-3 py-2" 
+                                                onclick="rejectOrder(${orderInfo.id})"
+                                                id="rejectOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                                            Reject Order
+                                        </button>
+                                    `;
+                                }
+                                return buttonsHtml;
                             })()}
                         </div>
                     </div>
@@ -1773,7 +1868,6 @@ pointer-events: none
                     title="Click to copy: ${domain}"
                     onclick="copyToClipboard('${domain}')">
                         <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
-                    </span>
                 `).join('');
         }
 
@@ -2215,101 +2309,218 @@ pointer-events: none
             // Also update timers immediately after DOM load
             setTimeout(updateAllTimers, 500);
         });
-    </script>
 
+        // Global variable to store current order ID for rejection
+        let currentOrderIdForRejection = null;
 
+        // Function to reject an order
+        function rejectOrder(orderId) {
+            // Store the order ID globally
+            currentOrderIdForRejection = orderId;
+            
+            // Clear previous form data
+            const rejectionReasonTextarea = document.getElementById('rejectionReason');
+            const rejectionReasonError = document.getElementById('rejectionReasonError');
+            const rejectOrderForm = document.getElementById('rejectOrderForm');
+            
+            rejectionReasonTextarea.value = '';
+            rejectionReasonTextarea.classList.remove('is-invalid');
+            rejectionReasonError.textContent = '';
+            rejectOrderForm.classList.remove('was-validated');
+            
+            // Show the rejection reason modal
+            const rejectModal = new bootstrap.Modal(document.getElementById('rejectOrderModal'));
+            rejectModal.show();
+        }
 
-<script>
-    function createFlipCard(initial) {
-      const card = document.createElement('div');
-      card.className = 'flip-card';
-      card.innerHTML = `
-        <div class="flip-inner">
-          <div class="flip-front">${initial}</div>
-          <div class="flip-back">${initial}</div>
-        </div>
-      `;
-      return card;
-    }
-  
-    function updateFlipCard(card, newVal) {
-      const inner = card.querySelector('.flip-inner');
-      const front = card.querySelector('.flip-front');
-      const back = card.querySelector('.flip-back');
-  
-      if (front.textContent === newVal) return;
-  
-      back.textContent = newVal;
-      inner.style.transform = 'rotateX(180deg)';
-  
-      setTimeout(() => {
-        front.textContent = newVal;
-        inner.style.transition = 'none';
-        inner.style.transform = 'rotateX(0deg)';
-        setTimeout(() => {
-          inner.style.transition = 'transform 0.6s ease-in-out';
-        }, 20);
-      }, 600);
-    }
-  
-    function startTimer(containerId, durationSeconds) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-  
-      const digitElements = [];
-  
-      const formatTime = (s) => {
-        const h = Math.floor(s / 3600).toString().padStart(2, '0');
-        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
-        const sec = (s % 60).toString().padStart(2, '0');
-        return h + m + sec;
-      };
-  
-      const initial = formatTime(durationSeconds);
-      for (let i = 0; i < initial.length; i++) {
-        const card = createFlipCard(initial[i]);
-        container.appendChild(card);
-        digitElements.push(card);
-  
-        if (i === 1 || i === 3) {
-          const colon = document.createElement('div');
-          colon.textContent = ':';
-          colon.style.cssText = 'font-size: 20px; line-height: 10px; color: white;';
-          container.appendChild(colon);
-        }
-      }
-  
-      let current = durationSeconds;
-  
-      function update() {
-        if (current < 0) return clearInterval(timer);
-  
-        if (current <= 3600) {
-          container.classList.add('time-danger');
-        } else {
-          container.classList.remove('time-danger');
-        }
-  
-        const timeStr = formatTime(current);
-        for (let i = 0; i < 6; i++) {
-          updateFlipCard(digitElements[i], timeStr[i]);
-        }
-        current--;
-      }
-  
-      update();
-      const timer = setInterval(update, 1000);
-    }
-  
-    // Init all timers after DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-      // Example: run 10 timers with different or same durations
-      for (let i = 0; i < 10; i++) {
-        const timerId = `flip-timer-${i}`;
-        const duration = 1 * 60 * 60; // or set different duration if needed
-        startTimer(timerId, duration);
-      }
-    });
+        // Handle confirm reject button click in the first modal
+        document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+            const rejectionReason = document.getElementById('rejectionReason').value.trim();
+            const rejectionReasonTextarea = document.getElementById('rejectionReason');
+            const rejectionReasonError = document.getElementById('rejectionReasonError');
+            const rejectOrderForm = document.getElementById('rejectOrderForm');
+            
+            // Reset previous validation state
+            rejectionReasonTextarea.classList.remove('is-invalid');
+            rejectionReasonError.textContent = '';
+            rejectOrderForm.classList.remove('was-validated');
+            
+            // Validate rejection reason
+            if (!rejectionReason) {
+                rejectionReasonTextarea.classList.add('is-invalid');
+                rejectionReasonError.textContent = 'Please provide a reason for rejection';
+                rejectOrderForm.classList.add('was-validated');
+                return;
+            }
+            
+            if (rejectionReason.length < 5) {
+                rejectionReasonTextarea.classList.add('is-invalid');
+                rejectionReasonError.textContent = 'Reason must be at least 5 characters long';
+                rejectOrderForm.classList.add('was-validated');
+                return;
+            }
+            
+            // Show rejection reason in confirmation modal
+            document.getElementById('confirmRejectionReason').textContent = rejectionReason;
+            
+            // Hide first modal and show confirmation modal
+            const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderModal'));
+            rejectModal.hide();
+            
+            // Wait a bit for the first modal to hide, then show confirmation modal
+            setTimeout(() => {
+                const confirmModal = new bootstrap.Modal(document.getElementById('rejectOrderConfirmModal'));
+                confirmModal.show();
+            }, 300);
+        });
+
+        // Handle final reject button click in the confirmation modal
+        document.getElementById('finalRejectBtn').addEventListener('click', async function() {
+            const rejectionReason = document.getElementById('rejectionReason').value.trim();
+            const finalRejectBtn = this;
+            
+            try {
+                // Hide confirmation modal
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderConfirmModal'));
+                confirmModal.hide();
+                
+                // Show loading state on the final reject button
+                finalRejectBtn.disabled = true;
+                finalRejectBtn.innerHTML = `
+                    <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 16px; height: 16px;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Rejecting...
+                `;
+                
+                // Show loading state on the reject order button in offcanvas
+                const button = document.getElementById('rejectOrderBtn');
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Rejecting...
+                    `;
+                }
+
+                // Show SweetAlert2 loading dialog as well
+                Swal.fire({
+                    title: 'Rejecting Order...',
+                    text: 'Please wait while we reject the order.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make API request to reject the order with reason
+                const response = await fetch(`/contractor/orders/${currentOrderIdForRejection}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: rejectionReason
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to reject order');
+                }
+
+                const data = await response.json();
+                
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Order rejected successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Update the button to show rejected state
+                if (button) {
+                    button.outerHTML = `
+                        <span class="badge bg-danger px-3 py-2" style="font-size: 11px;">
+                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                            Order Rejected
+                        </span>
+                    `;
+                }
+                
+                // Refresh the order list to reflect changes
+                setTimeout(() => {
+                    loadOrders(currentFilters, 1, false);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error rejecting order:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to reject order. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                
+                // Restore button states
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            } finally {
+                // Reset final reject button state
+                finalRejectBtn.disabled = false;
+                finalRejectBtn.innerHTML = `
+                    <i class="fas fa-ban me-1"></i>Yes, Reject Order!
+                `;
+                
+                // Clear the current order ID
+                currentOrderIdForRejection = null;
+            }
+        });
+
+        // Handle modal hide events to reset button states if needed
+        document.getElementById('rejectOrderModal').addEventListener('hidden.bs.modal', function() {
+            // Reset button state if modal is closed without completing the action
+            if (currentOrderIdForRejection) {
+                const button = document.getElementById('rejectOrderBtn');
+                if (button && button.disabled) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            }
+        });
+
+        document.getElementById('rejectOrderConfirmModal').addEventListener('hidden.bs.modal', function() {
+            // Reset button state if modal is closed without completing the action
+            if (currentOrderIdForRejection) {
+                const button = document.getElementById('rejectOrderBtn');
+                if (button && button.disabled) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            }
+        });
   </script>
-    
 @endpush
