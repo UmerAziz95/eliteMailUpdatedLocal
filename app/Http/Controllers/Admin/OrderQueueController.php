@@ -403,7 +403,10 @@ class OrderQueueController extends Controller
                         ];
                     }
                 }
-                
+                // Calculate status HTML before the return array
+                $statusKey = strtolower($order->status_manage_by_admin ?? 'N/A');
+                $statusHtml = '<span style="font-size:11px !important" class="py-1 px-1 text-' . ($this->statuses[$statusKey] ?? 'warning') . ' border border-' . ($this->statuses[$statusKey] ?? 'warning') . ' rounded-2 bg-transparent fs-6">' . ucfirst($statusKey) . '</span>';
+
                 return [
                     'id' => $order->id,
                     'order_id' => $order->id,
@@ -413,7 +416,8 @@ class OrderQueueController extends Controller
                     'inboxes_per_domain' => $inboxesPerDomain,
                     'total_domains' => $finalTotalDomains,
                     'status' => $order->status_manage_by_admin ?? 'pending',
-                    'status_manage_by_admin' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin_html' => $statusHtml,
+                    'status_manage_by_admin' => $statusHtml,
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,

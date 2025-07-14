@@ -465,12 +465,12 @@
 <style>
     .flip-card {
       position: relative;
-      width: 30px;
-      height: 30px;
+      width: 16px;
+      height: 18px;
       perspective: 1000px;
-      font-family: "Space Grotesk";
+      font-family: "Space Grotesk", "Courier New", monospace;
+      margin: 0 1px;
     }
-    
     .flip-inner {
       position: absolute;
       width: 100%;
@@ -485,15 +485,16 @@
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
-      border-radius: 4px;
-      font-size: 24px;
+      background: linear-gradient(to bottom, #f8f9fa 50%, #e9ecef 50%);
+      border-radius: 3px;
+      font-size: 11px;
       font-weight: bold;
-      color: #222;
+      color: #495057;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #aaa;
+      border: 1px solid #ced4da;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     .flip-front {
@@ -501,6 +502,109 @@
     }
     
     .flip-back {
+      transform: rotateX(180deg);
+    }
+    
+    /* Flip timer container styles */
+    .flip-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: "Space Grotesk", "Courier New", monospace;
+      font-size: 12px;
+      padding: 4px 8px;
+      /* border-radius: 6px; */
+      /* background: rgba(248, 249, 250, 0.8); */
+      /* border: 1px solid rgba(206, 212, 218, 0.5); */
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(2px);
+    }
+    
+    .flip-timer:hover {
+      /* transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); */
+    }
+    
+    .flip-timer.positive {
+      /* background: rgba(40, 167, 69, 0.1); */
+      background: transparent;
+      /* border-color: rgba(40, 167, 69, 0.3); */
+      color: #28a745;
+    }
+    
+    .flip-timer.positive .flip-front,
+    .flip-timer.positive .flip-back {
+      /* background: linear-gradient(to bottom, #d4edda 50%, #c3e6cb 50%); */
+      color: #155724;
+      border-color: rgba(40, 167, 69, 0.2);
+    }
+    
+    .flip-timer.negative {
+      background: transparent;
+      /* border-color: rgba(220, 53, 69, 0.3); */
+      color: #dc3545;
+      /* animation: pulse-red 2s infinite; */
+    }
+    
+    .flip-timer.negative .flip-front,
+    .flip-timer.negative .flip-back {
+        color: #dc3545;
+      background-color:rgba(255, 0, 0, 0.16);
+      border-color: rgb(220, 53, 70);
+    }
+    
+    .flip-timer.completed {
+      background: rgba(108, 117, 125, 0.1);
+      border-color: rgba(108, 117, 125, 0.3);
+      color: #6c757d;
+    }
+    
+    .flip-timer.completed .flip-front,
+    .flip-timer.completed .flip-back {
+      background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+      color: #495057;
+      border-color: rgba(108, 117, 125, 0.2);
+    }
+    
+    /* Timer separator styling */
+    .timer-separator {
+      font-weight: bold;
+      margin: 0 2px;
+      opacity: 0.7;
+      font-size: 11px;
+    }
+    
+    /* Timer icon styling */
+    .timer-icon {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-right: 4px;
+    }
+    
+    /* Negative sign styling */
+    .negative-sign {
+      font-weight: bold;
+      margin-right: 2px;
+      font-size: 12px;
+    }
+    
+    /* Pulse animation for overdue timers */
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
+      }
+      50% {
+        box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
+        transform: scale(1.02);
+      }
+      100% {
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
+      }
+    }
+    
+    /* Flip animation enhancement */
+    .flip-card.flipping .flip-inner {
       transform: rotateX(180deg);
     }
 </style>
@@ -1104,7 +1208,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             return `${hoursStr}:${minutesStr}:${secondsStr}`;
         }
 
-        // Create timer badge HTML
+        // Create timer badge HTML with flip timer
         function createTimerBadge(order) {
             console.log(order);
             const timer = calculateOrderTimer(
@@ -1133,19 +1237,80 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
             }
             
+            // Generate unique ID for this timer using order ID
+            const timerId = `flip-timer-${order.order_id}`;
+            
+            // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+            let timeString = timer.display;
+            let isNegative = false;
+            
+            // Remove any status text (like "(Paused)")
+            timeString = timeString.replace(/\s*\([^)]*\)$/, '');
+            
+            if (timeString.startsWith('-')) {
+                isNegative = true;
+                timeString = timeString.substring(1);
+            }
+            
+            const timeParts = timeString.split(':');
+            const hours = (timeParts[0] || '00').padStart(2, '0');
+            const minutes = (timeParts[1] || '00').padStart(2, '0');
+            const seconds = (timeParts[2] || '00').padStart(2, '0');
+            
+            // Create flip timer with individual digit cards
             return `
-                <span class="timer-badge ${timer.class}" 
-                      data-order-id="${order.order_id}" 
-                      data-created-at="${order.created_at}" 
-                      data-status="${order.status}" 
-                      data-completed-at="${order.completed_at || ''}"
-                      data-timer-started-at="${order.timer_started_at || ''}"
-                      data-timer-paused-at="${order.timer_paused_at || ''}"
-                      data-total-paused-seconds="${order.total_paused_seconds || 0}"
-                      data-tooltip="${tooltip}">
-                    <i class="${iconClass} timer-icon"></i>
-                    ${timer.display}
-                </span>
+                <div id="${timerId}" class="flip-timer ${timer.class}" 
+                     data-order-id="${order.order_id}" 
+                     data-created-at="${order.created_at}" 
+                     data-status="${order.status}" 
+                     data-completed-at="${order.completed_at || ''}"
+                     data-timer-started-at="${order.timer_started_at || ''}"
+                     data-timer-paused-at="${order.timer_paused_at || ''}"
+                     data-total-paused-seconds="${order.total_paused_seconds || 0}"
+                     data-tooltip="${tooltip}"
+                     title="${tooltip}"
+                     style="gap: 4px; align-items: center;">
+                    <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
+                    ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
+                    <div class="flip-card" data-digit="${hours.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(0)}</div>
+                            <div class="flip-back">${hours.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${hours.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(1)}</div>
+                            <div class="flip-back">${hours.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${minutes.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(0)}</div>
+                            <div class="flip-back">${minutes.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${minutes.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(1)}</div>
+                            <div class="flip-back">${minutes.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${seconds.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(0)}</div>
+                            <div class="flip-back">${seconds.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${seconds.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(1)}</div>
+                            <div class="flip-back">${seconds.charAt(1)}</div>
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
@@ -2090,17 +2255,17 @@ function parseUTCDateTime(dateStr) {
             }
             }
         }
-        // Update all timer badges on the page
+        // Update all flip timers on the page
         function updateAllTimers() {
-            const timerBadges = document.querySelectorAll('.timer-badge');
-            timerBadges.forEach(badge => {
-                const orderId = badge.dataset.orderId;
-                const createdAt = badge.dataset.createdAt;
-                const status = badge.dataset.status;
-                const completedAt = badge.dataset.completedAt;
-                const timerStartedAt = badge.dataset.timerStartedAt;
-                const timerPausedAt = badge.dataset.timerPausedAt;
-                const totalPausedSeconds = parseInt(badge.dataset.totalPausedSeconds) || 0;
+            const flipTimers = document.querySelectorAll('.flip-timer');
+            flipTimers.forEach(flipTimer => {
+                const orderId = flipTimer.dataset.orderId;
+                const createdAt = flipTimer.dataset.createdAt;
+                const status = flipTimer.dataset.status;
+                const completedAt = flipTimer.dataset.completedAt;
+                const timerStartedAt = flipTimer.dataset.timerStartedAt;
+                const timerPausedAt = flipTimer.dataset.timerPausedAt;
+                const totalPausedSeconds = parseInt(flipTimer.dataset.totalPausedSeconds) || 0;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
@@ -2112,41 +2277,130 @@ function parseUTCDateTime(dateStr) {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
-                const iconClass = timer.isCompleted ? 'fas fa-check' : 
-                                  timer.isPaused ? 'fas fa-pause' : 
-                                  (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-                
-                // Check if the timer display has changed to avoid unnecessary DOM updates
-                const currentDisplay = badge.textContent.trim();
-                if (currentDisplay === timer.display) {
-                    return;
+                try {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+                    const iconClass = timer.isCompleted ? 'fas fa-check' : 
+                                      timer.isPaused ? 'fas fa-pause' : 
+                                      (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                    
+                    // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+                    let timeString = timer.display;
+                    let isNegative = false;
+                    
+                    // Remove any status text (like "(Paused)")
+                    timeString = timeString.replace(/\s*\([^)]*\)$/, '');
+                    
+                    if (timeString.startsWith('-')) {
+                        isNegative = true;
+                        timeString = timeString.substring(1);
+                    }
+                    
+                    const timeParts = timeString.split(':');
+                    const hours = (timeParts[0] || '00').padStart(2, '0');
+                    const minutes = (timeParts[1] || '00').padStart(2, '0');
+                    const seconds = (timeParts[2] || '00').padStart(2, '0');
+                    
+                    // Get current digits from flip cards
+                    const flipCards = flipTimer.querySelectorAll('.flip-card');
+                    const currentDigits = [
+                        hours.charAt(0), hours.charAt(1),
+                        minutes.charAt(0), minutes.charAt(1),
+                        seconds.charAt(0), seconds.charAt(1)
+                    ];
+                    
+                    // Only update if any digit has changed
+                    let hasChanged = false;
+                    flipCards.forEach((card, index) => {
+                        const currentDigit = card.dataset.digit;
+                        const newDigit = currentDigits[index];
+                        if (currentDigit !== newDigit) {
+                            hasChanged = true;
+                        }
+                    });
+                    
+                    if (hasChanged) {
+                        // Create tooltip text
+                        let tooltip = '';
+                        if (timer.isCompleted) {
+                            tooltip = completedAt 
+                                ? `Order completed on ${formatDate(completedAt)}` 
+                                : 'Order is completed';
+                        } else if (timer.isPaused) {
+                            tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerPausedAt)}`;
+                        } else if (timer.isNegative) {
+                            tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
+                        } else {
+                            tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
+                        }
+                        
+                        // Update flip timer class and tooltip
+                        flipTimer.className = `flip-timer ${timer.class}`;
+                        flipTimer.setAttribute('data-tooltip', tooltip);
+                        flipTimer.setAttribute('title', tooltip);
+                        
+                        // Update icon
+                        const timerIcon = flipTimer.querySelector('.timer-icon');
+                        if (timerIcon) {
+                            timerIcon.className = `${iconClass} timer-icon`;
+                        }
+                        
+                        // Update negative sign visibility
+                        const negativeSign = flipTimer.querySelector('.negative-sign');
+                        if (isNegative && !negativeSign) {
+                            // Add negative sign if needed
+                            const iconElement = flipTimer.querySelector('.timer-icon');
+                            if (iconElement) {
+                                iconElement.insertAdjacentHTML('afterend', '<span class="negative-sign" style="color: #dc3545; font-weight: bold; margin-right: 4px;">-</span>');
+                            }
+                        } else if (!isNegative && negativeSign) {
+                            // Remove negative sign if not needed
+                            negativeSign.remove();
+                        }
+                        
+                        // Update each flip card with animation
+                        flipCards.forEach((card, index) => {
+                            const newDigit = currentDigits[index];
+                            const currentDigit = card.dataset.digit;
+                            
+                            if (currentDigit !== newDigit) {
+                                updateFlipCard(card, newDigit);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error updating flip timer for order', orderId, ':', error);
                 }
-                
-                // Create tooltip text
-                let tooltip = '';
-                if (timer.isCompleted) {
-                    tooltip = completedAt 
-                        ? `Order completed on ${formatDate(completedAt)}` 
-                        : 'Order is completed';
-                } else if (timer.isPaused) {
-                    tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerPausedAt)}`;
-                } else if (timer.isNegative) {
-                    tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
-                } else {
-                    tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
-                }
-                
-                // Update badge class and tooltip
-                badge.className = `timer-badge ${timer.class}`;
-                badge.setAttribute('data-tooltip', tooltip);
-                
-                // Update badge content
-                badge.innerHTML = `
-                    <i class="${iconClass} timer-icon"></i>
-                    ${timer.display}
-                `;
             });
+        }
+        
+        // Function to animate flip card digit change
+        function updateFlipCard(card, newDigit) {
+            const flipInner = card.querySelector('.flip-inner');
+            const flipFront = card.querySelector('.flip-front');
+            const flipBack = card.querySelector('.flip-back');
+            
+            if (!flipInner || !flipFront || !flipBack) return;
+            
+            // Add flipping class for visual enhancement
+            card.classList.add('flipping');
+            
+            // Set the new digit on the back face
+            flipBack.textContent = newDigit;
+            
+            // Add flip animation
+            flipInner.style.transform = 'rotateX(180deg)';
+            
+            // After animation completes, update front face and reset
+            setTimeout(() => {
+                flipFront.textContent = newDigit;
+                card.dataset.digit = newDigit;
+                flipInner.style.transform = 'rotateX(0deg)';
+                
+                // Remove flipping class after animation
+                setTimeout(() => {
+                    card.classList.remove('flipping');
+                }, 100);
+            }, 300); // Half of the 0.6s CSS transition
         }
 
         // Initialize page
@@ -2164,89 +2418,11 @@ function parseUTCDateTime(dateStr) {
             loadOrders();
             
             // Update timers every second for real-time countdown
+            console.log('Starting flip timer updates...');
             setInterval(updateAllTimers, 1000); // Update every 1 second
+            
+            // Also update timers immediately after DOM load
+            setTimeout(updateAllTimers, 500);
         });
-    </script>
-
-
-<script>
-    function createFlipCard(initial) {
-      const card = document.createElement('div');
-      card.className = 'flip-card';
-      card.innerHTML = `
-        <div class="flip-inner">
-          <div class="flip-front">${initial}</div>
-          <div class="flip-back">${initial}</div>
-        </div>
-      `;
-      return card;
-    }
-    
-    function updateFlipCard(card, newVal) {
-      const inner = card.querySelector('.flip-inner');
-      const front = card.querySelector('.flip-front');
-      const back = card.querySelector('.flip-back');
-    
-      if (front.textContent === newVal) return;
-    
-      // Set up new value before flip
-      back.textContent = newVal;
-    
-      // Flip animation
-      inner.style.transform = 'rotateX(180deg)';
-    
-      setTimeout(() => {
-        // Reset values after flip
-        front.textContent = newVal;
-        inner.style.transition = 'none';
-        inner.style.transform = 'rotateX(0deg)';
-        setTimeout(() => {
-          inner.style.transition = 'transform 0.6s ease-in-out';
-        }, 20);
-      }, 600);
-    }
-    
-    function startTimer(durationSeconds) {
-      const container = document.getElementById('flip-timer');
-      const digitElements = [];
-    
-      const formatTime = (s) => {
-        const h = Math.floor(s / 3600).toString().padStart(2, '0');
-        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
-        const sec = (s % 60).toString().padStart(2, '0');
-        return h + m + sec;
-      };
-    
-      // Create 6 flip cards (HHMMSS)
-      const initial = formatTime(durationSeconds);
-      for (let i = 0; i < initial.length; i++) {
-        const card = createFlipCard(initial[i]);
-        container.appendChild(card);
-        digitElements.push(card);
-    
-        // Add colons
-        if (i === 1 || i === 3) {
-          const colon = document.createElement('div');
-          colon.textContent = ':';
-          colon.style.cssText = 'font-size: 24px; line-height: 20px; color: white;';
-          container.appendChild(colon);
-        }
-      }
-    
-      let current = durationSeconds;
-      function update() {
-        if (current < 0) return clearInterval(timer);
-        const timeStr = formatTime(current);
-        for (let i = 0; i < 6; i++) {
-          updateFlipCard(digitElements[i], timeStr[i]);
-        }
-        current--;
-      }
-    
-      update();
-      const timer = setInterval(update, 1000);
-    }
-    // Example: 24 hours
-    startTimer(24 * 60 * 60);
     </script>
     @endpush
