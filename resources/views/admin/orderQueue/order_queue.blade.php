@@ -1906,10 +1906,53 @@
         // Function to reject an order
         async function rejectOrder(orderId) {
             try {
-                // Show SweetAlert2 confirmation dialog
-                const result = await Swal.fire({
-                    title: 'Reject Order?',
-                    text: 'This will mark the order as rejected. This action cannot be undone. Are you sure?',
+                // First, ask for rejection reason
+                const reasonResult = await Swal.fire({
+                    title: 'Rejection Reason',
+                    text: 'Please provide a reason for rejecting this order:',
+                    input: 'textarea',
+                    inputPlaceholder: 'Enter rejection reason...',
+                    inputAttributes: {
+                        'aria-label': 'Enter rejection reason',
+                        'style': 'min-height: 80px; resize: vertical;',
+                        'class': 'form-control'
+                    },
+                    customClass: {
+                        input: 'swal2-textarea-custom'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Continue',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    inputValidator: (value) => {
+                        if (!value || value.trim().length === 0) {
+                            return 'Please provide a reason for rejection';
+                        }
+                        if (value.trim().length < 5) {
+                            return 'Reason must be at least 5 characters long';
+                        }
+                    }
+                });
+
+                // If user cancels or doesn't provide reason, return early
+                if (!reasonResult.isConfirmed) {
+                    return;
+                }
+
+                const rejectionReason = reasonResult.value.trim();
+
+                // Show confirmation dialog with the reason
+                const confirmResult = await Swal.fire({
+                    title: 'Confirm Order Rejection',
+                    html: `
+                        <p>This will mark the order as rejected. This action cannot be undone.</p>
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <strong>Rejection Reason:</strong><br>
+                            <em>"${rejectionReason}"</em>
+                        </div>
+                        <p class="mt-3">Are you sure you want to proceed?</p>
+                    `,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
@@ -1919,8 +1962,8 @@
                     reverseButtons: true
                 });
 
-                // If user cancels, return early
-                if (!result.isConfirmed) {
+                // If user cancels final confirmation, return early
+                if (!confirmResult.isConfirmed) {
                     return;
                 }
 
@@ -1949,14 +1992,17 @@
                     `;
                 }
 
-                // Make API request to reject the order
+                // Make API request to reject the order with reason
                 const response = await fetch(`/admin/order_queue/${orderId}/reject`, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({
+                        reason: rejectionReason
+                    })
                 });
 
                 if (!response.ok) {

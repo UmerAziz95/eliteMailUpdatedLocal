@@ -317,10 +317,11 @@ class OrderQueueController extends Controller
     {
         try {
             $adminId = auth()->id();
+            $reason = $request->input('reason', null); // Get rejection reason from request
             
             // Use the OrderRejectionService to handle the rejection
             $rejectionService = new OrderRejectionService();
-            $result = $rejectionService->rejectOrder($orderId, $adminId);
+            $result = $rejectionService->rejectOrder($orderId, $adminId, $reason);
             
             return response()->json($result);
             

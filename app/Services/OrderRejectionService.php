@@ -17,12 +17,13 @@ class OrderRejectionService
      *
      * @param int $orderId
      * @param int $adminId
+     * @param string|null $reason
      * @return array
      * @throws Exception
      */
-    public function rejectOrder($orderId, $adminId)
+    public function rejectOrder($orderId, $adminId, $reason = null)
     {
-        return DB::transaction(function () use ($orderId, $adminId) {
+        return DB::transaction(function () use ($orderId, $adminId, $reason) {
             // Find the order
             $order = Order::findOrFail($orderId);
             
@@ -34,6 +35,7 @@ class OrderRejectionService
                 'status_manage_by_admin' => 'reject',
                 'rejected_by' => $adminId,
                 'rejected_at' => now(),
+                'reason' => $reason
             ]);
             // reorderInfo update this total_inboxes
             $reorderInfo = $order->reorderInfo()->first();
@@ -50,6 +52,7 @@ class OrderRejectionService
             Log::info("Order #{$orderId} rejected successfully", [
                 'order_id' => $orderId,
                 'rejected_by' => $adminId,
+                'rejection_reason' => $reason,
                 'updated_panels' => $updatedPanels,
                 'rollback_info' => $rollbackInfo
             ]);
@@ -58,6 +61,7 @@ class OrderRejectionService
                 'success' => true,
                 'message' => 'Order rejected successfully!',
                 'order_id' => $orderId,
+                'rejection_reason' => $reason,
                 'updated_panels' => $updatedPanels,
                 'rollback_info' => $rollbackInfo
             ];
@@ -205,7 +209,7 @@ class OrderRejectionService
             'rejected_at' => $order->rejected_at,
             'rejected_by' => $order->rejectedBy ? $order->rejectedBy->name : 'Unknown',
             'rejected_by_id' => $order->rejected_by,
-            'rejection_reason' => $order->rejection_reason ?? 'No reason provided'
+            'rejection_reason' => $order->reason ?? 'No reason provided'
         ];
     }
     
