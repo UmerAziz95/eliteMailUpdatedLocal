@@ -180,6 +180,122 @@
             display: none !important;
         }
 
+        /* Flip card styling for timer */
+        .flip-card {
+            position: relative;
+            width: 15px;
+            height: 15px;
+            perspective: 1000px;
+            font-family: "Space Grotesk";
+        }
+
+        .flip-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .flip-front,
+        .flip-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flip-front {
+            z-index: 2;
+        }
+
+        .flip-back {
+            transform: rotateX(180deg);
+        }
+
+        /* Flip timer container styles */
+        .flip-timer {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-family: "Space Grotesk", "Courier New", monospace;
+            font-size: 12px;
+            padding: 4px 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(2px);
+        }
+
+        .flip-timer.positive {
+            background: transparent;
+            color: #28a745;
+        }
+
+        .flip-timer.positive .flip-front,
+        .flip-timer.positive .flip-back {
+            color: #155724;
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+
+        .flip-timer.negative {
+            background: transparent;
+            color: #dc3545;
+        }
+
+        .flip-timer.negative .flip-front,
+        .flip-timer.negative .flip-back {
+            color: #dc3545;
+            background-color: rgba(255, 0, 0, 0.16);
+            border-color: rgb(220, 53, 70);
+        }
+
+        .flip-timer.completed {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.completed .flip-front,
+        .flip-timer.completed .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.paused {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #856404;
+        }
+
+        .flip-timer.paused .flip-front,
+        .flip-timer.paused .flip-back {
+            background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
+            color: #856404;
+            border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .flip-timer.cancelled {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.cancelled .flip-front,
+        .flip-timer.cancelled .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
         /* Timer badge styling */
         .timer-badge {
             font-family: 'Courier New', monospace;
@@ -2335,21 +2451,27 @@ pointer-events: none
             // Only add new orders for pagination
             const currentOrdersCount = container.children.length;
             const newOrders = orders.slice(currentOrdersCount);
-            const newOrdersHtml = newOrders.map(order => createOrderCard(order)).join('');
+            const newOrdersHtml = newOrders.map((order, index) => createOrderCard(order, currentOrdersCount + index)).join('');
             container.insertAdjacentHTML('beforeend', newOrdersHtml);
+            
+            // Start timers for new orders
+            startTimersForOrders(newOrders);
         } else {
             // Replace all content for new search
-            const ordersHtml = orders.map(order => createOrderCard(order)).join('');
+            const ordersHtml = orders.map((order, index) => createOrderCard(order, index)).join('');
             container.innerHTML = ordersHtml;
+            
+            // Start timers for all orders
+            startTimersForOrders(orders);
         }
     }
     // Create order card HTML
-    function createOrderCard(order) {
+    function createOrderCard(order, index = 0) {
         // Calculate splits table content
         const splitsTableContent = order.splits && order.splits.length > 0 
-        ? order.splits.map((split, index) => `
+        ? order.splits.map((split, splitIndex) => `
             <tr>
-            <td style="font-size: 10px; padding: 5px !important;">${index + 1}</td>
+            <td style="font-size: 10px; padding: 5px !important;">${splitIndex + 1}</td>
             <td style="font-size: 10px; padding: 5px !important;"><span class="badge ${getStatusBadgeClass(split.status)}" style="font-size: 9px;">${split.status || 'Unknown'}</span></td>
             <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
             <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
@@ -2399,7 +2521,7 @@ pointer-events: none
                     <h6>Order #${order.order_id}</h6>
                     <div>
                     ${order.status_manage_by_admin}
-                    ${createTimerBadge(order)}
+                    ${createTimerBadge(order, index)}
                     </div>
                 </div>
 
@@ -2526,29 +2648,62 @@ pointer-events: none
         }
     }
 
-    // Calculate timer for order
-    function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+    // Calculate timer for order (12-hour countdown) with pause functionality
+    function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+        console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
         const now = new Date();
-        
-        // Use timer_started_at if available, otherwise fall back to created_at
+
         const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-        const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
-        
-        // If order is completed, timer is paused - show the time it took to complete
+        const twelveHours = 12 * 60 * 60 * 1000;
+
+        // ⏸ If paused OR cancelled OR rejected, treat as paused
+        if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+            const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+            const timeElapsedBeforePause = pausedTime - startTime;
+            const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+            const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+            const label = (status === 'cancelled' || status === 'reject') ? '' : '';
+            const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+
+            if (timeDiffAtPause > 0) {
+                // Was overdue
+                return {
+                    display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                    isNegative: true,
+                    isCompleted: false,
+                    isPaused: true,
+                    class: `${timerClass} negative`
+                };
+            } else {
+                // Still had time left
+                return {
+                    display: formatTimeDuration(-timeDiffAtPause) + label,
+                    isNegative: false,
+                    isCompleted: false,
+                    isPaused: true,
+                    class: `${timerClass} positive`
+                };
+            }
+        }
+
+        // ✅ Completed (with timestamp)
         if (status === 'completed' && completedAt) {
             const completionDate = new Date(completedAt);
-            const timeTaken = completionDate - startTime;
-            const isOverdue = completionDate > twelveHoursLater;
-            
+            const totalElapsedTime = completionDate - startTime;
+            const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const isOverdue = effectiveWorkingTime > twelveHours;
+
             return {
-                display: formatTimeDuration(timeTaken),
+                display: formatTimeDuration(effectiveWorkingTime),
                 isNegative: isOverdue,
                 isCompleted: true,
                 class: 'completed'
             };
         }
-        
-        // If order is completed but no completion date, just show completed
+
+        // ✅ Completed (no timestamp)
         if (status === 'completed') {
             return {
                 display: 'Completed',
@@ -2557,14 +2712,15 @@ pointer-events: none
                 class: 'completed'
             };
         }
-        
-        // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-        // - Counts down from 12:00:00 to 00:00:00
-        // - After reaching zero, continues in negative time (overtime)
-        const timeDiff = now - twelveHoursLater;
-        
+
+        // ⏱ Active countdown or overtime
+        const totalElapsedTime = now - startTime;
+        const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+        const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+        const timeDiff = now - effectiveDeadline;
+
         if (timeDiff > 0) {
-            // Order is overdue (negative time - overtime)
+            // Overtime
             return {
                 display: '-' + formatTimeDuration(timeDiff),
                 isNegative: true,
@@ -2572,7 +2728,7 @@ pointer-events: none
                 class: 'negative'
             };
         } else {
-            // Order still has time remaining (countdown)
+            // Still in time
             return {
                 display: formatTimeDuration(-timeDiff),
                 isNegative: false,
@@ -2597,34 +2753,121 @@ pointer-events: none
         return `${hoursStr}:${minutesStr}:${secondsStr}`;
     }
 
-    // Create timer badge HTML
-    function createTimerBadge(order) {
+    // Create timer badge HTML with flip animation
+    function createTimerBadge(order, index = 0) {
         console.log(order);
-        const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
-        const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-        
+        const timer = calculateOrderTimer(
+            order.created_at, 
+            order.status, 
+            order.completed_at, 
+            order.timer_started_at, 
+            order.timer_paused_at, 
+            order.total_paused_seconds
+        );
+
+        // Determine the icon class based on status and timer
+        let iconClass = '';
+        if (order.status === 'cancelled') {
+            iconClass = 'fas fa-exclamation-triangle'; // warning icon
+        } else if (order.status === 'reject') {
+            iconClass = 'fas fa-ban'; // ban icon for rejected
+        } else if (timer.isCompleted) {
+            iconClass = 'fas fa-check';
+        } else if (timer.isPaused) {
+            iconClass = 'fas fa-pause';
+        } else {
+            iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+        }
+
         // Create tooltip text
         let tooltip = '';
-        if (timer.isCompleted) {
+        if (order.status === 'cancelled') {
+            tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+        } else if (order.status === 'reject') {
+            tooltip = `Order was rejected on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+        } else if (timer.isCompleted) {
             tooltip = order.completed_at 
                 ? `Order completed on ${formatDate(order.completed_at)}` 
                 : 'Order is completed';
+        } else if (timer.isPaused) {
+            tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(order.timer_paused_at)}`;
         } else if (timer.isNegative) {
             tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
         } else {
             tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
         }
         
+        // Generate unique ID for this timer using order ID and index
+        const timerId = `flip-timer-${order.order_id}-${index}`;
+        
+        // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+        let timeString = timer.display;
+        let isNegative = false;
+        
+        if (timeString.startsWith('-')) {
+            isNegative = true;
+            timeString = timeString.substring(1);
+        }
+        
+        const timeParts = timeString.split(':');
+        const hours = timeParts[0] || '00';
+        const minutes = timeParts[1] || '00';
+        const seconds = timeParts[2] || '00';
+        
+        // Create flip timer with individual digit cards
         return `
-            <span class="timer-badge ${timer.class}" 
-                  data-order-id="${order.order_id}" 
-                  data-created-at="${order.created_at}" 
-                  data-status="${order.status}" 
-                  data-completed-at="${order.completed_at || ''}"
-                  data-tooltip="${tooltip}">
-                <i class="${iconClass} timer-icon"></i>
-                ${timer.display}
-            </span>
+            <div id="${timerId}" class="flip-timer ${timer.class}" 
+                 data-order-id="${order.order_id}" 
+                 data-created-at="${order.created_at}" 
+                 data-status="${order.status}" 
+                 data-completed-at="${order.completed_at || ''}"
+                 data-timer-started-at="${order.timer_started_at || ''}"
+                 data-timer-paused-at="${order.timer_paused_at || ''}"
+                 data-total-paused-seconds="${order.total_paused_seconds || 0}"
+                 data-tooltip="${tooltip}"
+                 title="${tooltip}"
+                 style="gap: 4px; align-items: center;">
+                <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
+                ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
+                <div class="flip-card" data-digit="${hours.charAt(0)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${hours.charAt(0)}</div>
+                        <div class="flip-back">${hours.charAt(0)}</div>
+                    </div>
+                </div>
+                <div class="flip-card" data-digit="${hours.charAt(1)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${hours.charAt(1)}</div>
+                        <div class="flip-back">${hours.charAt(1)}</div>
+                    </div>
+                </div>
+                <span class="timer-separator">:</span>
+                <div class="flip-card" data-digit="${minutes.charAt(0)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${minutes.charAt(0)}</div>
+                        <div class="flip-back">${minutes.charAt(0)}</div>
+                    </div>
+                </div>
+                <div class="flip-card" data-digit="${minutes.charAt(1)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${minutes.charAt(1)}</div>
+                        <div class="flip-back">${minutes.charAt(1)}</div>
+                    </div>
+                </div>
+                <span class="timer-separator">:</span>
+                <div class="flip-card" data-digit="${seconds.charAt(0)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${seconds.charAt(0)}</div>
+                        <div class="flip-back">${seconds.charAt(0)}</div>
+                    </div>
+                </div>
+                <div class="flip-card" data-digit="${seconds.charAt(1)}">
+                    <div class="flip-inner">
+                        <div class="flip-front">${seconds.charAt(1)}</div>
+                        <div class="flip-back">${seconds.charAt(1)}</div>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
@@ -2732,7 +2975,7 @@ pointer-events: none
                     <div>
                         <h6>
                             ${orderInfo.status_manage_by_admin}
-                            ${createTimerBadge(orderInfo)}
+                            ${createTimerBadge(orderInfo, 0)}
                         </h6>
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
@@ -3530,49 +3773,124 @@ pointer-events: none
     }
     // Update all timer badges on the page
     function updateAllTimers() {
-        const timerBadges = document.querySelectorAll('.timer-badge');
-        timerBadges.forEach(badge => {
-            const orderId = badge.dataset.orderId;
-            const createdAt = badge.dataset.createdAt;
-            const status = badge.dataset.status;
-            const completedAt = badge.dataset.completedAt;
-            const timerStartedAt = badge.dataset.timerStartedAt;
+        const flipTimers = document.querySelectorAll('.flip-timer');
+        flipTimers.forEach(timerElement => {
+            const orderId = timerElement.dataset.orderId;
+            const createdAt = timerElement.dataset.createdAt;
+            const status = timerElement.dataset.status;
+            const completedAt = timerElement.dataset.completedAt;
+            const timerStartedAt = timerElement.dataset.timerStartedAt;
+            const timerPausedAt = timerElement.dataset.timerPausedAt;
+            const totalPausedSeconds = timerElement.dataset.totalPausedSeconds;
             
-            // Skip updating completed orders (timer is paused)
-            if (status === 'completed') {
+            // Skip updating completed, cancelled, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
                 return;
             }
             
-            const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+            updateTimerDisplay(timerElement.id, timer);
+        });
+    }
+
+    // Update timer display
+    function updateTimerDisplay(timerId, timer) {
+        const timerElement = document.getElementById(timerId);
+        if (!timerElement) return;
+        
+        // Update timer class
+        timerElement.className = `flip-timer ${timer.class}`;
+        
+        let timeString = timer.display;
+        if (timeString === 'Completed') return;
+        
+        let isNegative = false;
+        if (timeString.startsWith('-')) {
+            isNegative = true;
+            timeString = timeString.substring(1);
+        }
+        
+        const timeParts = timeString.split(':');
+        const hours = timeParts[0] || '00';
+        const minutes = timeParts[1] || '00';
+        const seconds = timeParts[2] || '00';
+        
+        // Update digit cards
+        const flipCards = timerElement.querySelectorAll('.flip-card');
+        if (flipCards.length >= 6) {
+            updateFlipCard(flipCards[0], hours.charAt(0));
+            updateFlipCard(flipCards[1], hours.charAt(1));
+            updateFlipCard(flipCards[2], minutes.charAt(0));
+            updateFlipCard(flipCards[3], minutes.charAt(1));
+            updateFlipCard(flipCards[4], seconds.charAt(0));
+            updateFlipCard(flipCards[5], seconds.charAt(1));
+        }
+    }
+
+    // Update individual flip card
+    function updateFlipCard(card, newDigit) {
+        if (!card) return;
+        
+        const currentDigit = card.getAttribute('data-digit');
+        if (currentDigit === newDigit) return;
+        
+        const flipInner = card.querySelector('.flip-inner');
+        const flipFront = card.querySelector('.flip-front');
+        const flipBack = card.querySelector('.flip-back');
+        
+        if (!flipInner || !flipFront || !flipBack) return;
+        
+        // Update back face with new digit
+        flipBack.textContent = newDigit;
+        
+        // Trigger flip animation
+        flipInner.style.transform = 'rotateX(180deg)';
+        
+        setTimeout(() => {
+            // Update front face and reset position
+            flipFront.textContent = newDigit;
+            card.setAttribute('data-digit', newDigit);
+            flipInner.style.transition = 'none';
+            flipInner.style.transform = 'rotateX(0deg)';
             
-            // Check if the timer display has changed to avoid unnecessary DOM updates
-            const currentDisplay = badge.textContent.trim();
-            if (currentDisplay === timer.display) {
-                return;
+            // Re-enable transition
+            setTimeout(() => {
+                flipInner.style.transition = 'transform 0.6s ease-in-out';
+            }, 20);
+        }, 300);
+    }
+
+    // Start timers for all rendered orders
+    function startTimersForOrders(ordersList) {
+        ordersList.forEach((order, index) => {
+            if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && !order.timer_paused_at) {
+                const timerId = `flip-timer-${order.order_id}-${index}`;
+                const timer = calculateOrderTimer(
+                    order.created_at, 
+                    order.status, 
+                    order.completed_at, 
+                    order.timer_started_at, 
+                    order.timer_paused_at, 
+                    order.total_paused_seconds
+                );
+                
+                if (!timer.isCompleted && !timer.isPaused) {
+                    updateTimerDisplay(timerId, timer);
+                    
+                    // Set up interval to update timer every second
+                    setInterval(() => {
+                        const updatedTimer = calculateOrderTimer(
+                            order.created_at, 
+                            order.status, 
+                            order.completed_at, 
+                            order.timer_started_at, 
+                            order.timer_paused_at, 
+                            order.total_paused_seconds
+                        );
+                        updateTimerDisplay(timerId, updatedTimer);
+                    }, 1000);
+                }
             }
-            
-            // Create tooltip text
-            let tooltip = '';
-            if (timer.isCompleted) {
-                tooltip = completedAt 
-                    ? `Order completed on ${formatDate(completedAt)}` 
-                    : 'Order is completed';
-            } else if (timer.isNegative) {
-                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
-            } else {
-                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
-            }
-            
-            // Update badge class and tooltip
-            badge.className = `timer-badge ${timer.class}`;
-            badge.setAttribute('data-tooltip', tooltip);
-            
-            // Update badge content
-            badge.innerHTML = `
-                <i class="${iconClass} timer-icon"></i>
-                ${timer.display}
-            `;
         });
     }
 

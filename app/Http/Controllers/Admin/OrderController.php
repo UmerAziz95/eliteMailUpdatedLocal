@@ -656,8 +656,9 @@ class OrderController extends Controller
                     })(),
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
-                    // 'timer_started_at' => $order->timer_started_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
@@ -727,9 +728,13 @@ class OrderController extends Controller
                 'success' => true,
                 'order' => [
                     'id' => $order->id,
+                    'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
