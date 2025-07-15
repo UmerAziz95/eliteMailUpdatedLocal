@@ -1384,6 +1384,8 @@ class OrderController extends Controller
                 }
             }
             $order->assigned_to = $contractorId;
+            // status to in-progress
+            $order->status_manage_by_admin = 'in-progress';
             $order->save();
             // Update order status if all panels are now allocated
             $remainingUnallocated = OrderPanel::where('order_id', $orderId)

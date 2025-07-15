@@ -281,6 +281,7 @@ class OrderQueueController extends Controller
             
             // Assign the order to the current admin
             $order->assigned_to = $adminId;
+            $order->status_manage_by_admin = 'in-progress'; // Set status to in-progress
             $order->save();
             
             // Check remaining unallocated panels

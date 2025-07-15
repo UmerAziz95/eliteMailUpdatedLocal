@@ -305,6 +305,8 @@ class OrderQueueController extends Controller
             
             // Assign the order to the current contractor
             $order->assigned_to = $contractorId;
+            // status to in-progress
+            $order->status_manage_by_admin = 'in-progress';
             $order->save();
             
             // Check remaining unallocated panels
