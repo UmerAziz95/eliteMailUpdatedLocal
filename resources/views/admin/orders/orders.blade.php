@@ -371,18 +371,18 @@
 
         /* Additional timer badge states */
         .timer-badge.paused {
-            background: linear-gradient(135deg, #ffc107, #ffb300);
-            color: #212529;
-            border-color: rgba(255, 193, 7, 0.3);
-            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
-            animation: pulse-yellow 2s infinite;
+            background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+            color: #212529 !important;
+            border-color: rgba(255, 193, 7, 0.3) !important;
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
+            animation: pulse-yellow 2s infinite !important;
         }
 
         .timer-badge.cancelled {
-            background: linear-gradient(135deg, #6c757d, #495057);
-            color: white;
-            border-color: rgba(108, 117, 125, 0.3);
-            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+            background: linear-gradient(135deg, #6c757d, #495057) !important;
+            color: white !important;
+            border-color: rgba(108, 117, 125, 0.3) !important;
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2) !important;
         }
 
         /* Timer icon styling */
@@ -1321,22 +1321,22 @@ pointer-events: none
                 const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
 
                 if (timeDiffAtPause > 0) {
-                    // Was overdue
+                    // Was overdue - for paused, show as paused regardless of being overdue
                     return {
                         display: '-' + formatTimeDuration(timeDiffAtPause) + label,
                         isNegative: true,
                         isCompleted: false,
                         isPaused: true,
-                        class: `${timerClass} negative`
+                        class: timerClass // Only use primary state class for paused/cancelled
                     };
                 } else {
-                    // Still had time left
+                    // Still had time left - for paused, show as paused regardless of time left
                     return {
                         display: formatTimeDuration(-timeDiffAtPause) + label,
                         isNegative: false,
                         isCompleted: false,
                         isPaused: true,
-                        class: `${timerClass} positive`
+                        class: timerClass // Only use primary state class for paused/cancelled
                     };
                 }
             }
@@ -2759,22 +2759,22 @@ pointer-events: none
             const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
 
             if (timeDiffAtPause > 0) {
-                // Was overdue
+                // Was overdue - for paused, show as paused regardless of being overdue
                 return {
                     display: '-' + formatTimeDuration(timeDiffAtPause) + label,
                     isNegative: true,
                     isCompleted: false,
                     isPaused: true,
-                    class: `${timerClass} negative`
+                    class: timerClass // Only use primary state class for paused/cancelled
                 };
             } else {
-                // Still had time left
+                // Still had time left - for paused, show as paused regardless of time left
                 return {
                     display: formatTimeDuration(-timeDiffAtPause) + label,
                     isNegative: false,
                     isCompleted: false,
                     isPaused: true,
-                    class: `${timerClass} positive`
+                    class: timerClass // Only use primary state class for paused/cancelled
                 };
             }
         }
