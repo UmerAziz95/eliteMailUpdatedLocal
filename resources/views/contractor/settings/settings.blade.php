@@ -404,7 +404,7 @@
                                             data-id="{{ $notification->id }}" title="Mark as Read">
                                             {{-- <i class="ti ti-check"></i> --}}
                                             <div>
-                                                <i class="fa-regular fa-envelope fs-5 text-white"></i>
+                                                <i class="fa-regular fa-envelope fs-5 text-white" ></i>
                                                 {{-- <i class="fa-solid fa-envelope-open-text fs-5"></i> --}}
                                             </div>
                                         </button>
