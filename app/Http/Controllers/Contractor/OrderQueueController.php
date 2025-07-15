@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Contractor;
 
 use App\Http\Controllers\Controller;
 use App\Services\OrderRejectionService;
@@ -28,7 +28,7 @@ class OrderQueueController extends Controller
 
     public function index()
     {
-        return view('admin.orderQueue.order_queue');
+        return view('contractor.panel.index');
     }
     
     public function getOrdersData(Request $request)
@@ -38,16 +38,23 @@ class OrderQueueController extends Controller
             
             $query = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits']);
             
+            // For contractors, only show orders assigned to them OR unassigned orders they can pick up
+            $contractorId = auth()->id();
+            
             // Filter by type
             if ($type === 'in-draft') {
                 $query->where('status_manage_by_admin', 'draft');
+                // Show drafts assigned to this contractor
+                // $query->where('assigned_to', $contractorId);
             } elseif ($type === 'reject-orders') {
                 $query->where('status_manage_by_admin', 'reject');
+                // Show rejected orders assigned to this contractor
+                // $query->where('assigned_to', $contractorId);
             } else {
-                // In-queue: all orders except draft and rejected
+                // In-queue: show unassigned orders that contractor can pick up
                 $query->whereNotIn('status_manage_by_admin', ['draft', 'reject']);
-                // type in-queue not get assigned orders
                 $query->whereNull('assigned_to');
+                // $query->where('status_manage_by_admin', 'peding');
                 // For queue orders, only include orders that have splits
                 $query->whereHas('orderPanels.orderPanelSplits');
             }
@@ -145,7 +152,7 @@ class OrderQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching admin orders data: ' . $e->getMessage());
+            Log::error('Error fetching contractor orders data: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching orders data: ' . $e->getMessage()
@@ -162,6 +169,15 @@ class OrderQueueController extends Controller
                 'orderPanels.orderPanelSplits',
                 'orderPanels.panel'
             ])->findOrFail($orderId);
+
+            // Check if contractor has access to this order
+            $contractorId = auth()->id();
+            if ($order->assigned_to && $order->assigned_to != $contractorId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this order.'
+                ], 403);
+            }
 
             $reorderInfo = $order->reorderInfo->first();
             $orderPanels = $order->orderPanels;
@@ -237,10 +253,18 @@ class OrderQueueController extends Controller
     public function assignOrderToMe(Request $request, $orderId)
     {
         try {
-            $adminId = auth()->id();
+            $contractorId = auth()->id();
             
             // Find the order
             $order = Order::findOrFail($orderId);
+            
+            // Check if order is already assigned
+            if ($order->assigned_to) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This order is already assigned to another contractor.'
+                ], 400);
+            }
             
             // Get all order panels (splits) for this order that are unallocated
             $unallocatedPanels = OrderPanel::where('order_id', $orderId)
@@ -257,7 +281,7 @@ class OrderQueueController extends Controller
             $assignedCount = 0;
             $errors = [];
             
-            // Assign each unallocated panel to the admin
+            // Assign each unallocated panel to the contractor
             foreach ($unallocatedPanels as $panel) {
                 try {
                     // Get the order panel split id
@@ -267,7 +291,7 @@ class OrderQueueController extends Controller
                         // Update panel status to allocated
                         $panel->update([
                             'status' => 'allocated',
-                            'contractor_id' => $adminId
+                            'contractor_id' => $contractorId
                         ]);
                         
                         $assignedCount++;
@@ -275,13 +299,14 @@ class OrderQueueController extends Controller
                     
                 } catch (Exception $e) {
                     $errors[] = "Failed to assign panel {$panel->id}: " . $e->getMessage();
-                    Log::error("Error assigning panel {$panel->id} to admin {$adminId}: " . $e->getMessage());
+                    Log::error("Error assigning panel {$panel->id} to contractor {$contractorId}: " . $e->getMessage());
                 }
             }
             
-            // Assign the order to the current admin
-            $order->assigned_to = $adminId;
-            $order->status_manage_by_admin = 'in-progress'; // Set status to in-progress
+            // Assign the order to the current contractor
+            $order->assigned_to = $contractorId;
+            // status to in-progress
+            $order->status_manage_by_admin = 'in-progress';
             $order->save();
             
             // Check remaining unallocated panels
@@ -314,15 +339,16 @@ class OrderQueueController extends Controller
             ], 500);
         }
     }
+
     public function rejectOrder(Request $request, $orderId)
     {
         try {
-            $adminId = auth()->id();
+            $contractorId = auth()->id();
             $reason = $request->input('reason', null); // Get rejection reason from request
             
             // Use the OrderRejectionService to handle the rejection
             $rejectionService = new OrderRejectionService();
-            $result = $rejectionService->rejectOrder($orderId, $adminId, $reason);
+            $result = $rejectionService->rejectOrder($orderId, $contractorId, $reason);
             
             return response()->json($result);
             
@@ -354,16 +380,16 @@ class OrderQueueController extends Controller
         }
     }
 
-    // my orders
+    // my orders for contractor
     public function myOrders()
     {
-        return view('admin.myorders.index');
+        return view('contractor.myorders.index');
     }
 
     public function getAssignedOrdersData(Request $request)
     {
         try {
-            // For admin, get orders that are assigned to current admin user
+            // For contractor, get orders that are assigned to current contractor user
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
                 ->where('assigned_to', auth()->id());
 
@@ -446,6 +472,7 @@ class OrderQueueController extends Controller
                         ];
                     }
                 }
+
                 // Calculate status HTML before the return array
                 $statusKey = strtolower($order->status_manage_by_admin ?? 'N/A');
                 $statusHtml = '<span style="font-size:11px !important" class="py-1 px-1 text-' . ($this->statuses[$statusKey] ?? 'warning') . ' border border-' . ($this->statuses[$statusKey] ?? 'warning') . ' rounded-2 bg-transparent fs-6">' . ucfirst($statusKey) . '</span>';
@@ -489,7 +516,7 @@ class OrderQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching assigned orders data: ' . $e->getMessage());
+            Log::error('Error fetching assigned contractor orders data: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching orders data: ' . $e->getMessage()

@@ -391,7 +391,7 @@ class OrderController extends Controller
                         ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ? '' :
                             '<li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                 <i class="fa-solid fa-eye"></i> View</a></li>') .
-                        (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ?
+                        (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft','reject']) ?
                             '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                 <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') .
                         ($hasRejectedPanels ?
@@ -812,7 +812,8 @@ class OrderController extends Controller
                     [
                         'cron_run_time' => now(),
                         'inboxes_per_domain' => $request->inboxes_per_domain,
-                        'total_inboxes' => $calculatedTotalInboxes
+                        'total_inboxes' => $calculatedTotalInboxes,
+                        'status' => 'pending', // Set status to pending for new orders
                     ]
                 );
                 

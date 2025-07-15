@@ -354,7 +354,6 @@ class CheckPanelCapacity extends Command
                 ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
-            $admin->email = "muhammad.farooq.raaj@gmail.com";
             Mail::to($admin->email)->send(
                 new AdminPanelNotificationMail(
                     $totalPanelsNeeded,

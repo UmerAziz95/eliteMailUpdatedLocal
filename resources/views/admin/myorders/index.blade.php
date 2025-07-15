@@ -1,7 +1,5 @@
-@extends('contractor.layouts.app')
-
+@extends('admin.layouts.app')
 @section('title', 'Orders')
-
 @push('styles')
 <style>
     input,
@@ -25,7 +23,6 @@
     .remain {
         color: orange
     }
-
 
     .empty-state {
         text-align: center;
@@ -319,13 +316,6 @@
         animation: pulse-red-yellow 3s infinite;
     }
 
-    .timer-badge.cancelled {
-        background: linear-gradient(135deg, #858585, #8f8f8f);
-        color: white;
-        border-color: rgba(143, 143, 143, 0.3);
-        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
-    }
-
     /* Pulse animation for overdue timers */
     @keyframes pulse-red {
         0% {
@@ -396,47 +386,45 @@
 </style>
 <style>
     .anim_card {
-        background-color: var(--secondary-color);
-        color: var(--light-color);
-        border: 1px solid #99999962;
-        border-radius: 8px;
-        position: relative;
-        opacity: 1;
+    background-color: var(--secondary-color);
+    color: var(--light-color);
+    border: 1px solid #99999962;
+    border-radius: 8px;
+    position: relative;
+    opacity: 1;
     }
-
     .anim_card .order_detail {
-        width: 100%;
-        height: 14rem;
-        overflow: hidden;
-        border: 1px solid #86868654
+    width: 100%;
+    height: 14rem;
+    overflow: hidden;
+    border: 1px solid #86868654
     }
-
     .anim_card .order_detail .card_content {
-        width: 100%;
-        transition: .5s;
+    width: 100%;
+    transition: .5s;
     }
 
     .card_content {
-        transform: translateX(30%);
+    transform: translateX(30%);
     }
 
     .anim_card:hover .order_detail .card_content {
-        opacity: .9;
-        transform: translateX(0%);
+    opacity: .9;
+    transform: translateX(0%);
     }
 
     .anim_card .flip_details {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--second-primary);
-        border-radius: 10px;
-        transition: transform 0.5s ease, box-shadow 0.5s ease;
-        transform-origin: left;
-        transform: perspective(2000px) rotateY(0deg);
-        z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--second-primary);
+    border-radius: 10px;
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    transform-origin: left;
+    transform: perspective(2000px) rotateY(0deg);
+    z-index: 2;
     }
 
     /* .anim_card .flip_details::after {
@@ -452,70 +440,176 @@
     } */
 
     .anim_card:hover .flip_details {
-        transform: perspective(2000px) rotateY(-90deg);
-        box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
-            rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
-            rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
-        pointer-events: none
+    transform: perspective(2000px) rotateY(-90deg);
+    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px,
+    rgba(255, 255, 255, 0.3) 0px 7px 13px -3px,
+    rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
+    pointer-events: none
     }
 
     .anim_card:hover .flip_details::after {
-        width: 102px;
-        background-color: #9a9a9a81;
-        pointer-events: none;
+    width: 102px;
+    background-color: #9a9a9a81;
+    pointer-events: none;
     }
 
     .anim_card .flip_details .center {
-        padding: 20px;
-        background-color: var(--secondary-color);
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
+    padding: 20px;
+    background-color: var(--secondary-color);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    }
+    </style>
+
+<style>
+    .flip-card {
+      position: relative;
+      width: 16px;
+      height: 18px;
+      perspective: 1000px;
+      font-family: "Space Grotesk", "Courier New", monospace;
+      margin: 0 1px;
+    }
+    .flip-inner {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease-in-out;
+    }
+    
+    .flip-front,
+    .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      background: linear-gradient(to bottom, #f8f9fa 50%, #e9ecef 50%);
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #495057;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ced4da;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .flip-front {
+      z-index: 2;
+    }
+    
+    .flip-back {
+      transform: rotateX(180deg);
+    }
+    
+    /* Flip timer container styles */
+    .flip-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: "Space Grotesk", "Courier New", monospace;
+      font-size: 12px;
+      padding: 4px 8px;
+      /* border-radius: 6px; */
+      /* background: rgba(248, 249, 250, 0.8); */
+      /* border: 1px solid rgba(206, 212, 218, 0.5); */
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(2px);
+    }
+    
+    .flip-timer:hover {
+      /* transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); */
+    }
+    
+    .flip-timer.positive {
+      /* background: rgba(40, 167, 69, 0.1); */
+      background: transparent;
+      /* border-color: rgba(40, 167, 69, 0.3); */
+      color: #28a745;
+    }
+    
+    .flip-timer.positive .flip-front,
+    .flip-timer.positive .flip-back {
+      /* background: linear-gradient(to bottom, #d4edda 50%, #c3e6cb 50%); */
+      color: #155724;
+      border-color: rgba(40, 167, 69, 0.2);
+    }
+    
+    .flip-timer.negative {
+      background: transparent;
+      /* border-color: rgba(220, 53, 69, 0.3); */
+      color: #dc3545;
+      /* animation: pulse-red 2s infinite; */
+    }
+    
+    .flip-timer.negative .flip-front,
+    .flip-timer.negative .flip-back {
+        color: #dc3545;
+      background-color:rgba(255, 0, 0, 0.16);
+      border-color: rgb(220, 53, 70);
+    }
+    
+    .flip-timer.completed {
+      background: rgba(108, 117, 125, 0.1);
+      border-color: rgba(108, 117, 125, 0.3);
+      color: #6c757d;
+    }
+    
+    .flip-timer.completed .flip-front,
+    .flip-timer.completed .flip-back {
+      background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+      color: #495057;
+      border-color: rgba(108, 117, 125, 0.2);
+    }
+    
+    /* Timer separator styling */
+    .timer-separator {
+      font-weight: bold;
+      margin: 0 2px;
+      opacity: 0.7;
+      font-size: 11px;
+    }
+    
+    /* Timer icon styling */
+    .timer-icon {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-right: 4px;
+    }
+    
+    /* Negative sign styling */
+    .negative-sign {
+      font-weight: bold;
+      margin-right: 2px;
+      font-size: 12px;
+    }
+    
+    /* Pulse animation for overdue timers */
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
+      }
+      50% {
+        box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
+        transform: scale(1.02);
+      }
+      100% {
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
+      }
+    }
+    
+    /* Flip animation enhancement */
+    .flip-card.flipping .flip-inner {
+      transform: rotateX(180deg);
     }
 </style>
 
 <style>
-    .flip-card {
-        position: relative;
-        width: 30px;
-        height: 30px;
-        perspective: 1000px;
-        font-family: "Space Grotesk";
-    }
-
-    .flip-inner {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        transform-style: preserve-3d;
-        transition: transform 0.6s ease-in-out;
-    }
-
-    .flip-front,
-    .flip-back {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        backface-visibility: hidden;
-        background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
-        border-radius: 4px;
-        font-size: 24px;
-        font-weight: bold;
-        color: #222;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #aaa;
-    }
-
-    .flip-front {
-        z-index: 2;
-    }
-
-    .flip-back {
-        transform: rotateX(180deg);
-    }
-
     /* Change Status Modal Styles */
     .modal-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -525,10 +619,6 @@
 
     .modal-header .btn-close {
         filter: invert(1);
-    }
-
-    .modal-body {
-        /* background-color: #f8f9fa; */
     }
 
     .form-select, .form-control {
@@ -541,187 +631,175 @@
         border-color: #667eea;
         box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
-
-    /* Status badge styles */
-    .badge.bg-primary { background-color: #0d6efd !important; }
-    .badge.bg-success { background-color: #198754 !important; }
-    .badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
-    .badge.bg-danger { background-color: #dc3545 !important; }
-    .badge.bg-secondary { background-color: #6c757d !important; }
-
-    /* Notification styles */
-    .alert {
-        border-radius: 0.5rem;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
 </style>
+    
+    
+    
+    @endpush
 
+    @section('content')
+    <section class="py-3">
 
-
-@endpush
-
-@section('content')
-<section class="py-3">
-
-    <!-- Advanced Search Filter UI -->
-    <div class="card p-3 mb-4">
-        <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
-            role="button" aria-expanded="false" aria-controls="filter_1">
-            <div>
-                <div class="d-flex gap-2 align-items-center">
-                    <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
-                    <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
-                        width="30" alt="">
+        <!-- Advanced Search Filter UI -->
+        <div class="card p-3 mb-4">
+            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
+                role="button" aria-expanded="false" aria-controls="filter_1">
+                <div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
+                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                            width="30" alt="">
+                    </div>
+                    <small>Click here to open advance search for orders</small>
                 </div>
-                <small>Click here to open advance search for orders</small>
+            </div>
+
+            <div class="row collapse" id="filter_1">
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Order ID</label>
+                            <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="unallocated">Unallocated</option>
+                                <option value="allocated">Allocated</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Min Inboxes</label>
+                            <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label mb-0">Max Inboxes</label>
+                            <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="button" id="resetFilters"
+                                class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                            <button type="submit" id="submitBtn"
+                                class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+
+        <!-- Grid Cards (Dynamic) -->
+        <div id="ordersContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+            <!-- Loading state -->
+            <div id="loadingState"
+                style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Loading orders...</p>
             </div>
         </div>
 
-        <div class="row collapse" id="filter_1">
-            <form id="filterForm">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label mb-0">Order ID</label>
-                        <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
+        {{-- <div id="flip-timer" style="display: flex; gap: 10px; background: #111; padding: 20px;"></div> --}}
+
+
+        <!-- Load More Button -->
+        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                <span id="loadMoreText">Load More</span>
+                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                    style="display: none;">
+                    <span class="visually-hidden">Loading...</span>
+                </span>
+            </button>
+            <div id="paginationInfo" class="mt-2 text-light small">
+                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
+                    id="totalOrders">0</span> orders
+            </div>
+        </div>
+
+
+    </section>
+
+    <!-- Order Details Offcanvas -->
+    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
+        aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+            <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
+            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times fs-5"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body pt-2">
+            <div id="orderSplitsContainer">
+                <!-- Dynamic content will be loaded here -->
+                <div id="splitsLoadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading order details...</span>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label mb-0">Status</label>
-                        <select name="status" class="form-select">
-                            <option value="">All Status</option>
-                            <option value="unallocated">Unallocated</option>
-                            <option value="allocated">Allocated</option>
-                            <option value="in-progress">In Progress</option>
+                    <p class="mt-2">Loading order details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Status Modal -->
+    <div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeStatusModalLabel">Change Order Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Order ID: <span id="modalOrderId" class="fw-bold text-primary"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Status: <span id="modalCurrentStatus" class="badge"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">Select New Status</label>
+                        <select class="form-select" id="newStatus" required>
+                            <option value="">-- Select Status --</option>
+                            <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="in-progress">In Progress</option>
                         </select>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label mb-0">Min Inboxes</label>
-                        <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label mb-0">Max Inboxes</label>
-                        <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
-                    </div>
-                    <div class="col-12 text-end">
-                        <button type="button" id="resetFilters"
-                            class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                        <button type="submit" id="submitBtn"
-                            class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                    <div class="mb-3">
+                        <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
+                        <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
                     </div>
                 </div>
-            </form>
-        </div>
-
-    </div>
-
-
-    <!-- Grid Cards (Dynamic) -->
-    <div id="ordersContainer"
-        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
-        <!-- Loading state -->
-        <div id="loadingState"
-            style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 mb-0">Loading orders...</p>
-        </div>
-    </div>
-
-    {{-- <div id="flip-timer" style="display: flex; gap: 10px; background: #111; padding: 20px;"></div> --}}
-
-
-    <!-- Load More Button -->
-    <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-        <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-            <span id="loadMoreText">Load More</span>
-            <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                style="display: none;">
-                <span class="visually-hidden">Loading...</span>
-            </span>
-        </button>
-        <div id="paginationInfo" class="mt-2 text-light small">
-            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalOrders">0</span>
-            orders
-        </div>
-    </div>
-
-
-</section>
-
-<!-- Order Details Offcanvas -->
-<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
-    aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-    <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
-        <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
-        <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
-            <i class="fas fa-times fs-5"></i>
-        </button>
-    </div>
-    <div class="offcanvas-body pt-2">
-        <div id="orderSplitsContainer">
-            <!-- Dynamic content will be loaded here -->
-            <div id="splitsLoadingState" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading order details...</span>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmStatusChange" onclick="updateOrderStatus()">
+                        <i class="fas fa-save me-1"></i>
+                        Update Status
+                    </button>
                 </div>
-                <p class="mt-2">Loading order details...</p>
             </div>
         </div>
     </div>
-</div>
+    @endsection
 
-<!-- Change Status Modal -->
-<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="changeStatusModalLabel">Change Order Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Order ID: <span id="modalOrderId" class="fw-bold text-primary"></span></label>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Current Status: <span id="modalCurrentStatus" class="badge"></span></label>
-                </div>
-                <div class="mb-3">
-                    <label for="newStatus" class="form-label">Select New Status</label>
-                    <select class="form-select" id="newStatus" required>
-                        <option value="">-- Select Status --</option>
-                        <!-- <option value="pending">Pending</option> -->
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="reject">Rejected</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
-                    <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmStatusChange" onclick="updateOrderStatus()">
-                    <i class="fas fa-save me-1"></i>
-                    Update Status
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@push('scripts')
+    @push('scripts')
+   
+        
+        
+        
 
 
-
-
-
-
-<script>
-    let orders = [];
+    <script>
+        let orders = [];
         let currentFilters = {};
         let currentPage = 1;
         let hasMorePages = false;
@@ -751,7 +829,7 @@
                     page: page,
                     per_page: 12
                 });
-                const url = `/contractor/assigned/order/data?${params}`;
+                const url = `/admin/assigned/order/data?${params}`;
                 console.log('Fetching from URL:', url);
                 
                 const response = await fetch(url, {
@@ -918,8 +996,8 @@
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
                     <div class="d-flex gap-1">
-                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
-                        <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/contractor/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
+                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
+                        <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/admin/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
                     </div>
                 </td>
                 </tr>
@@ -1196,7 +1274,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             return `${hoursStr}:${minutesStr}:${secondsStr}`;
         }
 
-        // Create timer badge HTML
+        // Create timer badge HTML with flip timer
         function createTimerBadge(order) {
             console.log(order);
             const timer = calculateOrderTimer(
@@ -1207,24 +1285,13 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 order.timer_paused_at, 
                 order.total_paused_seconds
             );
-
-            // Determine the icon class based on status and timer
-            let iconClass = '';
-            if (order.status === 'cancelled') {
-                iconClass = 'fas fa-exclamation-triangle'; // warning icon
-            } else if (timer.isCompleted) {
-                iconClass = 'fas fa-check';
-            } else if (timer.isPaused) {
-                iconClass = 'fas fa-pause';
-            } else {
-                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
-            }
-
+            const iconClass = timer.isCompleted ? 'fas fa-check' : 
+                              timer.isPaused ? 'fas fa-pause' : 
+                              (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            
             // Create tooltip text
             let tooltip = '';
-            if (order.status === 'cancelled') {
-                tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
-            } else if (timer.isCompleted) {
+            if (timer.isCompleted) {
                 tooltip = order.completed_at 
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
@@ -1235,23 +1302,83 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
             } else {
                 tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
             }
-
+            
+            // Generate unique ID for this timer using order ID
+            const timerId = `flip-timer-${order.order_id}`;
+            
+            // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+            let timeString = timer.display;
+            let isNegative = false;
+            
+            // Remove any status text (like "(Paused)")
+            timeString = timeString.replace(/\s*\([^)]*\)$/, '');
+            
+            if (timeString.startsWith('-')) {
+                isNegative = true;
+                timeString = timeString.substring(1);
+            }
+            
+            const timeParts = timeString.split(':');
+            const hours = (timeParts[0] || '00').padStart(2, '0');
+            const minutes = (timeParts[1] || '00').padStart(2, '0');
+            const seconds = (timeParts[2] || '00').padStart(2, '0');
+            
+            // Create flip timer with individual digit cards
             return `
-                <span class="timer-badge ${timer.class}" 
-                    data-order-id="${order.order_id}" 
-                    data-created-at="${order.created_at}" 
-                    data-status="${order.status}" 
-                    data-completed-at="${order.completed_at || ''}"
-                    data-timer-started-at="${order.timer_started_at || ''}"
-                    data-timer-paused-at="${order.timer_paused_at || ''}"
-                    data-total-paused-seconds="${order.total_paused_seconds || 0}"
-                    data-tooltip="${tooltip}">
-                    <i class="${iconClass} timer-icon"></i>
-                    ${timer.display}
-                </span>
+                <div id="${timerId}" class="flip-timer ${timer.class}" 
+                     data-order-id="${order.order_id}" 
+                     data-created-at="${order.created_at}" 
+                     data-status="${order.status}" 
+                     data-completed-at="${order.completed_at || ''}"
+                     data-timer-started-at="${order.timer_started_at || ''}"
+                     data-timer-paused-at="${order.timer_paused_at || ''}"
+                     data-total-paused-seconds="${order.total_paused_seconds || 0}"
+                     data-tooltip="${tooltip}"
+                     title="${tooltip}"
+                     style="gap: 4px; align-items: center;">
+                    <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
+                    ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
+                    <div class="flip-card" data-digit="${hours.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(0)}</div>
+                            <div class="flip-back">${hours.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${hours.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(1)}</div>
+                            <div class="flip-back">${hours.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${minutes.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(0)}</div>
+                            <div class="flip-back">${minutes.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${minutes.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(1)}</div>
+                            <div class="flip-back">${minutes.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${seconds.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(0)}</div>
+                            <div class="flip-back">${seconds.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${seconds.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(1)}</div>
+                            <div class="flip-back">${seconds.charAt(1)}</div>
+                        </div>
+                    </div>
+                </div>
             `;
         }
-
 
         // View order splits
         async function viewOrderSplits(orderId) {
@@ -1294,7 +1421,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 offcanvas.show();
                 
                 // Fetch order splits
-                const response = await fetch(`/contractor/orders/${orderId}/splits`, {
+                const response = await fetch(`/admin/orders/${orderId}/splits`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1444,10 +1571,10 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                            <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <a href="/admin/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
                                         </div>
@@ -2077,7 +2204,7 @@ function parseUTCDateTime(dateStr) {
             });
         }
 
-        // Function to assign entire order to logged-in contractor
+        // Function to assign entire order to logged-in admin
         async function assignOrderToMe(orderId) {
             try {
             // Show SweetAlert2 confirmation dialog
@@ -2125,7 +2252,7 @@ function parseUTCDateTime(dateStr) {
             }
 
             // Make API request to assign all unallocated splits of the order
-            const response = await fetch(`/contractor/orders/${orderId}/assign-to-me`, {
+            const response = await fetch(`/admin/orders/${orderId}/assign-to-me`, {
                 method: 'POST',
                 headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -2200,17 +2327,147 @@ function parseUTCDateTime(dateStr) {
             }
             }
         }
-        // Update all timer badges on the page
+
+        // Change Status Modal Functions
+        function openChangeStatusModal(orderId, currentStatus) {
+            // Set the order ID and current status in the modal
+            document.getElementById('modalOrderId').textContent = '#' + orderId;
+            
+            // Set current status with appropriate styling
+            const statusBadge = document.getElementById('modalCurrentStatus');
+            statusBadge.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+            statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
+            
+            // Reset form
+            document.getElementById('newStatus').value = '';
+            document.getElementById('statusReason').value = '';
+            
+            // Store order ID for later use
+            document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
+            modal.show();
+        }
+
+        async function updateOrderStatus() {
+            const modal = document.getElementById('changeStatusModal');
+            const orderId = modal.getAttribute('data-order-id');
+            const newStatus = document.getElementById('newStatus').value;
+            const reason = document.getElementById('statusReason').value;
+            
+            if (!newStatus) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please select a new status',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            // Show SweetAlert2 confirmation dialog
+            const result = await Swal.fire({
+                title: 'Confirm Status Change',
+                text: `Are you sure you want to change the status to "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, update status!',
+                cancelButtonText: 'Cancel'
+            });
+
+            // If user cancels, return early
+            if (!result.isConfirmed) {
+                return;
+            }
+            
+            // Show SweetAlert2 loading dialog
+            Swal.fire({
+                title: 'Updating Status...',
+                text: 'Please wait while we update the order status.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const response = await fetch(`/admin/orders/${orderId}/change-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        reason: reason
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update status');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Close loading dialog and show success
+                    await Swal.fire({
+                        title: 'Success!',
+                        text: 'Status updated successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    
+                    // Hide modal
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    
+                    // Refresh the order details if currently viewing this order
+                    const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
+                    if (currentOrderId) {
+                        viewOrderSplits(orderId);
+                    }
+                    
+                    // Optionally refresh the orders list
+                    loadOrders(currentFilters, 1, false);
+                    
+                } else {
+                    throw new Error(result.message || 'Failed to update status');
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: 'Error updating status: ' + error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+
+        // Update all flip timers on the page
         function updateAllTimers() {
-            const timerBadges = document.querySelectorAll('.timer-badge');
-            timerBadges.forEach(badge => {
-                const orderId = badge.dataset.orderId;
-                const createdAt = badge.dataset.createdAt;
-                const status = badge.dataset.status;
-                const completedAt = badge.dataset.completedAt;
-                const timerStartedAt = badge.dataset.timerStartedAt;
-                const timerPausedAt = badge.dataset.timerPausedAt;
-                const totalPausedSeconds = parseInt(badge.dataset.totalPausedSeconds) || 0;
+            const flipTimers = document.querySelectorAll('.flip-timer');
+            flipTimers.forEach(flipTimer => {
+                const orderId = flipTimer.dataset.orderId;
+                const createdAt = flipTimer.dataset.createdAt;
+                const status = flipTimer.dataset.status;
+                const completedAt = flipTimer.dataset.completedAt;
+                const timerStartedAt = flipTimer.dataset.timerStartedAt;
+                const timerPausedAt = flipTimer.dataset.timerPausedAt;
+                const totalPausedSeconds = parseInt(flipTimer.dataset.totalPausedSeconds) || 0;
                 
                 // Skip updating completed orders (timer is paused)
                 if (status === 'completed') {
@@ -2222,41 +2479,130 @@ function parseUTCDateTime(dateStr) {
                     return;
                 }
                 
-                const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
-                const iconClass = timer.isCompleted ? 'fas fa-check' : 
-                                  timer.isPaused ? 'fas fa-pause' : 
-                                  (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-                
-                // Check if the timer display has changed to avoid unnecessary DOM updates
-                const currentDisplay = badge.textContent.trim();
-                if (currentDisplay === timer.display) {
-                    return;
+                try {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+                    const iconClass = timer.isCompleted ? 'fas fa-check' : 
+                                      timer.isPaused ? 'fas fa-pause' : 
+                                      (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+                    
+                    // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+                    let timeString = timer.display;
+                    let isNegative = false;
+                    
+                    // Remove any status text (like "(Paused)")
+                    timeString = timeString.replace(/\s*\([^)]*\)$/, '');
+                    
+                    if (timeString.startsWith('-')) {
+                        isNegative = true;
+                        timeString = timeString.substring(1);
+                    }
+                    
+                    const timeParts = timeString.split(':');
+                    const hours = (timeParts[0] || '00').padStart(2, '0');
+                    const minutes = (timeParts[1] || '00').padStart(2, '0');
+                    const seconds = (timeParts[2] || '00').padStart(2, '0');
+                    
+                    // Get current digits from flip cards
+                    const flipCards = flipTimer.querySelectorAll('.flip-card');
+                    const currentDigits = [
+                        hours.charAt(0), hours.charAt(1),
+                        minutes.charAt(0), minutes.charAt(1),
+                        seconds.charAt(0), seconds.charAt(1)
+                    ];
+                    
+                    // Only update if any digit has changed
+                    let hasChanged = false;
+                    flipCards.forEach((card, index) => {
+                        const currentDigit = card.dataset.digit;
+                        const newDigit = currentDigits[index];
+                        if (currentDigit !== newDigit) {
+                            hasChanged = true;
+                        }
+                    });
+                    
+                    if (hasChanged) {
+                        // Create tooltip text
+                        let tooltip = '';
+                        if (timer.isCompleted) {
+                            tooltip = completedAt 
+                                ? `Order completed on ${formatDate(completedAt)}` 
+                                : 'Order is completed';
+                        } else if (timer.isPaused) {
+                            tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerPausedAt)}`;
+                        } else if (timer.isNegative) {
+                            tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
+                        } else {
+                            tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
+                        }
+                        
+                        // Update flip timer class and tooltip
+                        flipTimer.className = `flip-timer ${timer.class}`;
+                        flipTimer.setAttribute('data-tooltip', tooltip);
+                        flipTimer.setAttribute('title', tooltip);
+                        
+                        // Update icon
+                        const timerIcon = flipTimer.querySelector('.timer-icon');
+                        if (timerIcon) {
+                            timerIcon.className = `${iconClass} timer-icon`;
+                        }
+                        
+                        // Update negative sign visibility
+                        const negativeSign = flipTimer.querySelector('.negative-sign');
+                        if (isNegative && !negativeSign) {
+                            // Add negative sign if needed
+                            const iconElement = flipTimer.querySelector('.timer-icon');
+                            if (iconElement) {
+                                iconElement.insertAdjacentHTML('afterend', '<span class="negative-sign" style="color: #dc3545; font-weight: bold; margin-right: 4px;">-</span>');
+                            }
+                        } else if (!isNegative && negativeSign) {
+                            // Remove negative sign if not needed
+                            negativeSign.remove();
+                        }
+                        
+                        // Update each flip card with animation
+                        flipCards.forEach((card, index) => {
+                            const newDigit = currentDigits[index];
+                            const currentDigit = card.dataset.digit;
+                            
+                            if (currentDigit !== newDigit) {
+                                updateFlipCard(card, newDigit);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error updating flip timer for order', orderId, ':', error);
                 }
-                
-                // Create tooltip text
-                let tooltip = '';
-                if (timer.isCompleted) {
-                    tooltip = completedAt 
-                        ? `Order completed on ${formatDate(completedAt)}` 
-                        : 'Order is completed';
-                } else if (timer.isPaused) {
-                    tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerPausedAt)}`;
-                } else if (timer.isNegative) {
-                    tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
-                } else {
-                    tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
-                }
-                
-                // Update badge class and tooltip
-                badge.className = `timer-badge ${timer.class}`;
-                badge.setAttribute('data-tooltip', tooltip);
-                
-                // Update badge content
-                badge.innerHTML = `
-                    <i class="${iconClass} timer-icon"></i>
-                    ${timer.display}
-                `;
             });
+        }
+        
+        // Function to animate flip card digit change
+        function updateFlipCard(card, newDigit) {
+            const flipInner = card.querySelector('.flip-inner');
+            const flipFront = card.querySelector('.flip-front');
+            const flipBack = card.querySelector('.flip-back');
+            
+            if (!flipInner || !flipFront || !flipBack) return;
+            
+            // Add flipping class for visual enhancement
+            card.classList.add('flipping');
+            
+            // Set the new digit on the back face
+            flipBack.textContent = newDigit;
+            
+            // Add flip animation
+            flipInner.style.transform = 'rotateX(180deg)';
+            
+            // After animation completes, update front face and reset
+            setTimeout(() => {
+                flipFront.textContent = newDigit;
+                card.dataset.digit = newDigit;
+                flipInner.style.transform = 'rotateX(0deg)';
+                
+                // Remove flipping class after animation
+                setTimeout(() => {
+                    card.classList.remove('flipping');
+                }, 100);
+            }, 300); // Half of the 0.6s CSS transition
         }
 
         // Initialize page
@@ -2274,259 +2620,11 @@ function parseUTCDateTime(dateStr) {
             loadOrders();
             
             // Update timers every second for real-time countdown
+            console.log('Starting flip timer updates...');
             setInterval(updateAllTimers, 1000); // Update every 1 second
+            
+            // Also update timers immediately after DOM load
+            setTimeout(updateAllTimers, 500);
         });
-</script>
-
-
-<script>
-    function createFlipCard(initial) {
-      const card = document.createElement('div');
-      card.className = 'flip-card';
-      card.innerHTML = `
-        <div class="flip-inner">
-          <div class="flip-front">${initial}</div>
-          <div class="flip-back">${initial}</div>
-        </div>
-      `;
-      return card;
-    }
-    
-    function updateFlipCard(card, newVal) {
-      const inner = card.querySelector('.flip-inner');
-      const front = card.querySelector('.flip-front');
-      const back = card.querySelector('.flip-back');
-    
-      if (front.textContent === newVal) return;
-    
-      // Set up new value before flip
-      back.textContent = newVal;
-    
-      // Flip animation
-      inner.style.transform = 'rotateX(180deg)';
-    
-      setTimeout(() => {
-        // Reset values after flip
-        front.textContent = newVal;
-        inner.style.transition = 'none';
-        inner.style.transform = 'rotateX(0deg)';
-        setTimeout(() => {
-          inner.style.transition = 'transform 0.6s ease-in-out';
-        }, 20);
-      }, 600);
-    }
-    
-    function startTimer(durationSeconds) {
-      const container = document.getElementById('flip-timer');
-      const digitElements = [];
-    
-      const formatTime = (s) => {
-        const h = Math.floor(s / 3600).toString().padStart(2, '0');
-        const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
-        const sec = (s % 60).toString().padStart(2, '0');
-        return h + m + sec;
-      };
-    
-      // Create 6 flip cards (HHMMSS)
-      const initial = formatTime(durationSeconds);
-      for (let i = 0; i < initial.length; i++) {
-        const card = createFlipCard(initial[i]);
-        container.appendChild(card);
-        digitElements.push(card);
-    
-        // Add colons
-        if (i === 1 || i === 3) {
-          const colon = document.createElement('div');
-          colon.textContent = ':';
-          colon.style.cssText = 'font-size: 24px; line-height: 20px; color: white;';
-          container.appendChild(colon);
-        }
-      }
-    
-      let current = durationSeconds;
-      function update() {
-        if (current < 0) return clearInterval(timer);
-        const timeStr = formatTime(current);
-        for (let i = 0; i < 6; i++) {
-          updateFlipCard(digitElements[i], timeStr[i]);
-        }
-        current--;
-      }
-    
-      update();
-      const timer = setInterval(update, 1000);
-    }
-    
-    // Example: 24 hours
-    startTimer(24 * 60 * 60);
-
-    // Change Status Modal Functions
-    function openChangeStatusModal(orderId, currentStatus) {
-        // Set the order ID and current status in the modal
-        document.getElementById('modalOrderId').textContent = '#' + orderId;
-        
-        // Set current status with appropriate styling
-        const statusBadge = document.getElementById('modalCurrentStatus');
-        statusBadge.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
-        statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
-        
-        // Reset form
-        document.getElementById('newStatus').value = '';
-        document.getElementById('statusReason').value = '';
-        
-        // Store order ID for later use
-        document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
-        
-        // Show the modal
-        const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
-        modal.show();
-    }
-
-    // Helper function to get status badge class
-    function getStatusBadgeClass(status) {
-        switch(status) {
-            case 'completed': return 'bg-success';
-            case 'pending': return 'bg-warning text-dark';
-            case 'cancelled': return 'bg-danger';
-            case 'rejected': return 'bg-danger';
-            case 'in-progress': return 'bg-primary';
-            case 'unallocated': return 'bg-warning text-dark';
-            case 'allocated': return 'bg-info';
-            default: return 'bg-secondary';
-        }
-    }
-
-    async function updateOrderStatus() {
-        const modal = document.getElementById('changeStatusModal');
-        const orderId = modal.getAttribute('data-order-id');
-        const newStatus = document.getElementById('newStatus').value;
-        const reason = document.getElementById('statusReason').value;
-        
-        if (!newStatus) {
-            Swal.fire({
-                title: 'Validation Error',
-                text: 'Please select a new status',
-                icon: 'warning',
-                confirmButtonColor: '#f39c12'
-            });
-            return;
-        }
-        
-        // Show SweetAlert2 confirmation dialog
-        const result = await Swal.fire({
-            title: 'Update Order Status?',
-            text: `Are you sure you want to change the status to "${newStatus}"?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, update status!',
-            cancelButtonText: 'Cancel',
-            reverseButtons: true
-        });
-
-        // If user cancels, return early
-        if (!result.isConfirmed) {
-            return;
-        }
-        
-        // Show SweetAlert2 loading dialog
-        Swal.fire({
-            title: 'Updating Status...',
-            text: 'Please wait while we update the order status.',
-            icon: 'info',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        try {
-            const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    status: newStatus,
-                    reason: reason
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update status');
-            }
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Close loading dialog and show success
-                await Swal.fire({
-                    title: 'Success!',
-                    text: result.message || 'Status updated successfully!',
-                    icon: 'success',
-                    confirmButtonColor: '#28a745',
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-                
-                // Hide modal
-                const modalInstance = bootstrap.Modal.getInstance(modal);
-                modalInstance.hide();
-                
-                // Refresh the order details if currently viewing this order
-                const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
-                if (currentOrderId) {
-                    viewOrderSplits(orderId);
-                }
-                
-                // Refresh the orders list to reflect changes
-                setTimeout(() => {
-                    loadOrders(currentFilters, 1, false);
-                }, 1000);
-                
-            } else {
-                throw new Error(result.message || 'Failed to update status');
-            }
-            
-        } catch (error) {
-            console.error('Error updating status:', error);
-            
-            // Close loading dialog and show error
-            await Swal.fire({
-                title: 'Error!',
-                text: error.message || 'Failed to update status. Please try again.',
-                icon: 'error',
-                confirmButtonColor: '#dc3545'
-            });
-        }
-    }
-
-    // Show notification function
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // Add to body
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification && notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
-    }
-</script>
-@endpush
+    </script>
+    @endpush

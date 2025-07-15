@@ -1384,6 +1384,8 @@ class OrderController extends Controller
                 }
             }
             $order->assigned_to = $contractorId;
+            // status to in-progress
+            $order->status_manage_by_admin = 'in-progress';
             $order->save();
             // Update order status if all panels are now allocated
             $remainingUnallocated = OrderPanel::where('order_id', $orderId)
@@ -1426,6 +1428,166 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to assign order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Change the status of an order
+     */
+    public function changeStatus(Request $request, $orderId)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $contractorId = Auth::id();
+            $newStatus = $request->input('status');
+            $reason = $request->input('reason');
+            
+            // If status is reject, use the OrderRejectionService
+            if ($newStatus === 'reject' || $newStatus === 'rejected') {
+                $rejectionService = new \App\Services\OrderRejectionService();
+                $result = $rejectionService->rejectOrder($orderId, $contractorId, $reason);
+                
+                return response()->json($result);
+            }
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Store the old status for logging
+            $oldStatus = $order->status_manage_by_admin;
+            
+            // Auto-assign the order if it's not already assigned
+            if (!$order->assigned_to) {
+                $order->assigned_to = $contractorId;
+            }
+            
+            // Update the order status using the correct column
+            $order->status_manage_by_admin = $newStatus;
+            
+            // Set completion timestamp if status is completed
+            if ($newStatus === 'completed') {
+                $order->completed_at = now();
+            }
+            
+            // Add reason if provided
+            if ($reason) {
+                $order->reason = $reason . " (Reason given by) " . Auth::user()->name;
+            }
+            
+            // Save the order
+            $order->save();
+            
+            // Create activity log
+            ActivityLogService::log(
+                'contractor-order-status-update',
+                'Order status updated : ' . $order->id,
+                $order,
+                [
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $order->status_manage_by_admin,
+                    'updated_by' => $contractorId,
+                    'assigned_to' => $order->assigned_to,
+                    'reason' => $reason
+                ]
+            );
+            
+            // Create notifications
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_status_change',
+                'title' => 'Order Status Changed',
+                'message' => 'Your order #' . $order->id . ' status has been changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'assigned_to' => $order->assigned_to
+                ]
+            ]);
+
+            // Notification for contractor
+            Notification::create([
+                'user_id' => $contractorId,
+                'type' => 'order_status_change',
+                'title' => 'Order Status Changed',
+                'message' => 'Order #' . $order->id . ' status changed to ' . $newStatus,
+                'data' => [
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'assigned_to' => $order->assigned_to
+                ]
+            ]);
+            
+            // Send email notifications
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order status change email sent', [
+                    'order_id' => $order->id,
+                    'assigned_to' => $order->assigned_to
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send order status change emails: ' . $e->getMessage());
+            }
+            
+            $orderCounts = $this->getOrderCounts();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Order status successfully changed from '{$oldStatus}' to '{$newStatus}'",
+                'counts' => $orderCounts,
+                'order' => [
+                    'id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_at' => $order->updated_at
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeStatus for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change order status: ' . $e->getMessage()
             ], 500);
         }
     }

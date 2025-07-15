@@ -27,6 +27,7 @@ use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscription
 // Contractor
 use App\Http\Controllers\Contractor\OrderController as ContractorOrderController;
 use App\Http\Controllers\Contractor\OrderEmailController as ContractorOrderEmailController;
+use App\Http\Controllers\Contractor\OrderQueueController as ContractorOrderQueueController;
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
@@ -160,6 +161,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+        Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
+        Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
@@ -216,7 +219,13 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
         Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
         Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
-      
+              Route::post('/order_queue/{orderId}/reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
+        Route::get('/order_queue/{orderId}/can-reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'canRejectOrder'])->name('orderQueue.can-reject');
+
+        // My Orders
+        Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
+        Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
+
         //settings
        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings');
 
@@ -303,6 +312,18 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
 Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')->group(function () {
     Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
     
+    // Order Queue Routes
+    Route::get('/order_queue', [ContractorOrderQueueController::class, 'index'])->name('orderQueue.order_queue');
+    Route::get('/order_queue/data', [ContractorOrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
+    Route::get('/order_queue/{orderId}/splits', [ContractorOrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
+    Route::post('/order_queue/{orderId}/assign-to-me', [ContractorOrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
+    Route::post('/order_queue/{orderId}/reject', [ContractorOrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
+    Route::get('/order_queue/{orderId}/can-reject', [ContractorOrderQueueController::class, 'canRejectOrder'])->name('orderQueue.can-reject');
+
+    // My Orders
+    Route::get('/my-orders', [ContractorOrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
+    Route::get('/assigned/order/data', [ContractorOrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
+    
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
     Route::get('/orders/{id}/split/view', [ContractorOrderController::class, 'splitView'])->name('orders.split.view');
     
@@ -363,6 +384,8 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/assigned/order/data', [ContractorOrderController::class, 'getAssignedOrdersData'])->name('panels.data');
     Route::get('/orders/{orderId}/splits', [ContractorPanelController::class, 'getOrderSplits'])->name('orders.splits');
     Route::post('/orders/{orderId}/assign-to-me', [ContractorOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
+    Route::post('/orders/{orderId}/change-status', [ContractorOrderController::class, 'changeStatus'])->name('orders.change-status');
+    Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
 }); 
 

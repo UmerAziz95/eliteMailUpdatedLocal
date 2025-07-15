@@ -25,6 +25,7 @@ use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 class OrderController extends Controller
 {
     private $statuses;
@@ -235,14 +236,7 @@ class OrderController extends Controller
                             </a>
                         </li>'
                         . (auth()->user()->hasPermissionTo('Mod') ? '' : '
-                        <li>
-                            <a href="#" class="dropdown-item markStatus" id="markStatus"
-                                data-id="' . $order->chargebee_subscription_id . '"
-                                data-status="' . $order->status_manage_by_admin . '"
-                                data-reason="' . $order->reason . '">
-                                <i class="fa-solid fa-flag"></i> &nbsp;Mark Status
-                            </a>
-                        </li>
+                        
                         <li>
                             <a href="#" class="dropdown-item"  onclick="viewOrderSplits(' . $order->id . ')" 
                                 data-order-id="' . $order->id . '">
@@ -319,6 +313,8 @@ class OrderController extends Controller
                         'status' => strtolower($order->status_manage_by_admin ?? 'n/a'),
                         'completed_at' => $order->completed_at ? $order->completed_at->toISOString() : null,
                         'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                        'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                        'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                         'order_id' => $order->id
                     ]);
                 })
@@ -662,8 +658,9 @@ class OrderController extends Controller
                     })(),
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
-                    // 'timer_started_at' => $order->timer_started_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
@@ -733,9 +730,13 @@ class OrderController extends Controller
                 'success' => true,
                 'order' => [
                     'id' => $order->id,
+                    'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
                     'completed_at' => $order->completed_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
@@ -1702,6 +1703,254 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Debug error: ' . $e->getMessage(),
                 'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    public function assignOrderToMe(Request $request, $orderId)
+    {
+        try {
+            $adminId = auth()->id();
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Check if order is already assigned
+            if ($order->assigned_to && $order->assigned_to != $adminId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is already assigned to another admin.'
+                ], 400);
+            }
+            
+            // Get all order panels (splits) for this order that are unallocated
+            $unallocatedPanels = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->get();
+            
+            if ($unallocatedPanels->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No unallocated splits found for this order.'
+                ], 400);
+            }
+            
+            $assignedCount = 0;
+            $errors = [];
+            
+            // Assign each unallocated panel to the admin
+            foreach ($unallocatedPanels as $panel) {
+                try {
+                    // Update panel status to allocated
+                    $panel->update([
+                        'status' => 'allocated',
+                        'contractor_id' => $adminId
+                    ]);
+                    
+                    $assignedCount++;
+                    
+                } catch (Exception $e) {
+                    $errors[] = "Failed to assign panel {$panel->id}: " . $e->getMessage();
+                    Log::error("Error assigning panel {$panel->id} to admin {$adminId}: " . $e->getMessage());
+                }
+            }
+            
+            // Assign the order to the current admin
+            $order->assigned_to = $adminId;
+            $order->status_manage_by_admin = 'in-progress'; // Set status to in-progress
+            $order->save();
+            
+            // Check remaining unallocated panels
+            $remainingUnallocated = OrderPanel::where('order_id', $orderId)
+                ->where('status', 'unallocated')
+                ->count();
+            
+            $message = $assignedCount > 0 
+                ? "Successfully assigned {$assignedCount} split(s) to you!" 
+                : "No new assignments were made.";
+            
+            if (!empty($errors)) {
+                $message .= " However, some errors occurred: " . implode(', ', $errors);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'assigned_count' => $assignedCount,
+                'remaining_unallocated' => $remainingUnallocated,
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error("Error in assignOrderToMe for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Change order status with reason and activity logging
+     */
+    public function changeStatus(Request $request, $orderId)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $adminId = Auth::id();
+            $newStatus = $request->input('status');
+            $reason = $request->input('reason');
+            
+            // If status is reject, use the OrderRejectionService
+            if ($newStatus === 'reject' || $newStatus === 'rejected') {
+                $rejectionService = new \App\Services\OrderRejectionService();
+                $result = $rejectionService->rejectOrder($orderId, $adminId, $reason);
+                
+                return response()->json($result);
+            }
+            
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            $oldStatus = $order->status_manage_by_admin;
+            
+            // Don't allow status change if it's the same
+            if ($oldStatus === $newStatus) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is already in the selected status.'
+                ], 400);
+            }
+            
+            // Update order status using the correct column
+            $order->status_manage_by_admin = $newStatus;
+            
+            // Set completion timestamp if status is completed
+            if ($newStatus === 'completed') {
+                $order->completed_at = now();
+            }
+            
+            // Add reason if provided
+            if ($reason) {
+                $order->reason = $reason . " (Reason given by " . Auth::user()->name . ")";
+            }
+            
+            $order->save();
+            
+            // Log the activity
+            ActivityLogService::log(
+                'admin_order_status_updated',
+                "Admin changed order status from '{$oldStatus}' to '{$newStatus}'" . ($reason ? " with reason: {$reason}" : ""),
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+            
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_status_change',
+                'title' => 'Order Status Updated',
+                'message' => "Your order #{$orderId} status has been changed to {$newStatus}",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason
+                ]
+            ]);
+            
+            // Send email notifications
+            try {
+                $user = $order->user;
+                Mail::to($user->email)
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        false
+                    ));
+
+                // Send email to admin
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new OrderStatusChangeMail(
+                        $order,
+                        $user,
+                        $oldStatus,
+                        $newStatus,
+                        $reason,
+                        true
+                    ));
+
+                Log::info('Order status change email sent', [
+                    'order_id' => $order->id,
+                    'assigned_to' => $order->assigned_to
+                ]);
+
+                // Send email to assigned contractor if exists
+                if($order->assigned_to){
+                    $assignedUser = User::find($order->assigned_to);
+                    if ($assignedUser) {
+                        Mail::to($assignedUser->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                true
+                            ));
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send order status change emails: ' . $e->getMessage());
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Order status successfully changed from '{$oldStatus}' to '{$newStatus}'",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $reason
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeStatus for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change order status: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -2,6 +2,7 @@
 
 @section('title', 'Orders-Queue')
 @push('styles')
+
     <style>
         input,
         .form-control,
@@ -172,6 +173,45 @@
             border-color: rgba(108, 117, 125, 0.2);
         }
 
+        .flip-timer.paused {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #856404;
+        }
+
+        .flip-timer.paused .flip-front,
+        .flip-timer.paused .flip-back {
+            background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
+            color: #856404;
+            border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .flip-timer.cancelled {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.cancelled .flip-front,
+        .flip-timer.cancelled .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.reject {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #721c24;
+        }
+
+        .flip-timer.reject .flip-front,
+        .flip-timer.reject .flip-back {
+            background: linear-gradient(to bottom, #f8d7da 50%, #f5c6cb 50%);
+            color: #721c24;
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+
         /* Timer separator styling */
         .timer-separator {
             font-weight: bold;
@@ -298,8 +338,7 @@
                 </form>
             </div>
         </div>
-
-
+        
         <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
@@ -310,6 +349,13 @@
                 <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
                     data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
                     aria-selected="false">in-draft</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
+                    data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
+                    aria-selected="false">
+                    <i class="fas fa-ban me-1"></i>reject orders
+                </button>
             </li>
         </ul>
 
@@ -369,6 +415,33 @@
                     </div>
                 </div>
             </div>
+            <div class="tab-pane fade" id="reject-orders-tab-pane" role="tabpanel" aria-labelledby="reject-orders-tab"
+                tabindex="0">
+                <div id="rejectOrdersContainer" class="mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div id="rejectOrdersLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading rejected orders...</p>
+                    </div>
+                </div>
+                <!-- Load More Button for Rejected Orders -->
+                <div id="loadMoreRejectOrdersContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreRejectOrdersBtn" class="btn btn-lg btn-danger px-4 me-2 border-0">
+                        <span id="loadMoreRejectOrdersText">Load More</span>
+                        <span id="loadMoreRejectOrdersSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationRejectOrdersInfo" class="mt-2 text-light small">
+                        Showing <span id="showingRejectOrdersFrom">0</span> to <span id="showingRejectOrdersTo">0</span> of <span
+                            id="totalRejectOrders">0</span> orders
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -397,21 +470,105 @@
             </div>
         </div>
     </div>
+
+    <!-- Reject Order Modal -->
+    <div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="rejectOrderModalLabel">
+                        <i class="fas fa-times me-2"></i>Reject Order
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            This action will mark the order as rejected and cannot be undone.
+                        </div>
+                    </div>
+                    
+                    <form id="rejectOrderForm">
+                        <div class="mb-3">
+                            <label for="rejectionReason" class="form-label fw-bold">
+                                Rejection Reason <span class="text-danger">*</span>
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="rejectionReason" 
+                                name="rejection_reason"
+                                rows="4" 
+                                placeholder="Please provide a detailed reason for rejecting this order..."
+                                required
+                                minlength="5"
+                            ></textarea>
+                            <div class="form-text">Minimum 5 characters required</div>
+                            <div class="invalid-feedback" id="rejectionReasonError"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+                        <i class="fas fa-check me-1"></i>Reject Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Order Confirmation Modal -->
+    <div class="modal fade" id="rejectOrderConfirmModal" tabindex="-1" aria-labelledby="rejectOrderConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="rejectOrderConfirmModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Order Rejection
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">This will mark the order as rejected. This action cannot be undone.</p>
+                    <div class="p-3 bg-danger rounded mb-3">
+                        <strong>Rejection Reason:</strong><br>
+                        <em id="confirmRejectionReason"></em>
+                    </div>
+                    <p class="mb-0">Are you sure you want to proceed?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="finalRejectBtn">
+                        <i class="fas fa-ban me-1"></i>Yes, Reject Order!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
     <script>
         let orders = [];
         let drafts = [];
+        let rejectedOrders = [];
         let currentFilters = {};
         let currentPage = 1;
         let currentDraftsPage = 1;
+        let currentRejectOrdersPage = 1;
         let hasMorePages = false;
         let hasMoreDraftsPages = false;
+        let hasMoreRejectOrdersPages = false;
         let totalOrders = 0;
         let totalDrafts = 0;
+        let totalRejectOrders = 0;
         let isLoading = false;
         let isDraftsLoading = false;
+        let isRejectOrdersLoading = false;
         let activeTab = 'in-queue';
 
         // Initialize the page
@@ -434,6 +591,13 @@
                 }
             });
 
+            document.getElementById('reject-orders-tab').addEventListener('click', function() {
+                activeTab = 'reject-orders';
+                if (rejectedOrders.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'reject-orders');
+                }
+            });
+
             // Filter form handler
             document.getElementById('filterForm').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -450,8 +614,10 @@
                 
                 if (activeTab === 'in-queue') {
                     loadOrders(filters, 1, false, 'in-queue');
-                } else {
+                } else if (activeTab === 'in-draft') {
                     loadOrders(filters, 1, false, 'in-draft');
+                } else {
+                    loadOrders(filters, 1, false, 'reject-orders');
                 }
             });
 
@@ -461,8 +627,10 @@
                 currentFilters = {};
                 if (activeTab === 'in-queue') {
                     loadOrders({}, 1, false, 'in-queue');
-                } else {
+                } else if (activeTab === 'in-draft') {
                     loadOrders({}, 1, false, 'in-draft');
+                } else {
+                    loadOrders({}, 1, false, 'reject-orders');
                 }
             });
 
@@ -478,17 +646,26 @@
                     loadOrders(currentFilters, currentDraftsPage + 1, true, 'in-draft');
                 }
             });
+
+            document.getElementById('loadMoreRejectOrdersBtn').addEventListener('click', function() {
+                if (hasMoreRejectOrdersPages && !isRejectOrdersLoading) {
+                    loadOrders(currentFilters, currentRejectOrdersPage + 1, true, 'reject-orders');
+                }
+            });
         });
 
         // Load orders data
         async function loadOrders(filters = {}, page = 1, append = false, type = 'in-queue') {
             const isLoadingDrafts = type === 'in-draft';
+            const isLoadingRejectOrders = type === 'reject-orders';
             
             try {
-                if (isLoadingDrafts ? isDraftsLoading : isLoading) return;
+                if (isLoadingDrafts ? isDraftsLoading : (isLoadingRejectOrders ? isRejectOrdersLoading : isLoading)) return;
                 
                 if (isLoadingDrafts) {
                     isDraftsLoading = true;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = true;
                 } else {
                     isLoading = true;
                 }
@@ -497,6 +674,9 @@
                     if (isLoadingDrafts) {
                         showDraftsLoading();
                         drafts = [];
+                    } else if (isLoadingRejectOrders) {
+                        showRejectOrdersLoading();
+                        rejectedOrders = [];
                     } else {
                         showLoading();
                         orders = [];
@@ -504,7 +684,7 @@
                 }
                 
                 if (append) {
-                    showLoadMoreSpinner(true, isLoadingDrafts);
+                    showLoadMoreSpinner(true, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
                 }
                 
                 const params = new URLSearchParams({
@@ -543,6 +723,21 @@
                     renderOrders(append, true);
                     updatePaginationInfo(true);
                     updateLoadMoreButton(true);
+                } else if (isLoadingRejectOrders) {
+                    if (append) {
+                        rejectedOrders = rejectedOrders.concat(newOrders);
+                    } else {
+                        rejectedOrders = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentRejectOrdersPage = pagination.current_page || 1;
+                    hasMoreRejectOrdersPages = pagination.has_more_pages || false;
+                    totalRejectOrders = pagination.total || 0;
+                    
+                    renderOrders(append, false, true);
+                    updatePaginationInfo(false, true);
+                    updateLoadMoreButton(false, true);
                 } else {
                     if (append) {
                         orders = orders.concat(newOrders);
@@ -563,17 +758,19 @@
             } catch (error) {
                 console.error('Error loading orders:', error);
                 if (!append) {
-                    showError(error.message, isLoadingDrafts);
+                    showError(error.message, isLoadingDrafts, isLoadingRejectOrders);
                 }
             } finally {
                 if (isLoadingDrafts) {
                     isDraftsLoading = false;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = false;
                 } else {
                     isLoading = false;
                 }
                 
                 if (append) {
-                    showLoadMoreSpinner(false, isLoadingDrafts);
+                    showLoadMoreSpinner(false, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
                 }
                 
                 document.getElementById('submitBtn').disabled = false;
@@ -610,18 +807,51 @@
             }
         }
 
+        // Show reject orders loading state
+        function showRejectOrdersLoading() {
+            const container = document.getElementById('rejectOrdersContainer');
+            const loadingElement = document.getElementById('rejectOrdersLoadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
         // Hide loading state
-        function hideLoading(isDrafts = false) {
-            const loadingElement = document.getElementById(isDrafts ? 'draftsLoadingState' : 'loadingState');
+        function hideLoading(isDrafts = false, isRejectOrders = false) {
+            let loadingElement;
+            if (isRejectOrders) {
+                loadingElement = document.getElementById('rejectOrdersLoadingState');
+            } else if (isDrafts) {
+                loadingElement = document.getElementById('draftsLoadingState');
+            } else {
+                loadingElement = document.getElementById('loadingState');
+            }
             if (loadingElement) {
                 loadingElement.style.display = 'none';
             }
         }
 
         // Show error message
-        function showError(message, isDrafts = false) {
-            hideLoading(isDrafts);
-            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
+        function showError(message, isDrafts = false, isRejectOrders = false) {
+            hideLoading(isDrafts, isRejectOrders);
+            let container;
+            let containerType;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                containerType = 'reject-orders';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                containerType = 'in-draft';
+            } else {
+                container = document.getElementById('ordersContainer');
+                containerType = 'in-queue';
+            }
             if (!container) return;
             
             container.style.display = 'grid';
@@ -633,18 +863,30 @@
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
-                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${isDrafts ? 'in-draft' : 'in-queue'}')">Retry</button>
+                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${containerType}')">Retry</button>
                 </div>
             `;
         }
 
         // Render orders
-        function renderOrders(append = false, isDrafts = false) {
-            const container = document.getElementById(isDrafts ? 'draftsContainer' : 'ordersContainer');
-            const ordersList = isDrafts ? drafts : orders;
+        function renderOrders(append = false, isDrafts = false, isRejectOrders = false) {
+            let container, ordersList, containerLabel;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                ordersList = rejectedOrders;
+                containerLabel = 'Rejected ';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                ordersList = drafts;
+                containerLabel = 'Draft ';
+            } else {
+                container = document.getElementById('ordersContainer');
+                ordersList = orders;
+                containerLabel = '';
+            }
             
             if (!append) {
-                hideLoading(isDrafts);
+                hideLoading(isDrafts, isRejectOrders);
             }
             
             if (!container) return;
@@ -653,8 +895,8 @@
                 container.innerHTML = `
                     <div class="empty-state" style="grid-column: 1 / -1;">
                         <i class="fas fa-inbox"></i>
-                        <h5>No ${isDrafts ? 'Draft ' : ''}Orders Found</h5>
-                        <p>There are no ${isDrafts ? 'draft ' : ''}orders to display.</p>
+                        <h5>No ${containerLabel}Orders Found</h5>
+                        <p>There are no ${containerLabel.toLowerCase()}orders to display.</p>
                     </div>
                 `;
                 return;
@@ -667,11 +909,18 @@
                 container.style.gap = '30px';
             }
             
-            const startIndex = append ? (isDrafts ? drafts.length - (drafts.length - ordersList.length) : orders.length - (orders.length - ordersList.length)) : 0;
+            let startIndex;
+            if (isRejectOrders) {
+                startIndex = append ? (rejectedOrders.length - (rejectedOrders.length - ordersList.length)) : 0;
+            } else if (isDrafts) {
+                startIndex = append ? (drafts.length - (drafts.length - ordersList.length)) : 0;
+            } else {
+                startIndex = append ? (orders.length - (orders.length - ordersList.length)) : 0;
+            }
             const ordersToRender = append ? ordersList.slice(startIndex) : ordersList;
             
             ordersToRender.forEach((order, index) => {
-                const orderCard = createOrderCard(order, isDrafts, startIndex + index);
+                const orderCard = createOrderCard(order, isDrafts, startIndex + index, isRejectOrders);
                 container.appendChild(orderCard);
             });
             
@@ -682,13 +931,29 @@
         }
 
         // Create order card
-        function createOrderCard(order, isDrafts, index) {
+        function createOrderCard(order, isDrafts, index, isRejectOrders = false) {
             const statusConfig = getStatusConfig(order.status);
-            const borderColor = isDrafts ? 'rgb(0, 221, 255)' : statusConfig.borderColor;
-            const statusClass = isDrafts ? 'text-info' : statusConfig.statusClass;
-            const statusIcon = isDrafts ? 'fa-solid fa-file-lines' : statusConfig.statusIcon;
-            const statusText = isDrafts ? 'Draft' : (order.status || 'Pending');
-            const lineColor = isDrafts ? 'rgb(0, 242, 255)' : statusConfig.lineColor;
+            let borderColor, statusClass, statusIcon, statusText, lineColor;
+            
+            if (isRejectOrders) {
+                borderColor = '#dc3545';
+                statusClass = 'text-danger';
+                statusIcon = 'fa-solid fa-ban';
+                statusText = 'Rejected';
+                lineColor = '#dc3545';
+            } else if (isDrafts) {
+                borderColor = 'rgb(0, 221, 255)';
+                statusClass = 'text-info';
+                statusIcon = 'fa-solid fa-file-lines';
+                statusText = 'Draft';
+                lineColor = 'rgb(0, 242, 255)';
+            } else {
+                borderColor = statusConfig.borderColor;
+                statusClass = statusConfig.statusClass;
+                statusIcon = statusConfig.statusIcon;
+                statusText = order.status || 'Pending';
+                lineColor = statusConfig.lineColor;
+            }
             
             const cardElement = document.createElement('div');
             cardElement.className = 'card p-3 overflow-hidden';
@@ -781,10 +1046,16 @@
                     statusIcon: 'fa-solid fa-check',
                     lineColor: '#28a745'
                 },
-                'cancelled': {
+                'rejected': {
                     borderColor: '#dc3545',
                     statusClass: 'text-danger',
                     statusIcon: 'fa-solid fa-times',
+                    lineColor: '#dc3545'
+                },
+                'reject': {
+                    borderColor: '#dc3545',
+                    statusClass: 'text-danger',
+                    statusIcon: 'fa-solid fa-ban',
                     lineColor: '#dc3545'
                 },
                 'expired': {
@@ -809,8 +1080,18 @@
         }
 
         // Update pagination info
-        function updatePaginationInfo(isDrafts = false) {
-            if (isDrafts) {
+        function updatePaginationInfo(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const showingFrom = document.getElementById('showingRejectOrdersFrom');
+                const showingTo = document.getElementById('showingRejectOrdersTo');
+                const totalOrdersEl = document.getElementById('totalRejectOrders');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = rejectedOrders.length > 0 ? 1 : 0;
+                    showingTo.textContent = rejectedOrders.length;
+                    totalOrdersEl.textContent = totalRejectOrders;
+                }
+            } else if (isDrafts) {
                 const showingFrom = document.getElementById('showingDraftsFrom');
                 const showingTo = document.getElementById('showingDraftsTo');
                 const totalOrdersEl = document.getElementById('totalDrafts');
@@ -834,8 +1115,13 @@
         }
 
         // Update load more button
-        function updateLoadMoreButton(isDrafts = false) {
-            if (isDrafts) {
+        function updateLoadMoreButton(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const container = document.getElementById('loadMoreRejectOrdersContainer');
+                if (container) {
+                    container.style.display = hasMoreRejectOrdersPages ? 'block' : 'none';
+                }
+            } else if (isDrafts) {
                 const container = document.getElementById('loadMoreDraftsContainer');
                 if (container) {
                     container.style.display = hasMoreDraftsPages ? 'block' : 'none';
@@ -849,27 +1135,27 @@
         }
 
         // Show load more spinner
-        function showLoadMoreSpinner(show, isDrafts = false) {
-            if (isDrafts) {
-                const button = document.getElementById('loadMoreDraftsBtn');
-                const text = document.getElementById('loadMoreDraftsText');
-                const spinner = document.getElementById('loadMoreDraftsSpinner');
-                
-                if (button && text && spinner) {
-                    button.disabled = show;
-                    text.textContent = show ? 'Loading...' : 'Load More';
-                    spinner.style.display = show ? 'inline-block' : 'none';
-                }
+        function showLoadMoreSpinner(show, type = 'orders') {
+            let button, text, spinner;
+            
+            if (type === 'reject-orders') {
+                button = document.getElementById('loadMoreRejectOrdersBtn');
+                text = document.getElementById('loadMoreRejectOrdersText');
+                spinner = document.getElementById('loadMoreRejectOrdersSpinner');
+            } else if (type === 'drafts') {
+                button = document.getElementById('loadMoreDraftsBtn');
+                text = document.getElementById('loadMoreDraftsText');
+                spinner = document.getElementById('loadMoreDraftsSpinner');
             } else {
-                const button = document.getElementById('loadMoreBtn');
-                const text = document.getElementById('loadMoreText');
-                const spinner = document.getElementById('loadMoreSpinner');
-                
-                if (button && text && spinner) {
-                    button.disabled = show;
-                    text.textContent = show ? 'Loading...' : 'Load More';
-                    spinner.style.display = show ? 'inline-block' : 'none';
-                }
+                button = document.getElementById('loadMoreBtn');
+                text = document.getElementById('loadMoreText');
+                spinner = document.getElementById('loadMoreSpinner');
+            }
+            
+            if (button && text && spinner) {
+                button.disabled = show;
+                text.textContent = show ? 'Loading...' : 'Load More';
+                spinner.style.display = show ? 'inline-block' : 'none';
             }
         }
 
@@ -954,11 +1240,14 @@
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
-                        <div>
+                        
+                        <div class="d-flex gap-2">
                             ${(() => {
                                 const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
+                                let buttonsHtml = '';
+                                
                                 if (unallocatedSplits.length > 0) {
-                                    return `
+                                    buttonsHtml += `
                                         <button class="btn btn-success btn-sm px-3 py-2" 
                                                 onclick="assignOrderToMe(${orderInfo.id})"
                                                 id="assignOrderBtn"
@@ -969,13 +1258,28 @@
                                         </button>
                                     `;
                                 } else {
-                                    return `
+                                    buttonsHtml += `
                                         <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
                                     `;
                                 }
+                                
+                                // Add reject button if order is not already rejected or completed
+                                if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
+                                    buttonsHtml += `
+                                        <button class="btn btn-danger btn-sm px-3 py-2" 
+                                                onclick="rejectOrder(${orderInfo.id})"
+                                                id="rejectOrderBtn"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                                            Reject Order
+                                        </button>
+                                    `;
+                                }
+                                
+                                return buttonsHtml;
                             })()}
                         </div>
                     </div>
@@ -1173,7 +1477,7 @@
                 // Start timer for the order displayed in the offcanvas
                 const timerId = `flip-timer-${orderInfo.order_id}-0`;
                 const timerElement = document.getElementById(timerId);
-                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled') {
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject') {
                     // Use the same timer starting logic as in the main cards
                     startSingleTimer(orderInfo, false, 0);
                 }
@@ -1292,30 +1596,62 @@
             const timer = setInterval(update, 1000);
         }
 
-        // Calculate timer for order (12-hour countdown)
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
-            // Use current real-time date for dynamic timer updates
+        // Calculate timer for order (12-hour countdown) with pause functionality
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
-            
-            // Use timer_started_at if available, otherwise fall back to created_at
+
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
-            
-            // If order is completed, timer is paused - show the time it took to complete
+            const twelveHours = 12 * 60 * 60 * 1000;
+
+            // ⏸ If paused OR cancelled OR rejected, treat as paused
+            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+                const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+                const timeElapsedBeforePause = pausedTime - startTime;
+                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+                const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+                const label = (status === 'cancelled' || status === 'reject') ? '' : '';
+                const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+
+                if (timeDiffAtPause > 0) {
+                    // Was overdue
+                    return {
+                        display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                        isNegative: true,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} negative`
+                    };
+                } else {
+                    // Still had time left
+                    return {
+                        display: formatTimeDuration(-timeDiffAtPause) + label,
+                        isNegative: false,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} positive`
+                    };
+                }
+            }
+
+            // ✅ Completed (with timestamp)
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - startTime;
-                const isOverdue = completionDate > twelveHoursLater;
-                
+                const totalElapsedTime = completionDate - startTime;
+                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+                const isOverdue = effectiveWorkingTime > twelveHours;
+
                 return {
-                    display: formatTimeDuration(timeTaken),
+                    display: formatTimeDuration(effectiveWorkingTime),
                     isNegative: isOverdue,
                     isCompleted: true,
                     class: 'completed'
                 };
             }
-            
-            // If order is completed but no completion date, just show completed
+
+            // ✅ Completed (no timestamp)
             if (status === 'completed') {
                 return {
                     display: 'Completed',
@@ -1324,14 +1660,15 @@
                     class: 'completed'
                 };
             }
-            
-            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-            // - Counts down from 12:00:00 to 00:00:00
-            // - After reaching zero, continues in negative time (overtime)
-            const timeDiff = now - twelveHoursLater;
-            
+
+            // ⏱ Active countdown or overtime
+            const totalElapsedTime = now - startTime;
+            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+            const timeDiff = now - effectiveDeadline;
+
             if (timeDiff > 0) {
-                // Order is overdue (negative time - overtime)
+                // Overtime
                 return {
                     display: '-' + formatTimeDuration(timeDiff),
                     isNegative: true,
@@ -1339,7 +1676,7 @@
                     class: 'negative'
                 };
             } else {
-                // Order still has time remaining (countdown)
+                // Still in time
                 return {
                     display: formatTimeDuration(-timeDiff),
                     isNegative: false,
@@ -1366,15 +1703,41 @@
 
         // Create timer badge HTML
         function createTimerBadge(order, isDrafts, index) {
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-            
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
+
+            // Determine the icon class based on status and timer
+            let iconClass = '';
+            if (order.status === 'cancelled') {
+                iconClass = 'fas fa-exclamation-triangle'; // warning icon
+            } else if (order.status === 'reject') {
+                iconClass = 'fas fa-ban'; // ban icon for rejected
+            } else if (timer.isCompleted) {
+                iconClass = 'fas fa-check';
+            } else if (timer.isPaused) {
+                iconClass = 'fas fa-pause';
+            } else {
+                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+            }
+
             // Create tooltip text
             let tooltip = '';
-            if (timer.isCompleted) {
+            if (order.status === 'cancelled') {
+                tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (order.status === 'reject') {
+                tooltip = `Order was rejected on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (timer.isCompleted) {
                 tooltip = order.completed_at 
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
+            } else if (timer.isPaused) {
+                tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(order.timer_paused_at)}`;
             } else if (timer.isNegative) {
                 tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
             } else {
@@ -1406,6 +1769,8 @@
                      data-status="${order.status}" 
                      data-completed-at="${order.completed_at || ''}"
                      data-timer-started-at="${order.timer_started_at || ''}"
+                     data-timer-paused-at="${order.timer_paused_at || ''}"
+                     data-total-paused-seconds="${order.total_paused_seconds || 0}"
                      data-tooltip="${tooltip}"
                      title="${tooltip}"
                      style="gap: 4px; align-items: center;">
@@ -1456,16 +1821,30 @@
         // Start timers for all rendered orders
         function startTimersForOrders(ordersList, isDrafts, startIndex) {
             ordersList.forEach((order, index) => {
-                if (order.status !== 'completed' && order.status !== 'cancelled') {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject') {
                     const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
-                    const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                    const timer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
                     
                     if (!timer.isCompleted) {
                         updateTimerDisplay(timerId, timer);
                         
                         // Set up interval to update timer every second
                         setInterval(() => {
-                            const updatedTimer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                            const updatedTimer = calculateOrderTimer(
+                                order.created_at, 
+                                order.status, 
+                                order.completed_at, 
+                                order.timer_started_at, 
+                                order.timer_paused_at, 
+                                order.total_paused_seconds
+                            );
                             updateTimerDisplay(timerId, updatedTimer);
                         }, 1000);
                     }
@@ -1475,17 +1854,31 @@
 
         // Start timer for a single order (used in offcanvas)
         function startSingleTimer(order, isDrafts, index) {
-            if (order.status === 'completed' || order.status === 'cancelled') return;
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject') return;
             
             const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
             
             if (!timer.isCompleted) {
                 updateTimerDisplay(timerId, timer);
                 
                 // Set up interval to update timer every second
                 setInterval(() => {
-                    const updatedTimer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                    const updatedTimer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
                     updateTimerDisplay(timerId, updatedTimer);
                 }, 1000);
             }
@@ -1723,6 +2116,7 @@
         // Initialize chevron states for all splits
         function initializeChevronStates() {
             const allIcons = document.querySelectorAll('[id^="icon-split-"]');
+           
             allIcons.forEach(icon => {
                 const contentId = icon.id.replace('icon-', '');
                 const content = document.getElementById(contentId);
@@ -1878,5 +2272,222 @@
                 }
             }
         }
+
+        // Global variable to store current order ID for rejection
+        let currentOrderIdForRejection = null;
+
+        // Function to reject an order
+        function rejectOrder(orderId) {
+            // Store the order ID globally
+            currentOrderIdForRejection = orderId;
+            
+            // Clear previous form data
+            const rejectionReasonTextarea = document.getElementById('rejectionReason');
+            const rejectionReasonError = document.getElementById('rejectionReasonError');
+            const rejectOrderForm = document.getElementById('rejectOrderForm');
+            
+            rejectionReasonTextarea.value = '';
+            rejectionReasonTextarea.classList.remove('is-invalid');
+            rejectionReasonError.textContent = '';
+            rejectOrderForm.classList.remove('was-validated');
+            
+            // Show the rejection reason modal
+            const rejectModal = new bootstrap.Modal(document.getElementById('rejectOrderModal'));
+            rejectModal.show();
+        }
+
+        // Handle confirm reject button click in the first modal
+        document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+            const rejectionReason = document.getElementById('rejectionReason').value.trim();
+            const rejectionReasonTextarea = document.getElementById('rejectionReason');
+            const rejectionReasonError = document.getElementById('rejectionReasonError');
+            const rejectOrderForm = document.getElementById('rejectOrderForm');
+            
+            // Reset previous validation state
+            rejectionReasonTextarea.classList.remove('is-invalid');
+            rejectionReasonError.textContent = '';
+            rejectOrderForm.classList.remove('was-validated');
+            
+            // Validate rejection reason
+            if (!rejectionReason) {
+                rejectionReasonTextarea.classList.add('is-invalid');
+                rejectionReasonError.textContent = 'Please provide a reason for rejection';
+                rejectOrderForm.classList.add('was-validated');
+                return;
+            }
+            
+            if (rejectionReason.length < 5) {
+                rejectionReasonTextarea.classList.add('is-invalid');
+                rejectionReasonError.textContent = 'Reason must be at least 5 characters long';
+                rejectOrderForm.classList.add('was-validated');
+                return;
+            }
+            
+            // Show rejection reason in confirmation modal
+            document.getElementById('confirmRejectionReason').textContent = rejectionReason;
+            
+            // Hide first modal and show confirmation modal
+            const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderModal'));
+            rejectModal.hide();
+            
+            // Wait a bit for the first modal to hide, then show confirmation modal
+            setTimeout(() => {
+                const confirmModal = new bootstrap.Modal(document.getElementById('rejectOrderConfirmModal'));
+                confirmModal.show();
+            }, 300);
+        });
+
+        // Handle final reject button click in the confirmation modal
+        document.getElementById('finalRejectBtn').addEventListener('click', async function() {
+            const rejectionReason = document.getElementById('rejectionReason').value.trim();
+            const finalRejectBtn = this;
+            
+            try {
+                // Hide confirmation modal
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderConfirmModal'));
+                confirmModal.hide();
+                
+                // Show loading state on the final reject button
+                finalRejectBtn.disabled = true;
+                finalRejectBtn.innerHTML = `
+                    <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 16px; height: 16px;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Rejecting...
+                `;
+                
+                // Show loading state on the reject order button in offcanvas
+                const button = document.getElementById('rejectOrderBtn');
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Rejecting...
+                    `;
+                }
+
+                // Show SweetAlert2 loading dialog as well
+                Swal.fire({
+                    title: 'Rejecting Order...',
+                    text: 'Please wait while we reject the order.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make API request to reject the order with reason
+                const response = await fetch(`/admin/order_queue/${currentOrderIdForRejection}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: rejectionReason
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to reject order');
+                }
+
+                const data = await response.json();
+                
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Order rejected successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Update the button to show rejected state
+                if (button) {
+                    button.outerHTML = `
+                        <span class="badge bg-danger px-3 py-2" style="font-size: 11px;">
+                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                            Order Rejected
+                        </span>
+                    `;
+                }
+                
+                // Refresh the order list to reflect changes
+                setTimeout(() => {
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error rejecting order:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to reject order. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                
+                // Restore button states
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            } finally {
+                // Reset final reject button state
+                finalRejectBtn.disabled = false;
+                finalRejectBtn.innerHTML = `
+                    <i class="fas fa-ban me-1"></i>Yes, Reject Order!
+                `;
+                
+                // Clear the current order ID
+                currentOrderIdForRejection = null;
+            }
+        });
+
+        // Handle modal hide events to reset button states if needed
+        document.getElementById('rejectOrderModal').addEventListener('hidden.bs.modal', function() {
+            // Reset button state if modal is closed without completing the action
+            if (currentOrderIdForRejection) {
+                const button = document.getElementById('rejectOrderBtn');
+                if (button && button.disabled) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            }
+        });
+
+        document.getElementById('rejectOrderConfirmModal').addEventListener('hidden.bs.modal', function() {
+            // Reset button state if modal is closed without completing the action
+            if (currentOrderIdForRejection) {
+                const button = document.getElementById('rejectOrderBtn');
+                if (button && button.disabled) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        Reject Order
+                    `;
+                }
+            }
+        });
     </script>
 @endpush
