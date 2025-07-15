@@ -2,6 +2,7 @@
 
 @section('title', 'Orders-Queue')
 @push('styles')
+
     <style>
         input,
         .form-control,
@@ -170,6 +171,45 @@
             background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
             color: #495057;
             border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.paused {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #856404;
+        }
+
+        .flip-timer.paused .flip-front,
+        .flip-timer.paused .flip-back {
+            background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
+            color: #856404;
+            border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .flip-timer.cancelled {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.cancelled .flip-front,
+        .flip-timer.cancelled .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.reject {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #721c24;
+        }
+
+        .flip-timer.reject .flip-front,
+        .flip-timer.reject .flip-back {
+            background: linear-gradient(to bottom, #f8d7da 50%, #f5c6cb 50%);
+            color: #721c24;
+            border-color: rgba(220, 53, 69, 0.2);
         }
 
         /* Timer separator styling */
@@ -1006,13 +1046,13 @@
                     statusIcon: 'fa-solid fa-check',
                     lineColor: '#28a745'
                 },
-                'cancelled': {
+                'rejected': {
                     borderColor: '#dc3545',
                     statusClass: 'text-danger',
                     statusIcon: 'fa-solid fa-times',
                     lineColor: '#dc3545'
                 },
-                'rejected': {
+                'reject': {
                     borderColor: '#dc3545',
                     statusClass: 'text-danger',
                     statusIcon: 'fa-solid fa-ban',
@@ -1437,7 +1477,7 @@
                 // Start timer for the order displayed in the offcanvas
                 const timerId = `flip-timer-${orderInfo.order_id}-0`;
                 const timerElement = document.getElementById(timerId);
-                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled') {
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject') {
                     // Use the same timer starting logic as in the main cards
                     startSingleTimer(orderInfo, false, 0);
                 }
@@ -1556,30 +1596,62 @@
             const timer = setInterval(update, 1000);
         }
 
-        // Calculate timer for order (12-hour countdown)
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
-            // Use current real-time date for dynamic timer updates
+        // Calculate timer for order (12-hour countdown) with pause functionality
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
-            
-            // Use timer_started_at if available, otherwise fall back to created_at
+
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
-            
-            // If order is completed, timer is paused - show the time it took to complete
+            const twelveHours = 12 * 60 * 60 * 1000;
+
+            // ⏸ If paused OR cancelled OR rejected, treat as paused
+            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+                const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+                const timeElapsedBeforePause = pausedTime - startTime;
+                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+                const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+                const label = (status === 'cancelled' || status === 'reject') ? '' : '';
+                const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+
+                if (timeDiffAtPause > 0) {
+                    // Was overdue
+                    return {
+                        display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                        isNegative: true,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} negative`
+                    };
+                } else {
+                    // Still had time left
+                    return {
+                        display: formatTimeDuration(-timeDiffAtPause) + label,
+                        isNegative: false,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} positive`
+                    };
+                }
+            }
+
+            // ✅ Completed (with timestamp)
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - startTime;
-                const isOverdue = completionDate > twelveHoursLater;
-                
+                const totalElapsedTime = completionDate - startTime;
+                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+                const isOverdue = effectiveWorkingTime > twelveHours;
+
                 return {
-                    display: formatTimeDuration(timeTaken),
+                    display: formatTimeDuration(effectiveWorkingTime),
                     isNegative: isOverdue,
                     isCompleted: true,
                     class: 'completed'
                 };
             }
-            
-            // If order is completed but no completion date, just show completed
+
+            // ✅ Completed (no timestamp)
             if (status === 'completed') {
                 return {
                     display: 'Completed',
@@ -1588,14 +1660,15 @@
                     class: 'completed'
                 };
             }
-            
-            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-            // - Counts down from 12:00:00 to 00:00:00
-            // - After reaching zero, continues in negative time (overtime)
-            const timeDiff = now - twelveHoursLater;
-            
+
+            // ⏱ Active countdown or overtime
+            const totalElapsedTime = now - startTime;
+            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+            const timeDiff = now - effectiveDeadline;
+
             if (timeDiff > 0) {
-                // Order is overdue (negative time - overtime)
+                // Overtime
                 return {
                     display: '-' + formatTimeDuration(timeDiff),
                     isNegative: true,
@@ -1603,7 +1676,7 @@
                     class: 'negative'
                 };
             } else {
-                // Order still has time remaining (countdown)
+                // Still in time
                 return {
                     display: formatTimeDuration(-timeDiff),
                     isNegative: false,
@@ -1630,15 +1703,41 @@
 
         // Create timer badge HTML
         function createTimerBadge(order, isDrafts, index) {
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-            
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
+
+            // Determine the icon class based on status and timer
+            let iconClass = '';
+            if (order.status === 'cancelled') {
+                iconClass = 'fas fa-exclamation-triangle'; // warning icon
+            } else if (order.status === 'reject') {
+                iconClass = 'fas fa-ban'; // ban icon for rejected
+            } else if (timer.isCompleted) {
+                iconClass = 'fas fa-check';
+            } else if (timer.isPaused) {
+                iconClass = 'fas fa-pause';
+            } else {
+                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+            }
+
             // Create tooltip text
             let tooltip = '';
-            if (timer.isCompleted) {
+            if (order.status === 'cancelled') {
+                tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (order.status === 'reject') {
+                tooltip = `Order was rejected on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (timer.isCompleted) {
                 tooltip = order.completed_at 
                     ? `Order completed on ${formatDate(order.completed_at)}` 
                     : 'Order is completed';
+            } else if (timer.isPaused) {
+                tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(order.timer_paused_at)}`;
             } else if (timer.isNegative) {
                 tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
             } else {
@@ -1670,6 +1769,8 @@
                      data-status="${order.status}" 
                      data-completed-at="${order.completed_at || ''}"
                      data-timer-started-at="${order.timer_started_at || ''}"
+                     data-timer-paused-at="${order.timer_paused_at || ''}"
+                     data-total-paused-seconds="${order.total_paused_seconds || 0}"
                      data-tooltip="${tooltip}"
                      title="${tooltip}"
                      style="gap: 4px; align-items: center;">
@@ -1720,16 +1821,30 @@
         // Start timers for all rendered orders
         function startTimersForOrders(ordersList, isDrafts, startIndex) {
             ordersList.forEach((order, index) => {
-                if (order.status !== 'completed' && order.status !== 'cancelled') {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject') {
                     const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
-                    const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                    const timer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
                     
                     if (!timer.isCompleted) {
                         updateTimerDisplay(timerId, timer);
                         
                         // Set up interval to update timer every second
                         setInterval(() => {
-                            const updatedTimer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                            const updatedTimer = calculateOrderTimer(
+                                order.created_at, 
+                                order.status, 
+                                order.completed_at, 
+                                order.timer_started_at, 
+                                order.timer_paused_at, 
+                                order.total_paused_seconds
+                            );
                             updateTimerDisplay(timerId, updatedTimer);
                         }, 1000);
                     }
@@ -1739,17 +1854,31 @@
 
         // Start timer for a single order (used in offcanvas)
         function startSingleTimer(order, isDrafts, index) {
-            if (order.status === 'completed' || order.status === 'cancelled') return;
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject') return;
             
             const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
             
             if (!timer.isCompleted) {
                 updateTimerDisplay(timerId, timer);
                 
                 // Set up interval to update timer every second
                 setInterval(() => {
-                    const updatedTimer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
+                    const updatedTimer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
                     updateTimerDisplay(timerId, updatedTimer);
                 }, 1000);
             }
