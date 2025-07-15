@@ -1,8 +1,8 @@
 @extends('contractor.layouts.app')
 
-@section('title', 'Orders')
-
+@section('title', 'Orders-Queue')
 @push('styles')
+
     <style>
         input,
         .form-control,
@@ -17,6 +17,7 @@
         .total {
             color: var(--second-primary);
         }
+
 
         .used {
             color: #43C95C;
@@ -61,438 +62,224 @@
         .offcanvas-backdrop {
             transition: opacity 0.15s linear !important;
         }
-        
+
         .offcanvas-backdrop.fade {
             opacity: 0;
         }
-        
+
         .offcanvas-backdrop.show {
             opacity: 0.5;
         }
-        
+
         /* Ensure body doesn't keep backdrop classes */
         body:not(.offcanvas-open) {
             overflow: visible !important;
             padding-right: 0 !important;
         }
-          
+
         /* Fix any remaining backdrop elements */
         .modal-backdrop,
         .offcanvas-backdrop.fade:not(.show) {
             display: none !important;
         }
 
-        /* Domain badge styling */
-        /* .domain-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            margin: 0.125rem;
-            display: inline-block;
+        .flip-card {
+            position: relative;
+            width: 15px;
+            height: 15px;
+            perspective: 1000px;
+            font-family: "Space Grotesk";
+        }
+
+        .flip-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .flip-front,
+        .flip-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* border: 1px solid #aaa; */
+        }
+
+        .flip-front {
+            z-index: 2;
+        }
+
+        .flip-back {
+            transform: rotateX(180deg);
+        }
+
+        /* Flip timer container styles */
+        .flip-timer {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-family: "Space Grotesk", "Courier New", monospace;
+            font-size: 12px;
+            padding: 4px 8px;
             transition: all 0.3s ease;
-        } */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(2px);
+        }
 
-        /* .domain-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        } */
+        .flip-timer.positive {
+            background: transparent;
+            color: #28a745;
+        }
 
-        /* Order card styling */
-        .order-card {
+        .flip-timer.positive .flip-front,
+        .flip-timer.positive .flip-back {
+            color: #155724;
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+
+        .flip-timer.negative {
+            background: transparent;
+            color: #dc3545;
+        }
+
+        .flip-timer.negative .flip-front,
+        .flip-timer.negative .flip-back {
+            color: #dc3545;
+            background-color: rgba(255, 0, 0, 0.16);
+            border-color: rgb(220, 53, 70);
+        }
+
+        .flip-timer.completed {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.completed .flip-front,
+        .flip-timer.completed .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.paused {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #856404;
+        }
+
+        .flip-timer.paused .flip-front,
+        .flip-timer.paused .flip-back {
+            background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
+            color: #856404;
+            border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .flip-timer.cancelled {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.cancelled .flip-front,
+        .flip-timer.cancelled .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
+        .flip-timer.reject {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #721c24;
+        }
+
+        .flip-timer.reject .flip-front,
+        .flip-timer.reject .flip-back {
+            background: linear-gradient(to bottom, #f8d7da 50%, #f5c6cb 50%);
+            color: #721c24;
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+
+        /* Timer separator styling */
+        .timer-separator {
+            font-weight: bold;
+            margin: 0 2px;
+            opacity: 0.7;
+            font-size: 11px;
+        }
+
+        /* Timer icon styling */
+        .timer-icon {
+            font-size: 11px;
+            margin-right: 4px;
+        }
+
+        .card-draft {
+            background-color: rgba(0, 225, 255, 0.037);
+        }
+
+        .domain-split-container {
             transition: all 0.3s ease;
-            border: 1px solid rgba(140, 140, 140, 0.362);
         }
 
-        .order-card:hover {
-            /* transform: translateY(-2px); */
-            /* box-shadow: 0 4px 12px rgba(0,0,0,0.15); */
+        .split-header {
+            transition: all 0.2s ease;
         }
 
-        /* Enhanced stat boxes hover effects */
-        .order-card .col-6 > div {
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .split-header:hover {
+            /* background-color: var(--second-primary) !important; */
         }
 
-        .order-card .col-6 > div:hover {
-            /* transform: translateY(-1px); */
-            /* box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-color: rgba(255, 255, 255, 0.3) !important; */
-        }
-
-        /* Icon animations */
-        .order-card i {
-            transition: all 0.3s ease;
-        }
-
-        .order-card:hover i {
-            transform: scale(1.1);
-        }
-
-        /* Status badge enhancement */
-        .order-card .badge {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Button enhancement */
-        .order-card button {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .order-card button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-        }
-
-        /* Split content animations */
-        .collapse {
+        .split-content {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .split-content.show {
+            display: block !important;
+        }
+
+        .transition-transform {
+            transition: transform 0.3s ease;
+        }
+
+        .domain-badge:hover {
+            background-color: var(--second-primary) !important;
+            transform: scale(1.05);
+        }
+
+        /* Collapse animation styles */
+        .collapse {
+            transition: height 0.35s ease, opacity 0.35s ease;
         }
 
         .collapse:not(.show) {
+            height: 0 !important;
             opacity: 0;
-            transform: translateY(-10px);
         }
 
         .collapse.show {
+            height: auto !important;
             opacity: 1;
-            transform: translateY(0);
-            animation: splitFadeIn 0.4s ease-out;
         }
-
-        .collapse.collapsing {
-            opacity: 0.5;
-            transform: translateY(-5px);
-        }
-
-        /* Split fade-in animation */
-        /* @keyframes splitFadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-15px) scale(0.98);
-            }
-
-            50% {
-                opacity: 0.7;
-                transform: translateY(-5px) scale(0.99);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        @keyframes domainFadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-10px) scale(0.8);
-            }
-
-            50% {
-                opacity: 0.7;
-                transform: translateY(-2px) scale(0.95);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        @keyframes toastSlideIn {
-            0% {
-                opacity: 0;
-                transform: translateX(100%) scale(0.8);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        } */
-
-        .transition-transform {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .domain-badge {
-            will-change: transform, box-shadow;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-
-        /* .domain-badge:hover {
-            transform: translateY(-3px) scale(1.08) !important;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
-            filter: brightness(1.1);
-        } */
-
-        .split-container {
-            transition: all 0.3s ease;
-        }
-
-        .split-container.expanding {
-            animation: splitExpand 0.4s ease-out;
-        }
-
-        /* @keyframes splitExpand {
-            0% {
-                transform: scale(0.98);
-            }
-            50% {
-                transform: scale(1.02);
-            }
-            100% {
-                transform: scale(1);
-            }
-        } */
-
-
-
-
-
-
-
-
-
-
-        .anim_card {
-    background-color: var(--secondary-color);
-    color: var(--light-color);
-    border: 1px solid #99999962;
-    border-radius: 8px;
-    position: relative;
-    opacity: 1;
-}
-.anim_card .order_detail {
-    width: 100%;
-    height: 14rem;
-    overflow: hidden;
-    border: 1px solid #86868654
-}
-.anim_card .order_detail .card_content {
-    width: 100%;
-    transition: .5s;
-}
-
-.card_content {
-    transform: translateX(30%);
-}
-
-.anim_card:hover .order_detail .card_content {
-    opacity: .9;
-    transform: translateX(0%);
-}
-
-.anim_card .flip_details {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--second-primary);
-    border-radius: 10px;
-    transition: transform 0.5s ease, box-shadow 0.5s ease;
-    transform-origin: left;
-    transform: perspective(2000px) rotateY(0deg);
-    z-index: 2;
-}
-
-.anim_card .flip_details::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: -5px;
-    width: 0px;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.602); 
-    border-radius: 0 5px 5px 0;
-    transition: width 0.3s ease;
-}
-
-.anim_card:hover .flip_details {
-    transform: perspective(2000px) rotateY(-91deg);
-    box-shadow: rgba(255, 255, 255, 0.4) 0px 2px 4px, 
-                rgba(255, 255, 255, 0.3) 0px 7px 13px -3px, 
-                rgba(255, 255, 255, 0.2) 0px -3px 0px inset;
-pointer-events: none
-}
-
-.anim_card:hover .flip_details::after {
-    width: 102px;
-    background-color: #9a9a9a81;
-    pointer-events: none;
-}
-
-.anim_card .flip_details .center {
-    padding: 20px;
-    background-color: var(--secondary-color);
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
     </style>
-
-
-<style>
-    .flip-card {
-      position: relative;
-      width: 16px;
-      height: 18px;
-      perspective: 1000px;
-      font-family: "Space Grotesk", "Courier New", monospace;
-      margin: 0 1px;
-    }
-    .flip-inner {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      transform-style: preserve-3d;
-      transition: transform 0.6s ease-in-out;
-    }
-    
-    .flip-front,
-    .flip-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      background: linear-gradient(to bottom, #f8f9fa 50%, #e9ecef 50%);
-      border-radius: 3px;
-      font-size: 11px;
-      font-weight: bold;
-      color: #495057;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ced4da;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .flip-front {
-      z-index: 2;
-    }
-    
-    .flip-back {
-      transform: rotateX(180deg);
-    }
-    
-    /* Flip timer container styles */
-    .flip-timer {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      font-family: "Space Grotesk", "Courier New", monospace;
-      font-size: 12px;
-      padding: 4px 8px;
-      /* border-radius: 6px; */
-      /* background: rgba(248, 249, 250, 0.8); */
-      /* border: 1px solid rgba(206, 212, 218, 0.5); */
-      transition: all 0.3s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(2px);
-    }
-    
-    .flip-timer:hover {
-      /* transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); */
-    }
-    
-    .flip-timer.positive {
-      /* background: rgba(40, 167, 69, 0.1); */
-      background: transparent;
-      /* border-color: rgba(40, 167, 69, 0.3); */
-      color: #28a745;
-    }
-    
-    .flip-timer.positive .flip-front,
-    .flip-timer.positive .flip-back {
-      /* background: linear-gradient(to bottom, #d4edda 50%, #c3e6cb 50%); */
-      color: #155724;
-      border-color: rgba(40, 167, 69, 0.2);
-    }
-    
-    .flip-timer.negative {
-      background: transparent;
-      /* border-color: rgba(220, 53, 69, 0.3); */
-      color: #dc3545;
-      /* animation: pulse-red 2s infinite; */
-    }
-    
-    .flip-timer.negative .flip-front,
-    .flip-timer.negative .flip-back {
-        color: #dc3545;
-      background-color:rgba(255, 0, 0, 0.16);
-      border-color: rgb(220, 53, 70);
-    }
-    
-    .flip-timer.completed {
-      background: rgba(108, 117, 125, 0.1);
-      border-color: rgba(108, 117, 125, 0.3);
-      color: #6c757d;
-    }
-    
-    .flip-timer.completed .flip-front,
-    .flip-timer.completed .flip-back {
-      background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
-      color: #495057;
-      border-color: rgba(108, 117, 125, 0.2);
-    }
-    
-    /* Timer separator styling */
-    .timer-separator {
-      font-weight: bold;
-      margin: 0 2px;
-      opacity: 0.7;
-      font-size: 11px;
-    }
-    
-    /* Timer icon styling */
-    .timer-icon {
-      font-size: 11px;
-      opacity: 0.8;
-      margin-right: 4px;
-    }
-    
-    /* Negative sign styling */
-    .negative-sign {
-      font-weight: bold;
-      margin-right: 2px;
-      font-size: 12px;
-    }
-    
-    /* Pulse animation for overdue timers */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
-      }
-      50% {
-        box-shadow: 0 3px 8px rgba(220, 53, 69, 0.4);
-        transform: scale(1.02);
-      }
-      100% {
-        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
-      }
-    }
-    
-    /* Flip animation enhancement */
-    .flip-card.flipping .flip-inner {
-      transform: rotateX(180deg);
-    }
-</style>
 @endpush
 
 @section('content')
     <section class="py-3">
-        
+
         <!-- Advanced Search Filter UI -->
         <div class="card p-3 mb-4">
             <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -506,14 +293,15 @@ pointer-events: none
                     <small>Click here to open advance search for orders</small>
                 </div>
             </div>
+
             <div class="row collapse" id="filter_1">
                 <form id="filterForm">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Order ID</label>
                             <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <!-- <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Status</label>
                             <select name="status" class="form-select">
                                 <option value="">All Status</option>
@@ -522,118 +310,149 @@ pointer-events: none
                                 <option value="in-progress">In Progress</option>
                                 <option value="completed">Completed</option>
                             </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
+                        </div> -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Min Inboxes</label>
                             <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label mb-0">Max Inboxes</label>
                             <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
                         </div>
+                        <!-- <div class="col-md-3 mb-3">
+                            <div class="form-check" style="padding-top: 1.5rem;">
+                                <input class="form-check-input" type="checkbox" name="assigned_to_me" id="assignedToMeFilter" value="1">
+                                <label class="form-check-label" for="assignedToMeFilter">
+                                    <i class="fas fa-user me-1"></i>
+                                    Assigned to Me Only
+                                </label>
+                            </div>
+                        </div> -->
                         <div class="col-12 text-end">
-                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                            <button type="button" id="resetFilters"
+                                class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                            <button type="submit" id="submitBtn"
+                                class="btn btn-primary btn-sm border-0 px-3">Search</button>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>  
+        </div>
         
-        <div class="mb-4" style="display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-            @for ($i = 0; $i < 10; $i++)
-            <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid orange">
-                <div style="position: relative; z-index: 9;">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <h6 class="mb-0">#92</h6>
-                            <span class="text-warning small">
-                                <i class="fa-solid fa-spinner text-warning"></i>
-                                Pending
-                            </span>
-                        </div>
-    
-                        <div id="flip-timer-{{ $i }}" class="flip-timer" style="display: flex; gap: 4px;"></div>
+        <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
+                    data-bs-target="#in-queue-tab-pane" type="button" role="tab" aria-controls="in-queue-tab-pane"
+                    aria-selected="true">in-queue</button>
+            </li>
+            <li class="nav-item" role="presentation" style="display:none;">
+                <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
+                    data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
+                    aria-selected="false">in-draft</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
+                    data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
+                    aria-selected="false">
+                    <i class="fas fa-ban me-1"></i>reject orders
+                </button>
+            </li>
+        </ul>
 
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="in-queue-tab-pane" role="tabpanel" aria-labelledby="in-queue-tab"
+                tabindex="0">
+                <div id="ordersContainer" class="mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading orders...</p>
                     </div>
-    
-                    <div class="d-flex flex-column gap-0">
-                        <h6 class="mb-0">
-                            Total Inboxes : <span class="text-white number ">5000</span>
-                        </h6>
-                        <small>Splits : <span class="text-white number">03</span></small>
-                    </div>
-    
-                    <div class="my-4">
-                        <div class="content-line d-flex align-items-center justify-content-between">
-                            <div class="d-flex flex-column">
-                                <small>Inboxes/Domain</small>
-                                <small class="small">100</small>
-                            </div>
-                            <div class="d-flex flex-column align-items-end">
-                                <small>Total Domains</small>
-                                <small class="small">5000</small>
-                            </div>
-                        </div>
-        
-                        <div class="d-flex align-items-center mt-1">
-                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                            <span style="height: 1px; width: 100%; background-color: orange;"></span>
-                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                        </div>
-                    </div>
-    
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-1">
-                            <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="">
-                            <div class="d-flex flex-column gap-0">
-                                <h6 class="mb-0">Hamza Ashfaq</h6>
-                                <small>7/3/2025</small>
-                            </div>
-                        </div>
-    
-                        <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
-                            onclick="viewOrderSplits(${order.order_id})" 
-                            data-bs-toggle="offcanvas" 
-                            data-bs-target="#order-splits-view"
-                        >
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                        <span id="loadMoreText">Load More</span>
+                        <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationInfo" class="mt-2 text-light small">
+                        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
+                            id="totalOrders">0</span> orders
                     </div>
                 </div>
             </div>
-            @endfor
-        </div>
-
-        <!-- Grid Cards (Dynamic) -->
-        <div id="ordersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-            <!-- Loading state -->
-            <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            <div class="tab-pane fade" id="in-draft-tab-pane" role="tabpanel" aria-labelledby="in-draft-tab"
+                tabindex="0">
+                <div id="draftsContainer" class="mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div id="draftsLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading draft orders...</p>
+                    </div>
                 </div>
-                <p class="mt-2 mb-0">Loading orders...</p>
+                <!-- Load More Button for Drafts -->
+                <div id="loadMoreDraftsContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreDraftsBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                        <span id="loadMoreDraftsText">Load More</span>
+                        <span id="loadMoreDraftsSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationDraftsInfo" class="mt-2 text-light small">
+                        Showing <span id="showingDraftsFrom">0</span> to <span id="showingDraftsTo">0</span> of <span
+                            id="totalDrafts">0</span> orders
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="reject-orders-tab-pane" role="tabpanel" aria-labelledby="reject-orders-tab"
+                tabindex="0">
+                <div id="rejectOrdersContainer" class="mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div id="rejectOrdersLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading rejected orders...</p>
+                    </div>
+                </div>
+                <!-- Load More Button for Rejected Orders -->
+                <div id="loadMoreRejectOrdersContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreRejectOrdersBtn" class="btn btn-lg btn-danger px-4 me-2 border-0">
+                        <span id="loadMoreRejectOrdersText">Load More</span>
+                        <span id="loadMoreRejectOrdersSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                            style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                    <div id="paginationRejectOrdersInfo" class="mt-2 text-light small">
+                        Showing <span id="showingRejectOrdersFrom">0</span> to <span id="showingRejectOrdersTo">0</span> of <span
+                            id="totalRejectOrders">0</span> orders
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Load More Button -->
-        <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-            <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                <span id="loadMoreText">Load More</span>
-                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
-                    <span class="visually-hidden">Loading...</span>
-                </span>
-            </button>
-            <div id="paginationInfo" class="mt-2 text-light small">
-                Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalOrders">0</span> orders
-            </div>
-        </div>
 
-    </section> 
-    
+
+
+
+    </section>
     <!-- Order Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header" style="background-color: transparent">
+    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
+        aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
                 <i class="fas fa-times"></i>
@@ -713,7 +532,7 @@ pointer-events: none
                 </div>
                 <div class="modal-body">
                     <p class="mb-3">This will mark the order as rejected. This action cannot be undone.</p>
-                    <div class="p-3 bg-light rounded mb-3">
+                    <div class="p-3 bg-danger rounded mb-3">
                         <strong>Rejection Reason:</strong><br>
                         <em id="confirmRejectionReason"></em>
                     </div>
@@ -730,136 +549,311 @@ pointer-events: none
             </div>
         </div>
     </div>
-
 @endsection
 
 @push('scripts')
     <script>
         let orders = [];
+        let drafts = [];
+        let rejectedOrders = [];
         let currentFilters = {};
         let currentPage = 1;
+        let currentDraftsPage = 1;
+        let currentRejectOrdersPage = 1;
         let hasMorePages = false;
+        let hasMoreDraftsPages = false;
+        let hasMoreRejectOrdersPages = false;
         let totalOrders = 0;
+        let totalDrafts = 0;
+        let totalRejectOrders = 0;
         let isLoading = false;
+        let isDraftsLoading = false;
+        let isRejectOrdersLoading = false;
+        let activeTab = 'in-queue';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial orders
+            loadOrders({}, 1, false, 'in-queue');
+            
+            // Tab change handlers
+            document.getElementById('in-queue-tab').addEventListener('click', function() {
+                activeTab = 'in-queue';
+                if (orders.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'in-queue');
+                }
+            });
+            
+            document.getElementById('in-draft-tab').addEventListener('click', function() {
+                activeTab = 'in-draft';
+                if (drafts.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'in-draft');
+                }
+            });
+
+            document.getElementById('reject-orders-tab').addEventListener('click', function() {
+                activeTab = 'reject-orders';
+                if (rejectedOrders.length === 0) {
+                    loadOrders(currentFilters, 1, false, 'reject-orders');
+                }
+            });
+
+            // Filter form handler
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const filters = Object.fromEntries(formData);
+                
+                // Remove empty filters
+                Object.keys(filters).forEach(key => {
+                    if (!filters[key]) delete filters[key];
+                });
+                
+                currentFilters = filters;
+                document.getElementById('submitBtn').disabled = true;
+                
+                if (activeTab === 'in-queue') {
+                    loadOrders(filters, 1, false, 'in-queue');
+                } else if (activeTab === 'in-draft') {
+                    loadOrders(filters, 1, false, 'in-draft');
+                } else {
+                    loadOrders(filters, 1, false, 'reject-orders');
+                }
+            });
+
+            // Reset filters handler
+            document.getElementById('resetFilters').addEventListener('click', function() {
+                document.getElementById('filterForm').reset();
+                currentFilters = {};
+                if (activeTab === 'in-queue') {
+                    loadOrders({}, 1, false, 'in-queue');
+                } else if (activeTab === 'in-draft') {
+                    loadOrders({}, 1, false, 'in-draft');
+                } else {
+                    loadOrders({}, 1, false, 'reject-orders');
+                }
+            });
+
+            // Load more handlers
+            document.getElementById('loadMoreBtn').addEventListener('click', function() {
+                if (hasMorePages && !isLoading) {
+                    loadOrders(currentFilters, currentPage + 1, true, 'in-queue');
+                }
+            });
+
+            document.getElementById('loadMoreDraftsBtn').addEventListener('click', function() {
+                if (hasMoreDraftsPages && !isDraftsLoading) {
+                    loadOrders(currentFilters, currentDraftsPage + 1, true, 'in-draft');
+                }
+            });
+
+            document.getElementById('loadMoreRejectOrdersBtn').addEventListener('click', function() {
+                if (hasMoreRejectOrdersPages && !isRejectOrdersLoading) {
+                    loadOrders(currentFilters, currentRejectOrdersPage + 1, true, 'reject-orders');
+                }
+            });
+        });
 
         // Load orders data
-        async function loadOrders(filters = {}, page = 1, append = false) {
+        async function loadOrders(filters = {}, page = 1, append = false, type = 'in-queue') {
+            const isLoadingDrafts = type === 'in-draft';
+            const isLoadingRejectOrders = type === 'reject-orders';
+            
             try {
-                if (isLoading) return; // Prevent concurrent requests
-                isLoading = true;
+                if (isLoadingDrafts ? isDraftsLoading : (isLoadingRejectOrders ? isRejectOrdersLoading : isLoading)) return;
                 
-                console.log('Loading orders with filters:', filters, 'page:', page, 'append:', append);
-                
-                if (!append) {
-                    showLoading();
-                    orders = []; // Reset orders array for new search
+                if (isLoadingDrafts) {
+                    isDraftsLoading = true;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = true;
+                } else {
+                    isLoading = true;
                 }
                 
-                // Show loading state for Load More button
+                if (!append) {
+                    if (isLoadingDrafts) {
+                        showDraftsLoading();
+                        drafts = [];
+                    } else if (isLoadingRejectOrders) {
+                        showRejectOrdersLoading();
+                        rejectedOrders = [];
+                    } else {
+                        showLoading();
+                        orders = [];
+                    }
+                }
+                
                 if (append) {
-                    showLoadMoreSpinner(true);
+                    showLoadMoreSpinner(true, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
                 }
                 
                 const params = new URLSearchParams({
                     ...filters,
+                    type: type,
                     page: page,
                     per_page: 12
                 });
-                const url = `/contractor/panels/data?${params}`;
-                console.log('Fetching from URL:', url);
                 
-                const response = await fetch(url, {
+                const response = await fetch(`/contractor/order_queue/data?${params}`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`);
+                    throw new Error(`Failed to fetch orders: ${response.status}`);
                 }
-                  
+                
                 const data = await response.json();
-                console.log('Received data:', data);
-                
                 const newOrders = data.data || [];
-                console.log('New orders:', newOrders);
                 
-                if (append) {
-                    orders = orders.concat(newOrders);
+                if (isLoadingDrafts) {
+                    if (append) {
+                        drafts = drafts.concat(newOrders);
+                    } else {
+                        drafts = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentDraftsPage = pagination.current_page || 1;
+                    hasMoreDraftsPages = pagination.has_more_pages || false;
+                    totalDrafts = pagination.total || 0;
+                    
+                    renderOrders(append, true);
+                    updatePaginationInfo(true);
+                    updateLoadMoreButton(true);
+                } else if (isLoadingRejectOrders) {
+                    if (append) {
+                        rejectedOrders = rejectedOrders.concat(newOrders);
+                    } else {
+                        rejectedOrders = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentRejectOrdersPage = pagination.current_page || 1;
+                    hasMoreRejectOrdersPages = pagination.has_more_pages || false;
+                    totalRejectOrders = pagination.total || 0;
+                    
+                    renderOrders(append, false, true);
+                    updatePaginationInfo(false, true);
+                    updateLoadMoreButton(false, true);
                 } else {
-                    orders = newOrders;
+                    if (append) {
+                        orders = orders.concat(newOrders);
+                    } else {
+                        orders = newOrders;
+                    }
+                    
+                    const pagination = data.pagination || {};
+                    currentPage = pagination.current_page || 1;
+                    hasMorePages = pagination.has_more_pages || false;
+                    totalOrders = pagination.total || 0;
+                    
+                    renderOrders(append, false);
+                    updatePaginationInfo(false);
+                    updateLoadMoreButton(false);
                 }
-                
-                // Update pagination state
-                const pagination = data.pagination || {};
-                currentPage = pagination.current_page || 1;
-                hasMorePages = pagination.has_more_pages || false;
-                totalOrders = pagination.total || 0;
-                
-                console.log('Updated state:', { currentPage, hasMorePages, totalOrders, ordersCount: orders.length });
-                
-                renderOrders(append);
-                updatePaginationInfo();
-                updateLoadMoreButton();
                 
             } catch (error) {
                 console.error('Error loading orders:', error);
                 if (!append) {
-                    showError(`Failed to load orders: ${error.message}`);
+                    showError(error.message, isLoadingDrafts, isLoadingRejectOrders);
                 }
             } finally {
-                isLoading = false;
-                if (append) {
-                    showLoadMoreSpinner(false);
+                if (isLoadingDrafts) {
+                    isDraftsLoading = false;
+                } else if (isLoadingRejectOrders) {
+                    isRejectOrdersLoading = false;
+                } else {
+                    isLoading = false;
                 }
-
-                // submit enabled
+                
+                if (append) {
+                    showLoadMoreSpinner(false, isLoadingDrafts || isLoadingRejectOrders ? (isLoadingDrafts ? 'drafts' : 'reject-orders') : 'orders');
+                }
+                
                 document.getElementById('submitBtn').disabled = false;
             }
         }
-        
-        // Show loading state        
+
+        // Show loading state
         function showLoading() {
             const container = document.getElementById('ordersContainer');
             const loadingElement = document.getElementById('loadingState');
             
             if (container && loadingElement) {
-                // Keep the grid display but show only loading element
                 container.style.display = 'grid';
                 container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
                 container.style.gap = '30px';
-                
-                // Clear any existing content except loading
                 container.innerHTML = '';
                 container.appendChild(loadingElement);
                 loadingElement.style.display = 'flex';
             }
         }
-        
+
+        // Show drafts loading state
+        function showDraftsLoading() {
+            const container = document.getElementById('draftsContainer');
+            const loadingElement = document.getElementById('draftsLoadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
+        // Show reject orders loading state
+        function showRejectOrdersLoading() {
+            const container = document.getElementById('rejectOrdersContainer');
+            const loadingElement = document.getElementById('rejectOrdersLoadingState');
+            
+            if (container && loadingElement) {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+                container.innerHTML = '';
+                container.appendChild(loadingElement);
+                loadingElement.style.display = 'flex';
+            }
+        }
+
         // Hide loading state
-        function hideLoading() {
-            const loadingElement = document.getElementById('loadingState');
+        function hideLoading(isDrafts = false, isRejectOrders = false) {
+            let loadingElement;
+            if (isRejectOrders) {
+                loadingElement = document.getElementById('rejectOrdersLoadingState');
+            } else if (isDrafts) {
+                loadingElement = document.getElementById('draftsLoadingState');
+            } else {
+                loadingElement = document.getElementById('loadingState');
+            }
             if (loadingElement) {
                 loadingElement.style.display = 'none';
             }
-        }        
-        
+        }
+
         // Show error message
-        function showError(message) {
-            hideLoading();
-            const container = document.getElementById('ordersContainer');
-            if (!container) {
-                console.error('ordersContainer element not found');
-                return;
+        function showError(message, isDrafts = false, isRejectOrders = false) {
+            hideLoading(isDrafts, isRejectOrders);
+            let container;
+            let containerType;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                containerType = 'reject-orders';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                containerType = 'in-draft';
+            } else {
+                container = document.getElementById('ordersContainer');
+                containerType = 'in-queue';
             }
+            if (!container) return;
             
-            // Keep grid layout but show error spanning full width
             container.style.display = 'grid';
             container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
             container.style.gap = '30px';
@@ -869,397 +863,305 @@ pointer-events: none
                     <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
                     <h5>Error</h5>
                     <p class="mb-3">${message}</p>
-                    <button class="btn btn-primary" onclick="loadOrders(currentFilters)">Retry</button>
+                    <button class="btn btn-primary" onclick="loadOrders(currentFilters, 1, false, '${containerType}')">Retry</button>
                 </div>
             `;
         }
-        
+
         // Render orders
-        function renderOrders(append = false) {
-            if (!append) {
-                hideLoading();
+        function renderOrders(append = false, isDrafts = false, isRejectOrders = false) {
+            let container, ordersList, containerLabel;
+            if (isRejectOrders) {
+                container = document.getElementById('rejectOrdersContainer');
+                ordersList = rejectedOrders;
+                containerLabel = 'Rejected ';
+            } else if (isDrafts) {
+                container = document.getElementById('draftsContainer');
+                ordersList = drafts;
+                containerLabel = 'Draft ';
+            } else {
+                container = document.getElementById('ordersContainer');
+                ordersList = orders;
+                containerLabel = '';
             }
             
-            const container = document.getElementById('ordersContainer');
-            if (!container) {
-                console.error('ordersContainer element not found');
-                return;
+            if (!append) {
+                hideLoading(isDrafts, isRejectOrders);
             }
-              
-            if (orders.length === 0 && !append) {
-                // Keep grid layout but show empty state spanning full width
-                container.style.display = 'grid';
-                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-                container.style.gap = '30px';
-                
+            
+            if (!container) return;
+            
+            if (ordersList.length === 0 && !append) {
                 container.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <i class="fas fa-inbox mb-3" style="font-size: 3rem;"></i>
-                        <h5>No Orders Found</h5>
-                        <p class="mb-3">No orders match your current filters.</p>
-                        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <i class="fas fa-inbox"></i>
+                        <h5>No ${containerLabel}Orders Found</h5>
+                        <p>There are no ${containerLabel.toLowerCase()}orders to display.</p>
                     </div>
                 `;
                 return;
             }
-            // Reset container to grid layout for orders
-            container.style.display = 'grid';
-            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-            container.style.gap = '30px';
-
-            if (append) {
-                // Only add new orders for pagination
-                const currentOrdersCount = container.children.length;
-                const newOrders = orders.slice(currentOrdersCount);
-                const newOrdersHtml = newOrders.map(order => createOrderCard(order)).join('');
-                container.insertAdjacentHTML('beforeend', newOrdersHtml);
-            } else {
-                // Replace all content for new search
-                const ordersHtml = orders.map(order => createOrderCard(order)).join('');
-                container.innerHTML = ordersHtml;
-            }
-        }
-        
-        // Create order card HTML
-        function createOrderCard(order) {
-            // Get status color for border
-            // pending, completed, in-progress, draft, rejected
-            function getStatusColor(status) {
-                switch(status) {
-                    case 'completed': return '#28a745';
-                    case 'pending': return '#ffc107';
-                    case 'in-progress': return '#007bff';
-                    case 'draft': return '#6c757d';
-                    case 'reject': return '#dc3545';
-                    default: return '#6c757d';
-                }
-            }
-
-            // Get status icon
-            function getStatusIcon(status) {
-                switch(status) {
-                    case 'completed': return 'fa-solid fa-check';
-                    case 'pending': return 'fa-solid fa-spinner';
-                    case 'in-progress': return 'fa-solid fa-spinner';
-                    case 'draft': return 'fa-solid fa-file-pen';
-                    case 'reject': return 'fa-solid fa-times';
-                    default: return 'fa-solid fa-question';
-                }
-            }
-
-            const statusColor = getStatusColor(order.status);
-            const statusIcon = getStatusIcon(order.status);
-
-            return `
-                <div class="card p-3 card-pending overflow-hidden" style="border-bottom: 4px solid ${statusColor}">
-                    <div style="position: relative; z-index: 9;">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <h6 class="mb-0">#${order.order_id}</h6>
-                                <span class="small" style="color: ${statusColor}">
-                                    <i class="${statusIcon}" style="color: ${statusColor}"></i>
-                                    ${order.status}
-                                </span>
-                            </div>
-                            ${createTimerBadge(order)}
-                        </div>
-
-                        <div class="d-flex flex-column gap-0">
-                            <h6 class="mb-0">
-                                Total Inboxes : <span class="text-white number">${order.total_inboxes}</span>
-                            </h6>
-                            <small>Splits : <span class="text-white number">${order.splits_count}</span></small>
-                        </div>
-
-                        <div class="my-4">
-                            <div class="content-line d-flex align-items-center justify-content-between">
-                                <div class="d-flex flex-column">
-                                    <small>Inboxes/Domain</small>
-                                    <small class="small">${order.inboxes_per_domain}</small>
-                                </div>
-                                <div class="d-flex flex-column align-items-end">
-                                    <small>Total Domains</small>
-                                    <small class="small">${order.total_domains}</small>
-                                </div>
-                            </div>
             
-                            <div class="d-flex align-items-center mt-1">
-                                <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
-                                <span style="height: 1px; width: 100%; background-color: ${statusColor};"></span>
-                                <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+            if (!append) {
+                container.innerHTML = '';
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+                container.style.gap = '30px';
+            }
+            
+            let startIndex;
+            if (isRejectOrders) {
+                startIndex = append ? (rejectedOrders.length - (rejectedOrders.length - ordersList.length)) : 0;
+            } else if (isDrafts) {
+                startIndex = append ? (drafts.length - (drafts.length - ordersList.length)) : 0;
+            } else {
+                startIndex = append ? (orders.length - (orders.length - ordersList.length)) : 0;
+            }
+            const ordersToRender = append ? ordersList.slice(startIndex) : ordersList;
+            
+            ordersToRender.forEach((order, index) => {
+                const orderCard = createOrderCard(order, isDrafts, startIndex + index, isRejectOrders);
+                container.appendChild(orderCard);
+            });
+            
+            // Start timers for rendered orders
+            setTimeout(() => {
+                startTimersForOrders(ordersToRender, isDrafts, startIndex);
+            }, 100);
+        }
+
+        // Create order card
+        function createOrderCard(order, isDrafts, index, isRejectOrders = false) {
+            const statusConfig = getStatusConfig(order.status);
+            let borderColor, statusClass, statusIcon, statusText, lineColor;
+            
+            if (isRejectOrders) {
+                borderColor = '#dc3545';
+                statusClass = 'text-danger';
+                statusIcon = 'fa-solid fa-ban';
+                statusText = 'Rejected';
+                lineColor = '#dc3545';
+            } else if (isDrafts) {
+                borderColor = 'rgb(0, 221, 255)';
+                statusClass = 'text-info';
+                statusIcon = 'fa-solid fa-file-lines';
+                statusText = 'Draft';
+                lineColor = 'rgb(0, 242, 255)';
+            } else {
+                borderColor = statusConfig.borderColor;
+                statusClass = statusConfig.statusClass;
+                statusIcon = statusConfig.statusIcon;
+                statusText = order.status || 'Pending';
+                lineColor = statusConfig.lineColor;
+            }
+            
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card p-3 overflow-hidden';
+            cardElement.style.borderBottom = `4px solid ${borderColor}`;
+            
+            const customerImage = order.customer_image 
+                ? order.customer_image 
+                : 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg';
+            
+            cardElement.innerHTML = `
+                <div style="position: relative; z-index: 9;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <h6 class="mb-0">#${order.order_id}</h6>
+                            <span class="${statusClass} small">
+                                <i class="${statusIcon}"></i>
+                                ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}
+                            </span>
+                        </div>
+                        ${createTimerBadge(order, isDrafts, index)}
+                    </div>
+
+                    <div class="d-flex flex-column gap-0">
+                        <h6 class="mb-0">
+                            Total Inboxes : <span class="text-white number">${order.total_inboxes || 0}</span>
+                        </h6>
+                        <small>Splits : <span class="text-white number">${order.splits_count || 0}</span></small>
+                    </div>
+
+                    <div class="my-4">
+                        <div class="content-line d-flex align-items-center justify-content-between">
+                            <div class="d-flex flex-column">
+                                <small>Inboxes/Domain</small>
+                                <small class="small">${order.inboxes_per_domain || 0}</small>
+                            </div>
+                            <div class="d-flex flex-column align-items-end">
+                                <small>Total Domains</small>
+                                <small class="small">${order.total_domains || 0}</small>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-1">
-                                <img src="${order.customer_profile_image || 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg'}" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="">
-                                <div class="d-flex flex-column gap-0">
-                                    <h6 class="mb-0">${order.customer_name}</h6>
-                                    <small>${formatDate(order.created_at)}</small>
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-center mt-1">
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                            <span style="height: 1px; width: 100%; background-color: ${lineColor};"></span>
+                            <span style="height: 11px; width: 11px; border-radius: 50px; border: 3px solid #fff; background-color: var(--second-primary)"></span>
+                        </div>
+                    </div>
 
-                            <div class="d-flex align-items-center justify-content-center" style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
-                                onclick="viewOrderSplits(${order.order_id})" 
-                                data-bs-toggle="offcanvas" 
-                                data-bs-target="#order-splits-view"
-                            >
-                                <i class="fa-solid fa-chevron-right"></i>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-1">
+                            <img src="${customerImage}" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="" onerror="this.src='https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg'">
+                            <div class="d-flex flex-column gap-0">
+                                <h6 class="mb-0">${order.customer_name}</h6>
+                                <small>${formatDate(order.created_at)}</small>
                             </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-center" 
+                             style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
+                             onclick="viewOrderSplits(${order.order_id})" 
+                             data-bs-toggle="offcanvas" 
+                             data-bs-target="#order-splits-view">
+                            <i class="fa-solid fa-chevron-right"></i>
                         </div>
                     </div>
                 </div>
             `;
+            
+            return cardElement;
         }
 
-        // Update pagination info display
-        function updatePaginationInfo() {
-            const showingFromEl = document.getElementById('showingFrom');
-            const showingToEl = document.getElementById('showingTo');
-            const totalOrdersEl = document.getElementById('totalOrders');
-            
-            if (showingFromEl && showingToEl && totalOrdersEl) {
-                const from = orders.length > 0 ? 1 : 0;
-                const to = orders.length;
-                
-                showingFromEl.textContent = from;
-                showingToEl.textContent = to;
-                totalOrdersEl.textContent = totalOrders;
-            }
-        }
-
-        // Update Load More button visibility and state
-        function updateLoadMoreButton() {
-            const loadMoreContainer = document.getElementById('loadMoreContainer');
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            
-            if (loadMoreContainer && loadMoreBtn) {
-                if (hasMorePages && orders.length > 0) {
-                    loadMoreContainer.style.display = 'block';
-                    loadMoreBtn.disabled = false;
-                } else {
-                    loadMoreContainer.style.display = 'none';
+        // Get status configuration
+        function getStatusConfig(status) {
+            const configs = {
+                'pending': {
+                    borderColor: 'orange',
+                    statusClass: 'text-warning',
+                    statusIcon: 'fa-solid fa-spinner',
+                    lineColor: 'orange'
+                },
+                'in-progress': {
+                    borderColor: '#007bff',
+                    statusClass: 'text-primary',
+                    statusIcon: 'fa-solid fa-cog fa-spin',
+                    lineColor: '#007bff'
+                },
+                'completed': {
+                    borderColor: '#28a745',
+                    statusClass: 'text-success',
+                    statusIcon: 'fa-solid fa-check',
+                    lineColor: '#28a745'
+                },
+                'rejected': {
+                    borderColor: '#dc3545',
+                    statusClass: 'text-danger',
+                    statusIcon: 'fa-solid fa-times',
+                    lineColor: '#dc3545'
+                },
+                'reject': {
+                    borderColor: '#dc3545',
+                    statusClass: 'text-danger',
+                    statusIcon: 'fa-solid fa-ban',
+                    lineColor: '#dc3545'
+                },
+                'expired': {
+                    borderColor: '#6c757d',
+                    statusClass: 'text-secondary',
+                    statusIcon: 'fa-solid fa-clock',
+                    lineColor: '#6c757d'
                 }
-            }
-        }
-
-        // Show/hide loading spinner on Load More button
-        function showLoadMoreSpinner(show) {
-            const loadMoreText = document.getElementById('loadMoreText');
-            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            };
             
-            if (loadMoreText && loadMoreSpinner && loadMoreBtn) {
-                if (show) {
-                    loadMoreText.textContent = 'Loading...';
-                    loadMoreSpinner.style.display = 'inline-block';
-                    loadMoreBtn.disabled = true;
-                } else {
-                    loadMoreText.textContent = 'Load More';
-                    loadMoreSpinner.style.display = 'none';
-                    loadMoreBtn.disabled = false;
-                }
-            }
+            return configs[status?.toLowerCase()] || configs['pending'];
         }
 
-        // Load More button click handler
-        function loadMoreOrders() {
-            if (hasMorePages && !isLoading) {
-                loadOrders(currentFilters, currentPage + 1, true);
-            }
-        }
-
-        // Helper function to get status badge class
-        function getStatusBadgeClass(status) {
-            switch(status) {
-                case 'completed': return 'bg-success';
-                case 'unallocated': return 'bg-warning text-dark';
-                case 'allocated': return 'bg-info';
-                case 'rejected': return 'bg-danger';
-                case 'in-progress': return 'bg-primary';
-                default: return 'bg-secondary';
-            }
-        }
-        
-        // Helper function to format date
+        // Format date
         function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            try {
-                return new Date(dateString).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: '2-digit'
-                });
-            } catch (error) {
-                return 'Invalid Date';
-            }
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
         }
-        
-        // Calculate timer for order
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
-            // Use current real-time date for dynamic timer updates
-            const now = new Date();
-            
-            // Use timer_started_at if available, otherwise fall back to created_at
-            const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
-            
-            // If order is completed, timer is paused - show the time it took to complete
-            if (status === 'completed' && completedAt) {
-                const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - startTime;
-                const isOverdue = completionDate > twelveHoursLater;
+
+        // Update pagination info
+        function updatePaginationInfo(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const showingFrom = document.getElementById('showingRejectOrdersFrom');
+                const showingTo = document.getElementById('showingRejectOrdersTo');
+                const totalOrdersEl = document.getElementById('totalRejectOrders');
                 
-                return {
-                    display: formatTimeDuration(timeTaken),
-                    isNegative: isOverdue,
-                    isCompleted: true,
-                    class: 'completed'
-                };
-            }
-            
-            // If order is completed but no completion date, just show completed
-            if (status === 'completed') {
-                return {
-                    display: 'Completed',
-                    isNegative: false,
-                    isCompleted: true,
-                    class: 'completed'
-                };
-            }
-            
-            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-            // - Counts down from 12:00:00 to 00:00:00
-            // - After reaching zero, continues in negative time (overtime)
-            const timeDiff = now - twelveHoursLater;
-            
-            if (timeDiff > 0) {
-                // Order is overdue (negative time - overtime)
-                return {
-                    display: '-' + formatTimeDuration(timeDiff),
-                    isNegative: true,
-                    isCompleted: false,
-                    class: 'negative'
-                };
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = rejectedOrders.length > 0 ? 1 : 0;
+                    showingTo.textContent = rejectedOrders.length;
+                    totalOrdersEl.textContent = totalRejectOrders;
+                }
+            } else if (isDrafts) {
+                const showingFrom = document.getElementById('showingDraftsFrom');
+                const showingTo = document.getElementById('showingDraftsTo');
+                const totalOrdersEl = document.getElementById('totalDrafts');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = drafts.length > 0 ? 1 : 0;
+                    showingTo.textContent = drafts.length;
+                    totalOrdersEl.textContent = totalDrafts;
+                }
             } else {
-                // Order still has time remaining (countdown)
-                return {
-                    display: formatTimeDuration(-timeDiff),
-                    isNegative: false,
-                    isCompleted: false,
-                    class: 'positive'
-                };
+                const showingFrom = document.getElementById('showingFrom');
+                const showingTo = document.getElementById('showingTo');
+                const totalOrdersEl = document.getElementById('totalOrders');
+                
+                if (showingFrom && showingTo && totalOrdersEl) {
+                    showingFrom.textContent = orders.length > 0 ? 1 : 0;
+                    showingTo.textContent = orders.length;
+                    totalOrdersEl.textContent = totalOrders;
+                }
             }
         }
 
-        // Format time duration in countdown format (HH:MM:SS)
-        function formatTimeDuration(milliseconds) {
-            const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            
-            // Format with leading zeros for proper countdown display
-            const hoursStr = hours.toString().padStart(2, '0');
-            const minutesStr = minutes.toString().padStart(2, '0');
-            const secondsStr = seconds.toString().padStart(2, '0');
-            
-            return `${hoursStr}:${minutesStr}:${secondsStr}`;
-        }
-        // Create timer badge HTML
-        function createTimerBadge(order) {
-            console.log(order);
-            const timer = calculateOrderTimer(order.created_at, order.status, order.completed_at, order.timer_started_at);
-            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-            
-            // Create tooltip text
-            let tooltip = '';
-            if (timer.isCompleted) {
-                tooltip = order.completed_at 
-                    ? `Order completed on ${formatDate(order.completed_at)}` 
-                    : 'Order is completed';
-            } else if (timer.isNegative) {
-                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
+        // Update load more button
+        function updateLoadMoreButton(isDrafts = false, isRejectOrders = false) {
+            if (isRejectOrders) {
+                const container = document.getElementById('loadMoreRejectOrdersContainer');
+                if (container) {
+                    container.style.display = hasMoreRejectOrdersPages ? 'block' : 'none';
+                }
+            } else if (isDrafts) {
+                const container = document.getElementById('loadMoreDraftsContainer');
+                if (container) {
+                    container.style.display = hasMoreDraftsPages ? 'block' : 'none';
+                }
             } else {
-                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
+                const container = document.getElementById('loadMoreContainer');
+                if (container) {
+                    container.style.display = hasMorePages ? 'block' : 'none';
+                }
+            }
+        }
+
+        // Show load more spinner
+        function showLoadMoreSpinner(show, type = 'orders') {
+            let button, text, spinner;
+            
+            if (type === 'reject-orders') {
+                button = document.getElementById('loadMoreRejectOrdersBtn');
+                text = document.getElementById('loadMoreRejectOrdersText');
+                spinner = document.getElementById('loadMoreRejectOrdersSpinner');
+            } else if (type === 'drafts') {
+                button = document.getElementById('loadMoreDraftsBtn');
+                text = document.getElementById('loadMoreDraftsText');
+                spinner = document.getElementById('loadMoreDraftsSpinner');
+            } else {
+                button = document.getElementById('loadMoreBtn');
+                text = document.getElementById('loadMoreText');
+                spinner = document.getElementById('loadMoreSpinner');
             }
             
-            // Generate unique ID for this timer using order ID
-            const timerId = `flip-timer-${order.order_id}`;
-            
-            // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
-            let timeString = timer.display;
-            let isNegative = false;
-            
-            if (timeString.startsWith('-')) {
-                isNegative = true;
-                timeString = timeString.substring(1);
+            if (button && text && spinner) {
+                button.disabled = show;
+                text.textContent = show ? 'Loading...' : 'Load More';
+                spinner.style.display = show ? 'inline-block' : 'none';
             }
-            
-            const timeParts = timeString.split(':');
-            const hours = timeParts[0] || '00';
-            const minutes = timeParts[1] || '00';
-            const seconds = timeParts[2] || '00';
-            
-            // Create flip timer with individual digit cards
-            return `
-                <div id="${timerId}" class="flip-timer ${timer.class}" 
-                     data-order-id="${order.order_id}" 
-                     data-created-at="${order.created_at}" 
-                     data-status="${order.status}" 
-                     data-completed-at="${order.completed_at || ''}"
-                     data-timer-started-at="${order.timer_started_at || ''}"
-                     data-tooltip="${tooltip}"
-                     title="${tooltip}"
-                     style="gap: 4px; align-items: center;">
-                    <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
-                    ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
-                    <div class="flip-card" data-digit="${hours.charAt(0)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${hours.charAt(0)}</div>
-                            <div class="flip-back">${hours.charAt(0)}</div>
-                        </div>
-                    </div>
-                    <div class="flip-card" data-digit="${hours.charAt(1)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${hours.charAt(1)}</div>
-                            <div class="flip-back">${hours.charAt(1)}</div>
-                        </div>
-                    </div>
-                    <span class="timer-separator">:</span>
-                    <div class="flip-card" data-digit="${minutes.charAt(0)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${minutes.charAt(0)}</div>
-                            <div class="flip-back">${minutes.charAt(0)}</div>
-                        </div>
-                    </div>
-                    <div class="flip-card" data-digit="${minutes.charAt(1)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${minutes.charAt(1)}</div>
-                            <div class="flip-back">${minutes.charAt(1)}</div>
-                        </div>
-                    </div>
-                    <span class="timer-separator">:</span>
-                    <div class="flip-card" data-digit="${seconds.charAt(0)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${seconds.charAt(0)}</div>
-                            <div class="flip-back">${seconds.charAt(0)}</div>
-                        </div>
-                    </div>
-                    <div class="flip-card" data-digit="${seconds.charAt(1)}">
-                        <div class="flip-inner">
-                            <div class="flip-front">${seconds.charAt(1)}</div>
-                            <div class="flip-back">${seconds.charAt(1)}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
         }
 
         // View order splits
         async function viewOrderSplits(orderId) {
             try {
-                // Show loading in offcanvas
                 const container = document.getElementById('orderSplitsContainer');
                 if (container) {
                     container.innerHTML = `
@@ -1271,44 +1173,21 @@ pointer-events: none
                         </div>
                     `;
                 }
-                  
-                // Show offcanvas with proper cleanup
-                const offcanvasElement = document.getElementById('order-splits-view');
-                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
-                
-                // Add event listeners for proper cleanup
-                offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
-                    // Clean up any remaining backdrop elements
-                    const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
-                    backdrops.forEach(backdrop => backdrop.remove());
-                    
-                    // Ensure body classes are removed
-                    document.body.classList.remove('offcanvas-open');
-                    document.body.style.overflow = '';
-                    document.body.style.paddingRight = '';
-                    
-                    // Reset offcanvas title
-                    const offcanvasTitle = document.getElementById('order-splits-viewLabel');
-                    if (offcanvasTitle) {
-                        offcanvasTitle.innerHTML = 'Order Details';
-                    }
-                }, { once: true });
-                
-                offcanvas.show();
-                
-                // Fetch order splits
-                const response = await fetch(`/contractor/orders/${orderId}/splits`, {
+
+                const response = await fetch(`/contractor/order_queue/${orderId}/splits`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
-                
-                if (!response.ok) throw new Error('Failed to fetch order splits');
-                
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch order splits');
+                }
+
                 const data = await response.json();
                 renderOrderSplits(data);
-                  
+
             } catch (error) {
                 console.error('Error loading order splits:', error);
                 const container = document.getElementById('orderSplitsContainer');
@@ -1324,7 +1203,7 @@ pointer-events: none
                 }
             }
         }
-        
+
         // Render order splits in offcanvas
         function renderOrderSplits(data) {
             const container = document.getElementById('orderSplitsContainer');
@@ -1339,13 +1218,11 @@ pointer-events: none
                 `;
                 return;
             }
-            
+
             const orderInfo = data.order;
             const reorderInfo = data.reorder_info;
             const splits = data.splits;
-            // console.log('Order Info:', orderInfo);  
-            // console.log('Reorder Info:', reorderInfo);
-            // console.log('Reorder  Info data_obj:', reorderInfo.data_obj.additional_info);
+            
             // Update offcanvas title with timer
             const offcanvasTitle = document.getElementById('order-splits-viewLabel');
             if (offcanvasTitle && orderInfo) {
@@ -1353,25 +1230,25 @@ pointer-events: none
                     Order Details #${orderInfo.id} 
                 `;
             }
-
             const splitsHtml = `
                 <div class="mb-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6>
-                                ${orderInfo.status_manage_by_admin}
-                                ${createTimerBadge(orderInfo)}
+                                <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin.charAt(0).toUpperCase() + orderInfo.status_manage_by_admin.slice(1)}</span>
+                                ${createTimerBadge(orderInfo, false, 0)}
                             </h6>
                             <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
                         
-                        <div>
+                        <div class="d-flex gap-2">
                             ${(() => {
                                 const unallocatedSplits = splits.filter(split => split.status === 'unallocated');
                                 let buttonsHtml = '';
+                                
                                 if (unallocatedSplits.length > 0) {
                                     buttonsHtml += `
-                                        <button class="btn btn-success btn-sm px-3 py-2 me-2" 
+                                        <button class="btn btn-success btn-sm px-3 py-2" 
                                                 onclick="assignOrderToMe(${orderInfo.id})"
                                                 id="assignOrderBtn"
                                                 style="font-size: 11px;">
@@ -1382,12 +1259,13 @@ pointer-events: none
                                     `;
                                 } else {
                                     buttonsHtml += `
-                                        <span class="btn btn-primary rounded-1 px-3 py-2 me-2" style="font-size: 11px;">
+                                        <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
                                     `;
                                 }
+                                
                                 // Add reject button if order is not already rejected or completed
                                 if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
                                     buttonsHtml += `
@@ -1400,6 +1278,7 @@ pointer-events: none
                                         </button>
                                     `;
                                 }
+                                
                                 return buttonsHtml;
                             })()}
                         </div>
@@ -1421,32 +1300,27 @@ pointer-events: none
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
-
                         <tbody>
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
-                                      <td>
+                                    <td>
                                         <span class="badge bg-primary" style="font-size: 10px;">
                                             SPL-${split.id || 'N/A'}
                                         </span>
                                     </td>
-                                     <td>${split?.panel_id || 'N/A'}</td>
-                                     <td>${split?.panel_title || 'N/A'}</td>
+                                    <td>${split?.panel_id || 'N/A'}</td>
+                                    <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="text-dark px-2 py-1 rounded-1 badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                     </td>
-                                    
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
-
                                     <td>
                                         <span class="px-2 py-1 rounded-1 bg-success text-white" style="font-size: 10px;">
                                             ${split.domains_count || 0} domain(s)
                                         </span>
                                     </td>
-
                                     <td>${split.total_inboxes || 'N/A'}</td>
-
                                     <td>
                                         <div class="d-flex gap-1">
                                             <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 11px" class="me-2 btn btn-sm btn-outline-primary" title="View Split" target="_blank">
@@ -1497,7 +1371,6 @@ pointer-events: none
                                 <span class="opacity-50 small">Profile Picture URL</span>
                                 <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
                             </div>
-                            
                         </div>
                     </div>
 
@@ -1552,7 +1425,7 @@ pointer-events: none
                                 
                                 <!-- Order Splits Domains -->
                                 ${splits.map((split, index) => `
-                                    <div class="domain-split-container mb-3" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s both;">
+                                    <div class="domain-split-container mb-3">
                                         <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
                                              style="background-color: var(--filter-color); cursor: pointer;"
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
@@ -1599,219 +1472,510 @@ pointer-events: none
             
             container.innerHTML = splitsHtml;
             
-            // Initialize chevron states and animations after rendering 
+            // Start timer for the order in the offcanvas and initialize other features
             setTimeout(function() {
+                // Start timer for the order displayed in the offcanvas
+                const timerId = `flip-timer-${orderInfo.order_id}-0`;
+                const timerElement = document.getElementById(timerId);
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject') {
+                    // Use the same timer starting logic as in the main cards
+                    startSingleTimer(orderInfo, false, 0);
+                }
+                
+                // Initialize chevron states and animations after rendering
                 initializeChevronStates();
             }, 100);
         }
 
-
-    function renderProfileLinksFromObject(prefixVariantsDetails) {
-    
-    if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
-        return `<span>N/A</span>`;
-    }
-
-    let html = '';
-
-    Object.entries(prefixVariantsDetails).forEach(([key, variant]) => {
-        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-        html += `<div class="mt-1">`;
-        html += `<strong>${formattedKey}:</strong> `;
-
-        if (variant?.profile_link) {
-            html += `<a href="${variant.profile_link}" target="_blank">${variant.profile_link}</a>`;
-        } else {
-            html += `<span>N/A</span>`;
-        }
-
-        html += `</div>`;
-    });
-
-    return html;
-}
-        
-        // Function to copy domain to clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                // Show a temporary success message
-                showToast('Domain copied to clipboard!', 'success');
-            }).catch(() => {
-                console.warn('Failed to copy to clipboard');
-                showToast('Failed to copy domain', 'error');
-            });
-        }
-
-        // Function to copy all domains from a split to clipboard
-        function copyAllDomains(domains, splitName) {
-            if (!domains || domains.length === 0) {
-                showToast('No domains to copy', 'error');
-                return;
-            }
+        // Get main order status badge class  
+        function getOrderStatusBadgeClass(status) {
             
-            // Join domains with newlines for easy copying
-            const domainsText = domains.join('\n');
-            
-            navigator.clipboard.writeText(domainsText).then(() => {
-                showToast(`All domains from ${splitName} copied to clipboard!`, 'success');
-            }).catch(() => {
-                showToast('Failed to copy domains', 'error');
-            });
+            const statusClasses = {
+                'completed': 'bg-success text-white',
+                'pending': 'bg-warning border-warning bg-transparent text-warning',
+                'in-progress': 'bg-primary text-white border-primary text-white',
+                'draft': 'bg-secondary text-white border-secondary text-white',
+                'rejected': 'bg-danger text-white border-danger text-white',
+                'expired': 'bg-dark text-white border-dark text-white',
+                'cancelled': 'bg-danger text-white border-danger text-white'
+            };
+            return statusClasses[status?.toLowerCase()] || 'bg-secondary text-white';
         }
 
-        // Function to show toast notifications
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            toast.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            document.body.appendChild(toast);
-
-            // Auto remove after 3 seconds
-            setTimeout(() => {
-                if (toast && toast.parentNode) {
-                    toast.remove();
-                }
-            }, 3000);
-        }
-        // Function to copy domain to clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                // Show a temporary success message
-                showToast('Domain copied to clipboard!', 'success');
-            }).catch(() => {
-                console.warn('Failed to copy to clipboard');
-                showToast('Failed to copy domain', 'error');
-            });
-        }
-
-        // Function to copy all domains from a split to clipboard
-        function copyAllDomains(domains, splitName) {
-            if (!domains || domains.length === 0) {
-                showToast('No domains to copy', 'error');
-                return;
-            }
-            
-            // Join domains with newlines for easy copying
-            const domainsText = domains.join('\n');
-            
-            navigator.clipboard.writeText(domainsText).then(() => {
-                showToast(`All domains from ${splitName} copied to clipboard!`, 'success');
-            }).catch(() => {
-                showToast('Failed to copy domains', 'error');
-            });
-        }
-
-        // Function to show toast notifications
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            toast.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            document.body.appendChild(toast);
-
-            // Auto remove after 3 seconds
-            setTimeout(() => {
-                if (toast && toast.parentNode) {
-                    toast.remove();
-                }
-            }, 3000);
-        }
-
-        // Helper function to get status badge class
+        // Get status badge class
         function getStatusBadgeClass(status) {
-            switch(status) {
-                case 'completed': return 'bg-success';
-                case 'unallocated': return 'bg-warning text-dark';
-                case 'allocated': return 'bg-info';
-                case 'rejected': return 'bg-danger';
-                case 'in-progress': return 'bg-primary';
-                default: return 'bg-secondary';
-            }
-        }
-        
-        // Helper function to format date
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            try {
-                return new Date(dateString).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: '2-digit'
-                });
-            } catch (error) {
-                return 'Invalid Date';
-            }
+            const statusClasses = {
+                'completed': 'bg-success',
+                'in-progress': 'bg-primary',
+                'unallocated': 'bg-warning',
+                'allocated': 'bg-info',
+                'rejected': 'bg-danger'
+            };
+            return statusClasses[status?.toLowerCase()] || 'bg-secondary';
         }
 
-        // Handle filter form submission
-        document.getElementById('filterForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const filters = {};
-            
-            for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    filters[key] = value.trim();
+        // Timer functions
+        function createFlipCard(initial) {
+            const card = document.createElement('div');
+            card.className = 'flip-card';
+            card.innerHTML = `
+                <div class="flip-inner">
+                    <div class="flip-front">${initial}</div>
+                    <div class="flip-back">${initial}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        function updateFlipCard(card, newVal) {
+            const inner = card.querySelector('.flip-inner');
+            const front = card.querySelector('.flip-front');
+            const back = card.querySelector('.flip-back');
+
+            if (front.textContent === newVal) return;
+
+            back.textContent = newVal;
+            inner.style.transform = 'rotateX(180deg)';
+
+            setTimeout(() => {
+                front.textContent = newVal;
+                inner.style.transition = 'none';
+                inner.style.transform = 'rotateX(0deg)';
+                setTimeout(() => {
+                    inner.style.transition = 'transform 0.6s ease-in-out';
+                }, 20);
+            }, 600);
+        }
+
+        function startTimer(containerId, durationSeconds) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const digitElements = [];
+
+            const formatTime = (s) => {
+                const h = Math.floor(s / 3600).toString().padStart(2, '0');
+                const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+                const sec = (s % 60).toString().padStart(2, '0');
+                return h + m + sec;
+            };
+
+            const initial = formatTime(durationSeconds);
+            for (let i = 0; i < initial.length; i++) {
+                const card = createFlipCard(initial[i]);
+                container.appendChild(card);
+                digitElements.push(card);
+
+                if (i === 1 || i === 3) {
+                    const colon = document.createElement('div');
+                    colon.textContent = ':';
+                    colon.style.cssText = 'font-size: 20px; line-height: 10px; color: white;';
+                    container.appendChild(colon);
                 }
             }
-            
-            currentFilters = filters;
-            currentPage = 1;
-            hasMorePages = false;
-            totalOrders = 0;
-            loadOrders(filters);
-        });
-          
-        // Reset filters
-        function resetFilters() {
-            document.getElementById('filterForm').reset();
-            currentFilters = {};
-            currentPage = 1;
-            hasMorePages = false;
-            totalOrders = 0;
-            loadOrders();
-        }
-        
-        // Reset filters button
-        document.getElementById('resetFilters').addEventListener('click', resetFilters);
 
-        // Global cleanup function for offcanvas issues
-        function cleanupOffcanvasBackdrop() {
-            // Remove any remaining backdrop elements
-            const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop, .fade');
-            backdrops.forEach(backdrop => {
-                if (backdrop.classList.contains('offcanvas-backdrop') || backdrop.classList.contains('modal-backdrop')) {
-                    backdrop.remove();
+            let current = durationSeconds;
+
+            function update() {
+                if (current < 0) return clearInterval(timer);
+
+                if (current <= 3600) {
+                    container.classList.add('time-danger');
+                } else {
+                    container.classList.remove('time-danger');
+                }
+
+                const timeStr = formatTime(current);
+                for (let i = 0; i < 6; i++) {
+                    updateFlipCard(digitElements[i], timeStr[i]);
+                }
+                current++;
+            }
+
+            update();
+            const timer = setInterval(update, 1000);
+        }
+
+        // Calculate timer for order (12-hour countdown) with pause functionality
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+            const now = new Date();
+
+            const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
+            const twelveHours = 12 * 60 * 60 * 1000;
+
+            // ⏸ If paused OR cancelled OR rejected, treat as paused
+            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+                const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+                const timeElapsedBeforePause = pausedTime - startTime;
+                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+                const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+                const label = (status === 'cancelled' || status === 'reject') ? '' : '';
+                const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+
+                if (timeDiffAtPause > 0) {
+                    // Was overdue
+                    return {
+                        display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                        isNegative: true,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} negative`
+                    };
+                } else {
+                    // Still had time left
+                    return {
+                        display: formatTimeDuration(-timeDiffAtPause) + label,
+                        isNegative: false,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} positive`
+                    };
+                }
+            }
+
+            // ✅ Completed (with timestamp)
+            if (status === 'completed' && completedAt) {
+                const completionDate = new Date(completedAt);
+                const totalElapsedTime = completionDate - startTime;
+                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+                const isOverdue = effectiveWorkingTime > twelveHours;
+
+                return {
+                    display: formatTimeDuration(effectiveWorkingTime),
+                    isNegative: isOverdue,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+
+            // ✅ Completed (no timestamp)
+            if (status === 'completed') {
+                return {
+                    display: 'Completed',
+                    isNegative: false,
+                    isCompleted: true,
+                    class: 'completed'
+                };
+            }
+
+            // ⏱ Active countdown or overtime
+            const totalElapsedTime = now - startTime;
+            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+            const timeDiff = now - effectiveDeadline;
+
+            if (timeDiff > 0) {
+                // Overtime
+                return {
+                    display: '-' + formatTimeDuration(timeDiff),
+                    isNegative: true,
+                    isCompleted: false,
+                    class: 'negative'
+                };
+            } else {
+                // Still in time
+                return {
+                    display: formatTimeDuration(-timeDiff),
+                    isNegative: false,
+                    isCompleted: false,
+                    class: 'positive'
+                };
+            }
+        }
+
+        // Format time duration in countdown format (HH:MM:SS)
+        function formatTimeDuration(milliseconds) {
+            const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            // Format with leading zeros for proper countdown display
+            const hoursStr = hours.toString().padStart(2, '0');
+            const minutesStr = minutes.toString().padStart(2, '0');
+            const secondsStr = seconds.toString().padStart(2, '0');
+            
+            return `${hoursStr}:${minutesStr}:${secondsStr}`;
+        }
+
+        // Create timer badge HTML
+        function createTimerBadge(order, isDrafts, index) {
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
+
+            // Determine the icon class based on status and timer
+            let iconClass = '';
+            if (order.status === 'cancelled') {
+                iconClass = 'fas fa-exclamation-triangle'; // warning icon
+            } else if (order.status === 'reject') {
+                iconClass = 'fas fa-ban'; // ban icon for rejected
+            } else if (timer.isCompleted) {
+                iconClass = 'fas fa-check';
+            } else if (timer.isPaused) {
+                iconClass = 'fas fa-pause';
+            } else {
+                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+            }
+
+            // Create tooltip text
+            let tooltip = '';
+            if (order.status === 'cancelled') {
+                tooltip = `Order was cancelled on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (order.status === 'reject') {
+                tooltip = `Order was rejected on ${formatDate(order.completed_at || order.timer_paused_at || order.created_at)}`;
+            } else if (timer.isCompleted) {
+                tooltip = order.completed_at 
+                    ? `Order completed on ${formatDate(order.completed_at)}` 
+                    : 'Order is completed';
+            } else if (timer.isPaused) {
+                tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(order.timer_paused_at)}`;
+            } else if (timer.isNegative) {
+                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(order.created_at)}`;
+            } else {
+                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
+            }
+            
+            // Generate unique ID for this timer using order ID and index
+            const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
+            
+            // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
+            let timeString = timer.display;
+            let isNegative = false;
+            
+            if (timeString.startsWith('-')) {
+                isNegative = true;
+                timeString = timeString.substring(1);
+            }
+            
+            const timeParts = timeString.split(':');
+            const hours = timeParts[0] || '00';
+            const minutes = timeParts[1] || '00';
+            const seconds = timeParts[2] || '00';
+            
+            // Create flip timer with individual digit cards
+            return `
+                <div id="${timerId}" class="flip-timer ${timer.class}" 
+                     data-order-id="${order.order_id}" 
+                     data-created-at="${order.created_at}" 
+                     data-status="${order.status}" 
+                     data-completed-at="${order.completed_at || ''}"
+                     data-timer-started-at="${order.timer_started_at || ''}"
+                     data-timer-paused-at="${order.timer_paused_at || ''}"
+                     data-total-paused-seconds="${order.total_paused_seconds || 0}"
+                     data-tooltip="${tooltip}"
+                     title="${tooltip}"
+                     style="gap: 4px; align-items: center;">
+                    <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
+                    ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
+                    <div class="flip-card" data-digit="${hours.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(0)}</div>
+                            <div class="flip-back">${hours.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${hours.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${hours.charAt(1)}</div>
+                            <div class="flip-back">${hours.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${minutes.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(0)}</div>
+                            <div class="flip-back">${minutes.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${minutes.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${minutes.charAt(1)}</div>
+                            <div class="flip-back">${minutes.charAt(1)}</div>
+                        </div>
+                    </div>
+                    <span class="timer-separator">:</span>
+                    <div class="flip-card" data-digit="${seconds.charAt(0)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(0)}</div>
+                            <div class="flip-back">${seconds.charAt(0)}</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-digit="${seconds.charAt(1)}">
+                        <div class="flip-inner">
+                            <div class="flip-front">${seconds.charAt(1)}</div>
+                            <div class="flip-back">${seconds.charAt(1)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Start timers for all rendered orders
+        function startTimersForOrders(ordersList, isDrafts, startIndex) {
+            ordersList.forEach((order, index) => {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject') {
+                    const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
+                    const timer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
+                    
+                    if (!timer.isCompleted) {
+                        updateTimerDisplay(timerId, timer);
+                        
+                        // Set up interval to update timer every second
+                        setInterval(() => {
+                            const updatedTimer = calculateOrderTimer(
+                                order.created_at, 
+                                order.status, 
+                                order.completed_at, 
+                                order.timer_started_at, 
+                                order.timer_paused_at, 
+                                order.total_paused_seconds
+                            );
+                            updateTimerDisplay(timerId, updatedTimer);
+                        }, 1000);
+                    }
                 }
             });
-            
-            // Reset body styles
-            document.body.classList.remove('offcanvas-open', 'modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
         }
 
-        // Add global event listener for offcanvas cleanup
-        document.addEventListener('click', function(e) {
-            // If clicking outside offcanvas or on close button, ensure cleanup
-            if (e.target.matches('[data-bs-dismiss="offcanvas"]') || 
-                e.target.closest('[data-bs-dismiss="offcanvas"]')) {
-                setTimeout(cleanupOffcanvasBackdrop, 300);
+        // Start timer for a single order (used in offcanvas)
+        function startSingleTimer(order, isDrafts, index) {
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject') return;
+            
+            const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
+            const timer = calculateOrderTimer(
+                order.created_at, 
+                order.status, 
+                order.completed_at, 
+                order.timer_started_at, 
+                order.timer_paused_at, 
+                order.total_paused_seconds
+            );
+            
+            if (!timer.isCompleted) {
+                updateTimerDisplay(timerId, timer);
+                
+                // Set up interval to update timer every second
+                setInterval(() => {
+                    const updatedTimer = calculateOrderTimer(
+                        order.created_at, 
+                        order.status, 
+                        order.completed_at, 
+                        order.timer_started_at, 
+                        order.timer_paused_at, 
+                        order.total_paused_seconds
+                    );
+                    updateTimerDisplay(timerId, updatedTimer);
+                }, 1000);
             }
-        });
+        }
 
-        // Cleanup on page focus (in case of any lingering issues)
-        window.addEventListener('focus', cleanupOffcanvasBackdrop);
+        // Update timer display
+        function updateTimerDisplay(timerId, timer) {
+            const timerElement = document.getElementById(timerId);
+            if (!timerElement) return;
+            
+            // Update timer class
+            timerElement.className = `flip-timer ${timer.class}`;
+            
+            let timeString = timer.display;
+            if (timeString === 'Completed') return;
+            
+            let isNegative = false;
+            if (timeString.startsWith('-')) {
+                isNegative = true;
+                timeString = timeString.substring(1);
+            }
+            
+            const timeParts = timeString.split(':');
+            const hours = timeParts[0] || '00';
+            const minutes = timeParts[1] || '00';
+            const seconds = timeParts[2] || '00';
+            
+            // Update digit cards
+            const flipCards = timerElement.querySelectorAll('.flip-card');
+            if (flipCards.length >= 6) {
+                updateFlipCard(flipCards[0], hours.charAt(0));
+                updateFlipCard(flipCards[1], hours.charAt(1));
+                updateFlipCard(flipCards[2], minutes.charAt(0));
+                updateFlipCard(flipCards[3], minutes.charAt(1));
+                updateFlipCard(flipCards[4], seconds.charAt(0));
+                updateFlipCard(flipCards[5], seconds.charAt(1));
+            }
+        }
+
+        // Update individual flip card
+        function updateFlipCard(card, newDigit) {
+            if (!card) return;
+            
+            const currentDigit = card.getAttribute('data-digit');
+            if (currentDigit === newDigit) return;
+            
+            const flipInner = card.querySelector('.flip-inner');
+            const flipFront = card.querySelector('.flip-front');
+            const flipBack = card.querySelector('.flip-back');
+            
+            if (!flipInner || !flipFront || !flipBack) return;
+            
+            // Update back face with new digit
+            flipBack.textContent = newDigit;
+            
+            // Trigger flip animation
+            flipInner.style.transform = 'rotateX(180deg)';
+            
+            setTimeout(() => {
+                // Update front face and reset position
+                flipFront.textContent = newDigit;
+                card.setAttribute('data-digit', newDigit);
+                flipInner.style.transition = 'none';
+                flipInner.style.transform = 'rotateX(0deg)';
+                
+                // Re-enable transition
+                setTimeout(() => {
+                    flipInner.style.transition = 'transform 0.6s ease-in-out';
+                }, 20);
+            }, 300);
+        }
+
+        // Helper functions for canvas rendering
+        function renderProfileLinksFromObject(prefixVariantsDetails) {
+            if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
+                return `<span>N/A</span>`;
+            }
+
+            let html = '';
+
+            Object.entries(prefixVariantsDetails).forEach(([key, variant]) => {
+                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                html += `<div class="mt-1">`;
+                html += `<strong>${formattedKey}:</strong> `;
+
+                if (variant?.profile_link) {
+                    html += `<a href="${variant.profile_link}" target="_blank">${variant.profile_link}</a>`;
+                } else {
+                    html += `<span>N/A</span>`;
+                }
+
+                html += `</div>`;
+            });
+
+            return html;
+        }
 
         // Enhanced function to render domains with attractive styling
         function renderDomainsWithStyle(splits) {
@@ -1868,6 +2032,7 @@ pointer-events: none
                     title="Click to copy: ${domain}"
                     onclick="copyToClipboard('${domain}')">
                         <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                    </span>
                 `).join('');
         }
 
@@ -1941,374 +2106,172 @@ pointer-events: none
                         // Add expanding class for additional effects
                         const container = content.closest('.split-container');
                         if (container) {
-                            container.classList.add('expanding');
-                            setTimeout(() => {
-                                container.classList.remove('expanding');
-                            }, 400);
+                            container.classList.add('expanded');
                         }
                     });
-                    
-                    // Animate domain badges within the split with staggered delay
-                    // setTimeout(() => {
-                    //     const domainBadges = content.querySelectorAll('.domain-badge');
-                    //     domainBadges.forEach((badge, index) => {
-                    //         badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-                    //     });
-                    // }, 200);
                 }
             }
+        }
+
+        // Initialize chevron states for all splits
+        function initializeChevronStates() {
+            const allIcons = document.querySelectorAll('[id^="icon-split-"]');
+           
+            allIcons.forEach(icon => {
+                const contentId = icon.id.replace('icon-', '');
+                const content = document.getElementById(contentId);
+                
+                if (content && content.classList.contains('show')) {
+                    icon.style.transform = 'rotate(90deg)'; // Point down if open
+                } else {
+                    icon.style.transform = 'rotate(0deg)'; // Point right if closed
+                }
+            });
+        }
+
+        // Copy all domains from a split to clipboard
+        function copyAllDomainsFromSplit(splitId, splitLabel) {
+            const content = document.getElementById(splitId);
+            if (!content) return;
+            
+            // Get all domain texts
+            const domainTexts = Array.from(content.querySelectorAll('.domain-text'))
+                .map(el => el.textContent.trim())
+                .filter(text => text !== '');
+            
+            if (domainTexts.length === 0) {
+                return alert('No domains found to copy.');
+            }
+            
+            // Create a temporary textarea element to facilitate copying
+            const textarea = document.createElement('textarea');
+            textarea.value = domainTexts.join('\n');
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            // Show success message
+            alert(`All domains from ${splitLabel} copied to clipboard!`);
         }
         
-        // Function to initialize chevron states and animations on page load
-        function initializeChevronStates() {
-            // Find all collapsible elements and set initial chevron states
-            document.querySelectorAll('[id^="split-"]').forEach(function(element) {
-                const splitId = element.id;
-                const icon = document.getElementById('icon-' + splitId);
-                
-                if (icon) {
-                    // Add transition class for smooth chevron rotation
-                    icon.classList.add('transition-transform');
-                    
-                    // Check if the element has 'show' class or is visible
-                    const isVisible = element.classList.contains('show');
-                    
-                    if (isVisible) {
-                        icon.style.transform = 'rotate(90deg)'; // Point down when open
-                        // Set initial animation state for visible content
-                        element.style.opacity = '1';
-                        element.style.transform = 'translateY(0)';
-                    } else {
-                        icon.style.transform = 'rotate(0deg)'; // Point right when closed
-                        // Set initial hidden state
-                        element.style.opacity = '0';
-                        element.style.transform = 'translateY(-10px)';
-                    }
-                }
-            });
-            
-            // Initialize domain badge animations for visible splits only
-            // document.querySelectorAll('.collapse.show .domain-badge').forEach((badge, index) => {
-            //     badge.style.animation = `domainFadeIn 0.3s ease-out ${index * 0.001}s both`;
-            // });
-        }
-
-        // Function to copy all domains from a split container by extracting them from the DOM
-        function copyAllDomainsFromSplit(splitId, splitName) {
-            const splitContainer = document.getElementById(splitId);
-            if (!splitContainer) {
-                showToast('Split container not found', 'error');
-                return;
-            }
-            
-            // Extract domain names from the domain badges in the split container
-            const domainBadges = splitContainer.querySelectorAll('.domain-badge');
-            const domains = [];
-            
-            domainBadges.forEach(badge => {
-                // Get text content and remove the globe icon
-                const fullText = badge.textContent.trim();
-                // Remove the globe icon (which appears as a character) and any extra whitespace
-                const domainText = fullText.replace(/^\s*[\u{1F30D}\u{1F310}]?\s*/, '').trim();
-                if (domainText && domainText !== '') {
-                    domains.push(domainText);
-                }
-            });
-            
-            if (domains.length === 0) {
-                showToast(`No domains found in ${splitName}`, 'error');
-                return;
-            }
-            
-            // Join domains with newlines for easy copying
-            const domainsText = domains.join('\n');
-            
-            navigator.clipboard.writeText(domainsText).then(() => {
-                showToast(`Copied ${domains.length} domains from ${splitName}`, 'success');
-            }).catch(() => {
-                showToast('Failed to copy domains', 'error');
-            });
-        }
-
         // Function to assign entire order to logged-in contractor
         async function assignOrderToMe(orderId) {
             try {
-            // Show SweetAlert2 confirmation dialog
-            const result = await Swal.fire({
-                title: 'Assign Order to Yourself?',
-                text: 'This will assign all unallocated splits of this order to you. Are you sure?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, assign to me!',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            });
+                // Show SweetAlert2 confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Assign Order to Yourself?',
+                    text: 'This will assign this order to you. Are you sure?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, assign to me!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                });
 
-            // If user cancels, return early
-            if (!result.isConfirmed) {
-                return;
-            }
-
-            // Show SweetAlert2 loading dialog
-            Swal.fire({
-                title: 'Assigning Order...',
-                text: 'Please wait while we assign the order to you.',
-                icon: 'info',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                Swal.showLoading();
-                }
-            });
-
-            // Show loading state on the button as backup
-            const button = document.getElementById('assignOrderBtn');
-            if (button) {
-                const originalHtml = button.innerHTML;
-                button.disabled = true;
-                button.innerHTML = `
-                <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                Assigning Order...
-                `;
-            }
-
-            // Make API request to assign all unallocated splits of the order
-            const response = await fetch(`/contractor/orders/${orderId}/assign-to-me`, {
-                method: 'POST',
-                headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to assign order');
-            }
-
-            const data = await response.json();
-            
-            // Close loading dialog and show success
-            await Swal.fire({
-                title: 'Success!',
-                text: data.message || 'Order assigned successfully!',
-                icon: 'success',
-                confirmButtonColor: '#28a745',
-                timer: 3000,
-                timerProgressBar: true
-            });
-            
-            // Update the button to show assigned state
-            if (button) {
-                button.outerHTML = `
-                <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
-                    <i class="fas fa-check me-1" style="font-size: 10px;"></i>
-                    Order Assigned to You
-                </span>
-                `;
-            }
-            
-            // Update all status badges in the table to show allocated
-            const statusBadges = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge');
-            statusBadges.forEach(badge => {
-                if (badge.textContent.trim().toLowerCase() === 'unallocated') {
-                badge.className = 'badge bg-info';
-                badge.textContent = 'allocated';
-                }
-            });
-            
-            // Refresh the order list to reflect changes
-            setTimeout(() => {
-                loadOrders(currentFilters, 1, false);
-            }, 1000);
-            
-            } catch (error) {
-            console.error('Error assigning order:', error);
-            
-            // Close loading dialog and show error
-            await Swal.fire({
-                title: 'Error!',
-                text: error.message || 'Failed to assign order. Please try again.',
-                icon: 'error',
-                confirmButtonColor: '#dc3545'
-            });
-            
-            // Restore button state
-            const button = document.getElementById('assignOrderBtn');
-            if (button) {
-                button.disabled = false;
-                // Restore original button content - we need to recreate it
-                const unallocatedCount = document.querySelectorAll('#orderSplitsContainer .table tbody tr td:nth-child(2) .badge').length;
-                button.innerHTML = `
-                <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
-                Assign Order to Me
-                <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedCount}</span>
-                `;
-            }
-            }
-        }
-    
-        // Update all flip timers on the page
-        function updateAllTimers() {
-            const flipTimers = document.querySelectorAll('.flip-timer');
-            flipTimers.forEach(flipTimer => {
-                const orderId = flipTimer.dataset.orderId;
-                const createdAt = flipTimer.dataset.createdAt;
-                const status = flipTimer.dataset.status;
-                const completedAt = flipTimer.dataset.completedAt;
-                const timerStartedAt = flipTimer.dataset.timerStartedAt;
-                
-                // Skip updating completed orders (timer is paused)
-                if (status === 'completed') {
+                // If user cancels, return early
+                if (!result.isConfirmed) {
                     return;
                 }
-                
-                try {
-                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
-                    
-                    // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
-                    let timeString = timer.display;
-                    let isNegative = false;
-                    
-                    if (timeString.startsWith('-')) {
-                        isNegative = true;
-                        timeString = timeString.substring(1);
-                    }
-                    
-                    const timeParts = timeString.split(':');
-                    const hours = (timeParts[0] || '00').padStart(2, '0');
-                    const minutes = (timeParts[1] || '00').padStart(2, '0');
-                    const seconds = (timeParts[2] || '00').padStart(2, '0');
-                    
-                    // Get current digits from flip cards
-                    const flipCards = flipTimer.querySelectorAll('.flip-card');
-                    const currentDigits = [
-                        hours.charAt(0), hours.charAt(1),
-                        minutes.charAt(0), minutes.charAt(1),
-                        seconds.charAt(0), seconds.charAt(1)
-                    ];
-                    
-                    // Only update if any digit has changed
-                    let hasChanged = false;
-                    flipCards.forEach((card, index) => {
-                        const currentDigit = card.dataset.digit;
-                        const newDigit = currentDigits[index];
-                        if (currentDigit !== newDigit) {
-                            hasChanged = true;
-                        }
-                    });
-                    
-                    if (hasChanged) {
-                        // Create tooltip text
-                        let tooltip = '';
-                        if (timer.isCompleted) {
-                            tooltip = completedAt 
-                                ? `Order completed on ${formatDate(completedAt)}` 
-                                : 'Order is completed';
-                        } else if (timer.isNegative) {
-                            tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(createdAt)}`;
-                        } else {
-                            tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(createdAt)}`;
-                        }
-                        
-                        // Update flip timer class and tooltip
-                        flipTimer.className = `flip-timer ${timer.class}`;
-                        flipTimer.setAttribute('data-tooltip', tooltip);
-                        flipTimer.setAttribute('title', tooltip);
-                        
-                        // Update icon
-                        const timerIcon = flipTimer.querySelector('.timer-icon');
-                        if (timerIcon) {
-                            timerIcon.className = `${iconClass} timer-icon`;
-                        }
-                        
-                        // Update negative sign visibility
-                        const negativeSign = flipTimer.querySelector('.negative-sign');
-                        if (isNegative && !negativeSign) {
-                            // Add negative sign if needed
-                            const iconElement = flipTimer.querySelector('.timer-icon');
-                            if (iconElement) {
-                                iconElement.insertAdjacentHTML('afterend', '<span class="negative-sign" style="color: #dc3545; font-weight: bold; margin-right: 4px;">-</span>');
-                            }
-                        } else if (!isNegative && negativeSign) {
-                            // Remove negative sign if not needed
-                            negativeSign.remove();
-                        }
-                        
-                        // Update each flip card with animation
-                        flipCards.forEach((card, index) => {
-                            const newDigit = currentDigits[index];
-                            const currentDigit = card.dataset.digit;
-                            
-                            if (currentDigit !== newDigit) {
-                                updateFlipCard(card, newDigit);
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error updating flip timer for order', orderId, ':', error);
-                }
-            });
-        }
-        
-        // Function to animate flip card digit change
-        function updateFlipCard(card, newDigit) {
-            const flipInner = card.querySelector('.flip-inner');
-            const flipFront = card.querySelector('.flip-front');
-            const flipBack = card.querySelector('.flip-back');
-            
-            if (!flipInner || !flipFront || !flipBack) return;
-            
-            // Add flipping class for visual enhancement
-            card.classList.add('flipping');
-            
-            // Set the new digit on the back face
-            flipBack.textContent = newDigit;
-            
-            // Add flip animation
-            flipInner.style.transform = 'rotateX(180deg)';
-            
-            // After animation completes, update front face and reset
-            setTimeout(() => {
-                flipFront.textContent = newDigit;
-                card.dataset.digit = newDigit;
-                flipInner.style.transform = 'rotateX(0deg)';
-                
-                // Remove flipping class after animation
-                setTimeout(() => {
-                    card.classList.remove('flipping');
-                }, 100);
-            }, 300); // Half of the 0.6s CSS transition
-        }
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Clean up any existing backdrop issues on page load
-            cleanupOffcanvasBackdrop();
-            
-            // Add Load More button event handler
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            if (loadMoreBtn) {
-                loadMoreBtn.addEventListener('click', loadMoreOrders);
+                // Show SweetAlert2 loading dialog
+                Swal.fire({
+                    title: 'Assigning Order...',
+                    text: 'Please wait while we assign the order to you.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Show loading state on the button as backup
+                const button = document.getElementById('assignOrderBtn');
+                if (button) {
+                    const originalHtml = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Assigning Order...
+                    `;
+                }
+
+                // Make API request to assign the order (using contractor route if exists, fallback to contractor route)
+                const response = await fetch(`/contractor/order_queue/${orderId}/assign-to-me`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to assign order');
+                }
+
+                const data = await response.json();
+                
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Order assigned successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Update the button to show assigned state
+                if (button) {
+                    button.outerHTML = `
+                        <span class="badge bg-info px-3 py-2" style="font-size: 11px;">
+                            <i class="fas fa-check me-1" style="font-size: 10px;"></i>
+                            Order Assigned to You
+                        </span>
+                    `;
+                }
+                
+                // Refresh the order list to reflect changes
+                setTimeout(() => {
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error assigning order:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to assign order. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+                
+                // Restore button state
+                const button = document.getElementById('assignOrderBtn');
+                if (button) {
+                    button.disabled = false;
+                    // Restore original button content
+                    button.innerHTML = `
+                        <i class="fas fa-user-plus me-1" style="font-size: 10px;"></i>
+                        Assign Order to Me
+                        <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">1</span>
+                    `;
+                }
             }
-            
-            // Load orders immediately
-            loadOrders();
-            
-            // Update timers every second for real-time countdown
-            console.log('Starting timer updates...');
-            setInterval(updateAllTimers, 1000); // Update every 1 second
-            
-            // Also update timers immediately after DOM load
-            setTimeout(updateAllTimers, 500);
-        });
+        }
 
         // Global variable to store current order ID for rejection
         let currentOrderIdForRejection = null;
@@ -2419,7 +2382,7 @@ pointer-events: none
                 });
 
                 // Make API request to reject the order with reason
-                const response = await fetch(`/contractor/orders/${currentOrderIdForRejection}/reject`, {
+                const response = await fetch(`/contractor/order_queue/${currentOrderIdForRejection}/reject`, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -2460,7 +2423,11 @@ pointer-events: none
                 
                 // Refresh the order list to reflect changes
                 setTimeout(() => {
-                    loadOrders(currentFilters, 1, false);
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    }
                 }, 1000);
                 
             } catch (error) {
@@ -2522,5 +2489,5 @@ pointer-events: none
                 }
             }
         });
-  </script>
+    </script>
 @endpush
