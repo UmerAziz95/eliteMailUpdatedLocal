@@ -350,7 +350,10 @@
                     data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
                     aria-selected="false">in-draft</button>
             </li>
-            <li class="nav-item" role="presentation">
+            @php
+                $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
+            @endphp
+            <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};">
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
