@@ -313,6 +313,8 @@ class OrderController extends Controller
                         'status' => strtolower($order->status_manage_by_admin ?? 'n/a'),
                         'completed_at' => $order->completed_at ? $order->completed_at->toISOString() : null,
                         'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                        'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                        'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                         'order_id' => $order->id
                     ]);
                 })

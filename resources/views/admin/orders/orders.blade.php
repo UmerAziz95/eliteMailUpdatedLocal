@@ -353,6 +353,38 @@
             }
         }
 
+        /* Pulse animation for paused timers */
+        @keyframes pulse-yellow {
+            0% {
+                box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+                transform: scale(1.02);
+            }
+
+            100% {
+                box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+            }
+        }
+
+        /* Additional timer badge states */
+        .timer-badge.paused {
+            background: linear-gradient(135deg, #ffc107, #ffb300);
+            color: #212529;
+            border-color: rgba(255, 193, 7, 0.3);
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+            animation: pulse-yellow 2s infinite;
+        }
+
+        .timer-badge.cancelled {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border-color: rgba(108, 117, 125, 0.3);
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+        }
+
         /* Timer icon styling */
         .timer-icon {
             font-size: 10px;
@@ -1269,29 +1301,62 @@ pointer-events: none
             window.location.href = `{{ url('/admin/orders/${id}/view') }}`;
         }
 
-        // Timer calculation functions
-        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null) {
+        // Timer calculation functions with pause and cancelled support
+        function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
+            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
 
-            // Use timer_started_at if available, otherwise fall back to created_at
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
-            const twelveHoursLater = new Date(startTime.getTime() + (12 * 60 * 60 * 1000));
+            const twelveHours = 12 * 60 * 60 * 1000;
 
-            // If order is completed, timer is paused - show the time it took to complete
+            // ⏸ If paused OR cancelled OR rejected, treat as paused
+            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+                const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
+
+                const timeElapsedBeforePause = pausedTime - startTime;
+                const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
+                const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
+
+                const label = (status === 'cancelled' || status === 'reject') ? '' : '';
+                const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+
+                if (timeDiffAtPause > 0) {
+                    // Was overdue
+                    return {
+                        display: '-' + formatTimeDuration(timeDiffAtPause) + label,
+                        isNegative: true,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} negative`
+                    };
+                } else {
+                    // Still had time left
+                    return {
+                        display: formatTimeDuration(-timeDiffAtPause) + label,
+                        isNegative: false,
+                        isCompleted: false,
+                        isPaused: true,
+                        class: `${timerClass} positive`
+                    };
+                }
+            }
+
+            // ✅ Completed (with timestamp)
             if (status === 'completed' && completedAt) {
                 const completionDate = new Date(completedAt);
-                const timeTaken = completionDate - startTime;
-                const isOverdue = completionDate > twelveHoursLater;
+                const totalElapsedTime = completionDate - startTime;
+                const effectiveWorkingTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+                const isOverdue = effectiveWorkingTime > twelveHours;
 
                 return {
-                    display: formatTimeDuration(timeTaken),
+                    display: formatTimeDuration(effectiveWorkingTime),
                     isNegative: isOverdue,
                     isCompleted: true,
                     class: 'completed'
                 };
             }
 
-            // If order is completed but no completion date, just show completed
+            // ✅ Completed (no timestamp)
             if (status === 'completed') {
                 return {
                     display: 'Completed',
@@ -1301,13 +1366,14 @@ pointer-events: none
                 };
             }
 
-            // For active orders: 12-hour countdown from timer_started_at (or created_at as fallback)
-            // - Counts down from 12:00:00 to 00:00:00
-            // - After reaching zero, continues in negative time (overtime)
-            const timeDiff = now - twelveHoursLater;
+            // ⏱ Active countdown or overtime
+            const totalElapsedTime = now - startTime;
+            const effectiveElapsedTime = Math.max(0, totalElapsedTime - (totalPausedSeconds * 1000));
+            const effectiveDeadline = new Date(startTime.getTime() + twelveHours + (totalPausedSeconds * 1000));
+            const timeDiff = now - effectiveDeadline;
 
             if (timeDiff > 0) {
-                // Order is overdue (negative time - overtime)
+                // Overtime
                 return {
                     display: '-' + formatTimeDuration(timeDiff),
                     isNegative: true,
@@ -1315,7 +1381,7 @@ pointer-events: none
                     class: 'negative'
                 };
             } else {
-                // Order still has time remaining (countdown)
+                // Still in time
                 return {
                     display: formatTimeDuration(-timeDiff),
                     isNegative: false,
@@ -1353,39 +1419,64 @@ pointer-events: none
             return date.toLocaleDateString('en-US', options);
         }
 
-        // Create timer badge HTML
-        // function createTimerBadge(timerData) {
-        //     const timer = calculateOrderTimer(timerData.created_at, timerData.status, timerData.completed_at, timerData
-        //         .timer_started_at);
-        //     const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' :
-        //         'fas fa-clock');
+        // Create timer badge HTML with pause and cancelled support
+        function createTimerBadge(timerData) {
+            const timer = calculateOrderTimer(
+                timerData.created_at, 
+                timerData.status, 
+                timerData.completed_at, 
+                timerData.timer_started_at,
+                timerData.timer_paused_at,
+                timerData.total_paused_seconds
+            );
 
-        //     // Create tooltip text
-        //     let tooltip = '';
-        //     if (timer.isCompleted) {
-        //         tooltip = timerData.completed_at ?
-        //             `Order completed on ${formatDate(timerData.completed_at)}` :
-        //             'Order is completed';
-        //     } else if (timer.isNegative) {
-        //         tooltip =
-        //             `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(timerData.created_at)}`;
-        //     } else {
-        //         tooltip =
-        //             `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(timerData.created_at)}`;
-        //     }
+            // Determine the icon class based on status and timer
+            let iconClass = '';
+            if (timerData.status === 'cancelled') {
+                iconClass = 'fas fa-exclamation-triangle'; // warning icon
+            } else if (timerData.status === 'reject') {
+                iconClass = 'fas fa-ban'; // ban icon for rejected
+            } else if (timer.isCompleted) {
+                iconClass = 'fas fa-check';
+            } else if (timer.isPaused) {
+                iconClass = 'fas fa-pause';
+            } else {
+                iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+            }
 
-        //     return `
-        //     <span class="timer-badge ${timer.class}" 
-        //           data-order-id="${timerData.order_id}" 
-        //           data-created-at="${timerData.created_at}" 
-        //           data-status="${timerData.status}" 
-        //           data-completed-at="${timerData.completed_at || ''}"
-        //           title="${tooltip}">
-        //         <i class="${iconClass} timer-icon"></i>
-        //         ${timer.display}
-        //     </span>
-        // `;
-        // }
+            // Create tooltip text
+            let tooltip = '';
+            if (timerData.status === 'cancelled') {
+                tooltip = `Order was cancelled on ${formatDate(timerData.completed_at || timerData.timer_paused_at || timerData.created_at)}`;
+            } else if (timerData.status === 'reject') {
+                tooltip = `Order was rejected on ${formatDate(timerData.completed_at || timerData.timer_paused_at || timerData.created_at)}`;
+            } else if (timer.isCompleted) {
+                tooltip = timerData.completed_at 
+                    ? `Order completed on ${formatDate(timerData.completed_at)}` 
+                    : 'Order is completed';
+            } else if (timer.isPaused) {
+                tooltip = `Timer is paused at ${timer.display.replace(' (Paused)', '')}. Paused on ${formatDate(timerData.timer_paused_at)}`;
+            } else if (timer.isNegative) {
+                tooltip = `Order is overdue by ${timer.display.substring(1)} (overtime). Created on ${formatDate(timerData.created_at)}`;
+            } else {
+                tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(timerData.created_at)}`;
+            }
+
+            return `
+                <span class="timer-badge ${timer.class}" 
+                      data-order-id="${timerData.order_id}" 
+                      data-created-at="${timerData.created_at}" 
+                      data-status="${timerData.status}" 
+                      data-completed-at="${timerData.completed_at || ''}"
+                      data-timer-started-at="${timerData.timer_started_at || ''}"
+                      data-timer-paused-at="${timerData.timer_paused_at || ''}"
+                      data-total-paused-seconds="${timerData.total_paused_seconds || 0}"
+                      title="${tooltip}">
+                    <i class="${iconClass} timer-icon"></i>
+                    ${timer.display}
+                </span>
+            `;
+        }
 
         function initDataTable(planId = '') {
             console.log('Initializing DataTable for planId:', planId);
