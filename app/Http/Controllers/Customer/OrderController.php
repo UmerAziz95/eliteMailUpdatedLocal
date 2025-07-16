@@ -397,6 +397,9 @@ class OrderController extends Controller
                         ($hasRejectedPanels ?
                             '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
                                 <i class="fa-solid fa-tools"></i> Fix Order</a></li>' : '') .
+                        (
+                            '<li><a class="dropdown-item" href="#" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" style="cursor: pointer">
+                                <i class="fa-solid fa-tools"></i> Order Log</a></li>') .
                     '</ul>
                 </div>';
                 }
