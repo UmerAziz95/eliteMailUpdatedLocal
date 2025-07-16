@@ -318,6 +318,10 @@ class OrderController extends Controller
                         'order_id' => $order->id
                     ]);
                 })
+                // contractor name
+                ->addColumn('contractor_name', function ($order) {
+                    return $order->assignedTo ? $order->assignedTo->name : 'Unassigned';
+                })
                 ->rawColumns(['action', 'status', 'timer'])
                 ->make(true);
         } catch (Exception $e) {
@@ -647,6 +651,7 @@ class OrderController extends Controller
                     'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
+                    'contractor_name' => $order->assignedTo ? $order->assignedTo->name : null,
                     'total_domains' => $totalDomainsCount,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {

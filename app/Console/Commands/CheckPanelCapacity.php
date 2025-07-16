@@ -576,10 +576,10 @@ class CheckPanelCapacity extends Command
             $orderPanel = OrderPanel::create([
                 'panel_id' => $panel->id,
                 'order_id' => $order->id,
-                'contractor_id' => null, // Will be assigned later
+                'contractor_id' => $order->assigned_to ?? null, // Assign to specific contractor if order has one
                 'space_assigned' => $spaceToAssign,
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
-                'status' => 'unallocated',
+                'status' => $order->assigned_to ? 'allocated' : 'unallocated', // Default to unallocated if no contractor assigned
                 'note' => "Auto-assigned split #{$splitNumber} - {$spaceToAssign} inboxes across " . count($domainsToAssign) . " domains"
             ]);
             

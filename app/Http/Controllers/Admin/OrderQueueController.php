@@ -126,7 +126,8 @@ class OrderQueueController extends Controller
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
-                    })
+                    }),
+                    'rejected_by' => $order->rejectedBy->name ?? 'N/A'
                 ];
             });
 
@@ -365,7 +366,8 @@ class OrderQueueController extends Controller
         try {
             // For admin, get orders that are assigned to current admin user
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
-                ->where('assigned_to', auth()->id());
+                ->where('assigned_to', auth()->id())
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
