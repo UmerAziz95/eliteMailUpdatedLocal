@@ -318,6 +318,11 @@ class OrderController extends Controller
                         'order_id' => $order->id
                     ]);
                 })
+                // contractor name
+                ->addColumn('contractor_name', function ($order) {
+                    $assignedTo = $order->assigned_to ? User::find($order->assigned_to) : null;
+                    return $assignedTo ? $assignedTo->name : 'Unassigned';
+                })
                 ->rawColumns(['action', 'status', 'timer'])
                 ->make(true);
         } catch (Exception $e) {

@@ -9,6 +9,7 @@
                 @if(!isset($plan_id))
                 <th>Plan</th>
                 @endif
+                <th>Assigned To</th>
                 <th>Split Counts</th>
                 <th>Total Inboxes</th>
                 <th>Timer</th>

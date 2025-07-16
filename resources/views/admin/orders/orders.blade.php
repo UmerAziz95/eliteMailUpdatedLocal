@@ -1639,6 +1639,19 @@ pointer-events: none
                             `;
                             }
                         }]),
+                        // add contractor_name
+                        {
+                            data: 'contractor_name',
+                            name: 'orders.contractor_name',
+                            render: function(data, type, row) {
+                                return `
+                                <div class="d-flex align-items-center gap-1">
+                                    <i class="ti ti-user fs-6"></i>
+                                    <span>${data}</span>
+                                </div>
+                            `;
+                            }
+                        },
                         {
                             data: 'split_counts',
                             name: 'split_counts',
