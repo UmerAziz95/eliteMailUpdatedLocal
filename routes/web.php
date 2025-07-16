@@ -213,6 +213,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::put('/panels/{id}', [AdminPanelController::class, 'update'])->name('panels.update');
         Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
+        Route::get('/panels/next-id', [AdminPanelController::class, 'getNextId'])->name('panels.next-id');
        
         // Order Queue Routes
         Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');

@@ -18,6 +18,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PanelController extends Controller
 {
+    // getNextId
+    public function getNextId()
+    {
+        $nextId = Panel::max('id');
+        $nextId = $nextId ? $nextId + 1 : 1;
+        return response()->json(['next_id' => 'PNL-' . $nextId]);
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {

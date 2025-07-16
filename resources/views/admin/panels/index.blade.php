@@ -380,7 +380,13 @@
                     View Orders
                 </button>
             </div>
+            
             <form id="panelForm" class="">
+
+                <div class="mb-3">
+                    <label for="panel_id">Panel ID:</label>
+                    <input type="text" class="form-control" id="panel_id" name="panel_id" value="" readonly>
+                </div>
                 <label for="panel_title">Panel title: <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="panel_title" name="panel_title" value="" required maxlength="255">
 
@@ -695,6 +701,7 @@
     // Pass PHP values to JavaScript
     const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 1790) }};
 
+
     document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
         const secondOffcanvasElement = document.getElementById("secondOffcanvas");
         const secondOffcanvas = new bootstrap.Offcanvas(secondOffcanvasElement, {
@@ -702,12 +709,27 @@
             scroll: true     // allows scrolling while multiple are open
         });
         secondOffcanvas.show();
-        
         // Initialize DataTable when offcanvas is shown
         setTimeout(function() {
             initializeOrderTrackingTable();
         }, 300); // Small delay to ensure offcanvas is fully shown
     });
+
+    // Fetch next panel ID when panelFormOffcanvas is opened
+    document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
+        fetchNextPanelId();
+    });
+
+    function fetchNextPanelId() {
+        fetch('/admin/panels/next-id')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('panel_id').value = data.next_id || '';
+            })
+            .catch(() => {
+                document.getElementById('panel_id').value = '';
+            });
+    }
 
     let orderTrackingTable = null;
 
