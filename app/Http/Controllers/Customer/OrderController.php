@@ -690,6 +690,12 @@ class OrderController extends Controller
                 $order->update([
                     'status_manage_by_admin' => $status,
                 ]);
+
+                if($order->assigned_to && $status != 'draft') {
+                    $order->update([
+                        'status_manage_by_admin' => 'in-progress',
+                    ]);
+                }
                 // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
                 

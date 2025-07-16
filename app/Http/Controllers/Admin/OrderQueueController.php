@@ -365,7 +365,8 @@ class OrderQueueController extends Controller
         try {
             // For admin, get orders that are assigned to current admin user
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
-                ->where('assigned_to', auth()->id());
+                ->where('assigned_to', auth()->id())
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
 
             // Apply filters if provided
             if ($request->filled('order_id')) {

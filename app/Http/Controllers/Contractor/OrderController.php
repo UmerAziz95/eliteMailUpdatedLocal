@@ -1595,11 +1595,14 @@ class OrderController extends Controller
     public function getAssignedOrdersData(Request $request)
     {
         try {
+            // dd('ok');
+            // $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
+            //     ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+            //         $q->where('contractor_id', auth()->id());
+            //     });
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
-                ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
-                    $q->where('contractor_id', auth()->id());
-                });
-
+                ->where('assigned_to', auth()->id())
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
             // Apply filters if provided
             if ($request->filled('order_id')) {
                 $query->where('id', 'like', '%' . $request->order_id . '%');
