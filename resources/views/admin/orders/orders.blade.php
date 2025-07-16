@@ -4110,6 +4110,14 @@ pointer-events: none
                 const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
                 if (currentOrderId) {
                     viewOrderSplits(orderId);
+                    // if order status is not completed, then close the canvas
+                    if (newStatus !== 'completed') {
+                        const offcanvas = document.querySelector('.offcanvas.show');
+                        if (offcanvas) {
+                            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+                            offcanvasInstance.hide();
+                        }
+                    }
                 }
                 
                 // Optionally refresh the orders list
