@@ -383,7 +383,7 @@
             
             <form id="panelForm" class="">
 
-                <div class="mb-3">
+                <div class="mb-3" id="nextPanelIdContainer">
                     <label for="panel_id">Panel ID:</label>
                     <input type="text" class="form-control" id="panel_id" name="panel_id" value="" readonly>
                 </div>
@@ -2810,6 +2810,11 @@ $('#resetFilters').on('click', function() {
 // Edit panel function
 async function editPanel(panelId) {
     try {
+        // nextPanelIdContainer hide it on edit time
+        const nextPanelIdContainer = document.getElementById('nextPanelIdContainer');
+        if (nextPanelIdContainer) {
+            nextPanelIdContainer.style.display = 'none';
+        }
         console.log('Editing panel ID:', panelId);
         console.log('Available panels:', panels);
         
@@ -3000,6 +3005,11 @@ function createNewPanel() {
 
 // Reset form for new panel creation
 function resetPanelForm() {
+    // nextPanelIdContainer show it on reset
+    const nextPanelIdContainer = document.getElementById('nextPanelIdContainer');
+    if (nextPanelIdContainer) {
+        nextPanelIdContainer.style.display = 'block';
+    }
     $('#panelForm')[0].reset();
     $('#panelForm').removeData('panel-id');
     $('#panelForm').removeData('action');
