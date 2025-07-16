@@ -35,6 +35,16 @@
                 </div>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.checkout.index') ? 'active' : '' }}"
+                href="{{ route('admin.checkout.index') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="fa-brands fa-first-order"></i></div>
+                    <div class="text">Check Out</div>
+                </div>
+            </a>
+        </li>
         
     
 

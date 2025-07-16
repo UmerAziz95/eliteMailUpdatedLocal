@@ -427,6 +427,10 @@ Route::get('/contact_us', function () {
     return view('admin/contact_us/contact_us');
 });
 
+Route::get('checkout', function () {
+    return view('admin/checkout/index');
+})->name("admin.checkout.index");
+
 
 
 Route::get('/profile', function () {
