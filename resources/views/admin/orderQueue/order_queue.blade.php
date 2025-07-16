@@ -353,7 +353,7 @@
             @php
                 $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
             @endphp
-            <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};">
+            <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};" id="reject-orders-tab-li">
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
@@ -2366,6 +2366,15 @@
                     timerProgressBar: true
                 });
                 
+                // Close the offcanvas if it's open
+                const offcanvasElement = document.getElementById('order-splits-view');
+                if (offcanvasElement) {
+                    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                    if (offcanvasInstance) {
+                        offcanvasInstance.hide();
+                    }
+                }
+                
                 // Update the button to show rejected state
                 if (button) {
                     button.outerHTML = `
@@ -2376,14 +2385,22 @@
                     `;
                 }
                 
-                // Refresh the order list to reflect changes
+                // Refresh all tabs data immediately
                 setTimeout(() => {
-                    if (activeTab === 'in-queue') {
-                        loadOrders(currentFilters, 1, false, 'in-queue');
-                    } else {
-                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    // Refresh in-queue tab
+                    loadOrders(currentFilters, 1, false, 'in-queue');
+                    
+                    // Refresh in-draft tab
+                    loadOrders(currentFilters, 1, false, 'in-draft');
+                    
+                    // Refresh reject-orders tab
+                    loadOrders(currentFilters, 1, false, 'reject-orders');
+                    // reject-orders-tab-li
+                    const rejectOrdersTabLi = document.getElementById('reject-orders-tab-li');
+                    if (rejectOrdersTabLi) {
+                        rejectOrdersTabLi.style.display = 'block'; // Show the tab if there are rejected orders
                     }
-                }, 1000);
+                }, 500); // Reduced timeout for faster refresh
                 
             } catch (error) {
                 console.error('Error rejecting order:', error);
