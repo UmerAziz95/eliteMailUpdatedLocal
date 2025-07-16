@@ -716,18 +716,42 @@
     });
 
     // Fetch next panel ID when panelFormOffcanvas is opened
-    document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
-        fetchNextPanelId();
-    });
+    // document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
+        
+    // });
 
     function fetchNextPanelId() {
+        // Show SweetAlert loading dialog
+        Swal.fire({
+            title: 'Fetching Panel ID',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         fetch('/admin/panels/next-id')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('panel_id').value = data.next_id || '';
+                Swal.close();
+                // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
+                const offcanvasElement = document.getElementById('panelFormOffcanvas');
+                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+                offcanvas.show();
             })
             .catch(() => {
                 document.getElementById('panel_id').value = '';
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch next panel ID.',
+                    confirmButtonText: 'OK'
+                });
             });
     }
 
@@ -2996,11 +3020,8 @@ async function deletePanel(panelId) {
 function createNewPanel() {
     // Reset form for new panel creation
     resetPanelForm();
-    
-    // Show the offcanvas
-    const offcanvasElement = document.getElementById('panelFormOffcanvas');
-    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
-    offcanvas.show();
+    // Call fetchNextPanelId and show the offcanvas after it completes
+    fetchNextPanelId();
 }
 
 // Reset form for new panel creation
