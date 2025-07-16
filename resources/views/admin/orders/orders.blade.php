@@ -2643,6 +2643,8 @@ pointer-events: none
                     <span class="fw-bold">${order.customer_name}</span>
                     <small>
                         Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Split${order.splits_count === 1 ? '' : 's'}
+                        
+                        ${order.contractor_name && order.contractor_name !== '-' ? `| Assigned To: ${order.contractor_name}` : ''}
                     </small>
                     </div>
                 </div>
