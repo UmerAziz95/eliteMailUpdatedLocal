@@ -16,4 +16,8 @@ class AdminSettingsController extends Controller
         return view('admin.settings.index');
     }
 
+    public function sysConfing(Request $request){
+        return view('admin.config.index');
+    }
+
 }

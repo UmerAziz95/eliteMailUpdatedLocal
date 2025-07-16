@@ -37,6 +37,8 @@ use App\Http\Controllers\Admin\MediaHandlerController;
 //supports
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Customer\CustomerSupportController;
+//settings
+use App\Http\Controllers\Admin\AdminSettingsController;
 
 
 //cron
@@ -227,7 +229,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
         //settings
-       Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings');
+       Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+       Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
 
 
     }); 

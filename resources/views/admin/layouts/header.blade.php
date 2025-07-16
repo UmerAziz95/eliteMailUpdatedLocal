@@ -142,7 +142,7 @@
         <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
                 href="{{ route('admin.profile') }}"><i class="ti ti-user"></i> My Profile</a></li>
         <li><a class="dropdown-item d-flex gap-2 align-items-center mb-2 px-3 rounded-2" style="font-size: 15px"
-                href="{{ route('admin.settings') }}"><i class="ti ti-settings"></i> Settings</a></li>
+                href="{{ route('admin.settings.index') }}"><i class="ti ti-settings"></i> Settings</a></li>
 
         <a class="logout-btn" href="{{ route('logout') }}">
             <button class="btn btn-danger w-100" style="font-size: 13px"><i class="fas fa-sign-out-alt"></i>
