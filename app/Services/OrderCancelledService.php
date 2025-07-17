@@ -40,11 +40,28 @@ class OrderCancelledService
             if ($result->subscription()->status === 'cancelled') {
                 $user = User::find($user_id);
 
+                // Calculate proper end date based on billing cycle
+                $endDate = now(); // Default fallback
+                
+                // If subscription has next_billing_date, calculate end date from last billing period
+                if ($subscription->next_billing_date) {
+                    $nextBillingDate = Carbon::parse($subscription->next_billing_date);
+                    // Assume monthly billing - subtract 1 month to get last billing date
+                    $lastBillingDate = $nextBillingDate->copy()->subMonth();
+                    $endDate = $nextBillingDate->copy()->subDay(); // End date is day before next billing
+                }else{
+                    // get last billing date from subscription
+                    $lastBillingDate = $subscription->last_billing_date ? Carbon::parse($subscription->last_billing_date) : null;
+                    if ($lastBillingDate) {
+                        $endDate = $lastBillingDate->copy()->addMonth()->subDay(); // End date is last billing date + 1 month - 1 day
+                    }
+                }
+
                 $subscription->update([
                     'status' => 'cancelled',
                     'cancellation_at' => now(),
                     'reason' => $reason,
-                    'end_date' => now(), // Replace with getEndExpiryDate if needed
+                    'end_date' => $endDate,
                     'next_billing_date' => null,
                 ]);
 
@@ -75,8 +92,7 @@ class OrderCancelledService
                 );
                 // Add entry to domain removal queue table
                 // Queue date is set to 72 hours after subscription end date
-                $subscriptionEndDate = $subscription->end_date ? Carbon::parse($subscription->end_date) : Carbon::now();
-                $queueStartDate = $subscriptionEndDate->addHours(72);
+                $queueStartDate = $endDate->copy()->addHours(72);
                 
                 DomainRemovalTask::create([
                     'started_queue_date' => $queueStartDate,
@@ -84,7 +100,7 @@ class OrderCancelledService
                     'order_id' => $order ? $order->id : null,
                     'chargebee_subscription_id' => $chargebee_subscription_id,
                     'reason' => $reason,
-                    'assigned_to' => $order->assigned_to,
+                    'assigned_to' => null, // Assuming no specific user assigned yet
                     'status' => 'pending'
                 ]);
 

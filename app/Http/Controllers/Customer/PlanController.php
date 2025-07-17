@@ -576,7 +576,7 @@ class PlanController extends Controller
             ]);
         }
     }
-
+    // this remove and use this service
     public function subscriptionCancelProcess(Request $request)
     {
         
