@@ -391,6 +391,9 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/{orderId}/change-status', [ContractorOrderController::class, 'changeStatus'])->name('orders.change-status');
     Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
+
+
+    // Domains Removal Tasks
 }); 
 
 Route::get('/forget_password', function () {
