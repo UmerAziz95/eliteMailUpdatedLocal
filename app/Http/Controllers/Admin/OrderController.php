@@ -1819,7 +1819,14 @@ class OrderController extends Controller
             $adminId = Auth::id();
             $newStatus = $request->input('status');
             $reason = $request->input('reason');
-            
+            if($newStatus == 'reject' || $newStatus == 'cancelled') {
+                if(!$reason) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Reason is required for reject or cancel status'
+                    ], 422);
+                }
+            }
             // If status is reject, use the OrderRejectionService
             if ($newStatus === 'reject' || $newStatus === 'rejected') {
                 $rejectionService = new \App\Services\OrderRejectionService();
@@ -1827,7 +1834,19 @@ class OrderController extends Controller
                 
                 return response()->json($result);
             }
-            
+            // if status is cancelled then also remove customer subscriptoins create service
+            if($newStatus === 'cancelled') {
+                $order = Order::findOrFail($orderId);
+                $subscriptionService = new \App\Services\OrderCancelledService();
+                $result = $subscriptionService->cancelSubscription(
+                    $order->chargebee_subscription_id,
+                    $order->user_id,
+                    $reason,
+                    false
+                );
+                
+                return response()->json($result);
+            }
             // Find the order
             $order = Order::findOrFail($orderId);
             $oldStatus = $order->status_manage_by_admin;

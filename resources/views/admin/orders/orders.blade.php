@@ -4055,6 +4055,16 @@ pointer-events: none
             });
             return;
         }
+        // status is reject or cancelled
+        if ((newStatus === 'reject' || newStatus === 'cancelled') && !reason) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Reason',
+                text: 'Please provide a reason for rejecting or cancelling the order',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
         
         // Show SweetAlert2 confirmation dialog
         const result = await Swal.fire({
