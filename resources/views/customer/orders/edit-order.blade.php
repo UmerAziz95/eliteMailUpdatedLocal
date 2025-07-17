@@ -174,6 +174,40 @@
 </style>
 @endpush
 @section('content')
+
+
+@if(isset($order) && $order->reason)
+    <div class="mb-4">
+        <div class="alert border-0 shadow-lg panel-rejection-alert"
+            style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
+            <!-- Animated background pattern -->
+            <div class="alert-pattern"></div>
+
+            <div class="d-flex align-items-start position-relative" style="z-index: 2;">
+                <div class="alert-icon-wrapper me-3">
+                    <i class="fa-solid fa-exclamation-triangle fa-2x text-white"
+                        style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-2 text-white fw-bold">
+                        Rejection Reason
+                    </h6>
+                    <div class="rejection-note-content">
+                        <p class="mb-0 text-white fw-medium small">
+                            {{ $order->reason }}
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
+                            <i class="fa-solid fa-clock me-1"></i>
+                            Action Required
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 <form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
@@ -456,8 +490,13 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0 purchase-btn">
+                        
+                        @if(isset($order) && $order->status_manage_by_admin === 'reject')
+                            Fix Order
+                        @else
                         <i class="fa-solid fa-cart-shopping"></i>
-                        Purchase Inboxes
+                            Purchase Inboxes
+                        @endif
                     </button>
                 </div>
             </div>
@@ -1251,13 +1290,16 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
             // Update color and note based on usage
             if (percentageUsed > 100) {
                 progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-                progressNote.html('(Limit reached)');
+                progressNote.html('(Opps: Limit Exceeded)');
+            } else if (percentageUsed == 100) {
+                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+                progressNote.html('(Perfect: Limit Reached)');
             } else if (percentageUsed >= 90) {
                 progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Critical: Nearly at limit)');
+                progressNote.html('(Good: Nearly at limit)');
             } else if (percentageUsed >= 75) {
                 progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Warning: Approaching limit)');
+                progressNote.html('(Approaching limit)');
             } else if (percentageUsed >= 50) {
                 progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
                 progressNote.html('(Moderate usage)');

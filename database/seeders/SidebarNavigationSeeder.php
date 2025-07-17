@@ -134,6 +134,13 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.panels.index",
                         "permission" => "Panels",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Settings",
+                        "icon" => "ti ti-file-invoice fs-5",
+                        "route" => "admin.system.config",
+                        "permission" => "Settings",
+                        'sub_menu' => []
             ]
         ];
 

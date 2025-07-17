@@ -37,6 +37,8 @@ use App\Http\Controllers\Admin\MediaHandlerController;
 //supports
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Customer\CustomerSupportController;
+//settings
+use App\Http\Controllers\Admin\AdminSettingsController;
 
 
 //cron
@@ -213,18 +215,24 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::put('/panels/{id}', [AdminPanelController::class, 'update'])->name('panels.update');
         Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
+        Route::get('/panels/next-id', [AdminPanelController::class, 'getNextId'])->name('panels.next-id');
        
         // Order Queue Routes
         Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
         Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
         Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
-        Route::post('/order_queue/{orderId}/reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
+              Route::post('/order_queue/{orderId}/reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
         Route::get('/order_queue/{orderId}/can-reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'canRejectOrder'])->name('orderQueue.can-reject');
 
         // My Orders
         Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
+
+        //settings
+       Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+       Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
+
 
     }); 
 

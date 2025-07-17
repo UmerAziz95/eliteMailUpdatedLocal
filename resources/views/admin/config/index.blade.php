@@ -1,4 +1,4 @@
-@extends('contractor.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'security')
 
@@ -44,27 +44,12 @@
         inline-size: .75rem;
         inset-block-start: 0;
         inset-inline-start: -0.38rem;
-        outline: 3px solid #3a3b64;
+        outline: 3px solid #506295;
         border-radius: 50%;
         opacity: 1
     }
 
-    /* .timeline .timeline-item.timeline-item-transparent .timeline-event {
-                                                                                                                    background-color: rgba(0, 0, 0, 0);
-                                                                                                                    inset-block-start: -0.9rem;
-                                                                                                                    padding-inline: 0;
-                                                                                                                } */
-
-    /* .timeline .timeline-item .timeline-event {
-                                                                                                                    position: relative;
-                                                                                                                    border-radius: 50%;
-                                                                                                                    background-color: var(--secondary-color);
-                                                                                                                    inline-size: 100%;
-                                                                                                                    min-block-size: 4rem;
-                                                                                                                    padding-block: .5rem .3375rem;
-                                                                                                                    padding-inline: 0rem;
-                                                                                                                } */
-
+   
     .bg-lighter {
         background-color: #ffffff1d;
         padding: .3rem;
@@ -75,179 +60,46 @@
     .timeline:not(.timeline-center) {
         padding-inline-start: .5rem;
     }
-
-    .cropper-container {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-
-    #cropperModal .modal-content {
-        background-color: var(--secondary-color);
-        color: var(--extra-light);
-    }
-
-    .cropper-controls {
-        margin-top: 15px;
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .cropper-controls button {
-        padding: 5px 10px;
-        border-radius: 4px;
-        background: var(--second-primary);
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-
-    .zoom-controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .zoom-slider {
-        width: 150px;
-    }
-
-    .bg-label-warning,
-    .bg-label-secondary,
-    .bg-label-primary {
-        padding: .5rem;
-        font-size: 10px;
-        font-weight: 400
-    }
 </style>
 @endpush
 
 @section('content')
 <div class="row py-4">
-    <!-- User Sidebar -->
-    <div class="col-xl-4 col-lg-5 order-1 order-md-0">
-        <!-- User Card -->
-        <div class="card mb-4">
-            <div class="card-body pt-12">
-                <div class="user-avatar-section">
-                    <div class="d-flex align-items-center flex-column">
-                        <div>
-                            <img class="img-fluid rounded mb-4" id="profile-image"
-                                src="{{ Auth::user()->profile_image ? asset('storage/profile_images/' . Auth::user()->profile_image) : 'https://cdn-icons-png.flaticon.com/128/3237/3237472.png' }}"
-                                height="120" width="120" alt="User avatar" style="cursor: pointer;"
-                                onclick="$('#profile-image-input').click();">
-                        </div>
-                        <input type="file" id="profile-image-input" style="display: none;" accept="image/*">
-                        <div class="user-info text-center">
-                            <h5>{{ Auth::user()->name }}</h5>
-                            <span class="badge bg-label-secondary">{{ Auth::user()->role->name }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- <div class="d-flex justify-content-around flex-wrap my-5 gap-0 gap-md-3 gap-lg-4">
-                            <div class="d-flex align-items-center me-5 gap-4">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-label-primary rounded p-2">
-                                        <i class="ti ti-checkbox fs-4 theme-text"></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h5 class="mb-0">1.23k</h5>
-                                    <span class="small opacity-50">Task Done</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-4">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-label-primary rounded p-2">
-                                        <i class="ti ti-checkbox fs-4 theme-text"></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h5 class="mb-0">568</h5>
-                                    <span class="small opacity-50">Project Done</span>
-                                </div>
-                            </div>
-                        </div> -->
-
-                <h5 class="pb-4 border-bottom mb-4">Details</h5>
-                <div class="info-container">
-                    <ul class="list-unstyled mb-6">
-                        <li class="mb-2">
-                            <span class="h6">First Name:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->name }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">Email:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->email }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">Status:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->status == '1' ? 'Active' :
-                                'In-Active' }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">Role:</span>
-                            <span class="opacity-50 small fw-light">{{ Auth::user()->role->name }}</span>
-                        </li>
-                        {{-- <li class="mb-2">
-                            <span class="h6">Tax id:</span>
-                            <span class="opacity-50 small fw-light">Tax-8965</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">plans:</span>
-                            <span class="opacity-50 small fw-light">(123) 456-7890</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">Languages:</span>
-                            <span class="opacity-50 small fw-light">French</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">Country:</span>
-                            <span class="opacity-50 small fw-light">England</span>
-                        </li> --}}
-                    </ul>
-
-                    <div class="d-flex justify-content-center gap-2">
-                        <button class="m-btn rounded-2 py-2 px-4 border-0" data-bs-target="#edit"
-                            data-bs-toggle="modal">Edit</button>
-                        <!-- <a href="javascript:;"
-                                    class="cancel-btn py-2 px-4 rounded-2 border-0 text-decoration-none opacity-75">Suspend</a> -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /User Card -->
-    </div>
-    <!--/ User Sidebar -->
 
     <div class="col-xl-8 col-lg-5">
         <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane"
+                <button class="nav-link active" id="chargebee-tab" data-bs-toggle="tab"
+                    data-bs-target="#chargebee_configuration_tab-pane" type="button" role="tab" aria-controls="chargebee_configuration_tab-pane"
+                    aria-selected="false"><i class="fa-solid fa-unlock"></i> Chargebee Configuration</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="plan-tab" data-bs-toggle="tab" data-bs-target="#plan-tab-pane"
                     type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
-                        class="fa-regular fa-bell"></i> Notifications</button>
+                        class="fa-regular fa-gear"></i> Plan Configuration</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-tab-pane"
-                    type="button" role="tab" aria-controls="activity-tab-pane" aria-selected="false"><i
-                        class="fa-regular fa-bell"></i> Activity</button>
+                <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#backup-tab-pane"
+                    type="button" role="tab" aria-controls="backup-tab-pane" aria-selected="false"><i
+                        class="fa-regular fa-file"></i> System Backup</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-tab-pane"
-                    type="button" role="tab" aria-controls="security-tab-pane" aria-selected="false"><i
-                        class="fa-solid fa-unlock"></i> Security</button>
+                <button class="nav-link" id="configuration-pane" data-bs-toggle="tab" data-bs-target="#system_configuration-pane"
+                    type="button" role="tab" aria-controls="system_configuration-tab-pane" aria-selected="false"><i
+                        class="fa-regular fa-file"></i> System Configuration</button>
             </li>
-
         </ul>
 
         <div class="tab-content mt-4" id="myTabContent">
-            <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
+            <div class="tab-pane fade show active" id="account-tab-pane" role="tabpanel" aria-labelledby="account-tab"
+                tabindex="0">
+            </div>
+
+
+            <div class="tab-pane fade active show" id="chargebee_configuration_tab-pane" role="tabpanel" aria-labelledby="chargebe_configuration-tab"
                 tabindex="0">
                 <div class="card mb-4 p-3">
-                    <h5 class="card-header">Change Password</h5>
+                    <h5 class="card-header">Charge bee configuration</h5>
                     <div class="card-body">
                         <form id="formChangePassword">
                             <div class="alert text-warning alert-dismissible"
@@ -260,36 +112,38 @@
                             {{-- Old Password --}}
 
                             <div class="row gx-6">
-                                <!-- Old Password -->
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
                                     <label class="form-label" for="oldPassword">Old Password</label>
-                                    <input class="form-control" type="password" id="oldPassword" name="oldPassword"
-                                        placeholder="············" style="padding-right: 40px;">
-                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="oldPassword"
-                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
-                                    <div class="fv-plugins-message-container invalid-feedback"></div>
+                                    <div class="input-group input-group-merge has-validation">
+                                        <input class="form-control" type="password" id="oldPassword" name="oldPassword"
+                                            placeholder="············">
+                                    </div>
+                                    <div
+                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
+                                    </div>
                                 </div>
 
-                                <!-- New Password -->
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
                                     <label class="form-label" for="newPassword">New Password</label>
-                                    <input class="form-control" type="password" id="newPassword" name="newPassword"
-                                        placeholder="············" style="padding-right: 40px;">
-                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="newPassword"
-                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
-                                    <div class="fv-plugins-message-container invalid-feedback"></div>
+                                    <div class="input-group input-group-merge has-validation">
+                                        <input class="form-control" type="password" id="newPassword" name="newPassword"
+                                            placeholder="············">
+                                    </div>
+                                    <div
+                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
+                                    </div>
                                 </div>
 
-                                <!-- Confirm Password -->
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle" style="position: relative;">
+                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
                                     <label class="form-label" for="confirmPassword">Confirm New Password</label>
-                                    <input class="form-control" type="password" id="confirmPassword"
-                                        name="confirmPassword" placeholder="············" style="padding-right: 40px;">
-                                    <i class="fa-solid fa-eye-slash toggle-password" data-target="confirmPassword"
-                                        style="position: absolute; top: 60%; right: 20px; cursor: pointer; color: #888;"></i>
-                                    <div class="fv-plugins-message-container invalid-feedback"></div>
+                                    <div class="input-group input-group-merge has-validation">
+                                        <input class="form-control" type="password" name="confirmPassword"
+                                            id="confirmPassword" placeholder="············">
+                                    </div>
+                                    <div
+                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
+                                    </div>
                                 </div>
-
                                 <div>
                                     <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change
                                         Password</button>
@@ -300,183 +154,63 @@
                         </form>
                     </div>
                 </div>
-
-                <!-- <div class="card p-3">
-                            <h5 class="card-header">Recent Devices</h5>
-                            <div class="table-responsive table-border-bottom-0">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-truncate">Browser</th>
-                                            <th class="text-truncate">Device</th>
-                                            <th class="text-truncate">Location</th>
-                                            <th class="text-truncate">Recent Activities</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="text-truncate">
-                                                <i class="ti ti-brand-windows fs-5 text-info"></i>
-                                                <span class="text-heading">Chrome on Windows</span>
-                                            </td>
-                                            <td class="text-truncate">HP Spectre 360</td>
-                                            <td class="text-truncate">Switzerland</td>
-                                            <td class="text-truncate">10, July 2021 20:07</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-truncate">
-                                                <i class="ti ti-device-mobile text-danger"></i>
-                                                <span class="text-heading">Chrome on iPhone</span>
-                                            </td>
-                                            <td class="text-truncate">iPhone 12x</td>
-                                            <td class="text-truncate">Australia</td>
-                                            <td class="text-truncate">13, July 2021 10:10</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-truncate">
-                                                <i class="ti ti-brand-android text-success"></i>
-                                                <span class="text-heading">Chrome on Android</span>
-                                            </td>
-                                            <td class="text-truncate">Oneplus 9 Pro</td>
-                                            <td class="text-truncate">Dubai</td>
-                                            <td class="text-truncate">14, July 2021 15:15</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-truncate">
-                                                <i class="ti ti-brand-apple"></i>
-                                                <span class="text-heading">Chrome on MacOS</span>
-                                            </td>
-                                            <td class="text-truncate">Apple iMac</td>
-                                            <td class="text-truncate">India</td>
-                                            <td class="text-truncate">16, July 2021 16:17</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div> -->
             </div>
 
-            <div class="tab-pane fade show active" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab"
-                tabindex="0">
+            <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Current Plan</h5>
+                    <div class="card-body">
+                       
+                    </div>
+                </div>
+
+                <div class="card p-3 mb-4">
+                    <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                        <h5 class="card-action-title mb-0">Billing Address</h5>
+                        <div class="card-action-element">
+                            <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
+                                data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
+                                address</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                           
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab" tabindex="0">
                 <div class="card p-3">
                     <!-- Notifications -->
                     <div class="card-header">
-                        <h5 class="mb-0">Notifications</h5>
+                        <h5 class="mb-0">Plan configuration</h5>
                     </div>
-
-                    <div class="table-responsive">
-                        <table class="display w-100" id="notificationsTable">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Message</th>
-                                    <th>Type</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                $notifications = \App\Models\Notification::where('user_id', Auth::id())
-                                ->orderBy('created_at', 'desc')
-                                ->get();
-                                @endphp
-                                @foreach ($notifications as $notification)
-                                <tr>
-                                    <td>{{ $notification->title }}</td>
-                                    <td>{{ $notification->message }}</td>
-                                    <td><span
-                                            class="badge bg-label-{{ $notification->type === 'order_status_change' ? 'warning' : 'info' }}">{{
-                                            str_replace('_', ' ', ucfirst($notification->type)) }}</span>
-                                    </td>
-                                    <td>{{ $notification->created_at->diffForHumans() }}</td>
-                                    <td>
-                                        @if ($notification->is_read)
-                                        <span class="badge bg-label-success">Read</span>
-                                        @else
-                                        <span class="badge bg-label-warning readToggle">Unread</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if (!$notification->is_read)
-                                        <button class="btn btn-sm btn-icon mark-as-read"
-                                            data-id="{{ $notification->id }}" title="Mark as Read">
-                                            {{-- <i class="ti ti-check"></i> --}}
-                                            <div>
-                                                <i class="fa-regular fa-envelope fs-5 text-white" ></i>
-                                                {{-- <i class="fa-solid fa-envelope-open-text fs-5"></i> --}}
-                                            </div>
-                                        </button>
-                                        @endif
-                                        @if ($notification->is_read)
-                                        <button class="btn btn-sm btn-icon mark-as-read"
-                                            data-id="{{ $notification->id }}" title="Mark as UnRead">
-                                            {{-- <i class="ti ti-check"></i> --}}
-                                            <div>
-                                                {{-- <i class="fa-regular fa-envelope fs-5"></i> --}}
-                                                <i class="fa-solid fa-envelope-open-text fs-5 text-white"></i>
-                                            </div>
-                                        </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- /Notifications -->
                 </div>
             </div>
-            <div class="tab-pane fade" id="activity-tab-pane" role="tabpanel" aria-labelledby="activity-tab"
-                tabindex="0">
-                <div class="card p-3">
-                    <!-- Activity -->
-                    <div class="card-header">
-                        <h5 class="mb-0">Activity</h5>
-                    </div>
 
-                    <div class="table-responsive">
-                        <table class="display w-100" id="activityTable">
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Description</th>
-                                    <th>Performed On</th>
-                                    <!-- <th>Additional Data</th> -->
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                $logs = \App\Models\Log::where('performed_by', Auth::id())
-                                ->orderBy('created_at', 'desc')
-                                ->get();
-                                @endphp
-                                @foreach ($logs as $log)
-                                <tr>
-                                    <td><span class="badge bg-label-primary">{{ str_replace('_', ' ',
-                                            ucfirst($log->action_type)) }}</span>
-                                    </td>
-                                    <td>{{ $log->description }}</td>
-                                    <td>{{ class_basename($log->performed_on_type) }} #{{ $log->performed_on_id }}
-                                    </td>
-                                    <!-- <td>
-                                                    @if ($log->data)
-    {{ json_encode($log->data) }}
-@else
-    -
-    @endif
-                                                </td> -->
-                                    <td>{{ $log->created_at->diffForHumans() }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+            <div class="tab-pane fade" id="backup-tab-pane" role="tabpanel" aria-labelledby="backup-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Backup</h5>
+                    <div class="card-body">
+                      
                     </div>
-                    <!-- /Activity -->
                 </div>
+
+               
             </div>
+
+            <div class="tab-pane fade" id="system_configuration-pane" role="tabpanel" aria-labelledby="system_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">System Configuration</h5>
+                    <div class="card-body">
+                      
+                    </div>
+                </div>
+
+               
+            </div>
+
         </div>
     </div>
 </div>
@@ -694,8 +428,7 @@
                         <label class="form-label" for="modalEditUserPhone">Phone Number</label>
                         <div class="input-group">
                             <input type="text" id="modalEditUserPhone" name="modalEditUserPhone"
-                                class="form-control phone-number-mask" placeholder="202 555 0111"
-                                value="{{ Auth::user()->phone }}">
+                                class="form-control phone-number-mask" placeholder="" value="{{ Auth::user()->phone }}">
                         </div>
                     </div>
 
@@ -703,14 +436,14 @@
 
 
                     {{-- bill address --}}
-                    <div class="col-12 col-md-6" style="display: none;">
+                    {{-- <div class="col-12 col-md-6">
                         <label class="form-label" for="modalEditUserBillingAddress">Billing Address</label>
                         <div class="input-group">
                             <input type="text" id="modalEditUserBillingAddress" name="modalEditUserBillingAddress"
                                 class="form-control" placeholder="123 Main St, City, Country"
                                 value="{{ Auth::user()->billing_address ?? '' }}">
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="col-12 text-center">
                         <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0 ">Submit</button>
@@ -722,8 +455,6 @@
         </div>
     </div>
 </div>
-
-<!-- Add Cropper Modal -->
 <div class="modal fade" id="cropperModal" tabindex="-1" role="dialog" aria-labelledby="cropperModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -740,8 +471,7 @@
                     <button type="button" class="rotate-left"><i class="ti ti-rotate-clockwise-2"></i> Rotate
                         Left</button>
                     <button type="button" class="rotate-right"><i class="ti ti-rotate"></i> Rotate Right</button>
-                    <button type="button" class="flip-horizontal"><i class="ti ti-flip-horizontal"></i> Flip
-                        H</button>
+                    <button type="button" class="flip-horizontal"><i class="ti ti-flip-horizontal"></i> Flip H</button>
                     <button type="button" class="flip-vertical"><i class="ti ti-flip-vertical"></i> Flip V</button>
                     <div class="zoom-controls">
                         <button type="button" class="zoom-in"><i class="ti ti-zoom-in"></i></button>
@@ -753,8 +483,7 @@
             <div class="modal-footer">
                 <button type="button" class="cancel-btn py-2 px-4 rounded-2 border-0"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop &
-                    Upload</button>
+                <button type="button" class="m-btn py-2 px-4 rounded-2 border-0" id="cropButton">Crop & Upload</button>
             </div>
         </div>
     </div>
@@ -763,20 +492,8 @@
 
 @push('scripts')
 <script>
-    document.querySelectorAll('.toggle-password').forEach(icon => {
-            icon.addEventListener('click', function() {
-                const targetId = this.getAttribute('data-target');
-                const input = document.getElementById(targetId);
-                const isHidden = input.type === 'password';
-
-                input.type = isHidden ? 'text' : 'password';
-                this.classList.toggle('fa-eye');
-                this.classList.toggle('fa-eye-slash');
-            });
-        });
-
-        $(document).ready(function() {
-            var table = $('#myTable').DataTable();
+    $(document).ready(function() {
+            var table = $('#notificationsTable').DataTable();
 
             // Handle user edit form submission
             $('#editUserForm').on('submit', function(e) {
@@ -849,10 +566,51 @@
                 });
             });
         });
+    
+            // Handle user edit form submission
+            $('#editUserForm').on('submit', function(e) {
+                e.preventDefault();
+
+                var formData = {
+                    name: $('#modalEditUserFirstName').val(),
+                    email: $('#modalEditUserEmail').val(),
+                    phone: $('#modalEditUserPhone').val(),
+                    billing_address: $('#modalEditUserBillingAddress').val(),
+                    _token: '{{ csrf_token() }}'
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '{{ route('admin.profile.update') }}',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            // Close modal
+                            $('#edit').modal('hide');
+
+                            // Show success message
+                            toastr.success('Profile updated successfully');
+
+                            // Reload page to reflect changes
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 1500);
+                        }
+                    },
+                    error: function(xhr) {
+                        // Show error message
+                        toastr.error('Error updating profile');
+                        console.log(xhr.responseText);
+                    }
+                });
+            });
+
+      
+     
 
         let cropper;
         let zoomValue = 0;
-
+        
         // Initialize image cropping when file is selected
         $('#profile-image-input').on('change', function(e) {
             const file = e.target.files[0];
@@ -862,10 +620,10 @@
                     // Initialize cropper
                     const image = document.getElementById('cropperImage');
                     image.src = e.target.result;
-
+                    
                     // Show cropper modal
                     $('#cropperModal').modal('show');
-
+                    
                     // Initialize Cropper.js after modal is shown
                     $('#cropperModal').on('shown.bs.modal', function() {
                         if (cropper) {
@@ -942,7 +700,7 @@
             }
         });
 
-        // Handle crop and upload
+        // Rest of your existing cropper code...
         $('#cropButton').on('click', function() {
             if (!cropper) return;
 
@@ -956,13 +714,13 @@
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-
+            
             for (let i = 0; i < data.length; i += 4) {
                 data[i] = Math.min(255, data[i] * 1.2); // Red
                 data[i + 1] = Math.min(255, data[i + 1] * 0.9); // Green
                 data[i + 2] = Math.min(255, data[i + 2] * 0.7); // Blue
             }
-
+            
             ctx.putImageData(imageData, 0, 0);
 
             // Convert to blob and upload
@@ -979,6 +737,7 @@
                     contentType: false,
                     success: function(response) {
                         if (response.success) {
+                            // Update the image preview
                             $('#profile-image').attr('src', response.image_url);
                             // login-user-profile
                             $('.login-user-profile').attr('src', response.image_url);
@@ -994,35 +753,11 @@
                 });
             }, 'image/jpeg', 0.95);
         });
-
-        // Initialize DataTable for notifications
-        var notificationsTable = $('#notificationsTable').DataTable({
-            responseive: true,
-            order: [
-                [3, 'desc']
-            ], // Sort by date column descending
-            pageLength: 10,
-            language: {
-                emptyTable: "No notifications found"
-            }
-        });
-        // Initialize DataTable for notifications
-        var activityTable = $('#activityTable').DataTable({
-            responseive: true,
-            order: [
-                [3, 'desc']
-            ], // Sort by date column descending
-            pageLength: 10,
-            language: {
-                emptyTable: "No Activity found"
-            }
-        });
-
         // Handle mark as read functionality
         $('.mark-as-read').on('click', function() {
             const button = $(this);
             const notificationId = button.data('id');
-
+            
             $.ajax({
                 url: `/notifications/${notificationId}/mark-read`,
                 type: 'POST',
@@ -1032,13 +767,11 @@
                 success: function(response) {
                     if (response.success) {
                         // Update the status badge
-                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning')
-                            .addClass('bg-label-success').text('Read');
+                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
                         // Remove the mark as read button
                         button.remove();
                         // Show success message
                         toastr.success(response.message || 'Notification marked as read');
-                        window.location.reload();
                     } else {
                         toastr.error(response.message || 'Failed to mark notification as read');
                     }

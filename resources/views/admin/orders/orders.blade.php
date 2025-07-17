@@ -1639,6 +1639,19 @@ pointer-events: none
                             `;
                             }
                         }]),
+                        // add contractor_name
+                        {
+                            data: 'contractor_name',
+                            name: 'orders.contractor_name',
+                            render: function(data, type, row) {
+                                return `
+                                <div class="d-flex align-items-center gap-1">
+                                    <i class="ti ti-user fs-6"></i>
+                                    <span>${data}</span>
+                                </div>
+                            `;
+                            }
+                        },
                         {
                             data: 'split_counts',
                             name: 'split_counts',
@@ -2630,6 +2643,8 @@ pointer-events: none
                     <span class="fw-bold">${order.customer_name}</span>
                     <small>
                         Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Split${order.splits_count === 1 ? '' : 's'}
+                        
+                        ${order.contractor_name && order.contractor_name !== '-' ? `| Assigned To: ${order.contractor_name}` : ''}
                     </small>
                     </div>
                 </div>
@@ -4110,6 +4125,14 @@ pointer-events: none
                 const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
                 if (currentOrderId) {
                     viewOrderSplits(orderId);
+                    // if order status is not completed, then close the canvas
+                    if (newStatus !== 'completed') {
+                        const offcanvas = document.querySelector('.offcanvas.show');
+                        if (offcanvas) {
+                            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+                            offcanvasInstance.hide();
+                        }
+                    }
                 }
                 
                 // Optionally refresh the orders list
