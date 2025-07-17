@@ -77,7 +77,7 @@
                 </div>
 
                 <!-- Step 2: Billing Form -->
-                <div id="billing-left" class="d-none">
+                <div id="billing-left" class="">
                     <div class="card card-custom p-3 mb-4">
                         <h5 class="mb-2">Account Details</h5>
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -177,7 +177,7 @@
                 </div>
 
                 <!-- Step 3: Review Card -->
-                <div id="review-left" class="d-none">
+                <div id="review-left" class="">
                     <!-- Account Details -->
                     <div class="card card-custom p-3 mb-4">
                         <div class="d-flex justify-content-between align-items-center">
