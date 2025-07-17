@@ -1219,7 +1219,7 @@ pointer-events: none
 <!-- Order Details Offcanvas -->
                 <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view" aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
                     <div class="offcanvas-header">
-                        <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
+                        <h5 class="offcanvas-title" id="order-splits-viewLabel">Details Order </h5>
                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
                             <i class="fas fa-times"></i>
                         </button>
@@ -2903,8 +2903,8 @@ pointer-events: none
             tooltip = `Time remaining: ${timer.display} (12-hour countdown). Order created on ${formatDate(order.created_at)}`;
         }
         
-        // Generate unique ID for this timer using order ID and index
-        const timerId = `flip-timer-${order.order_id}-${index}`;
+        // Generate unique ID for this timer using order ID, index, and view context
+        const uniqueTimerId = `flip-timer-${order.order_id}-${index}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         
         // Parse the timer display (format: HH:MM:SS or -HH:MM:SS)
         let timeString = timer.display;
@@ -2922,7 +2922,7 @@ pointer-events: none
         
         // Create flip timer with individual digit cards
         return `
-            <div id="${timerId}" class="flip-timer ${timer.class}" 
+            <div id="${uniqueTimerId}" class="flip-timer ${timer.class}" 
                  data-order-id="${order.order_id}" 
                  data-created-at="${order.created_at}" 
                  data-status="${order.status}" 
@@ -3013,7 +3013,7 @@ pointer-events: none
                 // Reset offcanvas title
                 const offcanvasTitle = document.getElementById('order-splits-viewLabel');
                 if (offcanvasTitle) {
-                    offcanvasTitle.innerHTML = 'Order Details';
+                    offcanvasTitle.innerHTML = 'Details Order';
                 }
             }, { once: true });
             
@@ -3071,7 +3071,7 @@ pointer-events: none
         const offcanvasTitle = document.getElementById('order-splits-viewLabel');
         if (offcanvasTitle && orderInfo) {
             offcanvasTitle.innerHTML = `
-                Order Details #${orderInfo.id} 
+                Details Order #${orderInfo.id} 
             `;
         }
 
@@ -3107,7 +3107,6 @@ pointer-events: none
                             <th scope="col">Inboxes/Domain</th>
                             <th scope="col">Total Domains</th>
                             <th scope="col">Total Inboxes</th>
-                            <th scope="col">Split timer</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -3142,7 +3141,6 @@ pointer-events: none
                                     </span>
                                 </td>
                                 <td>${split.total_inboxes || 'N/A'}</td>
-                                <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                 <td>
                                     <div class="d-flex gap-1">
                                         <a href="/admin/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
@@ -3301,42 +3299,42 @@ pointer-events: none
 
 
         // Split timer calculator
-        function calculateSplitTime(split) {
-        const order_panel = split.order_panel;
+        // function calculateSplitTime(split) {
+        // const order_panel = split.order_panel;
 
-        if (!order_panel || !order_panel.timer_started_at) {
-        return "00:00:00";
-        }
+        // if (!order_panel || !order_panel.timer_started_at) {
+        // return "00:00:00";
+        // }
 
-        const start = parseUTCDateTime(order_panel.timer_started_at);
-        if (!start || isNaN(start.getTime())) {
-        return "00:00:00";
-        }
+        // const start = parseUTCDateTime(order_panel.timer_started_at);
+        // if (!start || isNaN(start.getTime())) {
+        // return "00:00:00";
+        // }
 
-        let end;
+        // let end;
 
-        if (order_panel.status === "completed" && order_panel.completed_at) {
-        end = parseUTCDateTime(order_panel.completed_at);
-        if (!end || isNaN(end.getTime())) {
-        return "00:00:00";
-        }
-        } else if (order_panel.status === "in-progress") {
-        end = new Date(); // current time
-        } else {
-        // If status is neither "completed" nor "in-progress"
-        return "00:00:00";
-        }
+        // if (order_panel.status === "completed" && order_panel.completed_at) {
+        // end = parseUTCDateTime(order_panel.completed_at);
+        // if (!end || isNaN(end.getTime())) {
+        // return "00:00:00";
+        // }
+        // } else if (order_panel.status === "in-progress") {
+        // end = new Date(); // current time
+        // } else {
+        // // If status is neither "completed" nor "in-progress"
+        // return "00:00:00";
+        // }
 
-        const diffMs = end - start;
-        if (diffMs <= 0) return "00:00:00";
+        // const diffMs = end - start;
+        // if (diffMs <= 0) return "00:00:00";
 
-        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+        // const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        // const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        // const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-        const pad = (n) => (n < 10 ? "0" + n : n);
-        return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
-        }
+        // const pad = (n) => (n < 10 ? "0" + n : n);
+        // return `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
+        // }
 
 
     function parseUTCDateTime(dateStr) {
@@ -3879,6 +3877,7 @@ pointer-events: none
     }
     // Update all timer badges on the page
     function updateAllTimers() {
+        // Update flip-timer elements (used in grid/canvas views)
         const flipTimers = document.querySelectorAll('.flip-timer');
         flipTimers.forEach(timerElement => {
             const orderId = timerElement.dataset.orderId;
@@ -3897,8 +3896,32 @@ pointer-events: none
             const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             updateTimerDisplay(timerElement.id, timer);
         });
-    }
 
+        // Update timer-badge elements (used in datatable views)
+        const timerBadges = document.querySelectorAll('.timer-badge');
+        timerBadges.forEach(badgeElement => {
+            const orderId = badgeElement.dataset.orderId;
+            const createdAt = badgeElement.dataset.createdAt;
+            const status = badgeElement.dataset.status;
+            const completedAt = badgeElement.dataset.completedAt;
+            const timerStartedAt = badgeElement.dataset.timerStartedAt;
+            const timerPausedAt = badgeElement.dataset.timerPausedAt;
+            const totalPausedSeconds = badgeElement.dataset.totalPausedSeconds;
+            
+            // Skip updating completed, cancelled, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
+                return;
+            }
+            
+            const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+            
+            // Update timer badge
+            badgeElement.className = `timer-badge ${timer.class}`;
+            const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock');
+            badgeElement.innerHTML = `<i class="${iconClass} timer-icon"></i> ${timer.display}`;
+        });
+    }
+    
     // Update timer display
     function updateTimerDisplay(timerId, timer) {
         const timerElement = document.getElementById(timerId);
@@ -3968,36 +3991,9 @@ pointer-events: none
 
     // Start timers for all rendered orders
     function startTimersForOrders(ordersList) {
-        ordersList.forEach((order, index) => {
-            if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && !order.timer_paused_at) {
-                const timerId = `flip-timer-${order.order_id}-${index}`;
-                const timer = calculateOrderTimer(
-                    order.created_at, 
-                    order.status, 
-                    order.completed_at, 
-                    order.timer_started_at, 
-                    order.timer_paused_at, 
-                    order.total_paused_seconds
-                );
-                
-                if (!timer.isCompleted && !timer.isPaused) {
-                    updateTimerDisplay(timerId, timer);
-                    
-                    // Set up interval to update timer every second
-                    setInterval(() => {
-                        const updatedTimer = calculateOrderTimer(
-                            order.created_at, 
-                            order.status, 
-                            order.completed_at, 
-                            order.timer_started_at, 
-                            order.timer_paused_at, 
-                            order.total_paused_seconds
-                        );
-                        updateTimerDisplay(timerId, updatedTimer);
-                    }, 1000);
-                }
-            }
-        });
+        // This function is kept for compatibility but actual timer updates 
+        // are handled by the global updateAllTimers function
+        console.log('Timer initialization completed for', ordersList.length, 'orders');
     }
 
     // Initialize page
@@ -4016,6 +4012,9 @@ pointer-events: none
         
         // Update timers every second for real-time countdown
         setInterval(updateAllTimers, 1000); // Update every 1 second
+        
+        // Initialize timers immediately for any existing elements
+        updateAllTimers();
     });
 
     // Change Status Modal Functions

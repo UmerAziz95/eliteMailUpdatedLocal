@@ -237,6 +237,7 @@ class PanelController extends Controller
                     'created_at' => $orderPanel->created_at->format('Y-m-d H:i:s'),
                     'accepted_at' => $orderPanel->accepted_at,
                     'released_at' => $orderPanel->released_at,
+                    'order_status'=>$order->status_manage_by_admin ?? 'N/A',
                     // Add comprehensive order information
                     'reorder_info' => $reorderInfo ? [
                         'total_inboxes' => $reorderInfo->total_inboxes,
