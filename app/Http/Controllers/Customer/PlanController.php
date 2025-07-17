@@ -576,15 +576,14 @@ class PlanController extends Controller
             ]);
         }
     }
-    // this remove and use this service
     public function subscriptionCancelProcess(Request $request)
     {
-        
         if ($request->remove_accounts == null || $request->remove_accounts == false) {
             $request->remove_accounts = 0;
         } else {
             $request->remove_accounts = true;
         }
+        
         $request->validate([
             'chargebee_subscription_id' => 'required|string',
             'reason' => 'required|string',
@@ -603,94 +602,16 @@ class PlanController extends Controller
             ], 404);
         }
 
-        try {
-            $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
-                "end_of_term" => false,
-                "credit_option" => "none",
-                "unbilled_charges_option" => "delete",
-                "account_receivables_handling" => "no_action"
-            ]);
-
-            $subscriptionData = $result->subscription();
-            $invoiceData = $result->invoice();
-            $customerData = $result->customer();
-
-            if ($result->subscription()->status === 'cancelled') {
-                // Update subscription status and end date
-                $subscription->update([
-                    'status' => 'cancelled',
-                    'cancellation_at' => now(),
-                    'reason' => $request->reason,
-                    'end_date' => $this->getEndExpiryDate($subscription->start_date),
-                    'next_billing_date' => null,
-                ]);
-
-                // Update user status
-                $user->update([
-                    'subscription_status' => 'cancelled',
-                    'subscription_id' => null,
-                    'plan_id' => null
-                ]);
-
-                // Update order status
-                $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-                if ($order) {
-                    $order->update([
-                        'status_manage_by_admin' => 'cancelled',
-                    ]);
-                    
-                }
-                // Create a new activity log using the custom log service
-                ActivityLogService::log(
-                    'customer-subscription-cancelled',
-                    'Subscription cancelled successfully: ' . $subscription->id,
-                    $subscription, 
-                    [
-                        'user_id' => auth()->user()->id,
-                        'subscription_id' => $subscription->id,
-                        'status' => $subscription->status,
-                    ]
-                );
-
-                try {
-                    // Send email to user
-                    Mail::to($user->email)
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason
-                        ));
-
-                    // Send email to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason,
-                            true
-                        ));
-                } catch (\Exception $e) {
-                    // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
-                    // Continue execution since the subscription was already cancelled
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Subscription cancelled successfully'
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to cancel subscription in payment gateway'
-            ], 500);
-        } catch (\Exception $e) {
-            \Log::error('Error cancelling subscription: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to cancel subscription: ' . $e->getMessage()
-            ], 500);
-        }
+        // Use the OrderCancelledService
+        $subscriptionService = new \App\Services\OrderCancelledService();
+        $result = $subscriptionService->cancelSubscription(
+            $request->chargebee_subscription_id,
+            $user->id,
+            $request->reason,
+            $request->remove_accounts
+        );
+        
+        return response()->json($result);
     }
     // getEndExpiryDate from start Date
     public function getEndExpiryDate($startDate)
