@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Models\Subscription as UserSubscription;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\DomainRemovalTask;
 use App\Mail\SubscriptionCancellationMail;
 use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Mail;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class OrderCancelledService
 {
@@ -71,6 +73,20 @@ class OrderCancelledService
                         'status' => $subscription->status,
                     ]
                 );
+                // Add entry to domain removal queue table
+                // Queue date is set to 72 hours after subscription end date
+                $subscriptionEndDate = $subscription->end_date ? Carbon::parse($subscription->end_date) : Carbon::now();
+                $queueStartDate = $subscriptionEndDate->addHours(72);
+                
+                DomainRemovalTask::create([
+                    'started_queue_date' => $queueStartDate,
+                    'user_id' => $user_id,
+                    'order_id' => $order ? $order->id : null,
+                    'chargebee_subscription_id' => $chargebee_subscription_id,
+                    'reason' => $reason,
+                    'assigned_to' => $order->assigned_to,
+                    'status' => 'pending'
+                ]);
 
                 try {
                     $reasonString = $reason ?? '';
