@@ -239,6 +239,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
         Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
 
+        // My Task Routes
+        Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
+        Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
+        Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+
 
     }); 
 
@@ -439,9 +444,6 @@ Route::get('/contact_us', function () {
 Route::get('checkout', function () {
     return view('admin/checkout/index');
 })->name("admin.checkout.index");
-
-Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("admin.myTask.index");
-Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("admin.myTask.data");
 
 
 Route::get('/profile', function () {

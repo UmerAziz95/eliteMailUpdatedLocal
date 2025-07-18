@@ -24,9 +24,9 @@ class TaskQueueController extends Controller
 
             // Filter based on requirements: assigned_to = null and status = pending and started_queue_date >= now()
             if ($type === 'pending') {
-                $query->where('assigned_to', null)
+                $query->whereNull('assigned_to')
                       ->where('status', 'pending')
-                      ->where('started_queue_date', '>=', now());
+                      ->whereDate('started_queue_date', '<=', now());
             } elseif ($type === 'in-progress') {
                 $query->where('status', 'in-progress')
                       ->whereNotNull('assigned_to');

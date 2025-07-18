@@ -7,6 +7,60 @@
         color: #fff;
         font-size: 13px
     }
+
+    /* Fix offcanvas backdrop issues */
+    .offcanvas-backdrop {
+        z-index: 1040;
+    }
+
+    .offcanvas-backdrop.fade {
+        opacity: 0;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
+    }
+
+    /* Ensure body doesn't get scrollable when offcanvas is open */
+    body:not(.offcanvas-open) {
+        overflow: auto !important;
+        padding-right: 0 !important;
+    }
+
+    /* Remove backdrop when it shouldn't be there */
+    .offcanvas-backdrop.fade:not(.show) {
+        display: none !important;
+    }
+
+    /* Domain badge hover effects */
+    .domain-badge:hover {
+        background-color: rgba(102, 126, 234, 0.8) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+    }
+
+    /* Transition for chevron icons */
+    .transition-transform {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    /* Split container expanding effect */
+    .split-container.expanding {
+        transform: scale(1.01);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Domain fade in animation */
+    @keyframes domainFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 </style>
 @endpush
 
@@ -46,6 +100,28 @@
             </div>
         </div>
     </section>
+
+    <!-- Task Details Offcanvas -->
+    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="task-details-view"
+        aria-labelledby="task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+            <h5 class="offcanvas-title" id="task-details-viewLabel">Task Details</h5>
+            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times fs-5"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body pt-2">
+            <div id="taskDetailsContainer">
+                <!-- Dynamic content will be loaded here -->
+                <div id="taskLoadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading task details...</span>
+                    </div>
+                    <p class="mt-2">Loading task details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -183,7 +259,7 @@
         div.innerHTML = `
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="fw-semibold">#${task.task_id}</span>
+                <span class="fw-semibold">#${task.task_id} <i class="fa fa-solid fa-check-to-slot text-primary"></i></span>
                 <span class="badge ${statusClass} fw-semibold">${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}</span>
             </div>
 
@@ -228,13 +304,16 @@
                     </div>
                 </div>
                 <div>
-                    <button class="btn btn-primary btn-sm d-flex align-items-center justify-content-center">
+                    <button class="btn btn-primary btn-sm d-flex align-items-center justify-content-center"
+                        onclick="viewTaskDetails(${task.task_id})" 
+                        data-bs-toggle="offcanvas" 
+                        data-bs-target="#task-details-view">
                         <i class="fas fa-arrow-right text-white"></i>
                     </button>
+                    
                 </div>
             </div>
         `;
-        
         return div;
     }
 
@@ -267,6 +346,577 @@
                 </button>
             </div>
         `;
+    }
+
+    // View task details function
+    async function viewTaskDetails(taskId) {
+        try {
+            // Show loading in offcanvas
+            const container = document.getElementById('taskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="taskLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading task details...</span>
+                        </div>
+                        <p class="mt-2">Loading task details...</p>
+                    </div>
+                `;
+            }
+            
+            // Show offcanvas with proper cleanup
+            const offcanvasElement = document.getElementById('task-details-view');
+            const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+            
+            // Add event listeners for proper cleanup
+            offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
+                // Clean up any remaining backdrop elements
+                const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                // Ensure body classes are removed
+                document.body.classList.remove('offcanvas-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                // Reset offcanvas title
+                const offcanvasTitle = document.getElementById('task-details-viewLabel');
+                if (offcanvasTitle) {
+                    offcanvasTitle.innerHTML = 'Task Details';
+                }
+            }, { once: true });
+            
+            offcanvas.show();
+            
+            // Fetch task details using admin route
+            const response = await fetch(`{{ url('admin/myTask') }}/${taskId}/details`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch task details');
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load task details');
+            }
+            
+            renderTaskDetails(data);
+            
+        } catch (error) {
+            console.error('Error loading task details:', error);
+            const container = document.getElementById('taskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                        <h5>Error Loading Task Details</h5>
+                        <p>Failed to load task details. Please try again.</p>
+                        <button class="btn btn-primary" onclick="viewTaskDetails(${taskId})">Retry</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Render task details in offcanvas (simplified version without timer and status change)
+    function renderTaskDetails(data) {
+        const container = document.getElementById('taskDetailsContainer');
+        
+        if (!data.splits || data.splits.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox text-white fs-3 mb-3"></i>
+                    <h5>No Order Data Found</h5>
+                    <p>This order doesn't have any data yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const orderInfo = data.order;
+        const reorderInfo = data.reorder_info;
+        const splits = data.splits;
+
+        // Update offcanvas title
+        const offcanvasTitle = document.getElementById('task-details-viewLabel');
+        if (offcanvasTitle && orderInfo) {
+            offcanvasTitle.innerHTML = `Order Details #${orderInfo.id}`;
+        }
+
+        const detailsHtml = `
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6>${orderInfo.status_manage_by_admin}</h6>
+                        <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
+                <table class="table table-striped table-hover position-sticky top-0 border-0">
+                    <thead class="border-0">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Id</th>
+                            <th scope="col">Panel Title</th>
+                            <th scope="col">Inboxes/Domain</th>
+                            <th scope="col">Total Domains</th>
+                            <th scope="col">Total Inboxes</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${splits.map((split, index) => `
+                            <tr>
+                                <th scope="row">${index + 1}</th>
+                                <td>
+                                    <span class="badge bg-primary" style="font-size: 10px;">
+                                        SPL-${split.id || 'N/A'}
+                                    </span>
+                                </td>
+                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_title || 'N/A'}</td>
+                                <td>${split.inboxes_per_domain || 'N/A'}</td>
+                                <td>
+                                    <span class="py-1 px-2 rounded-1 border border-success success" style="font-size: 10px;">
+                                        ${split.domains_count || 0} domain(s)
+                                    </span>
+                                </td>
+                                <td>${split.total_inboxes || 'N/A'}</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="/admin/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <i class="fas fa-download"></i> CSV
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-regular fa-envelope"></i>
+                            </div>
+                            Email configurations
+                        </h6>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span style="font-size: 12px">${(() => {
+                                const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
+                                const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
+                                const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
+                                
+                                let splitDetails = '';
+                                splits.forEach((split, index) => {
+                                    splitDetails += `
+                                        <br>
+                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                            Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                });
+                                
+                                return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                            })()}</span>
+                        </div>
+                         
+                        <hr>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50 small">Prefix Variants</span>
+                            <small>${renderPrefixVariants(reorderInfo)}</small>
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50 small">Profile Picture URLS</span>
+                         <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
+                        </div>
+                       
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card p-3 overflow-y-auto" style="max-height: 50rem">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-earth-europe"></i>
+                            </div>
+                            Domains &amp; Configuration
+                        </h6>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Hosting Platform</span>
+                            <small>${reorderInfo?.hosting_platform || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Platform Login</span>
+                            <small>${reorderInfo?.platform_login || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Platform Password</span>
+                            <small>${reorderInfo?.platform_password || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Domain Forwarding Destination URL</span>
+                            <small>${reorderInfo?.forwarding_url || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Sending Platform</span>
+                            <small>${reorderInfo?.sending_platform || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Cold email platform - Login</span>
+                            <small>${reorderInfo?.sequencer_login || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Cold email platform - Password</span>
+                            <small>${reorderInfo?.sequencer_password || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column">
+                            <h6 class="d-flex align-items-center gap-1">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-solid fa-globe"></i>
+                                </div>
+                               <span>All Domains & Splits</span>
+                            </h6>
+                            
+                            <!-- Task Splits Domains -->
+                            ${splits.map((split, index) => `
+                                <div class="domain-split-container mb-3">
+                                    <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                         style="background: var(--filter-color); cursor: pointer; border: 1px solid var(--second-primary)"
+                                         onclick="toggleSplit('split-${orderInfo.id}-${index}')">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                Split ${String(index + 1).padStart(2, '0')}
+                                            </span>
+                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                ${split.domains_count || 0} domains
+                                            </span>
+                                            <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                               title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
+                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                            <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
+                                        <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                            <div class="domains-grid">
+                                                ${renderDomainsWithStyle([split])}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Back up codes</span>
+                            <span>${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+
+                            <span class="opacity-50">Additional Notes</span>
+                            <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = detailsHtml;
+        
+        // Initialize chevron states and animations after rendering
+        setTimeout(function() {
+            initializeChevronStates();
+        }, 100);
+    }
+
+    // Helper functions for task details canvas
+
+    // Helper function to get status badge class
+    function getStatusBadgeClass(status) {
+        switch(status) {
+            case 'completed': return 'bg-success';
+            case 'unallocated': return 'bg-warning text-dark';
+            case 'allocated': return 'bg-info';
+            case 'rejected': return 'bg-danger';
+            case 'in-progress': return 'bg-primary';
+            default: return 'bg-secondary';
+        }
+    }
+
+    // Helper function to render prefix variants
+    function renderPrefixVariants(reorderInfo) {
+        if (!reorderInfo) return '<div>N/A</div>';
+
+        let variants = [];
+
+        // Check if we have the new prefix_variants JSON format
+        if (reorderInfo.prefix_variants) {
+            try {
+                const prefixVariants = typeof reorderInfo.prefix_variants === 'string' 
+                    ? JSON.parse(reorderInfo.prefix_variants) 
+                    : reorderInfo.prefix_variants;
+
+                Object.keys(prefixVariants).forEach((key, index) => {
+                    if (prefixVariants[key]) {
+                        variants.push(`<div>Variant ${index + 1}: ${prefixVariants[key]}</div>`);
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not parse prefix variants:', e);
+            }
+        }
+
+        // Fallback to old individual fields if new format is empty
+        if (variants.length === 0) {
+            if (reorderInfo.prefix_variant_1) {
+                variants.push(`<div>Variant 1: ${reorderInfo.prefix_variant_1}</div>`);
+            }
+            if (reorderInfo.prefix_variant_2) {
+                variants.push(`<div>Variant 2: ${reorderInfo.prefix_variant_2}</div>`);
+            }
+        }
+
+        return variants.length > 0 ? variants.join('') : '<div>N/A</div>';
+    }
+
+    // Helper function to render profile links from object
+    function renderProfileLinksFromObject(prefixVariantsDetails) {
+        if (!prefixVariantsDetails || typeof prefixVariantsDetails !== 'object') {
+            return `<span>N/A</span>`;
+        }
+
+        let html = '';
+
+        Object.entries(prefixVariantsDetails).forEach(([key, variant]) => {
+            const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            html += `<div class="mt-1">`;
+            html += `<strong>${formattedKey}:</strong> `;
+
+            if (variant?.profile_link) {
+                html += `<a href="${variant.profile_link}" target="_blank">${variant.profile_link}</a>`;
+            } else {
+                html += `<span>N/A</span>`;
+            }
+
+            html += `</div>`;
+        });
+
+        return html;
+    }
+
+    // Enhanced function to render domains with attractive styling
+    function renderDomainsWithStyle(splits) {
+        if (!splits || splits.length === 0) {
+            return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
+        }
+        
+        let allDomains = [];
+        
+        splits.forEach(split => {
+            if (split.domains) {
+                // Handle different data types for domains
+                if (Array.isArray(split.domains)) {
+                    split.domains.forEach(domainItem => {
+                        if (typeof domainItem === 'object' && domainItem.domain) {
+                            allDomains.push(domainItem.domain);
+                        } else if (typeof domainItem === 'string') {
+                            allDomains.push(domainItem);
+                        }
+                    });
+                } else if (typeof split.domains === 'string') {
+                    const domainString = split.domains.trim();
+                    if (domainString) {
+                        const domains = domainString.split(/[,;\n\r]+/).map(d => d.trim()).filter(d => d);
+                        allDomains = allDomains.concat(domains);
+                    }
+                } else if (typeof split.domains === 'object' && split.domains !== null) {
+                    const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
+                    allDomains = allDomains.concat(domainValues);
+                }
+            }
+        });
+        
+        if (allDomains.length === 0) {
+            return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
+        }
+        
+        // Create styled domain badges
+        return allDomains
+            .filter(domain => domain && typeof domain === 'string')
+            .map((domain, index) => `
+                <span class="domain-badge" style="
+                    display: inline-block;
+                    background-color: var(--filter-color);
+                    color: white;
+                    min-width: 7rem;
+                    padding: 4px 8px;
+                    margin: 2px 2px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 200;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                " 
+                title="Click to copy: ${domain}"
+                onclick="copyToClipboard('${domain}')">
+                    <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                </span>
+            `).join('');
+    }
+
+    // Function to toggle split sections with enhanced animations
+    function toggleSplit(splitId) {
+        const content = document.getElementById(splitId);
+        const icon = document.getElementById('icon-' + splitId);
+        
+        if (content && icon) {
+            // Check current state and toggle
+            const isCurrentlyShown = content.classList.contains('show');
+            
+            if (isCurrentlyShown) {
+                // Hide the content with animation
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(-10px)';
+                
+                setTimeout(() => {
+                    content.classList.remove('show');
+                    icon.style.transform = 'rotate(0deg)'; // Point right when closed
+                }, 150);
+            } else {
+                // Show the content with animation
+                content.classList.add('show');
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(-15px) scale(0.98)';
+                
+                // Trigger the animation
+                requestAnimationFrame(() => {
+                    content.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0) scale(1)';
+                    icon.style.transform = 'rotate(90deg)'; // Point down when open
+                });
+            }
+        }
+    }
+
+    // Function to initialize chevron states and animations on page load
+    function initializeChevronStates() {
+        // Find all collapsible elements and set initial chevron states
+        document.querySelectorAll('[id^="split-"]').forEach(function(element) {
+            const splitId = element.id;
+            const icon = document.getElementById('icon-' + splitId);
+            
+            if (icon) {
+                // Add transition class for smooth chevron rotation
+                icon.classList.add('transition-transform');
+                
+                // Check if the element has 'show' class or is visible
+                const isVisible = element.classList.contains('show');
+                
+                if (isVisible) {
+                    icon.style.transform = 'rotate(90deg)'; // Point down when open
+                    // Set initial animation state for visible content
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)'; // Point right when closed
+                    // Set initial hidden state
+                    element.style.opacity = '0';
+                    element.style.transform = 'translateY(-10px)';
+                }
+            }
+        });
+    }
+
+    // Function to copy domain to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Show a temporary success message
+            showToast('Domain copied to clipboard!', 'success');
+        }).catch(() => {
+            console.warn('Failed to copy to clipboard');
+            showToast('Failed to copy domain', 'error');
+        });
+    }
+
+    // Function to copy all domains from a split container by extracting them from the DOM
+    function copyAllDomainsFromSplit(splitId, splitName) {
+        const splitContainer = document.getElementById(splitId);
+        if (!splitContainer) {
+            showToast('Split container not found', 'error');
+            return;
+        }
+        
+        // Extract domain names from the domain badges in the split container
+        const domainBadges = splitContainer.querySelectorAll('.domain-badge');
+        const domains = [];
+        
+        domainBadges.forEach(badge => {
+            // Get text content and remove the globe icon
+            const fullText = badge.textContent.trim();
+            // Remove the globe icon (which appears as a character) and any extra whitespace
+            const domainText = fullText.replace(/^\s*[\u{1F30D}\u{1F310}]?\s*/, '').trim();
+            if (domainText && domainText !== '') {
+                domains.push(domainText);
+            }
+        });
+        
+        if (domains.length === 0) {
+            showToast(`No domains found in ${splitName}`, 'error');
+            return;
+        }
+        
+        // Join domains with newlines for easy copying
+        const domainsText = domains.join('\n');
+        
+        navigator.clipboard.writeText(domainsText).then(() => {
+            showToast(`Copied ${domains.length} domains from ${splitName}`, 'success');
+        }).catch(() => {
+            showToast('Failed to copy domains', 'error');
+        });
+    }
+
+    // Function to show toast notifications
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (toast && toast.parentNode) {
+                toast.remove();
+            }
+        }, 3000);
     }
 </script>
 @endpush

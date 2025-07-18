@@ -367,7 +367,6 @@
         const statusClass = getStatusClass(task.status);
         const queueDate = new Date(task.started_queue_date);
         const now = new Date();
-        const isOverdue = queueDate <= now && task.status === 'pending';
         
         div.innerHTML = `
             <!-- Header -->
@@ -377,7 +376,6 @@
                     <span class="badge px-2 py-1 rounded ${statusClass}">
                         ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
                     </span>
-                    ${isOverdue ? '<span class="badge bg-danger ms-1">Overdue</span>' : ''}
                 </div>
                 ${task.status === 'pending' ? `
                     <button class="btn btn-sm border-0 assign-btn" 
