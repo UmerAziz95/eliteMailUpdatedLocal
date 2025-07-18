@@ -225,7 +225,6 @@
                     </div>
                     <div>
                         <p class="mb-0 fw-semibold">${task.customer_name || 'N/A'}</p>
-                        <small>${formatDate(task.started_queue_date)}</small>
                     </div>
                 </div>
                 <div>

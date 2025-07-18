@@ -442,7 +442,7 @@
         
         return div;
     }
-
+    
     // Helper functions
     function getStatusClass(status) {
         const classes = {
