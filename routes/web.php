@@ -222,16 +222,22 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
         Route::get('/order_queue/{orderId}/splits', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrderSplits'])->name('orderQueue.splits');
         Route::post('/order_queue/{orderId}/assign-to-me', [App\Http\Controllers\Admin\OrderQueueController::class, 'assignOrderToMe'])->name('orderQueue.assign-to-me');
-              Route::post('/order_queue/{orderId}/reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
+        Route::post('/order_queue/{orderId}/reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'rejectOrder'])->name('orderQueue.reject');
         Route::get('/order_queue/{orderId}/can-reject', [App\Http\Controllers\Admin\OrderQueueController::class, 'canRejectOrder'])->name('orderQueue.can-reject');
 
         // My Orders
         Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
-        //settings
-       Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
-       Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
+            //settings
+        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+        Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
+        
+        // Task Queue Routes
+        Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
+        Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
+        Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+        Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
 
 
     }); 
@@ -434,14 +440,9 @@ Route::get('checkout', function () {
     return view('admin/checkout/index');
 })->name("admin.checkout.index");
 
-Route::get('myTask', function () {
-    return view('admin/myTask/index');
-})->name("admin.myTask.index");
+Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("admin.myTask.index");
+Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("admin.myTask.data");
 
-Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("admin.taskInQueue.index");
-Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("admin.taskInQueue.data");
-Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("admin.taskInQueue.assign");
-Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("admin.taskInQueue.updateStatus");
 
 Route::get('/profile', function () {
     return view('admin/profile/profile');

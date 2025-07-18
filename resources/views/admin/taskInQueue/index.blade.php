@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Task Queue')
 @push('styles')
+
     <style>
         .glass-box {
             background-color: rgba(255, 255, 255, 0.05);
@@ -66,9 +67,9 @@
                 <button type="button" class="btn btn-outline-light btn-sm" onclick="refreshTasks()">
                     <i class="fas fa-sync-alt me-1"></i> Refresh
                 </button>
-                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <!-- <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
                     <i class="fas fa-filter me-1"></i> Filter
-                </button>
+                </button> -->
             </div>
         </div>
 
@@ -79,13 +80,13 @@
                     Pending Tasks <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span>
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
                     In Progress <span class="badge bg-info ms-1" id="progress-count">0</span>
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane"
                     type="button" role="tab" aria-controls="completed-tab-pane" aria-selected="false">
                     Completed <span class="badge bg-success ms-1" id="completed-count">0</span>
@@ -422,14 +423,6 @@
                         <small class="text-white-50 d-block mb-1">Total Domains</small>
                         <span class="fw-semibold text-white">${task.total_domains || 0}</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Queue Date -->
-            <div class="glass-box mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="small text-white-50">Queue Date</span>
-                    <span class="fw-bold text-white small">${formatDate(task.started_queue_date)}</span>
                 </div>
             </div>
 
