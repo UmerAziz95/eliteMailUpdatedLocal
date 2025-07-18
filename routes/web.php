@@ -431,7 +431,13 @@ Route::get('checkout', function () {
     return view('admin/checkout/index');
 })->name("admin.checkout.index");
 
+Route::get('myTask', function () {
+    return view('admin/myTask/index');
+})->name("admin.myTask.index");
 
+Route::get('taskInQueue', function () {
+    return view('admin/taskInQueue/index');
+})->name("admin.taskInQueue.index");
 
 Route::get('/profile', function () {
     return view('admin/profile/profile');

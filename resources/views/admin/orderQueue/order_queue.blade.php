@@ -446,12 +446,9 @@
                 </div>
             </div>
         </div>
-
-
-
-
-
     </section>
+
+    
     <!-- Order Details Offcanvas -->
     <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
         aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
@@ -471,7 +468,7 @@
                     <p class="mt-2">Loading order details...</p>
                 </div>
             </div>
-        </div>
+        </div>   
     </div>
 
     <!-- Reject Order Modal -->
