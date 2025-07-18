@@ -65,7 +65,7 @@
 
         <div
             class="h-100 w-100 p-2 px-md-4 py-md-3 d-flex flex-column justify-content-between overflow-y-auto overflow-x-hidden">
-            <div>
+            <div class="h-100 d-flex flex-column justify-content-between">
                 <div>
                     @include('admin.layouts.header')
                     <!-- Include Header -->

@@ -18,6 +18,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PanelController extends Controller
 {
+    // getNextId
+    public function getNextId()
+    {
+        $nextId = Panel::max('id');
+        $nextId = $nextId ? $nextId + 1 : 1;
+        return response()->json(['next_id' => 'PNL-' . $nextId]);
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -230,6 +237,7 @@ class PanelController extends Controller
                     'created_at' => $orderPanel->created_at->format('Y-m-d H:i:s'),
                     'accepted_at' => $orderPanel->accepted_at,
                     'released_at' => $orderPanel->released_at,
+                    'order_status'=>$order->status_manage_by_admin ?? 'N/A',
                     // Add comprehensive order information
                     'reorder_info' => $reorderInfo ? [
                         'total_inboxes' => $reorderInfo->total_inboxes,
@@ -548,7 +556,8 @@ class PanelController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Panel updated successfully', 
-                'panel' => $panel->fresh()
+                'panel' => $panel->fresh(),
+                'capacity_data' => $this->calculatePanelCapacityNeeds() // Recalculate capacity needs after update
             ], 200);
 
         } catch (ModelNotFoundException $e) {

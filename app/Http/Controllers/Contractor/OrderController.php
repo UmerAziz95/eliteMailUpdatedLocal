@@ -1455,11 +1455,31 @@ class OrderController extends Controller
             $contractorId = Auth::id();
             $newStatus = $request->input('status');
             $reason = $request->input('reason');
-            
+            if($newStatus == 'reject' || $newStatus == 'cancelled') {
+                if(!$reason) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Reason is required for reject or cancel status'
+                    ], 422);
+                }
+            }
             // If status is reject, use the OrderRejectionService
             if ($newStatus === 'reject' || $newStatus === 'rejected') {
                 $rejectionService = new \App\Services\OrderRejectionService();
                 $result = $rejectionService->rejectOrder($orderId, $contractorId, $reason);
+                
+                return response()->json($result);
+            }
+            // if status is cancelled then also remove customer subscriptoins create service
+            if($newStatus === 'cancelled') {
+                $order = Order::findOrFail($orderId);
+                $subscriptionService = new \App\Services\OrderCancelledService();
+                $result = $subscriptionService->cancelSubscription(
+                    $order->chargebee_subscription_id,
+                    $order->user_id,
+                    $reason,
+                    false
+                );
                 
                 return response()->json($result);
             }
@@ -1595,11 +1615,14 @@ class OrderController extends Controller
     public function getAssignedOrdersData(Request $request)
     {
         try {
+            // dd('ok');
+            // $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
+            //     ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+            //         $q->where('contractor_id', auth()->id());
+            //     });
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
-                ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
-                    $q->where('contractor_id', auth()->id());
-                });
-
+                ->where('assigned_to', auth()->id())
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
             // Apply filters if provided
             if ($request->filled('order_id')) {
                 $query->where('id', 'like', '%' . $request->order_id . '%');

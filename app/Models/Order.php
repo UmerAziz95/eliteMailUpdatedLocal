@@ -79,6 +79,12 @@ class Order extends Model
         return $this->hasMany(OrderPanel::class);
     }
 
+    // Assigned contractor (user)
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
     public function userOrderPanelAssignments()
     {
         return $this->hasMany(UserOrderPanelAssignment::class, 'order_id');

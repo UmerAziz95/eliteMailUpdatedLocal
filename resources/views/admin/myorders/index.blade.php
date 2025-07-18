@@ -767,11 +767,11 @@
                         <label for="newStatus" class="form-label">Select New Status</label>
                         <select class="form-select" id="newStatus" required>
                             <option value="">-- Select Status --</option>
-                            <option value="pending">Pending</option>
+                            <!-- <option value="pending">Pending</option> -->
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="in-progress">In Progress</option>
+                            <option value="reject">Rejected</option>
+                            <!-- <option value="in-progress">In Progress</option> -->
                         </select>
                     </div>
                     <div class="mb-3">
@@ -2365,7 +2365,16 @@ function parseUTCDateTime(dateStr) {
                 });
                 return;
             }
-            
+            // status is reject or cancelled
+            if ((newStatus === 'reject' || newStatus === 'cancelled') && !reason) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Reason',
+                    text: 'Please provide a reason for rejecting or cancelling the order',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
             // Show SweetAlert2 confirmation dialog
             const result = await Swal.fire({
                 title: 'Confirm Status Change',
@@ -2411,7 +2420,7 @@ function parseUTCDateTime(dateStr) {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to update status');
+                    throw new Error(response.message || 'Failed to update status');
                 }
                 
                 const result = await response.json();
@@ -2435,6 +2444,14 @@ function parseUTCDateTime(dateStr) {
                     const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
                     if (currentOrderId) {
                         viewOrderSplits(orderId);
+                        // if order status is not completed, then close the canvas
+                        if (newStatus !== 'completed') {
+                            const offcanvas = document.querySelector('.offcanvas.show');
+                            if (offcanvas) {
+                                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+                                offcanvasInstance.hide();
+                            }
+                        }
                     }
                     
                     // Optionally refresh the orders list

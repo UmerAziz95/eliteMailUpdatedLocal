@@ -350,7 +350,10 @@
                     data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
                     aria-selected="false">in-draft</button>
             </li>
-            <li class="nav-item" role="presentation">
+            @php
+                $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
+            @endphp
+            <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};" id="reject-orders-tab-li">
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
@@ -519,37 +522,9 @@
             </div>
         </div>
     </div>
-
-    <!-- Reject Order Confirmation Modal -->
-    <div class="modal fade" id="rejectOrderConfirmModal" tabindex="-1" aria-labelledby="rejectOrderConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title" id="rejectOrderConfirmModalLabel">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Order Rejection
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-3">This will mark the order as rejected. This action cannot be undone.</p>
-                    <div class="p-3 bg-danger rounded mb-3">
-                        <strong>Rejection Reason:</strong><br>
-                        <em id="confirmRejectionReason"></em>
-                    </div>
-                    <p class="mb-0">Are you sure you want to proceed?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger" id="finalRejectBtn">
-                        <i class="fas fa-ban me-1"></i>Yes, Reject Order!
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
+
+
 
 @push('scripts')
     <script>
@@ -2275,7 +2250,6 @@
 
         // Global variable to store current order ID for rejection
         let currentOrderIdForRejection = null;
-
         // Function to reject an order
         function rejectOrder(orderId) {
             // Store the order ID globally
@@ -2297,11 +2271,12 @@
         }
 
         // Handle confirm reject button click in the first modal
-        document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+        document.getElementById('confirmRejectBtn').addEventListener('click', async function() {
             const rejectionReason = document.getElementById('rejectionReason').value.trim();
             const rejectionReasonTextarea = document.getElementById('rejectionReason');
             const rejectionReasonError = document.getElementById('rejectionReasonError');
             const rejectOrderForm = document.getElementById('rejectOrderForm');
+            const confirmRejectBtn = this;
             
             // Reset previous validation state
             rejectionReasonTextarea.classList.remove('is-invalid');
@@ -2323,35 +2298,15 @@
                 return;
             }
             
-            // Show rejection reason in confirmation modal
-            document.getElementById('confirmRejectionReason').textContent = rejectionReason;
-            
-            // Hide first modal and show confirmation modal
-            const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderModal'));
-            rejectModal.hide();
-            
-            // Wait a bit for the first modal to hide, then show confirmation modal
-            setTimeout(() => {
-                const confirmModal = new bootstrap.Modal(document.getElementById('rejectOrderConfirmModal'));
-                confirmModal.show();
-            }, 300);
-        });
-
-        // Handle final reject button click in the confirmation modal
-        document.getElementById('finalRejectBtn').addEventListener('click', async function() {
-            const rejectionReason = document.getElementById('rejectionReason').value.trim();
-            const finalRejectBtn = this;
-            
             try {
-                // Hide confirmation modal
-                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderConfirmModal'));
-                confirmModal.hide();
+                // Hide the modal
+                const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectOrderModal'));
+                rejectModal.hide();
                 
-                // Show loading state on the final reject button
-                finalRejectBtn.disabled = true;
-                finalRejectBtn.innerHTML = `
+                // Show loading state on the confirm reject button
+                confirmRejectBtn.disabled = true;
+                confirmRejectBtn.innerHTML = `
                     <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 16px; height: 16px;">
-                        <span class="visually-hidden">Loading...</span>
                     </div>
                     Rejecting...
                 `;
@@ -2361,14 +2316,13 @@
                 if (button) {
                     button.disabled = true;
                     button.innerHTML = `
-                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;">
-                            <span class="visually-hidden">Loading...</span>
+                        <div class="spinner-border spinner-border-sm me-1" role="status" style="width: 16px; height: 16px;">
                         </div>
                         Rejecting...
                     `;
                 }
 
-                // Show SweetAlert2 loading dialog as well
+                // Show SweetAlert2 loading dialog
                 Swal.fire({
                     title: 'Rejecting Order...',
                     text: 'Please wait while we reject the order.',
@@ -2385,12 +2339,11 @@
                 const response = await fetch(`/contractor/order_queue/${currentOrderIdForRejection}/reject`, {
                     method: 'POST',
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        reason: rejectionReason
+                        rejection_reason: rejectionReason
                     })
                 });
 
@@ -2410,25 +2363,38 @@
                     timer: 3000,
                     timerProgressBar: true
                 });
+                // Close the offcanvas if it's open
+                const offcanvasElement = document.getElementById('order-splits-view');
+                if (offcanvasElement) {
+                    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                    if (offcanvasInstance) {
+                        offcanvasInstance.hide();
+                    }
+                }
                 
                 // Update the button to show rejected state
                 if (button) {
                     button.outerHTML = `
-                        <span class="badge bg-danger px-3 py-2" style="font-size: 11px;">
-                            <i class="fas fa-times me-1" style="font-size: 10px;"></i>
-                            Order Rejected
-                        </span>
+                        <div class="alert alert-danger text-center mb-0" role="alert">
+                            <i class="fas fa-ban me-1"></i>Order Rejected
+                        </div>
                     `;
                 }
                 
-                // Refresh the order list to reflect changes
+                // Refresh all tabs data immediately
                 setTimeout(() => {
-                    if (activeTab === 'in-queue') {
-                        loadOrders(currentFilters, 1, false, 'in-queue');
-                    } else {
-                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    
+                    // Refresh in-queue tab
+                    loadOrders(currentFilters, 1, false, 'in-queue');
+                    
+                    // Refresh in-draft tab
+                    loadOrders(currentFilters, 1, false, 'in-draft');
+                    // reject-orders-tab-li
+                    const rejectOrdersTabLi = document.getElementById('reject-orders-tab-li');
+                    if (rejectOrdersTabLi) {
+                        rejectOrdersTabLi.style.display = 'block'; // Show the tab if there are rejected orders
                     }
-                }, 1000);
+                }, 500); // Reduced timeout for faster refresh
                 
             } catch (error) {
                 console.error('Error rejecting order:', error);
@@ -2445,17 +2411,17 @@
                 if (button) {
                     button.disabled = false;
                     button.innerHTML = `
-                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                        <i class="fas fa-ban me-1" style="font-size: 10px;"></i>
                         Reject Order
                     `;
                 }
-            } finally {
-                // Reset final reject button state
-                finalRejectBtn.disabled = false;
-                finalRejectBtn.innerHTML = `
-                    <i class="fas fa-ban me-1"></i>Yes, Reject Order!
-                `;
                 
+                // Restore confirm reject button state
+                confirmRejectBtn.disabled = false;
+                confirmRejectBtn.innerHTML = `
+                    <i class="fas fa-ban me-1"></i>Reject Order
+                `;
+            } finally {
                 // Clear the current order ID
                 currentOrderIdForRejection = null;
             }
@@ -2473,20 +2439,8 @@
                         Reject Order
                     `;
                 }
-            }
-        });
-
-        document.getElementById('rejectOrderConfirmModal').addEventListener('hidden.bs.modal', function() {
-            // Reset button state if modal is closed without completing the action
-            if (currentOrderIdForRejection) {
-                const button = document.getElementById('rejectOrderBtn');
-                if (button && button.disabled) {
-                    button.disabled = false;
-                    button.innerHTML = `
-                        <i class="fas fa-times me-1" style="font-size: 10px;"></i>
-                        Reject Order
-                    `;
-                }
+                // Clear the current order ID if modal is closed
+                currentOrderIdForRejection = null;
             }
         });
     </script>

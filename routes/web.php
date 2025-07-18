@@ -217,6 +217,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::put('/panels/{id}', [AdminPanelController::class, 'update'])->name('panels.update');
         Route::delete('/panels/{id}', [AdminPanelController::class, 'destroy'])->name('panels.delete');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
+        Route::get('/panels/next-id', [AdminPanelController::class, 'getNextId'])->name('panels.next-id');
        
         // Order Queue Routes
         Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
@@ -397,6 +398,9 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/{orderId}/change-status', [ContractorOrderController::class, 'changeStatus'])->name('orders.change-status');
     Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
+
+
+    // Domains Removal Tasks
 }); 
 
 Route::get('/forget_password', function () {
@@ -433,7 +437,17 @@ Route::get('/contact_us', function () {
     return view('admin/contact_us/contact_us');
 });
 
+Route::get('checkout', function () {
+    return view('admin/checkout/index');
+})->name("admin.checkout.index");
 
+Route::get('myTask', function () {
+    return view('admin/myTask/index');
+})->name("admin.myTask.index");
+
+Route::get('taskInQueue', function () {
+    return view('admin/taskInQueue/index');
+})->name("admin.taskInQueue.index");
 
 Route::get('/profile', function () {
     return view('admin/profile/profile');

@@ -35,6 +35,36 @@
                 </div>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.myTask.index') ? 'active' : '' }}"
+                href="{{ route('admin.myTask.index') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="fa-brands fa-first-order"></i></div>
+                    <div class="text">My Task</div>
+                </div>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.taskInQueue.index') ? 'active' : '' }}"
+                href="{{ route('admin.taskInQueue.index') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="fa-brands fa-first-order"></i></div>
+                    <div class="text">Task In Queue</div>
+                </div>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.checkout.index') ? 'active' : '' }}"
+                href="{{ route('admin.checkout.index') }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="fa-brands fa-first-order"></i></div>
+                    <div class="text">Check Out</div>
+                </div>
+            </a>
+        </li>
         
     
 
