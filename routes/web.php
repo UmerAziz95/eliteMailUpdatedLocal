@@ -243,6 +243,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
         Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
         Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+        Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
+        Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
 
 
     }); 

@@ -61,6 +61,17 @@
             transform: translateY(0) scale(1);
         }
     }
+
+    /* Custom SweetAlert styles */
+    .swal-wide {
+        width: 600px !important;
+    }
+
+    /* Hover effect for clickable check icon */
+    .fa-check-to-slot:hover {
+        color: #28a745 !important;
+        transform: scale(1.1) !important;
+    }
 </style>
 @endpush
 
@@ -259,7 +270,14 @@
         div.innerHTML = `
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="fw-semibold">#${task.task_id} <i class="fa fa-solid fa-check-to-slot text-primary"></i></span>
+                <span class="fw-semibold">#${task.task_id} 
+                    <i class="fa fa-solid fa-check-to-slot text-primary" 
+                       style="cursor: pointer; transition: all 0.2s ease;" 
+                       onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
+                       onmouseout="this.style.color=''; this.style.transform='scale(1)'" 
+                       onclick="confirmTaskCompletion(${task.task_id})" 
+                       title="Mark as completed"></i>
+                </span>
                 <span class="badge ${statusClass} fw-semibold">${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}</span>
             </div>
 
@@ -917,6 +935,233 @@
                 toast.remove();
             }
         }, 3000);
+    }
+
+    // Task completion confirmation function
+    async function confirmTaskCompletion(taskId) {
+        try {
+            // First get the completion summary
+            const summaryResponse = await fetch(`{{ url('admin/myTask') }}/${taskId}/completion-summary`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            if (!summaryResponse.ok) {
+                throw new Error('Failed to get task completion summary');
+            }
+
+            const summaryData = await summaryResponse.json();
+
+            if (!summaryData.success) {
+                throw new Error(summaryData.message || 'Failed to get task completion summary');
+            }
+
+            const summary = summaryData.data;
+            
+            // Check if task is already completed
+            if (summary.task_status === 'completed') {
+                Swal.fire({
+                    title: 'Task Already Completed',
+                    text: 'This task has already been marked as completed.',
+                    icon: 'info',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            
+            // Create detailed confirmation message
+            let confirmationText = `<div class="text-start">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body text-center text-white">
+                                <i class="fas fa-tasks fs-2 mb-2"></i>
+                                <h4 class="card-title mb-1 fw-bold">#${summary.task_id}</h4>
+                                <small class="text-white-50">Task ID</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                            <div class="card-body text-center text-white">
+                                <i class="fas fa-layer-group fs-2 mb-2"></i>
+                                <h4 class="card-title mb-1 fw-bold">${summary.splits_count}</h4>
+                                <small class="text-white-50">Splits to Process</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                            <div class="card-body text-center text-white">
+                                <i class="fas fa-unlock fs-2 mb-2"></i>
+                                <h4 class="card-title mb-1 fw-bold">${summary.total_spaces_to_release}</h4>
+                                <small class="text-white-50">Spaces to Release</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (summary.panels_affected && summary.panels_affected.length > 0) {
+                confirmationText += `
+                <div class="mb-4 text-center">
+                    <h5 class="text-light text-center mb-3 d-flex align-items-center">
+                        <i class="fas fa-server me-2 text-primary"></i>
+                        <span>Panels Affected</span>
+                    </h5>
+                    <div class="row g-2" style="max-height: 250px; overflow-y: auto; overflow-x: hidden;">`;
+                
+                summary.panels_affected.forEach(panel => {
+                    confirmationText += `
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100" style="background: white; border-left: 4px solid #007bff !important;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="card-title mb-0 text-dark fw-bold">${panel.title}</h6>
+                                        <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 10px;">ID: PNL-${panel.id}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-center">
+                                            <div class="p-2 rounded-3" style="background: rgba(108, 117, 125, 0.1);">
+                                                <div class="text-muted small mb-1">Current</div>
+                                                <div class="fw-bold text-secondary">${panel.current_available}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center mx-2">
+                                            <i class="fas fa-arrow-right text-muted"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="p-2 rounded-3" style="background: rgba(25, 135, 84, 0.1);">
+                                                <div class="text-muted small mb-1">After</div>
+                                                <div class="fw-bold text-success">${panel.new_available}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center ms-2">
+                                            <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 11px;">
+                                                +${panel.spaces_to_release}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                
+                confirmationText += `
+                    </div>
+                </div>`;
+            }
+
+            confirmationText += `
+                <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Note:</strong> After this action completed, all splits with assigned spaces will be removed and the spaces will be released back to their respective panels.
+                </div>
+            </div>`;
+
+            // Show SweetAlert confirmation
+            const result = await Swal.fire({
+                title: 'Mark Task as Completed?',
+                html: confirmationText,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check me-2"></i>Yes, Complete Task',
+                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancel',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                width: '600px',
+                customClass: {
+                    popup: 'swal-wide'
+                }
+            });
+
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Completing Task...',
+                    text: 'Please wait while we process the task completion and release panel spaces.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Complete the task
+                await completeTask(taskId);
+            }
+
+        } catch (error) {
+            console.error('Error in task completion confirmation:', error);
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Failed to load task completion details',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Function to complete the task
+    async function completeTask(taskId) {
+        try {
+            const response = await fetch(`{{ url('admin/myTask') }}/${taskId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to complete task');
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show success message
+                await Swal.fire({
+                    title: 'Task Completed Successfully!',
+                    html: `
+                        <div class="text-start">
+                            <p><strong>Task #${data.data.task_id} has been completed successfully.</strong></p>
+                            <p><strong>Released spaces:</strong> ${data.data.released_spaces}</p>
+                            <p><strong>Processed splits:</strong> ${data.data.processed_splits}</p>
+                            <p><strong>Affected panels:</strong> ${data.data.affected_panels.length}</p>
+                            <div class="alert alert-success mt-3 mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                All splits have been processed and spaces have been released back to the panels.
+                            </div>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+
+                // Reload the current tab's tasks to reflect the changes
+                loadTasks(activeTab);
+            } else {
+                throw new Error(data.message || 'Failed to complete task');
+            }
+
+        } catch (error) {
+            console.error('Error completing task:', error);
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Failed to complete task',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 </script>
 @endpush

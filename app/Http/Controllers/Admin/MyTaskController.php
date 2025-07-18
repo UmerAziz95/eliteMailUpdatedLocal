@@ -238,4 +238,42 @@ class MyTaskController extends Controller
 
         return $badges[$status] ?? '<span class="badge bg-secondary">' . ucfirst($status) . '</span>';
     }
+
+    /**
+     * Get task completion summary for confirmation
+     */
+    public function getTaskCompletionSummary($taskId)
+    {
+        try {
+            $panelService = new \App\Services\PanelReleasedSpacedService();
+            $result = $panelService->getTaskCompletionSummary($taskId);
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error getting task completion summary: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting task completion summary'
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete task and release assigned spaces
+     */
+    public function completeTask($taskId)
+    {
+        try {
+            $panelService = new \App\Services\PanelReleasedSpacedService();
+            $result = $panelService->completeTaskAndReleaseSpaces($taskId);
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error completing task: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing task'
+            ], 500);
+        }
+    }
 }
