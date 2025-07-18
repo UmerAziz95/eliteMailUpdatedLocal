@@ -37,8 +37,10 @@ use App\Http\Controllers\Admin\MediaHandlerController;
 //supports
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Customer\CustomerSupportController;
-//settings
+//configuration
 use App\Http\Controllers\Admin\AdminSettingsController;
+//coupons
+use App\Http\Controllers\Admin\AdminCouponController;
 
 
 //cron
@@ -227,12 +229,17 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // My Orders
         Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
-
-        //settings
-       Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+       //profile settings
+        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+        //system configurations
        Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
-
-
+      
+       //coupons
+        Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
+        Route::get('/coupons/data', [AdminCouponController::class, 'couponsData'])->name('coupons.data');
+        Route::post('coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
+        Route::delete('coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
+        Route::get('coupons/plans/list', [AdminCouponController::class, 'plansList'])->name('coupons.plan.list');
     }); 
 
 });

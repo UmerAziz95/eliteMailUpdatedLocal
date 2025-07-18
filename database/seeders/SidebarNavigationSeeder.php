@@ -142,6 +142,13 @@ class SidebarNavigationSeeder extends Seeder
                         "permission" => "Settings",
                         'sub_menu' => []
             ]
+            // [
+            //             "name" => "Coupons",
+            //             "icon" => "ti ti-file-invoice fs-5",
+            //             "route" => "admin.coupons.index",
+            //             "permission" => "Coupons",
+            //             'sub_menu' => []
+            // ]
         ];
 
         foreach ($navs as $nav) {
@@ -184,5 +191,7 @@ class SidebarNavigationSeeder extends Seeder
             ]
         );
        }
+
+         $this->call(AssignRoleSeeder::class);
       } 
 }  

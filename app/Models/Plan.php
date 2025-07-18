@@ -84,4 +84,11 @@ class Plan extends Model
             ->orderBy('subscriptions_count', 'desc')
             ->first();
     }
+
+    public function coupons()
+{
+    return $this->hasMany(Coupon::class);
+}
+
+
 }

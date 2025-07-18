@@ -74,7 +74,7 @@
                     aria-selected="false"><i class="fa-solid fa-unlock"></i> Chargebee Configuration</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-tab" data-bs-toggle="tab" data-bs-target="#plan-tab-pane"
+                <button class="nav-link" id="plan-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
                     type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
                         class="fa-regular fa-gear"></i> Plan Configuration</button>
             </li>
@@ -96,95 +96,95 @@
             </div>
 
 
-            <div class="tab-pane fade active show" id="chargebee_configuration_tab-pane" role="tabpanel" aria-labelledby="chargebe_configuration-tab"
-                tabindex="0">
+            <div class="tab-pane fade active show" id="chargebee_configuration_tab-pane" role="tabpanel"
+                aria-labelledby="chargebe_configuration-tab" tabindex="0">
                 <div class="card mb-4 p-3">
-                    <h5 class="card-header">Charge bee configuration</h5>
+                    <h5 class="card-header">Chargebee Configuration</h5>
                     <div class="card-body">
-                        <form id="formChangePassword">
+                        <form id="chargebeeConfigForm">
                             <div class="alert text-warning alert-dismissible"
                                 style="background-color: rgba(255, 166, 0, 0.189)" role="alert">
-                                <h5 class="alert-heading mb-1">Ensure that these requirements are met</h5>
-                                <span>Minimum 8 characters long, uppercase &amp; symbol</span>
-                                <button type="button" class="btn-close text-warning " data-bs-dismiss="alert"
-                                    aria-label="Close"></button>
+                                <h5 class="alert-heading mb-1">Note</h5>
+                                <span>Only one environment can be active at a time. Provide credentials accordingly.</span>
+                                <button type="button" class="btn-close text-warning" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
                             </div>
-                            {{-- Old Password --}}
 
-                            <div class="row gx-6">
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
-                                    <label class="form-label" for="oldPassword">Old Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" id="oldPassword" name="oldPassword"
-                                            placeholder="············">
-                                    </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
+                            {{-- Environment Toggles --}}
+                            <div class="row mb-4">
+                                <div class="col-sm-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="liveSwitch">
+                                        <label class="form-check-label" for="liveSwitch">Use Live Environment</label>
                                     </div>
                                 </div>
-
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
-                                    <label class="form-label" for="newPassword">New Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" id="newPassword" name="newPassword"
-                                            placeholder="············">
+                                <div class="col-sm-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="sandboxSwitch">
+                                        <label class="form-check-label" for="sandboxSwitch">Use Sandbox Environment</label>
                                     </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                                    </div>
-                                </div>
-
-                                <div class="mb-4 col-12 col-sm-6 form-password-toggle">
-                                    <label class="form-label" for="confirmPassword">Confirm New Password</label>
-                                    <div class="input-group input-group-merge has-validation">
-                                        <input class="form-control" type="password" name="confirmPassword"
-                                            id="confirmPassword" placeholder="············">
-                                    </div>
-                                    <div
-                                        class="fv-plugins-message-container fv-plugins-message-container--enabled invalid-feedback">
-                                    </div>
-                                </div>
-                                <div>
-                                    <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0">Change
-                                        Password</button>
                                 </div>
                             </div>
 
-                            <input type="hidden">
+                            {{-- Live Credentials --}}
+                            <div class="row gx-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="liveSiteKey" class="form-label">Live Site Key</label>
+                                    <input type="text" id="liveSiteKey" name="liveSiteKey" class="form-control" disabled>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="liveSecretKey" class="form-label">Live Secret Key</label>
+                                    <input type="text" id="liveSecretKey" name="liveSecretKey" class="form-control" disabled>
+                                </div>
+                            </div>
+
+                            {{-- Sandbox Credentials --}}
+                            <div class="row gx-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="sandboxSiteKey" class="form-label">Sandbox Site Key</label>
+                                    <input type="text" id="sandboxSiteKey" name="sandboxSiteKey" class="form-control" disabled>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sandboxSecretKey" class="form-label">Sandbox Secret Key</label>
+                                    <input type="text" id="sandboxSecretKey" name="sandboxSecretKey" class="form-control" disabled>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            </div>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab" tabindex="0">
-                <div class="card mb-4 p-3">
-                    <h5 class="card-header">Current Plan</h5>
-                    <div class="card-body">
-                       
-                    </div>
-                </div>
 
-                <div class="card p-3 mb-4">
-                    <div class="card-header d-flex align-items-center justify-content-between gap-2">
-                        <h5 class="card-action-title mb-0">Billing Address</h5>
-                        <div class="card-action-element">
-                            <button class="m-btn rounded-2 border-0 py-2 px-4" data-bs-target="#addRoleModal"
-                                data-bs-toggle="modal"><i class="icon-base ti tabler-plus icon-14px me-1_5"></i>Edit
-                                address</button>
-                        </div>
-                    </div>
+
+           <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Plan Configuration</h5>
                     <div class="card-body">
-                        <div class="row">
-                           
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="notify-tab" tabindex="0">
-                <div class="card p-3">
-                    <!-- Notifications -->
-                    <div class="card-header">
-                        <h5 class="mb-0">Plan configuration</h5>
+                        <form id="planConfigForm">
+                            <div class="row gx-4">
+                                {{-- Split Limit Value --}}
+                                <div class="col-md-6 mb-4">
+                                    <label for="splitLimitValue" class="form-label">Split Limit Value</label>
+                                    <input type="number" step="0.01" id="splitLimitValue" name="splitLimitValue" class="form-control"
+                                        placeholder="Enter split limit">
+                                </div>
+
+                                {{-- Chargebee Product Family ID --}}
+                                <div class="col-md-6 mb-4">
+                                    <label for="productFamilyId" class="form-label">Chargebee Product Family ID</label>
+                                    <input type="text" id="productFamilyId" name="productFamilyId" class="form-control"
+                                        placeholder="Enter Chargebee Product Family ID">
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -193,23 +193,129 @@
                 <div class="card mb-4 p-3">
                     <h5 class="card-header">Backup</h5>
                     <div class="card-body">
-                      
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Backup Title</th>
+                                        <th>Occurred At</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Daily Backup - July 16</td>
+                                        <td>16 Jul 2025, 03:00 AM</td>
+                                        <td class="text-center">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="fa fa-download me-2 text-success"></i>Download
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger">
+                                                            <i class="fa fa-trash me-2"></i>Delete
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Weekly Backup - July 14</td>
+                                        <td>14 Jul 2025, 01:15 AM</td>
+                                        <td class="text-center">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="fa fa-download me-2 text-success"></i>Download
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item text-danger">
+                                                            <i class="fa fa-trash me-2"></i>Delete
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Empty state -->
+                                    <!-- <tr>
+                                        <td colspan="3" class="text-center text-muted">No backups found.</td>
+                                    </tr> -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="tab-pane fade" id="system_configuration-pane" role="tabpanel"
+     aria-labelledby="system_configuration-tab" tabindex="0">
+    <div class="card mb-4 p-3">
+        <h5 class="card-header">System Configuration</h5>
+        <div class="card-body">
+            <form id="systemConfigForm">
+                <div class="row gx-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="systemName" class="form-label">System Name</label>
+                        <input type="text" class="form-control" id="systemName" name="systemName" placeholder="My Application">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="adminEmail" class="form-label">Admin Email</label>
+                        <input type="email" class="form-control" id="adminEmail" name="adminEmail" placeholder="admin@example.com">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="supportEmail" class="form-label">Support Email</label>
+                        <input type="email" class="form-control" id="supportEmail" name="supportEmail" placeholder="support@example.com">
+                    </div>
+
+                      <div class="col-md-6 mb-3">
+                        <label for="logo" class="form-label">System Logo</label>
+                        <input type="file" class="form-control" id="logo" name="logo">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenanceMode">
+                            <label class="form-check-label" for="maintenanceMode">Enable Maintenance Mode</label>
+                        </div>
+                    </div>
+
+                  
+
+                    <div class="col-md-12 mb-3">
+                        <label for="footerText" class="form-label">Footer Text</label>
+                        <textarea class="form-control" id="footerText" name="footerText" rows="3"
+                                  placeholder="© 2025 My Application. All rights reserved."></textarea>
                     </div>
                 </div>
 
-               
-            </div>
-
-            <div class="tab-pane fade" id="system_configuration-pane" role="tabpanel" aria-labelledby="system_configuration-tab" tabindex="0">
-                <div class="card mb-4 p-3">
-                    <h5 class="card-header">System Configuration</h5>
-                    <div class="card-body">
-                      
-                    </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
                 </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-               
-            </div>
 
         </div>
     </div>
@@ -432,19 +538,6 @@
                         </div>
                     </div>
 
-
-
-
-                    {{-- bill address --}}
-                    {{-- <div class="col-12 col-md-6">
-                        <label class="form-label" for="modalEditUserBillingAddress">Billing Address</label>
-                        <div class="input-group">
-                            <input type="text" id="modalEditUserBillingAddress" name="modalEditUserBillingAddress"
-                                class="form-control" placeholder="123 Main St, City, Country"
-                                value="{{ Auth::user()->billing_address ?? '' }}">
-                        </div>
-                    </div> --}}
-
                     <div class="col-12 text-center">
                         <button type="submit" class="m-btn py-2 px-4 rounded-2 border-0 ">Submit</button>
                         <button type="reset" class="cancel-btn py-2 px-4 rounded-2 border-0" data-bs-dismiss="modal"
@@ -492,299 +585,41 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-            var table = $('#notificationsTable').DataTable();
+    document.addEventListener("DOMContentLoaded", () => {
+        const liveSwitch = document.getElementById("liveSwitch");
+        const sandboxSwitch = document.getElementById("sandboxSwitch");
 
-            // Handle user edit form submission
-            $('#editUserForm').on('submit', function(e) {
-                e.preventDefault();
+        const liveSiteKey = document.getElementById("liveSiteKey");
+        const liveSecretKey = document.getElementById("liveSecretKey");
 
-                var formData = {
-                    name: $('#modalEditUserFirstName').val(),
-                    email: $('#modalEditUserEmail').val(),
-                    phone: $('#modalEditUserPhone').val(),
-                    billing_address: $('#modalEditUserBillingAddress').val(),
-                    _token: '{{ csrf_token() }}'
-                };
+        const sandboxSiteKey = document.getElementById("sandboxSiteKey");
+        const sandboxSecretKey = document.getElementById("sandboxSecretKey");
 
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ route('admin.profile.update') }}',
-                    data: formData,
-                    success: function(response) {
-                        if (response.success) {
-                            // Close modal
-                            $('#edit').modal('hide');
-
-                            // Show success message
-                            toastr.success('Profile updated successfully');
-
-                            // Reload page to reflect changes
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
-                        }
-                    },
-                    error: function(xhr) {
-                        // Show error message
-                        toastr.error('Error updating profile');
-                        console.log(xhr.responseText);
-                    }
-                });
-            });
-
-        });
-        $(document).ready(function() {
-            $('#formChangePassword').on('submit', function(e) {
-                e.preventDefault();
-
-                $.ajax({
-                    url: "{{ route('change.password') }}",
-                    type: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        oldPassword: $('#oldPassword').val(),
-                        newPassword: $('#newPassword').val(),
-                        confirmPassword: $('#confirmPassword').val()
-                    },
-                    success: function(response) {
-                        toastr.success(response.message);
-                        $('#formChangePassword')[0].reset();
-                    },
-                    error: function(xhr) {
-                        if (xhr.status === 422) {
-                            var errors = xhr.responseJSON.errors;
-                            Object.keys(errors).forEach(function(key) {
-                                toastr.error(errors[key][0]);
-                            });
-                        } else if (xhr.status === 400) {
-                            toastr.error(xhr.responseJSON.message);
-                        } else {
-                            toastr.error('Something went wrong. Please try again.');
-                        }
-                    }
-                });
-            });
-        });
-    
-            // Handle user edit form submission
-            $('#editUserForm').on('submit', function(e) {
-                e.preventDefault();
-
-                var formData = {
-                    name: $('#modalEditUserFirstName').val(),
-                    email: $('#modalEditUserEmail').val(),
-                    phone: $('#modalEditUserPhone').val(),
-                    billing_address: $('#modalEditUserBillingAddress').val(),
-                    _token: '{{ csrf_token() }}'
-                };
-
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ route('admin.profile.update') }}',
-                    data: formData,
-                    success: function(response) {
-                        if (response.success) {
-                            // Close modal
-                            $('#edit').modal('hide');
-
-                            // Show success message
-                            toastr.success('Profile updated successfully');
-
-                            // Reload page to reflect changes
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
-                        }
-                    },
-                    error: function(xhr) {
-                        // Show error message
-                        toastr.error('Error updating profile');
-                        console.log(xhr.responseText);
-                    }
-                });
-            });
-
-      
-     
-
-        let cropper;
-        let zoomValue = 0;
-        
-        // Initialize image cropping when file is selected
-        $('#profile-image-input').on('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Initialize cropper
-                    const image = document.getElementById('cropperImage');
-                    image.src = e.target.result;
-                    
-                    // Show cropper modal
-                    $('#cropperModal').modal('show');
-                    
-                    // Initialize Cropper.js after modal is shown
-                    $('#cropperModal').on('shown.bs.modal', function() {
-                        if (cropper) {
-                            cropper.destroy();
-                        }
-                        cropper = new Cropper(image, {
-                            aspectRatio: 1,
-                            viewMode: 1,
-                            dragMode: 'move',
-                            autoCropArea: 1,
-                            cropBoxResizable: true,
-                            cropBoxMovable: true,
-                            minCropBoxWidth: 200,
-                            minCropBoxHeight: 200,
-                            width: 200,
-                            height: 200,
-                            guides: true,
-                            center: true,
-                            highlight: true,
-                            background: true,
-                            autoCrop: true,
-                            responsive: true,
-                            toggleDragModeOnDblclick: true
-                        });
-                    });
-                };
-                reader.readAsDataURL(file);
+        function updateFields() {
+            if (liveSwitch.checked) {
+                sandboxSwitch.checked = false;
+                liveSiteKey.disabled = false;
+                liveSecretKey.disabled = false;
+                sandboxSiteKey.disabled = true;
+                sandboxSecretKey.disabled = true;
+            } else if (sandboxSwitch.checked) {
+                liveSwitch.checked = false;
+                sandboxSiteKey.disabled = false;
+                sandboxSecretKey.disabled = false;
+                liveSiteKey.disabled = true;
+                liveSecretKey.disabled = true;
+            } else {
+                liveSiteKey.disabled = true;
+                liveSecretKey.disabled = true;
+                sandboxSiteKey.disabled = true;
+                sandboxSecretKey.disabled = true;
             }
-        });
+        }
 
-        // Handle image manipulation controls
-        $('.rotate-left').on('click', function() {
-            cropper.rotate(-90);
-        });
+        liveSwitch.addEventListener("change", updateFields);
+        sandboxSwitch.addEventListener("change", updateFields);
 
-        $('.rotate-right').on('click', function() {
-            cropper.rotate(90);
-        });
-
-        $('.flip-horizontal').on('click', function() {
-            cropper.scaleX(cropper.getData().scaleX === 1 ? -1 : 1);
-        });
-
-        $('.flip-vertical').on('click', function() {
-            cropper.scaleY(cropper.getData().scaleY === 1 ? -1 : 1);
-        });
-
-        $('.zoom-in').on('click', function() {
-            zoomValue = Math.min(zoomValue + 10, 100);
-            $('.zoom-slider').val(zoomValue);
-            cropper.zoom(0.1);
-        });
-
-        $('.zoom-out').on('click', function() {
-            zoomValue = Math.max(zoomValue - 10, 0);
-            $('.zoom-slider').val(zoomValue);
-            cropper.zoom(-0.1);
-        });
-
-        $('.zoom-slider').on('input', function() {
-            const newZoom = parseInt($(this).val());
-            const zoomDiff = (newZoom - zoomValue) / 100;
-            cropper.zoom(zoomDiff);
-            zoomValue = newZoom;
-        });
-
-        // Clean up cropper when modal is hidden
-        $('#cropperModal').on('hidden.bs.modal', function() {
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-                zoomValue = 0;
-                $('.zoom-slider').val(0);
-            }
-        });
-
-        // Rest of your existing cropper code...
-        $('#cropButton').on('click', function() {
-            if (!cropper) return;
-
-            // Get cropped canvas
-            const canvas = cropper.getCroppedCanvas({
-                width: 200,
-                height: 200
-            });
-
-            // Apply copper filter effect
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                data[i] = Math.min(255, data[i] * 1.2); // Red
-                data[i + 1] = Math.min(255, data[i + 1] * 0.9); // Green
-                data[i + 2] = Math.min(255, data[i + 2] * 0.7); // Blue
-            }
-            
-            ctx.putImageData(imageData, 0, 0);
-
-            // Convert to blob and upload
-            canvas.toBlob(function(blob) {
-                const formData = new FormData();
-                formData.append('profile_image', blob, 'profile.jpg');
-                formData.append('_token', '{{ csrf_token() }}');
-
-                $.ajax({
-                    url: '{{ route('profile.update.image') }}',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            // Update the image preview
-                            $('#profile-image').attr('src', response.image_url);
-                            // login-user-profile
-                            $('.login-user-profile').attr('src', response.image_url);
-                            toastr.success('Profile image updated successfully');
-                            $('#cropperModal').modal('hide');
-                            window.location.reload();
-                        }
-                    },
-                    error: function(xhr) {
-                        toastr.error('Error updating profile image');
-                        console.log(xhr.responseText);
-                    }
-                });
-            }, 'image/jpeg', 0.95);
-        });
-        // Handle mark as read functionality
-        $('.mark-as-read').on('click', function() {
-            const button = $(this);
-            const notificationId = button.data('id');
-            
-            $.ajax({
-                url: `/notifications/${notificationId}/mark-read`,
-                type: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Update the status badge
-                        button.closest('tr').find('.readToggle').removeClass('bg-label-warning').addClass('bg-label-success').text('Read');
-                        // Remove the mark as read button
-                        button.remove();
-                        // Show success message
-                        toastr.success(response.message || 'Notification marked as read');
-                    } else {
-                        toastr.error(response.message || 'Failed to mark notification as read');
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Error marking notification as read:', xhr);
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        toastr.error(xhr.responseJSON.message);
-                    } else {
-                        toastr.error('Failed to mark notification as read. Please try again.');
-                    }
-                }
-            });
-        });
+        updateFields(); // run once on load
+    });
 </script>
 @endpush
