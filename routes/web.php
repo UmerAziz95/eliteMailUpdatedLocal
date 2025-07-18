@@ -438,9 +438,10 @@ Route::get('myTask', function () {
     return view('admin/myTask/index');
 })->name("admin.myTask.index");
 
-Route::get('taskInQueue', function () {
-    return view('admin/taskInQueue/index');
-})->name("admin.taskInQueue.index");
+Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("admin.taskInQueue.index");
+Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("admin.taskInQueue.data");
+Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("admin.taskInQueue.assign");
+Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("admin.taskInQueue.updateStatus");
 
 Route::get('/profile', function () {
     return view('admin/profile/profile');
