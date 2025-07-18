@@ -14,25 +14,23 @@ class MasterPlanController extends Controller
 {    /**
      * Display the master plan with volume items
      */
-    public function show()
-    {
-        $masterPlan = MasterPlan::getSingle();
-        
-        if (!$masterPlan) {
-            return response()->json(null);
-        }
-        
-        // Load volume items with features to match the format used in store method
-        $masterPlan->load('volumeItems.features');
-        
-        // Format the response to match frontend expectations (same as store method)
-        $formattedData = [
-            'id' => $masterPlan->id,
-            'external_name' => $masterPlan->external_name,
-            'internal_name' => $masterPlan->internal_name,
-            'description' => $masterPlan->description,
-            'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
-            'volume_items' => $masterPlan->volumeItems->map(function ($item) {
+public function show($id=null)
+{
+    
+    if($id !==null){
+    $masterPlans = MasterPlan::with('volumeItems.features')->where('id', $id)->get();
+    }else{
+        $masterPlans=MasterPlan::with('volumeItems.features')->get();
+    }
+
+    $formattedData = $masterPlans->map(function ($plan) {
+        return [ 
+            'id' => $plan->id,
+            'external_name' => $plan->external_name,
+            'internal_name' => $plan->internal_name,
+            'description' => $plan->description,
+            'chargebee_plan_id' => $plan->chargebee_plan_id,
+            'volume_items' => $plan->volumeItems->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
@@ -46,9 +44,12 @@ class MasterPlanController extends Controller
                 ];
             })->toArray()
         ];
-        
-        return response()->json($formattedData);
-    }    /**
+    });
+
+    return response()->json($formattedData);
+}
+
+   /**
      * Create or update the master plan with volume items
      */
     public function store(Request $request)
@@ -219,35 +220,37 @@ class MasterPlanController extends Controller
 
             DB::commit();
 
-            // Reload with volume items and format response
-            $masterPlan->load('volumeItems.features');
-            
-            // Format the response to match frontend expectations
-            $formattedData = [
-                'id' => $masterPlan->id,
-                'external_name' => $masterPlan->external_name,
-                'internal_name' => $masterPlan->internal_name,
-                'description' => $masterPlan->description,
-                'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
-                'volume_items' => $masterPlan->volumeItems->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'description' => $item->description,
-                        'min_inbox' => $item->min_inbox,
-                        'max_inbox' => $item->max_inbox,
-                        'price' => $item->price,
-                        'duration' => $item->duration,
-                        'features' => $item->features->pluck('id')->toArray(),
-                        'feature_values' => $item->features->pluck('pivot.value')->toArray()
-                    ];
-                })->toArray()
+           // Load all master plans with their volume items and features
+$allMasterPlans = MasterPlan::with(['volumeItems.features'])->get();
+
+// Format each master plan
+$formattedPlans = $allMasterPlans->map(function ($plan) {
+    return [
+        'id' => $plan->id,
+        'external_name' => $plan->external_name,
+        'internal_name' => $plan->internal_name,
+        'description' => $plan->description,
+        'chargebee_plan_id' => $plan->chargebee_plan_id,
+        'volume_items' => $plan->volumeItems->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'description' => $item->description,
+                'min_inbox' => $item->min_inbox,
+                'max_inbox' => $item->max_inbox,
+                'price' => $item->price,
+                'duration' => $item->duration,
+                'features' => $item->features->pluck('id')->toArray(),
+                'feature_values' => $item->features->pluck('pivot.value')->toArray()
             ];
+        })->toArray()
+    ];
+});
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'data' => $formattedData
+                'data' => $formattedPlans
             ]);
 
         } catch (\Exception $e) {
@@ -430,6 +433,7 @@ class MasterPlanController extends Controller
      */
     public function data()
     {
+       
         try {
             $masterPlan = MasterPlan::getSingle();
             

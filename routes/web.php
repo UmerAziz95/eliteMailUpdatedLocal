@@ -131,7 +131,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
         
         // Master Plan routes
-        Route::get('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
+        Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
         Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
         Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
         Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
