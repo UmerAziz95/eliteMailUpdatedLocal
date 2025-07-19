@@ -274,12 +274,23 @@
                 <span class="fw-semibold">#${task.task_id} 
                     <i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
                        style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;" 
-                       ${task.status === 'completed' ? '' : `onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
+                       onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
                        onmouseout="this.style.color=''; this.style.transform='scale(1)'" 
-                       onclick="confirmTaskCompletion(${task.task_id})"`}
+                       onclick="confirmTaskCompletion(${task.task_id})"
                        title="${task.status === 'completed' ? 'Task completed' : 'Mark as completed'}"></i>
                 </span>
-                <span class="badge ${statusClass} fw-semibold">${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}</span>
+                <span class="badge ${statusClass} fw-semibold">
+                    <i class="${(() => {
+                        switch(task.status) {
+                            case 'pending': return 'fa fa-clock fa-pulse';
+                            case 'in-progress': return 'fa fa-solid fa-gear fa-spin';
+                            case 'completed': return 'fa fa-check';
+                            case 'failed': return 'fa fa-times fa-shake';
+                            default: return 'fa fa-question fa-fade';
+                        }
+                    })()}"></i>
+                    ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                </span>
             </div>
 
             <!-- Stats -->
