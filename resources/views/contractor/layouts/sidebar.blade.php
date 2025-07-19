@@ -25,15 +25,7 @@
     
             <!-- Orders -->
             {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Product</p> --}}
-            <li class="nav-item">
-                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.orders') ? 'active' : '' }}"
-                    href="{{ route('contractor.orders') }}">
-                    <div class="d-flex align-items-center" style="gap: 13px">
-                        <div class="icons"><i class="ti ti-box fs-5"></i></div>
-                        <div class="text">My Orders</div>
-                    </div>
-                </a>
-            </li>
+            
     
             <!-- Pricing -->
             <!-- <li class="nav-item">
@@ -66,8 +58,38 @@
                         <span class="text">Order In Queue</span>
                     </div>
                 </a>
-            </li>   
-    
+            </li>
+            <!-- Queue Tasks -->
+            <li class="nav-item">
+                <a href="{{ route('contractor.taskInQueue.index') }}"
+                    class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.taskInQueue.index') ? 'active' : '' }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="ti ti-list-check fs-5"></i>
+                        <span class="text">Tasks In Queue</span>
+                    </div>
+                </a>
+            </li> 
+            <li class="nav-item">
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.orders') ? 'active' : '' }}"
+                    href="{{ route('contractor.orders') }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="ti ti-box fs-5"></i></div>
+                        <div class="text">My Orders</div>
+                    </div>
+                </a>
+            </li>
+            <!-- myTask -->
+            <li class="nav-item">
+                <a href="{{ route('contractor.myTask.index') }}"
+                    class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.myTask.index') ? 'active' : '' }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="ti ti-list-check fs-5"></i>
+                        <span class="text">My Tasks</span>
+                    </div>
+                </a>
+            </li>
+            
+
             <!-- Support -->
             {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Product</p> --}}
     

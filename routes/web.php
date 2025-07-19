@@ -405,6 +405,18 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
     Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
 
+    // Task Queue Routes
+    Route::get('taskInQueue', [App\Http\Controllers\Contractor\TaskQueueController::class, 'index'])->name("taskInQueue.index");
+    Route::get('taskInQueue/data', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
+    Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+    Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+
+    // My Task Routes
+    Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
+    Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
+    Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+    Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
+    Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
 
     // Domains Removal Tasks
 }); 
