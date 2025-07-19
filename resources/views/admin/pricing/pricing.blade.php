@@ -1907,7 +1907,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
             });
 
             // Volume item management
-            let volumeItemIndex = 0;
+            var volumeItemIndex = 0;
 
             // Add volume item
             $('#addVolumeItem').on('click', function() {
@@ -1986,26 +1986,36 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="">
                                 <label class="form-label">Min Inboxes <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control volume-min-inbox" name="volume_items[${volumeItemIndex}][min_inbox]" value="${item.min_inbox}" min="1" step="1" required>
                                 <small class="text-muted">Must be 1 or greater</small>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="">
                                 <label class="form-label">Max Inboxes <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control volume-max-inbox" name="volume_items[${volumeItemIndex}][max_inbox]" value="${item.max_inbox || '0'}" min="0" step="1">
                                 <small class="opacity-75">Set to 0 for unlimited</small>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="">
                                 <label class="form-label">Price per Inbox <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control volume-price" name="volume_items[${volumeItemIndex}][price]" value="${item.price}" step="0.01" min="0" required>
+                                    <input type="number" class="form-control volume-price tier_volume_price" data-itemindex="${volumeItemIndex}" id="tier_volume_price_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][price]" value="${item.price}" step="0.01" min="0" required>
+                                </div>
+                                <small class="text-muted">Must be 0 or greater</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="">
+                                <label class="form-label">Final Price after applied discount<span class="text-danger"></span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" >
                                 </div>
                                 <small class="text-muted">Must be 0 or greater</small>
                             </div>
@@ -2013,10 +2023,16 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Descriptionk</label>
                         <textarea class="form-control volume-description" name="volume_items[${volumeItemIndex}][description]" rows="2">${item.description}</textarea>
                     </div>
                     
+
+                <!-- tier discount fields -->
+                 <div class="tier-discount-container-${volumeItemIndex}">
+                   ${createTierDiscountFields(volumeItemIndex)}
+                </div>
+
                     <!-- Features Section -->
                     <div class="">
                         <label class="form-label">Features</label>
@@ -2058,7 +2074,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                         </div>
                     </div>
                 </div>
-            `;
+                `;
 
                 $('#volumeItemsContainer').append(itemHtml);
                 volumeItemIndex++;
@@ -2067,6 +2083,30 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                 // Load available features for this volume item
                 loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
             }
+
+            function createTierDiscountFields(volumeItemIndex) {
+                const selectedVal = $('#planTypeRole').val();
+                if (selectedVal == "Discounted") {
+                    return `
+                        <div class="row mt-3 mb-3 discount-fields" id="discountFields${volumeItemIndex}">
+                            <div class="col-md-6">
+                                <label class="form-label">Discount Type</label>
+                                <select class="form-select tier_discount_type" id="tier_discount_type_${volumeItemIndex}" data-itemindex="${volumeItemIndex}" name="volume_items[${volumeItemIndex}][discount_type]">
+                                    <option value="percentage">Percentage</option>
+                                    <option value="fixed">Fixed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Discount Value</label>
+                                <input type="number" class="form-control tier_discount_value " data-itemindex="${volumeItemIndex}" id="tier_discount_value_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][discount_value]" min="0" step="0.01" placeholder="Enter discount value">
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return '';
+                }
+            } 
+
 
             // Add input validation to prevent invalid values and validate range logic (ChargeBee compatible)
             $(document).on('input', '.volume-min-inbox, .volume-max-inbox', function() {
@@ -2729,6 +2769,8 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     <button type="button" class="btn btn-sm btn-danger remove-feature-btn" data-index="${itemIndex}" data-feature-id="${featureId}">
                         <i class="fa-solid fa-times"></i>
                     </button>
+
+
                     <div class="row">
                         <div class="col-md-5">
                             <strong>${featureTitle}</strong>
@@ -2888,7 +2930,74 @@ $(document).on('click', '.editMasterPlanBtn', function () {
             //     loadMasterPlanData();
             // });
         });
+
+
+
+   $(document).ready(function () {
+    // Toggle discount fields based on plan type
+    $('#planTypeRole').on('change', function () {
+        $('#volumeItemsContainer').empty(); // Clears all children inside the container
+    });
+});
 </script>
+<script>
+
+$(document).ready(function () {
+    function recalculateVolumePrice(index) {
+        console.log(`📦 Triggered field with index: ${index}`);
+
+        const discountType = $(`#tier_discount_type_${index}`).val();
+        const discountValueRaw = $(`#tier_discount_value_${index}`).val();
+        const basePriceRaw = $(`#tier_volume_price_${index}`).val();
+
+        console.log(`🔍 Index: ${index}`);
+        console.log(`➡️  Discount Type: ${discountType}`);
+        console.log(`➡️  Discount Value (raw): ${discountValueRaw}`);
+        console.log(`➡️  Base Price (raw): ${basePriceRaw}`);
+
+        const discountValue = parseFloat(discountValueRaw);
+        const basePrice = parseFloat(basePriceRaw);
+
+        console.log(`✅ Parsed Discount Value: ${discountValue}`);
+        console.log(`✅ Parsed Base Price: ${basePrice}`);
+
+        if (isNaN(discountValue) || isNaN(basePrice)) {
+            console.warn("❌ One or more values are NaN — exiting");
+            $(`#price_after_discount_${index}`).val('');
+            return;
+        }
+
+        let updatedPrice = basePrice;
+
+        if (discountType === 'percentage') {
+            updatedPrice = basePrice * ((100 - discountValue) / 100);
+        } else if (discountType === 'fixed') {
+            updatedPrice = basePrice - discountValue;
+        }
+
+        updatedPrice = Math.max(updatedPrice, 0); // Prevent negative values
+        updatedPrice = parseFloat(updatedPrice.toFixed(2));
+
+        console.log(`✅ Updated Price: ${updatedPrice}`);
+
+        // Show the calculated price in the separate field (not modifying base price)
+        $(`#price_after_discount_${index}`).val(updatedPrice);
+    }
+
+    $(document).on('change input', '.tier_discount_type, .tier_discount_value, .tier_volume_price', function () {
+        const index = $(this).data('itemindex');
+        console.log(`📦 Triggered field with index: ${index}`);
+
+        if (typeof index !== 'undefined') {
+            recalculateVolumePrice(index);
+        } else {
+            console.warn('⚠️ No data-itemindex found on this field.');
+        }
+    });
+});
+</script>
+
+
 
 <!-- Master Plan Modal -->
 <div class="modal fade" id="masterPlanModal" tabindex="-1" aria-labelledby="masterPlanModalLabel" aria-hidden="true">
@@ -2906,11 +3015,11 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     <!-- Basic Information -->
                     <div class="card mb-4 p-3">
                         <div>
-                            <h6 class="mb-0 theme-text"><i class="fa-solid fa-info-circle me-2"></i>Basic Information
+                            <h6 class="mb-0 theme-text">
+                                <i class="fa-solid fa-info-circle me-2"></i>Basic Information
                             </h6>
                         </div>
                         <div>
-
                             <div class="row">
                                 <div class="col-md-12 mb-2">
                                     <div>
@@ -2920,17 +3029,17 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                         <input type="text" class="form-control" id="masterPlanExternalName" required>
                                         <small class="opacity-50" style="display: none;">This will be shown to
                                             customers</small>
-                                        <small class="text-muted d-block mt-1"
-                                            style="display: none !important;">Internal name: <span
-                                                id="internalNamePreview"
-                                                class="text-primary">plan_name_preview</span></small>
+                                        <small class="text-muted d-block mt-1" style="display: none !important;">
+                                            Internal name: <span id="internalNamePreview"
+                                                class="text-primary">plan_name_preview</span>
+                                        </small>
                                     </div>
                                 </div>
+
                                 <div class="col-md-6 mb-2" style="display: none;">
-                                    <div>
-                                        <input type="hidden" class="form-control" id="masterPlanInternalName">
-                                    </div>
+                                    <input type="hidden" class="form-control" id="masterPlanInternalName">
                                 </div>
+
                                 <div class="col-12">
                                     <label for="masterPlanDescription" class="form-label">Description <span
                                             class="text-danger">*</span></label>
@@ -2938,9 +3047,29 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                         required></textarea>
                                     <small class="opacity-50">Describe the master plan features and benefits</small>
                                 </div>
+
+                                <!-- Type Dropdown -->
+                                <div class="col-12 mt-3">
+                                    <label for="planType" class="form-label">Type <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="planTypeRole" required>
+                                        <option value="">-- Select Type --</option>
+                                        <option value="Discounted">Discounted</option>
+                                        <option value="Without Discount">Without Discount</option>
+
+                                    </select>
+                                </div>
+
+                                <!-- Other Type Input -->
+                                <div class="col-12 mt-3" id="otherTypeWrapper" style="display: none;">
+                                    <label for="otherType" class="form-label">Other Type</label>
+                                    <input type="text" class="form-control" id="otherType"
+                                        placeholder="Enter other type">
+                                </div>
                             </div>
                         </div>
                     </div>
+
 
                     <!-- Tier Creation Instructions -->
                     <div class="card mb-3">
