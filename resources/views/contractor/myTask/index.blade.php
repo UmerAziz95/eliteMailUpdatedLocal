@@ -49,7 +49,7 @@
         transform: scale(1.01);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
+    
     /* Domain fade in animation */
     @keyframes domainFadeIn {
         from {
@@ -72,6 +72,7 @@
         color: #28a745 !important;
         transform: scale(1.1) !important;
     }
+    
 </style>
 @endpush
 

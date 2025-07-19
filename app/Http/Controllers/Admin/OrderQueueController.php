@@ -45,7 +45,7 @@ class OrderQueueController extends Controller
                 $query->where('status_manage_by_admin', 'reject');
             } else {
                 // In-queue: all orders except draft and rejected
-                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject']);
+                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject', 'completed', 'cancelled', 'in-progress']);
                 // type in-queue not get assigned orders
                 $query->whereNull('assigned_to');
                 // For queue orders, only include orders that have splits

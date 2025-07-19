@@ -52,7 +52,7 @@ class OrderQueueController extends Controller
                 // $query->where('assigned_to', $contractorId);
             } else {
                 // In-queue: show unassigned orders that contractor can pick up
-                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject']);
+                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject', 'completed', 'cancelled', 'in-progress']);
                 $query->whereNull('assigned_to');
                 // $query->where('status_manage_by_admin', 'peding');
                 // For queue orders, only include orders that have splits

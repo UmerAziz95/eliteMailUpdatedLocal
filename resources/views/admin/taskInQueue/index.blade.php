@@ -43,14 +43,28 @@
             opacity: 0.5;
         }
 
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .loading-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
         .loading-spinner {
             display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 3rem;
+            height: 3rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
+            margin-bottom: 1rem;
+            opacity: 0.5;
         }
 
         @keyframes spin {

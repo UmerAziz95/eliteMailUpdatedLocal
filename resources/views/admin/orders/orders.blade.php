@@ -3086,12 +3086,14 @@ pointer-events: none
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
                     <div>
-                        <button class="btn btn-warning btn-sm px-3 py-2" 
-                                onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
-                                style="font-size: 13px;">
-                            <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
-                            Change Status
-                        </button>
+                        ${orderInfo?.status !== 'cancelled' ? `
+                            <button class="btn btn-warning btn-sm px-3 py-2" 
+                                    onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
+                                    style="font-size: 13px;">
+                                <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
+                                Change Status
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             </div>
