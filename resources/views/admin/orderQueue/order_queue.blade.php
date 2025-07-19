@@ -357,7 +357,7 @@
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
-                    <i class="fas fa-ban me-1"></i>reject orders
+                    Reject orders
                 </button>
             </li>
         </ul>

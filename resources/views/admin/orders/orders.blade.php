@@ -3086,7 +3086,7 @@ pointer-events: none
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
                     <div>
-                        ${orderInfo?.status !== 'cancelled' ? `
+                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'completed' ? `
                             <button class="btn btn-warning btn-sm px-3 py-2" 
                                     onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                     style="font-size: 13px;">
