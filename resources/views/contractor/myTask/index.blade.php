@@ -114,7 +114,7 @@
     </section>
 
     <!-- Task Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="task-details-view"
+    <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="task-details-view"
         aria-labelledby="task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
         <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
             <h5 class="offcanvas-title" id="task-details-viewLabel">Order Details</h5>
