@@ -53,7 +53,7 @@ class MyTaskController extends Controller
             $query->orderBy('started_queue_date', $order);
 
             // Pagination parameters
-            $perPage = $request->get('per_page', 12);
+            $perPage = 100;
             $page = $request->get('page', 1);
             
             // Get paginated results
