@@ -1612,27 +1612,29 @@
             loadMasterPlan();
 
             // // Create/Edit Master Plan
-            // $('#createMasterPlan').click(function() {
-            //     // Load existing data if available
-            //     $.get('{{ route('admin.master-plan.show') }}')
-            //         .done(function(response) {
-            //             if (response && response.id) {
-            //                 $('#masterPlanExternalName').val(response.name || '');
-            //                 // Generate internal name from external name instead of using stored value
-            //                 const generatedInternalName = generateInternalName(response.name || '');
-            //                 $('#masterPlanInternalName').val(generatedInternalName);
-            //                 $('#internalNamePreview').text(generatedInternalName ||
-            //                 'plan_name_preview');
-            //                 $('#masterPlanDescription').val(response.description || '');
-            //             }
-            //         })
-            //         .always(function() {
-            //             $('#masterPlanModal').modal('show');
-            //         });
-            // }
+            $('#createMasterPlan').click(function() {
+                // Load existing data if available
+                // $.get('{{ route('admin.master-plan.show') }}')
+                //     .done(function(response) {
+                //         if (response && response.id) {
+                //             $('#masterPlanExternalName').val(response.name || '');
+                //             // Generate internal name from external name instead of using stored value
+                //             const generatedInternalName = generateInternalName(response.name || '');
+                //             $('#masterPlanInternalName').val(generatedInternalName);
+                //             $('#internalNamePreview').text(generatedInternalName ||
+                //             'plan_name_preview');
+                //             $('#masterPlanDescription').val(response.description || '');
+                //         }
+                //     })
+                //     .always(function() {
+                //         $('#masterPlanModal').modal('show');
+                //     });
+
+                       $('#masterPlanId').val(''); // Clear ID for new plan
+                      $('#masterPlanModal').modal('show');
+            });
 
 $(document).on('click', '.editMasterPlanBtn', function () {
-  alert("jfkdjk")
     const id = $(this).data('id');
 
     // Load existing data for the selected plan using its ID
@@ -1641,6 +1643,8 @@ $(document).on('click', '.editMasterPlanBtn', function () {
         .done(function (response) { 
             if (response && response[0].id) {
                 loadMasterPlanData(response[0]);
+                // masterPlanId
+                $('#masterPlanId').val(response[0].id || '');
                 $('#masterPlanExternalName').val(response[0].external_name	 || '');
 
                 // Generate internal name from external name
@@ -1677,6 +1681,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     internal_name: $('#masterPlanInternalName').val(),
                     description: $('#masterPlanDescription').val(),
                     volume_items: collectVolumeItems(),
+                    masterPlanId: $('#masterPlanId').val() || null,
                     _token: '{{ csrf_token() }}'
                 };
 
@@ -2911,6 +2916,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                     <div>
                                         <label for="masterPlanExternalName" class="form-label">Plan Name <span
                                                 class="text-danger">*</span></label>
+                                        <input type="hidden" id="masterPlanId" value="">
                                         <input type="text" class="form-control" id="masterPlanExternalName" required>
                                         <small class="opacity-50" style="display: none;">This will be shown to
                                             customers</small>

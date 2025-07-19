@@ -24,17 +24,17 @@ class MasterPlan extends Model
     }/**
      * Boot the model
      */
-    protected static function boot()
-    {
-        parent::boot();
+    // protected static function boot()
+    // {
+    //     parent::boot();
 
-        // Prevent creating multiple master plans
-        static::creating(function ($model) {
-            if (static::count() > 0) {
-                throw new \Exception('Only one master plan is allowed. Please edit the existing master plan instead of creating a new one.');
-            }
-        });
-    }
+    //     // Prevent creating multiple master plans
+    //     static::creating(function ($model) {
+    //         if (static::count() > 0) {
+    //             throw new \Exception('Only one master plan is allowed. Please edit the existing master plan instead of creating a new one.');
+    //         }
+    //     });
+    // }
 
     /**
      * Get the single master plan instance
