@@ -53,7 +53,11 @@ public function show($id=null)
      * Create or update the master plan with volume items
      */
     public function store(Request $request)
-        {        $request->validate([
+
+        { 
+            dd($request->all());
+            
+            $request->validate([
                 'external_name' => 'required|string|max:255',
                 // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
                 'description' => 'required|string|max:1000',

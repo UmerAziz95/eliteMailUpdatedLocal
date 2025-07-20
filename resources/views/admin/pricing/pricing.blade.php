@@ -2083,29 +2083,36 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                 // Load available features for this volume item
                 loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
             }
+function createTierDiscountFields(volumeItemIndex) {
+    const selectedVal = $('#planTypeRole').val();
+    if (selectedVal === "Discounted") {
+        return `
+            <div class="row mt-3 mb-3 discount-fields" id="discountFields${volumeItemIndex}">
+                <div class="col-md-4">
+                    <label class="form-label">Discount Type</label>
+                    <select class="form-select tier_discount_type" 
+                        id="tier_discount_type_${volumeItemIndex}" 
+                        data-itemindex="${volumeItemIndex}" 
+                        name="volume_items[${volumeItemIndex}][discount_type]">
+                        <option value="percentage">Percentage</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Discount Value</label>
+                    <input type="number" class="form-control tier_discount_value" 
+                        id="tier_discount_value_${volumeItemIndex}" 
+                        data-itemindex="${volumeItemIndex}" 
+                        name="volume_items[${volumeItemIndex}][discount_value]" 
+                        placeholder="Discount" step="0.01" />
+                </div>
+            </div>
+        `;
+    } else {
+        return '';
+    }
+}
 
-            function createTierDiscountFields(volumeItemIndex) {
-                const selectedVal = $('#planTypeRole').val();
-                if (selectedVal == "Discounted") {
-                    return `
-                        <div class="row mt-3 mb-3 discount-fields" id="discountFields${volumeItemIndex}">
-                            <div class="col-md-6">
-                                <label class="form-label">Discount Type</label>
-                                <select class="form-select tier_discount_type" id="tier_discount_type_${volumeItemIndex}" data-itemindex="${volumeItemIndex}" name="volume_items[${volumeItemIndex}][discount_type]">
-                                    <option value="percentage">Percentage</option>
-                                    <option value="fixed">Fixed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Discount Value</label>
-                                <input type="number" class="form-control tier_discount_value " data-itemindex="${volumeItemIndex}" id="tier_discount_value_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][discount_value]" min="0" step="0.01" placeholder="Enter discount value">
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    return '';
-                }
-            } 
 
 
             // Add input validation to prevent invalid values and validate range logic (ChargeBee compatible)
@@ -2650,56 +2657,96 @@ $(document).on('click', '.editMasterPlanBtn', function () {
             });
 
             // Collect volume items data
-            function collectVolumeItems() {
-                const items = [];
-                $('#volumeItemsContainer .volume-item').each(function() {
-                    const $item = $(this);
+          // Collect volume items data
+function collectVolumeItems() {
+    const items = [];
+    const discountMode = $('#planTypeRole').val(); // ✅ Only read once
 
-                    // Get values with proper validation
-                    const itemId = $item.data('item-id') || $item.find('.volume-id').val() || null;
-                    const nameVal = $item.find('.volume-name').val();
-                    const minInboxVal = $item.find('.volume-min-inbox').val();
-                    const maxInboxVal = $item.find('.volume-max-inbox').val();
-                    const priceVal = $item.find('.volume-price').val();
+    $('#volumeItemsContainer .volume-item').each(function(index) {
+        const $item = $(this);
 
-                    // Parse values, treating empty strings appropriately
-                    const name = nameVal ? nameVal.trim() : '';
-                    const minInbox = minInboxVal === '' ? null : (parseInt(minInboxVal) || 0);
-                    const maxInbox = maxInboxVal === '' ? null : (parseInt(maxInboxVal) || 0);
-                    const price = priceVal === '' ? null : (parseFloat(priceVal) || 0);
+        const itemId = $item.data('item-id') || $item.find('.volume-id').val() || null;
+        const nameVal = $item.find('.volume-name').val();
+        const minInboxVal = $item.find('.volume-min-inbox').val();
+        const maxInboxVal = $item.find('.volume-max-inbox').val();
+        const originalPriceVal = $item.find('.volume-price').val();
 
-                    // Collect selected features with values for this volume item
-                    const features = [];
-                    const featureValues = [];
-                    $item.find('.selected-features-list .feature-item').each(function() {
-                        const featureId = $(this).data('feature-id');
-                        const featureValue = $(this).find('.feature-value-input').val() || '';
-                        if (featureId) {
-                            features.push(featureId);
-                            featureValues.push(featureValue);
-                        }
-                    });
+        const rawDiscountValue = $item.find('.tier_discount_value').val();
+        const tier_discount_value = rawDiscountValue === '' || rawDiscountValue == null ? null : parseFloat(rawDiscountValue);
+        const tier_discount_type = $item.find('.tier_discount_type').val() || null;
 
-                    const itemData = {
-                        name: name,
-                        description: $item.find('.volume-description').val() || '',
-                        min_inbox: minInbox,
-                        max_inbox: maxInbox,
-                        price: price,
-                        duration: $item.find('.volume-duration').val() || 'monthly',
-                        features: features,
-                        feature_values: featureValues
-                    };
+        const name = nameVal ? nameVal.trim() : '';
+        const minInbox = minInboxVal === '' ? null : (parseInt(minInboxVal) || 0);
+        const maxInbox = maxInboxVal === '' ? null : (parseInt(maxInboxVal) || 0);
+        const originalPrice = originalPriceVal === '' ? null : (parseFloat(originalPriceVal) || 0);
 
-                    // Include ID only if it exists (for existing items)
-                    if (itemId) {
-                        itemData.id = itemId;
-                    }
+        let finalPrice = originalPrice;
+        const actual_price_before_discount = originalPrice;
 
-                    items.push(itemData);
-                });
-                return items;
+        const priceAfterDiscountField = $(`#price_after_discount_${index}`);
+
+        // ✅ Only apply discount if planTypeRole is "Discounted"
+        if (
+            discountMode === 'Discounted' &&
+            tier_discount_type &&
+            tier_discount_value !== null &&
+            !isNaN(originalPrice)
+        ) {
+            if (tier_discount_type === 'percentage') {
+                const discountAmount = (tier_discount_value / 100) * originalPrice;
+                finalPrice = Math.max(originalPrice - discountAmount, 0);
+            } else if (tier_discount_type === 'fixed') {
+                finalPrice = Math.max(originalPrice - tier_discount_value, 0);
             }
+
+            if (priceAfterDiscountField.length) {
+                priceAfterDiscountField.val(finalPrice.toFixed(2));
+            }
+        } else {
+            // Not Discounted → clear price after discount field
+            if (priceAfterDiscountField.length) {
+                priceAfterDiscountField.val('');
+            }
+        }
+
+        // Collect features and values
+        const features = [];
+        const featureValues = [];
+        $item.find('.selected-features-list .feature-item').each(function () {
+            const featureId = $(this).data('feature-id');
+            const featureValue = $(this).find('.feature-value-input').val() || '';
+            if (featureId) {
+                features.push(featureId);
+                featureValues.push(featureValue);
+            }
+        });
+
+        const itemData = {
+            name: name,
+            description: $item.find('.volume-description').val() || '',
+            min_inbox: minInbox,
+            max_inbox: maxInbox,
+            price: finalPrice,
+            actual_price_before_discount: actual_price_before_discount,
+            duration: $item.find('.volume-duration').val() || 'monthly',
+            features: features,
+            feature_values: featureValues,
+            tier_discount_value: tier_discount_value,
+            tier_discount_type: tier_discount_type
+        };
+
+        if (itemId) {
+            itemData.id = itemId;
+        }
+
+        items.push(itemData);
+    });
+
+    return items;
+}
+
+
+
 
             // Load features for a specific volume item
             function loadFeaturesForVolumeItem(itemIndex, selectedFeatures = [], selectedValues = []) {
@@ -2941,8 +2988,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
 });
 </script>
 <script>
-
-$(document).ready(function () {
+    $(document).ready(function () {
     function recalculateVolumePrice(index) {
         console.log(`📦 Triggered field with index: ${index}`);
 
