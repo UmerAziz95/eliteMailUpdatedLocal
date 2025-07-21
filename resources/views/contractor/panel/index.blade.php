@@ -357,7 +357,7 @@
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
-                    <i class="fas fa-ban me-1"></i>reject orders
+                    reject orders
                 </button>
             </li>
         </ul>
@@ -955,7 +955,10 @@
                         <h6 class="mb-0">
                             Total Inboxes : <span class="text-white number">${order.total_inboxes || 0}</span>
                         </h6>
-                        <small>Splits : <span class="text-white number">${order.splits_count || 0}</span></small>
+                        <small>
+                            Splits : <span class="text-white number">${order.splits_count || 0}</span>
+                            ${order.rejected_by && order.status === 'reject' ? ` | Rejected by: <span class="text-white number">${order.rejected_by}</span>` : ''}
+                        </small>
                     </div>
 
                     <div class="my-4">
@@ -985,7 +988,6 @@
                                 <small>${formatDate(order.created_at)}</small>
                             </div>
                         </div>
-
                         <div class="d-flex align-items-center justify-content-center" 
                              style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
                              onclick="viewOrderSplits(${order.order_id})" 
