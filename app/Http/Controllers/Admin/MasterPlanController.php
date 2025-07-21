@@ -30,6 +30,7 @@ public function show($id=null)
             'internal_name' => $plan->internal_name,
             'description' => $plan->description,
             'chargebee_plan_id' => $plan->chargebee_plan_id,
+            'is_discounted' => $plan->is_discounted,
             'volume_items' => $plan->volumeItems->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -40,7 +41,9 @@ public function show($id=null)
                     'price' => $item->price,
                     'duration' => $item->duration,
                     'features' => $item->features->pluck('id')->toArray(),
-                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray(),
+                    'tier_discount_type' => $item->tier_discount_type,
+                    'tier_discount_value' => $item->tier_discount_value
                 ];
             })->toArray()
         ];
@@ -55,8 +58,8 @@ public function show($id=null)
     public function store(Request $request)
 
         { 
-            dd($request->all());
             
+// dd($request->all());
             $request->validate([
                 'external_name' => 'required|string|max:255',
                 // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
@@ -83,25 +86,39 @@ public function show($id=null)
                 'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
             ]);        
             // Additional validation and cleaning of volume items data
-            $volumeItems = collect($request->volume_items)->map(function ($item) {
-                $volumeItem = [
-                    'name' => trim($item['name'] ?? ''),
-                    'description' => trim($item['description'] ?? ''),
-                    'min_inbox' => is_numeric($item['min_inbox']) ? (int)$item['min_inbox'] : 0,
-                    'max_inbox' => is_numeric($item['max_inbox']) ? (int)$item['max_inbox'] : 0,
-                    'price' => is_numeric($item['price']) ? (float)$item['price'] : 0,
-                    'duration' => $item['duration'] ?? 'monthly',
-                    'features' => $item['features'] ?? [],
-                    'feature_values' => $item['feature_values'] ?? []
-                ];
-                
-                // Include ID if present (for existing items)
-                if (!empty($item['id'])) {
-                    $volumeItem['id'] = (int)$item['id'];
-                }
-                
-                return $volumeItem;
-            })->toArray();
+           $volumeItems = collect($request->volume_items)->map(function ($item) use ($request) {
+            $volumeItem = [
+                'name' => trim($item['name'] ?? ''),
+                'description' => trim($item['description'] ?? ''),
+                'min_inbox' => is_numeric($item['min_inbox']) ? (int)$item['min_inbox'] : 0,
+                'max_inbox' => is_numeric($item['max_inbox']) ? (int)$item['max_inbox'] : 0,
+                'price' => is_numeric($item['price']) ? (float)$item['price'] : 0,
+                'duration' => $item['duration'] ?? 'monthly',
+                'features' => $item['features'] ?? [],
+                'feature_values' => $item['feature_values'] ?? [],
+                'discountMode' => $request->discountMode ? 1 : 0
+            ];
+
+            // Apply discount fields only if discount mode is "Discounted"
+            if ($request->discountMode === 'Discounted') {
+                $volumeItem['tier_discount_value'] = is_numeric($item['tier_discount_value']) ? (float)$item['tier_discount_value'] : null;
+                $volumeItem['tier_discount_type'] = $item['tier_discount_type'] ?? null;
+                $volumeItem['actual_price_before_discount'] = is_numeric($item['actual_price_before_discount']) ? (float)$item['actual_price_before_discount'] : null;
+            }
+            else {
+                $volumeItem['tier_discount_value'] =  null;
+                $volumeItem['tier_discount_type'] =  null;
+                $volumeItem['actual_price_before_discount'] =  null;
+            }
+
+            // Include ID if present (for existing items)
+            if (!empty($item['id'])) {
+                $volumeItem['id'] = (int)$item['id'];
+            }
+
+            return $volumeItem;
+        })->toArray();
+
 
             // Custom validation for range logic
             foreach ($volumeItems as $index => $item) {
@@ -192,6 +209,7 @@ public function show($id=null)
                         'external_name' => $request->external_name,
                         'internal_name' => $request->internal_name,
                         'description' => $request->description,
+                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
                     ]);
                     
                     // Update volume items instead of deleting and recreating
@@ -206,6 +224,7 @@ public function show($id=null)
                         'external_name' => $request->external_name,
                         'internal_name' => $request->internal_name,
                         'description' => $request->description,
+                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
                     ]);
                     
                     // Create volume items in plans table
@@ -648,6 +667,11 @@ public function show($id=null)
                     'price' => $volumeItem['price'],
                     'duration' => 'monthly',
                     'is_active' => true,
+                    'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
+                    'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
+                    'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
+                    'is_discounted' => $volumeItem['discountMode']?? null,
+                    
                 ]);
                 
                 // Update features
@@ -682,6 +706,7 @@ public function show($id=null)
      */
     private function createSingleVolumeItem($masterPlan, $volumeItem)
     {
+        
         $plan = Plan::create([
             'master_plan_id' => $masterPlan->id,
             'name' => $volumeItem['name'],
@@ -691,7 +716,11 @@ public function show($id=null)
             'min_inbox' => $volumeItem['min_inbox'],
             'max_inbox' => $volumeItem['max_inbox'],
             'is_active' => true,
-        ]);
+            'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
+            'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
+            'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
+            'is_discounted' => $volumeItem['discountMode'] =="Discounted" ? true : false,
+        ]); 
         
         // Attach features if any
         $this->updateVolumeItemFeatures($plan, $volumeItem);

@@ -12,7 +12,8 @@ class MasterPlan extends Model
         'external_name',
         'internal_name',
         'description',
-        'chargebee_plan_id'
+        'chargebee_plan_id',
+        'is_discounted',
     ];
 
     /**

@@ -167,7 +167,6 @@ class PlanController extends Controller
                 ]);
             }
 
-          
             if(!Auth::check()){
                 $unauthorized_user = session()->get('unauthorized_session');
                 if($unauthorized_user) {
@@ -178,23 +177,9 @@ class PlanController extends Controller
                     }
                 }
             }
-            // dd($unauthorized_user);
-            // if(!Auth::check()){
-            //     $unauthorized_user = session()->get('unauthorized_session');
-            //     $user=User::where('email',$unauthorized_user->email)->first();
-            //     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-            //     $user->password=Hash::make($randomPassword);
-            //     $user->status=1;
-            //     $user->save();
-            //     Auth::login($user);
-            //     session()->forget('unauthorized_session');
-            // try {
-            // Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-            //  } catch (\Exception $e) {
-            //    Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-            //   }
-            // }   
-         
+
+          
+          
             
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
@@ -205,7 +190,6 @@ class PlanController extends Controller
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
             $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
-
             //shipping address
             $firstName = $shippingAddress['first_name'] ?? '';
             $lastName = $shippingAddress['last_name'] ?? '';
@@ -218,6 +202,35 @@ class PlanController extends Controller
             $validationStatus = $shippingAddress['validation_status'] ?? '';
             $plan_id = null;
             $charge_plan_id = null;
+
+
+              if(!Auth::check()){
+              
+                $user = User::where('email', $customer->email)->first();
+                if(!$user){
+                    $user = new User();
+                    $user->email = $customer->email;
+                    $user->name = $customer->firstName.' '. $customer->lastName ?? 'Guest';
+                     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+                     $user->password=Hash::make($randomPassword);
+                        $user->role_id = 3; // Assuming 3 is the role_id for customers
+                        $user->status=1;
+                        $user->billing_address = $line1;
+                        $user->billing_address2 = $line2;
+                        $user->billing_city = $city;
+                        $user->billing_state = $state;
+                        $user->billing_country = $country;
+                        $user->billing_zip = $zip;
+                        $user->save();
+                        Auth::login($user);
+                }  
+            try {
+            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
+             } catch (\Exception $e) {
+               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
+              }
+            }   
+         
 
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;

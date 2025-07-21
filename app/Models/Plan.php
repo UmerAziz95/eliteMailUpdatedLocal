@@ -15,7 +15,11 @@ class Plan extends Model
         'is_active',
         'min_inbox',
         'max_inbox',
-        'master_plan_id'
+        'master_plan_id',
+        'tier_discount_value',
+        'tier_discount_type',
+        'actual_price_before_discount',
+        'is_discounted'
     ];
 
     protected $casts = [

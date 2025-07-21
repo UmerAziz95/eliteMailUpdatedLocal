@@ -1597,6 +1597,7 @@
 
             // Master Plan Functions
             function loadMasterPlan() {
+               
                 $.get('{{ route('admin.master-plan.show') }}')
                     .done(function(response) {
 
@@ -1643,7 +1644,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
         .done(function (response) { 
             if (response && response[0].id) {
                 loadMasterPlanData(response[0]);
-                // masterPlanId
+
                 $('#masterPlanId').val(response[0].id || '');
                 $('#masterPlanExternalName').val(response[0].external_name	 || '');
 
@@ -1680,6 +1681,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     external_name: $('#masterPlanExternalName').val(),
                     internal_name: $('#masterPlanInternalName').val(),
                     description: $('#masterPlanDescription').val(),
+                    discountMode : $('#planTypeRole').val(), // ✅ Only read once
                     volume_items: collectVolumeItems(),
                     masterPlanId: $('#masterPlanId').val() || null,
                     _token: '{{ csrf_token() }}'
@@ -1944,7 +1946,9 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     price: data.price || '',
                     duration: data.duration || 'monthly',
                     features: data.features || [],
-                    feature_values: data.feature_values || []
+                    feature_values: data.feature_values || [],
+                    tier_discount_type: data.tier_discount_type || null,
+                    tier_discount_value: data.tier_discount_value || null,
                 } : {
                     id: null, // New items don't have ID
                     name: '',
@@ -1954,8 +1958,11 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     price: '',
                     duration: 'monthly',
                     features: [],
-                    feature_values: []
+                    feature_values: [],
+                    tier_discount_type: null,
+                    tier_discount_value: null,
                 };
+                
 
                 const itemHtml = `
                 <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}" data-item-id="${item.id || ''}">
@@ -2010,7 +2017,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                 <small class="text-muted">Must be 0 or greater</small>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-3 mb-2 calculated_price_after_discount " style="display:none;">
                             <div class="">
                                 <label class="form-label">Final Price after applied discount<span class="text-danger"></span></label>
                                 <div class="input-group">
@@ -2030,7 +2037,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
 
                 <!-- tier discount fields -->
                  <div class="tier-discount-container-${volumeItemIndex}">
-                   ${createTierDiscountFields(volumeItemIndex)}
+                   ${createTierDiscountFields(volumeItemIndex, item)}
                 </div>
 
                     <!-- Features Section -->
@@ -2083,14 +2090,14 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                 // Load available features for this volume item
                 loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
             }
-function createTierDiscountFields(volumeItemIndex) {
+function createTierDiscountFields(volumeItemIndex, item) {
     const selectedVal = $('#planTypeRole').val();
     if (selectedVal === "Discounted") {
         return `
             <div class="row mt-3 mb-3 discount-fields" id="discountFields${volumeItemIndex}">
                 <div class="col-md-4">
-                    <label class="form-label">Discount Type</label>
-                    <select class="form-select tier_discount_type" 
+                    <label  class="form-label">Discount Type</label>
+                    <select value="${item.tier_discount_type}" class="form-select tier_discount_type" 
                         id="tier_discount_type_${volumeItemIndex}" 
                         data-itemindex="${volumeItemIndex}" 
                         name="volume_items[${volumeItemIndex}][discount_type]">
@@ -2104,6 +2111,7 @@ function createTierDiscountFields(volumeItemIndex) {
                         id="tier_discount_value_${volumeItemIndex}" 
                         data-itemindex="${volumeItemIndex}" 
                         name="volume_items[${volumeItemIndex}][discount_value]" 
+                        value="${item.tier_discount_value || 0}"
                         placeholder="Discount" step="0.01" />
                 </div>
             </div>
@@ -2111,7 +2119,7 @@ function createTierDiscountFields(volumeItemIndex) {
     } else {
         return '';
     }
-}
+} 
 
 
 
@@ -2657,7 +2665,7 @@ function createTierDiscountFields(volumeItemIndex) {
             });
 
             // Collect volume items data
-          // Collect volume items data
+          // Collect volume items data   
 function collectVolumeItems() {
     const items = [];
     const discountMode = $('#planTypeRole').val(); // ✅ Only read once
@@ -2700,11 +2708,13 @@ function collectVolumeItems() {
             }
 
             if (priceAfterDiscountField.length) {
+                priceAfterDiscountField.show();
                 priceAfterDiscountField.val(finalPrice.toFixed(2));
             }
         } else {
             // Not Discounted → clear price after discount field
             if (priceAfterDiscountField.length) {
+                priceAfterDiscountField.hide();
                 priceAfterDiscountField.val('');
             }
         }
@@ -2932,10 +2942,10 @@ function collectVolumeItems() {
             });
 
             // Load existing master plan data if editing
-           function loadMasterPlanData(plan) {
-           console.log("plan", plan);
-
+  function loadMasterPlanData(plan) {
+         
     if (plan) {
+        console.log('Loading existing master plan data:', plan);
         // Fill basic information with safe fallbacks
         $('#masterPlanExternalName').val(plan.external_name || '');
 
@@ -2944,6 +2954,7 @@ function collectVolumeItems() {
         $('#masterPlanInternalName').val(generatedInternalName);
         $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
         $('#masterPlanDescription').val(plan.description || '');
+        $('#planTypeRole').val(plan.is_discounted ? 'Discounted' : 'Without Discount');
 
         // Clear and add volume items
         $('#volumeItemsContainer').empty();

@@ -92,6 +92,7 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
+Route::get('/plans/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -107,6 +108,7 @@ Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptio
 
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
+Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
