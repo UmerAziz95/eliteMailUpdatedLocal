@@ -142,6 +142,13 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.system.config",
                         "permission" => "Settings",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Discord Settings",
+                        "icon" => "ti ti-file-invoice fs-5",
+                        "route" => "admin.discord.settings",
+                        "permission" => "Discord Settings",
+                        'sub_menu' => []
             ]
             // [
             //             "name" => "Coupons",
