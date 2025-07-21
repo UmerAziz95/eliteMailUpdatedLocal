@@ -2608,9 +2608,9 @@ $(document).ready(function() {
             Swal.fire({
                 title: 'Incomplete Order',
                 html: `
-                    <p>Your total inboxes are not fully completed:</p>
-                    <p><strong>Original Total:</strong> ${originalTotalInboxes} inboxes</p>
-                    <p><strong>Current Total:</strong> ${currentTotalInboxes} inboxes</p>
+                    <p>You haven't finished adding all of your domains.</p>
+                    <p><strong>Planned Total:</strong> ${originalTotalInboxes} inboxes</p>
+                    <p><strong>Currently Used:</strong> ${currentTotalInboxes} inboxes</p>
                     <p>Are you sure you want to continue?</p>
                 `,
                 icon: 'warning',
