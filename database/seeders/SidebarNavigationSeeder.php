@@ -52,6 +52,14 @@ class SidebarNavigationSeeder extends Seeder
                 'permission' => 'Invoices',
                 'sub_menu' => []
             ],
+            // My orders
+            [
+                'name' => 'My Orders',
+                'icon' => 'ti ti-shopping-cart fs-5',
+                'route' => 'admin.orderQueue.my_orders',
+                'permission' => 'Orders',
+                'sub_menu' => []
+            ],
             [
                 'name' => 'Orders',
                 'icon' => 'ti ti-box fs-5',
@@ -105,14 +113,7 @@ class SidebarNavigationSeeder extends Seeder
                 ]
 
             ],
-            // My orders
-            [
-                'name' => 'My Orders',
-                'icon' => 'ti ti-shopping-cart fs-5',
-                'route' => 'admin.orderQueue.my_orders',
-                'permission' => 'Orders',
-                'sub_menu' => []
-            ],
+           
             
             [
                 'name' => 'Plans',
@@ -143,7 +144,8 @@ class SidebarNavigationSeeder extends Seeder
                         'sub_menu' => []
             ]
         ];
-
+        // sidebar_navigations delete all existing records
+        DB::table('sidebar_navigations')->truncate();
         foreach ($navs as $nav) {
             // Insert or update permission (prevent duplicates)
             DB::table('permissions')->updateOrInsert(

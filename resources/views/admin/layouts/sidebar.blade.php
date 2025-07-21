@@ -54,6 +54,25 @@
                 </div>
             </a>
         </li>
+        <div>
+        @php
+            $allowedItems = ['My Orders', 'Orders'];
+        @endphp
+        @foreach ($navigations as $item)
+                @if (in_array($item->name, $allowedItems))
+                    @can($item->permission)
+                        <li class="nav-item">
+                            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
+                                href="{{ route($item->route) }}">
+                                <div class="d-flex align-items-center" style="gap: 13px">
+                                    <div class="icons"><i class="{{ $item->icon }}"></i></div>
+                                    <div class="text">{{ $item->name }}</div>
+                                </div>
+                            </a>
+                        </li>
+                    @endcan
+                @endif
+            @endforeach
 
         
 
@@ -79,10 +98,10 @@
         {{-- <p class="text fw-lighter my-2 text-uppercase" style="font-size: 13px;">Product</p> --}}
 
         @php
-            $allowedItems = ['Plans', 'Orders', 'Subscriptions', 'Invoices', 'Panels'];
+            $allowedItems = ['Plans', 'Subscriptions', 'Invoices', 'Panels'];
         @endphp
 
-        <div>
+        
 
             {{-- MAIN NAVIGATION --}}
             @foreach ($navigations as $item)
@@ -105,7 +124,7 @@
             {{-- <p class=" text fw-lighter mt-4 text-uppercase" style="font-size: 13px;">Users</p> --}}
 
             @php
-                $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices', 'Panels'];
+                $excludedItems = ['Dashboard', 'Plans', 'Orders', 'Subscriptions', 'Invoices', 'Panels', 'My Orders'];
             @endphp
 
             @foreach ($navigations as $item)
