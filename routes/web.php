@@ -37,8 +37,10 @@ use App\Http\Controllers\Admin\MediaHandlerController;
 //supports
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Customer\CustomerSupportController;
-//settings
+//configuration
 use App\Http\Controllers\Admin\AdminSettingsController;
+//coupons
+use App\Http\Controllers\Admin\AdminCouponController;
 
 
 //cron
@@ -90,6 +92,7 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
+Route::get('/plans/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -105,6 +108,7 @@ Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptio
 
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
+Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
@@ -129,7 +133,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
         
         // Master Plan routes
-        Route::get('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
+        Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
         Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
         Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
         Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
@@ -229,7 +233,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/my-orders', [App\Http\Controllers\Admin\OrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
-            //settings
+        //settings
         Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
         Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
         
@@ -247,6 +251,17 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
 
 
+       //profile settings
+        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+        //system configurations
+       Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
+      
+       //coupons
+        Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
+        Route::get('/coupons/data', [AdminCouponController::class, 'couponsData'])->name('coupons.data');
+        Route::post('coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
+        Route::delete('coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
+        Route::get('coupons/plans/list', [AdminCouponController::class, 'plansList'])->name('coupons.plan.list');
     }); 
 
 });

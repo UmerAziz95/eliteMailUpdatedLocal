@@ -14,25 +14,251 @@ class MasterPlanController extends Controller
 {    /**
      * Display the master plan with volume items
      */
-    public function show()
-    {
-        $masterPlan = MasterPlan::getSingle();
-        
-        if (!$masterPlan) {
-            return response()->json(null);
-        }
-        
-        // Load volume items with features to match the format used in store method
-        $masterPlan->load('volumeItems.features');
-        
-        // Format the response to match frontend expectations (same as store method)
-        $formattedData = [
-            'id' => $masterPlan->id,
-            'external_name' => $masterPlan->external_name,
-            'internal_name' => $masterPlan->internal_name,
-            'description' => $masterPlan->description,
-            'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
-            'volume_items' => $masterPlan->volumeItems->map(function ($item) {
+public function show($id=null)
+{
+    
+    if($id !==null){
+    $masterPlans = MasterPlan::with('volumeItems.features')->where('id', $id)->get();
+    }else{
+        $masterPlans=MasterPlan::with('volumeItems.features')->get();
+    }
+
+    $formattedData = $masterPlans->map(function ($plan) {
+        return [ 
+            'id' => $plan->id,
+            'external_name' => $plan->external_name,
+            'internal_name' => $plan->internal_name,
+            'description' => $plan->description,
+            'chargebee_plan_id' => $plan->chargebee_plan_id,
+            'is_discounted' => $plan->is_discounted,
+            'volume_items' => $plan->volumeItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'min_inbox' => $item->min_inbox,
+                    'max_inbox' => $item->max_inbox,
+                    'price' => $item->price,
+                    'duration' => $item->duration,
+                    'features' => $item->features->pluck('id')->toArray(),
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray(),
+                    'tier_discount_type' => $item->tier_discount_type,
+                    'tier_discount_value' => $item->tier_discount_value
+                ];
+            })->toArray()
+        ];
+    });
+
+    return response()->json($formattedData);
+}
+
+   /**
+     * Create or update the master plan with volume items
+     */
+    public function store(Request $request)
+
+        { 
+            
+// dd($request->all());
+            $request->validate([
+                'external_name' => 'required|string|max:255',
+                // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
+                'description' => 'required|string|max:1000',
+                'volume_items' => 'required|array|min:1',
+                'volume_items.*.id' => 'sometimes|integer|exists:plans,id',
+                'volume_items.*.min_inbox' => 'required|integer|min:0',
+                'volume_items.*.max_inbox' => 'required|integer|min:0',
+                'volume_items.*.price' => 'required|numeric|min:0',
+                'volume_items.*.features' => 'sometimes|array',
+                'volume_items.*.features.*' => 'integer|exists:features,id',
+                'volume_items.*.feature_values' => 'sometimes|array',
+                'volume_items.*.feature_values.*' => 'nullable|string|max:255'
+            ], [
+                'internal_name.regex' => 'Internal name can only contain lowercase letters, numbers, and underscores.',
+                'volume_items.required' => 'At least one volume item is required.',
+                'volume_items.*.id.exists' => 'Selected volume item does not exist.',
+                'volume_items.*.min_inbox.required' => 'Min inbox is required for all volume items.',
+                'volume_items.*.min_inbox.integer' => 'Min inbox must be a valid integer.',
+                'volume_items.*.max_inbox.required' => 'Max inbox is required for all volume items.',
+                'volume_items.*.max_inbox.integer' => 'Max inbox must be a valid integer.',
+                'volume_items.*.price.required' => 'Price is required for all volume items.',
+                'volume_items.*.price.numeric' => 'Price must be a valid number.',
+                'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
+            ]);        
+            // Additional validation and cleaning of volume items data
+           $volumeItems = collect($request->volume_items)->map(function ($item) use ($request) {
+            $volumeItem = [
+                'name' => trim($item['name'] ?? ''),
+                'description' => trim($item['description'] ?? ''),
+                'min_inbox' => is_numeric($item['min_inbox']) ? (int)$item['min_inbox'] : 0,
+                'max_inbox' => is_numeric($item['max_inbox']) ? (int)$item['max_inbox'] : 0,
+                'price' => is_numeric($item['price']) ? (float)$item['price'] : 0,
+                'duration' => $item['duration'] ?? 'monthly',
+                'features' => $item['features'] ?? [],
+                'feature_values' => $item['feature_values'] ?? [],
+                'discountMode' => $request->discountMode ? 1 : 0
+            ];
+
+            // Apply discount fields only if discount mode is "Discounted"
+            if ($request->discountMode === 'Discounted') {
+                $volumeItem['tier_discount_value'] = is_numeric($item['tier_discount_value']) ? (float)$item['tier_discount_value'] : null;
+                $volumeItem['tier_discount_type'] = $item['tier_discount_type'] ?? null;
+                $volumeItem['actual_price_before_discount'] = is_numeric($item['actual_price_before_discount']) ? (float)$item['actual_price_before_discount'] : null;
+            }
+            else {
+                $volumeItem['tier_discount_value'] =  null;
+                $volumeItem['tier_discount_type'] =  null;
+                $volumeItem['actual_price_before_discount'] =  null;
+            }
+
+            // Include ID if present (for existing items)
+            if (!empty($item['id'])) {
+                $volumeItem['id'] = (int)$item['id'];
+            }
+
+            return $volumeItem;
+        })->toArray();
+
+
+            // Custom validation for range logic
+            foreach ($volumeItems as $index => $item) {
+                // Check if min_inbox > max_inbox (when max_inbox is not 0 for unlimited)
+                if ($item['max_inbox'] !== 0 && $item['min_inbox'] > $item['max_inbox']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Invalid range in tier " . ($index + 1) . ": Min inboxes ({$item['min_inbox']}) cannot be greater than max inboxes ({$item['max_inbox']}). Set max to 0 for unlimited or adjust the values."
+                    ], 422);
+                }
+                
+                // Check for negative values
+                if ($item['min_inbox'] < 0 || $item['max_inbox'] < 0 || $item['price'] < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Negative values not allowed in tier " . ($index + 1) . "."
+                    ], 422);
+                }
+                
+                // Check for empty name
+                if (empty(trim($item['name']))) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Tier " . ($index + 1) . " name is required."
+                    ], 422);
+                }
+            }
+
+            // Sort items by min_inbox for range validation
+            $sortedItems = collect($volumeItems)->sortBy('min_inbox')->values()->toArray();
+            
+            // Validate for overlapping ranges and gaps
+            for ($i = 0; $i < count($sortedItems) - 1; $i++) {
+                $current = $sortedItems[$i];
+                $next = $sortedItems[$i + 1];
+                
+                // If current tier has unlimited (max_inbox = 0) and it's not the last tier
+                if ($current['max_inbox'] === 0 && $i < count($sortedItems) - 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
+                ], 422);
+                }
+                
+                // Check for overlapping ranges
+                if ($current['max_inbox'] !== 0 && $next['min_inbox'] <= $current['max_inbox']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
+                ], 422);
+                }
+                
+                // Check for gaps between consecutive tiers (ChargeBee requirement)
+                if ($current['max_inbox'] !== 0 && $next['min_inbox'] > $current['max_inbox'] + 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Gap detected between tiers. Tier ending at {$current['max_inbox']} has a gap before the next tier starting at {$next['min_inbox']}. ChargeBee requires continuous tier ranges. Next tier should start at " . ($current['max_inbox'] + 1) . "."
+                ], 422);
+                }
+            }
+            
+            // Check if the last tier doesn't have unlimited (max_inbox = 0)
+            if (!empty($sortedItems) && $sortedItems[count($sortedItems) - 1]['max_inbox'] !== 0) {
+                return response()->json([
+                'success' => false,
+                'message' => "The last tier must have unlimited inboxes (max_inbox = 0) to handle all cases beyond the defined ranges."
+                ], 422);
+            }
+            
+            // Additional validation: First tier should start at 1 (ChargeBee requirement)
+            if (!empty($sortedItems) && $sortedItems[0]['min_inbox'] !== 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "First tier must start at 1 inbox (ChargeBee requirement). Current first tier starts at {$sortedItems[0]['min_inbox']}."
+                ], 422);
+            }
+
+            try {
+                DB::beginTransaction();
+
+                // dd($request->masterPlanId);
+                $masterPlan = MasterPlan::find($request->masterPlanId);
+                
+                
+                if ($masterPlan) {
+                    // Update existing master plan
+                    $masterPlan->update([
+                        'external_name' => $request->external_name,
+                        'internal_name' => $request->internal_name,
+                        'description' => $request->description,
+                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
+                    ]);
+                    
+                    // Update volume items instead of deleting and recreating
+                    $this->updateVolumeItems($masterPlan, $volumeItems);
+                    
+                    $message = 'Master plan updated successfully';
+                } else {
+                    // dd("2");
+                    // exit();
+                    // Create new master plan
+                    $masterPlan = MasterPlan::create([
+                        'external_name' => $request->external_name,
+                        'internal_name' => $request->internal_name,
+                        'description' => $request->description,
+                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
+                    ]);
+                    
+                    // Create volume items in plans table
+                    $this->createVolumeItems($masterPlan, $volumeItems);
+                    
+                    $message = 'Master plan created successfully';
+                }            
+                // Create or update on Chargebee
+                $chargebeeSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
+                
+                if (!$chargebeeSuccess) {
+                    // Log warning but don't fail the operation
+                    Log::warning('Master plan saved locally but Chargebee sync failed', [
+                        'master_plan_id' => $masterPlan->id
+                    ]);
+                    $message .= ' (Note: Chargebee synchronization failed, please try again)';
+                } else {
+                    $message .= ' and synchronized with Chargebee successfully';
+                }
+
+                DB::commit();
+
+            // Load all master plans with their volume items and features
+        $allMasterPlans = MasterPlan::with(['volumeItems.features'])->get();
+
+        // Format each master plan
+        $formattedPlans = $allMasterPlans->map(function ($plan) {
+        return [
+            'id' => $plan->id,
+            'external_name' => $plan->external_name,
+            'internal_name' => $plan->internal_name,
+            'description' => $plan->description,
+            'chargebee_plan_id' => $plan->chargebee_plan_id,
+            'volume_items' => $plan->volumeItems->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
@@ -46,208 +272,12 @@ class MasterPlanController extends Controller
                 ];
             })->toArray()
         ];
-        
-        return response()->json($formattedData);
-    }    /**
-     * Create or update the master plan with volume items
-     */
-    public function store(Request $request)
-    {        $request->validate([
-            'external_name' => 'required|string|max:255',
-            // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
-            'description' => 'required|string|max:1000',
-            'volume_items' => 'required|array|min:1',
-            'volume_items.*.id' => 'sometimes|integer|exists:plans,id',
-            'volume_items.*.min_inbox' => 'required|integer|min:0',
-            'volume_items.*.max_inbox' => 'required|integer|min:0',
-            'volume_items.*.price' => 'required|numeric|min:0',
-            'volume_items.*.features' => 'sometimes|array',
-            'volume_items.*.features.*' => 'integer|exists:features,id',
-            'volume_items.*.feature_values' => 'sometimes|array',
-            'volume_items.*.feature_values.*' => 'nullable|string|max:255'
-        ], [
-            'internal_name.regex' => 'Internal name can only contain lowercase letters, numbers, and underscores.',
-            'volume_items.required' => 'At least one volume item is required.',
-            'volume_items.*.id.exists' => 'Selected volume item does not exist.',
-            'volume_items.*.min_inbox.required' => 'Min inbox is required for all volume items.',
-            'volume_items.*.min_inbox.integer' => 'Min inbox must be a valid integer.',
-            'volume_items.*.max_inbox.required' => 'Max inbox is required for all volume items.',
-            'volume_items.*.max_inbox.integer' => 'Max inbox must be a valid integer.',
-            'volume_items.*.price.required' => 'Price is required for all volume items.',
-            'volume_items.*.price.numeric' => 'Price must be a valid number.',
-            'volume_items.*.features.*.exists' => 'Selected feature does not exist.'
-        ]);        
-        // Additional validation and cleaning of volume items data
-        $volumeItems = collect($request->volume_items)->map(function ($item) {
-            $volumeItem = [
-                'name' => trim($item['name'] ?? ''),
-                'description' => trim($item['description'] ?? ''),
-                'min_inbox' => is_numeric($item['min_inbox']) ? (int)$item['min_inbox'] : 0,
-                'max_inbox' => is_numeric($item['max_inbox']) ? (int)$item['max_inbox'] : 0,
-                'price' => is_numeric($item['price']) ? (float)$item['price'] : 0,
-                'duration' => $item['duration'] ?? 'monthly',
-                'features' => $item['features'] ?? [],
-                'feature_values' => $item['feature_values'] ?? []
-            ];
-            
-            // Include ID if present (for existing items)
-            if (!empty($item['id'])) {
-                $volumeItem['id'] = (int)$item['id'];
-            }
-            
-            return $volumeItem;
-        })->toArray();
-
-        // Custom validation for range logic
-        foreach ($volumeItems as $index => $item) {
-            // Check if min_inbox > max_inbox (when max_inbox is not 0 for unlimited)
-            if ($item['max_inbox'] !== 0 && $item['min_inbox'] > $item['max_inbox']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Invalid range in tier " . ($index + 1) . ": Min inboxes ({$item['min_inbox']}) cannot be greater than max inboxes ({$item['max_inbox']}). Set max to 0 for unlimited or adjust the values."
-                ], 422);
-            }
-            
-            // Check for negative values
-            if ($item['min_inbox'] < 0 || $item['max_inbox'] < 0 || $item['price'] < 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Negative values not allowed in tier " . ($index + 1) . "."
-                ], 422);
-            }
-            
-            // Check for empty name
-            if (empty(trim($item['name']))) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Tier " . ($index + 1) . " name is required."
-                ], 422);
-            }
-        }
-
-        // Sort items by min_inbox for range validation
-        $sortedItems = collect($volumeItems)->sortBy('min_inbox')->values()->toArray();
-        
-        // Validate for overlapping ranges and gaps
-        for ($i = 0; $i < count($sortedItems) - 1; $i++) {
-            $current = $sortedItems[$i];
-            $next = $sortedItems[$i + 1];
-            
-            // If current tier has unlimited (max_inbox = 0) and it's not the last tier
-            if ($current['max_inbox'] === 0 && $i < count($sortedItems) - 1) {
-            return response()->json([
-                'success' => false,
-                'message' => "Tier with unlimited inboxes (max_inbox = 0) can only be the last tier."
-            ], 422);
-            }
-            
-            // Check for overlapping ranges
-            if ($current['max_inbox'] !== 0 && $next['min_inbox'] <= $current['max_inbox']) {
-            return response()->json([
-                'success' => false,
-                'message' => "Overlapping ranges detected between tiers. Tier ending at {$current['max_inbox']} overlaps with tier starting at {$next['min_inbox']}."
-            ], 422);
-            }
-            
-            // Check for gaps between consecutive tiers (ChargeBee requirement)
-            if ($current['max_inbox'] !== 0 && $next['min_inbox'] > $current['max_inbox'] + 1) {
-            return response()->json([
-                'success' => false,
-                'message' => "Gap detected between tiers. Tier ending at {$current['max_inbox']} has a gap before the next tier starting at {$next['min_inbox']}. ChargeBee requires continuous tier ranges. Next tier should start at " . ($current['max_inbox'] + 1) . "."
-            ], 422);
-            }
-        }
-        
-        // Check if the last tier doesn't have unlimited (max_inbox = 0)
-        if (!empty($sortedItems) && $sortedItems[count($sortedItems) - 1]['max_inbox'] !== 0) {
-            return response()->json([
-            'success' => false,
-            'message' => "The last tier must have unlimited inboxes (max_inbox = 0) to handle all cases beyond the defined ranges."
-            ], 422);
-        }
-        
-        // Additional validation: First tier should start at 1 (ChargeBee requirement)
-        if (!empty($sortedItems) && $sortedItems[0]['min_inbox'] !== 1) {
-            return response()->json([
-                'success' => false,
-                'message' => "First tier must start at 1 inbox (ChargeBee requirement). Current first tier starts at {$sortedItems[0]['min_inbox']}."
-            ], 422);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $masterPlan = MasterPlan::getSingle();
-            
-            if ($masterPlan) {
-                // Update existing master plan
-                $masterPlan->update([
-                    'external_name' => $request->external_name,
-                    'internal_name' => $request->internal_name,
-                    'description' => $request->description,
-                ]);
-                
-                // Update volume items instead of deleting and recreating
-                $this->updateVolumeItems($masterPlan, $volumeItems);
-                
-                $message = 'Master plan updated successfully';
-            } else {
-                // Create new master plan
-                $masterPlan = MasterPlan::create([
-                    'external_name' => $request->external_name,
-                    'internal_name' => $request->internal_name,
-                    'description' => $request->description,
-                ]);
-                
-                // Create volume items in plans table
-                $this->createVolumeItems($masterPlan, $volumeItems);
-                
-                $message = 'Master plan created successfully';
-            }            
-            // Create or update on Chargebee
-            $chargebeeSuccess = $this->syncWithChargebee($masterPlan, $volumeItems);
-            
-            if (!$chargebeeSuccess) {
-                // Log warning but don't fail the operation
-                Log::warning('Master plan saved locally but Chargebee sync failed', [
-                    'master_plan_id' => $masterPlan->id
-                ]);
-                $message .= ' (Note: Chargebee synchronization failed, please try again)';
-            } else {
-                $message .= ' and synchronized with Chargebee successfully';
-            }
-
-            DB::commit();
-
-            // Reload with volume items and format response
-            $masterPlan->load('volumeItems.features');
-            
-            // Format the response to match frontend expectations
-            $formattedData = [
-                'id' => $masterPlan->id,
-                'external_name' => $masterPlan->external_name,
-                'internal_name' => $masterPlan->internal_name,
-                'description' => $masterPlan->description,
-                'chargebee_plan_id' => $masterPlan->chargebee_plan_id,
-                'volume_items' => $masterPlan->volumeItems->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'description' => $item->description,
-                        'min_inbox' => $item->min_inbox,
-                        'max_inbox' => $item->max_inbox,
-                        'price' => $item->price,
-                        'duration' => $item->duration,
-                        'features' => $item->features->pluck('id')->toArray(),
-                        'feature_values' => $item->features->pluck('pivot.value')->toArray()
-                    ];
-                })->toArray()
-            ];
+      });
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'data' => $formattedData
+                'data' => $formattedPlans
             ]);
 
         } catch (\Exception $e) {
@@ -430,6 +460,7 @@ class MasterPlanController extends Controller
      */
     public function data()
     {
+       
         try {
             $masterPlan = MasterPlan::getSingle();
             
@@ -636,6 +667,11 @@ class MasterPlanController extends Controller
                     'price' => $volumeItem['price'],
                     'duration' => 'monthly',
                     'is_active' => true,
+                    'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
+                    'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
+                    'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
+                    'is_discounted' => $volumeItem['discountMode']?? null,
+                    
                 ]);
                 
                 // Update features
@@ -670,6 +706,7 @@ class MasterPlanController extends Controller
      */
     private function createSingleVolumeItem($masterPlan, $volumeItem)
     {
+        
         $plan = Plan::create([
             'master_plan_id' => $masterPlan->id,
             'name' => $volumeItem['name'],
@@ -679,7 +716,11 @@ class MasterPlanController extends Controller
             'min_inbox' => $volumeItem['min_inbox'],
             'max_inbox' => $volumeItem['max_inbox'],
             'is_active' => true,
-        ]);
+            'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
+            'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
+            'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
+            'is_discounted' => $volumeItem['discountMode'] =="Discounted" ? true : false,
+        ]); 
         
         // Attach features if any
         $this->updateVolumeItemFeatures($plan, $volumeItem);

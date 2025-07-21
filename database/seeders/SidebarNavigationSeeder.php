@@ -143,6 +143,13 @@ class SidebarNavigationSeeder extends Seeder
                         "permission" => "Settings",
                         'sub_menu' => []
             ]
+            // [
+            //             "name" => "Coupons",
+            //             "icon" => "ti ti-file-invoice fs-5",
+            //             "route" => "admin.coupons.index",
+            //             "permission" => "Coupons",
+            //             'sub_menu' => []
+            // ]
         ];
         // sidebar_navigations delete all existing records
         DB::table('sidebar_navigations')->truncate();
@@ -186,5 +193,7 @@ class SidebarNavigationSeeder extends Seeder
             ]
         );
        }
+
+         $this->call(AssignRoleSeeder::class);
       } 
 }  
