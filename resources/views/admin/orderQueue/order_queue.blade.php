@@ -983,14 +983,21 @@
                                 <small>${formatDate(order.created_at)}</small>
                             </div>
                         </div>
-                        ${order.status != 'reject' ? 
-                        `<div class="d-flex align-items-center justify-content-center" 
+                        ${order.status === 'reject' ? `
+                            <div class="d-flex align-items-center justify-content-center" 
+                                style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
+                                onclick="rejectReasonAlert(${order.rejected_by ? `'${order.rejected_by}'` : 'null'}, '${order.reason || ''}')">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                        ` : `
+                        <div class="d-flex align-items-center justify-content-center" 
                              style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
                              onclick="viewOrderSplits(${order.order_id})" 
                              data-bs-toggle="offcanvas" 
                              data-bs-target="#order-splits-view">
                             <i class="fa-solid fa-chevron-right"></i>
-                        </div>`:``}
+                        </div>
+                        `}
                     </div>
                 </div>
             `;
@@ -1131,7 +1138,19 @@
                 spinner.style.display = show ? 'inline-block' : 'none';
             }
         }
-
+                // rejectReasonAlert swal alert for rejected orders
+        function rejectReasonAlert(rejectedBy, reason) {
+            const title = rejectedBy ? `Rejected by: ${rejectedBy}` : 'Order Rejected';
+            Swal.fire({
+                title: title,
+                text: reason || 'No reason provided',
+                icon: 'warning',
+                confirmButtonText: 'Close',
+                customClass: {
+                    confirmButton: 'btn btn-primary'
+                }
+            });
+        }
         // View order splits
         async function viewOrderSplits(orderId) {
             try {

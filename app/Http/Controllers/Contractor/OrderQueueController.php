@@ -212,6 +212,7 @@ class OrderQueueController extends Controller
                 'order' => [
                     'id' => $order->id,
                     'status_manage_by_admin' => $order->status_manage_by_admin,
+                    'reason' => $order->reason,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
