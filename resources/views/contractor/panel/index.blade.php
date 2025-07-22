@@ -1596,7 +1596,6 @@
 
         // Calculate timer for order (12-hour countdown) with pause functionality
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
-            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
 
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
@@ -2466,5 +2465,225 @@
                 currentOrderIdForRejection = null;
             }
         });
+    </script>
+
+     
+    <script>
+        // Laravel Echo WebSocket Implementation for Real-time Order Updates
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Echo is available (consistent check using window.Echo)
+            if (typeof window.Echo !== 'undefined') {
+                console.log('🔌 Laravel Echo initialized successfully', window.Echo);
+                console.log('🔍 Echo connector details:', window.Echo.connector);
+                
+                // Test connection status first
+                if (window.Echo.connector && window.Echo.connector.pusher) {
+                    console.log('📡 Pusher connection state:', window.Echo.connector.pusher.connection.state);
+                }
+                
+                // Listen to the 'orders' channel for real-time order updates
+                const ordersChannel = window.Echo.channel('orders');
+                console.log('🎯 Subscribed to orders channel:', ordersChannel);
+                
+                ordersChannel
+                    .listen('.order.created', (e) => {
+                        console.log('🆕 New Order Created:', e);
+                        
+                        // Show notification
+                        // if (typeof toastr !== 'undefined') {
+                        //     toastr.success(`New order created: Order #${e.order?.id || e.id}`, 'New Order', {
+                        //         timeOut: 5000,
+                        //         extendedTimeOut: 3000,
+                        //         closeButton: true,
+                        //         progressBar: true,
+                        //         onclick: function() {
+                        //             // Optional: Focus on the new order or reload data
+                        //             if (typeof loadOrders === 'function') {
+                        //                 loadOrders(currentFilters, 1, false, activeTab);
+                        //             }
+                        //         }
+                        //     });
+                        // }
+                        
+                        // Automatically refresh the current active tab
+                        setTimeout(() => {
+                            if (typeof loadOrders === 'function') {
+                                loadOrders(currentFilters, 1, false, activeTab);
+                            }
+                        }, 1000);
+                    })
+                    // .listen('.order.updated', (e) => {
+                    //     console.log('🔄 Order Updated:', e);
+                        
+                    //     const order = e.order || e;
+                    //     const changes = e.changes || {};
+                        
+                    //     // Show notification for order updates
+                    //     if (typeof toastr !== 'undefined') {
+                    //         toastr.info(`Order #${order.id || order.order_number} has been updated`, 'Order Updated', {
+                    //             timeOut: 3000,
+                    //             closeButton: true,
+                    //             onclick: function() {
+                    //                 if (typeof loadOrders === 'function') {
+                    //                     loadOrders(currentFilters, 1, false, activeTab);
+                    //                 }
+                    //             }
+                    //         });
+                    //     }
+                        
+                    //     // Refresh data
+                    //     setTimeout(() => {
+                    //         if (typeof loadOrders === 'function') {
+                    //             loadOrders(currentFilters, 1, false, activeTab);
+                    //         }
+                    //     }, 500);
+                    // })
+                    .listen('.order.status.updated', (e) => {
+                        console.log('📊 Order Status Updated:', e);
+                        
+                        const order = e.order || e;
+                        const previousStatus = e.previous_status;
+                        const newStatus = e.status || order.status;
+                        
+                        // Show notification for status updates
+                        // if (typeof toastr !== 'undefined') {
+                        //     toastr.info(
+                        //         `Order #${order.id || order.order_number} status changed from "${previousStatus}" to "${newStatus}"`, 
+                        //         'Status Updated', 
+                        //         {
+                        //             timeOut: 4000,
+                        //             closeButton: true,
+                        //             onclick: function() {
+                        //                 if (typeof loadOrders === 'function') {
+                        //                     loadOrders(currentFilters, 1, false, activeTab);
+                        //                 }
+                        //             }
+                        //         }
+                        //     );
+                        // }
+                        
+                        // Refresh data
+                        setTimeout(() => {
+                            if (typeof loadOrders === 'function') {
+                                loadOrders(currentFilters, 1, false, activeTab);
+                            }
+                        }, 500);
+                    })
+                    .error((error) => {
+                        console.error('❌ Channel subscription error:', error);
+                    });
+                
+                // Connection status monitoring using window.Echo
+                if (window.Echo.connector && window.Echo.connector.pusher) {
+                    window.Echo.connector.pusher.connection.bind('connected', () => {
+                        console.log('✅ WebSocket connected successfully');
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('Real-time updates connected!', 'WebSocket Connected', {
+                                timeOut: 2000,
+                                closeButton: true
+                            });
+                        }
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('disconnected', () => {
+                        console.log('❌ WebSocket disconnected');
+                        
+                        // Show reconnection status
+                        if (typeof toastr !== 'undefined') {
+                            toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                                timeOut: 3000,
+                                closeButton: true
+                            });
+                        }
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('reconnected', () => {
+                        console.log('🔄 WebSocket reconnected');
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('Real-time updates reconnected!', 'Connection Restored', {
+                                timeOut: 2000,
+                                closeButton: true
+                            });
+                        }
+                        
+                        // Refresh data when reconnected
+                        setTimeout(() => {
+                            if (typeof loadOrders === 'function') {
+                                loadOrders(currentFilters, 1, false, activeTab);
+                            }
+                        }, 1000);
+                    });
+                    
+                    // Additional connection state monitoring
+                    window.Echo.connector.pusher.connection.bind('state_change', (states) => {
+                        console.log(`🔄 Connection state changed from ${states.previous} to ${states.current}`);
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('error', (error) => {
+                        console.error('❌ WebSocket connection error:', error);
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('WebSocket connection error occurred', 'Connection Error', {
+                                timeOut: 5000,
+                                closeButton: true
+                            });
+                        }
+                    });
+                }
+                
+                console.log('✅ Listening to order events on channel: orders');
+                
+            } else {
+                console.warn('⚠️ Laravel Echo not available. Real-time updates disabled.');
+                
+                // Optional: Show warning that real-time updates are not available
+                setTimeout(() => {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.warning('Real-time updates are not available. Data will be updated on page refresh.', 'WebSocket Unavailable', {
+                            timeOut: 5000,
+                            closeButton: true
+                        });
+                    }
+                }, 2000);
+            }
+        });
+
+        // Alternative implementation if you need to access Echo outside of DOMContentLoaded
+        function initializeOrderWebSocket() {
+            if (typeof window.Echo !== 'undefined') {
+                console.log('🔌 Initializing Laravel Echo for real-time order updates...', window.Echo);
+                
+                // Your WebSocket logic here using window.Echo
+                return window.Echo;
+            } else {
+                console.warn('⚠️ Laravel Echo not initialized yet');
+                return null;
+            }
+        }
+
+        // Function to safely check and use Echo
+        function withEcho(callback) {
+            if (typeof window.Echo !== 'undefined') {
+                return callback(window.Echo);
+            } else {
+                console.warn('⚠️ Laravel Echo not available');
+                return null;
+            }
+        }
+
+        // Example usage:
+        // withEcho((echo) => {
+        //     echo.channel('orders').listen('.order.created', (e) => {
+        //         console.log('Order created:', e);
+        //     });
+        // });
+
+        // Export for potential module usage
+        if (typeof module !== 'undefined' && module.exports) {
+            module.exports = { initializeOrderWebSocket, withEcho };
+        }
+
     </script>
 @endpush

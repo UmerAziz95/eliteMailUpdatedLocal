@@ -588,3 +588,36 @@ Route::get('/cron/run-draft-notifications', function () {
         //notification markers
         Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
         Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
+
+// Temporary test route for broadcasting
+Route::get('/test-broadcast', function() {
+    $order = \App\Models\Order::first();
+    if ($order) {
+        $oldStatus = $order->status_manage_by_admin;
+        $order->status_manage_by_admin = 'pending';
+        $order->save();
+        
+        return response()->json([
+            'message' => 'Order status updated for testing broadcast',
+            'order_id' => $order->id,
+            'old_status' => $oldStatus,
+            'new_status' => $order->status_manage_by_admin
+        ]);
+    }
+    return response()->json(['message' => 'No orders found']);
+});
+
+// Test manual event broadcasting
+Route::get('/test-manual-broadcast', function() {
+    $order = \App\Models\Order::first();
+    if ($order) {
+        // Manually fire the event
+        event(new \App\Events\OrderStatusUpdated($order, 'test_old', 'test_new', 'Manual test'));
+        
+        return response()->json([
+            'message' => 'Manual OrderStatusUpdated event fired',
+            'order_id' => $order->id
+        ]);
+    }
+    return response()->json(['message' => 'No orders found']);
+});
