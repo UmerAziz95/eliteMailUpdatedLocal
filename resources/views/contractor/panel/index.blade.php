@@ -2489,6 +2489,20 @@
                     .listen('.order.created', (e) => {
                         console.log('🆕 New Order Created:', e);
                         
+                        // Clear existing UI containers first to ensure fresh display
+                        const ordersContainer = document.getElementById('ordersContainer');
+                        const draftsContainer = document.getElementById('draftsContainer');
+                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        
+                        if (ordersContainer) ordersContainer.innerHTML = '';
+                        if (draftsContainer) draftsContainer.innerHTML = '';
+                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // Reset all data arrays
+                        orders = [];
+                        drafts = [];
+                        rejectedOrders = [];
+                        
                         // Reset pagination states before refreshing
                         currentPage = 1;
                         hasMorePages = true;
@@ -2502,11 +2516,14 @@
                         rejectOrdersHasMorePages = true;
                         totalRejectOrders = 0;
                         
-                        // Refresh all tabs to show the new order
-                        loadOrders({}, 1, false, 'in-queue');
-                        loadOrders({}, 1, false, 'in-draft');
-                        loadOrders({}, 1, false, 'reject-orders');
-                        console.log('✅ New order loaded successfully...........');
+                        // Add small delay to ensure UI clears before loading new data
+                        setTimeout(() => {
+                            // Refresh all tabs to show the new order
+                            loadOrders({}, 1, false, 'in-queue');
+                            // loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ New order loaded successfully...........');
+                        }, 100);
                     })
                     .listen('.order.updated', (e) => {
                         console.log('🔄 Order Updated:', e);
@@ -2514,28 +2531,41 @@
                         const order = e.order || e;
                         const changes = e.changes || {};
                         
+                        // Clear existing UI containers first to ensure fresh display
+                        const ordersContainer = document.getElementById('ordersContainer');
+                        const draftsContainer = document.getElementById('draftsContainer');
+                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
                         
-                        // Refresh data
+                        if (ordersContainer) ordersContainer.innerHTML = '';
+                        if (draftsContainer) draftsContainer.innerHTML = '';
+                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // Reset all data arrays
+                        orders = [];
+                        drafts = [];
+                        rejectedOrders = [];
+                        
+                        // Reset pagination states before refreshing
+                        currentPage = 1;
+                        hasMorePages = true;
+                        totalOrders = 0;
+                        
+                        draftsCurrentPage = 1;
+                        draftsHasMorePages = true;
+                        totalDraftsOrders = 0;
+                        
+                        rejectOrdersCurrentPage = 1;
+                        rejectOrdersHasMorePages = true;
+                        totalRejectOrders = 0;
+                        
+                        // Add delay to ensure UI clears before loading new data
                         setTimeout(() => {
-                            if (typeof loadOrders === 'function') {
-                                // Reset pagination states before refreshing
-                                currentPage = 1;
-                                hasMorePages = true;
-                                totalOrders = 0;
-                                
-                                draftsCurrentPage = 1;
-                                draftsHasMorePages = true;
-                                totalDraftsOrders = 0;
-                                
-                                rejectOrdersCurrentPage = 1;
-                                rejectOrdersHasMorePages = true;
-                                totalRejectOrders = 0;
-                                // Refresh all tabs to reflect status changes
-                                loadOrders({}, 1, false, 'in-queue');
-                                loadOrders({}, 1, false, 'in-draft');
-                                loadOrders({}, 1, false, 'reject-orders');
-                            }
-                        }, 1500);
+                            // Refresh all tabs to reflect changes
+                            loadOrders({}, 1, false, 'in-queue');
+                            loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ Order updated successfully 232323...........');
+                        }, 100);
                     })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
@@ -2544,6 +2574,20 @@
                         const previousStatus = e.previous_status;
                         const newStatus = e.status || order.status;
                         
+                        // Clear existing UI containers first to ensure fresh display
+                        const ordersContainer = document.getElementById('ordersContainer');
+                        const draftsContainer = document.getElementById('draftsContainer');
+                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        
+                        if (ordersContainer) ordersContainer.innerHTML = '';
+                        if (draftsContainer) draftsContainer.innerHTML = '';
+                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // Reset all data arrays
+                        orders = [];
+                        drafts = [];
+                        rejectedOrders = [];
+                        
                         // Reset pagination states before refreshing
                         currentPage = 1;
                         hasMorePages = true;
@@ -2557,12 +2601,14 @@
                         rejectOrdersHasMorePages = true;
                         totalRejectOrders = 0;
                         
-                        // Refresh all tabs to reflect status changes
-                        loadOrders({}, 1, false, 'in-queue');
-                        loadOrders({}, 1, false, 'in-draft');
-                        loadOrders({}, 1, false, 'reject-orders');
-
-                        console.log('✅ Order status updated successfully...........');
+                        // Add small delay to ensure UI clears before loading new data
+                        setTimeout(() => {
+                            // Refresh all tabs to reflect status changes
+                            loadOrders({}, 1, false, 'in-queue');
+                            loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ Order status updated successfully...........');
+                        }, 5000);
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2605,6 +2651,20 @@
                         
                         // Refresh data when reconnected
                         setTimeout(() => {
+                            // Clear existing UI containers first
+                            const ordersContainer = document.getElementById('ordersContainer');
+                            const draftsContainer = document.getElementById('draftsContainer');
+                            const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                            
+                            if (ordersContainer) ordersContainer.innerHTML = '';
+                            if (draftsContainer) draftsContainer.innerHTML = '';
+                            if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                            
+                            // Reset all data arrays
+                            orders = [];
+                            drafts = [];
+                            rejectedOrders = [];
+                            
                             // Reset pagination states
                             currentPage = 1;
                             hasMorePages = true;
@@ -2617,13 +2677,14 @@
                             rejectOrdersCurrentPage = 1;
                             rejectOrdersHasMorePages = true;
                             totalRejectOrders = 0;
-                            
-                            // Refresh all tabs
-                            loadOrders({}, 1, false, 'in-queue');
-                            loadOrders({}, 1, false, 'in-draft');
-                            loadOrders({}, 1, false, 'reject-orders');
-
-                            console.log('✅ Orders refreshed after reconnection...........');
+                            // Add small delay to ensure UI clears
+                            setTimeout(() => {
+                                // Refresh all tabs
+                                loadOrders({}, 1, false, 'in-queue');
+                                // loadOrders({}, 1, false, 'in-draft');
+                                // loadOrders({}, 1, false, 'reject-orders');
+                                console.log('✅ Orders refreshed after reconnection...........');
+                            }, 100);
                         }, 1000);
                     });
                     

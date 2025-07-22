@@ -268,6 +268,7 @@ class OrderQueueController extends Controller
                 ], 400);
             }
             
+            
             // Get all order panels (splits) for this order that are unallocated
             $unallocatedPanels = OrderPanel::where('order_id', $orderId)
                 ->where('status', 'unallocated')
