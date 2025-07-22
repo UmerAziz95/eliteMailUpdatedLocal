@@ -2488,65 +2488,80 @@
                 ordersChannel
                     .listen('.order.created', (e) => {
                         console.log('🆕 New Order Created:', e);
-                        // resetFilters trigger
+                        
+                        // Reset pagination states before refreshing
+                        currentPage = 1;
+                        hasMorePages = true;
+                        totalOrders = 0;
+                        
+                        draftsCurrentPage = 1;
+                        draftsHasMorePages = true;
+                        totalDraftsOrders = 0;
+                        
+                        rejectOrdersCurrentPage = 1;
+                        rejectOrdersHasMorePages = true;
+                        totalRejectOrders = 0;
+                        
+                        // Refresh all tabs to show the new order
                         loadOrders({}, 1, false, 'in-queue');
                         loadOrders({}, 1, false, 'in-draft');
                         loadOrders({}, 1, false, 'reject-orders');
-                        
-                        // Show notification
-                        // if (typeof toastr !== 'undefined') {
-                        //     toastr.success(`New order created: Order #${e.order?.id || e.id}`, 'New Order', {
-                        //         timeOut: 5000,
-                        //         extendedTimeOut: 3000,
-                        //         closeButton: true,
-                        //         progressBar: true,
-                        //         onclick: function() {
-                        //             // Optional: Focus on the new order or reload data
-                        //             if (typeof loadOrders === 'function') {
-                        //                 loadOrders(currentFilters, 1, false, activeTab);
-                        //             }
-                        //         }
-                        //     });
-                        // }
-                        
+                        console.log('✅ New order loaded successfully...........');
                     })
-                    // .listen('.order.updated', (e) => {
-                    //     console.log('🔄 Order Updated:', e);
+                    .listen('.order.updated', (e) => {
+                        console.log('🔄 Order Updated:', e);
                         
-                    //     const order = e.order || e;
-                    //     const changes = e.changes || {};
+                        const order = e.order || e;
+                        const changes = e.changes || {};
                         
-                    //     // Show notification for order updates
-                    //     if (typeof toastr !== 'undefined') {
-                    //         toastr.info(`Order #${order.id || order.order_number} has been updated`, 'Order Updated', {
-                    //             timeOut: 3000,
-                    //             closeButton: true,
-                    //             onclick: function() {
-                    //                 if (typeof loadOrders === 'function') {
-                    //                     loadOrders(currentFilters, 1, false, activeTab);
-                    //                 }
-                    //             }
-                    //         });
-                    //     }
                         
-                    //     // Refresh data
-                    //     setTimeout(() => {
-                    //         if (typeof loadOrders === 'function') {
-                    //             loadOrders(currentFilters, 1, false, activeTab);
-                    //         }
-                    //     }, 500);
-                    // })
+                        // Refresh data
+                        setTimeout(() => {
+                            if (typeof loadOrders === 'function') {
+                                // Reset pagination states before refreshing
+                                currentPage = 1;
+                                hasMorePages = true;
+                                totalOrders = 0;
+                                
+                                draftsCurrentPage = 1;
+                                draftsHasMorePages = true;
+                                totalDraftsOrders = 0;
+                                
+                                rejectOrdersCurrentPage = 1;
+                                rejectOrdersHasMorePages = true;
+                                totalRejectOrders = 0;
+                                // Refresh all tabs to reflect status changes
+                                loadOrders({}, 1, false, 'in-queue');
+                                loadOrders({}, 1, false, 'in-draft');
+                                loadOrders({}, 1, false, 'reject-orders');
+                            }
+                        }, 1500);
+                    })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
                         
                         const order = e.order || e;
                         const previousStatus = e.previous_status;
                         const newStatus = e.status || order.status;
-                        // this send request properly but not 
-                        // resetFilters trigger
+                        
+                        // Reset pagination states before refreshing
+                        currentPage = 1;
+                        hasMorePages = true;
+                        totalOrders = 0;
+                        
+                        draftsCurrentPage = 1;
+                        draftsHasMorePages = true;
+                        totalDraftsOrders = 0;
+                        
+                        rejectOrdersCurrentPage = 1;
+                        rejectOrdersHasMorePages = true;
+                        totalRejectOrders = 0;
+                        
+                        // Refresh all tabs to reflect status changes
                         loadOrders({}, 1, false, 'in-queue');
                         loadOrders({}, 1, false, 'in-draft');
                         loadOrders({}, 1, false, 'reject-orders');
+
                         console.log('✅ Order status updated successfully...........');
                     })
                     .error((error) => {
@@ -2590,11 +2605,25 @@
                         
                         // Refresh data when reconnected
                         setTimeout(() => {
-                            if (typeof loadOrders === 'function') {
-                                loadOrders({}, 1, false, 'in-queue');
-                                loadOrders({}, 1, false, 'in-draft');
-                                loadOrders({}, 1, false, 'reject-orders');
-                            }
+                            // Reset pagination states
+                            currentPage = 1;
+                            hasMorePages = true;
+                            totalOrders = 0;
+                            
+                            draftsCurrentPage = 1;
+                            draftsHasMorePages = true;
+                            totalDraftsOrders = 0;
+                            
+                            rejectOrdersCurrentPage = 1;
+                            rejectOrdersHasMorePages = true;
+                            totalRejectOrders = 0;
+                            
+                            // Refresh all tabs
+                            loadOrders({}, 1, false, 'in-queue');
+                            loadOrders({}, 1, false, 'in-draft');
+                            loadOrders({}, 1, false, 'reject-orders');
+
+                            console.log('✅ Orders refreshed after reconnection...........');
                         }, 1000);
                     });
                     
