@@ -266,7 +266,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('disocrd/settings',[App\Http\Controllers\SettingController::class,'index'])->name('discord.settings');
         Route::post('disocrd/send/message',[App\Http\Controllers\SettingController::class,'sendDiscordMessage'])->name('discord.message.send');
         Route::post('disocrd/settings/save',[App\Http\Controllers\SettingController::class,'saveDiscordSettings'])->name('discord.settings.save');
-    }); 
+        Route::post('/discord/settings/toggle-cron',[App\Http\Controllers\SettingController::class,'toggleDiscordCron'])->name('discord.toggle.cron');
+    }); Route::get('/discord/settings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
 
 });
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');

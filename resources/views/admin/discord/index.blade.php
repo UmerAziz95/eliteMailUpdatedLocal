@@ -15,6 +15,7 @@
         border: none
     }
 
+
     .nav-tabs .nav-link:hover {
         color: var(--white-color);
         border: none
@@ -114,7 +115,7 @@
                                     <div id="cronFields">
                                         {{-- Plan Link (readonly with base URL) --}}
                                         <div class="mb-3">
-                                            <label for="planLink" class="form-label">Plan Link</label>
+                                            <label for="planLink" class="form-label">Plan Page Link (will be automatically append in the message automatically)</label>
                                             <input type="text" class="form-control" id="planLink" name="planLink"
                                                 readonly value="{{ url('/plans/discounted') }}">
                                         </div>
@@ -413,119 +414,129 @@
 
     @push('scripts')
 
-    <script>
+  <script>
         document.addEventListener('DOMContentLoaded', function () {
-        const cronSwitch = document.getElementById('cronSwitch');
-        const saveCronBtn = document.getElementById('saveCronBtn');
-        const sendToDiscordBtn = document.getElementById('sendToDiscordBtn');
+            const cronSwitch = document.getElementById('cronSwitch');
+            const saveCronBtn = document.getElementById('saveCronBtn');
+            const sendToDiscordBtn = document.getElementById('sendToDiscordBtn');
+            const cronMessageInput = document.getElementById('cronMessage');
 
-        function toggleButtons() {
-            if (cronSwitch.checked) {
-                saveCronBtn.style.display = 'inline-block';
-                sendToDiscordBtn.style.display = 'none';
-            } else {
-                saveCronBtn.style.display = 'none';
-                sendToDiscordBtn.style.display = 'inline-block';
+            // Load initial cron settings from backend
+            fetch("{{ route('admin.discord.settings.get') }}")
+                .then(res => res.json())
+                .then(data => {
+                    const isEnabled = data.enable_cron == 1;
+
+                    // Set switch state and message
+                    cronSwitch.checked = isEnabled;
+                    cronMessageInput.value = isEnabled ? (data.cron_message || '') : '';
+
+                    // Update button visibility
+                    toggleButtons();
+                })
+                .catch(err => {
+                    console.error("Failed to fetch initial settings:", err);
+                });
+
+            function toggleButtons() {
+                const isEnabled = cronSwitch.checked;
+
+                if (isEnabled) {
+                    saveCronBtn.style.display = 'inline-block';
+                    sendToDiscordBtn.style.display = 'none';
+                } else {
+                    saveCronBtn.style.display = 'none';
+                    sendToDiscordBtn.style.display = 'inline-block';
+                }
+
+                // Update toggle state in backend
+                fetch('/admin/discord/settings/toggle-cron', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        enable_cron: isEnabled ? 1 : 0
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    toastr.success(data.message || "Cron setting updated!");
+
+                    // When enabling, optionally fetch and populate cron message
+                    if (isEnabled) {
+                        fetch("{{ route('admin.discord.settings.get') }}")
+                            .then(res => res.json())
+                            .then(data => {
+                                cronMessageInput.value = data.cron_message || '';
+                            });
+                    } else {
+                        cronMessageInput.value = ''; // Clear on disable
+                    }
+                })
+                .catch(error => {
+                    toastr.error("Failed to update cron setting: " + error.message);
+                });
             }
-        }
 
-        // Initial toggle state
-        toggleButtons();
-        cronSwitch.addEventListener('change', toggleButtons);
+            cronSwitch.addEventListener('change', toggleButtons);
 
-        // Handle Save Cron Settings submission
-        $('#saveCronBtn').on('click', function () {
-            const data = {
+            // Handle Save Cron Settings
+            $('#saveCronBtn').on('click', function () {
+               const data = {
                 enable_cron: $('#cronSwitch').is(':checked') ? 1 : 0,
                 plan_link: $('#planLink').val(),
                 cron_message: $('#cronMessage').val(),
                 _token: '{{ csrf_token() }}'
             };
 
-            $.post("{{ route('admin.discord.settings.save') }}", data)
-                .done(function (response) {
-                  toastr.success(response.message || 'Cron settings saved successfully!');
-                    // Optionally, you can reset the form or update the UI
-                    $('#cronMessage').val(''); // Clear the message field
-                })
-              .fail(function (err) {
-    if (err.responseJSON && err.responseJSON.errors) {
-        // Loop through the validation errors and show each one
-        $.each(err.responseJSON.errors, function (field, messages) {
-            messages.forEach(function (message) {
-                toastr.error(message);
+                $.post("{{ route('admin.discord.settings.save') }}", data)
+                    .done(function (response) {
+                        toastr.success(response.message || 'Cron settings saved successfully!');
+
+                        // ✅ Set values back from the saved response
+                        if (response.data) {
+                            $('#cronMessage').val(response.data.setting_value || '');
+                            $('#cronSwitch').prop('checked', response.data.discord_message_cron ? true : false);
+                        }
+                    })
+                    .fail(function (err) {
+                        if (err.responseJSON?.errors) {
+                            $.each(err.responseJSON.errors, function (field, messages) {
+                                messages.forEach(msg => toastr.error(msg));
+                            });
+                        } else {
+                            toastr.error(err.responseJSON?.message || 'An error occurred.');
+                        }
+                    });
+            });
+
+
+            // Handle Send to Discord
+            $('#sendToDiscordBtn').on('click', function () {
+                const data = {
+                    message: $('#cronMessage').val(),
+                    _token: '{{ csrf_token() }}'
+                };
+
+                $.post("{{ route('admin.discord.message.send') }}", data)
+                    .done(function (response) {
+                        toastr.success(response.message || 'Message sent successfully to Discord!');
+                    })
+                    .fail(function (err) {
+                        if (err.responseJSON?.errors) {
+                            $.each(err.responseJSON.errors, function (field, messages) {
+                                messages.forEach(msg => toastr.error(msg));
+                            });
+                        } else {
+                            toastr.error(err.responseJSON?.message || 'An error occurred.');
+                        }
+                    });
             });
         });
-    } else {
-        toastr.error(err.responseJSON?.message || 'An error occurred.');
-    }
-});
-        });
-
-        // Handle Send to Discord submission
-        $('#sendToDiscordBtn').on('click', function () {
-            const data = {
-                message: $('#cronMessage').val(),
-                _token: '{{ csrf_token() }}'
-            };
-
-            $.post("{{ route('admin.discord.message.send') }}", data)
-                .done(function (response) {
-                   toastr.success(response.message || 'Message sent successfully to Discord!');
-                })
-              .fail(function (err) {
-    if (err.responseJSON && err.responseJSON.errors) {
-        // Loop through the validation errors and show each one
-        $.each(err.responseJSON.errors, function (field, messages) {
-            messages.forEach(function (message) {
-                toastr.error(message);
-            });
-        });
-    } else {
-        toastr.error(err.responseJSON?.message || 'An error occurred.');
-    }
-});
-        });
-    });
-    </script>
+</script>
 
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-        const liveSwitch = document.getElementById("liveSwitch");
-        const sandboxSwitch = document.getElementById("sandboxSwitch");
 
-        const liveSiteKey = document.getElementById("liveSiteKey");
-        const liveSecretKey = document.getElementById("liveSecretKey");
-
-        const sandboxSiteKey = document.getElementById("sandboxSiteKey");
-        const sandboxSecretKey = document.getElementById("sandboxSecretKey");
-
-        function updateFields() {
-            if (liveSwitch.checked) {
-                sandboxSwitch.checked = false;
-                liveSiteKey.disabled = false;
-                liveSecretKey.disabled = false;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
-            } else if (sandboxSwitch.checked) {
-                liveSwitch.checked = false;
-                sandboxSiteKey.disabled = false;
-                sandboxSecretKey.disabled = false;
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-            } else {
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
-            }
-        }
-
-        liveSwitch.addEventListener("change", updateFields);
-        sandboxSwitch.addEventListener("change", updateFields);
-
-        updateFields(); // run once on load
-    });
-    </script>
     @endpush
