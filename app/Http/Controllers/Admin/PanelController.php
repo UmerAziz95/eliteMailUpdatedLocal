@@ -704,14 +704,7 @@ class PanelController extends Controller
             
             // Adjust total panels needed based on available panels (same logic as Console Command)
             $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            
-            \Log::info('Counter calculations completed', [
-                'total_orders' => $totalOrders,
-                'total_inboxes' => $totalInboxes,
-                'total_panels_needed_raw' => $totalPanelsNeeded,
-                'available_panel_count' => $availablePanelCount,
-                'panels_required' => $panelsRequired
-            ]);
+            $totalInboxes -= $panelsRequired * $maxSplitCapacity; // Adjust total inboxes based on panels required
 
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
@@ -998,7 +991,7 @@ class PanelController extends Controller
             
             // Adjust total panels needed based on available panels
             $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            
+            $totalInboxes -= $panelsRequired * $maxSplitCapacity;
             return response()->json([
                 'success' => true,
                 'counters' => [

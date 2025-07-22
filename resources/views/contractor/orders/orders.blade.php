@@ -692,7 +692,7 @@
                         <option value="">-- Select Status --</option>
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <!-- <option value="cancelled">Cancelled</option> -->
                         <option value="reject">Rejected</option>
                     </select>
                 </div>
@@ -1394,12 +1394,15 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     `;
                                 }
                             })()}
-                            <button class="btn btn-warning btn-sm px-3 py-2" 
-                                    onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
-                                    style="font-size: 13px;">
-                                <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
-                                Change Status
-                            </button>
+                            
+                            ${orderInfo.status !== 'reject' && orderInfo.status !== 'completed' ? `
+                                <button class="btn btn-warning btn-sm px-3 py-2" 
+                                        onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
+                                    Change Status
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>

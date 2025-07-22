@@ -1259,7 +1259,7 @@
                                 }
                                 
                                 // Add reject button if order is not already rejected or completed
-                                if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
+                                if (orderInfo.status_manage_by_admin !== 'reject' && orderInfo.status_manage_by_admin !== 'completed') {
                                     buttonsHtml += `
                                         <button class="btn btn-danger btn-sm px-3 py-2" 
                                                 onclick="rejectOrder(${orderInfo.id})"
