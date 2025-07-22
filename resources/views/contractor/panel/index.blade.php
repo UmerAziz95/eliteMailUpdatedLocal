@@ -2489,32 +2489,32 @@
                     .listen('.order.created', (e) => {
                         console.log('🆕 New Order Created:', e);
                         
-                        // Clear existing UI containers first to ensure fresh display
-                        const ordersContainer = document.getElementById('ordersContainer');
-                        const draftsContainer = document.getElementById('draftsContainer');
-                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
                         
-                        if (ordersContainer) ordersContainer.innerHTML = '';
-                        if (draftsContainer) draftsContainer.innerHTML = '';
-                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
                         
-                        // Reset all data arrays
-                        orders = [];
-                        drafts = [];
-                        rejectedOrders = [];
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
                         
-                        // Reset pagination states before refreshing
-                        currentPage = 1;
-                        hasMorePages = true;
-                        totalOrders = 0;
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
                         
-                        draftsCurrentPage = 1;
-                        draftsHasMorePages = true;
-                        totalDraftsOrders = 0;
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
                         
-                        rejectOrdersCurrentPage = 1;
-                        rejectOrdersHasMorePages = true;
-                        totalRejectOrders = 0;
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
                         
                         // Add small delay to ensure UI clears before loading new data
                         setTimeout(() => {
@@ -2523,7 +2523,7 @@
                             // loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ New order loaded successfully...........');
-                        }, 100);
+                        }, 15000);
                     })
                     .listen('.order.updated', (e) => {
                         console.log('🔄 Order Updated:', e);
@@ -2531,32 +2531,32 @@
                         const order = e.order || e;
                         const changes = e.changes || {};
                         
-                        // Clear existing UI containers first to ensure fresh display
-                        const ordersContainer = document.getElementById('ordersContainer');
-                        const draftsContainer = document.getElementById('draftsContainer');
-                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
                         
-                        if (ordersContainer) ordersContainer.innerHTML = '';
-                        if (draftsContainer) draftsContainer.innerHTML = '';
-                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
                         
-                        // Reset all data arrays
-                        orders = [];
-                        drafts = [];
-                        rejectedOrders = [];
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
                         
-                        // Reset pagination states before refreshing
-                        currentPage = 1;
-                        hasMorePages = true;
-                        totalOrders = 0;
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
                         
-                        draftsCurrentPage = 1;
-                        draftsHasMorePages = true;
-                        totalDraftsOrders = 0;
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
                         
-                        rejectOrdersCurrentPage = 1;
-                        rejectOrdersHasMorePages = true;
-                        totalRejectOrders = 0;
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
                         
                         // Add delay to ensure UI clears before loading new data
                         setTimeout(() => {
@@ -2565,7 +2565,7 @@
                             loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ Order updated successfully 232323...........');
-                        }, 100);
+                        }, 15000);
                     })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
@@ -2574,32 +2574,32 @@
                         const previousStatus = e.previous_status;
                         const newStatus = e.status || order.status;
                         
-                        // Clear existing UI containers first to ensure fresh display
-                        const ordersContainer = document.getElementById('ordersContainer');
-                        const draftsContainer = document.getElementById('draftsContainer');
-                        const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
                         
-                        if (ordersContainer) ordersContainer.innerHTML = '';
-                        if (draftsContainer) draftsContainer.innerHTML = '';
-                        if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
                         
-                        // Reset all data arrays
-                        orders = [];
-                        drafts = [];
-                        rejectedOrders = [];
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
                         
-                        // Reset pagination states before refreshing
-                        currentPage = 1;
-                        hasMorePages = true;
-                        totalOrders = 0;
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
                         
-                        draftsCurrentPage = 1;
-                        draftsHasMorePages = true;
-                        totalDraftsOrders = 0;
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
                         
-                        rejectOrdersCurrentPage = 1;
-                        rejectOrdersHasMorePages = true;
-                        totalRejectOrders = 0;
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
                         
                         // Add small delay to ensure UI clears before loading new data
                         setTimeout(() => {
@@ -2608,7 +2608,7 @@
                             loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ Order status updated successfully...........');
-                        }, 5000);
+                        }, 15000);
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2685,7 +2685,7 @@
                                 // loadOrders({}, 1, false, 'reject-orders');
                                 console.log('✅ Orders refreshed after reconnection...........');
                             }, 100);
-                        }, 1000);
+                        }, 15000);
                     });
                     
                     // Additional connection state monitoring

@@ -2514,7 +2514,7 @@
                             if (typeof loadOrders === 'function') {
                                 loadOrders();
                             }
-                        }, 1000);
+                        }, 15000);
                     })
                     .listen('.order.updated', (e) => {
                         console.log('🔄 Order Updated:', e);
@@ -2546,7 +2546,7 @@
                                 loadOrders(currentFilters, 1, false, 'reject-orders');
                                 loadOrders();
                             }
-                        }, 500);
+                        }, 15000);
                     })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
@@ -2583,7 +2583,7 @@
                                 loadOrders(currentFilters, 1, false, 'reject-orders');
                                 loadOrders();
                             }
-                        }, 500);
+                        }, 15000);
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2629,7 +2629,7 @@
                             if (typeof loadOrders === 'function') {
                                 loadOrders();
                             }
-                        }, 1000);
+                        }, 15000);
                     });
                     
                     // Additional connection state monitoring
