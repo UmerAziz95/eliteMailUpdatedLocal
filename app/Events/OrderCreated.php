@@ -59,7 +59,21 @@ class OrderCreated implements ShouldBroadcastNow
         $this->order->load(['user', 'plan']);
         
         $broadcastData = [
-            'order' => $this->order->toArray(),
+            'order' => [
+                'id' => $this->order->id,
+                'status' => $this->order->status,
+                'total' => $this->order->total,
+                'created_at' => $this->order->created_at,
+                'user' => [
+                    'id' => $this->order->user->id,
+                    'name' => $this->order->user->name,
+                    'email' => $this->order->user->email
+                ],
+                'plan' => [
+                    'id' => $this->order->plan->id,
+                    'name' => $this->order->plan->name
+                ]
+            ],
             'message' => 'New order created',
             'type' => 'created'
         ];

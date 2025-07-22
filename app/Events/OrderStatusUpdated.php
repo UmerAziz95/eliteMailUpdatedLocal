@@ -68,7 +68,14 @@ class OrderStatusUpdated implements ShouldBroadcastNow
         $this->order->load(['user', 'plan']);
         
         $broadcastData = [
-            'order' => $this->order->toArray(),
+            'order' => [
+                'id' => $this->order->id,
+                'status_manage_by_admin' => $this->order->status_manage_by_admin,
+                'user_id' => $this->order->user_id,
+                'plan_id' => $this->order->plan_id,
+                'created_at' => $this->order->created_at,
+                'updated_at' => $this->order->updated_at
+            ],
             'previous_status' => $this->previousStatus,
             'status' => $this->newStatus,
             'reason' => $this->reason,

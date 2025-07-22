@@ -2488,6 +2488,10 @@
                 ordersChannel
                     .listen('.order.created', (e) => {
                         console.log('🆕 New Order Created:', e);
+                        // resetFilters trigger
+                        loadOrders({}, 1, false, 'in-queue');
+                        loadOrders({}, 1, false, 'in-draft');
+                        loadOrders({}, 1, false, 'reject-orders');
                         
                         // Show notification
                         // if (typeof toastr !== 'undefined') {
@@ -2505,12 +2509,6 @@
                         //     });
                         // }
                         
-                        // Automatically refresh the current active tab
-                        setTimeout(() => {
-                            if (typeof loadOrders === 'function') {
-                                loadOrders(currentFilters, 1, false, activeTab);
-                            }
-                        }, 1000);
                     })
                     // .listen('.order.updated', (e) => {
                     //     console.log('🔄 Order Updated:', e);
@@ -2544,30 +2542,12 @@
                         const order = e.order || e;
                         const previousStatus = e.previous_status;
                         const newStatus = e.status || order.status;
-                        
-                        // Show notification for status updates
-                        // if (typeof toastr !== 'undefined') {
-                        //     toastr.info(
-                        //         `Order #${order.id || order.order_number} status changed from "${previousStatus}" to "${newStatus}"`, 
-                        //         'Status Updated', 
-                        //         {
-                        //             timeOut: 4000,
-                        //             closeButton: true,
-                        //             onclick: function() {
-                        //                 if (typeof loadOrders === 'function') {
-                        //                     loadOrders(currentFilters, 1, false, activeTab);
-                        //                 }
-                        //             }
-                        //         }
-                        //     );
-                        // }
-                        
-                        // Refresh data
-                        setTimeout(() => {
-                            if (typeof loadOrders === 'function') {
-                                loadOrders(currentFilters, 1, false, activeTab);
-                            }
-                        }, 500);
+                        // this send request properly but not 
+                        // resetFilters trigger
+                        loadOrders({}, 1, false, 'in-queue');
+                        loadOrders({}, 1, false, 'in-draft');
+                        loadOrders({}, 1, false, 'reject-orders');
+                        console.log('✅ Order status updated successfully...........');
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2611,7 +2591,9 @@
                         // Refresh data when reconnected
                         setTimeout(() => {
                             if (typeof loadOrders === 'function') {
-                                loadOrders(currentFilters, 1, false, activeTab);
+                                loadOrders({}, 1, false, 'in-queue');
+                                loadOrders({}, 1, false, 'in-draft');
+                                loadOrders({}, 1, false, 'reject-orders');
                             }
                         }, 1000);
                     });

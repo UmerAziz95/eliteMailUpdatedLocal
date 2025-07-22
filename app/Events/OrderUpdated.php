@@ -58,11 +58,15 @@ class OrderUpdated implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        // Load relationships needed for the contractor panel
-        $this->order->load(['user', 'plan']);
-        
         $broadcastData = [
-            'order' => $this->order->toArray(),
+            'order' => [
+                'id' => $this->order->id,
+                'status' => $this->order->status,
+                'total' => $this->order->total,
+                'user_id' => $this->order->user_id,
+                'plan_id' => $this->order->plan_id,
+                'updated_at' => $this->order->updated_at,
+            ],
             'changes' => $this->changes,
             'message' => 'Order updated',
             'type' => 'updated'
