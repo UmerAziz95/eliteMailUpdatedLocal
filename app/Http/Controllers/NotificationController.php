@@ -172,6 +172,7 @@ $notification->update(['is_read' => !$notification->is_read]);
     /**
      * Get notifications for a specific order
      */
+    // 
     public function getOrderNotifications($orderId)
     {
         try {
@@ -184,41 +185,42 @@ $notification->update(['is_read' => !$notification->is_read]);
                     $query->where('data->order_id', $orderId)
                           ->orWhere('data->order_panel_id', $orderId);
                 })
+                ->with('user') // Load user relationship
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($notification) {
                     $data = $notification->data ?? [];
                     
-                    // Determine the actor/role based on notification type and data
+                    // Determine the actor/role based on user_id instead of data
                     $actor = 'system';
                     $icon = 'fa-solid fa-bell';
                     
-                    if (strpos($notification->type, 'order_status') !== false) {
-                        if (isset($data['updated_by'])) {
-                            // Try to get user info to determine role
-                            $user = \App\Models\User::find($data['updated_by']);
-                            if ($user) {
-                                if ($user->role_id == 1 || $user->role_id == 2) {
-                                    $actor = 'admin';
-                                    $icon = 'fa-solid fa-user-shield';
-                                } elseif ($user->role_id == 4) {
-                                    $actor = 'contractor'; 
-                                    $icon = 'fa-solid fa-hard-hat';
-                                } else {
-                                    $actor = 'customer';
-                                    $icon = 'fa-solid fa-user';
-                                }
-                            }
-                        } else {
+                    // Get user info from user_id relationship
+                    if ($notification->user_id && $notification->user) {
+                        $user = $notification->user;
+                        
+                        if ($user->role_id == 1 || $user->role_id == 2) {
                             $actor = 'admin';
                             $icon = 'fa-solid fa-user-shield';
+                        } elseif ($user->role_id == 4) {
+                            $actor = 'contractor'; 
+                            $icon = 'fa-solid fa-hard-hat';
+                        } else {
+                            $actor = 'customer';
+                            $icon = 'fa-solid fa-user';
                         }
-                    } elseif (strpos($notification->type, 'order_created') !== false) {
-                        $actor = 'customer';
-                        $icon = 'fa-solid fa-user';
-                    } elseif (strpos($notification->type, 'order_panel') !== false) {
-                        $actor = 'contractor';
-                        $icon = 'fa-solid fa-hard-hat';
+                    } else {
+                        // Fallback to notification type if no user relationship
+                        if (strpos($notification->type, 'order_status') !== false) {
+                            $actor = 'admin';
+                            $icon = 'fa-solid fa-user-shield';
+                        } elseif (strpos($notification->type, 'order_created') !== false) {
+                            $actor = 'customer';
+                            $icon = 'fa-solid fa-user';
+                        } elseif (strpos($notification->type, 'order_panel') !== false) {
+                            $actor = 'contractor';
+                            $icon = 'fa-solid fa-hard-hat';
+                        }
                     }
 
                     return [
@@ -230,7 +232,12 @@ $notification->update(['is_read' => !$notification->is_read]);
                         'is_read' => $notification->is_read,
                         'created_at' => $notification->created_at->format('M j, Y — h:i A'),
                         'created_at_human' => $notification->created_at->diffForHumans(),
-                        'data' => $data
+                        'user_id' => $notification->user_id,
+                        'user' => $notification->user ? [
+                            'id' => $notification->user->id,
+                            'name' => $notification->user->name,
+                            'role_id' => $notification->user->role_id
+                        ] : null
                     ];
                 });
 
