@@ -589,3 +589,28 @@ Route::get('/cron/run-draft-notifications', function () {
         //notification markers
         Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
         Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
+
+
+
+
+// ->command('domains:process-removal-queue')
+Route::get('/cron/run-domain-removal-queue', function () {
+    try {
+        $options = [];
+        // Capture command output
+        $exitCode = Artisan::call('domains:process-removal-queue', $options);
+        $output = Artisan::output();
+        return response()->json([
+            'success' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'output' => $output,
+            'message' => $exitCode === 0 ? 'Command executed successfully' : 'Command failed'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('cron.run-domain-removal-queue');

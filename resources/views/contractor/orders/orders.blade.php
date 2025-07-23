@@ -2414,7 +2414,17 @@ function parseUTCDateTime(dateStr) {
             });
             return;
         }
-        
+        // Validate reason if status is not completed
+        if (newStatus !== 'completed' && !reason) {
+            Swal.fire({
+                title: 'Validation Error',
+                text: 'Please provide a reason for rejecting this order',
+                icon: 'warning',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+
         // Show SweetAlert2 confirmation dialog
         const result = await Swal.fire({
             title: 'Update Order Status?',
