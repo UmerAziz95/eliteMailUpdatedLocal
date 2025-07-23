@@ -33,7 +33,9 @@ class PlanController extends Controller
     public function index()
     {
         $getMostlyUsed = Plan::getMostlyUsed();
-        $plans = Plan::with('features')->where('is_active', true)->get();
+        $plans = Plan::with('features')->where('is_active', true)->where(function($query) {
+            $query->where('is_discounted', 0)->orWhereNull('is_discounted');
+        })->get();
         return view('customer.pricing.pricing', compact('plans', 'getMostlyUsed'));
     }
 
