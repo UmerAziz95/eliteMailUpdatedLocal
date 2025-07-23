@@ -96,7 +96,7 @@ public function show($id=null)
                 'duration' => $item['duration'] ?? 'monthly',
                 'features' => $item['features'] ?? [],
                 'feature_values' => $item['feature_values'] ?? [],
-                'discountMode' => $request->discountMode ? 1 : 0
+                'discountMode' => $request->discountMode=="Discounted" ? 1 : 0
             ];
 
             // Apply discount fields only if discount mode is "Discounted"
@@ -209,7 +209,7 @@ public function show($id=null)
                         'external_name' => $request->external_name,
                         'internal_name' => $request->internal_name,
                         'description' => $request->description,
-                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
+                        'is_discounted' => $request->discountMode === 'Discounted' ? 1 : 0
                     ]);
                     
                     // Update volume items instead of deleting and recreating
@@ -224,7 +224,7 @@ public function show($id=null)
                         'external_name' => $request->external_name,
                         'internal_name' => $request->internal_name,
                         'description' => $request->description,
-                        'is_discounted' => $request->discountMode === 'Discounted' ? true : false
+                        'is_discounted' => $request->discountMode === 'Discounted' ? 1 : 0
                     ]);
                     
                     // Create volume items in plans table
@@ -670,7 +670,7 @@ public function show($id=null)
                     'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
                     'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
                     'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
-                    'is_discounted' => $volumeItem['discountMode']?? null,
+                    'is_discounted' => $volumeItem['discountMode'] ?? 0,
                     
                 ]);
                 
@@ -719,7 +719,7 @@ public function show($id=null)
             'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
             'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
             'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
-            'is_discounted' => $volumeItem['discountMode'] =="Discounted" ? true : false,
+            'is_discounted' => $volumeItem['discountMode'] ?? 0
         ]); 
         
         // Attach features if any

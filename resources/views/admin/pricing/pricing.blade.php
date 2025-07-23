@@ -1963,7 +1963,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     tier_discount_value: null,
                 };
                 
-
+              const selectedVal=  $('#planTypeRole').val();
                 const itemHtml = `
                 <div class="volume-item border rounded p-3 mb-3" data-index="${volumeItemIndex}" data-item-id="${item.id || ''}">
                     <div class="d-flex justify-content-between align-items-center ">
@@ -2017,16 +2017,19 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                 <small class="text-muted">Must be 0 or greater</small>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-2 calculated_price_after_discount " style="display:none;">
-                            <div class="">
-                                <label class="form-label">Final Price after applied discount<span class="text-danger"></span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" >
+                        ${selectedVal == "Discounted" ?
+                            `<div class="col-md-3 mb-2 calculated_price_after_discount">
+                                <div class="">
+                                    <label class="form-label">Final Price after applied discount<span class="text-danger"></span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" readonly>
+                                    </div>
+                                    <small class="text-muted">Must be 0 or greater</small>
                                 </div>
-                                <small class="text-muted">Must be 0 or greater</small>
-                            </div>
-                        </div>
+                            </div>` : ''
+                         }
+                       
                     </div>
                     
                     <div class="mb-3">
@@ -2993,10 +2996,12 @@ function collectVolumeItems() {
 
    $(document).ready(function () {
     // Toggle discount fields based on plan type
-    $('#planTypeRole').on('change', function () {
-        $('#volumeItemsContainer').empty(); // Clears all children inside the container
-    });
+   $('#planTypeRole').on('change', function () {
+
+    $('#volumeItemsContainer').empty(); // Clears all children inside the container
 });
+
+}); 
 </script>
 <script>
     $(document).ready(function () {
