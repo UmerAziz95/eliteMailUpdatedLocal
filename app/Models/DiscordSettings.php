@@ -12,5 +12,7 @@ class DiscordSettings extends Model
         'setting_name',
         'setting_value',
         'discord_message_cron',
-    ];
-}
+        'cron_start_from',
+        'cron_occurrence'
+    ]; 
+} 

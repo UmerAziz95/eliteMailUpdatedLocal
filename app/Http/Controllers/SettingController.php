@@ -29,7 +29,9 @@ public function saveDiscordSettings(Request $request)
         ['setting_name' => 'discord_message'],
         [
             'setting_value' => $request->input('cron_message'),
-            'discord_message_cron' => $request->input('enable_cron', false)
+            'discord_message_cron' => $request->input('enable_cron', false),
+            'cron_start_from' => $request->input('cron_start'),
+            'cron_occurrence' => $request->input('cron_occurrence', null) //
         ]
     );
 
@@ -96,7 +98,9 @@ public function getCronSettings()
     $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
     return response()->json([
         'enable_cron' => $settings->discord_message_cron,  // 1 or 0
-        'cron_message' => $settings->setting_value ?? ''
+        'cron_message' => $settings->setting_value ?? '',
+        'cron_start' => $settings->cron_start_from ?? null,
+        'cron_occurrence' => $settings->cron_occurrence ?? null,
     ]);
 }
 

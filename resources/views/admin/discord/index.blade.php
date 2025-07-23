@@ -95,15 +95,16 @@
                             <div class="alert text-warning alert-dismissible"
                                 style="background-color: rgba(255, 166, 0, 0.189)" role="alert">
                                 <h5 class="alert-heading mb-1">Note</h5>
-                                <span>Only one environment can be active at a time. Provide credentials
-                                    accordingly.</span>
+                                <span>Only one environment can be active at a time.
+                                    accordingly.</span><br>
+                                <span>If the cron is enabled then the cron will send the message to discord channel if disable then you have to manually send by clicking the below <strong>Send to Discord </strong> Button </span>
                                 <button type="button" class="btn-close text-warning" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
                             </div>
 
                             {{-- Cron Configuration Section --}}
                             <div class="card mb-4 p-3">
-                                <h5 class="card-header">Cron Configuration</h5>
+                                <h5 class="card-header">Dicord Configuration</h5>
                                 <div class="card-body">
                                     {{-- Cron Toggle --}}
                                     <div class="form-check form-switch mb-4">
@@ -115,18 +116,39 @@
                                     <div id="cronFields">
                                         {{-- Plan Link (readonly with base URL) --}}
                                         <div class="mb-3">
-                                            <label for="planLink" class="form-label">Plan Page Link (will be automatically append in the message automatically)</label>
+                                            <label for="planLink" class="form-label">Plan Page Link (will be
+                                                automatically append in the message automatically)</label>
                                             <input type="text" class="form-control" id="planLink" name="planLink"
                                                 readonly value="{{ url('/plans/discounted') }}">
                                         </div>
 
                                         {{-- Message Textarea --}}
                                         <div class="mb-3">
-                                            <label for="cronMessage" class="form-label">Cron Message</label>
+                                            <label for="cronMessage" class="form-label">Discord Message</label>
                                             <textarea class="form-control" id="cronMessage" name="cronMessage" rows="4"
                                                 placeholder="Enter message..."></textarea>
                                         </div>
                                     </div>
+                                    {{-- Cron-specific fields (hidden when cron is disabled) --}}
+                                    <div id="cronExtraFields" style="display: none;">
+                                        {{-- Cron Start From --}}
+                                        <div class="mb-3">
+                                            <label for="cronStartFrom" class="form-label">Cron Start From</label>
+                                            <input type="datetime-local" class="form-control" id="cronStart"
+                                                name="cronStart">
+                                        </div>
+
+                                        {{-- Occurrence Dropdown --}}
+                                        <div class="mb-3">
+                                            <label for="cronOccurrence" class="form-label">Occurrence</label>
+                                            <select class="form-select" id="cronOccurrence" name="cronOccurrence">
+                                                <option value="daily">Daily</option>
+                                                <option value="weekly">Weekly</option>
+                                                <option value="monthly">Monthly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
 
                                     <div class="mt-3">
                                         <button type="button" id="saveCronBtn" class="btn btn-primary"
@@ -414,12 +436,14 @@
 
     @push('scripts')
 
-  <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function () {
             const cronSwitch = document.getElementById('cronSwitch');
             const saveCronBtn = document.getElementById('saveCronBtn');
             const sendToDiscordBtn = document.getElementById('sendToDiscordBtn');
             const cronMessageInput = document.getElementById('cronMessage');
+            const cron_start = document.getElementById('cronStart');
+            const cron_occurrence = document.getElementById('cronOccurrence');
 
             // Load initial cron settings from backend
             fetch("{{ route('admin.discord.settings.get') }}")
@@ -430,7 +454,8 @@
                     // Set switch state and message
                     cronSwitch.checked = isEnabled;
                     cronMessageInput.value = isEnabled ? (data.cron_message || '') : '';
-
+                     cron_start.value = data.cron_start || '';
+                    cron_occurrence.value = data.cron_occurrence || 'daily';
                     // Update button visibility
                     toggleButtons();
                 })
@@ -438,58 +463,63 @@
                     console.error("Failed to fetch initial settings:", err);
                 });
 
-            function toggleButtons() {
-                const isEnabled = cronSwitch.checked;
+        function toggleButtons() {
+    const isEnabled = cronSwitch.checked;
 
-                if (isEnabled) {
-                    saveCronBtn.style.display = 'inline-block';
-                    sendToDiscordBtn.style.display = 'none';
-                } else {
-                    saveCronBtn.style.display = 'none';
-                    sendToDiscordBtn.style.display = 'inline-block';
-                }
+    if (isEnabled) {
+        saveCronBtn.style.display = 'inline-block';
+        sendToDiscordBtn.style.display = 'none';
+        document.getElementById('cronExtraFields').style.display = 'block';
+    } else {
+        saveCronBtn.style.display = 'none';
+        sendToDiscordBtn.style.display = 'inline-block';
+        document.getElementById('cronExtraFields').style.display = 'none';
+    }
 
-                // Update toggle state in backend
-                fetch('/admin/discord/settings/toggle-cron', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        enable_cron: isEnabled ? 1 : 0
-                    })
-                })
-                .then(response => response.json())
+    // Update toggle state in backend
+    fetch('/admin/discord/settings/toggle-cron', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            enable_cron: isEnabled ? 1 : 0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        toastr.success(data.message || "Cron setting updated!");
+
+        // When enabling, optionally fetch and populate cron message
+        if (isEnabled) {
+            fetch("{{ route('admin.discord.settings.get') }}")
+                .then(res => res.json())
                 .then(data => {
-                    toastr.success(data.message || "Cron setting updated!");
-
-                    // When enabling, optionally fetch and populate cron message
-                    if (isEnabled) {
-                        fetch("{{ route('admin.discord.settings.get') }}")
-                            .then(res => res.json())
-                            .then(data => {
-                                cronMessageInput.value = data.cron_message || '';
-                            });
-                    } else {
-                        cronMessageInput.value = ''; // Clear on disable
-                    }
-                })
-                .catch(error => {
-                    toastr.error("Failed to update cron setting: " + error.message);
+                    cronMessageInput.value = data.cron_message || '';
                 });
-            }
+        } else {
+            cronMessageInput.value = ''; // Clear on disable
+        }
+    })
+    .catch(error => {
+        toastr.error("Failed to update cron setting: " + error.message);
+    });
+}
+
 
             cronSwitch.addEventListener('change', toggleButtons);
 
             // Handle Save Cron Settings
             $('#saveCronBtn').on('click', function () {
-               const data = {
+             const data = {
                 enable_cron: $('#cronSwitch').is(':checked') ? 1 : 0,
                 plan_link: $('#planLink').val(),
                 cron_message: $('#cronMessage').val(),
+                cron_start: $('#cronStart').val(),
+                cron_occurrence: $('#cronOccurrence').val(),
                 _token: '{{ csrf_token() }}'
-            };
+            }; 
 
                 $.post("{{ route('admin.discord.settings.save') }}", data)
                     .done(function (response) {
@@ -535,7 +565,7 @@
                     });
             });
         });
-</script>
+    </script>
 
 
 
