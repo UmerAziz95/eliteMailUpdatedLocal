@@ -71,6 +71,14 @@ html.dark-theme .logo-light {
     font-family: "Space Grotesk"
 }
 
+.truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;   /* Limit to 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+
 .card-pending::after {
     content: '';
     position: absolute;
@@ -778,7 +786,7 @@ th {
 th {
     padding: .8rem !important;
     font-size: 14px;
-    min-width: 6rem;
+    /* min-width: 6rem; */
 }
 
 td {
