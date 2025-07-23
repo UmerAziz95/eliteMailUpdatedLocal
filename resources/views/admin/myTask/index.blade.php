@@ -1174,5 +1174,235 @@
             });
         }
     }
+
+    // Laravel Echo WebSocket Implementation for Real-time Task Updates (Admin MyTask)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if Echo is available (consistent check using window.Echo)
+        if (typeof window.Echo !== 'undefined') {
+            console.log('🔌 Laravel Echo initialized successfully for Admin MyTask', window.Echo);
+            console.log('🔍 Echo connector details:', window.Echo.connector);
+            
+            // Test connection status first
+            if (window.Echo.connector && window.Echo.connector.pusher) {
+                console.log('📡 Pusher connection state:', window.Echo.connector.pusher.connection.state);
+            }
+            
+            // Listen to the 'domain-removal-tasks' channel for real-time task updates
+            const tasksChannel = window.Echo.channel('domain-removal-tasks');
+            console.log('🎯 Subscribed to domain-removal-tasks channel:', tasksChannel);
+            
+            tasksChannel
+                .listen('.task.started', (e) => {
+                    console.log('🚀 Task Started/Created Event (Admin MyTask):', e);
+                    
+                    const task = e.task || e;
+                    const startedQueueDate = task.started_queue_date;
+                    
+                    console.log('Task:', task);
+                    console.log('Started Queue Date:', startedQueueDate);
+                    
+                    // Always process task events, regardless of queue date
+                    // This handles scenarios where tasks are created with future dates (+1 month +72 hours)
+                    if (startedQueueDate) {
+                        const startedDate = new Date(startedQueueDate);
+                        const formattedDate = startedDate.toLocaleDateString();
+                        
+                        console.log('✅ Processing task event - task created with queue date:', formattedDate);
+                        
+                        // Show notification for task created
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success(
+                                `New Task #${task.task_id || task.id} created and scheduled for ${formattedDate}!`, 
+                                'New Task Created', 
+                                {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    onclick: function() {
+                                        // Focus on my-tasks tab and refresh
+                                        if (activeTab !== 'my-tasks') {
+                                            document.getElementById('pills-mytask-tab').click();
+                                        }
+                                        refreshAllAdminTabs();
+                                    }
+                                }
+                            );
+                        }
+                        
+                        // Refresh all tabs since new task should appear
+                        setTimeout(() => {
+                            refreshAllAdminTabs();
+                        }, 1000);
+                    } else {
+                        console.log('⚠️ No started_queue_date found in task data');
+                    }
+                })
+                .listen('.task.completed', (e) => {
+                    console.log('✅ Task Completed Event (Admin MyTask):', e);
+                    
+                    const task = e.task || e;
+                    
+                    // Show notification for task completion
+                    if (typeof toastr !== 'undefined') {
+                        toastr.info(
+                            `Task #${task.task_id || task.id} has been completed!`, 
+                            'Task Completed', 
+                            {
+                                timeOut: 5000,
+                                closeButton: true,
+                                progressBar: true,
+                                onclick: function() {
+                                    refreshAllAdminTabs();
+                                }
+                            }
+                        );
+                    }
+                    
+                    // Refresh all tabs to reflect the completion
+                    setTimeout(() => {
+                        refreshAllAdminTabs();
+                    }, 1000);
+                })
+                .listen('.task.status.updated', (e) => {
+                    console.log('🔄 Task Status Updated Event (Admin MyTask):', e);
+                    
+                    const task = e.task || e;
+                    
+                    // Show notification for status update
+                    if (typeof toastr !== 'undefined') {
+                        toastr.info(
+                            `Task #${task.task_id || task.id} status updated to: ${task.status}`, 
+                            'Task Status Updated', 
+                            {
+                                timeOut: 3000,
+                                closeButton: true,
+                                progressBar: true
+                            }
+                        );
+                    }
+                    
+                    // Refresh all tabs to reflect the status change
+                    setTimeout(() => {
+                        refreshAllAdminTabs();
+                    }, 1000);
+                })
+                .error((error) => {
+                    console.error('❌ Channel subscription error:', error);
+                });
+            
+            // Connection status monitoring using window.Echo
+            if (window.Echo.connector && window.Echo.connector.pusher) {
+                window.Echo.connector.pusher.connection.bind('connected', () => {
+                    console.log('✅ WebSocket connected successfully for Admin MyTask');
+                    
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success('Real-time task updates connected!', 'WebSocket Connected', {
+                            timeOut: 2000,
+                            closeButton: true
+                        });
+                    }
+                });
+                
+                window.Echo.connector.pusher.connection.bind('disconnected', () => {
+                    console.log('❌ WebSocket disconnected');
+                    
+                    // Show reconnection status
+                    if (typeof toastr !== 'undefined') {
+                        toastr.warning('Real-time task updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                            timeOut: 3000,
+                            closeButton: true
+                        });
+                    }
+                });
+                
+                window.Echo.connector.pusher.connection.bind('reconnected', () => {
+                    console.log('🔄 WebSocket reconnected for Admin MyTask');
+                    
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success('Real-time task updates reconnected!', 'Connection Restored', {
+                            timeOut: 2000,
+                            closeButton: true
+                        });
+                    }
+                    
+                    // Refresh all tabs when reconnected
+                    setTimeout(() => {
+                        refreshAllAdminTabs();
+                    }, 1000);
+                });
+                
+                // Additional connection state monitoring
+                window.Echo.connector.pusher.connection.bind('state_change', (states) => {
+                    console.log(`🔄 Admin MyTask connection state changed from ${states.previous} to ${states.current}`);
+                });
+                
+                window.Echo.connector.pusher.connection.bind('error', (error) => {
+                    console.error('❌ WebSocket connection error:', error);
+                    
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('WebSocket connection error occurred', 'Connection Error', {
+                            timeOut: 5000,
+                            closeButton: true
+                        });
+                    }
+                });
+            }
+            
+            console.log('✅ Listening to admin task events on channel: domain-removal-tasks');
+            console.log('🎯 Processing task.started, task.completed, and task.status.updated events');
+            
+        } else {
+            console.warn('⚠️ Laravel Echo not available. Real-time task updates disabled.');
+            
+            // Optional: Show warning that real-time updates are not available
+            setTimeout(() => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Real-time task updates are not available. Data will be updated on page refresh.', 'WebSocket Unavailable', {
+                        timeOut: 5000,
+                        closeButton: true
+                    });
+                }
+            }, 2000);
+        }
+    });
+
+    // Helper function to refresh all admin tabs
+    function refreshAllAdminTabs() {
+        console.log('🔄 Refreshing all admin task tabs...');
+        
+        // Clear all task data for admin tabs
+        tasks['my-tasks'] = [];
+        tasks['all-tasks'] = [];
+        
+        // Reset pagination for admin tabs
+        pagination['all-tasks'] = { currentPage: 1, hasMore: false };
+        
+        // Refresh current active tab
+        loadTasks(activeTab);
+        
+        console.log(`✅ Refreshed ${activeTab} tab with latest data`);
+    }
+
+    // Alternative implementation if you need to access Echo outside of DOMContentLoaded
+    function initializeAdminTaskWebSocket() {
+        if (typeof window.Echo !== 'undefined') {
+            console.log('🔌 Initializing Laravel Echo for admin real-time task updates...', window.Echo);
+            return window.Echo;
+        } else {
+            console.warn('⚠️ Laravel Echo not initialized yet');
+            return null;
+        }
+    }
+
+    // Function to safely check and use Echo in admin context
+    function withAdminEcho(callback) {
+        if (typeof window.Echo !== 'undefined') {
+            return callback(window.Echo);
+        } else {
+            console.warn('⚠️ Laravel Echo not available');
+            return null;
+        }
+    }
 </script>
 @endpush
+<!--  -->
