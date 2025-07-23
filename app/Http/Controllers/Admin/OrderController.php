@@ -1761,6 +1761,7 @@ class OrderController extends Controller
             }
             
             // Assign the order to the current admin
+            // Assign the order to the current admin
             $order->assigned_to = $adminId;
             $order->status_manage_by_admin = 'in-progress'; // Set status to in-progress
             $order->save();
@@ -1773,7 +1774,6 @@ class OrderController extends Controller
             $message = $assignedCount > 0 
                 ? "Successfully assigned {$assignedCount} split(s) to you!" 
                 : "No new assignments were made.";
-            
             if (!empty($errors)) {
                 $message .= " However, some errors occurred: " . implode(', ', $errors);
             }

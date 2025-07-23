@@ -3,9 +3,72 @@
 namespace App\Observers;
 
 use App\Models\Order;
+use App\Events\OrderCreated;
+use App\Events\OrderUpdated;
+use App\Events\OrderStatusUpdated;
 
 class OrderObserver
 {
+    /**
+     * Handle the Order "created" event.
+     */
+    public function created(Order $order): void
+    {
+        \Log::info('OrderObserver: Order created event triggered', [
+            'order_id' => $order->id,
+            'status' => $order->status_manage_by_admin
+        ]);
+        
+        // Fire the OrderCreated event for real-time updates
+        event(new OrderCreated($order));
+        
+        \Log::info('OrderObserver: OrderCreated event fired', [
+            'order_id' => $order->id
+        ]);
+    }
+
+    /**
+     * Handle the Order "updated" event.
+     */
+    public function updated(Order $order): void
+    {
+        // Get the changes made to the order
+        $changes = $order->getChanges();
+        
+        \Log::info('OrderObserver: Order updated event triggered', [
+            'order_id' => $order->id,
+            'changes' => $changes
+        ]);
+        
+        // Check if status_manage_by_admin was changed
+        if (isset($changes['status_manage_by_admin'])) {
+            $previousStatus = $order->getOriginal('status_manage_by_admin');
+            $newStatus = $order->status_manage_by_admin;
+            $reason = $order->reason ?? null;
+            
+            \Log::info('OrderObserver: Status change detected', [
+                'order_id' => $order->id,
+                'previous_status' => $previousStatus,
+                'new_status' => $newStatus,
+                'reason' => $reason
+            ]);
+            
+            // Fire the OrderStatusUpdated event for real-time updates
+            event(new OrderStatusUpdated($order, $previousStatus, $newStatus, $reason));
+            
+            \Log::info('OrderObserver: OrderStatusUpdated event fired', [
+                'order_id' => $order->id
+            ]);
+        }
+        
+        // Fire the general OrderUpdated event for real-time updates
+        event(new OrderUpdated($order, $changes));
+        
+        \Log::info('OrderObserver: OrderUpdated event fired', [
+            'order_id' => $order->id
+        ]);
+    }
+
     /**
      * Handle the Order "updating" event.
      */

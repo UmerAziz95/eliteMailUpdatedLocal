@@ -32,6 +32,7 @@
     {{-- <link rel="stylesheet" href="https://unpkg.com/flipdown@0.3.2/dist/flipdown.css"> --}}
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.css" rel="stylesheet">
+    @vite(['resources/js/app.js'])
     @stack('styles')
 
     <script>

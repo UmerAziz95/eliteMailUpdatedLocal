@@ -19,11 +19,13 @@ class DomainRemovalTask extends Model
         'chargebee_subscription_id',
         'reason',
         'assigned_to',
-        'status'
+        'status',
+        'broadcasted_at'
     ];
 
     protected $casts = [
         'started_queue_date' => 'datetime',
+        'broadcasted_at' => 'datetime',
     ];
 
     /**
