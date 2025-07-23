@@ -244,7 +244,12 @@ class OrderController extends Controller
                             </a>
                         </li>
                         ') .
-                    '</ul>
+                        '<li>
+                            <a href="javascript:;" class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-history"></i> &nbsp;Log View
+                            </a>
+                        </li>
+                    </ul>
                 </div>';
 
                 })

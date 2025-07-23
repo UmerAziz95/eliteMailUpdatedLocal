@@ -827,6 +827,39 @@ pointer-events: none
     border-radius: 0.5rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
+
+
+/* Loading state for action log */
+.action-log-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.action-log-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+}
+
+/* Empty state for action log */
+.action-log-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+
+.action-log-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
     </style>
 @endpush
 
@@ -1283,6 +1316,39 @@ pointer-events: none
     </div>
 </div>
     </section>
+
+<!-- Action Log -->
+<div class="offcanvas offcanvas-end text-bg-dark" style="min-width: 30rem" tabindex="-1" id="actionLogCanvas"
+    aria-labelledby="actionLogLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="actionLogLabel">Action Log</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+            aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="actionLogContainer">
+            <!-- Loading state -->
+            <div id="actionLogLoading" class="action-log-loading" style="display: none;">
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Loading action log...</span>
+            </div>
+            
+            <!-- Empty state -->
+            <div id="actionLogEmpty" class="action-log-empty" style="display: none;">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <h6>No Activity Found</h6>
+                <p class="mb-0 opacity-75">No notifications or activities found for this order.</p>
+            </div>
+
+            <!-- Timeline container for dynamic content -->
+            <div id="actionLogTimeline" class="timeline" style="display: none;">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -4385,6 +4451,91 @@ pointer-events: none
         if (typeof module !== 'undefined' && module.exports) {
             module.exports = { initializeOrderWebSocket, withEcho };
         }
+
+        // Action Log functionality
+        function loadOrderActionLog(orderId) {
+            const loading = document.getElementById('actionLogLoading');
+            const empty = document.getElementById('actionLogEmpty');
+            const timeline = document.getElementById('actionLogTimeline');
+            
+            // Show loading state
+            loading.style.display = 'flex';
+            empty.style.display = 'none';
+            timeline.style.display = 'none';
+            
+            // Fetch order notifications
+            fetch(`/notifications/order/${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    
+                    if (data.notifications && data.notifications.length > 0) {
+                        renderActionLogTimeline(data.notifications);
+                        timeline.style.display = 'block';
+                    } else {
+                        empty.style.display = 'flex';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading action log:', error);
+                    loading.style.display = 'none';
+                    empty.style.display = 'flex';
+                });
+        }
+
+        function renderActionLogTimeline(notifications) {
+            const timeline = document.getElementById('actionLogTimeline');
+            
+            timeline.innerHTML = notifications.map(notification => {
+                const actorName = notification.actor.charAt(0).toUpperCase() + notification.actor.slice(1);
+                
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-icon ${notification.actor}">
+                            <i class="${notification.icon}"></i>
+                        </div>
+                        <small class="opacity-75">${notification.created_at}</small>
+                        <h6 class="mt-1">${actorName}</h6>
+                        <p class="mb-0">${notification.message}</p>
+                        ${notification.data && notification.data.reason ? 
+                            `<small class="opacity-50 mt-1 d-block">Reason: ${notification.data.reason}</small>` : 
+                            ''
+                        }
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Handle action log offcanvas show event
+        document.addEventListener('DOMContentLoaded', function() {
+            const actionLogCanvas = document.getElementById('actionLogCanvas');
+            
+            if (actionLogCanvas) {
+                actionLogCanvas.addEventListener('show.bs.offcanvas', function(event) {
+                    // Get the trigger element
+                    const triggerElement = event.relatedTarget;
+                    const orderId = triggerElement ? triggerElement.getAttribute('data-order-id') : null;
+                    
+                    if (orderId) {
+                        // Update the offcanvas title
+                        const title = document.getElementById('actionLogLabel');
+                        title.textContent = `Action Log - Order #${orderId}`;
+                        
+                        // Load the action log for this order
+                        loadOrderActionLog(orderId);
+                    } else {
+                        // Show empty state if no order ID
+                        const loading = document.getElementById('actionLogLoading');
+                        const empty = document.getElementById('actionLogEmpty');
+                        const timeline = document.getElementById('actionLogTimeline');
+                        
+                        loading.style.display = 'none';
+                        timeline.style.display = 'none';
+                        empty.style.display = 'flex';
+                    }
+                });
+            }
+        });
 
     </script>
 @endpush

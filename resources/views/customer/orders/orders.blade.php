@@ -454,8 +454,6 @@
 
             </div>
         </div>
-
-
         <!-- Action Log Offcanvas -->
         <div class="offcanvas offcanvas-end text-bg-dark" style="min-width: 30rem" tabindex="-1" id="actionLogCanvas"
             aria-labelledby="actionLogLabel">

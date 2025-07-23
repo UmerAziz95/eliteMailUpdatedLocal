@@ -168,4 +168,80 @@ $notification->update(['is_read' => !$notification->is_read]);
 
        
     }
+
+    /**
+     * Get notifications for a specific order
+     */
+    public function getOrderNotifications($orderId)
+    {
+        try {
+            if (!auth()->check()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            // Get notifications related to the specific order
+            $notifications = Notification::where(function($query) use ($orderId) {
+                    $query->where('data->order_id', $orderId)
+                          ->orWhere('data->order_panel_id', $orderId);
+                })
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($notification) {
+                    $data = $notification->data ?? [];
+                    
+                    // Determine the actor/role based on notification type and data
+                    $actor = 'system';
+                    $icon = 'fa-solid fa-bell';
+                    
+                    if (strpos($notification->type, 'order_status') !== false) {
+                        if (isset($data['updated_by'])) {
+                            // Try to get user info to determine role
+                            $user = \App\Models\User::find($data['updated_by']);
+                            if ($user) {
+                                if ($user->role_id == 1 || $user->role_id == 2) {
+                                    $actor = 'admin';
+                                    $icon = 'fa-solid fa-user-shield';
+                                } elseif ($user->role_id == 4) {
+                                    $actor = 'contractor'; 
+                                    $icon = 'fa-solid fa-hard-hat';
+                                } else {
+                                    $actor = 'customer';
+                                    $icon = 'fa-solid fa-user';
+                                }
+                            }
+                        } else {
+                            $actor = 'admin';
+                            $icon = 'fa-solid fa-user-shield';
+                        }
+                    } elseif (strpos($notification->type, 'order_created') !== false) {
+                        $actor = 'customer';
+                        $icon = 'fa-solid fa-user';
+                    } elseif (strpos($notification->type, 'order_panel') !== false) {
+                        $actor = 'contractor';
+                        $icon = 'fa-solid fa-hard-hat';
+                    }
+
+                    return [
+                        'id' => $notification->id,
+                        'title' => $notification->title,
+                        'message' => $notification->message,
+                        'actor' => $actor,
+                        'icon' => $icon,
+                        'is_read' => $notification->is_read,
+                        'created_at' => $notification->created_at->format('M j, Y — h:i A'),
+                        'created_at_human' => $notification->created_at->diffForHumans(),
+                        'data' => $data
+                    ];
+                });
+
+            return response()->json(['notifications' => $notifications]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching order notifications: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order notifications: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

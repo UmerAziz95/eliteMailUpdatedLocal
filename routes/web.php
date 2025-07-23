@@ -509,6 +509,7 @@ Route::post('/notifications/mark-all-read', [NotificationController::class, 'mar
 Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
 Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
 Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
+Route::get('/notifications/order/{orderId}', [NotificationController::class, 'getOrderNotifications'])->middleware(['auth'])->name('notifications.order');
 
 
 
