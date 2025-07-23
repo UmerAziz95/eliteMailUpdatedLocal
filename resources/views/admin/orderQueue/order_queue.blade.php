@@ -2492,21 +2492,21 @@
                         
                         // Show notification
                         if (typeof toastr !== 'undefined') {
-                            toastr.success(`New order created: Order #${e.order?.id || e.id}`, 'New Order', {
-                                timeOut: 5000,
-                                extendedTimeOut: 3000,
-                                closeButton: true,
-                                progressBar: true,
-                                onclick: function() {
-                                    // Optional: Focus on the new order or reload data
-                                    if (typeof loadOrders === 'function') {
-                                        loadOrders(currentFilters, 1, false, 'in-queue');
-                                        loadOrders(currentFilters, 1, false, 'in-draft');
-                                        loadOrders(currentFilters, 1, false, 'reject-orders');
-                                        loadOrders();
-                                    }
-                                }
-                            });
+                            // toastr.success(`New order created: Order #${e.order?.id || e.id}`, 'New Order', {
+                            //     timeOut: 5000,
+                            //     extendedTimeOut: 3000,
+                            //     closeButton: true,
+                            //     progressBar: true,
+                            //     onclick: function() {
+                            //         // Optional: Focus on the new order or reload data
+                            //         if (typeof loadOrders === 'function') {
+                            //             loadOrders(currentFilters, 1, false, 'in-queue');
+                            //             loadOrders(currentFilters, 1, false, 'in-draft');
+                            //             loadOrders(currentFilters, 1, false, 'reject-orders');
+                            //             loadOrders();
+                            //         }
+                            //     }
+                            // });
                         }
                         
                         // Automatically refresh the orders
@@ -2514,7 +2514,7 @@
                             if (typeof loadOrders === 'function') {
                                 loadOrders();
                             }
-                        }, 15000);
+                        }, 25000);
                     })
                     .listen('.order.updated', (e) => {
                         console.log('🔄 Order Updated:', e);
@@ -2546,7 +2546,7 @@
                                 loadOrders(currentFilters, 1, false, 'reject-orders');
                                 loadOrders();
                             }
-                        }, 15000);
+                        }, 25000);
                     })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
@@ -2583,7 +2583,7 @@
                                 loadOrders(currentFilters, 1, false, 'reject-orders');
                                 loadOrders();
                             }
-                        }, 15000);
+                        }, 25000);
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2595,10 +2595,10 @@
                         console.log('✅ WebSocket connected successfully');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates connected!', 'WebSocket Connected', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates connected!', 'WebSocket Connected', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -2607,10 +2607,10 @@
                         
                         // Show reconnection status
                         if (typeof toastr !== 'undefined') {
-                            toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
-                                timeOut: 3000,
-                                closeButton: true
-                            });
+                            // toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                            //     timeOut: 3000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -2618,10 +2618,10 @@
                         console.log('🔄 WebSocket reconnected');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates reconnected!', 'Connection Restored', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates reconnected!', 'Connection Restored', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                         
                         // Refresh data when reconnected
@@ -2629,7 +2629,7 @@
                             if (typeof loadOrders === 'function') {
                                 loadOrders();
                             }
-                        }, 15000);
+                        }, 25000);
                     });
                     
                     // Additional connection state monitoring

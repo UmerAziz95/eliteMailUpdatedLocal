@@ -2523,7 +2523,7 @@
                             // loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ New order loaded successfully...........');
-                        }, 15000);
+                        }, 25000);
                     })
                     .listen('.order.updated', (e) => {
                         console.log('🔄 Order Updated:', e);
@@ -2565,7 +2565,7 @@
                             loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ Order updated successfully 232323...........');
-                        }, 15000);
+                        }, 25000);
                     })
                     .listen('.order.status.updated', (e) => {
                         console.log('📊 Order Status Updated:', e);
@@ -2608,7 +2608,7 @@
                             loadOrders({}, 1, false, 'in-draft');
                             // loadOrders({}, 1, false, 'reject-orders');
                             console.log('✅ Order status updated successfully...........');
-                        }, 15000);
+                        }, 25000);
                     })
                     .error((error) => {
                         console.error('❌ Channel subscription error:', error);
@@ -2620,10 +2620,10 @@
                         console.log('✅ WebSocket connected successfully');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates connected!', 'WebSocket Connected', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates connected!', 'WebSocket Connected', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -2632,10 +2632,10 @@
                         
                         // Show reconnection status
                         if (typeof toastr !== 'undefined') {
-                            toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
-                                timeOut: 3000,
-                                closeButton: true
-                            });
+                            // toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                            //     timeOut: 3000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -2643,10 +2643,10 @@
                         console.log('🔄 WebSocket reconnected');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates reconnected!', 'Connection Restored', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates reconnected!', 'Connection Restored', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                         
                         // Refresh data when reconnected
@@ -2685,7 +2685,7 @@
                                 // loadOrders({}, 1, false, 'reject-orders');
                                 console.log('✅ Orders refreshed after reconnection...........');
                             }, 100);
-                        }, 15000);
+                        }, 25000);
                     });
                     
                     // Additional connection state monitoring
@@ -2713,10 +2713,10 @@
                 // Optional: Show warning that real-time updates are not available
                 setTimeout(() => {
                     if (typeof toastr !== 'undefined') {
-                        toastr.warning('Real-time updates are not available. Data will be updated on page refresh.', 'WebSocket Unavailable', {
-                            timeOut: 5000,
-                            closeButton: true
-                        });
+                        // toastr.warning('Real-time updates are not available. Data will be updated on page refresh.', 'WebSocket Unavailable', {
+                        //     timeOut: 5000,
+                        //     closeButton: true
+                        // });
                     }
                 }, 2000);
             }

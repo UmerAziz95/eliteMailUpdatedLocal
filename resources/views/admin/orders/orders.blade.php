@@ -4279,10 +4279,10 @@ pointer-events: none
                         console.log('✅ WebSocket connected successfully');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates connected!', 'WebSocket Connected', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates connected!', 'WebSocket Connected', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -4291,10 +4291,10 @@ pointer-events: none
                         
                         // Show reconnection status
                         if (typeof toastr !== 'undefined') {
-                            toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
-                                timeOut: 3000,
-                                closeButton: true
-                            });
+                            // toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                            //     timeOut: 3000,
+                            //     closeButton: true
+                            // });
                         }
                     });
                     
@@ -4302,10 +4302,10 @@ pointer-events: none
                         console.log('🔄 WebSocket reconnected');
                         
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Real-time updates reconnected!', 'Connection Restored', {
-                                timeOut: 2000,
-                                closeButton: true
-                            });
+                            // toastr.success('Real-time updates reconnected!', 'Connection Restored', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
                         }
                         
                         // Refresh data when reconnected
