@@ -8,6 +8,7 @@ use App\Events\OrderCreated;
 use App\Events\OrderUpdated;
 use App\Events\OrderStatusUpdated;
 use App\Services\ActivityLogService;
+use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\Auth;
 class OrderObserver
 {
@@ -54,6 +55,21 @@ class OrderObserver
                 'new_status' => $newStatus,
                 'reason' => $reason
             ]);
+            
+            // Send Slack notification if order is cancelled
+            if (strtolower($newStatus) === 'cancelled') {
+                try {
+                    SlackNotificationService::sendOrderCancellationNotification($order, $reason);
+                    \Log::info('OrderObserver: Slack notification sent for cancelled order', [
+                        'order_id' => $order->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderObserver: Failed to send Slack notification for cancelled order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
             
             // Fire the OrderStatusUpdated event for real-time updates
             event(new OrderStatusUpdated($order, $previousStatus, $newStatus, $reason));

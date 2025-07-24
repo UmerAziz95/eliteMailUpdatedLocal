@@ -354,7 +354,7 @@ class OrderController extends Controller
         // Log before updating order status
         ActivityLogService::log(
             'order_status_updated', // Action type
-            'Order status updated by admin', // Description
+            'Order status updated from ' . $order->status_manage_by_admin . ' to ' . $request->status_manage_by_admin . ' : ' . $order->id,
             $order, // The model the action was performed on
             [
                 'order_id' => $order->id,

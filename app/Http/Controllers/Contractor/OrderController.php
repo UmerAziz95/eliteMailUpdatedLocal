@@ -603,7 +603,7 @@ class OrderController extends Controller
             // Create activity log
             ActivityLogService::log(
                 'contractor-order-status-update',
-                'Order status updated : ' . $order->id,
+                'Order status updated from ' . $oldStatus . ' to ' . $order->status_manage_by_admin . ' : ' . $order->id,
                 $order,
                 [
                     'order_id' => $order->id,
@@ -782,7 +782,7 @@ class OrderController extends Controller
                 // Create a new activity log using the custom log service
                 ActivityLogService::log(
                     'contractor-order-status-update',
-                    'Order status updated : ' . $order->id,
+                    'Order status updated from ' . $oldStatus . ' to ' . $order->status_manage_by_admin . ' : ' . $order->id,
                     $order,
                     [
                         'order_id' => $order->id,
@@ -1514,7 +1514,7 @@ class OrderController extends Controller
             // Create activity log
             ActivityLogService::log(
                 'contractor-order-status-update',
-                'Order status updated : ' . $order->id,
+                'Order status updated from ' . $oldStatus . ' to ' . $order->status_manage_by_admin . ' : ' . $order->id,
                 $order,
                 [
                     'order_id' => $order->id,
