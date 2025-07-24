@@ -23,8 +23,8 @@ class SlackSettings extends Model
     const TYPES = [
         'order-cancelled' => 'Order Cancelled',
         'panel-created' => 'Panel Created',
-        'order-created' => 'Order Created',
-        'order-updated' => 'Order Updated',
+        // 'order-created' => 'Order Created',
+        // 'order-updated' => 'Order Updated',
         // 'user-registered' => 'User Registered',
         // 'invoice-generated' => 'Invoice Generated'
     ];
