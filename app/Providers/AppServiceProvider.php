@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use ChargeBee\ChargeBee\Environment;
 use App\Models\Order;
+use App\Models\DomainRemovalTask;
 use App\Observers\OrderObserver;
+use App\Observers\DomainRemovalTaskObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register model observers
         Order::observe(OrderObserver::class);
+        DomainRemovalTask::observe(DomainRemovalTaskObserver::class);
         
         // Configure Chargebee environment
         Environment::configure(
