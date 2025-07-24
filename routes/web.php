@@ -92,7 +92,7 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
-Route::get('/plans/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
+Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -614,3 +614,6 @@ Route::get('/cron/run-domain-removal-queue', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-queue');
+
+Route::get('/test-discord-cron', [\App\Http\Controllers\SettingController::class, 'discorSendMessageCron']);
+
