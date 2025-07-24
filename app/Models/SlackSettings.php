@@ -21,12 +21,9 @@ class SlackSettings extends Model
     
     // Define available types
     const TYPES = [
-        'order-cancelled' => 'Order Cancelled',
-        'panel-created' => 'Panel Created',
-        // 'order-created' => 'Order Created',
-        // 'order-updated' => 'Order Updated',
-        // 'user-registered' => 'User Registered',
-        // 'invoice-generated' => 'Invoice Generated'
+        'inbox-setup' => 'Inbox Setup',
+        'inbox-cancellation'=> 'Inbox Cancellation',
+        'inbox-admins' => 'Inbox Admins',
     ];
     
     public static function getTypes()

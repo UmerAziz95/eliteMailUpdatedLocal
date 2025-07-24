@@ -52,67 +52,6 @@ class SlackNotificationService
         }
     }
 
-    /**
-     * Legacy method to maintain backward compatibility
-     *
-     * @param string $message
-     * @param array $additionalData
-     * @return bool
-     */
-    public static function sendNotification($message, $additionalData = [])
-    {
-        $webhookUrl = env('SLACK_WEBHOOK_URL');
-        
-        if (!$webhookUrl) {
-            Log::warning('Slack webhook URL not configured');
-            return false;
-        }
-
-        try {
-            $payload = [
-                'text' => $message,
-                'username' => 'Order Bot',
-                'icon_emoji' => ':warning:',
-            ];
-
-            // Add additional data as attachment if provided
-            if (!empty($additionalData)) {
-                $payload['attachments'] = [
-                    [
-                        'color' => 'danger',
-                        'fields' => []
-                    ]
-                ];
-
-                foreach ($additionalData as $key => $value) {
-                    $payload['attachments'][0]['fields'][] = [
-                        'title' => ucfirst(str_replace('_', ' ', $key)),
-                        'value' => is_array($value) ? json_encode($value) : (string) $value,
-                        'short' => true
-                    ];
-                }
-            }
-
-            $response = Http::post($webhookUrl, $payload);
-
-            if ($response->successful()) {
-                Log::info('Slack notification sent successfully', ['message' => $message]);
-                return true;
-            } else {
-                Log::error('Failed to send Slack notification', [
-                    'status' => $response->status(),
-                    'response' => $response->body()
-                ]);
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error sending Slack notification: ' . $e->getMessage(), [
-                'message' => $message,
-                'error' => $e->getTraceAsString()
-            ]);
-            return false;
-        }
-    }
 
     /**
      * Send order cancellation notification to Slack
@@ -130,7 +69,7 @@ class SlackNotificationService
             'reason' => $reason ?: 'No reason provided'
         ];
 
-        return self::send('order-cancelled', $data);
+        return self::send('inbox-cancellation', $data);
     }
     
     /**
