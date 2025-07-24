@@ -267,6 +267,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('disocrd/send/message',[App\Http\Controllers\SettingController::class,'sendDiscordMessage'])->name('discord.message.send');
         Route::post('disocrd/settings/save',[App\Http\Controllers\SettingController::class,'saveDiscordSettings'])->name('discord.settings.save');
         Route::post('/discord/settings/toggle-cron',[App\Http\Controllers\SettingController::class,'toggleDiscordCron'])->name('discord.toggle.cron');
+        
+        //slack settings
+        Route::get('slack/settings',[App\Http\Controllers\Admin\SlackSettingsController::class,'index'])->name('slack.settings');
+        Route::post('slack/settings/save',[App\Http\Controllers\Admin\SlackSettingsController::class,'store'])->name('slack.settings.save');
+        Route::post('slack/settings/test',[App\Http\Controllers\Admin\SlackSettingsController::class,'testWebhook'])->name('slack.settings.test');
+        Route::delete('slack/settings/{id}',[App\Http\Controllers\Admin\SlackSettingsController::class,'destroy'])->name('slack.settings.delete');
     }); Route::get('/discord/settings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
 
 });
