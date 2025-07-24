@@ -6,18 +6,31 @@ use Illuminate\Http\Request;
 use App\Models\Plan;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
+use App\Models\DiscordSettingS;
 
 class DiscountedPlanController extends Controller
 {
     //
-    public function index()
-    {
-        $getMostlyUsed = Plan::getMostlyUsed();
-            $plans = Plan::with('features')->where('is_active', true)->where('is_discounted', true)->get();
-          
-            $publicPage=true;
-            return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed','publicPage'));
+   public function index($id = null)
+{
+    if ($id !== null) {
+        $setting = DiscordSettingS::where('url_string', $id)->first();
+
+        if (!$setting) {
+            abort(404, 'Invalid or expired discount link.');
+        }
     }
+
+    $getMostlyUsed = Plan::getMostlyUsed();
+    $plans = Plan::with('features')
+        ->where('is_active', true)
+        ->where('is_discounted', true)
+        ->get();
+
+    $publicPage = true;
+
+    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage'));
+}
 
 
       public function initiateSubscription(Request $request, $planId,$encrypted=null)
