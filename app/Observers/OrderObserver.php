@@ -3,10 +3,12 @@
 namespace App\Observers;
 
 use App\Models\Order;
+use App\Models\Notification;
 use App\Events\OrderCreated;
 use App\Events\OrderUpdated;
 use App\Events\OrderStatusUpdated;
-
+use App\Services\ActivityLogService;
+use Illuminate\Support\Facades\Auth;
 class OrderObserver
 {
     /**
@@ -67,6 +69,74 @@ class OrderObserver
         \Log::info('OrderObserver: OrderUpdated event fired', [
             'order_id' => $order->id
         ]);
+
+        // Check if assigned_to was changed
+        if (isset($changes['assigned_to'])) {
+            $newAssignedTo = $order->assigned_to;
+            $oldAssignedTo = $order->getOriginal('assigned_to');
+
+            \Log::info('OrderObserver: Assignment change detected', [
+                'order_id' => $order->id,
+                'old_assigned_to' => $oldAssignedTo,
+                'new_assigned_to' => $newAssignedTo
+            ]);
+            
+            // Create notification when order is assigned to contractor (from null to assigned)
+            if ($newAssignedTo && !$oldAssignedTo) {
+                \Log::info('OrderObserver: Creating notification for contractor assignment', [
+                    'order_id' => $order->id,
+                    'assigned_to' => $newAssignedTo,
+                    'auth_user_id' => Auth::id()
+                ]);
+
+                try {
+                    // Create a notification for the contractor
+                    Notification::create([
+                        'user_id' => $newAssignedTo,
+                        'type' => 'order_assigned',
+                        'title' => 'Order Assigned',
+                        'message' => 'You have been assigned to order #' . $order->id,
+                        'data' => [
+                            'order_id' => $order->id,
+                            'assigned_to' => $newAssignedTo,
+                            'assigned_by' => Auth::id(),
+                        ],
+                        'is_read' => false
+                    ]);
+
+                    // Also create a log entry
+                    ActivityLogService::log(
+                        'order-assigned',
+                        'Order assigned to contractor: ' . $order->id . ' - ' . ($order->assignedTo ? $order->assignedTo->name : 'Unknown'),
+                        $order,
+                        [
+                            'order_id' => $order->id,
+                            'assigned_to' => $newAssignedTo,
+                        ],
+                        Auth::id() ?? 1 // Performed By - fallback to admin if no auth
+                    );
+
+                    \Log::info('OrderObserver: Order assignment notification created successfully', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderObserver: Failed to create assignment notification', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            } else {
+                \Log::info('OrderObserver: Assignment condition not met', [
+                    'order_id' => $order->id,
+                    'new_assigned_to' => $newAssignedTo,
+                    'old_assigned_to' => $oldAssignedTo,
+                    'condition_met' => false
+                ]);
+            }
+        }
     }
 
     /**

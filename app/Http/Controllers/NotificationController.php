@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Models\Log;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -173,7 +174,96 @@ $notification->update(['is_read' => !$notification->is_read]);
      * Get notifications for a specific order
      */
     // 
+
     public function getOrderNotifications($orderId)
+    {
+        try {
+            if (!auth()->check()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            // Get logs related to the specific order
+            $notifications = Log::where(function($query) use ($orderId) {
+                    $query->where('data->order_id', $orderId)
+                          ->orWhere('data->order_panel_id', $orderId);
+                })
+                ->orWhere(function($query) use ($orderId) {
+                    $query->where('performed_on_type', 'App\\Models\\Order')
+                          ->where('performed_on_id', $orderId);
+                })
+                ->with('user') // Load user relationship
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($log) {
+                    $data = $log->data ?? [];
+                    
+                    // Determine the actor/role based on performed_by instead of user_id
+                    $actor = 'system';
+                    $icon = 'fa-solid fa-bell';
+                    
+                    // Get user info from performed_by relationship
+                    if ($log->performed_by && $log->user) {
+                        $user = $log->user;
+                        
+                        if ($user->role_id == 1 || $user->role_id == 2) {
+                            $actor = 'admin';
+                            $icon = 'fa-solid fa-user-shield';
+                        } elseif ($user->role_id == 4) {
+                            $actor = 'contractor'; 
+                            $icon = 'fa-solid fa-hard-hat';
+                        } else {
+                            $actor = 'customer';
+                            $icon = 'fa-solid fa-user';
+                        }
+                    } else {
+                        // Fallback to action_type if no user relationship
+                        if (strpos($log->action_type, 'order-status') !== false) {
+                            $actor = 'admin';
+                            $icon = 'fa-solid fa-user-shield';
+                        } elseif (strpos($log->action_type, 'order-created') !== false) {
+                            $actor = 'customer';
+                            $icon = 'fa-solid fa-user';
+                        } elseif (strpos($log->action_type, 'order-assigned') !== false) {
+                            $actor = 'admin';
+                            $icon = 'fa-solid fa-user-shield';
+                        }
+                    }
+
+                    // Create title and message from log data
+                    $title = ucfirst(str_replace('-', ' ', $log->action_type));
+                    $message = $log->description ?? $title;
+
+                    return [
+                        'id' => $log->id,
+                        'title' => $title,
+                        'message' => preg_replace('/:\s*\d+$/', '', $message),
+                        'actor' => $actor,
+                        'icon' => $icon,
+                        'is_read' => true, // Logs don't have read status, so default to true
+                        'created_at' => $log->created_at->format('M j, Y — h:i A'),
+                        'created_at_human' => $log->created_at->diffForHumans(),
+                        'user_id' => $log->performed_by,
+                        'user' => $log->user ? [
+                            'id' => $log->user->id,
+                            'name' => $log->user->name,
+                            'role_id' => $log->user->role_id
+                        ] : null,
+                        'action_type' => $log->action_type,
+                        'data' => $data
+                    ];
+                });
+
+            return response()->json(['notifications' => $notifications]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching order notifications from logs: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching order notifications: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function oldgetOrderNotifications($orderId)
     {
         try {
             if (!auth()->check()) {
