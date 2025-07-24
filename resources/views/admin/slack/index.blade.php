@@ -176,28 +176,6 @@
         border: 1px solid rgba(108, 117, 125, 0.2);
     }
 
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        z-index: 1000;
-    }
-
-    .loading-overlay.show {
-        display: flex;
-    }
-
-    .webhook-form {
-        position: relative;
-    }
-
     .spinner-border-sm {
         width: 1rem;
         height: 1rem;
@@ -225,14 +203,14 @@
             </button>
         </div>
 
-        <div class="card">
-            <div class="card-body">
+        <div class="">
+            <div class="">
                 <div class="alert alert-info" role="alert">
                     <h5 class="alert-heading mb-1">
                         <i class="ti ti-info-circle me-2"></i>
                         How to Setup Slack Webhooks
                     </h5>
-                    <p class="mb-2">To receive notifications in your Slack channel, you need to create a webhook URL:</p>
+                    <p class="mb-2 mx-2 text-muted">To receive notifications in your Slack channel, you need to create a webhook URL:</p>
                     <ol class="mb-0">
                         <li>Go to your Slack workspace</li>
                         <li>Navigate to Apps > Incoming Webhooks</li>
@@ -246,13 +224,6 @@
                 <div id="webhookFormsContainer">
                     @foreach($types as $typeKey => $typeLabel)
                         <div class="webhook-form" id="form-{{ $typeKey }}" data-type="{{ $typeKey }}">
-                            <!-- Loading Overlay -->
-                            <div class="loading-overlay" id="loading-{{ $typeKey }}">
-                                <div class="spinner-border text-light" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </div>
-                            
                             <div class="webhook-header">
                                 <h5 class="webhook-title">
                                     <i class="ti ti-webhook me-2"></i>
@@ -329,13 +300,24 @@ $(document).ready(function() {
     });
 
     // Utility Functions
-    const showLoading = (type, show = true) => {
-        const loadingElement = $(`#loading-${type}`);
-        if (show) {
-            loadingElement.addClass('show');
-        } else {
-            loadingElement.removeClass('show');
-        }
+    const showSwalLoading = (title = 'Processing...', text = 'Please wait') => {
+        Swal.fire({
+            title: title,
+            text: text,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            customClass: {
+                popup: 'swal-dark'
+            }
+        });
+    };
+
+    const closeSwalLoading = () => {
+        Swal.close();
     };
 
     const clearValidationErrors = (type) => {
@@ -472,8 +454,8 @@ $(document).ready(function() {
         const submitBtn = form.find('button[type="submit"]');
         const originalText = submitBtn.html();
         
-        // Show loading state
-        showLoading(type, true);
+        // Show SweetAlert loading
+        showSwalLoading('Saving Settings...', 'Please wait while we save your webhook configuration');
         submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Saving...');
         
         $.ajax({
@@ -486,6 +468,8 @@ $(document).ready(function() {
                 if (response.success) {
                     // Mark input as valid
                     $(`#url-${type}`).addClass('is-valid');
+                    
+                    closeSwalLoading();
                     
                     Swal.fire({
                         icon: 'success',
@@ -507,6 +491,8 @@ $(document).ready(function() {
                         updateDeleteButton(type, response.data.id);
                     }
                 } else {
+                    closeSwalLoading();
+                    
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -534,6 +520,8 @@ $(document).ready(function() {
                     errorMessage = xhr.responseJSON.message;
                 }
                 
+                closeSwalLoading();
+                
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
@@ -544,7 +532,6 @@ $(document).ready(function() {
                 });
             },
             complete: function() {
-                showLoading(type, false);
                 submitBtn.prop('disabled', false).html(originalText);
             }
         });
@@ -587,8 +574,8 @@ $(document).ready(function() {
         const btn = $(this);
         const originalText = btn.html();
         
-        // Show loading state
-        showLoading(type, true);
+        // Show SweetAlert loading
+        showSwalLoading('Testing Webhook...', 'Sending test message to your Slack channel');
         btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Testing...');
         
         $.ajax({
@@ -602,17 +589,21 @@ $(document).ready(function() {
                 if (response.success) {
                     $(`#url-${type}`).addClass('is-valid');
                     
+                    closeSwalLoading();
+                    
                     Swal.fire({
                         icon: 'success',
                         title: 'Test Successful!',
                         text: response.message,
-                        timer: 2000,
+                        timer: 3000,
                         showConfirmButton: false,
                         customClass: {
                             popup: 'swal-dark'
                         }
                     });
                 } else {
+                    closeSwalLoading();
+                    
                     Swal.fire({
                         icon: 'error',
                         title: 'Test Failed!',
@@ -630,6 +621,8 @@ $(document).ready(function() {
                     errorMessage = xhr.responseJSON.message;
                 }
                 
+                closeSwalLoading();
+                
                 Swal.fire({
                     icon: 'error',
                     title: 'Test Failed!',
@@ -640,7 +633,6 @@ $(document).ready(function() {
                 });
             },
             complete: function() {
-                showLoading(type, false);
                 btn.prop('disabled', false).html(originalText);
             }
         });
@@ -666,7 +658,7 @@ $(document).ready(function() {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                showLoading(type, true);
+                showSwalLoading('Deleting Webhook...', 'Please wait while we delete the webhook configuration');
                 
                 $.ajax({
                     url: `{{ url('admin/slack/settings') }}/${id}`,
@@ -681,6 +673,8 @@ $(document).ready(function() {
                             // Clear validation errors
                             clearValidationErrors(type);
                             
+                            closeSwalLoading();
+                            
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Deleted!',
@@ -694,6 +688,8 @@ $(document).ready(function() {
                         }
                     },
                     error: function(xhr) {
+                        closeSwalLoading();
+                        
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
@@ -702,9 +698,6 @@ $(document).ready(function() {
                                 popup: 'swal-dark'
                             }
                         });
-                    },
-                    complete: function() {
-                        showLoading(type, false);
                     }
                 });
             }
@@ -718,7 +711,9 @@ $(document).ready(function() {
         
         btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Refreshing...');
         
-        // Simulate refresh by reloading the page with a smooth transition
+        showSwalLoading('Refreshing Settings...', 'Please wait while we reload the page');
+        
+        // Simulate refresh by reloading the page
         setTimeout(() => {
             window.location.reload();
         }, 500);
