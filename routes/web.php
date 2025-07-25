@@ -1,7 +1,7 @@
 <?php
 use ChargeBee\ChargeBee\Environment;
 use ChargeBee\ChargeBee\PaymentSource;
-
+use Illuminate\Http\Request; // ✅ Use this, NOT the Facade
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Log;
@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\AdminCouponController;
 use App\Http\Controllers\CronController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Crypt;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -617,3 +618,14 @@ Route::get('/cron/run-domain-removal-queue', function () {
 
 Route::get('/test-discord-cron', [\App\Http\Controllers\SettingController::class, 'discorSendMessageCron']);
 
+//
+
+Route::get('/go', function (Request $request) {
+    try {
+        $encrypted = $request->query('encrypted'); // ✅ fix here
+        $decryptedUrl = Crypt::decryptString($encrypted);
+        return redirect()->away($decryptedUrl);
+    } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+        abort(403, 'Invalid or expired link');
+    }
+})->name('secure.redirect');

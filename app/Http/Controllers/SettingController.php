@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Crypt;
 
 class SettingController extends Controller
 {
@@ -56,11 +57,12 @@ public function sendDiscordMessage(Request $request)
         $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
         $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
 
-    try {
+       try {
          $uuid = (string) Str::uuid();
 
                 // 2. Build the embedded URL
                 $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
+                
 
                 // 3. Update the database
                 $settings->url_string = $uuid;
@@ -68,10 +70,14 @@ public function sendDiscordMessage(Request $request)
                 $settings->save();
 
                 // 4. Use in your message
-                $cronMessage = $request->input('message') ?? '🔥 Don’t miss your chance to upgrade at a reduced price.
+                
+                 $encrypted = Crypt::encryptString($embeddedUrl);
+                 $redirectUrl = URL::to('/go?encrypted=' . Crypt::encryptString($embeddedUrl));
+                
+                  $cronMessage = $request->input('message') ?? '🔥 Don’t miss your chance to upgrade at a reduced price.
                     💡 Supercharge your email & inbox productivity with AI today.
                     👉 Click the link below to grab the offer now:';
-                $fullMessage = $cronMessage . "\n" . $embeddedUrl;
+                $fullMessage = $cronMessage . "\n" .  $redirectUrl;
 
                 Http::post($webhookUrl, [
                     'content' => $fullMessage,
@@ -82,7 +88,7 @@ public function sendDiscordMessage(Request $request)
                     "status" => "success",
                     "message" => "Message sent successfully to Discord."
                 ]);
-            } catch (\Exception $e) {
+        } catch (\Exception $e) {
                 return response()->json([
                     "status" => "error",
                     "message" => "Failed to send message to Discord: " . $e->getMessage()
@@ -173,10 +179,12 @@ public static function discorSendMessageCron()
             $settings->url_string = $uuid;
             $settings->embedded_url = $embeddedUrl;
             $settings->save();
+            $encrypted = Crypt::encryptString($embeddedUrl);
+            $redirectUrl = URL::to('/go?encrypted=' . Crypt::encryptString($embeddedUrl));
 
                 // 4. Use in your message
                 $cronMessage = $settings->cron_message ?? 'No message set.';
-                $fullMessage = $cronMessage . "\n" . $embeddedUrl;
+                $fullMessage = $cronMessage . "\n" . $redirectUrl;
 
                 Http::post($webhookUrl, [
                     'content' => $fullMessage,
