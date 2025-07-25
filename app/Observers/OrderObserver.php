@@ -122,6 +122,37 @@ class OrderObserver
                 }
             }
             
+            // Send Slack notification if order is rejected
+            if (strtolower($newStatus) === 'reject') {
+                try {
+                    SlackNotificationService::sendOrderRejectionNotification($order, $reason);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for rejected order', [
+                        'order_id' => $order->id,
+                        'reason' => $reason
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for rejected order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Send Slack notification if order is completed
+            if (strtolower($newStatus) === 'completed') {
+                try {
+                    SlackNotificationService::sendOrderCompletionNotification($order);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for completed order', [
+                        'order_id' => $order->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for completed order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             // Fire the OrderStatusUpdated event for real-time updates
             event(new OrderStatusUpdated($order, $previousStatus, $newStatus, $reason));
             
