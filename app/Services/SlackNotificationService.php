@@ -24,7 +24,7 @@ class SlackNotificationService
                                    ->first();
             
             if (!$setting) {
-                Log::info("No active Slack webhook found for type: {$type}");
+                Log::channel('slack_notifications')->info("No active Slack webhook found for type: {$type}");
                 return false;
             }
             
@@ -48,15 +48,28 @@ class SlackNotificationService
             $response = Http::post($setting->url, $payload);
             
             if ($response->successful()) {
-                Log::info("Slack notification sent successfully for type: {$type}");
+                Log::channel('slack_notifications')->info("Slack notification sent successfully for type: {$type}", [
+                    'type' => $type,
+                    'webhook_url' => $setting->url,
+                    'response_status' => $response->status()
+                ]);
                 return true;
             } else {
-                Log::error("Failed to send Slack notification. Response: " . $response->body());
+                Log::channel('slack_notifications')->error("Failed to send Slack notification. Response: " . $response->body(), [
+                    'type' => $type,
+                    'response_status' => $response->status(),
+                    'webhook_url' => $setting->url
+                ]);
                 return false;
             }
             
         } catch (\Exception $e) {
-            Log::error("Error sending Slack notification: " . $e->getMessage());
+            Log::channel('slack_notifications')->error("Error sending Slack notification: " . $e->getMessage(), [
+                'type' => $type,
+                'exception' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
             return false;
         }
     }
