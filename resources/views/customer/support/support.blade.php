@@ -435,6 +435,8 @@
         </div>
     </div> --}}
 
+    @include('customer.chatbot.chat')
+
 
     <div class="row mb-4" style="display: none;">
         <div class="col-md-12">
