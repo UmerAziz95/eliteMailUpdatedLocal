@@ -76,6 +76,32 @@ class SlackNotificationService
 
 
     /**
+     * Send new order available notification to Slack
+     *
+     * @param array $orderData
+     * @return bool
+     */
+    public static function sendNewOrderAvailableNotification($orderData)
+    {
+        $data = [
+            'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? 'N/A',
+            'order_name' => $orderData['name'] ?? 'N/A',
+            'customer_name' => $orderData['customer_name'] ?? 'Unknown',
+            'customer_email' => $orderData['customer_email'] ?? 'Unknown',
+            'contractor_name' => $orderData['contractor_name'] ?? 'Unassigned',
+            'inbox_count' => $orderData['inbox_count'] ?? 0,
+            'split_count' => $orderData['split_count'] ?? 0,
+            'previous_status' => $orderData['previous_status'] ?? 'N/A',
+            'new_status' => $orderData['new_status'] ?? 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('new-order-available', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send inbox cancellation notification to Slack
      *
      * @param \App\Models\Order $order
@@ -153,6 +179,75 @@ class SlackNotificationService
         $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
+            case 'new-order-available':
+                return [
+                    'text' => "🆕 *New Order Available Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#17a2b8',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order Name',
+                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Contractor Name',
+                                    'value' => $data['contractor_name'] ?? 'Unassigned',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                // [
+                                //     'title' => 'Split Count',
+                                //     'value' => $data['split_count'] ?? '0',
+                                //     'short' => true
+                                // ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => ucfirst($data['previous_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'New Status',
+                                    'value' => ucfirst($data['new_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated By',
+                                    'value' => $data['updated_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
             case 'inbox-setup':
                 return [
                     'text' => "📥 *Inbox Setup Notification*",
@@ -330,6 +425,7 @@ class SlackNotificationService
     private static function getEmojiForType(string $type): string
     {
         $emojis = [
+            'new-order-available' => ':new:',
             'inbox-setup' => ':inbox_tray:',
             'inbox-cancellation' => ':x:',
             'inbox-admins' => ':busts_in_silhouette:'

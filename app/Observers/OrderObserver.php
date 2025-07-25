@@ -56,15 +56,66 @@ class OrderObserver
                 'reason' => $reason
             ]);
             
+            // Send Slack notification if order status changes from draft to any other status
+            if (strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') {
+                try {
+                    // Calculate inbox count and split count
+                    $inboxCount = 0;
+                    $splitCount = 0;
+                    
+                    if ($order->orderPanels && $order->orderPanels->count() > 0) {
+                        foreach ($order->orderPanels as $orderPanel) {
+                            $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                            
+                            foreach ($orderPanel->orderPanelSplits as $split) {
+                                if ($split->domains && is_array($split->domains)) {
+                                    $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If no splits found, try to get from reorderInfo
+                    if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+                        $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+                    }
+                    
+                    $orderData = [
+                        'id' => $order->id,
+                        'order_id' => $order->id,
+                        'name' => 'Order #' . $order->id,
+                        'customer_name' => $order->user ? $order->user->name : 'Unknown',
+                        'customer_email' => $order->user ? $order->user->email : 'Unknown',
+                        'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+                        'inbox_count' => $inboxCount,
+                        'split_count' => $splitCount,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ];
+                    
+                    SlackNotificationService::sendNewOrderAvailableNotification($orderData);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order available', [
+                        'order_id' => $order->id,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for new order available', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             // Send Slack notification if order is cancelled
             if (strtolower($newStatus) === 'cancelled') {
                 try {
                     SlackNotificationService::sendOrderCancellationNotification($order, $reason);
-                    \Log::info('OrderObserver: Slack notification sent for cancelled order', [
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for cancelled order', [
                         'order_id' => $order->id
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('OrderObserver: Failed to send Slack notification for cancelled order', [
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for cancelled order', [
                         'order_id' => $order->id,
                         'error' => $e->getMessage()
                     ]);
