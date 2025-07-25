@@ -1344,7 +1344,8 @@
             const ordersHtml = `
                 <div class="mb-4">
                     <h6>PNL- ${panel.id}</h6>
-                    <p class="text-muted small">${panel.description || 'No description'}</p>
+                    <h6>Title: ${panel.title}</h6>
+                    <p class="text-white small">${panel.description || ''}</p>
                 </div>
                 <div class="accordion accordion-flush" id="panelOrdersAccordion">
                     ${orders.map((order, index) => `
@@ -1358,11 +1359,11 @@
                                     <small>${handleOrderRelativeTimeCount(order.timer_order) }</small>
                                     <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
                                     <div class="d-flex align-items-center gap-2">
-                                        ${order.status === 'unallocated' ? `
+                                        ${order.order_status === 'pending' ? `
                                            
                                         ` : `
-                                            <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 10px;">
-                                                ${order.status || 'Unknown'}
+                                            <span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">
+                                                ${order.order_status || 'Unknown'}
                                             </span>
                                         `}
                                         <i class="fas fa-chevron-down transition-transform" id="accordion-icon-${order.order_id}" style="font-size: 12px; transition: transform 0.3s ease;"></i>
@@ -1379,13 +1380,10 @@
                                                 <tr>
                                                     <th scope="col">#</th>
                                                     <th scope="col">Panel ID</th>
-                                                    <th scope="col">Order Panel ID</th>
-                                                    <th scope="col">Status</th>
-                                                    
+                                                    <th scope="col">Panel Title</th>
                                                     <th scope="col">Inboxes/Domain</th>
                                                     <th scope="col">Total Domains</th>
                                                     <th scope="col">Inboxes</th>
-                                                    <th scope="col">Split timer</th>
                                                     <th scope="col">Date</th>
                                                     <th scope="col">Action</th>
                                                 </tr>
@@ -1395,12 +1393,10 @@
                                                 
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
+
                                                     <td>PNL-${order.panel_id || 'N/A'}</td>
-                                                    <td>${order.order_panel_id || 'N/A'}</td>
-                                                    
-                                                    <td>
-                                                        <span class="badge badge-update-text ${getStatusBadgeClass(order.status)}">${order.status || 'Unknown'}</span>
-                                                    </td>
+
+                                                    <td>${panel?.title || 'N/A'}</td>
                                                     
                                                     <td>${order.inboxes_per_domain || 'N/A'}</td>
                                                     <td>
@@ -1411,7 +1407,7 @@
                                                     
                                                     
                                                     <td>${order.space_assigned || 'N/A'}</td>
-                                                    <td>${calculateSplitTime(order)}</td>
+                                                    <td>${formatDate(order.created_at)}</td>
                                                     <td>
                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                                             onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
@@ -1425,12 +1421,10 @@
                                                         <tr>
 
                                                             <th scope="row">${index + 1}.${panelIndex + 1}</th>
+
                                                             <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
-                                                            <td>${remainingPanel.order_panel_id || 'N/A'}</td>
                                                             
-                                                            <td>
-                                                                <span class="badge badge-update-text ${getStatusBadgeClass(remainingPanel.status)}">${remainingPanel.status || 'Unknown'}</span>
-                                                            </td>
+                                                            <td>${remainingPanel.panel_title || 'N/A'}</td>
                                                             
                                                             <td>${remainingPanel.inboxes_per_domain || 'N/A'}</td>
                                                             <td>
@@ -1439,7 +1433,6 @@
                                                                 </span>
                                                             </td>
                                                             <td>${remainingPanel.space_assigned || 'N/A'}</td>
-                                                            <td>${calculateSplitTime(remainingPanel)}</td>
                                                             <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
                                                             <td>
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
@@ -1671,45 +1664,45 @@
 
 
   // timer calculator split 
-    function calculateSplitTime(split) {
-    const order_panel = split.order_panel_data;
-    if (!order_panel || !order_panel.timer_started_at) {
-        return "00:00:00";
-    }
+//     function calculateSplitTime(split) {
+//     const order_panel = split.order_panel_data;
+//     if (!order_panel || !order_panel.timer_started_at) {
+//         return "00:00:00";
+//     }
 
-    const start = parseUTCDateTime(order_panel.timer_started_at);
-    if (!start || isNaN(start.getTime())) {
-        return "00:00:00";
-    }
+//     const start = parseUTCDateTime(order_panel.timer_started_at);
+//     if (!start || isNaN(start.getTime())) {
+//         return "00:00:00";
+//     }
 
-  let end;
-  let statusLabel = "";
+//   let end;
+//   let statusLabel = "";
 
-  if (order_panel.status === "completed" && order_panel.completed_at) {
-    end = parseUTCDateTime(order_panel.completed_at);
-    if (!end || isNaN(end.getTime())) {
-      return "00:00:00";
-    }
-    statusLabel = "completed in";
-  } else if (order_panel.status === "in-progress") {
-    end = new Date();
-    statusLabel = "in-progress";
-  } else {
-    return "00:00:00";
-  }
+//   if (order_panel.status === "completed" && order_panel.completed_at) {
+//     end = parseUTCDateTime(order_panel.completed_at);
+//     if (!end || isNaN(end.getTime())) {
+//       return "00:00:00";
+//     }
+//     statusLabel = "completed in";
+//   } else if (order_panel.status === "in-progress") {
+//     end = new Date();
+//     statusLabel = "in-progress";
+//   } else {
+//     return "00:00:00";
+//   }
 
-  const diffMs = end - start;
-  if (diffMs <= 0) return `${statusLabel} 00:00:00`;
+//   const diffMs = end - start;
+//   if (diffMs <= 0) return `${statusLabel} 00:00:00`;
 
-  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+//   const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+//   const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+//   const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
+//   const pad = (n) => (n < 10 ? "0" + n : n);
+//   const formattedTime = `${pad(diffHrs)}:${pad(diffMins)}:${pad(diffSecs)}`;
 
-  return `${formattedTime}`;
-}
+//   return `${formattedTime}`;
+// }
 
 
 
@@ -1815,10 +1808,10 @@
         function getStatusBadgeClass(status) {
             switch(status) {
                 case 'completed': return 'bg-success';
-                case 'unallocated': return 'bg-warning text-dark';
-                case 'allocated': return 'bg-info';
-                case 'rejected': return 'bg-danger';
+                case 'pending': return 'bg-warning text-dark';
+                case 'reject': return 'bg-danger';
                 case 'in-progress': return 'bg-primary';
+                case 'cancelled': return 'bg-danger';
                 default: return 'bg-secondary';
             }
         }

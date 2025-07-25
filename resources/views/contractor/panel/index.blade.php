@@ -357,7 +357,7 @@
                 <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
-                    <i class="fas fa-ban me-1"></i>reject orders
+                    reject orders
                 </button>
             </li>
         </ul>
@@ -955,7 +955,10 @@
                         <h6 class="mb-0">
                             Total Inboxes : <span class="text-white number">${order.total_inboxes || 0}</span>
                         </h6>
-                        <small>Splits : <span class="text-white number">${order.splits_count || 0}</span></small>
+                        <small>
+                            Splits : <span class="text-white number">${order.splits_count || 0}</span>
+                            ${order.rejected_by && order.status === 'reject' ? ` | Rejected by: <span class="text-white number">${order.rejected_by}</span>` : ''}
+                        </small>
                     </div>
 
                     <div class="my-4">
@@ -985,7 +988,13 @@
                                 <small>${formatDate(order.created_at)}</small>
                             </div>
                         </div>
-
+                        ${order.status === 'reject' ? `
+                            <div class="d-flex align-items-center justify-content-center" 
+                                style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
+                                onclick="rejectReasonAlert(${order.rejected_by ? `'${order.rejected_by}'` : 'null'}, '${order.reason || ''}')">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                        ` : `
                         <div class="d-flex align-items-center justify-content-center" 
                              style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
                              onclick="viewOrderSplits(${order.order_id})" 
@@ -993,6 +1002,7 @@
                              data-bs-target="#order-splits-view">
                             <i class="fa-solid fa-chevron-right"></i>
                         </div>
+                        `}
                     </div>
                 </div>
             `;
@@ -1133,7 +1143,19 @@
                 spinner.style.display = show ? 'inline-block' : 'none';
             }
         }
-
+        // rejectReasonAlert swal alert for rejected orders
+        function rejectReasonAlert(rejectedBy, reason) {
+            const title = rejectedBy ? `Rejected by: ${rejectedBy}` : 'Order Rejected';
+            Swal.fire({
+                title: title,
+                text: reason || 'No reason provided',
+                icon: 'warning',
+                confirmButtonText: 'Close',
+                customClass: {
+                    confirmButton: 'btn btn-primary'
+                }
+            });
+        }
         // View order splits
         async function viewOrderSplits(orderId) {
             try {
@@ -1161,6 +1183,7 @@
                 }
 
                 const data = await response.json();
+                
                 renderOrderSplits(data);
 
             } catch (error) {
@@ -1242,7 +1265,7 @@
                                 }
                                 
                                 // Add reject button if order is not already rejected or completed
-                                if (orderInfo.status_manage_by_admin !== 'rejected' && orderInfo.status_manage_by_admin !== 'completed') {
+                                if (orderInfo.status_manage_by_admin !== 'reject' && orderInfo.status_manage_by_admin !== 'completed') {
                                     buttonsHtml += `
                                         <button class="btn btn-danger btn-sm px-3 py-2" 
                                                 onclick="rejectOrder(${orderInfo.id})"
@@ -1573,7 +1596,6 @@
 
         // Calculate timer for order (12-hour countdown) with pause functionality
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
-            console.log(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
             const now = new Date();
 
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
@@ -2443,5 +2465,297 @@
                 currentOrderIdForRejection = null;
             }
         });
+    </script>
+
+     
+    <script>
+        // Laravel Echo WebSocket Implementation for Real-time Order Updates
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Echo is available (consistent check using window.Echo)
+            if (typeof window.Echo !== 'undefined') {
+                console.log('🔌 Laravel Echo initialized successfully', window.Echo);
+                console.log('🔍 Echo connector details:', window.Echo.connector);
+                
+                // Test connection status first
+                if (window.Echo.connector && window.Echo.connector.pusher) {
+                    console.log('📡 Pusher connection state:', window.Echo.connector.pusher.connection.state);
+                }
+                
+                // Listen to the 'orders' channel for real-time order updates
+                const ordersChannel = window.Echo.channel('orders');
+                console.log('🎯 Subscribed to orders channel:', ordersChannel);
+                
+                ordersChannel
+                    .listen('.order.created', (e) => {
+                        console.log('🆕 New Order Created:', e);
+                        
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
+                        
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
+                        
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
+                        
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
+                        
+                        // Add small delay to ensure UI clears before loading new data
+                        setTimeout(() => {
+                            // Refresh all tabs to show the new order
+                            loadOrders({}, 1, false, 'in-queue');
+                            // loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ New order loaded successfully...........');
+                        }, 25000);
+                    })
+                    .listen('.order.updated', (e) => {
+                        console.log('🔄 Order Updated:', e);
+                        
+                        const order = e.order || e;
+                        const changes = e.changes || {};
+                        
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
+                        
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
+                        
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
+                        
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
+                        
+                        // Add delay to ensure UI clears before loading new data
+                        setTimeout(() => {
+                            // Refresh all tabs to reflect changes
+                            loadOrders({}, 1, false, 'in-queue');
+                            loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ Order updated successfully 232323...........');
+                        }, 25000);
+                    })
+                    .listen('.order.status.updated', (e) => {
+                        console.log('📊 Order Status Updated:', e);
+                        
+                        const order = e.order || e;
+                        const previousStatus = e.previous_status;
+                        const newStatus = e.status || order.status;
+                        
+                        // // Clear existing UI containers first to ensure fresh display
+                        // const ordersContainer = document.getElementById('ordersContainer');
+                        // const draftsContainer = document.getElementById('draftsContainer');
+                        // const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                        
+                        // if (ordersContainer) ordersContainer.innerHTML = '';
+                        // if (draftsContainer) draftsContainer.innerHTML = '';
+                        // if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                        
+                        // // Reset all data arrays
+                        // orders = [];
+                        // drafts = [];
+                        // rejectedOrders = [];
+                        
+                        // // Reset pagination states before refreshing
+                        // currentPage = 1;
+                        // hasMorePages = true;
+                        // totalOrders = 0;
+                        
+                        // draftsCurrentPage = 1;
+                        // draftsHasMorePages = true;
+                        // totalDraftsOrders = 0;
+                        
+                        // rejectOrdersCurrentPage = 1;
+                        // rejectOrdersHasMorePages = true;
+                        // totalRejectOrders = 0;
+                        
+                        // Add small delay to ensure UI clears before loading new data
+                        setTimeout(() => {
+                            // Refresh all tabs to reflect status changes
+                            loadOrders({}, 1, false, 'in-queue');
+                            loadOrders({}, 1, false, 'in-draft');
+                            // loadOrders({}, 1, false, 'reject-orders');
+                            console.log('✅ Order status updated successfully...........');
+                        }, 25000);
+                    })
+                    .error((error) => {
+                        console.error('❌ Channel subscription error:', error);
+                    });
+                
+                // Connection status monitoring using window.Echo
+                if (window.Echo.connector && window.Echo.connector.pusher) {
+                    window.Echo.connector.pusher.connection.bind('connected', () => {
+                        console.log('✅ WebSocket connected successfully');
+                        
+                        if (typeof toastr !== 'undefined') {
+                            // toastr.success('Real-time updates connected!', 'WebSocket Connected', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
+                        }
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('disconnected', () => {
+                        console.log('❌ WebSocket disconnected');
+                        
+                        // Show reconnection status
+                        if (typeof toastr !== 'undefined') {
+                            // toastr.warning('Real-time updates disconnected. Trying to reconnect...', 'Connection Lost', {
+                            //     timeOut: 3000,
+                            //     closeButton: true
+                            // });
+                        }
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('reconnected', () => {
+                        console.log('🔄 WebSocket reconnected');
+                        
+                        if (typeof toastr !== 'undefined') {
+                            // toastr.success('Real-time updates reconnected!', 'Connection Restored', {
+                            //     timeOut: 2000,
+                            //     closeButton: true
+                            // });
+                        }
+                        
+                        // Refresh data when reconnected
+                        setTimeout(() => {
+                            // Clear existing UI containers first
+                            const ordersContainer = document.getElementById('ordersContainer');
+                            const draftsContainer = document.getElementById('draftsContainer');
+                            const rejectOrdersContainer = document.getElementById('rejectOrdersContainer');
+                            
+                            if (ordersContainer) ordersContainer.innerHTML = '';
+                            if (draftsContainer) draftsContainer.innerHTML = '';
+                            if (rejectOrdersContainer) rejectOrdersContainer.innerHTML = '';
+                            
+                            // Reset all data arrays
+                            orders = [];
+                            drafts = [];
+                            rejectedOrders = [];
+                            
+                            // Reset pagination states
+                            currentPage = 1;
+                            hasMorePages = true;
+                            totalOrders = 0;
+                            
+                            draftsCurrentPage = 1;
+                            draftsHasMorePages = true;
+                            totalDraftsOrders = 0;
+                            
+                            rejectOrdersCurrentPage = 1;
+                            rejectOrdersHasMorePages = true;
+                            totalRejectOrders = 0;
+                            // Add small delay to ensure UI clears
+                            setTimeout(() => {
+                                // Refresh all tabs
+                                loadOrders({}, 1, false, 'in-queue');
+                                // loadOrders({}, 1, false, 'in-draft');
+                                // loadOrders({}, 1, false, 'reject-orders');
+                                console.log('✅ Orders refreshed after reconnection...........');
+                            }, 100);
+                        }, 25000);
+                    });
+                    
+                    // Additional connection state monitoring
+                    window.Echo.connector.pusher.connection.bind('state_change', (states) => {
+                        console.log(`🔄 Connection state changed from ${states.previous} to ${states.current}`);
+                    });
+                    
+                    window.Echo.connector.pusher.connection.bind('error', (error) => {
+                        console.error('❌ WebSocket connection error:', error);
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('WebSocket connection error occurred', 'Connection Error', {
+                                timeOut: 5000,
+                                closeButton: true
+                            });
+                        }
+                    });
+                }
+                
+                console.log('✅ Listening to order events on channel: orders');
+                
+            } else {
+                console.warn('⚠️ Laravel Echo not available. Real-time updates disabled.');
+                
+                // Optional: Show warning that real-time updates are not available
+                setTimeout(() => {
+                    if (typeof toastr !== 'undefined') {
+                        // toastr.warning('Real-time updates are not available. Data will be updated on page refresh.', 'WebSocket Unavailable', {
+                        //     timeOut: 5000,
+                        //     closeButton: true
+                        // });
+                    }
+                }, 2000);
+            }
+        });
+
+        // Alternative implementation if you need to access Echo outside of DOMContentLoaded
+        function initializeOrderWebSocket() {
+            if (typeof window.Echo !== 'undefined') {
+                console.log('🔌 Initializing Laravel Echo for real-time order updates...', window.Echo);
+                
+                // Your WebSocket logic here using window.Echo
+                return window.Echo;
+            } else {
+                console.warn('⚠️ Laravel Echo not initialized yet');
+                return null;
+            }
+        }
+
+        // Function to safely check and use Echo
+        function withEcho(callback) {
+            if (typeof window.Echo !== 'undefined') {
+                return callback(window.Echo);
+            } else {
+                console.warn('⚠️ Laravel Echo not available');
+                return null;
+            }
+        }
+
+        // Example usage:
+        // withEcho((echo) => {
+        //     echo.channel('orders').listen('.order.created', (e) => {
+        //         console.log('Order created:', e);
+        //     });
+        // });
+
+        // Export for potential module usage
+        if (typeof module !== 'undefined' && module.exports) {
+            module.exports = { initializeOrderWebSocket, withEcho };
+        }
+
     </script>
 @endpush

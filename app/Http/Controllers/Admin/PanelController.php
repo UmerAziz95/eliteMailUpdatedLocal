@@ -237,6 +237,7 @@ class PanelController extends Controller
                     'created_at' => $orderPanel->created_at->format('Y-m-d H:i:s'),
                     'accepted_at' => $orderPanel->accepted_at,
                     'released_at' => $orderPanel->released_at,
+                    'order_status'=>$order->status_manage_by_admin ?? 'N/A',
                     // Add comprehensive order information
                     'reorder_info' => $reorderInfo ? [
                         'total_inboxes' => $reorderInfo->total_inboxes,
@@ -703,14 +704,7 @@ class PanelController extends Controller
             
             // Adjust total panels needed based on available panels (same logic as Console Command)
             $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            
-            \Log::info('Counter calculations completed', [
-                'total_orders' => $totalOrders,
-                'total_inboxes' => $totalInboxes,
-                'total_panels_needed_raw' => $totalPanelsNeeded,
-                'available_panel_count' => $availablePanelCount,
-                'panels_required' => $panelsRequired
-            ]);
+            $totalInboxes -= $panelsRequired * $maxSplitCapacity; // Adjust total inboxes based on panels required
 
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
@@ -997,7 +991,7 @@ class PanelController extends Controller
             
             // Adjust total panels needed based on available panels
             $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            
+            $totalInboxes -= $panelsRequired * $maxSplitCapacity;
             return response()->json([
                 'success' => true,
                 'counters' => [

@@ -2365,7 +2365,16 @@ function parseUTCDateTime(dateStr) {
                 });
                 return;
             }
-            
+            // status is reject or cancelled
+            if ((newStatus === 'reject' || newStatus === 'cancelled') && !reason) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Reason',
+                    text: 'Please provide a reason for rejecting or cancelling the order',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
             // Show SweetAlert2 confirmation dialog
             const result = await Swal.fire({
                 title: 'Confirm Status Change',
@@ -2411,7 +2420,7 @@ function parseUTCDateTime(dateStr) {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to update status');
+                    throw new Error(response.message || 'Failed to update status');
                 }
                 
                 const result = await response.json();

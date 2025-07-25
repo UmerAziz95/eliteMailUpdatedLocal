@@ -52,7 +52,7 @@ class OrderQueueController extends Controller
                 // $query->where('assigned_to', $contractorId);
             } else {
                 // In-queue: show unassigned orders that contractor can pick up
-                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject']);
+                $query->whereNotIn('status_manage_by_admin', ['draft', 'reject', 'completed', 'cancelled', 'in-progress']);
                 $query->whereNull('assigned_to');
                 // $query->where('status_manage_by_admin', 'peding');
                 // For queue orders, only include orders that have splits
@@ -133,7 +133,8 @@ class OrderQueueController extends Controller
                     'order_panels_count' => $orderPanels->count(),
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
-                    })
+                    }),
+                    'rejected_by' => $order->rejectedBy->name ?? 'N/A'
                 ];
             });
 
@@ -211,6 +212,7 @@ class OrderQueueController extends Controller
                 'order' => [
                     'id' => $order->id,
                     'status_manage_by_admin' => $order->status_manage_by_admin,
+                    'reason' => $order->reason,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'created_at' => $order->created_at,
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
@@ -265,6 +267,7 @@ class OrderQueueController extends Controller
                     'message' => 'This order is already assigned to another contractor.'
                 ], 400);
             }
+            
             
             // Get all order panels (splits) for this order that are unallocated
             $unallocatedPanels = OrderPanel::where('order_id', $orderId)

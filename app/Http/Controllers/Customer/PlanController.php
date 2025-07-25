@@ -33,7 +33,9 @@ class PlanController extends Controller
     public function index()
     {
         $getMostlyUsed = Plan::getMostlyUsed();
-        $plans = Plan::with('features')->where('is_active', true)->get();
+        $plans = Plan::with('features')->where('is_active', true)->where(function($query) {
+            $query->where('is_discounted', 0)->orWhereNull('is_discounted');
+        })->get();
         return view('customer.pricing.pricing', compact('plans', 'getMostlyUsed'));
     }
 
@@ -167,7 +169,6 @@ class PlanController extends Controller
                 ]);
             }
 
-          
             if(!Auth::check()){
                 $unauthorized_user = session()->get('unauthorized_session');
                 if($unauthorized_user) {
@@ -178,23 +179,9 @@ class PlanController extends Controller
                     }
                 }
             }
-            // dd($unauthorized_user);
-            // if(!Auth::check()){
-            //     $unauthorized_user = session()->get('unauthorized_session');
-            //     $user=User::where('email',$unauthorized_user->email)->first();
-            //     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-            //     $user->password=Hash::make($randomPassword);
-            //     $user->status=1;
-            //     $user->save();
-            //     Auth::login($user);
-            //     session()->forget('unauthorized_session');
-            // try {
-            // Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-            //  } catch (\Exception $e) {
-            //    Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-            //   }
-            // }   
-         
+
+          
+          
             
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
@@ -205,7 +192,6 @@ class PlanController extends Controller
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
             $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
-
             //shipping address
             $firstName = $shippingAddress['first_name'] ?? '';
             $lastName = $shippingAddress['last_name'] ?? '';
@@ -218,6 +204,35 @@ class PlanController extends Controller
             $validationStatus = $shippingAddress['validation_status'] ?? '';
             $plan_id = null;
             $charge_plan_id = null;
+
+
+              if(!Auth::check()){
+              
+                $user = User::where('email', $customer->email)->first();
+                if(!$user){
+                    $user = new User();
+                    $user->email = $customer->email;
+                    $user->name = $customer->firstName.' '. $customer->lastName ?? 'Guest';
+                     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+                     $user->password=Hash::make($randomPassword);
+                        $user->role_id = 3; // Assuming 3 is the role_id for customers
+                        $user->status=1;
+                        $user->billing_address = $line1;
+                        $user->billing_address2 = $line2;
+                        $user->billing_city = $city;
+                        $user->billing_state = $state;
+                        $user->billing_country = $country;
+                        $user->billing_zip = $zip;
+                        $user->save();
+                        Auth::login($user);
+                }  
+            try {
+            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
+             } catch (\Exception $e) {
+               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
+              }
+            }   
+         
 
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
@@ -576,15 +591,14 @@ class PlanController extends Controller
             ]);
         }
     }
-
     public function subscriptionCancelProcess(Request $request)
     {
-        
         if ($request->remove_accounts == null || $request->remove_accounts == false) {
             $request->remove_accounts = 0;
         } else {
             $request->remove_accounts = true;
         }
+        
         $request->validate([
             'chargebee_subscription_id' => 'required|string',
             'reason' => 'required|string',
@@ -603,94 +617,16 @@ class PlanController extends Controller
             ], 404);
         }
 
-        try {
-            $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($request->chargebee_subscription_id, [
-                "end_of_term" => false,
-                "credit_option" => "none",
-                "unbilled_charges_option" => "delete",
-                "account_receivables_handling" => "no_action"
-            ]);
-
-            $subscriptionData = $result->subscription();
-            $invoiceData = $result->invoice();
-            $customerData = $result->customer();
-
-            if ($result->subscription()->status === 'cancelled') {
-                // Update subscription status and end date
-                $subscription->update([
-                    'status' => 'cancelled',
-                    'cancellation_at' => now(),
-                    'reason' => $request->reason,
-                    'end_date' => $this->getEndExpiryDate($subscription->start_date),
-                    'next_billing_date' => null,
-                ]);
-
-                // Update user status
-                $user->update([
-                    'subscription_status' => 'cancelled',
-                    'subscription_id' => null,
-                    'plan_id' => null
-                ]);
-
-                // Update order status
-                $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-                if ($order) {
-                    $order->update([
-                        'status_manage_by_admin' => 'cancelled',
-                    ]);
-                    
-                }
-                // Create a new activity log using the custom log service
-                ActivityLogService::log(
-                    'customer-subscription-cancelled',
-                    'Subscription cancelled successfully: ' . $subscription->id,
-                    $subscription, 
-                    [
-                        'user_id' => auth()->user()->id,
-                        'subscription_id' => $subscription->id,
-                        'status' => $subscription->status,
-                    ]
-                );
-
-                try {
-                    // Send email to user
-                    Mail::to($user->email)
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason
-                        ));
-
-                    // Send email to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new SubscriptionCancellationMail(
-                            $subscription, 
-                            $user, 
-                            $request->reason,
-                            true
-                        ));
-                } catch (\Exception $e) {
-                    // \Log::error('Failed to send subscription cancellation emails: ' . $e->getMessage());
-                    // Continue execution since the subscription was already cancelled
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Subscription cancelled successfully'
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to cancel subscription in payment gateway'
-            ], 500);
-        } catch (\Exception $e) {
-            \Log::error('Error cancelling subscription: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to cancel subscription: ' . $e->getMessage()
-            ], 500);
-        }
+        // Use the OrderCancelledService
+        $subscriptionService = new \App\Services\OrderCancelledService();
+        $result = $subscriptionService->cancelSubscription(
+            $request->chargebee_subscription_id,
+            $user->id,
+            $request->reason,
+            $request->remove_accounts
+        );
+        
+        return response()->json($result);
     }
     // getEndExpiryDate from start Date
     public function getEndExpiryDate($startDate)

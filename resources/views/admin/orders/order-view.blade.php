@@ -48,7 +48,7 @@
                     data-bs-target="#configuration-tab-pane" type="button" role="tab"
                     aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
             </li>
-            <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
                     type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
             </li>

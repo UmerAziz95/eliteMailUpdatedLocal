@@ -27,7 +27,7 @@
             <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Panel {{ $orderPanel->id }}</h5>
             <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <!-- <div class="d-flex align-items-center gap-2">
             <div class="border border-{{ $orderPanel->split_status_color ?? 'secondary' }} rounded-2 py-1 px-2 text-{{ $orderPanel->split_status_color ?? 'secondary' }} bg-transparent">
             {{ ucfirst($orderPanel->status ?? 'Pending') }}
             </div>
@@ -36,7 +36,7 @@
             class="btn btn-outline-success btn-sm py-1 px-2">
             Change Status
             </button>
-        </div>
+        </div> -->
         
     </div>
 
@@ -46,7 +46,7 @@
                 data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
                 aria-selected="true">Configuration</button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" style="display: none;">
             <button class="nav-link fs-6 px-5" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane"
                 type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">Emails</button>
         </li>

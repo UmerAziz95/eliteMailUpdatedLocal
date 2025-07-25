@@ -243,6 +243,8 @@ class DashboardController extends Controller
                         $categories[] = $day->format('D'); // Mon, Tue, etc.
                     }
 
+                    
+
                     // Get revenue data grouped by weekday (MySQL returns 1=Sunday, 2=Monday, etc.)
                     $data = Order::whereBetween('created_at', [$start, $end])
                         ->selectRaw('DAYOFWEEK(created_at) as day, SUM(amount) as total')
@@ -308,6 +310,8 @@ class DashboardController extends Controller
                     $prevDayEnd = $end->copy()->subDay();
                     $prevTotal = Order::whereBetween('created_at', [$prevDayStart, $prevDayEnd])->sum('amount');
                     
+
+
                     // Calculate growth percentage
                     if ($prevTotal > 0) {
                         $growth = round((($total - $prevTotal) / $prevTotal) * 100, 1);

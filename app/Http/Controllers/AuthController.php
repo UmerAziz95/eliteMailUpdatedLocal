@@ -558,8 +558,10 @@ public function sendResetLink(Request $request)
             }
          
             $getMostlyUsed = Plan::getMostlyUsed();
-            $plans = Plan::with('features')->where('is_active', true)->get();
-          
+            $plans = Plan::with('features')->where('is_active', true)->where(function($query) {
+                $query->where('is_discounted', 0)->orWhereNull('is_discounted');
+            })->get();
+
             $publicPage=true;
             return view('customer.public_outside.plans', compact('plans', 'getMostlyUsed','publicPage','encrypted'));
         } 

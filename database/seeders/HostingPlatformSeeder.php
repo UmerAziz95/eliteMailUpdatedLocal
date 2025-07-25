@@ -20,8 +20,8 @@ class HostingPlatformSeeder extends Seeder
                         'label' => 'Domain Hosting Platform - Namecheap - Access Tutorial',
                         'type' => 'select',
                         'options' => [
+                            'yes' => "Yes - I reviewed the tutorial and am submitting the access information in requested format.",
                             'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
-                            'yes' => "Yes - I reviewed the tutorial and am submitting the access information in requested format."
                         ],
                         'required' => true
                     ],
@@ -53,8 +53,8 @@ class HostingPlatformSeeder extends Seeder
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
                         'type' => 'select',
                         'options' => [
+                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@premiuminboxes.com and entered my GoDaddy Account Name (NOT email) below.",
                             'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
-                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@premiuminboxes.com and entered my GoDaddy Account Name (NOT email) below."
                         ],
                         'required' => true
                     ],
@@ -86,8 +86,8 @@ class HostingPlatformSeeder extends Seeder
                         'label' => 'Domain Hosting Platform - Porkbun - Access Tutorial',
                         'type' => 'select',
                         'options' => [
+                            'yes' => "Yes - I disabled all 3 2FAs AND the 'Unrecognized Device 2FA'",
                             'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
-                            'yes' => "Yes - I disabled all 3 2FAs AND the 'Unrecognized Device 2FA'"
                         ],
                         'required' => true
                     ],

@@ -15,11 +15,11 @@ class SubscriptionController extends Controller
         if ($request->ajax()) {
             $oneMonthAgo = Carbon::now()->subMonth()->startOfMonth(); // 2025-03-01 00:00:00
         $today = Carbon::today(); // 2025-04-26 00:00:00
-
+        
         $subscriptions = Subscription::with(['user', 'plan', 'order'])
             ->where('status', 'active')
             ->whereHas('order', function ($query) use ($oneMonthAgo, $today) {
-                $query->whereBetween('paid_at', [$oneMonthAgo, $today]);
+                // $query->whereBetween('paid_at', [$oneMonthAgo, $today]);
             })
             ->orderBy('created_at', 'asc');
     

@@ -32,6 +32,8 @@ class FeatureController extends Controller
             'is_active' => 'required|in:true,false,0,1'
         ]);
 
+        
+
         $feature = Feature::create([
             'title' => $request->title,
             'value' => $request->value,

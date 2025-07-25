@@ -52,6 +52,14 @@ class SidebarNavigationSeeder extends Seeder
                 'permission' => 'Invoices',
                 'sub_menu' => []
             ],
+            // My orders
+            [
+                'name' => 'My Orders',
+                'icon' => 'ti ti-shopping-cart fs-5',
+                'route' => 'admin.orderQueue.my_orders',
+                'permission' => 'Orders',
+                'sub_menu' => []
+            ],
             [
                 'name' => 'Orders',
                 'icon' => 'ti ti-box fs-5',
@@ -105,14 +113,7 @@ class SidebarNavigationSeeder extends Seeder
                 ]
 
             ],
-            // My orders
-            [
-                'name' => 'My Orders',
-                'icon' => 'ti ti-shopping-cart fs-5',
-                'route' => 'admin.orderQueue.my_orders',
-                'permission' => 'Orders',
-                'sub_menu' => []
-            ],
+           
             
             [
                 'name' => 'Plans',
@@ -141,9 +142,24 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.system.config",
                         "permission" => "Settings",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Discord Settings",
+                        "icon" => "ti ti-file-invoice fs-5",
+                        "route" => "admin.discord.settings",
+                        "permission" => "Discord Settings",
+                        'sub_menu' => []
             ]
+            // [
+            //             "name" => "Coupons",
+            //             "icon" => "ti ti-file-invoice fs-5",
+            //             "route" => "admin.coupons.index",
+            //             "permission" => "Coupons",
+            //             'sub_menu' => []
+            // ]
         ];
-
+        // sidebar_navigations delete all existing records
+        DB::table('sidebar_navigations')->truncate();
         foreach ($navs as $nav) {
             // Insert or update permission (prevent duplicates)
             DB::table('permissions')->updateOrInsert(
@@ -184,5 +200,7 @@ class SidebarNavigationSeeder extends Seeder
             ]
         );
        }
+
+         $this->call(AssignRoleSeeder::class);
       } 
 }  

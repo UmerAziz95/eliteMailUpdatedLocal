@@ -118,6 +118,11 @@ class AdminController extends Controller
             ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
             ->sum('reorder_infos.total_inboxes');
 
+        // get completed orders total inboxes
+        $completedOrdersTotalInboxes = \App\Models\Order::where('status_manage_by_admin', 'completed')
+            ->join('reorder_infos', 'orders.id', '=', 'reorder_infos.order_id')
+            ->sum('reorder_infos.total_inboxes');
+
         // Get recent orders with their status from status_manage_by_admin column
         $recentOrders = \App\Models\Order::with(['plan','reorderInfo','user'])->latest()
             ->take(3)
@@ -136,6 +141,7 @@ class AdminController extends Controller
             'totalCustomers',
             'totalContractors', 
             'totalInboxesSold',
+            'completedOrdersTotalInboxes',
             'recentOrders'
         ));
     }
