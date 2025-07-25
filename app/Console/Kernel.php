@@ -33,6 +33,13 @@ class Kernel extends ConsoleKernel
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
+        // Order countdown notifications every 5 minutes
+        $schedule->command('orders:countdown-notifications')
+                ->everyFiveMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
         // ⏰ Daily database backup at 3:00 AM (USA time)
         $schedule->command('backup:daily')
                 ->dailyAt('03:00')

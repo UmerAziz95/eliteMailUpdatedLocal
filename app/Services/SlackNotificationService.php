@@ -643,6 +643,7 @@ class SlackNotificationService
             'order-completion' => ':white_check_mark:',
             'order-assignment' => ':bust_in_silhouette:',
             'order-cancellation' => ':x:',
+            'order-countdown' => ':alarm_clock:',
         ];
         
         return $emojis[$type] ?? ':bell:';
