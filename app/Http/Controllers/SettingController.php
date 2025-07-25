@@ -22,6 +22,7 @@ class SettingController extends Controller
 
 public function saveDiscordSettings(Request $request)
 {
+   
     $request->validate([
         'cron_message' => 'required',
     ]);

@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Plan;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
-use App\Models\DiscordSettingS;
+use App\Models\DiscordSettings;
 
 class DiscountedPlanController extends Controller
 {
@@ -14,7 +14,7 @@ class DiscountedPlanController extends Controller
    public function index($id = null)
 {
     if ($id !== null) {
-        $setting = DiscordSettingS::where('url_string', $id)->first();
+        $setting = DiscordSettings::where('url_string', $id)->first();
 
         if (!$setting) {
             abort(404, 'Invalid or expired discount link.');
