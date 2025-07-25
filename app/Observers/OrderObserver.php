@@ -213,7 +213,12 @@ class OrderObserver
                         ],
                         Auth::id() ?? 1 // Performed By - fallback to admin if no auth
                     );
-
+                    // Send Slack notification if order is assigned
+                    SlackNotificationService::sendOrderAssignmentNotification($order, $newAssignedTo);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order assignment', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo
+                    ]);
                     \Log::info('OrderObserver: Order assignment notification created successfully', [
                         'order_id' => $order->id,
                         'assigned_to' => $newAssignedTo

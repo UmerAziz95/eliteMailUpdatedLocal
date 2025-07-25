@@ -207,6 +207,52 @@ class SlackNotificationService
     }
 
     /**
+     * Send order assignment notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendOrderAssignmentNotification($order)
+    {
+        // Calculate inbox count and split count
+        $inboxCount = 0;
+        $splitCount = 0;
+        
+        if ($order->orderPanels && $order->orderPanels->count() > 0) {
+            foreach ($order->orderPanels as $orderPanel) {
+                $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains && is_array($split->domains)) {
+                        $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                    }
+                }
+            }
+        }
+        
+        // If no splits found, try to get from reorderInfo
+        if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+            $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+        }
+
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+            'contractor_email' => $order->assignedTo ? $order->assignedTo->email : 'N/A',
+            'inbox_count' => $inboxCount,
+            'split_count' => $splitCount,
+            'assigned_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-assignment', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send inbox cancellation notification to Slack
      *
      * @param \App\Models\Order $order
@@ -442,7 +488,69 @@ class SlackNotificationService
                     ]
                 ];
                 
-
+            case 'order-assignment':
+                return [
+                    'text' => "👤 *Order Assignment Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#007bff',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order Name',
+                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned To',
+                                    'value' => $data['contractor_name'] ?? 'Unassigned',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Contractor Email',
+                                    'value' => $data['contractor_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Split Count',
+                                    'value' => $data['split_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned By',
+                                    'value' => $data['assigned_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
 
             case 'order-cancellation':
                 return [
@@ -533,6 +641,7 @@ class SlackNotificationService
             'new-order-available' => ':new:',
             'order-rejection' => ':no_entry_sign:',
             'order-completion' => ':white_check_mark:',
+            'order-assignment' => ':bust_in_silhouette:',
             'order-cancellation' => ':x:',
         ];
         
