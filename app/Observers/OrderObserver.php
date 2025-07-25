@@ -47,7 +47,7 @@ class OrderObserver
         if (isset($changes['status_manage_by_admin'])) {
             $previousStatus = $order->getOriginal('status_manage_by_admin');
             $newStatus = $order->status_manage_by_admin;
-            $reason = $order->reason ?? null;
+            $reason = $order->reason ?? $order->subscription->reason ?? null;
             
             \Log::info('OrderObserver: Status change detected', [
                 'order_id' => $order->id,
