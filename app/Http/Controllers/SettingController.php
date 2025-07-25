@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\DiscordSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
-
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SettingController extends Controller
 {
@@ -20,6 +22,7 @@ class SettingController extends Controller
 
 public function saveDiscordSettings(Request $request)
 {
+   
     $request->validate([
         'cron_message' => 'required',
     ]);
@@ -46,35 +49,45 @@ public function saveDiscordSettings(Request $request)
 
 public function sendDiscordMessage(Request $request)
 {
-    $request->validate([
-        'message' => 'required|string|max:2000',
-    ]);
+        $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
 
-    $webhookUrl = 'https://discord.com/api/webhooks/1397108980245073942/0woNwztt1BXW7jwq6u2mGWBbrMZFqbcvfiOSULUBkSJsmF-wRlKzkYEf1x_MFSEYYNUF';
-    // $webhookUrl = 'https://discord.com/api/webhooks/1393571644597080205/BomZ2K7u84JZZPOdNBZiqVdSlhtUxCBokuXiGNfK4yJwwKDyTuubrHQqqmnIt0g3Hnd6';
+        $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+        $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
 
     try {
-        // Generate full URL to /plans/discounted
-        $link = URL::to('/plans/discounted');
+         $uuid = (string) Str::uuid();
 
-        // Combine message and link
-        $fullMessage = $request->input('message') . "\n" . $link;
+                // 2. Build the embedded URL
+                $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
 
-        // Send to Discord webhook
-        Http::post($webhookUrl, [
-            'content' => $fullMessage,
-        ]);
+                // 3. Update the database
+                $settings->url_string = $uuid;
+                $settings->embedded_url = $embeddedUrl;
+                $settings->save();
 
-        return response()->json([
-            "status" => "success",
-            "message" => "Message sent successfully to Discord."
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            "status" => "error",
-            "message" => "Failed to send message to Discord: " . $e->getMessage()
-        ]);
-    }
+                // 4. Use in your message
+                $cronMessage = $request->input('message') ?? '🔥 Don’t miss your chance to upgrade at a reduced price.
+                    💡 Supercharge your email & inbox productivity with AI today.
+                    👉 Click the link below to grab the offer now:';
+                $fullMessage = $cronMessage . "\n" . $embeddedUrl;
+
+                Http::post($webhookUrl, [
+                    'content' => $fullMessage,
+                ]);
+
+
+                return response()->json([
+                    "status" => "success",
+                    "message" => "Message sent successfully to Discord."
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "Failed to send message to Discord: " . $e->getMessage()
+                ]);
+            }
 }
 
 
@@ -102,6 +115,92 @@ public function getCronSettings()
         'cron_start' => $settings->cron_start_from ?? null,
         'cron_occurrence' => $settings->cron_occurrence ?? null,
     ]);
+}
+
+
+public static function discorSendMessageCron()
+{
+    Log::info('✅ discorSendMessageCron method triggered.');
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+
+    if (!$settings || !$settings->discord_message_cron) {
+        return false;
+    }
+
+    $cronMessage     = $settings->setting_value ?? "🔥 Don’t miss your chance to upgrade at a reduced price.";
+    $cronStart       = $settings->cron_start_from ?? null; // '2025-07-24 08:25:00' UTC
+    $cronOccurrence  = $settings->cron_occurrence ?? null; // 'daily', 'weekly', 'monthly'
+    $lastRun         = $settings->last_run_at ?? null;     // Optional: last run timestamp (add to your DB if needed)
+
+    if (!$cronMessage || !$cronStart || !$cronOccurrence) {
+        return false;
+    }
+
+    // Convert cronStart string to Carbon instance (assumed UTC)
+    $nowUtc = now()->setTimezone('UTC');
+    $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
+
+    // Skip if it's not time yet
+    if ($nowUtc->lt($startAt)) {
+        return false;
+    }
+
+    // Optional: avoid duplicate sends — skip if already sent today/this week/month
+    if ($lastRun) {
+        $lastRunAt = Carbon::parse($lastRun, 'UTC');
+
+        $shouldSkip = match ($cronOccurrence) {
+            'daily'   => $lastRunAt->isToday(),
+            'weekly'  => $lastRunAt->diffInDays($nowUtc) < 7,
+            'monthly' => $lastRunAt->month === $nowUtc->month && $lastRunAt->year === $nowUtc->year,
+            default   => true,
+        };
+
+        if ($shouldSkip) {
+            return false;
+        }
+    }
+
+    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    try {
+       // 1. Generate UUID
+            $uuid = (string) Str::uuid();
+
+            // 2. Build the embedded URL
+            $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
+
+            // 3. Update the database
+            $settings->url_string = $uuid;
+            $settings->embedded_url = $embeddedUrl;
+            $settings->save();
+
+                // 4. Use in your message
+                $cronMessage = $settings->cron_message ?? 'No message set.';
+                $fullMessage = $cronMessage . "\n" . $embeddedUrl;
+
+                Http::post($webhookUrl, [
+                    'content' => $fullMessage,
+                ]);
+
+        // Save last run time to avoid duplicates (if DB has such a column)
+                $settings->last_run_at = $nowUtc;
+                $settings->save();
+
+                Log::info('Discord message sent.', [
+                    'message' => $fullMessage,
+                    'cron_start' => $cronStart,
+                    'occurrence' => $cronOccurrence,
+                    'run_at' => $nowUtc,
+                ]);
+
+                return response()->json([
+                    'message' => 'Discord message sent.',
+                    'at' => $nowUtc->toDateTimeString()
+                ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to send Discord message: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to send message.'], 500);
+    }
 }
 
 } 

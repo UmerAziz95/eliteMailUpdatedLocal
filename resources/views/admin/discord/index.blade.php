@@ -116,10 +116,10 @@
                                     <div id="cronFields">
                                         {{-- Plan Link (readonly with base URL) --}}
                                         <div class="mb-3">
-                                            <label for="planLink" class="form-label">Plan Page Link (will be
-                                                automatically append in the message automatically)</label>
+                                            <label for="planLink" class="form-label">Plan Page Base Link (will be
+                                                automatically append in the message)</label>
                                             <input type="text" class="form-control" id="planLink" name="planLink"
-                                                readonly value="{{ url('/plans/discounted') }}">
+                                                readonly value="{{ url('/').'/plans/'.'{UUID}'.'/discounted' }}">
                                         </div>
 
                                         {{-- Message Textarea --}}
@@ -454,17 +454,24 @@
                     // Set switch state and message
                     cronSwitch.checked = isEnabled;
                     cronMessageInput.value = isEnabled ? (data.cron_message || '') : '';
-                     cron_start.value = data.cron_start || '';
                     cron_occurrence.value = data.cron_occurrence || 'daily';
-                    // Update button visibility
+                   if (data.cron_start) {
+                        const utcDate = new Date(data.cron_start + 'Z'); // Force UTC interpretation
+                        const localDateTime = utcDate.toISOString().slice(0, 16); // Still in UTC
+                        const offset = utcDate.getTimezoneOffset();
+                        const localDate = new Date(utcDate.getTime() - offset * 60000);
+                        cron_start.value = localDate.toISOString().slice(0, 16); // Format to yyyy-MM-ddTHH:mm
+                    } else {
+                        cron_start.value = '';
+                    }
                     toggleButtons();
                 })
                 .catch(err => {
                     console.error("Failed to fetch initial settings:", err);
                 });
 
-        function toggleButtons() {
-    const isEnabled = cronSwitch.checked;
+function toggleButtons() {
+          const isEnabled = cronSwitch.checked;
 
     if (isEnabled) {
         saveCronBtn.style.display = 'inline-block';
@@ -508,39 +515,53 @@
 }
 
 
-            cronSwitch.addEventListener('change', toggleButtons);
+cronSwitch.addEventListener('change', toggleButtons);
 
             // Handle Save Cron Settings
-            $('#saveCronBtn').on('click', function () {
-             const data = {
-                enable_cron: $('#cronSwitch').is(':checked') ? 1 : 0,
-                plan_link: $('#planLink').val(),
-                cron_message: $('#cronMessage').val(),
-                cron_start: $('#cronStart').val(),
-                cron_occurrence: $('#cronOccurrence').val(),
-                _token: '{{ csrf_token() }}'
-            }; 
+ $('#saveCronBtn').on('click', function () {
+    const cronStartInput = $('#cronStart').val(); // "2025-07-24T13:25"
 
-                $.post("{{ route('admin.discord.settings.save') }}", data)
-                    .done(function (response) {
-                        toastr.success(response.message || 'Cron settings saved successfully!');
+    const localDate = new Date(cronStartInput); // Treated as local time
 
-                        // ✅ Set values back from the saved response
-                        if (response.data) {
-                            $('#cronMessage').val(response.data.setting_value || '');
-                            $('#cronSwitch').prop('checked', response.data.discord_message_cron ? true : false);
-                        }
-                    })
-                    .fail(function (err) {
-                        if (err.responseJSON?.errors) {
-                            $.each(err.responseJSON.errors, function (field, messages) {
-                                messages.forEach(msg => toastr.error(msg));
-                            });
-                        } else {
-                            toastr.error(err.responseJSON?.message || 'An error occurred.');
-                        }
-                    });
-            });
+    // Get UTC components
+    const year = localDate.getUTCFullYear();
+    const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getUTCDate()).padStart(2, '0');
+    const hours = String(localDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getUTCSeconds()).padStart(2, '0');
+
+    // Format as "YYYY-MM-DD HH:MM:SS" in UTC
+    const cronStartUTC = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    const data = {
+        enable_cron: $('#cronSwitch').is(':checked') ? 1 : 0,
+        plan_link: $('#planLink').val(),
+        cron_message: $('#cronMessage').val(),
+        cron_start: cronStartUTC,
+        cron_occurrence: $('#cronOccurrence').val(),
+        _token: '{{ csrf_token() }}'
+    };
+
+    $.post("{{ route('admin.discord.settings.save') }}", data)
+        .done(function (response) {
+            toastr.success(response.message || 'Cron settings saved successfully!');
+            if (response.data) {
+                $('#cronMessage').val(response.data.setting_value || '');
+                $('#cronSwitch').prop('checked', response.data.discord_message_cron ? true : false);
+            }
+        })
+        .fail(function (err) {
+            if (err.responseJSON?.errors) {
+                $.each(err.responseJSON.errors, function (field, messages) {
+                    messages.forEach(msg => toastr.error(msg));
+                });
+            } else {
+                toastr.error(err.responseJSON?.message || 'An error occurred.');
+            }
+        });
+});
+
 
 
             // Handle Send to Discord
