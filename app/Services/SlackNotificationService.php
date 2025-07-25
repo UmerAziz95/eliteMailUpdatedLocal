@@ -15,7 +15,7 @@ class SlackNotificationService
      * @param array $data
      * @return bool
      */
-    public static function send(string $type, array $data = []): bool
+    public static function send(string $type, $message): bool
     {
         try {
             // Get the webhook settings for this type
@@ -28,15 +28,24 @@ class SlackNotificationService
                 return false;
             }
             
-            // Prepare the message based on type
-            $message = self::formatMessage($type, $data);
+            // Prepare payload based on message type
+            $payload = [];
+            if (is_array($message)) {
+                // If message is an array (structured message), use it directly
+                $payload = $message;
+                $payload['username'] = config('app.name', 'ProjectInbox');
+                $payload['icon_emoji'] = self::getEmojiForType($type);
+            } else {
+                // If message is a string, use simple format
+                $payload = [
+                    'text' => $message,
+                    'username' => config('app.name', 'ProjectInbox'),
+                    'icon_emoji' => self::getEmojiForType($type)
+                ];
+            }
             
             // Send to Slack
-            $response = Http::post($setting->url, [
-                'text' => $message,
-                'username' => config('app.name', 'ProjectInbox'),
-                'icon_emoji' => self::getEmojiForType($type)
-            ]);
+            $response = Http::post($setting->url, $payload);
             
             if ($response->successful()) {
                 Log::info("Slack notification sent successfully for type: {$type}");
@@ -54,7 +63,7 @@ class SlackNotificationService
 
 
     /**
-     * Send order cancellation notification to Slack
+     * Send inbox cancellation notification to Slack
      *
      * @param \App\Models\Order $order
      * @param string|null $reason
@@ -63,13 +72,60 @@ class SlackNotificationService
     public static function sendOrderCancellationNotification($order, $reason = null)
     {
         $data = [
-            'order_id' => $order->id,
+            'inbox_id' => $order->id,
+            'order_id' => $order->id, // Keep for backward compatibility
             'customer_name' => $order->user ? $order->user->name : 'Unknown',
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
-            'reason' => $reason ?: 'No reason provided'
+            'reason' => $reason ?: 'No reason provided',
+            'cancelled_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+        // Prepare the message based on type
+        $message = self::formatMessage('inbox-cancellation', $data);
+        return self::send('inbox-cancellation', $message);
+    }
+
+    /**
+     * Send inbox setup notification to Slack
+     *
+     * @param array $inboxData
+     * @return bool
+     */
+    public static function sendInboxSetupNotification($inboxData)
+    {
+        $data = [
+            'inbox_id' => $inboxData['id'] ?? 'N/A',
+            'inbox_name' => $inboxData['name'] ?? 'N/A',
+            'customer_name' => $inboxData['customer_name'] ?? 'Unknown',
+            'customer_email' => $inboxData['customer_email'] ?? 'Unknown',
+            'setup_by' => auth()->user() ? auth()->user()->name : 'System'
         ];
 
-        return self::send('inbox-cancellation', $data);
+        // Prepare the message based on type
+        $message = self::formatMessage('inbox-setup', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send inbox admin update notification to Slack
+     *
+     * @param array $inboxData
+     * @param string $action
+     * @return bool
+     */
+    public static function sendInboxAdminNotification($inboxData, $action = 'Updated')
+    {
+        $data = [
+            'inbox_id' => $inboxData['inbox_id'] ?? 'N/A',
+            'inbox_name' => $inboxData['inbox_name'] ?? 'N/A',
+            'action' => $action,
+            'admin_name' => $inboxData['admin_name'] ?? 'N/A',
+            'admin_email' => $inboxData['admin_email'] ?? 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('inbox-admins', $data);
+        return self::send('inbox-admins', $message);
     }
     
     /**
@@ -77,63 +133,178 @@ class SlackNotificationService
      *
      * @param string $type
      * @param array $data
-     * @return string
+     * @return array
      */
-    private static function formatMessage(string $type, array $data): string
+    private static function formatMessage(string $type, array $data): array
     {
-        $baseUrl = config('app.url');
+        $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
-            case 'order-cancelled':
-                return "🚫 *Order Cancelled*\n" .
-                       "Order ID: {$data['order_id']}\n" .
-                       "Customer: {$data['customer_name']}\n" .
-                       "Reason: {$data['reason']}\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
-            case 'panel-created':
-                return "🆕 *New Panel Created*\n" .
-                       "Panel ID: {$data['panel_id']}\n" .
-                       "Name: {$data['panel_name']}\n" .
-                       "Capacity: {$data['capacity']}\n" .
-                       "Created by: {$data['created_by']}\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
-            case 'order-created':
-                return "📦 *New Order Created*\n" .
-                       "Order ID: {$data['order_id']}\n" .
-                       "Customer: {$data['customer_name']}\n" .
-                       "Plan: {$data['plan_name']}\n" .
-                       "Amount: $" . number_format($data['amount'], 2) . "\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
-            case 'order-updated':
-                return "📝 *Order Updated*\n" .
-                       "Order ID: {$data['order_id']}\n" .
-                       "Status: {$data['status']}\n" .
-                       "Updated by: {$data['updated_by']}\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
-            case 'user-registered':
-                return "👤 *New User Registered*\n" .
-                       "Name: {$data['user_name']}\n" .
-                       "Email: {$data['user_email']}\n" .
-                       "Role: {$data['role']}\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
-            case 'invoice-generated':
-                return "🧾 *Invoice Generated*\n" .
-                       "Invoice ID: {$data['invoice_id']}\n" .
-                       "Customer: {$data['customer_name']}\n" .
-                       "Amount: $" . number_format($data['amount'], 2) . "\n" .
-                       "Due Date: {$data['due_date']}\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
-                       
+            case 'inbox-setup':
+                return [
+                    'text' => "📥 *Inbox Setup Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => [
+                                [
+                                    'title' => 'Inbox ID',
+                                    'value' => $data['inbox_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Name',
+                                    'value' => $data['inbox_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Setup By',
+                                    'value' => $data['setup_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
+            case 'inbox-cancellation':
+                return [
+                    'text' => "❌ *Inbox Cancellation Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Inbox ID',
+                                    'value' => $data['inbox_id'] ?? $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Cancelled By',
+                                    'value' => $data['cancelled_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Reason',
+                                    'value' => $data['reason'] ?? 'No reason provided',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
+            case 'inbox-admins':
+                return [
+                    'text' => "👥 *Inbox Admin Update Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#007bff',
+                            'fields' => [
+                                [
+                                    'title' => 'Inbox ID',
+                                    'value' => $data['inbox_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Name',
+                                    'value' => $data['inbox_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Action',
+                                    'value' => $data['action'] ?? 'Updated',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Admin',
+                                    'value' => $data['admin_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Admin Email',
+                                    'value' => $data['admin_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated By',
+                                    'value' => $data['updated_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
             default:
-                return "🔔 *Notification*\n" .
-                       "Type: {$type}\n" .
-                       "Data: " . json_encode($data) . "\n" .
-                       "Time: " . now()->format('Y-m-d H:i:s');
+                return [
+                    'text' => "🔔 *Notification*",
+                    'attachments' => [
+                        [
+                            'color' => '#6c757d',
+                            'fields' => [
+                                [
+                                    'title' => 'Type',
+                                    'value' => $type,
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Data',
+                                    'value' => json_encode($data),
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Timestamp',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
         }
     }
     
@@ -146,12 +317,9 @@ class SlackNotificationService
     private static function getEmojiForType(string $type): string
     {
         $emojis = [
-            'order-cancelled' => ':x:',
-            'panel-created' => ':new:',
-            'order-created' => ':package:',
-            'order-updated' => ':memo:',
-            'user-registered' => ':bust_in_silhouette:',
-            'invoice-generated' => ':receipt:'
+            'inbox-setup' => ':inbox_tray:',
+            'inbox-cancellation' => ':x:',
+            'inbox-admins' => ':busts_in_silhouette:'
         ];
         
         return $emojis[$type] ?? ':bell:';
