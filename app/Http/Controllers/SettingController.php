@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
+use App\Models\ShortEncryptedLink;
 
 class SettingController extends Controller
 {
@@ -50,50 +51,42 @@ public function saveDiscordSettings(Request $request)
 
 public function sendDiscordMessage(Request $request)
 {
-        $request->validate([
-            'message' => 'required|string|max:2000',
-        ]);
+    $request->validate([
+        'message' => 'required|string|max:2000',
+    ]);
 
-        $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
-        $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    $uuid = (string) Str::uuid();
 
-       try {
-         $uuid = (string) Str::uuid();
+    // Create your actual target URL
+    $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+    $settings->url_string = $uuid;
+    $settings->embedded_url = $embeddedUrl;
+    $settings->save();
+    // Encrypt the long URL and store it in DB
+    $encrypted = Crypt::encryptString($embeddedUrl);
+    $short = Str::random(20); // shorter than UUID
 
-                // 2. Build the embedded URL
-                $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
-                
+    ShortEncryptedLink::create([
+        'slug' => $short,
+        'encrypted_url' => $encrypted,
+    ]);
 
-                // 3. Update the database
-                $settings->url_string = $uuid;
-                $settings->embedded_url = $embeddedUrl;
-                $settings->save();
+    // Now send short URL like /go/abc12345
+    $shortUrl = URL::to('/go/' . $short);
 
-                // 4. Use in your message
-                
-                 $encrypted = Crypt::encryptString($embeddedUrl);
-                 $redirectUrl = URL::to('/go?encrypted=' . Crypt::encryptString($embeddedUrl));
-                
-                  $cronMessage = $request->input('message') ?? '🔥 Don’t miss your chance to upgrade at a reduced price.
-                    💡 Supercharge your email & inbox productivity with AI today.
-                    👉 Click the link below to grab the offer now:';
-                $fullMessage = $cronMessage . "\n" .  $redirectUrl;
+    $cronMessage = $request->input('message');
+    $fullMessage = $cronMessage . "\n" . $shortUrl;
 
-                Http::post($webhookUrl, [
-                    'content' => $fullMessage,
-                ]);
+    Http::post($webhookUrl, [
+        'content' => $fullMessage,
+    ]);
 
-
-                return response()->json([
-                    "status" => "success",
-                    "message" => "Message sent successfully to Discord."
-                ]);
-        } catch (\Exception $e) {
-                return response()->json([
-                    "status" => "error",
-                    "message" => "Failed to send message to Discord: " . $e->getMessage()
-                ]);
-            }
+    return response()->json([
+        "status" => "success",
+        "message" => "Message sent successfully to Discord.",
+    ]);
 }
 
 
@@ -146,7 +139,7 @@ public static function discorSendMessageCron()
     $nowUtc = now()->setTimezone('UTC');
     $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
 
-    // Skip if it's not time yet
+    // // Skip if it's not time yet
     if ($nowUtc->lt($startAt)) {
         return false;
     }
@@ -167,28 +160,36 @@ public static function discorSendMessageCron()
         }
     }
 
-    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
     try {
-       // 1. Generate UUID
-            $uuid = (string) Str::uuid();
+        // 1. Generate UUID
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    $uuid = (string) Str::uuid();
 
-            // 2. Build the embedded URL
-            $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
+    // Create your actual target URL
+    $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+    $settings->url_string = $uuid;
+    $settings->embedded_url = $embeddedUrl;
+    $settings->save();
+    // Encrypt the long URL and store it in DB
+    $encrypted = Crypt::encryptString($embeddedUrl);
+    $short = Str::random(20); // shorter than UUID
 
-            // 3. Update the database
-            $settings->url_string = $uuid;
-            $settings->embedded_url = $embeddedUrl;
-            $settings->save();
-            $encrypted = Crypt::encryptString($embeddedUrl);
-            $redirectUrl = URL::to('/go?encrypted=' . Crypt::encryptString($embeddedUrl));
+    ShortEncryptedLink::create([
+        'slug' => $short,
+        'encrypted_url' => $encrypted,
+    ]);
 
-                // 4. Use in your message
-                $cronMessage = $settings->cron_message ?? 'No message set.';
-                $fullMessage = $cronMessage . "\n" . $redirectUrl;
+    // Now send short URL like /go/abc12345
+    $shortUrl = URL::to('/go/' . $short);
+    // Log::info("short url----------------------------".$shortUrl);
 
-                Http::post($webhookUrl, [
-                    'content' => $fullMessage,
-                ]);
+   
+    $fullMessage = $cronMessage . "\n" . $shortUrl;
+
+    Http::post($webhookUrl, [
+        'content' => $fullMessage,
+    ]);
 
         // Save last run time to avoid duplicates (if DB has such a column)
                 $settings->last_run_at = $nowUtc;

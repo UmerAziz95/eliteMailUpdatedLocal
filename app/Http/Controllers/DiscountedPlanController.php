@@ -21,6 +21,8 @@ class DiscountedPlanController extends Controller
         }
     }
 
+
+    session()->put('discounted_plan_id', $id);
     $getMostlyUsed = Plan::getMostlyUsed();
     $plans = Plan::with('features')
         ->where('is_active', true)
@@ -29,7 +31,7 @@ class DiscountedPlanController extends Controller
 
     $publicPage = true;
 
-    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage'));
+    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','id'));
 }
 
 
@@ -39,7 +41,13 @@ class DiscountedPlanController extends Controller
         if(!$planId ){
             abort(404);
         }
-        
+        $encrypted=session()->get('discounted_plan_id');
+          $setting = DiscordSettings::where('url_string', $encrypted)->first();
+        if (!$setting) {
+            abort(404, 'Invalid or expired discount link.');
+        }
+       
+
         try {
            $plan = Plan::findOrFail($planId);
           
@@ -73,6 +81,7 @@ class DiscountedPlanController extends Controller
             } 
 
             $hostedPage = $result->hostedPage();
+           
 
             return response()->json([
                 'success' => true,
