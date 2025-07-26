@@ -45,6 +45,9 @@
         }
     </style>
     @stack('styles')
+    {{-- <script type="text/javascript">
+        window.$crisp=[];window.CRISP_WEBSITE_ID="94d39e02-26b9-45cb-a3d0-680611750afd";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();
+    </script> --}}
 
     <script>
         (function() {
@@ -62,21 +65,21 @@
 
     <div class="d-flex w-100 h-100 ">
         @unless ($publicPage ?? false)
-            <div>
-                @include('customer.layouts.sidebar')
-            </div>
+        <div>
+            @include('customer.layouts.sidebar')
+        </div>
         @endunless
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
                 @unless ($publicPage ?? false)
-                    @include('customer.layouts.header')
+                @include('customer.layouts.header')
                 @endunless
                 <!-- Include Header -->
                 @yield('content')
                 <!-- Main Page Content -->
             </div>
             @unless ($publicPage ?? false)
-                @include('customer.layouts.footer')
+            @include('customer.layouts.footer')
             @endunless
             <!-- Include Footer (Optional) -->
         </div>

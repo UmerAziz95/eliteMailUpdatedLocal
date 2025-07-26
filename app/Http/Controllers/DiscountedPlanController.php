@@ -74,6 +74,7 @@ class DiscountedPlanController extends Controller
 
             $hostedPage = $result->hostedPage();
 
+            
             return response()->json([
                 'success' => true,
                 'hosted_page_url' => $hostedPage->url

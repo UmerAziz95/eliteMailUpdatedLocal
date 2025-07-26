@@ -68,6 +68,7 @@ class AdminController extends Controller
                             <i class="fa-regular fa-eye"></i>';
                 }
 
+                
                 return '
                     <div class="d-flex align-items-center gap-2">
                         <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
