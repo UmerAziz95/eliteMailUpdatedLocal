@@ -26,6 +26,13 @@ class Kernel extends ConsoleKernel
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
+        // Panel capacity notifications every 5 minutes
+        $schedule->command('panels:capacity-notifications')
+                ->everyFiveMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
         // Process domain removal queue every minute
         $schedule->command('domains:process-removal-queue')
                 ->everyMinute()
