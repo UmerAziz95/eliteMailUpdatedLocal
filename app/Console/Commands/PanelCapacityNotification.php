@@ -29,7 +29,7 @@ class PanelCapacityNotification extends Command
     /**
      * Capacity thresholds that trigger notifications
      */
-    private $thresholds = [10000, 5000, 4000, 3000, 2000, 0];
+    private $thresholds = [0, 2000, 3000, 4000, 5000, 10000];
 
     /**
      * Execute the console command.
@@ -72,11 +72,29 @@ class PanelCapacityNotification extends Command
     {
         foreach ($this->thresholds as $threshold) {
             if ($this->shouldSendNotification($currentCapacity, $threshold)) {
-                $this->sendCapacityAlert($currentCapacity, $threshold);
+                // Only send notification for the first (highest) threshold breached
+                if ($threshold === $this->getHighestBreachedThreshold($currentCapacity)) {
+                    $this->sendCapacityAlert($currentCapacity, $threshold);
+                    $this->info("Capacity alert sent for threshold: {$threshold}");
+                }
+                
+                // Always mark threshold as notified
                 $this->markThresholdNotified($threshold, $currentCapacity);
-                $this->info("Capacity alert sent for threshold: {$threshold}");
             }
         }
+    }
+
+    /**
+     * Get the highest threshold that is breached
+     */
+    private function getHighestBreachedThreshold(int $currentCapacity): ?int
+    {
+        foreach ($this->thresholds as $threshold) {
+            if ($currentCapacity <= $threshold) {
+                return $threshold;
+            }
+        }
+        return null;
     }
 
     /**
