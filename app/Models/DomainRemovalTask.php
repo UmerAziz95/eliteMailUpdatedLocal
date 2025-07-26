@@ -20,12 +20,14 @@ class DomainRemovalTask extends Model
         'reason',
         'assigned_to',
         'status',
-        'broadcasted_at'
+        'broadcasted_at',
+        'slack_alerts'
     ];
 
     protected $casts = [
         'started_queue_date' => 'datetime',
         'broadcasted_at' => 'datetime',
+        'slack_alerts' => 'array',
     ];
 
     /**

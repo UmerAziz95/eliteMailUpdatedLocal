@@ -47,6 +47,13 @@ class Kernel extends ConsoleKernel
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
+        // Domain removal task Slack alerts every 10 minutes
+        $schedule->command('domain-removal:send-slack-alerts')
+                ->everyTenMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
         // ⏰ Daily database backup at 3:00 AM (USA time)
         $schedule->command('backup:daily')
                 ->dailyAt('03:00')

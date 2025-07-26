@@ -621,3 +621,25 @@ Route::get('/cron/run-domain-removal-queue', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-queue');
+
+// Manual trigger for domain removal task Slack alerts
+Route::get('/cron/run-domain-removal-slack-alerts', function () {
+    try {
+        $options = [];
+        // Capture command output
+        $exitCode = Artisan::call('domain-removal:send-slack-alerts', $options);
+        $output = Artisan::output();
+        return response()->json([
+            'success' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'output' => $output,
+            'message' => $exitCode === 0 ? 'Domain removal Slack alerts sent successfully' : 'Command failed'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('cron.run-domain-removal-slack-alerts');

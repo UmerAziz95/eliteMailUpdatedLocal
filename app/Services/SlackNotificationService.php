@@ -644,6 +644,7 @@ class SlackNotificationService
             'order-assignment' => ':bust_in_silhouette:',
             'order-cancellation' => ':x:',
             'order-countdown' => ':alarm_clock:',
+            'domain-removal-alerts' => ':warning:',
         ];
         
         return $emojis[$type] ?? ':bell:';
