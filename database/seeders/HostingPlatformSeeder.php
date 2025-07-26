@@ -14,7 +14,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Namecheap',
                 'value' => 'namecheap',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://docs.google.com/document/d/1D98lxHwJtAlw2MBIIHsCuejvARO2Ge25Z-ZLr91Aqm8/edit?tab=t.0#heading=h.gwg31lb1l0ct',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Namecheap - Access Tutorial',
