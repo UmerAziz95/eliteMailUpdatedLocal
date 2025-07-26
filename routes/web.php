@@ -48,6 +48,7 @@ use App\Http\Controllers\CronController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
+use App\Models\ShortEncryptedLink;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -620,12 +621,9 @@ Route::get('/test-discord-cron', [\App\Http\Controllers\SettingController::class
 
 //
 
-Route::get('/go', function (Request $request) {
-    try {
-        $encrypted = $request->query('encrypted'); // ✅ fix here
-        $decryptedUrl = Crypt::decryptString($encrypted);
-        return redirect()->away($decryptedUrl);
-    } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-        abort(403, 'Invalid or expired link');
-    }
-})->name('secure.redirect');
+Route::get('/go/{slug}', function ($slug) {
+ 
+    $record = ShortEncryptedLink::where('slug', $slug)->firstOrFail();
+    $originalUrl = Crypt::decryptString($record->encrypted_url);
+    return redirect()->away($originalUrl);
+});

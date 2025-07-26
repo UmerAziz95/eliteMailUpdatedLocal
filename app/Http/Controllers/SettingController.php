@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Http\Client\RequestException;
+use App\Models\ShortEncryptedLink;
 
 class SettingController extends Controller
 {
@@ -35,89 +35,55 @@ class SettingController extends Controller
             ]
         );
 
-        return response()->json([
-            "status" => "success",
-            "message" => "Discord settings saved successfully.",
-            "data" => $setting
-        ]);
-    }
+    return response()->json([
+        "status" => "success",
+        "message" => "Discord settings saved successfully.",
+        "data" => $setting
+    ]);
+}
 
-    public function sendDiscordMessage(Request $request)
-    {
-        try {
-            $request->validate([
-                'message' => 'required|string|max:2000',
-            ]);
 
-            $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
-            if (!$settings) {
-                return response()->json([
-                    "status" => "error",
-                    "message" => "Settings not found."
-                ], 404);
-            }
 
-            $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
-            
-            if (empty($webhookUrl)) {
-                return response()->json([
-                    "status" => "error",
-                    "message" => "Discord Webhook URL is missing."
-                ], 500);
-            }
+public function sendDiscordMessage(Request $request)
+{
+    $request->validate([
+        'message' => 'required|string|max:2000',
+    ]);
 
-            $uuid = Str::uuid();
-            $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    $uuid = (string) Str::uuid();
 
-            $settings->url_string = $uuid;
-            $settings->embedded_url = $embeddedUrl;
-            $settings->save();
+    // Create your actual target URL
+    $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+    $settings->url_string = $uuid;
+    $settings->embedded_url = $embeddedUrl;
+    $settings->save();
+    // Encrypt the long URL and store it in DB
+    $encrypted = Crypt::encryptString($embeddedUrl);
+    $short = Str::random(20); // shorter than UUID
 
-            $encrypted = Crypt::encryptString($embeddedUrl);
-            $redirectUrl = URL::to('/go?encrypted=' . urlencode($encrypted));
+    ShortEncryptedLink::create([
+        'slug' => $short,
+        'encrypted_url' => $encrypted,
+    ]);
 
-            $cronMessage = $request->input('message') ?? '🔥 Don’t miss your chance...';
-            $fullMessage = $cronMessage . "\n" . $redirectUrl;
+    // Now send short URL like /go/abc12345
+    $shortUrl = URL::to('/go/' . $short);
 
-            $response = Http::post($webhookUrl, [
-                'content' => $fullMessage,
-            ]);
-         
+    $cronMessage = $request->input('message');
+    $fullMessage = $cronMessage . "\n" . $shortUrl;
 
-            if ($response->failed()) {
-                return response()->json([
-                    "status" => "error",
-                    "message" => "Discord webhook request failed.",
-                    "response" => $response->body()
-                ], 500);
-            }
+    Http::post($webhookUrl, [
+        'content' => $fullMessage,
+    ]);
 
-            return response()->json([
-                "status" => "success",
-                "message" => "Message sent successfully to Discord."
-            ]);
+    return response()->json([
+        "status" => "success",
+        "message" => "Message sent successfully to Discord.",
+    ]);
+}
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Validation failed.",
-                "errors" => $e->errors()
-            ], 422);
-
-        } catch (RequestException $e) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Discord webhook request failed: " . $e->getMessage(),
-                "response" => $e->response ? $e->response->body() : null
-            ], 500);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Failed to send message to Discord: " . $e->getMessage()
-            ], 500);
-        }
-    }
 
     public function toggleDiscordCron(Request $request)
     {
@@ -165,9 +131,10 @@ class SettingController extends Controller
         $nowUtc = now()->setTimezone('UTC');
         $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
 
-        if ($nowUtc->lt($startAt)) {
-            return false;
-        }
+    // // Skip if it's not time yet
+    if ($nowUtc->lt($startAt)) {
+        return false;
+    }
 
         if ($lastRun) {
             $lastRunAt = Carbon::parse($lastRun, 'UTC');
@@ -183,27 +150,36 @@ class SettingController extends Controller
             }
         }
 
-        $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
-        if (empty($webhookUrl)) {
-            Log::error('Discord Webhook URL is missing.');
-            return false;
-        }
+    try {
+        // 1. Generate UUID
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+    $uuid = (string) Str::uuid();
 
-        try {
-            $uuid = (string) Str::uuid();
-            $embeddedUrl = URL::to('/plans/'.$uuid.'/discounted');
-            $settings->url_string = $uuid;
-            $settings->embedded_url = $embeddedUrl;
-            $settings->save();
-            $encrypted = Crypt::encryptString($embeddedUrl);
-            $redirectUrl = URL::to('/go?encrypted=' . urlencode($encrypted));
+    // Create your actual target URL
+    $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+    $settings->url_string = $uuid;
+    $settings->embedded_url = $embeddedUrl;
+    $settings->save();
+    // Encrypt the long URL and store it in DB
+    $encrypted = Crypt::encryptString($embeddedUrl);
+    $short = Str::random(20); // shorter than UUID
 
-            $messageText = $settings->setting_value ?? 'No message set.';
-            $fullMessage = $messageText . "\n" . $redirectUrl;
+    ShortEncryptedLink::create([
+        'slug' => $short,
+        'encrypted_url' => $encrypted,
+    ]);
 
-            $response = Http::post($webhookUrl, [
-                'content' => $fullMessage,
-            ]);
+    // Now send short URL like /go/abc12345
+    $shortUrl = URL::to('/go/' . $short);
+    // Log::info("short url----------------------------".$shortUrl);
+
+   
+    $fullMessage = $cronMessage . "\n" . $shortUrl;
+
+    Http::post($webhookUrl, [
+        'content' => $fullMessage,
+    ]);
 
             if ($response->failed()) {
                 Log::error('Discord webhook request failed: ' . $response->body());
