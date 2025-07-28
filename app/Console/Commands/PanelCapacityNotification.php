@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Panel;
 use App\Models\PanelCapacityAlert;
+use App\Models\PanelCapacityNotificationRecord;
 use App\Services\SlackNotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -17,19 +18,24 @@ class PanelCapacityNotification extends Command
      *
      * @var string
      */
-    protected $signature = 'panels:capacity-notifications';
+    
+    protected $signature = 'panels:capacity-notifications 
+                            {--dry-run : Run without sending notifications}
+                            {--force : Force send notification even if already sent for threshold}
+                            {--cleanup : Clean up old alert records}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Monitor panel capacity and send Slack notifications at specific thresholds';
+    protected $description = 'Monitor panel capacity and send Slack notifications at specific thresholds. Supports --dry-run, --force, and --cleanup options.';
 
     /**
-     * Capacity thresholds that trigger notifications
+     * Capacity thresholds that trigger notifications (in descending order for proper triggering)
      */
-    private $thresholds = [0, 2000, 3000, 4000, 5000, 10000];
+    private $thresholds = [10000, 5000, 4000, 3000, 2000, 0];
+    // private $thresholds = [0, 1000, 2000, 3000, 4000, 5000, 10000]; // Updated to include all thresholds in ascending order
 
     /**
      * Execute the console command.
@@ -37,14 +43,20 @@ class PanelCapacityNotification extends Command
     public function handle()
     {
         $this->info('Starting Panel Capacity Notification process...');
-        
+    
         try {
-            // Calculate current total capacity
-            $totalCapacity = $this->calculateTotalCapacity();
-            $this->info("Current total panel capacity: {$totalCapacity}");
+            // Handle cleanup option
+            if ($this->option('cleanup')) {
+                $this->cleanupOldRecords();
+                return;
+            }
 
-            // Check if any threshold is crossed
-            $this->checkThresholds($totalCapacity);
+            // Calculate current total capacity
+            $currentCapacity = $this->calculateTotalCapacity();
+            $this->info("Current total panel capacity: {$currentCapacity}");
+            
+            // Check each threshold and send notifications if needed
+            $this->checkThresholdsAndNotify($currentCapacity);
             
             $this->info('Panel Capacity Notification process completed successfully');
             
@@ -66,68 +78,88 @@ class PanelCapacityNotification extends Command
     }
 
     /**
-     * Check thresholds and send notifications if needed
+     * Check all thresholds and send notifications if needed
      */
-    private function checkThresholds(int $currentCapacity): void
+    private function checkThresholdsAndNotify(int $currentCapacity): void
     {
-        foreach ($this->thresholds as $threshold) {
-            if ($this->shouldSendNotification($currentCapacity, $threshold)) {
-                // Only send notification for the first (highest) threshold breached
-                if ($threshold === $this->getHighestBreachedThreshold($currentCapacity)) {
-                    $this->sendCapacityAlert($currentCapacity, $threshold);
-                    $this->info("Capacity alert sent for threshold: {$threshold}");
-                }
-                
-                // Always mark threshold as notified
-                $this->markThresholdNotified($threshold, $currentCapacity);
-            }
-        }
-    }
-
-    /**
-     * Get the highest threshold that is breached
-     */
-    private function getHighestBreachedThreshold(int $currentCapacity): ?int
-    {
+        // Find the appropriate threshold to trigger (if any)
+        $triggeredThreshold = null;
+        
+        // Check thresholds in descending order to find the right one to trigger
         foreach ($this->thresholds as $threshold) {
             if ($currentCapacity <= $threshold) {
-                return $threshold;
+                $triggeredThreshold = $threshold;
+                // Continue to find the lowest threshold that applies
             }
         }
-        return null;
+        
+        // Process all thresholds to update their states
+        foreach ($this->thresholds as $threshold) {
+            $this->info("Checking threshold: {$threshold}");
+            
+            // Get or create notification record for this threshold
+            $notificationRecord = PanelCapacityNotificationRecord::getOrCreateForThreshold($threshold);
+            
+            // Check if this is the threshold we should trigger
+            $shouldTrigger = ($threshold === $triggeredThreshold) && 
+                            $this->shouldSendNotification($notificationRecord, $currentCapacity, $threshold);
+            
+            if ($shouldTrigger) {
+                $this->sendCapacityAlert($currentCapacity, $threshold);
+                
+                // Mark threshold as triggered
+                $notificationRecord->markAsTriggered($currentCapacity);
+                
+                $this->info("Notification sent for threshold: {$threshold}");
+            } else {
+                // Update state if needed (deactivate if capacity recovered)
+                $notificationRecord->shouldTriggerNotification($currentCapacity);
+                $this->info("No notification needed for threshold: {$threshold}");
+            }
+        }
     }
 
     /**
-     * Check if notification should be sent for a threshold
+     * Determine if notification should be sent for a threshold
      */
-    private function shouldSendNotification(int $currentCapacity, int $threshold): bool
+    private function shouldSendNotification(PanelCapacityNotificationRecord $record, int $currentCapacity, int $threshold): bool
     {
-        // Don't send if capacity is above threshold
-        if ($currentCapacity > $threshold) {
-            return false;
+        // Force option overrides all checks
+        if ($this->option('force')) {
+            return true;
         }
 
-        // Check if this threshold was already alerted for current capacity level
-        $existingAlert = PanelCapacityAlert::where('threshold', $threshold)
-                                          ->where('capacity_when_sent', $currentCapacity)
-                                          ->whereDate('created_at', Carbon::today())
-                                          ->first();
+        // Check if threshold should trigger notification based on current state
+        return $record->shouldTriggerNotification($currentCapacity);
+    }
 
-        if ($existingAlert) {
-            return false; // Already sent today for this exact capacity
+    /**
+     * Clean up old notification records
+     */
+    private function cleanupOldRecords(): void
+    {
+        $this->info('Cleaning up old notification records...');
+        
+        try {
+            // Clean up old panel capacity alert records (older than 30 days)
+            $deletedAlerts = PanelCapacityAlert::where('created_at', '<', now()->subDays(30))->delete();
+            $this->info("Deleted {$deletedAlerts} old panel capacity alert records");
+            
+            // Reset inactive notification records older than 7 days
+            $resetRecords = PanelCapacityNotificationRecord::where('is_active', false)
+                ->where('updated_at', '<', now()->subDays(7))
+                ->update([
+                    'current_capacity' => 0,
+                    'last_triggered_at' => null,
+                ]);
+            $this->info("Reset {$resetRecords} inactive notification records");
+            
+            $this->info('Cleanup completed successfully');
+            
+        } catch (\Exception $e) {
+            $this->error('Error during cleanup: ' . $e->getMessage());
+            Log::error('PanelCapacityNotification Cleanup Error: ' . $e->getMessage());
         }
-
-        // For handling the scenario where capacity goes down, then up, then down again
-        // Check if we've sent an alert for this threshold recently (within last hour)
-        $recentAlert = PanelCapacityAlert::where('threshold', $threshold)
-                                        ->where('created_at', '>=', Carbon::now()->subHour())
-                                        ->first();
-
-        if ($recentAlert && $recentAlert->capacity_when_sent <= $currentCapacity) {
-            return false; // Recently sent and capacity hasn't improved enough
-        }
-
-        return true;
     }
 
     /**
@@ -137,6 +169,13 @@ class PanelCapacityNotification extends Command
     {
         try {
             $message = $this->formatCapacityMessage($currentCapacity, $threshold);
+            
+            // Dry run mode - just log what would be sent
+            if ($this->option('dry-run')) {
+                $this->info("DRY RUN: Would send capacity alert for threshold {$threshold}");
+                $this->info("Message: " . json_encode($message, JSON_PRETTY_PRINT));
+                return;
+            }
             
             // Send to Slack inbox-admins channel
             $result = SlackNotificationService::send('inbox-admins', $message);
@@ -161,19 +200,6 @@ class PanelCapacityNotification extends Command
         }
     }
 
-    /**
-     * Mark threshold as notified in database
-     */
-    private function markThresholdNotified(int $threshold, int $currentCapacity): void
-    {
-        PanelCapacityAlert::create([
-            'threshold' => $threshold,
-            'capacity_when_sent' => $currentCapacity,
-            'notification_sent_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-    }
 
     /**
      * Format capacity alert message for Slack
@@ -200,7 +226,7 @@ class PanelCapacityNotification extends Command
                             'short' => true
                         ],
                         [
-                            'title' => 'Threshold Breached',
+                            'title' => 'Threshold Hit',
                             'value' => number_format($threshold) . ' inboxes',
                             'short' => true
                         ],
@@ -214,12 +240,6 @@ class PanelCapacityNotification extends Command
                             'value' => number_format($panelStats['total_capacity']) . ' inboxes',
                             'short' => true
                         ],
-                        // [
-                        //     'title' => 'Capacity Used',
-                        //     'value' => number_format($panelStats['used_capacity']) . ' inboxes (' . 
-                        //              round($panelStats['usage_percentage'], 1) . '%)',
-                        //     'short' => true
-                        // ],
                         [
                             'title' => 'Urgency Level',
                             'value' => $urgencyData['level'] . ' ' . $urgencyData['icon'],
@@ -278,6 +298,7 @@ class PanelCapacityNotification extends Command
             ];
         }
     }
+
 
     /**
      * Get panel statistics
