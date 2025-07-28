@@ -16,7 +16,7 @@ class PanelObserver
         try {
             // Send Slack notification when a new panel is created
             PanelCapacityNotification::sendNewPanelNotification($panel);
-            \App\Models\PanelCapacityAlert::cleanupOldAlerts();
+            
             Log::info('PanelObserver: New panel notification sent', [
                 'panel_id' => $panel->id,
                 'panel_capacity' => $panel->limit,

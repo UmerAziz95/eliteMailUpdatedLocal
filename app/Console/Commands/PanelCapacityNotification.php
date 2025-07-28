@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Panel;
-use App\Models\PanelCapacityAlert;
 use App\Models\PanelCapacityNotificationRecord;
 use App\Services\SlackNotificationService;
 use Carbon\Carbon;
@@ -144,10 +143,6 @@ class PanelCapacityNotification extends Command
         $this->info('Cleaning up old notification records...');
         
         try {
-            // Clean up old panel capacity alert records (older than 30 days)
-            $deletedAlerts = PanelCapacityAlert::where('created_at', '<', now()->subDays(30))->delete();
-            $this->info("Deleted {$deletedAlerts} old panel capacity alert records");
-            
             // Reset inactive notification records older than 7 days
             $resetRecords = PanelCapacityNotificationRecord::where('is_active', false)
                 ->where('updated_at', '<', now()->subDays(7))
