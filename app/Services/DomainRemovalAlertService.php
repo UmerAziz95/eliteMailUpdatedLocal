@@ -14,6 +14,15 @@ class DomainRemovalAlertService
     public static function getAlertConfiguration(): array
     {
         return [
+            0 => [
+                'type' => 'new_task',
+                'title' => 'New Domain Removal Task Detected',
+                'description' => 'A new domain removal task has been queued for processing',
+                'urgency' => 'info',
+                'icon' => '🆕',
+                'color' => '#17a2b8', // Blue
+                'repeat' => false
+            ],
             6 => [
                 'type' => '6h',
                 'title' => 'Domain Removal Task: 6 Hours Since Queue Start',
@@ -61,7 +70,6 @@ class DomainRemovalAlertService
             ]
         ];
     }
-
     /**
      * Get overdue alert configuration
      */

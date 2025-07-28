@@ -48,7 +48,6 @@ class DomainRemovalTaskSlackAlerts extends Command
 
         // Get all tasks that need alert checking
         $tasks = DomainRemovalAlertService::getTasksForAlertChecking();
-
         if ($tasks->isEmpty()) {
             $this->info('✅ No active domain removal tasks found that require alerts');
             return 0;
@@ -80,7 +79,6 @@ class DomainRemovalTaskSlackAlerts extends Command
     {
         $alertsSent = 0;
         $hoursElapsed = DomainRemovalAlertService::calculateHoursElapsed($task);
-        
         // Get standard alert configuration
         $alertConfigs = DomainRemovalAlertService::getAlertConfiguration();
         
