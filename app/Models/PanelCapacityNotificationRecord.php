@@ -86,6 +86,11 @@ class PanelCapacityNotificationRecord extends Model
             return $currentCapacity > $this->threshold;
         }
         
+        // Special case for the 0 threshold (lowest threshold)
+        if ($this->threshold === 0) {
+            return $currentCapacity === 0;
+        }
+        
         // For other thresholds, check if capacity is in the range
         $upperThreshold = $allThresholds[$currentIndex - 1];
         return $currentCapacity > $this->threshold && $currentCapacity <= $upperThreshold;

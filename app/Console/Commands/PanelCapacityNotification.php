@@ -18,7 +18,6 @@ class PanelCapacityNotification extends Command
      *
      * @var string
      */
-    
     protected $signature = 'panels:capacity-notifications 
                             {--dry-run : Run without sending notifications}
                             {--force : Force send notification even if already sent for threshold}
@@ -249,11 +248,11 @@ class PanelCapacityNotification extends Command
                             'value' => $urgencyData['level'] . ' ' . $urgencyData['icon'],
                             'short' => true
                         ],
-                        [
-                            'title' => 'Recommended Action',
-                            'value' => $urgencyData['action'],
-                            'short' => false
-                        ],
+                        // [
+                        //     'title' => 'Recommended Action',
+                        //     'value' => $urgencyData['action'],
+                        //     'short' => false
+                        // ],
                         [
                             'title' => 'Alert Time',
                             'value' => now()->format('Y-m-d H:i:s T'),
