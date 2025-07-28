@@ -44,20 +44,51 @@ class PanelCapacityNotificationRecord extends Model
      */
     public function shouldTriggerNotification(int $currentCapacity): bool
     {
-        // If threshold is inactive and current capacity hits the threshold, trigger
-        if (!$this->is_active && $currentCapacity <= $this->threshold) {
+        // For range-based notifications:
+        // - Trigger if we're currently in this threshold range and it's not active
+        // - Deactivate if we're no longer in this threshold range and it's active
+        
+        $isInThresholdRange = $this->isCapacityInThresholdRange($currentCapacity);
+        
+        // If we're in this threshold range and it's not active, trigger
+        if ($isInThresholdRange && !$this->is_active) {
             return true;
         }
-
-        // If threshold is active but capacity has recovered above the threshold, deactivate
-        if ($this->is_active && $currentCapacity > $this->threshold) {
+        
+        // If we're not in this threshold range but it's active, deactivate
+        if (!$isInThresholdRange && $this->is_active) {
             $this->update([
                 'is_active' => false,
                 'current_capacity' => $currentCapacity,
             ]);
         }
-
+        
         return false;
+    }
+    
+    /**
+     * Check if current capacity is in this threshold range
+     */
+    private function isCapacityInThresholdRange(int $currentCapacity): bool
+    {
+        // Get all thresholds in descending order
+        $allThresholds = [10000, 5000, 4000, 3000, 2000, 1000, 0];
+        
+        // Find the current threshold index
+        $currentIndex = array_search($this->threshold, $allThresholds);
+        
+        if ($currentIndex === false) {
+            return false;
+        }
+        
+        // For the highest threshold (10000), check if capacity is above it
+        if ($currentIndex === 0) {
+            return $currentCapacity > $this->threshold;
+        }
+        
+        // For other thresholds, check if capacity is in the range
+        $upperThreshold = $allThresholds[$currentIndex - 1];
+        return $currentCapacity > $this->threshold && $currentCapacity <= $upperThreshold;
     }
 
     /**

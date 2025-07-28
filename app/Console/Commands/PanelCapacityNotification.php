@@ -34,8 +34,7 @@ class PanelCapacityNotification extends Command
     /**
      * Capacity thresholds that trigger notifications (in descending order for proper triggering)
      */
-    private $thresholds = [10000, 5000, 4000, 3000, 2000, 0];
-    // private $thresholds = [0, 1000, 2000, 3000, 4000, 5000, 10000]; // Updated to include all thresholds in ascending order
+    private $thresholds = [10000, 5000, 4000, 3000, 2000, 1000, 0];
 
     /**
      * Execute the console command.
@@ -82,26 +81,31 @@ class PanelCapacityNotification extends Command
      */
     private function checkThresholdsAndNotify(int $currentCapacity): void
     {
-        // Find the appropriate threshold to trigger (if any)
-        $triggeredThreshold = null;
+        // Find the appropriate threshold range we're currently in
+        $currentThresholdRange = null;
         
-        // Check thresholds in descending order to find the right one to trigger
+        // Check thresholds in descending order to find which range we're in
         foreach ($this->thresholds as $threshold) {
-            if ($currentCapacity <= $threshold) {
-                $triggeredThreshold = $threshold;
-                // Continue to find the lowest threshold that applies
+            if ($currentCapacity > $threshold) {
+                $currentThresholdRange = $threshold;
+                break;
             }
         }
         
-        // Process all thresholds to update their states
+        // If we're below all thresholds, we're in the 0 range
+        if ($currentThresholdRange === null) {
+            $currentThresholdRange = 0;
+        }
+        
+        // Process all thresholds to update their states and send notifications
         foreach ($this->thresholds as $threshold) {
             $this->info("Checking threshold: {$threshold}");
             
             // Get or create notification record for this threshold
             $notificationRecord = PanelCapacityNotificationRecord::getOrCreateForThreshold($threshold);
             
-            // Check if this is the threshold we should trigger
-            $shouldTrigger = ($threshold === $triggeredThreshold) && 
+            // Check if this threshold should trigger a notification
+            $shouldTrigger = ($threshold === $currentThresholdRange) && 
                             $this->shouldSendNotification($notificationRecord, $currentCapacity, $threshold);
             
             if ($shouldTrigger) {
@@ -274,6 +278,13 @@ class PanelCapacityNotification extends Command
                 'icon' => '🚨',
                 'color' => '#dc3545', // Red
                 'action' => 'IMMEDIATE ACTION REQUIRED: Create new panels immediately! No capacity available for new orders.'
+            ];
+        } elseif ($currentCapacity <= 1000) {
+            return [
+                'level' => 'CRITICAL',
+                'icon' => '🚨',
+                'color' => '#dc3545', // Red
+                'action' => 'CRITICAL: Very low capacity! Create new panels immediately.'
             ];
         } elseif ($currentCapacity <= 2000) {
             return [
