@@ -53,7 +53,7 @@ class HostingPlatformSeeder extends Seeder
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
                         'type' => 'select',
                         'options' => [
-                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@premiuminboxes.com and entered my GoDaddy Account Name (NOT email) below.",
+                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@projectinbox.ai and entered my GoDaddy Account Name (NOT email) below.",
                             'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
                         ],
                         'required' => true
