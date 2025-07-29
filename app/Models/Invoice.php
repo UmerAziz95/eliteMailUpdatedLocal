@@ -22,6 +22,7 @@ class Invoice extends Model
         'status',
         'paid_at',
         'metadata',
+        'cancellation_notification_sent_at',
     ];
     public function user()
     {
