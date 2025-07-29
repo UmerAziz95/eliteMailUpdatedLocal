@@ -46,7 +46,6 @@ class OrderObserver
             \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order created', [
                 'order_id' => $order->id,
                 'inbox_count' => $inboxCount,
-                'split_count' => $splitCount
             ]);
         } catch (\Exception $e) {
             \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for new order created', [
