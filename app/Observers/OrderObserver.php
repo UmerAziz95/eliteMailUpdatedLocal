@@ -82,7 +82,8 @@ class OrderObserver
             ]);
             
             // Send Slack notification if order status changes from draft to any other status
-            if (strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') {
+            if ((strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') || 
+                (strtolower($previousStatus) === 'reject' && strtolower($newStatus) === 'pending')) {
                 try {
                     // Calculate inbox count and split count
                     $inboxCount = 0;
