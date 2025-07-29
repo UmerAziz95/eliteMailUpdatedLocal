@@ -140,8 +140,8 @@ class DomainRemovalTaskSlackAlerts extends Command
             // Generate Slack message
             $message = DomainRemovalAlertService::generateSlackMessage($taskData, $alertConfig, $hoursElapsed);
             
-            // Send to Slack using the inbox-admins channel
-            $result = SlackNotificationService::send('inbox-admins', $message);
+            // Send to Slack using the inbox-cancellation channel
+            $result = SlackNotificationService::send('inbox-cancellation', $message);
             
             if ($result) {
                 $this->info("    📡 Alert sent successfully: Task #{$task->id} - {$alertConfig['type']}");

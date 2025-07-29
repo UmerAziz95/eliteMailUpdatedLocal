@@ -303,6 +303,54 @@ class SlackNotificationService
         $message = self::formatMessage('order-cancellation', $data);
         return self::send('inbox-cancellation', $message);
     }
+
+    /**
+     * Send invoice generated notification to Slack
+     *
+     * @param \App\Models\Invoice $invoice
+     * @param \App\Models\User $user
+     * @param bool $isPaymentFailed
+     * @return bool
+     */
+    public static function sendInvoiceGeneratedNotification($invoice, $user, $isPaymentFailed = false)
+    {
+        // Check if this is the first invoice for this user (new payment) or recurring
+        $previousInvoices = \App\Models\Invoice::where('user_id', $user->id)
+            ->where('chargebee_invoice_id', '!=', $invoice->chargebee_invoice_id)
+            ->where('order_id', $invoice->order_id)
+            ->count();
+        
+        $isNewPayment = $previousInvoices === 0;
+        $paymentType = $isNewPayment ? 'new' : 'recurring';
+        
+        // Get order information
+        $order = \App\Models\Order::find($invoice->order_id);
+        
+        $data = [
+            'invoice_id' => $invoice->chargebee_invoice_id,
+            'order_id' => $invoice->order_id,
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
+            'amount' => $invoice->amount,
+            'status' => $invoice->status,
+            'payment_type' => $paymentType,
+            'is_payment_failed' => $isPaymentFailed,
+            'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
+            'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
+            'currency' => $order ? $order->currency : 'USD'
+        ];
+
+        // Determine message type based on payment failure and type
+        if ($isPaymentFailed) {
+            $messageType = $isNewPayment ? 'invoice-payment-failed-new' : 'invoice-payment-failed-recurring';
+        } else {
+            $messageType = $isNewPayment ? 'invoice-generated-new' : 'invoice-generated-recurring';
+        }
+
+        // Prepare the message based on type
+        $message = self::formatMessage($messageType, $data);
+        return self::send('inbox-subscriptions', $message);
+    }
     
     /**
      * Format message based on type and data
@@ -316,6 +364,242 @@ class SlackNotificationService
         $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
+            case 'invoice-generated-new':
+                return [
+                    'text' => "💳 *New Payment Invoice Generated*",
+                    'attachments' => [
+                        [
+                            'color' => '#17a2b8',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'New Customer Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Generated At',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Invoice System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-generated-recurring':
+                return [
+                    'text' => "🔄 *Recurring Payment Invoice Generated*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'Recurring Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Generated At',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Invoice System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-payment-failed-new':
+                return [
+                    'text' => "❌ *New Payment Failed*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'New Customer Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Failed At',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Payment Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-payment-failed-recurring':
+                return [
+                    'text' => "⚠️ *Recurring Payment Failed*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'Recurring Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Failed At',
+                                    'value' => now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Payment Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
             case 'order-created':
                 return [
                     'text' => "🎉 *New Order Created*",
@@ -372,7 +656,7 @@ class SlackNotificationService
                                 [
                                     'title' => 'Created At',
                                     'value' => $data['created_at'] ?? 'N/A',
-                                    'short' => false
+                                    'short' => true
                                 ]
                             ],
                             'footer' => $appName . ' Slack Integration',

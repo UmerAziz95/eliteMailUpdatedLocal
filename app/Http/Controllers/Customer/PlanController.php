@@ -1043,7 +1043,7 @@ class PlanController extends Controller
                             'metadata' => $metadata,
                         ]
                     );
-
+                    
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
                         try {
@@ -1064,11 +1064,16 @@ class PlanController extends Controller
                                         $user,
                                         true
                                     ));
+                                
+                                // Slack notification is now handled by InvoiceObserver
                             }
                         } catch (\Exception $e) {
                             Log::error('Failed to send invoice generation emails: ' . $e->getMessage());
                         }
                     }
+
+                    // Slack notification for payment failures is now handled by InvoiceObserver
+                    // when the invoice status is updated to 'failed'
 
                     // update subscription last_billing_date, next_billing_date
                     $subscription = UserSubscription::where('chargebee_subscription_id', $invoiceData['subscription_id'])->first();

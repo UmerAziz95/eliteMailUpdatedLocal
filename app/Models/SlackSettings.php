@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class SlackSettings extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'type',
         'url',
@@ -24,6 +24,7 @@ class SlackSettings extends Model
         'inbox-setup' => 'Inbox Setup',
         'inbox-cancellation'=> 'Inbox Cancellation',
         'inbox-admins' => 'Inbox Admins',
+        'inbox-subscriptions' => 'Inbox Subscriptions',
     ];
     
     public static function getTypes()
@@ -31,3 +32,4 @@ class SlackSettings extends Model
         return self::TYPES;
     }
 }
+

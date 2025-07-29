@@ -67,6 +67,13 @@ class Kernel extends ConsoleKernel
                 ->everyMinute()
                 ->withoutOverlapping()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+        // Process failed invoice notifications daily at 9:00 AM
+        $schedule->command('invoices:process-failed-notifications')
+                ->dailyAt('09:00')
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
 
         protected function commands(): void
