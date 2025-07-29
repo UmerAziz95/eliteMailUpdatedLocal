@@ -82,6 +82,9 @@ class SlackNotificationService
      */
     public static function sendOrderCreatedNotification($order, $inboxCount = 0)
     {
+        // get plan name
+        $planName = $order->plan ? $order->plan->name : 'N/A';
+
         // Calculate inbox count and split count
         $splitCount = 0;
         $data = [
@@ -91,6 +94,7 @@ class SlackNotificationService
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
             'status' => ucfirst($order->status_manage_by_admin),
             'inbox_count' => $inboxCount,
+            'plan_name' => $planName,
             // 'split_count' => $splitCount,
             'created_by' => auth()->user() ? auth()->user()->name : 'System',
             'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A'
@@ -324,6 +328,11 @@ class SlackNotificationService
                                     'value' => $data['order_id'] ?? 'N/A',
                                     'short' => true
                                 ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => 'Draft' ?? 'N/A',
+                                    'short' => true
+                                ],
                                 // [
                                 //     'title' => 'Order Name',
                                 //     'value' => $data['order_name'] ?? 'N/A',
@@ -339,9 +348,10 @@ class SlackNotificationService
                                     'value' => $data['customer_email'] ?? 'N/A',
                                     'short' => true
                                 ],
+                                // Plan Name
                                 [
-                                    'title' => 'Status',
-                                    'value' => 'Draft' ?? 'N/A',
+                                    'title' => 'Plan Name',
+                                    'value' => $data['plan_name'] ?? 'N/A',
                                     'short' => true
                                 ],
                                 [
