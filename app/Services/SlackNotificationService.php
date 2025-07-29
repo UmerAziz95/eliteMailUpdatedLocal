@@ -74,6 +74,32 @@ class SlackNotificationService
         }
     }
 
+    /**
+     * Send order created notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendOrderCreatedNotification($order, $inboxCount = 0)
+    {
+        // Calculate inbox count and split count
+        $splitCount = 0;
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'status' => ucfirst($order->status_manage_by_admin),
+            'inbox_count' => $inboxCount,
+            // 'split_count' => $splitCount,
+            'created_by' => auth()->user() ? auth()->user()->name : 'System',
+            'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-created', $data);
+        return self::send('inbox-setup', $message);
+    }
 
     /**
      * Send new order available notification to Slack
@@ -286,6 +312,65 @@ class SlackNotificationService
         $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
+            case 'order-created':
+                return [
+                    'text' => "🎉 *New Order Created*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                // [
+                                //     'title' => 'Order Name',
+                                //     'value' => $data['order_name'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => 'Draft' ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                // [
+                                //     'title' => 'Split Count',
+                                //     'value' => $data['split_count'] ?? '0',
+                                //     'short' => true
+                                // ],
+                                [
+                                    'title' => 'Created By',
+                                    'value' => $data['created_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Created At',
+                                    'value' => $data['created_at'] ?? 'N/A',
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
             case 'new-order-available':
                 return [
                     'text' => "🆕 *New Order Available Notification*",
@@ -298,11 +383,11 @@ class SlackNotificationService
                                     'value' => $data['order_id'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Order Name',
+                                //     'value' => $data['order_name'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Customer Name',
                                     'value' => $data['customer_name'] ?? 'N/A',

@@ -275,7 +275,8 @@ class PlanController extends Controller
                 'customer' => $customer->getValues(),
                 'subscription' => $subscription->getValues(),
             ]);
-
+            // create session for set observer_total_inboxes
+            $request->session()->put('observer_total_inboxes', $subscription->subscriptionItems[0]->quantity ?? 1);
             // Create or update order
             $order = Order::firstOrCreate(
                 ['chargebee_invoice_id' => $invoice->id],

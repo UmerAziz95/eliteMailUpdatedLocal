@@ -15,6 +15,7 @@ class OrderObserver
     /**
      * Handle the Order "created" event.
      */
+    // 
     public function created(Order $order): void
     {
         \Log::info('OrderObserver: Order created event triggered', [
@@ -28,6 +29,31 @@ class OrderObserver
         \Log::info('OrderObserver: OrderCreated event fired', [
             'order_id' => $order->id
         ]);
+
+        // Send Slack notification for new order created
+        try {
+            // Calculate inbox count and split count
+            $inboxCount = 0;
+            // session variable for observer_total_inboxes get
+            if (session()->has('observer_total_inboxes')) {
+                $inboxCount = session()->get('observer_total_inboxes', 0);
+            } else {
+                // Fallback to 0 if not set
+                $inboxCount = 0;
+            }
+            
+            SlackNotificationService::sendOrderCreatedNotification($order, $inboxCount);
+            \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order created', [
+                'order_id' => $order->id,
+                'inbox_count' => $inboxCount,
+                'split_count' => $splitCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for new order created', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
