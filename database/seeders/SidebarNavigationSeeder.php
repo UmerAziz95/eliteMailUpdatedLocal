@@ -136,27 +136,27 @@ class SidebarNavigationSeeder extends Seeder
                         "permission" => "Panels",
                         'sub_menu' => []
             ],
-            [
-                        "name" => "Settings",
-                        "icon" => "ti ti-file-invoice fs-5",
-                        "route" => "admin.system.config",
-                        "permission" => "Settings",
-                        'sub_menu' => []
+                    [
+                "name" => "Settings",
+                "icon" => "ti ti-settings fs-5",
+                "route" => "admin.system.config",
+                "permission" => "Settings",
+                'sub_menu' => []
             ],
             [
-                        "name" => "Discord Settings",
-                        "icon" => "ti ti-file-invoice fs-5",
-                        "route" => "admin.discord.settings",
-                        "permission" => "Discord Settings",
+                "name" => "Discord Settings",
+                "icon" => "ti ti-brand-discord fs-5",
+                "route" => "admin.discord.settings",
+                "permission" => "Discord Settings",
+                'sub_menu' => []
+            ],
+            [
+                        "name" => "Domain Health Dashboard",
+                        "icon" => "ti ti-heartbeat fs-5",
+                        "route" => "admin.domain_health_dashboard.index",
+                        "permission" => "Domain Health Dashboard",
                         'sub_menu' => []
             ]
-            // [
-            //             "name" => "Coupons",
-            //             "icon" => "ti ti-file-invoice fs-5",
-            //             "route" => "admin.coupons.index",
-            //             "permission" => "Coupons",
-            //             'sub_menu' => []
-            // ]
         ];
         // sidebar_navigations delete all existing records
         DB::table('sidebar_navigations')->truncate();

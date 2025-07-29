@@ -41,6 +41,8 @@ use App\Http\Controllers\Customer\CustomerSupportController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 //coupons
 use App\Http\Controllers\Admin\AdminCouponController;
+// domain health dashboard
+use App\Http\Controllers\Admin\DomainHealthDashboardController; 
 
 
 //cron
@@ -208,7 +210,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
         
-        //panels
+        //panels/
         Route::get('/panels/dashboard', [AdminPanelController::class, 'index'])->name('panels.index');
         Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
@@ -269,7 +271,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('disocrd/send/message',[App\Http\Controllers\SettingController::class,'sendDiscordMessage'])->name('discord.message.send');
         Route::post('disocrd/settings/save',[App\Http\Controllers\SettingController::class,'saveDiscordSettings'])->name('discord.settings.save');
         Route::post('/discord/settings/toggle-cron',[App\Http\Controllers\SettingController::class,'toggleDiscordCron'])->name('discord.toggle.cron');
-    }); Route::get('/discord/settings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
+        Route::get('/discord/settvings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
+
+        //domain health dashboard   
+        Route::get('/domain_health_dashboard', [DomainHealthDashboardController::class, 'index'])->name('domain_health_dashboard.index');
+    });
 
 });
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');

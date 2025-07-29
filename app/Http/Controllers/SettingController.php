@@ -161,7 +161,7 @@ public static function discorSendMessageCron()
     }
 
     try {
-        // 1. Generate UUID
+    // 1. Generate UUID
     $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
     $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
     $uuid = (string) Str::uuid();
