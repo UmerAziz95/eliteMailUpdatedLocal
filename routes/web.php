@@ -269,6 +269,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('disocrd/send/message',[App\Http\Controllers\SettingController::class,'sendDiscordMessage'])->name('discord.message.send');
         Route::post('disocrd/settings/save',[App\Http\Controllers\SettingController::class,'saveDiscordSettings'])->name('discord.settings.save');
         Route::post('/discord/settings/toggle-cron',[App\Http\Controllers\SettingController::class,'toggleDiscordCron'])->name('discord.toggle.cron');
+        
+        //slack settings
+        Route::get('slack/settings',[App\Http\Controllers\Admin\SlackSettingsController::class,'index'])->name('slack.settings');
+        Route::post('slack/settings/save',[App\Http\Controllers\Admin\SlackSettingsController::class,'store'])->name('slack.settings.save');
+        Route::post('slack/settings/test',[App\Http\Controllers\Admin\SlackSettingsController::class,'testWebhook'])->name('slack.settings.test');
+        Route::delete('slack/settings/{id}',[App\Http\Controllers\Admin\SlackSettingsController::class,'destroy'])->name('slack.settings.delete');
     }); Route::get('/discord/settings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
 
 });
@@ -511,6 +517,7 @@ Route::post('/notifications/mark-all-read', [NotificationController::class, 'mar
 Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
 Route::get('/notifications/list', [NotificationController::class, 'getNotificationsList'])->middleware(['auth']);
 Route::get('/notifications/list/all', [NotificationController::class, 'getNotificationsListAll'])->middleware(['auth']);
+Route::get('/notifications/order/{orderId}', [NotificationController::class, 'getOrderNotifications'])->middleware(['auth'])->name('notifications.order');
 
 
 
@@ -627,3 +634,24 @@ Route::get('/go/{slug}', function ($slug) {
     $originalUrl = Crypt::decryptString($record->encrypted_url);
     return redirect()->away($originalUrl);
 });
+// Manual trigger for domain removal task Slack alerts
+Route::get('/cron/run-domain-removal-slack-alerts', function () {
+    try {
+        $options = [];
+        // Capture command output
+        $exitCode = Artisan::call('domain-removal:send-slack-alerts', $options);
+        $output = Artisan::output();
+        return response()->json([
+            'success' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'output' => $output,
+            'message' => $exitCode === 0 ? 'Domain removal Slack alerts sent successfully' : 'Command failed'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('cron.run-domain-removal-slack-alerts');

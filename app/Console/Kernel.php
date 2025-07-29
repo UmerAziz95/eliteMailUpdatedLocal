@@ -23,6 +23,13 @@ class Kernel extends ConsoleKernel
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
+        // Panel capacity notifications every 5 minutes
+        $schedule->command('panels:capacity-notifications')
+                ->everyFiveMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
         // Process domain removal queue every minute
         $schedule->command('domains:process-removal-queue')
                 ->everyMinute()
@@ -31,6 +38,21 @@ class Kernel extends ConsoleKernel
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
         // Daily database backup at 3:00 AM (USA time)
+        // Order countdown notifications every 5 minutes
+        $schedule->command('orders:countdown-notifications')
+                ->everyFiveMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+        // Domain removal task Slack alerts every 10 minutes
+        $schedule->command('domain-removal:send-slack-alerts')
+                ->everyTenMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+        // ⏰ Daily database backup at 3:00 AM (USA time)
         $schedule->command('backup:daily')
                 ->dailyAt('03:00')
                 ->timezone('America/New_York')
@@ -38,18 +60,18 @@ class Kernel extends ConsoleKernel
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
         // 🔔 Discord message sender (every 5 minutes)
-      $schedule->call(function () {
-    app()->call([\App\Http\Controllers\SettingController::class, 'discorSendMessageCron']);
-})
-->name('Send Discord Message') // ✅ MUST come BEFORE withoutOverlapping()
-->everyMinute()
-->withoutOverlapping()
-->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
-    }
+        $schedule->call(function () {
+                app()->call([\App\Http\Controllers\SettingController::class, 'discorSendMessageCron']);
+                })
+                ->name('Send Discord Message') // ✅ MUST come BEFORE withoutOverlapping()
+                ->everyMinute()
+                ->withoutOverlapping()
+                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+        }
 
-    protected function commands(): void
-    {
-        $this->load(__DIR__.'/Commands');
-        require base_path('routes/console.php');
-    }
+        protected function commands(): void
+        {
+                $this->load(__DIR__.'/Commands');
+                require base_path('routes/console.php');
+        }
 }

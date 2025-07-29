@@ -3,10 +3,13 @@
 namespace App\Observers;
 
 use App\Models\Order;
+use App\Models\Notification;
 use App\Events\OrderCreated;
 use App\Events\OrderUpdated;
 use App\Events\OrderStatusUpdated;
-
+use App\Services\ActivityLogService;
+use App\Services\SlackNotificationService;
+use Illuminate\Support\Facades\Auth;
 class OrderObserver
 {
     /**
@@ -44,7 +47,7 @@ class OrderObserver
         if (isset($changes['status_manage_by_admin'])) {
             $previousStatus = $order->getOriginal('status_manage_by_admin');
             $newStatus = $order->status_manage_by_admin;
-            $reason = $order->reason ?? null;
+            $reason = $order->reason ?? $order->subscription->reason ?? null;
             
             \Log::info('OrderObserver: Status change detected', [
                 'order_id' => $order->id,
@@ -52,6 +55,103 @@ class OrderObserver
                 'new_status' => $newStatus,
                 'reason' => $reason
             ]);
+            
+            // Send Slack notification if order status changes from draft to any other status
+            if (strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') {
+                try {
+                    // Calculate inbox count and split count
+                    $inboxCount = 0;
+                    $splitCount = 0;
+                    
+                    if ($order->orderPanels && $order->orderPanels->count() > 0) {
+                        foreach ($order->orderPanels as $orderPanel) {
+                            $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                            
+                            foreach ($orderPanel->orderPanelSplits as $split) {
+                                if ($split->domains && is_array($split->domains)) {
+                                    $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If no splits found, try to get from reorderInfo
+                    if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+                        $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+                    }
+                    
+                    $orderData = [
+                        'id' => $order->id,
+                        'order_id' => $order->id,
+                        'name' => 'Order #' . $order->id,
+                        'customer_name' => $order->user ? $order->user->name : 'Unknown',
+                        'customer_email' => $order->user ? $order->user->email : 'Unknown',
+                        'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+                        'inbox_count' => $inboxCount,
+                        'split_count' => $splitCount,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ];
+                    
+                    SlackNotificationService::sendNewOrderAvailableNotification($orderData);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order available', [
+                        'order_id' => $order->id,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for new order available', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Send Slack notification if order is cancelled
+            if (strtolower($newStatus) === 'cancelled') {
+                try {
+                    SlackNotificationService::sendOrderCancellationNotification($order, $reason);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for cancelled order', [
+                        'order_id' => $order->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for cancelled order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Send Slack notification if order is rejected
+            if (strtolower($newStatus) === 'reject') {
+                try {
+                    SlackNotificationService::sendOrderRejectionNotification($order, $reason);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for rejected order', [
+                        'order_id' => $order->id,
+                        'reason' => $reason
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for rejected order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Send Slack notification if order is completed
+            if (strtolower($newStatus) === 'completed') {
+                try {
+                    SlackNotificationService::sendOrderCompletionNotification($order);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for completed order', [
+                        'order_id' => $order->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for completed order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
             
             // Fire the OrderStatusUpdated event for real-time updates
             event(new OrderStatusUpdated($order, $previousStatus, $newStatus, $reason));
@@ -67,6 +167,79 @@ class OrderObserver
         \Log::info('OrderObserver: OrderUpdated event fired', [
             'order_id' => $order->id
         ]);
+
+        // Check if assigned_to was changed
+        if (isset($changes['assigned_to'])) {
+            $newAssignedTo = $order->assigned_to;
+            $oldAssignedTo = $order->getOriginal('assigned_to');
+
+            \Log::info('OrderObserver: Assignment change detected', [
+                'order_id' => $order->id,
+                'old_assigned_to' => $oldAssignedTo,
+                'new_assigned_to' => $newAssignedTo
+            ]);
+            
+            // Create notification when order is assigned to contractor (from null to assigned)
+            if ($newAssignedTo && !$oldAssignedTo) {
+                \Log::info('OrderObserver: Creating notification for contractor assignment', [
+                    'order_id' => $order->id,
+                    'assigned_to' => $newAssignedTo,
+                    'auth_user_id' => Auth::id()
+                ]);
+
+                try {
+                    // Create a notification for the contractor
+                    Notification::create([
+                        'user_id' => $newAssignedTo,
+                        'type' => 'order_assigned',
+                        'title' => 'Order Assigned',
+                        'message' => 'You have been assigned to order #' . $order->id,
+                        'data' => [
+                            'order_id' => $order->id,
+                            'assigned_to' => $newAssignedTo,
+                            'assigned_by' => Auth::id(),
+                        ],
+                        'is_read' => false
+                    ]);
+
+                    // Also create a log entry
+                    ActivityLogService::log(
+                        'order-assigned',
+                        'Order assigned to contractor: ' . $order->id . ' - ' . ($order->assignedTo ? $order->assignedTo->name : 'Unknown'),
+                        $order,
+                        [
+                            'order_id' => $order->id,
+                            'assigned_to' => $newAssignedTo,
+                        ],
+                        Auth::id() ?? 1 // Performed By - fallback to admin if no auth
+                    );
+                    // Send Slack notification if order is assigned
+                    SlackNotificationService::sendOrderAssignmentNotification($order, $newAssignedTo);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order assignment', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo
+                    ]);
+                    \Log::info('OrderObserver: Order assignment notification created successfully', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderObserver: Failed to create assignment notification', [
+                        'order_id' => $order->id,
+                        'assigned_to' => $newAssignedTo,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            } else {
+                \Log::info('OrderObserver: Assignment condition not met', [
+                    'order_id' => $order->id,
+                    'new_assigned_to' => $newAssignedTo,
+                    'old_assigned_to' => $oldAssignedTo,
+                    'condition_met' => false
+                ]);
+            }
+        }
     }
 
     /**

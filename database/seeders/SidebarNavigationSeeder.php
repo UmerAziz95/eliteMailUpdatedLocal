@@ -149,6 +149,13 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.discord.settings",
                         "permission" => "Discord Settings",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Slack Settings",
+                        "icon" => "ti ti-brand-slack fs-5",
+                        "route" => "admin.slack.settings",
+                        "permission" => "Slack Settings",
+                        'sub_menu' => []
             ]
             // [
             //             "name" => "Coupons",

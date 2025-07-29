@@ -270,8 +270,8 @@
         <!-- /User Card -->
 
         <!-- Plan Card -->
-        <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
-            <div class="card-body">
+        <!-- <div class="card mb-4 rounded" style="border: 2px solid var(--second-primary)">
+            <div class="card-body"> -->
                 @php
                 $latestOrder = Auth::user()
                 ->orders()
@@ -291,7 +291,7 @@
                 )->subDay();
                 }
                 @endphp
-                <div class="d-flex justify-content-between align-items-center">
+                <!-- <div class="d-flex justify-content-between align-items-center">
                     @if ($latestOrder && $latestOrder->plan)
                     <span class="badge bg-label-primary">{{ $latestOrder->plan->name }}</span>
                     <div class="d-flex justify-content-center">
@@ -303,10 +303,10 @@
                     @else
                     <span class="badge bg-label-secondary">No Active Plan</span>
                     @endif
-                </div>
+                </div> -->
 
                 @if ($latestOrder && $latestOrder->reorderInfo && $latestOrder->reorderInfo->count() > 0)
-                <ul class="list-unstyled g-2 my-4">
+                <!-- <ul class="list-unstyled g-2 my-4">
                     <li class="mb-2 d-flex align-items-center">
                         <i class="icon-base ti tabler-circle-filled icon-10px text-secondary me-2"></i>
                         <span class="small">
@@ -328,11 +328,11 @@
                                 {{ ucfirst($latestOrder->status_manage_by_admin) }}
                             </span></span>
                     </li>
-                </ul>
+                </ul> -->
                 @endif
 
                 @if ($latestOrder && $latestOrder->subscription)
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <!-- <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="mb-0">Subscription Period: </span>
                     <small class="opacity-75 mb-0">
                         {{ \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date)->format('M d, Y') }}
@@ -341,9 +341,9 @@
                         \Carbon\Carbon::parse($latestOrder->subscription->next_billing_date)->subDay()->format('M d, Y')
                         : 'N/A' }}
                     </small>
-                </div>
+                </div> -->
                 <!-- remaining days and next billing date check deeply and analyzed -->
-                <div class="progress mb-1 bg-label-primary rounded-1 p-0" style="height: 4px; padding: 0 !important;">
+                <!-- <div class="progress mb-1 bg-label-primary rounded-1 p-0" style="height: 4px; padding: 0 !important;">
                     @php
                     $startDate = \Carbon\Carbon::parse($latestOrder->subscription->last_billing_date);
                     $endDate = $latestOrder->subscription->next_billing_date
@@ -372,16 +372,16 @@
                     @endphp
                     <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;"
                         aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <small class="opacity-50">{{ $daysRemaining }} days remaining</small>
+                </div> -->
+                <!-- <small class="opacity-50">{{ $daysRemaining }} days remaining</small> -->
                 @endif
 
-                <div class="d-grid w-100 mt-4">
+                <!-- <div class="d-grid w-100 mt-4">
                     <a href="{{ route('customer.pricing') }}"
                         class="m-btn border-0 py-2 px-4 rounded-2 text-center">Upgrade Plan</a>
-                </div>
-            </div>
-        </div>
+                </div> -->
+            <!-- </div>
+        </div> -->
         <!-- /Plan Card -->
     </div>
     <!--/ User Sidebar -->
@@ -407,7 +407,7 @@
                         class="fa-regular fa-bell"></i> Activity</button>
             </li>
 
-            <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="plans-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
                     type="button" role="tab" aria-controls="plans-tab-pane" aria-selected="false"><i
                         class="fa-solid fa-file-invoice"></i> Plans</button>
