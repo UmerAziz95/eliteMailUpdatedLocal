@@ -171,24 +171,61 @@
 
         .btn-primary {
             display: inline-block;
-            background: var(--gradient-3);
-            color: var(--white-color);
-            padding: 16px 32px;
+            background: linear-gradient(135deg, #7367ef 0%, #9c88ff 50%, #7367ef 100%);
+            color: #ffff !important;
+            padding: 15px 32px;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 25px 0;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            margin: 20px 0;
             border: none;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(115, 103, 240, 0.2);
-            transition: all 0.3s ease;
-            animation: borderGlow 2s infinite;
+            box-shadow: 
+                0 8px 32px rgba(115, 103, 240, 0.4),
+                0 4px 16px rgba(115, 103, 240, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite, borderGlow 2s infinite;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(115, 103, 240, 0.3);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(115, 103, 240, 0.6),
+                0 8px 25px rgba(115, 103, 240, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #8f84ff 0%, #b19eff 50%, #8f84ff 100%);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .highlight-text {
@@ -280,10 +317,16 @@
                 {{-- <p>Alternatively, you can verify your email using the following secure link:</p> --}}
 
                 @if($verificationLink)
-                <div style="text-align: center; margin: 30px 0;">
+                <div style="text-align: center; margin: 40px 0; padding: 20px; background: linear-gradient(145deg, rgba(115, 103, 240, 0.05) 0%, rgba(115, 103, 240, 0.1) 100%); border-radius: 20px; border: 1px solid rgba(115, 103, 240, 0.1);">
+                    <div style="margin-bottom: 15px;">
+                        <span style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Click the button below to verify your account</span>
+                    </div>
                     <a href="{{ $verificationLink }}" class="btn-primary">
-                        Verify Email Address
+                        ✉️ Verify Here
                     </a>
+                    <div style="margin-top: 15px;">
+                        <span style="font-size: 12px; color: var(--text-secondary); opacity: 0.8;">This link will expire in 24 hours</span>
+                    </div>
                 </div>
                 @endif
 
