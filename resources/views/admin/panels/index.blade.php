@@ -1560,7 +1560,7 @@
                                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                                     Split 01
                                                                 </span>
-                                                                <small class="text-white fw-bold">PNL-${order.panel_id } Domains</small>
+                                                                <small class="text-white fw-bold text-uppercase">PNL-${order.panel_id} | ${order.panel_title || 'N/A'}</small>
                                                             </div>
                                                             <div class="d-flex align-items-center">
                                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -1592,7 +1592,7 @@
                                                                         <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                                             Split ${String(index + 2).padStart(2, '0')}
                                                                         </span>
-                                                                        <small class="text-white fw-bold">PNL-${panel.panel_id} Domains</small>
+                                                                        <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
                                                                     </div>
                                                                     <div class="d-flex align-items-center">
                                                                         <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">

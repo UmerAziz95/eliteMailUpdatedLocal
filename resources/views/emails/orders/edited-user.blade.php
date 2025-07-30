@@ -239,7 +239,7 @@
         
         <div class="content">
             <p>Dear {{ $user->name }},</p>
-            <p>Your order has been updated successfully. The order is now pending review by our team.</p>
+            <p>Your order has been updated successfully. The order is now being processed.</p>
 
             <div class="detail-card">
                 <div class="detail-row">
@@ -275,8 +275,6 @@
                     <span class="detail-value">{{ $reorderInfo->total_inboxes }}</span>
                 </div>
             </div>
-
-            <p style="margin-top: 20px;">Our team will review your updated order information and will contact you if we need any further information.</p>
         </div>
 
         <div class="footer">
