@@ -8,6 +8,7 @@
 
 @section('content')
 <section class="py-3" data-page="invoices">
+    @include('customer.chatbot.chat')
     <div class="counters mb-4">
         <div class="card p-2 counter_1">
             <div class="card-body">

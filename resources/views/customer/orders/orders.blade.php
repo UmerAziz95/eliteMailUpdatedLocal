@@ -172,6 +172,7 @@
 
 
     <section class="py-3" data-page="orders">
+        @include('customer.chatbot.chat')
 
         <div class="counters mb-4">
             <div class="card p-3 counter_1">

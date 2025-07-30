@@ -341,6 +341,8 @@
             </a>
         </div>
 
+        @include('customer.chatbot.chat')
+
         <div class="row gy-4">
             <!-- Inbox Statistics -->
             <div class="col-md-6 col-lg-4">
