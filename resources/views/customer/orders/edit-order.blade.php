@@ -1739,8 +1739,8 @@ $(document).ready(function() {
                 if (isConfigurationError) {
                     // Configuration error: order has limit but can't fit any domains
                     $('#domains').addClass('is-invalid');
-                    $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
-                    toastr.warning('Cannot create domains with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
+                    $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+                    toastr.warning('Can’t create inboxes with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -2023,7 +2023,7 @@ $(document).ready(function() {
             if (isConfigurationError) {
                 // Configuration error: order has limit but can't fit any domains with current inboxes per domain
                 $('#domains').addClass('is-invalid');
-                $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
                 
                 // During import, just return early
                 if (isImporting) {
@@ -2035,10 +2035,9 @@ $(document).ready(function() {
                     limitExceededShown = true;
                     Swal.fire({
                         title: 'Configuration Issue',
-                        html: `<strong>Cannot create domains with current settings.</strong><br><br>
+                        html: `<strong>Can’t create inboxes with current settings.</strong><br><br>
                                Your order limit is <strong>${orderInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
-                               You currently have <strong>${domains.length}</strong> domains that need to be removed.<br><br>
-                               <small>Please reduce inboxes per domain or contact support to increase your order limit.</small>`,
+                               <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
                         icon: 'warning',
                         confirmButtonText: 'Clear All Domains',
                         confirmButtonColor: '#dc3545',
@@ -2570,7 +2569,7 @@ $(document).ready(function() {
                         if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
                             isValid = false;
                             domainsField.addClass('is-invalid');
-                            $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                            $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
                             
                             if (!firstErrorField) {
                                 firstErrorField = domainsField;
