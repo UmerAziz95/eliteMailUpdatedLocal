@@ -63,16 +63,22 @@ class HostingPlatformSeeder extends Seeder
                     //     'type' => 'text',
                     //     'required' => true
                     // ],
+                    // hosting_platform
+                    // 'hosting_platform'=>[
+                    //     'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
+                    //     'type' => 'text',
+                    //     'required' => true
+                    // ],
                     'platform_login' => [
-                        'label' => 'Domain Hosting Platform - Login',
+                        'label' => 'Domain Hosting Platform - Your GoDaddy Account Name (NOT Email)',
                         'type' => 'text',
                         'required' => true
                     ],
-                    'platform_password' => [
-                        'label' => 'Domain Hosting Platform - Password',
-                        'type' => 'password',
-                        'required' => true
-                    ]
+                    // 'platform_password' => [
+                    //     'label' => 'Domain Hosting Platform - Password',
+                    //     'type' => 'password',
+                    //     'required' => true
+                    // ]
                 ],
                 'sort_order' => 2
             ],

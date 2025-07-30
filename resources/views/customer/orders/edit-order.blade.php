@@ -255,7 +255,7 @@
                     @endforeach
                 </select>
                 <div class="invalid-feedback" id="hosting-error"></div>
-                <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
+                <p class="note mb-0">(Where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
             </div>
 
