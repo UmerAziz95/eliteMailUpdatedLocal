@@ -162,7 +162,7 @@ class HostingPlatformSeeder extends Seeder
                 'sort_order' => 6
             ],
             [
-                'name' => 'Other',
+                'name' => 'Other (Fill in further details in the ‘Additional Details’ field below)',
                 'value' => 'other',
                 'fields' => [
                     'other_platform' => [
