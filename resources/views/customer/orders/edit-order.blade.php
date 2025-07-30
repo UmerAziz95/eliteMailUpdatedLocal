@@ -2095,7 +2095,7 @@ $(document).ready(function() {
                     
                     // Show warning popup without auto-trimming
                     Swal.fire({
-                        title: 'Order Limit Exceeded!',
+                        title: 'Configuration Issue',
                         html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
                                You need to remove <strong>${excessDomains}</strong> domains.<br><br>
                                <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,

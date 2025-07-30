@@ -1,4 +1,4 @@
-<style>
+<!-- <style>
     .chat-header a {
         text-decoration: none;
         color: white;
@@ -295,4 +295,4 @@
             chatBox.appendChild(buttonContainer);
         }
     }
-</script>
+</script> -->
