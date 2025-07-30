@@ -92,7 +92,7 @@ class PanelCapacityNotificationRecord extends Model
         }
         
         // For other thresholds, check if capacity is in the range
-        $upperThreshold = $allThresholds[$currentIndex - 1];
+        $upperThreshold = $allThresholds[$currentIndex];
         return $currentCapacity > $this->threshold && $currentCapacity <= $upperThreshold;
     }
 
