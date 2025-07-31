@@ -42,6 +42,8 @@ use App\Http\Controllers\Admin\AdminSettingsController;
 //coupons
 use App\Http\Controllers\Admin\AdminCouponController;
 
+use App\Models\User;
+use App\Services\AccountCreationGHL;
 
 //cron
 use App\Http\Controllers\CronController;
@@ -655,3 +657,26 @@ Route::get('/cron/run-domain-removal-slack-alerts', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-slack-alerts');
+
+// $this->ghlService->createContact($user, 'lead');
+Route::get('/ghl/create-contact', function () {
+    try {
+        $user = User::find(1); // Replace with the actual user ID or logic to get the user
+        $ghlService = new AccountCreationGHL();
+        $ghlService->createContact($user, 'lead');
+        return response()->json(['success' => true, 'message' => 'Contact created successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('ghl.create-contact');
+
+// testConnection
+Route::get('/ghl/test-connection', function () {
+    try {
+        $ghlService = new AccountCreationGHL();
+        $result = $ghlService->testConnection();
+        return response()->json(['success' => true, 'message' => 'Connection successful', 'data' => $result]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('ghl.test-connection');

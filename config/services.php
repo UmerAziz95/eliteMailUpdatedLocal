@@ -35,4 +35,13 @@ return [
         'api_key' => env('CHARGEBEE_API_KEY'),
     ],
 
+    'ghl' => [
+        'enabled' => env('GHL_ENABLED', false),
+        'base_url' => env('GHL_BASE_URL', 'https://services.leadconnectorhq.com'),
+        'api_token' => env('GHL_API_TOKEN'),
+        'location_id' => env('GHL_LOCATION_ID'),
+        'auth_type' => env('GHL_AUTH_TYPE', 'bearer'), // bearer, jwt, api_key
+        'api_version' => env('GHL_API_VERSION', '2021-07-28'),
+    ],
+
 ];

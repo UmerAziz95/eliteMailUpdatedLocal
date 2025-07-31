@@ -9,10 +9,12 @@ use Illuminate\Support\Facades\DB;
 use ChargeBee\ChargeBee\Environment;
 use App\Models\Order;
 use App\Models\Panel;
+use App\Models\User;
 use App\Models\DomainRemovalTask;
 use App\Models\Invoice;
 use App\Observers\OrderObserver;
 use App\Observers\PanelObserver;
+use App\Observers\UserObserver;
 use App\Observers\DomainRemovalTaskObserver;
 use App\Observers\InvoiceObserver;
 
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         // Register model observers
         Order::observe(OrderObserver::class);
         Panel::observe(PanelObserver::class);
+        User::observe(UserObserver::class);
         DomainRemovalTask::observe(DomainRemovalTaskObserver::class);
         Invoice::observe(InvoiceObserver::class);
         
