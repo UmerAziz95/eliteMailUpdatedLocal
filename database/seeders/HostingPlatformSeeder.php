@@ -204,6 +204,8 @@ class HostingPlatformSeeder extends Seeder
         ];
         HostingPlatform::truncate();
         foreach ($platforms as $platform) {
+            // Convert fields array to JSON with preserved order
+            $platform['fields'] = json_encode($platform['fields'], JSON_PRESERVE_ZERO_FRACTION);
             HostingPlatform::create($platform);
         }
     }
