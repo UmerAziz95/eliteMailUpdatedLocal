@@ -108,7 +108,7 @@
                 <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
             </div>
-
+            
             <div id="tutorial_section" class="mb-3" style="display: none;">
                 <div class="">
                     <p class="mb-0">
@@ -124,7 +124,7 @@
                     value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->other_platform : '' }}">
                 <div class="invalid-feedback" id="other-platform-error"></div>
             </div> -->
-
+            
             <div id="platform-fields-container">
                 <!-- Dynamic platform fields will be inserted here -->
             </div>

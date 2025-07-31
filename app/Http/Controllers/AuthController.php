@@ -246,7 +246,7 @@ class AuthController extends Controller
                 }
             return response()->json([
                 'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
-            ], 403);
+            ], 200);
         }
         
         if ($existingUser) {

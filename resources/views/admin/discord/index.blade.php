@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'security')
+@section('title', 'Discord Configuration')
 
 @push('styles')
 <style>

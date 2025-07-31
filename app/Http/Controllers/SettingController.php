@@ -110,7 +110,7 @@ public function sendDiscordMessage(Request $request)
         ]);
     }
 
-   public static function discorSendMessageCron()
+      public static function discorSendMessageCron()
 {
     Log::info('✅ discorSendMessageCron method triggered.');
     
@@ -197,5 +197,4 @@ public function sendDiscordMessage(Request $request)
         return false;
     }
 }
-
 }

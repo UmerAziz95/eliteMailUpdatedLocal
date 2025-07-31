@@ -41,6 +41,8 @@ use App\Http\Controllers\Customer\CustomerSupportController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 //coupons
 use App\Http\Controllers\Admin\AdminCouponController;
+// domain health dashboard
+use App\Http\Controllers\Admin\DomainHealthDashboardController; 
 
 
 //cron
@@ -49,6 +51,8 @@ use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\ShortEncryptedLink;
+use Flasher\Laravel\Facade\Flasher;
+use Flasher\Noty\Prime\NotyInterface;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -208,7 +212,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
         
-        //panels
+        //panels/
         Route::get('/panels/dashboard', [AdminPanelController::class, 'index'])->name('panels.index');
         Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
@@ -275,7 +279,18 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('slack/settings/save',[App\Http\Controllers\Admin\SlackSettingsController::class,'store'])->name('slack.settings.save');
         Route::post('slack/settings/test',[App\Http\Controllers\Admin\SlackSettingsController::class,'testWebhook'])->name('slack.settings.test');
         Route::delete('slack/settings/{id}',[App\Http\Controllers\Admin\SlackSettingsController::class,'destroy'])->name('slack.settings.delete');
-    }); Route::get('/discord/settings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
+        Route::get('/discord/settvings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
+
+        //domain health dashboard   
+        Route::get('/domain_health_dashboard', [DomainHealthDashboardController::class, 'index'])->name('domain_health_dashboard.index');
+        Route::get('/domains/orders/card/data', [DomainHealthDashboardController::class, 'getCardOrders'])->name('domains.orders.card.data');
+        Route::get('/domains/orders/{id}/view', [DomainHealthDashboardController::class, 'view'])->name('domains.orders.view');
+        Route::get('/domains/status/check', [DomainHealthDashboardController::class, 'checkDomainHealth'])->name('domains.status.check');
+        Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
+        Route::get('/domains/health/report/{id}', [DomainHealthDashboardController::class, 'domainsHelthReport'])->name('domains.health.report');
+
+
+    });
 
 });
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
@@ -655,3 +670,5 @@ Route::get('/cron/run-domain-removal-slack-alerts', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-slack-alerts');
+
+

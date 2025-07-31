@@ -47,7 +47,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'GoDaddy',
                 'value' => 'godaddy',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://docs.google.com/document/d/1x-PidbdG6AeptKtIZQ8-nqFBxQ1h_fKU0Wn5dmd7f3U/edit?usp=sharing',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
@@ -86,7 +86,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Porkbun',
                 'value' => 'porkbun',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://docs.google.com/document/d/1wr9l_jsBzfL4OZgZOEbslYdXtruhakrdUdTPiRZGG8w/edit?usp=sharing',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Porkbun - Access Tutorial',
@@ -204,7 +204,10 @@ class HostingPlatformSeeder extends Seeder
         ];
         HostingPlatform::truncate();
         foreach ($platforms as $platform) {
-            HostingPlatform::create($platform);
+            HostingPlatform::updateOrCreate(
+                ['value' => $platform['value']],
+                $platform
+            );
         }
     }
 }
