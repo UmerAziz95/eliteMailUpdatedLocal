@@ -51,6 +51,8 @@ use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\ShortEncryptedLink;
+use Flasher\Laravel\Facade\Flasher;
+use Flasher\Noty\Prime\NotyInterface;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -285,6 +287,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/domains/orders/{id}/view', [DomainHealthDashboardController::class, 'view'])->name('domains.orders.view');
         Route::get('/domains/status/check', [DomainHealthDashboardController::class, 'checkDomainHealth'])->name('domains.status.check');
         Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
+        Route::get('/domains/health/report/{id}', [DomainHealthDashboardController::class, 'domainsHelthReport'])->name('domains.health.report');
 
 
     });
@@ -667,3 +670,5 @@ Route::get('/cron/run-domain-removal-slack-alerts', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-slack-alerts');
+
+

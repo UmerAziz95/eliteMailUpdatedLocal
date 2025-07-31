@@ -18,7 +18,9 @@ use App\Models\OrderPanel;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Http;
 use App\Models\DomainHealthCheck;
-
+use App\Services\SlackNotificationService;
+use App\Models\SlackSettings;
+use Illuminate\Support\Facades\Response;
 
 class DomainHealthDashboardController extends Controller
 {
@@ -46,7 +48,7 @@ class DomainHealthDashboardController extends Controller
         $this->statuses = Status::pluck('badge', 'name')->toArray();
     }
     public function index(Request $request){  
-         $plans = Plan::all();
+        $plans = Plan::all();
         $userId = auth()->id();
         $orders = Order::all();
         $statuses = $this->statuses;
@@ -92,8 +94,8 @@ class DomainHealthDashboardController extends Controller
             ->select('orders.*')
             ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits', 'assignedTo'])
             ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
-            ->leftJoin('users', 'orders.user_id', '=', 'users.id');
-            // ->where('orders.status_manage_by_admin', 'completed'); // ✅ Main filter
+            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+            ->where('orders.status_manage_by_admin', 'completed'); // ✅ Main filter
 
         // Additional filters
         if ($request->filled('plan_id')) {
@@ -296,27 +298,29 @@ class DomainHealthDashboardController extends Controller
 
 public function checkDomainHealth($orderId = null)
 {
-    if (!$orderId) {
-        return false;
+    $query = Order::with(['reorderInfo'])->where("status_manage_by_admin", "completed");
+
+    if ($orderId) {
+        $query->where('id', $orderId);
     }
 
-    $orders = Order::with(['reorderInfo'])->where("status_manage_by_admin", "completed")->get();
-    if (!$orders) {
-        return false;
+    $orders = $query->get();
+  
+    if ($orders->isEmpty()) {
+        return response()->json(['message' => 'No orders found.'], 404);
     }
 
     $overallResults = [];
+    $apiKey = env('MXTOOLBOX_API_KEY');
+    $baseUrl = "https://mxtoolbox.com/api/v1/lookup";
 
     foreach ($orders as $order) {
         if ($order->reorderInfo->isEmpty()) {
-            continue; // Skip orders without reorder info
+            continue;
         }
 
         $domains = explode(',', $order->reorderInfo->first()->domains);
-        $apiKey = env('MXTOOLBOX_API_KEY');
-        $baseUrl = "https://mxtoolbox.com/api/v1/lookup";
         $results = [];
-
         $unhealthyDomains = 0;
         $blacklistedDomains = 0;
 
@@ -328,15 +332,11 @@ public function checkDomainHealth($orderId = null)
                 $dnsResponse = Http::get($dnsUrl)->json();
                 $blacklistResponse = Http::get($blacklistUrl)->json();
 
-                $dnsErrors = collect($dnsResponse['Failed'] ?? [])
-                    ->pluck('Name')
-                    ->toArray();
+                $dnsErrors = collect($dnsResponse['Failed'] ?? [])->pluck('Name')->toArray();
                 $dnsStatus = empty($dnsErrors) ? "OK" : implode(", ", $dnsErrors);
 
                 $listed = !empty($blacklistResponse['Failed']);
-                $listedOn = array_map(function($item) {
-                    return $item['Name'];
-                }, $blacklistResponse['Failed'] ?? []);
+                $listedOn = collect($blacklistResponse['Failed'] ?? [])->pluck('Name')->toArray();
 
                 if ($listed && !empty($dnsErrors)) {
                     $status = "Critical Error";
@@ -352,23 +352,26 @@ public function checkDomainHealth($orderId = null)
                     $summary = "No DNS errors or blacklist issues detected.";
                 }
 
-                DomainHealthCheck::create([
-                    'order_id' => $orderId,
-                    'domain' => $domain,
-                    'status' => $status,
-                    'summary' => $summary,
-                    'dns_status' => $dnsStatus,
-                    'dns_errors' => $dnsErrors,
-                    'blacklist_listed' => $listed,
-                    'blacklist_listed_on' => $listedOn
-                ]);
-
+               DomainHealthCheck::updateOrCreate(
+                    [
+                        'order_id' => $order->id,
+                        'domain' => $domain,
+                    ],
+                    [
+                        'status' => $status,
+                        'summary' => $summary,
+                        'dns_status' => $dnsStatus,
+                        'dns_errors' => $dnsErrors,
+                        'blacklist_listed' => $listed,
+                        'blacklist_listed_on' => $listedOn,
+                    ]
+                );
                 $results[] = [
                     "domain" => $domain,
                     "status" => $status,
                     "summary" => $summary,
                     "dns" => [
-                        "status" => empty($dnsErrors) ? "OK" : $dnsStatus,
+                        "status" => $dnsStatus,
                         "errors" => $dnsErrors,
                     ],
                     "blacklist" => [
@@ -380,6 +383,7 @@ public function checkDomainHealth($orderId = null)
                 if ($status !== "Healthy") {
                     $unhealthyDomains++;
                 }
+
                 if ($listed) {
                     $blacklistedDomains++;
                 }
@@ -404,7 +408,6 @@ public function checkDomainHealth($orderId = null)
             "blacklisted_domains" => $blacklistedDomains,
         ];
 
-        // Send Slack notification if there are any unhealthy domains
         if ($unhealthyDomains > 0) {
             $this->notifyOrderSlack(
                 $order->id,
@@ -419,8 +422,8 @@ public function checkDomainHealth($orderId = null)
     return response()->json(['results' => $overallResults]);
 }
 
-// Batch Slack notification per order
-private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $blacklistedDomains, $domainResults)
+
+private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $blacklistedDomains, $domainResults): void
 {
     $message = "*Domain Health Alert*\n";
     $message .= "Order ID: $orderId\n";
@@ -444,10 +447,16 @@ private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $b
         }
     }
 
-    Http::post('https://hooks.slack.com/services/your/webhook/url', ['text' => $message]);
+    // Use the actual type key, not label
+    SlackNotificationService::send('inbox-admins', $message);
 }
 
-    //  public function checkDomainHealth($orderId =null)
+
+
+
+
+
+//  public function checkDomainHealth($orderId =null)
 //     {
 //         if (!$orderId) {
 //             return false;
@@ -547,32 +556,123 @@ private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $b
 
 
 
-  public function domainsListings($orderId =null)
+public function domainsListings(Request $request, $orderId = null)
 {
-    
     if (!$orderId) { 
         return response()->json(['message' => 'Order ID not found'], 404);
     }
 
-    $records = \App\Models\DomainHealthCheck::where('order_id', $orderId)->get();
+    // DataTables parameters
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 10);
+    $draw = $request->input('draw', 1);
 
-    // Transform for DataTable: map to columns you wish to show
+    // Base query
+    $query = \App\Models\DomainHealthCheck::where('order_id', $orderId);
+
+    $recordsTotal = $query->count();
+
+    // Filtering (optional, e.g. search by domain)
+    if ($search = $request->input('search.value')) {
+        $query->where('domain', 'like', "%{$search}%");
+    }
+
+    $recordsFiltered = $query->count();
+
+    // Paging
+    $records = $query->skip($start)->take($length)->get();
+
+    // Map data
     $data = $records->map(function ($item) {
         return [
             'domain' => $item->domain ?? '',
             'status' => $item->status ?? '',
             'summary' => $item->summary ?? '',
-            // You can add more columns if needed, e.g.
             'dns_status' => $item->dns_status ?? '',
             'blacklist_listed' => $item->blacklist_listed ? 'Yes' : 'No',
         ];
     })->toArray();
 
     return response()->json([
-        'success' => true,
-        'data' => $data
+        'draw' => intval($draw),
+        'recordsTotal' => $recordsTotal,
+        'recordsFiltered' => $recordsFiltered,
+        'data' => $data,
     ]);
 }
 
 
+
+
+
+public function domainsHelthReport($id = null)
+{
+    // Handle missing ID
+    if (empty($id)) {
+        return redirect()->back()->with('error', '❌ Order ID is required to generate the report.');
+    }
+
+    try {
+        // Fetch domain health check records for this order
+        $domainHealthChecks = DomainHealthCheck::with('order')
+            ->where('order_id', $id)
+            ->get();
+
+        // Handle case when no records found
+        if ($domainHealthChecks->isEmpty()) {
+            return redirect()->back()->with('error', '⚠️ No domain health checks found for this Order ID.');
+        }
+
+        $fileName = 'domain_health_report_order_' . $id . '.csv';
+
+        // Define CSV headers
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        // Return streamed CSV
+        return Response::stream(function () use ($domainHealthChecks) {
+            $handle = fopen('php://output', 'w');
+
+            // CSV header row
+            fputcsv($handle, [
+                'ID',
+                'Order ID',
+                'Domain',
+                'Status',
+                'Summary',
+                'DNS Status',
+                'DNS Errors',
+                'Blacklisted',
+                'Blacklisted On',
+            ]);
+
+            // Write rows
+            foreach ($domainHealthChecks as $record) {
+                fputcsv($handle, [
+                    $record->id ?? '',
+                    $record->order_id ?? '',
+                    $record->domain ?? '',
+                    $record->status ?? '',
+                    $record->summary ?? '',
+                    $record->dns_status ?? '',
+                    json_encode($record->dns_errors ?? []),
+                    $record->blacklist_listed ? 'Yes' : 'No',
+                    json_encode($record->blacklist_listed_on ?? []),
+                ]);
+            }
+
+            fclose($handle);
+        }, 200, $headers);
+
+    } catch (\Exception $e) {
+        Log::error('Error generating domain health report: ' . $e->getMessage());
+
+        return redirect()->back()->with('error', '⚠️ Failed to generate report. Please try again later.');
+    }
+}
 }
