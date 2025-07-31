@@ -3,9 +3,9 @@
 @section('title', 'Orders')
 
 @section('content')
-    <section class="py-3 overflow-hidden">
-        {{-- <div class="d-flex align-items-center justify-content-between">
-        <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center" 
+<section class="py-3 overflow-hidden">
+    {{-- <div class="d-flex align-items-center justify-content-between">
+        <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center"
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
@@ -15,145 +15,144 @@
         </a>
     </div> --}}
 
-        @php
-            $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
-            $defaultProfilePic =
-                'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
-        @endphp
+    @php
+    $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
+    $defaultProfilePic =
+    'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
+    @endphp
 
-        <div class="d-flex align-items-center justify-content-between mt-3">
-            <div>
-                <div style="cursor: pointer; display: inline-flex; align-items: center; margin-bottom: 10px;">
-                    <a href="{{ url('/admin/orders') }}"
-                        style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background-color: #2f3349; border-radius: 50%; text-decoration: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                    </a>
-                </div>
-                <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
-                <h6><span class="opacity-50 fs-6">Order Date:</span>
-                    {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
+    <div class="d-flex align-items-center justify-content-between mt-3">
+        <div>
+            <div style="cursor: pointer; display: inline-flex; align-items: center; margin-bottom: 10px;">
+                <a href="{{ url('/admin/orders') }}"
+                    style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background-color: #2f3349; border-radius: 50%; text-decoration: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </a>
             </div>
-            <div
-                class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
-                {{ ucfirst($order->status_manage_by_admin ?? '') }}
-            </div>
+            <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
+            <h6><span class="opacity-50 fs-6">Order Date:</span>
+                {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
+        <div
+            class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
+            {{ ucfirst($order->status_manage_by_admin ?? '') }}
+        </div>
+    </div>
 
-        <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
-                    data-bs-target="#configuration-tab-pane" type="button" role="tab"
-                    aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
-            </li>
-            <li class="nav-item" role="presentation" style="display: none;">
-                <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
-                    type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
-                    data-bs-target="#subscription-tab-pane" type="button" role="tab"
-                    aria-controls="subscription-tab-pane" aria-selected="false">Subscription</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane"
-                    type="button" role="tab" aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
-            </li>
-        </ul>
+    <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+                data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
+                aria-selected="true">Configuration</button>
+        </li>
+        <li class="nav-item" role="presentation" style="display: none;">
+            <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
+                type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
+                data-bs-target="#subscription-tab-pane" type="button" role="tab" aria-controls="subscription-tab-pane"
+                aria-selected="false">Subscription</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane"
+                type="button" role="tab" aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
+        </li>
+    </ul>
 
-        <div class="tab-content mt-3" id="myTabContent">
-            <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
-                aria-labelledby="configuration-tab" tabindex="0">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card p-3 mb-3">
-                            <h6 class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                    <i class="fa-regular fa-envelope"></i>
-                                </div>
-                                Email configurations
-                            </h6>
+    <div class="tab-content mt-3" id="myTabContent">
+        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+            aria-labelledby="configuration-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-regular fa-envelope"></i>
+                            </div>
+                            Email configurations
+                        </h6>
 
-                            @if (optional($order->reorderInfo)->count() > 0)
-                                <div class="d-flex align-items-center justify-content-between">
-                                                                @php
-                                $domains = $order->reorderInfo->first()->domains ?? '';
-                                $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
-                                
-                                // Parse domains and count them
-                                $domainsArray = [];
-                                $lines = preg_split('/\r\n|\r|\n/', $domains);
-                                foreach ($lines as $line) {
-                                    if (trim($line)) {
-                                        $lineItems = explode(',', $line);
-                                        foreach ($lineItems as $item) {
-                                            if (trim($item)) {
-                                                $domainsArray[] = trim($item);
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                $totalDomains = count($domainsArray);
-                                $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                        @if (optional($order->reorderInfo)->count() > 0)
+                        <div class="d-flex align-items-center justify-content-between">
+                            @php
+                            $domains = $order->reorderInfo->first()->domains ?? '';
+                            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+
+                            // Parse domains and count them
+                            $domainsArray = [];
+                            $lines = preg_split('/\r\n|\r|\n/', $domains);
+                            foreach ($lines as $line) {
+                            if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                            if (trim($item)) {
+                            $domainsArray[] = trim($item);
+                            }
+                            }
+                            }
+                            }
+
+                            $totalDomains = count($domainsArray);
+                            $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
                             @endphp
-                            <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{ $inboxesPerDomain }})</span>
-                                    <span>Inboxes per domain <br>
-                                        {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex flex-column">
-                                    <span class="opacity-50">Prefix Variants</span>
-                                    @php
-                                        // Check if new prefix_variants JSON column exists and has data
-                                        $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
-                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
-                                        
-                                        // If new format doesn't exist, fallback to old individual fields
-                                        if (empty($prefixVariants)) {
-                                            $prefixVariants = [];
-                                            if ($order->reorderInfo->first()->prefix_variant_1) {
-                                                $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
-                                            }
-                                            if ($order->reorderInfo->first()->prefix_variant_2) {
-                                                $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
-                                            }
-                                        }
-                                    @endphp
-                                    
-                                    @for($i = 1; $i <= $inboxesPerDomain; $i++)
-                                        @php
-                                            $variantKey = "prefix_variant_$i";
-                                            $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
-                                        @endphp
-                                        <span>Variant {{ $i }}: {{ $variantValue }}</span>
-                                    @endfor
-                                </div>
-                                <div class="d-flex flex-column mt-3">
-                                    <span class="opacity-50">Profile Picture URLs</span>
-                                    @if($order->reorderInfo->first()->prefix_variants_details)
-                                        @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
-                                            <div class="mt-1">
-                                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
-                                                @if(!empty($variant['profile_link']))
-                                                    <a href="{{ $variant['profile_link'] }}" target="_blank">{{ $variant['profile_link'] }}</a>
-                                                @else
-                                                    <span>N/A</span>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    @else
-                                        <span>N/A</span>
-                                    @endif
-                                </div>
-                                <!-- <div class="d-flex flex-column mt-3">
+                            <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{
+                                $inboxesPerDomain }})</span>
+                            <span>Inboxes per domain <br>
+                                {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Prefix Variants</span>
+                            @php
+                            // Check if new prefix_variants JSON column exists and has data
+                            $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
+                            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+
+                            // If new format doesn't exist, fallback to old individual fields
+                            if (empty($prefixVariants)) {
+                            $prefixVariants = [];
+                            if ($order->reorderInfo->first()->prefix_variant_1) {
+                            $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
+                            }
+                            if ($order->reorderInfo->first()->prefix_variant_2) {
+                            $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
+                            }
+                            }
+                            @endphp
+
+                            @for($i = 1; $i <= $inboxesPerDomain; $i++) @php $variantKey="prefix_variant_$i" ;
+                                $variantValue=$prefixVariants[$variantKey] ?? 'N/A' ; @endphp <span>Variant {{ $i }}: {{
+                                $variantValue }}</span>
+                                @endfor
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Profile Picture URLs</span>
+                            @if($order->reorderInfo->first()->prefix_variants_details)
+                            @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
+                            <div class="mt-1">
+                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
+                                @if(!empty($variant['profile_link']))
+                                <a href="{{ $variant['profile_link'] }}" target="_blank">{{ $variant['profile_link']
+                                    }}</a>
+                                @else
+                                <span>N/A</span>
+                                @endif
+                            </div>
+                            @endforeach
+                            @else
+                            <span>N/A</span>
+                            @endif
+                        </div>
+                        <!-- <div class="d-flex flex-column mt-3">
                                     <span class="opacity-50">Profile Picture URL</span>
                                     <span>{{ $order->reorderInfo->first()->email_persona_picture_link ?? 'N/A' }}</span>
                                 </div> -->
-                                {{-- <div class="d-flex flex-column mt-3">
+                        {{-- <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Email Persona Password</span>
                             <span>{{ $order->reorderInfo->first()->email_persona_password ?? 'N/A' }}</span>
                         </div> --}}
@@ -161,12 +160,12 @@
                             <span class="opacity-50">Master Inbox Email</span>
                             <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
                         </div>
-                            @else
-                                <div class="text-muted">No email configuration data available</div>
-                            @endif
-                        </div>
+                        @else
+                        <div class="text-muted">No email configuration data available</div>
+                        @endif
+                    </div>
 
-                        <!-- <div class="card p-3">
+                    <!-- <div class="card p-3">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center"
                                     style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -194,187 +193,192 @@
                                 </div>
                             </div>
                         </div> -->
-                        <div class="price-display-section card p-3">
-                            @if(isset($order->plan) && $order->plan)
-                                @php
-                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->total_inboxes : 0;
-                                    $originalPrice = $order->plan->price * $totalInboxes;
-                                @endphp
-                                <div class="d-flex align-items-center gap-3">
-                                    <div>
-                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
-                                    </div>
-                                    <div>
-                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                        <br>
-                                        <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{ $order->plan->duration }})</small></span>
-                                    </div>
-                                </div>
-                                <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }}</h6>
-                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
-                                <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{ $order->plan->duration }}</small></h6>
-                            @else
-                                <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small></h6>
-                                <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
-                            @endif
+                    <div class="price-display-section card p-3">
+                        @if(isset($order->plan) && $order->plan)
+                        @php
+                        $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ?
+                        $order->reorderInfo->first()->total_inboxes : 0;
+                        $originalPrice = $order->plan->price * $totalInboxes;
+                        @endphp
+                        <div class="d-flex align-items-center gap-3">
+                            <div>
+                                <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                            </div>
+                            <div>
+                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                <br>
+                                <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{
+                                        $order->plan->duration }})</small></span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
-                            <h6 class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                    <i class="fa-solid fa-earth-europe"></i>
-                                </div>
-                                Domains & Configuration
-                            </h6>
-
-                            @if (optional($order->reorderInfo)->count() > 0)
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Hosting Platform</span>
-                                    <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
-                                </div>
-
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Platform Login</span>
-                                    <span>{{ $order->reorderInfo->first()->platform_login }}</span>
-                                </div>
-                                <!-- platform_password -->
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Platform Password</span>
-                                    <span>{{ $order->reorderInfo->first()->platform_password }}</span>
-                                </div>
-
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                    <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
-                                </div>
-
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Sending Platform</span>
-                                    <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
-                                </div>
-
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Cold email platform - Login</span>
-                                    <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
-                                </div>
-                                <!-- Sending plateform Sequencer - Password  -->
-                                <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Cold email platform - Password </span>
-                                    <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
-                                </div>
-                                <div class="d-flex flex-column">
-                                    <span class="opacity-50">Domains</span>
-                                    @php
-                                        // Get the domains string from the order
-                                        $domainsString = $order->reorderInfo->first()->domains;
-                                        
-                                        // Split by both newlines and commas
-                                        $domainsArray = [];
-                                        
-                                        // First split by newlines
-                                        $lines = preg_split('/\r\n|\r|\n/', $domainsString);
-                                        
-                                        // Then process each line
-                                        foreach ($lines as $line) {
-                                            if (trim($line)) {
-                                                // Split line by commas and add to domains array
-                                                $lineItems = explode(',', $line);
-                                                foreach ($lineItems as $item) {
-                                                    if (trim($item)) {
-                                                        $domainsArray[] = trim($item);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    @endphp
-
-                                    @foreach ($domainsArray as $domain)
-                                        <span class="d-block">{{ $domain }}</span>
-                                    @endforeach
-                                </div>
-                                @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
-                                <div class="d-flex flex-column mb-3 mt-3">
-                                    <span class="opacity-50">Backup Codes</span>
-                                    @php
-                                    $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
-                                    @endphp
-                                    @foreach($backupCodes as $backupCode)
-                                    <span>{{ trim($backupCode) }}</span>
-                                   
-                                    @endforeach
-                                     <span class="opacity-50">Additional Info</span>
-                                    <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
-                                </div>
-                                @endif
-                            @else
-                                <div class="text-muted">No configuration information available</div>
-                            @endif
-                        </div>
+                        <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{
+                            number_format($originalPrice, 2) }}</h6>
+                        <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
+                        <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }}
+                            <small>/{{ $order->plan->duration }}</small></h6>
+                        @else
+                        <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small>
+                        </h6>
+                        <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
+                        @endif
                     </div>
                 </div>
-            </div>
 
-            <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
-                <div class="col-12">
-                    <div class="card p-3">
+                <div class="col-md-6">
+                    <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                 <i class="fa-solid fa-earth-europe"></i>
                             </div>
-                            Emails
+                            Domains & Configuration
                         </h6>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-3" style="display: none;">
-                                <div style="display: none;">
-                                    <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
-                                        <i class="fa-solid fa-plus me-1"></i> Add Email
-                                    </button>
-                                    <button id="saveAllBtn" class="btn btn-success" style="display: none;">
-                                        <i class="fa-solid fa-floppy-disk me-1"></i> Save All
-                                    </button>
-                                </div>
+                        @if (optional($order->reorderInfo)->count() > 0)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Hosting Platform</span>
+                            <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform Login</span>
+                            <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                        </div>
+                        <!-- platform_password -->
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform Password</span>
+                            <span>{{ $order->reorderInfo->first()->platform_password }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Domain Forwarding Destination URL</span>
+                            <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Sending Platform</span>
+                            <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Cold email platform - Login</span>
+                            <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
+                        </div>
+                        <!-- Sending plateform Sequencer - Password  -->
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Cold email platform - Password </span>
+                            <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Domains</span>
+                            @php
+                            // Get the domains string from the order
+                            $domainsString = $order->reorderInfo->first()->domains;
+
+                            // Split by both newlines and commas
+                            $domainsArray = [];
+
+                            // First split by newlines
+                            $lines = preg_split('/\r\n|\r|\n/', $domainsString);
+
+                            // Then process each line
+                            foreach ($lines as $line) {
+                            if (trim($line)) {
+                            // Split line by commas and add to domains array
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                            if (trim($item)) {
+                            $domainsArray[] = trim($item);
+                            }
+                            }
+                            }
+                            }
+                            @endphp
+
+                            @foreach ($domainsArray as $domain)
+                            <span class="d-block">{{ $domain }}</span>
+                            @endforeach
+                        </div>
+                        @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
+                        <div class="d-flex flex-column mb-3 mt-3">
+                            <span class="opacity-50">Backup Codes</span>
+                            @php
+                            $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
+                            @endphp
+                            @foreach($backupCodes as $backupCode)
+                            <span>{{ trim($backupCode) }}</span>
+
+                            @endforeach
+                            <span class="opacity-50">Additional Info</span>
+                            <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
+                        </div>
+                        @endif
+                        @else
+                        <div class="text-muted">No configuration information available</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
+            <div class="col-12">
+                <div class="card p-3">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-earth-europe"></i>
+                        </div>
+                        Emails
+                    </h6>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-3" style="display: none;">
+                            <div style="display: none;">
+                                <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Email
+                                </button>
+                                <button id="saveAllBtn" class="btn btn-success" style="display: none;">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save All
+                                </button>
                             </div>
-                            <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
-                                <div class="badge rounded-circle bg-primary p-2">
-                                    <i class="fa-solid fa-envelope text-white"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0">Email Accounts</h6>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span id="totalRowCount" class="fw-bold">0</span>
-                                        <div class="progress" style="width: 100px; height: 6px;">
-                                            <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
-                                                style="width: 0%" aria-valuenow="0" aria-valuemin="0"
-                                                aria-valuemax="100"></div>
+                        </div>
+                        <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                            <div class="badge rounded-circle bg-primary p-2">
+                                <i class="fa-solid fa-envelope text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Email Accounts</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span id="totalRowCount" class="fw-bold">0</span>
+                                    <div class="progress" style="width: 100px; height: 6px;">
+                                        <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="table-responsive">
-                            <table id="email-configuration" class="display w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Password</th>
-                                        <!-- <th>Action</th> -->
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="table-responsive">
+                        <table id="email-configuration" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Password</th>
+                                    <!-- <th>Action</th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
 
-                        @push('scripts')
-                            <script>
-                                $(document).ready(function() {
+                    @push('scripts')
+                    <script>
+                        $(document).ready(function() {
                                     // Get the total_inboxes from order configuration
                                     // const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
                                     const totalInboxes = {{ optional($order->reorderInfo->first())->total_inboxes ?? 0 }};
@@ -676,57 +680,57 @@
 
                                     // ...existing code for delete button and other functionality...
                                 });
-                            </script>
-                        @endpush
-                    </div>
+                    </script>
+                    @endpush
                 </div>
             </div>
+        </div>
 
-            <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
-                tabindex="0">
-                @if ($order->subscription)
-                    <div class="card p-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h6 class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                    <i class="fa-solid fa-cart-plus"></i>
-                                </div>
-                                Subscriptions
-                            </h6>
-                            <button
-                                class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
-                                {{ ucfirst($order->subscription->status) }}
-                            </button>
+        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
+            tabindex="0">
+            @if ($order->subscription)
+            <div class="card p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-cart-plus"></i>
                         </div>
+                        Subscriptions
+                    </h6>
+                    <button
+                        class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
+                        {{ ucfirst($order->subscription->status) }}
+                    </button>
+                </div>
 
-                        @if (isset($nextBillingInfo['next_billing_at']) && $nextBillingInfo['next_billing_at'] !== 'N/A')
-                            <span>Next Billing</span>
+                @if (isset($nextBillingInfo['next_billing_at']) && $nextBillingInfo['next_billing_at'] !== 'N/A')
+                <span>Next Billing</span>
 
-                            <div>
-                                <span class="theme-text">Price</span>
-                                <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
-                            </div>
+                <div>
+                    <span class="theme-text">Price</span>
+                    <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
+                </div>
 
-                            <div>
-                                <span class="theme-text">Date</span>
-                                <h6>{{ $nextBillingInfo['next_billing_at'] }}</h6>
-                            </div>
-                        @else
-                            <span>End Billing Date</span>
+                <div>
+                    <span class="theme-text">Date</span>
+                    <h6>{{ $nextBillingInfo['next_billing_at'] }}</h6>
+                </div>
+                @else
+                <span>End Billing Date</span>
 
-                            <div>
-                                <span class="theme-text">Price</span>
-                                <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
-                            </div>
+                <div>
+                    <span class="theme-text">Price</span>
+                    <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
+                </div>
 
-                            <div>
-                                <span class="theme-text">Date</span>
-                                <h6>{{ $nextBillingInfo['current_term_end'] ?? 'N/A' }}</h6>
-                            </div>
-                        @endif
+                <div>
+                    <span class="theme-text">Date</span>
+                    <h6>{{ $nextBillingInfo['current_term_end'] ?? 'N/A' }}</h6>
+                </div>
+                @endif
 
-                        {{-- @if ($order->subscription->status == 'active')
+                {{-- @if ($order->subscription->status == 'active')
                 <div class="d-flex justify-content-end">
                     <button type="button" data-bs-toggle="modal" data-bs-target="#cancel_subscription"
                         class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
@@ -734,10 +738,10 @@
                     </button>
                 </div>
                 @endif --}}
-                    </div>
+            </div>
 
-                    @if (!empty($nextBillingInfo))
-                        <!-- <div class="card mt-4">
+            @if (!empty($nextBillingInfo))
+            <!-- <div class="card mt-4">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Subscription Details</h5>
                         </div>
@@ -755,96 +759,93 @@
                             </div>
                         </div>
                     </div> -->
-                    @endif
-                    <div class="card p-3 mt-3">
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body">
-                                        <div class="row gy-3">
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <h5 class="mb-2">Filters</h5>
-                                                <div>
-                                                    <button id="applyFilters"
-                                                        class="btn btn-primary btn-sm me-2">Filter</button>
-                                                    <button id="clearFilters"
-                                                        class="btn btn-secondary btn-sm">Clear</button>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="statusFilter" class="form-label">Invoice Status</label>
-                                                <select id="statusFilter" class="form-select">
-                                                    <option value="">All Statuses</option>
-                                                    <option value="paid">Paid</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="failed">Failed</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="orderStatusFilter" class="form-label">Order Status</label>
-                                                <select id="orderStatusFilter" class="form-select">
-                                                    <option value="">All Order Statuses</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="processing">Processing</option>
-                                                    <option value="completed">Completed</option>
-                                                    <option value="expired">Expired</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="startDate" class="form-label">Start Date</label>
-                                                <input type="date" id="startDate" class="form-control"
-                                                    placeholder="Start Date">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="endDate" class="form-label">End Date</label>
-                                                <input type="date" id="endDate" class="form-control"
-                                                    placeholder="End Date">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="priceRange" class="form-label">Price Range</label>
-                                                <select id="priceRange" class="form-select">
-                                                    <option value="">All Prices</option>
-                                                    <option value="0-100">$0 - $100</option>
-                                                    <option value="101-500">$101 - $500</option>
-                                                    <option value="501-1000">$501 - $1000</option>
-                                                    <option value="1001+">$1000+</option>
-                                                </select>
-                                            </div>
+            @endif
+            <div class="card p-3 mt-3">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="row gy-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-2">Filters</h5>
+                                        <div>
+                                            <button id="applyFilters"
+                                                class="btn btn-primary btn-sm me-2">Filter</button>
+                                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
                                         </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="statusFilter" class="form-label">Invoice Status</label>
+                                        <select id="statusFilter" class="form-select">
+                                            <option value="">All Statuses</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="failed">Failed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="orderStatusFilter" class="form-label">Order Status</label>
+                                        <select id="orderStatusFilter" class="form-select">
+                                            <option value="">All Order Statuses</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="expired">Expired</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="startDate" class="form-label">Start Date</label>
+                                        <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="endDate" class="form-label">End Date</label>
+                                        <input type="date" id="endDate" class="form-control" placeholder="End Date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="priceRange" class="form-label">Price Range</label>
+                                        <select id="priceRange" class="form-select">
+                                            <option value="">All Prices</option>
+                                            <option value="0-100">$0 - $100</option>
+                                            <option value="101-500">$101 - $500</option>
+                                            <option value="501-1000">$501 - $1000</option>
+                                            <option value="1001+">$1000+</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card p-3 mt-3">
-                        <h6 class="d-flex align-items-center gap-2">
-                            <div class="d-flex align-items-center justify-content-center"
-                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                <i class="fa-solid fa-file-invoice"></i>
-                            </div>
-                            Invoices
-                        </h6>
-
-                        <div class="table-responsive">
-                            <table id="invoicesTable" class="display w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Invoice #</th>
-                                        <th>Amount</th>
-                                        <th>Paid At</th>
-                                        <th>Status</th>
-                                        <!-- order-status -->
-                                        <th>Order Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
+                </div>
+            </div>
+            <div class="card p-3 mt-3">
+                <h6 class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center"
+                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                        <i class="fa-solid fa-file-invoice"></i>
                     </div>
+                    Invoices
+                </h6>
 
-                    @push('scripts')
-                        <script>
-                            $(document).ready(function() {
+                <div class="table-responsive">
+                    <table id="invoicesTable" class="display w-100">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Amount</th>
+                                <th>Paid At</th>
+                                <th>Status</th>
+                                <!-- order-status -->
+                                <th>Order Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
+            @push('scripts')
+            <script>
+                $(document).ready(function() {
                                 let invoicesTable = $('#invoicesTable').DataTable({
                                     processing: true,
                                     serverSide: true,
@@ -1040,22 +1041,21 @@
                                     });
                                 }
                             });
-                        </script>
-                    @endpush
-                @else
-                    <div class="card p-3">
-                        <div class="text-center text-muted">
-                            No subscription information available
-                        </div>
-                    </div>
-                @endif
+            </script>
+            @endpush
+            @else
+            <div class="card p-3">
+                <div class="text-center text-muted">
+                    No subscription information available
+                </div>
             </div>
+            @endif
+        </div>
 
-            <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab"
-                tabindex="0">
-                <div class="card p-3">
-                    <div class="table-responsive">
-                        <table id="myTable" class="display w-100">
+        <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab" tabindex="0">
+            <div class="card p-3">
+                <div class="table-responsive">
+                    <table id="myTable" class="display w-100">
                         <thead>
                             <tr>
                                 <th>Category</th>
@@ -1069,26 +1069,28 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
+
                             @if($order->supportTickets && $order->supportTickets->count() > 0)
                             @foreach($order->supportTickets as $ticket)
                             <tr>
                                 <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
                                 <td>
-                                    <a href="{{ route('admin.support.tickets.show', $ticket->id) }}" 
-                                       class="text-primary text-decoration-none">
+                                    <a href="{{ route('admin.support.tickets.show', $ticket->id) }}"
+                                        class="text-primary text-decoration-none">
                                         {{ $ticket->ticket_number ?? 'N/A' }}
                                     </a>
                                 </td>
-                                <td>{{ $ticket->created_at ? 
+                                <td>{{ $ticket->created_at ?
                                     $ticket->created_at->format('d M, Y') : 'N/A' }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
+                                    <span
+                                        class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
                                         {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
+                                    <span
+                                        class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
                                         {{ ucfirst($ticket->priority) ?? 'N/A' }}
                                     </span>
                                 </td>
@@ -1108,39 +1110,40 @@
                             @endif
                         </tbody>
                     </table>
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Cancel Subscription Modal -->
-        <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header border-0">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
-                            <div class="d-flex align-items-center justify-content-center"
-                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                <i class="fa-solid fa-cart-plus"></i>
-                            </div>
-                            Cancel Subscription
-                        </h6>
+    <!-- Cancel Subscription Modal -->
+    <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </div>
+                        Cancel Subscription
+                    </h6>
 
-                        <p class="note">
-                            We are sad to to hear you're cancelling. Would you mind sharing the reason
-                            for the cancelation? We strive to always improve and would appreciate your
-                            feedback.
-                        </p>
+                    <p class="note">
+                        We are sad to to hear you're cancelling. Would you mind sharing the reason
+                        for the cancelation? We strive to always improve and would appreciate your
+                        feedback.
+                    </p>
 
-                        {{-- <form action="{{ route('customer.subscription.cancel') }}" method="POST">
+                    {{-- <form action="{{ route('customer.subscription.cancel') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label for="cancellation_reason">Reason *</label>
-                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8" required></textarea>
+                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8"
+                                required></textarea>
                         </div>
 
                         <div class="form-check">
@@ -1151,7 +1154,8 @@
                             </label>
                         </div>
 
-                        <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <div
+                            class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
                             <button type="button"
                                 class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
                                 data-bs-dismiss="modal">No, I changed my mind</button>
@@ -1160,9 +1164,9 @@
                                 I'm sure</button>
                         </div>
                     </form> --}}
-                    </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 @endsection

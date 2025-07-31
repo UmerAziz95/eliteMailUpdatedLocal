@@ -275,6 +275,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
 
         //domain health dashboard   
         Route::get('/domain_health_dashboard', [DomainHealthDashboardController::class, 'index'])->name('domain_health_dashboard.index');
+        Route::get('/domains/orders/card/data', [DomainHealthDashboardController::class, 'getCardOrders'])->name('domains.orders.card.data');
+        Route::get('/domains/orders/{id}/view', [DomainHealthDashboardController::class, 'view'])->name('domains.orders.view');
+        Route::get('/domains/status/check', [DomainHealthDashboardController::class, 'checkDomainHealth'])->name('domains.status.check');
+        Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
+
+
     });
 
 });
