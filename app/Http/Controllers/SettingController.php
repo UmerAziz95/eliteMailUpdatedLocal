@@ -110,102 +110,92 @@ public function sendDiscordMessage(Request $request)
         ]);
     }
 
-    public static function discorSendMessageCron()
-    {
-        Log::info('✅ discorSendMessageCron method triggered.');
-        $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+   public static function discorSendMessageCron()
+{
+    Log::info('✅ discorSendMessageCron method triggered.');
+    
+    // Get settings only once
+    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
 
-        if (!$settings || !$settings->discord_message_cron) {
-            return false;
-        }
+    if (!$settings || !$settings->discord_message_cron) {
+        return false;
+    }
 
-        $cronMessage     = $settings->setting_value ?? "🔥 Don’t miss your chance to upgrade at a reduced price.";
-        $cronStart       = $settings->cron_start_from ?? null;
-        $cronOccurrence  = $settings->cron_occurrence ?? null;
-        $lastRun         = $settings->last_run_at ?? null;
+    $cronMessage     = $settings->setting_value ?? "🔥 Don’t miss your chance to upgrade at a reduced price.";
+    $cronStart       = $settings->cron_start_from ?? null;
+    $cronOccurrence  = $settings->cron_occurrence ?? null;
+    $lastRun         = $settings->last_run_at ?? null;
 
-        if (!$cronMessage || !$cronStart || !$cronOccurrence) {
-            return false;
-        }
+    if (!$cronMessage || !$cronStart || !$cronOccurrence) {
+        return false;
+    }
 
-        $nowUtc = now()->setTimezone('UTC');
-        $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
+    $nowUtc = now()->setTimezone('UTC');
+    $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
 
-    // // Skip if it's not time yet
     if ($nowUtc->lt($startAt)) {
         return false;
     }
 
-        if ($lastRun) {
-            $lastRunAt = Carbon::parse($lastRun, 'UTC');
-            $shouldSkip = match ($cronOccurrence) {
-                'daily'   => $lastRunAt->isToday(),
-                'weekly'  => $lastRunAt->diffInDays($nowUtc) < 7,
-                'monthly' => $lastRunAt->month === $nowUtc->month && $lastRunAt->year === $nowUtc->year,
-                default   => true,
-            };
+    if ($lastRun) {
+        $lastRunAt = Carbon::parse($lastRun, 'UTC');
+        $shouldSkip = match ($cronOccurrence) {
+            'daily'   => $lastRunAt->isToday(),
+            'weekly'  => $lastRunAt->diffInDays($nowUtc) < 7,
+            'monthly' => $lastRunAt->month === $nowUtc->month && $lastRunAt->year === $nowUtc->year,
+            default   => true,
+        };
 
-            if ($shouldSkip) {
-                return false;
-            }
-        }
-
-    try {
-        // 1. Generate UUID
-    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
-    $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
-    $uuid = (string) Str::uuid();
-
-    // Create your actual target URL
-    $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
-    $settings->url_string = $uuid;
-    $settings->embedded_url = $embeddedUrl;
-    $settings->save();
-    // Encrypt the long URL and store it in DB
-    $encrypted = Crypt::encryptString($embeddedUrl);
-    $short = Str::random(20); // shorter than UUID
-
-    ShortEncryptedLink::create([
-        'slug' => $short,
-        'encrypted_url' => $encrypted,
-    ]);
-
-    // Now send short URL like /go/abc12345
-    $shortUrl = URL::to('/go/' . $short);
-    // Log::info("short url----------------------------".$shortUrl);
-
-   
-    $fullMessage = $cronMessage . "\n" . $shortUrl;
-
-    Http::post($webhookUrl, [
-        'content' => $fullMessage,
-    ]);
-
-            if ($response->failed()) {
-                Log::error('Discord webhook request failed: ' . $response->body());
-                return false;
-            }
-
-            $settings->last_run_at = $nowUtc;
-            $settings->save();
-
-            Log::info('Discord message sent.', [
-                'message' => $fullMessage,
-                'cron_start' => $cronStart,
-                'occurrence' => $cronOccurrence,
-                'run_at' => $nowUtc,
-            ]);
-
-            return [
-                'message' => 'Discord message sent.',
-                'at' => $nowUtc->toDateTimeString()
-            ];
-        } catch (RequestException $e) {
-            Log::error('Discord webhook request failed: ' . $e->getMessage());
-            return false;
-        } catch (\Exception $e) {
-            Log::error('Failed to send Discord message: ' . $e->getMessage());
+        if ($shouldSkip) {
             return false;
         }
     }
+
+    try {
+        $webhookUrl = env('DISCORD_WEBHOOK_URL', '');
+        $uuid = (string) Str::uuid();
+        $embeddedUrl = URL::to('/plans/' . $uuid . '/discounted');
+
+        $settings->url_string = $uuid;
+        $settings->embedded_url = $embeddedUrl;
+
+        // Short URL
+        $encrypted = Crypt::encryptString($embeddedUrl);
+        $short = Str::random(20);
+        ShortEncryptedLink::create([
+            'slug' => $short,
+            'encrypted_url' => $encrypted,
+        ]);
+        $shortUrl = URL::to('/go/' . $short);
+        $fullMessage = $cronMessage . "\n" . $shortUrl;
+
+        $response = Http::post($webhookUrl, [
+            'content' => $fullMessage,
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Discord webhook request failed: ' . $response->body());
+            return false;
+        }
+
+        $settings->last_run_at = $nowUtc;
+        $settings->save();
+
+        Log::info('Discord message sent.', [
+            'message' => $fullMessage,
+            'cron_start' => $cronStart,
+            'occurrence' => $cronOccurrence,
+            'last_run_at' => $nowUtc,
+        ]);
+
+        return [
+            'message' => 'Discord message sent.',
+            'at' => $nowUtc->toDateTimeString()
+        ];
+    } catch (\Exception $e) {
+        Log::error('Failed to send Discord message: ' . $e->getMessage());
+        return false;
+    }
+}
+
 }
