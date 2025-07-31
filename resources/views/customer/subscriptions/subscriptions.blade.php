@@ -45,6 +45,9 @@
 
 @section('content')
 <section class="py-3" data-page="subscription">
+
+    @include('customer.chatbot.chat')
+
     <div class="row mb-4">
         <div class="counters col-xl-6">
             <div class="card p-3 counter_1">

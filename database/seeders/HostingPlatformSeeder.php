@@ -47,13 +47,13 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'GoDaddy',
                 'value' => 'godaddy',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://docs.google.com/document/d/1x-PidbdG6AeptKtIZQ8-nqFBxQ1h_fKU0Wn5dmd7f3U/edit?usp=sharing',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
                         'type' => 'select',
                         'options' => [
-                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@premiuminboxes.com and entered my GoDaddy Account Name (NOT email) below.",
+                            'yes' => "Yes - I sent DELEGATE ACCESS to hello@projectinbox.ai and entered my GoDaddy Account Name (NOT email) below.",
                             'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
                         ],
                         'required' => true
@@ -63,16 +63,22 @@ class HostingPlatformSeeder extends Seeder
                     //     'type' => 'text',
                     //     'required' => true
                     // ],
+                    // hosting_platform
+                    // 'hosting_platform'=>[
+                    //     'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
+                    //     'type' => 'text',
+                    //     'required' => true
+                    // ],
                     'platform_login' => [
-                        'label' => 'Domain Hosting Platform - Login',
+                        'label' => 'Domain Hosting Platform - Your GoDaddy Account Name (NOT Email)',
                         'type' => 'text',
                         'required' => true
                     ],
-                    'platform_password' => [
-                        'label' => 'Domain Hosting Platform - Password',
-                        'type' => 'password',
-                        'required' => true
-                    ]
+                    // 'platform_password' => [
+                    //     'label' => 'Domain Hosting Platform - Password',
+                    //     'type' => 'password',
+                    //     'required' => true
+                    // ]
                 ],
                 'sort_order' => 2
             ],
@@ -80,7 +86,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Porkbun',
                 'value' => 'porkbun',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://docs.google.com/document/d/1wr9l_jsBzfL4OZgZOEbslYdXtruhakrdUdTPiRZGG8w/edit?usp=sharing',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Porkbun - Access Tutorial',
@@ -156,7 +162,7 @@ class HostingPlatformSeeder extends Seeder
                 'sort_order' => 6
             ],
             [
-                'name' => 'Other',
+                'name' => 'Other (Fill in further details in the ‘Additional Details’ field below)',
                 'value' => 'other',
                 'fields' => [
                     'other_platform' => [
@@ -198,7 +204,10 @@ class HostingPlatformSeeder extends Seeder
         ];
         HostingPlatform::truncate();
         foreach ($platforms as $platform) {
-            HostingPlatform::create($platform);
+            HostingPlatform::updateOrCreate(
+                ['value' => $platform['value']],
+                $platform
+            );
         }
     }
 }

@@ -341,12 +341,12 @@
         
         <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
+                <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
                     data-bs-target="#in-queue-tab-pane" type="button" role="tab" aria-controls="in-queue-tab-pane"
                     aria-selected="true">in-queue</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
+                <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
                     data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
                     aria-selected="false">in-draft</button>
             </li>
@@ -354,7 +354,7 @@
                 $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
             @endphp
             <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};" id="reject-orders-tab-li">
-                <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
+                <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
                     data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
                     aria-selected="false">
                     Reject orders
@@ -1425,7 +1425,7 @@
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Split ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="fw-bold">PNL-${split.panel_id} Domains</small>
+                                                <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white bg-opacity-25 me-2" style="font-size: 9px;">

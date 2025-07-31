@@ -156,6 +156,13 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.domain_health_dashboard.index",
                         "permission" => "Domain Health Dashboard",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Slack Settings",
+                        "icon" => "ti ti-brand-slack fs-5",
+                        "route" => "admin.slack.settings",
+                        "permission" => "Slack Settings",
+                        'sub_menu' => []
             ]
         ];
         // sidebar_navigations delete all existing records

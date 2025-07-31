@@ -1431,7 +1431,7 @@
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Split ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="fw-bold">PNL-${split.panel_id} Domains</small>
+                                                <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white bg-opacity-25 me-2" style="font-size: 9px;">

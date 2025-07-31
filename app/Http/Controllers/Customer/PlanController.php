@@ -275,7 +275,8 @@ class PlanController extends Controller
                 'customer' => $customer->getValues(),
                 'subscription' => $subscription->getValues(),
             ]);
-
+            // create session for set observer_total_inboxes
+            $request->session()->put('observer_total_inboxes', $subscription->subscriptionItems[0]->quantity ?? 1);
             // Create or update order
             $order = Order::firstOrCreate(
                 ['chargebee_invoice_id' => $invoice->id],
@@ -1024,16 +1025,40 @@ class PlanController extends Controller
                     $metadata = json_encode([
                         'invoice' => $invoiceData,
                     ]);
-
+                    // get order_id, user_id, plan_id from invoce where subscription_id
+                    $order_id = Invoice::where('chargebee_subscription_id', $invoiceData['subscription_id'])
+                        ->value('order_id') ?? 1;
+                    $user_id = Invoice::where('chargebee_subscription_id', $invoiceData['subscription_id'])
+                        ->value('user_id') ?? 1;
+                    $plan_id = Invoice::where('chargebee_subscription_id', $invoiceData['subscription_id'])
+                        ->value('plan_id') ?? null;
+                    if (!$plan_id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Plan ID not found for the subscription'
+                        ], 400);
+                    }
+                    if (!$order_id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Order ID not found for the subscription'
+                        ], 400);
+                    }
+                    if (!$user_id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'User ID not found for the subscription'
+                        ], 400);
+                    }
                     // Find or create invoice record
                     $invoice = Invoice::updateOrCreate(
                         ['chargebee_invoice_id' => $invoiceData['id']],
                         [
                             'chargebee_customer_id' => $invoiceData['customer_id'] ?? null,
                             'chargebee_subscription_id' => $invoiceData['subscription_id'] ?? null,
-                            'user_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('user_id') ?? 1,
-                            'plan_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('plan_id') ?? null,
-                            'order_id' => Invoice::where('chargebee_customer_id', $invoiceData['customer_id'])->value('order_id') ?? 1,
+                            'user_id' => $user_id,
+                            'plan_id' => $plan_id,
+                            'order_id' => $order_id,
                             'amount' => $amount,
                             'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
@@ -1042,7 +1067,7 @@ class PlanController extends Controller
                             'metadata' => $metadata,
                         ]
                     );
-
+                    
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
                         try {
@@ -1063,11 +1088,16 @@ class PlanController extends Controller
                                         $user,
                                         true
                                     ));
+                                
+                                // Slack notification is now handled by InvoiceObserver
                             }
                         } catch (\Exception $e) {
                             Log::error('Failed to send invoice generation emails: ' . $e->getMessage());
                         }
                     }
+
+                    // Slack notification for payment failures is now handled by InvoiceObserver
+                    // when the invoice status is updated to 'failed'
 
                     // update subscription last_billing_date, next_billing_date
                     $subscription = UserSubscription::where('chargebee_subscription_id', $invoiceData['subscription_id'])->first();

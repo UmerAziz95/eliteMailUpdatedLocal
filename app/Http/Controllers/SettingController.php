@@ -14,31 +14,26 @@ use App\Models\ShortEncryptedLink;
 
 class SettingController extends Controller
 {
-    //
-
     public function index()
     {
-        // Logic to display settings page
         return view('admin.discord.index');
     }
 
-public function saveDiscordSettings(Request $request)
-{
-   
-    $request->validate([
-        'cron_message' => 'required',
-    ]);
+    public function saveDiscordSettings(Request $request)
+    {
+        $request->validate([
+            'cron_message' => 'required',
+        ]);
 
-    // Save and capture the updated or created record
-    $setting = DiscordSettings::updateOrCreate(
-        ['setting_name' => 'discord_message'],
-        [
-            'setting_value' => $request->input('cron_message'),
-            'discord_message_cron' => $request->input('enable_cron', false),
-            'cron_start_from' => $request->input('cron_start'),
-            'cron_occurrence' => $request->input('cron_occurrence', null) //
-        ]
-    );
+        $setting = DiscordSettings::updateOrCreate(
+            ['setting_name' => 'discord_message'],
+            [
+                'setting_value' => $request->input('cron_message'),
+                'discord_message_cron' => $request->input('enable_cron', false),
+                'cron_start_from' => $request->input('cron_start'),
+                'cron_occurrence' => $request->input('cron_occurrence', null)
+            ]
+        );
 
     return response()->json([
         "status" => "success",
@@ -90,75 +85,70 @@ public function sendDiscordMessage(Request $request)
 }
 
 
-public function toggleDiscordCron(Request $request)
-{
-    $isEnabled = $request->input('enable_cron') ? 1 : 0;
-    DiscordSettings::updateOrCreate(
-        ['setting_name' => 'discord_message'],
-        ['discord_message_cron' => $isEnabled]
-    );
+    public function toggleDiscordCron(Request $request)
+    {
+        $isEnabled = $request->input('enable_cron') ? 1 : 0;
+        DiscordSettings::updateOrCreate(
+            ['setting_name' => 'discord_message'],
+            ['discord_message_cron' => $isEnabled]
+        );
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Cron setting updated successfully.'
-    ]);
-}
-
-
-public function getCronSettings()
-{
-    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
-    return response()->json([
-        'enable_cron' => $settings->discord_message_cron,  // 1 or 0
-        'cron_message' => $settings->setting_value ?? '',
-        'cron_start' => $settings->cron_start_from ?? null,
-        'cron_occurrence' => $settings->cron_occurrence ?? null,
-    ]);
-}
-
-
-public static function discorSendMessageCron()
-{
-    Log::info('✅ discorSendMessageCron method triggered.');
-    $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
-
-    if (!$settings || !$settings->discord_message_cron) {
-        return false;
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cron setting updated successfully.'
+        ]);
     }
 
-    $cronMessage     = $settings->setting_value ?? "🔥 Don’t miss your chance to upgrade at a reduced price.";
-    $cronStart       = $settings->cron_start_from ?? null; // '2025-07-24 08:25:00' UTC
-    $cronOccurrence  = $settings->cron_occurrence ?? null; // 'daily', 'weekly', 'monthly'
-    $lastRun         = $settings->last_run_at ?? null;     // Optional: last run timestamp (add to your DB if needed)
-
-    if (!$cronMessage || !$cronStart || !$cronOccurrence) {
-        return false;
+    public function getCronSettings()
+    {
+        $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+        return response()->json([
+            'enable_cron' => $settings->discord_message_cron ?? 0,
+            'cron_message' => $settings->setting_value ?? '',
+            'cron_start' => $settings->cron_start_from ?? null,
+            'cron_occurrence' => $settings->cron_occurrence ?? null,
+        ]);
     }
 
-    // Convert cronStart string to Carbon instance (assumed UTC)
-    $nowUtc = now()->setTimezone('UTC');
-    $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
+    public static function discorSendMessageCron()
+    {
+        Log::info('✅ discorSendMessageCron method triggered.');
+        $settings = DiscordSettings::where('setting_name', 'discord_message')->first();
+
+        if (!$settings || !$settings->discord_message_cron) {
+            return false;
+        }
+
+        $cronMessage     = $settings->setting_value ?? "🔥 Don’t miss your chance to upgrade at a reduced price.";
+        $cronStart       = $settings->cron_start_from ?? null;
+        $cronOccurrence  = $settings->cron_occurrence ?? null;
+        $lastRun         = $settings->last_run_at ?? null;
+
+        if (!$cronMessage || !$cronStart || !$cronOccurrence) {
+            return false;
+        }
+
+        $nowUtc = now()->setTimezone('UTC');
+        $startAt = Carbon::createFromFormat('Y-m-d H:i:s', $cronStart, 'UTC');
 
     // // Skip if it's not time yet
     if ($nowUtc->lt($startAt)) {
         return false;
     }
 
-    // Optional: avoid duplicate sends — skip if already sent today/this week/month
-    if ($lastRun) {
-        $lastRunAt = Carbon::parse($lastRun, 'UTC');
+        if ($lastRun) {
+            $lastRunAt = Carbon::parse($lastRun, 'UTC');
+            $shouldSkip = match ($cronOccurrence) {
+                'daily'   => $lastRunAt->isToday(),
+                'weekly'  => $lastRunAt->diffInDays($nowUtc) < 7,
+                'monthly' => $lastRunAt->month === $nowUtc->month && $lastRunAt->year === $nowUtc->year,
+                default   => true,
+            };
 
-        $shouldSkip = match ($cronOccurrence) {
-            'daily'   => $lastRunAt->isToday(),
-            'weekly'  => $lastRunAt->diffInDays($nowUtc) < 7,
-            'monthly' => $lastRunAt->month === $nowUtc->month && $lastRunAt->year === $nowUtc->year,
-            default   => true,
-        };
-
-        if ($shouldSkip) {
-            return false;
+            if ($shouldSkip) {
+                return false;
+            }
         }
-    }
 
     try {
     // 1. Generate UUID
@@ -191,25 +181,31 @@ public static function discorSendMessageCron()
         'content' => $fullMessage,
     ]);
 
-        // Save last run time to avoid duplicates (if DB has such a column)
-                $settings->last_run_at = $nowUtc;
-                $settings->save();
+            if ($response->failed()) {
+                Log::error('Discord webhook request failed: ' . $response->body());
+                return false;
+            }
 
-                Log::info('Discord message sent.', [
-                    'message' => $fullMessage,
-                    'cron_start' => $cronStart,
-                    'occurrence' => $cronOccurrence,
-                    'run_at' => $nowUtc,
-                ]);
+            $settings->last_run_at = $nowUtc;
+            $settings->save();
 
-                return response()->json([
-                    'message' => 'Discord message sent.',
-                    'at' => $nowUtc->toDateTimeString()
-                ], 200);
-    } catch (\Exception $e) {
-        Log::error('Failed to send Discord message: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to send message.'], 500);
+            Log::info('Discord message sent.', [
+                'message' => $fullMessage,
+                'cron_start' => $cronStart,
+                'occurrence' => $cronOccurrence,
+                'run_at' => $nowUtc,
+            ]);
+
+            return [
+                'message' => 'Discord message sent.',
+                'at' => $nowUtc->toDateTimeString()
+            ];
+        } catch (RequestException $e) {
+            Log::error('Discord webhook request failed: ' . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Failed to send Discord message: ' . $e->getMessage());
+            return false;
+        }
     }
 }
-
-} 

@@ -223,6 +223,7 @@ class PanelController extends Controller
                     'order_panel_data' => $orderPanel,
                     'order_panel_id' => $orderPanel->id,
                     'panel_id' => $orderPanel->panel_id,
+                    'panel_title' => $orderPanel->panel->title ?? 'N/A',
                     'order_id' => $order->id ?? 'N/A',
                     'timer_order'=>$order,
                     'customer_name' => $order->user->name ?? 'N/A',
@@ -764,11 +765,17 @@ class PanelController extends Controller
     public function runPanelCapacityCheck(Request $request)
     {
         try {
+            if ($request->input('panel_id')) {
+                $panelId = (int) str_replace('PNL-', '', $request->input('panel_id'));
+                $request->merge(['panel_id' => $panelId]);
+            }
             // Validate that the request has optional fields
             $request->validate([
                 'panel_id' => 'nullable|integer',
                 'admin_id' => 'nullable|integer'
             ]);
+            // PNL-4 removed PNL- and set to integer
+            
             
             Log::info('Panel capacity check requested via admin AJAX', [
                 'panel_id' => $request->input('panel_id'),

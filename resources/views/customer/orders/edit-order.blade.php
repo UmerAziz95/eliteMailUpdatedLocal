@@ -255,7 +255,7 @@
                     @endforeach
                 </select>
                 <div class="invalid-feedback" id="hosting-error"></div>
-                <p class="note mb-0">(where your domains are hosted and can be accessed to modify the
+                <p class="note mb-0">(Where your domains are hosted and can be accessed to modify the
                     DNS settings)</p>
             </div>
 
@@ -1739,8 +1739,8 @@ $(document).ready(function() {
                 if (isConfigurationError) {
                     // Configuration error: order has limit but can't fit any domains
                     $('#domains').addClass('is-invalid');
-                    $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
-                    toastr.warning('Cannot create domains with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
+                    $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+                    toastr.warning('Can’t create inboxes with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
                         timeOut: 8000,
                         closeButton: true,
                         progressBar: true
@@ -2023,7 +2023,7 @@ $(document).ready(function() {
             if (isConfigurationError) {
                 // Configuration error: order has limit but can't fit any domains with current inboxes per domain
                 $('#domains').addClass('is-invalid');
-                $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
                 
                 // During import, just return early
                 if (isImporting) {
@@ -2035,10 +2035,9 @@ $(document).ready(function() {
                     limitExceededShown = true;
                     Swal.fire({
                         title: 'Configuration Issue',
-                        html: `<strong>Cannot create domains with current settings.</strong><br><br>
+                        html: `<strong>Can’t create inboxes with current settings.</strong><br><br>
                                Your order limit is <strong>${orderInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
-                               You currently have <strong>${domains.length}</strong> domains that need to be removed.<br><br>
-                               <small>Please reduce inboxes per domain or contact support to increase your order limit.</small>`,
+                               <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
                         icon: 'warning',
                         confirmButtonText: 'Clear All Domains',
                         confirmButtonColor: '#dc3545',
@@ -2096,7 +2095,7 @@ $(document).ready(function() {
                     
                     // Show warning popup without auto-trimming
                     Swal.fire({
-                        title: 'Order Limit Exceeded!',
+                        title: 'Configuration Issue',
                         html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
                                You need to remove <strong>${excessDomains}</strong> domains.<br><br>
                                <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
@@ -2155,9 +2154,9 @@ $(document).ready(function() {
         calculateTotalInboxes();
     }
     
-    function generateField(name, field, existingValue = '') {
+    function generateField(name, field, existingValue = '', colClass = 'mb-3') {
         const fieldId = `${name}`;
-        let html = `<div class="mb-3">
+        let html = `<div class="${colClass}">
             <label for="${fieldId}">${field.label}${field.required ? ' *' : ''}</label>`;
             
         if (field.type === 'select' && field.options) {
@@ -2184,6 +2183,41 @@ $(document).ready(function() {
         }
         
         html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
+        return html;
+    }
+
+    function generatePairedFields(fieldsData, existingValues) {
+        let html = '';
+        const processedFields = new Set();
+        
+        Object.entries(fieldsData).forEach(([name, field]) => {
+            if (processedFields.has(name)) return;
+            
+            // Check for login/password pairs
+            const isLoginField = name.includes('login') || name.includes('Login');
+            const passwordFieldKey = name.replace(/login/gi, 'password').replace(/Login/gi, 'Password');
+            const hasPasswordPair = fieldsData[passwordFieldKey];
+            
+            if (isLoginField && hasPasswordPair) {
+                // Generate paired login/password fields
+                const loginValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                const passwordValue = existingValues && existingValues[passwordFieldKey] ? existingValues[passwordFieldKey] : '';
+                
+                html += '<div class="row gx-3 mb-3">';
+                html += generateField(name, field, loginValue, 'col-md-6');
+                html += generateField(passwordFieldKey, fieldsData[passwordFieldKey], passwordValue, 'col-md-6');
+                html += '</div>';
+                
+                processedFields.add(name);
+                processedFields.add(passwordFieldKey);
+            } else if (!processedFields.has(name)) {
+                // Generate single field
+                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                html += generateField(name, field, existingValue);
+                processedFields.add(name);
+            }
+        });
+        
         return html;
     }
 
@@ -2228,10 +2262,8 @@ $(document).ready(function() {
             // Get existing values from the order if available
             const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
             
-            Object.entries(fieldsData).forEach(([name, field]) => {
-                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
-                container.append(generateField(name, field, existingValue));
-            });
+            // Use the new paired field generation
+            container.append(generatePairedFields(fieldsData, existingValues));
             
             // Reinitialize password toggles for new fields
             initializePasswordToggles();
@@ -2287,10 +2319,8 @@ $(document).ready(function() {
         if (fieldsData) {
             const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
             
-            Object.entries(fieldsData).forEach(([name, field]) => {
-                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
-                container.append(generateField(name, field, existingValue));
-            });
+            // Use the new paired field generation
+            container.append(generatePairedFields(fieldsData, existingValues));
             
             // Reinitialize password toggles for new fields
             initializePasswordToggles();
@@ -2570,7 +2600,7 @@ $(document).ready(function() {
                         if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
                             isValid = false;
                             domainsField.addClass('is-invalid');
-                            $('#domains-error').text('Cannot create domains with current settings. Please reduce inboxes per domain or contact support to increase your order limit.');
+                            $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
                             
                             if (!firstErrorField) {
                                 firstErrorField = domainsField;

@@ -88,6 +88,7 @@
                     type="button" role="tab" aria-controls="pills-all-tasks" aria-selected="false">All Tasks</button>
             </li>
         </ul>
+        
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-mytask" role="tabpanel" aria-labelledby="pills-mytask-tab"
                 tabindex="0">

@@ -172,6 +172,7 @@
 
 
     <section class="py-3" data-page="orders">
+        @include('customer.chatbot.chat')
 
         <div class="counters mb-4">
             <div class="card p-3 counter_1">
@@ -454,8 +455,6 @@
 
             </div>
         </div>
-
-
         <!-- Action Log Offcanvas -->
         <div class="offcanvas offcanvas-end text-bg-dark" style="min-width: 30rem" tabindex="-1" id="actionLogCanvas"
             aria-labelledby="actionLogLabel">
