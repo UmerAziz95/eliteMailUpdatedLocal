@@ -88,6 +88,7 @@ class AccountCreationGHL
             
             // Test with general locations endpoint
             $response = Http::withHeaders($headers)->get($this->baseUrl . '/locations/');
+            // dd($response->successful()); // Debugging line to check response
             // Check if the response is successful
             if ($response->successful()) {
                 Log::info('GHL API connection test successful');

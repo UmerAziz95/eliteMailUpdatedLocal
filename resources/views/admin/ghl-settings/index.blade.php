@@ -252,15 +252,31 @@ $(document).ready(function() {
         e.preventDefault();
         
         if (!validateForm()) {
-            toastr.error('Please fix the validation errors before submitting.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fix the validation errors before submitting.',
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
             return;
         }
         
-        const submitBtn = $('#saveBtn');
-        const originalText = submitBtn.html();
-        
-        // Disable button and show loading
-        submitBtn.prop('disabled', true).html('<i class="ti ti-loader-2 ti-spin me-1"></i>Saving...');
+        // Show loading
+        Swal.fire({
+            title: 'Saving Settings...',
+            text: 'Please wait while we save your GHL settings.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'swal-dark'
+            },
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         const formData = {
             enabled: $('#enabled').is(':checked') ? 1 : 0,
@@ -278,10 +294,26 @@ $(document).ready(function() {
             data: formData,
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message || 'Settings saved successfully!');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message || 'Settings saved successfully!',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                     updateTestButtonState();
                 } else {
-                    toastr.error(response.message || 'Failed to save settings');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed!',
+                        text: response.message || 'Failed to save settings',
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                 }
             },
             error: function(xhr) {
@@ -294,17 +326,29 @@ $(document).ready(function() {
                         $(`#${field}`).addClass('is-invalid');
                         $(`#${field}-error`).text(errors[field][0]);
                     });
-                    toastr.error('Please fix the validation errors.');
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please fix the validation errors.',
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                 } else {
                     const message = xhr.responseJSON?.message || 'An error occurred while saving settings';
-                    toastr.error(message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: message,
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                 }
-            },
-            complete: function() {
-                // Re-enable button
-                submitBtn.prop('disabled', false).html(originalText);
             }
         });
+        
     });
 
     // Test credentials functionality
@@ -314,11 +358,32 @@ $(document).ready(function() {
         
         // Save form first if there are unsaved changes
         if (!validateForm()) {
-            toastr.warning('Please save valid settings before testing connection.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Required',
+                text: 'Please save valid settings before testing connection.',
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
             return;
         }
         
-        btn.prop('disabled', true).html('<i class="ti ti-loader-2 ti-spin me-1"></i>Testing...');
+        
+        // Show loading
+        Swal.fire({
+            title: 'Testing Connection...',
+            text: 'Please wait while we test the GHL API connection.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'swal-dark'
+            },
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         $.ajax({
             url: '{{ route("admin.ghl-settings.test-connection") }}',
@@ -330,9 +395,25 @@ $(document).ready(function() {
                 showConnectionResults(response);
                 
                 if (response.success) {
-                    toastr.success('Connection test successful!');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Connection Successful!',
+                        text: 'GHL API connection test passed successfully.',
+                        timer: 3000,
+                        showConfirmButton: true,
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                 } else {
-                    toastr.error('Connection test failed!');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Connection Failed!',
+                        text: response.message || 'Unable to connect to GHL API.',
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    });
                 }
             },
             error: function(xhr) {
@@ -344,13 +425,20 @@ $(document).ready(function() {
                     message: message
                 });
                 
-                toastr.error(message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Test Failed!',
+                    text: message,
+                    customClass: {
+                        popup: 'swal-dark'
+                    }
+                });
             },
             complete: function() {
-                btn.prop('disabled', false).html(originalText);
                 updateTestButtonState();
             }
         });
+        
     });
 
     // Show connection test results
@@ -378,9 +466,39 @@ $(document).ready(function() {
 
     // Reset form
     $('#resetBtn').on('click', function() {
-        if (confirm('Are you sure you want to reset all changes? This will reload the original settings.')) {
-            location.reload();
-        }
+        Swal.fire({
+            title: 'Reset Settings?',
+            text: 'This will reload the original settings and discard all unsaved changes.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Reset Settings',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'swal-dark'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading while reloading
+                Swal.fire({
+                    title: 'Resetting...',
+                    text: 'Reloading original settings.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    timer: 1000,
+                    customClass: {
+                        popup: 'swal-dark'
+                    },
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        });
     });
 
     // Auto-save on blur for better UX (optional)
@@ -440,6 +558,36 @@ $(document).ready(function() {
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+/* Custom SweetAlert2 Dark Theme */
+.swal-dark {
+    background-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+}
+
+.swal-dark .swal2-title {
+    color: #e2e8f0 !important;
+}
+
+.swal-dark .swal2-content {
+    color: #cbd5e0 !important;
+}
+
+.swal-dark .swal2-input {
+    background-color: #4a5568 !important;
+    border: 1px solid #718096 !important;
+    color: #e2e8f0 !important;
+}
+
+.swal-dark .swal2-input:focus {
+    border-color: #3182ce !important;
+    box-shadow: 0 0 0 0.2rem rgba(49, 130, 206, 0.25) !important;
+}
+
+/* Loading spinner customization */
+.swal2-loader {
+    border-color: #3182ce transparent #3182ce transparent !important;
 }
 </style>
 @endpush
