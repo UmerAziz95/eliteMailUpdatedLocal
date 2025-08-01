@@ -1004,6 +1004,7 @@ class PlanController extends Controller
                 case 'invoice_updated':
                 case 'invoice_paid':
                 case 'invoice_payment_failed':
+                    
                 case 'invoice_generated':
                     $invoiceData = $content['invoice'] ?? null;
                     

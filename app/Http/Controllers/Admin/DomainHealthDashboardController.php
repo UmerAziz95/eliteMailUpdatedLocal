@@ -425,33 +425,32 @@ public function checkDomainHealth($orderId = null)
 
 private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $blacklistedDomains, $domainResults): void
 {
-    $message = "*Domain Health Alert*\n";
-    $message .= "Order ID: $orderId\n";
-    $message .= "Total Domains: $totalDomains\n";
-    $message .= "Unhealthy Domains: $unhealthyDomains\n";
-    $message .= "Blacklisted Domains: $blacklistedDomains\n\n";
-    $message .= "*Domain Details:*\n";
+   $message = ":rotating_light: *Domain Health Alert* :rotating_light:\n";
+    $message .= "> *Order ID:* `$orderId`\n";
+    $message .= "> *Total Domains Checked:* *$totalDomains*\n";
+    $message .= "> :warning: *Unhealthy Domains:* *$unhealthyDomains*\n";
+    $message .= "> :no_entry_sign: *Blacklisted Domains:* *$blacklistedDomains*\n";
+    $message .= "\n";
 
-    foreach ($domainResults as $result) {
-        if ($result['status'] !== "Healthy") {
-            $message .= "• Domain: {$result['domain']}\n";
-            $message .= "  Status: {$result['status']}\n";
-            $message .= "  Summary: {$result['summary']}\n";
-            if (!empty($result['dns']['errors'])) {
-                $message .= "  DNS Errors: " . implode(", ", $result['dns']['errors']) . "\n";
-            }
-            if (!empty($result['blacklist']['listed_on'])) {
-                $message .= "  Blacklisted on: " . implode(", ", $result['blacklist']['listed_on']) . "\n";
-            }
-            $message .= "\n";
-        }
-    }
+    // $message .= "*Domain Details:*\n";
+    // foreach ($domainResults as $result) {
+    //     if ($result['status'] !== "Healthy") {
+    //         $message .= "• Domain: {$result['domain']}\n";
+    //         $message .= "  Status: {$result['status']}\n";
+    //         $message .= "  Summary: {$result['summary']}\n";
+    //         if (!empty($result['dns']['errors'])) {
+    //             $message .= "  DNS Errors: " . implode(", ", $result['dns']['errors']) . "\n";
+    //         }
+    //         if (!empty($result['blacklist']['listed_on'])) {
+    //             $message .= "  Blacklisted on: " . implode(", ", $result['blacklist']['listed_on']) . "\n";
+    //         }
+    //         $message .= "\n";
+    //     }
+    // }
 
     // Use the actual type key, not label
     SlackNotificationService::send('inbox-admins', $message);
 }
-
-
 
 
 
