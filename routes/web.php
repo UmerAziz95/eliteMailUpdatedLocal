@@ -241,6 +241,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
         Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
         
+        // GHL Settings Routes
+        Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
+        Route::post('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'update'])->name('ghl-settings.update');
+        Route::post('/ghl-settings/test-connection', [App\Http\Controllers\Admin\GhlSettingsController::class, 'testConnection'])->name('ghl-settings.test-connection');
+        Route::get('/ghl-settings/get', [App\Http\Controllers\Admin\GhlSettingsController::class, 'getSettings'])->name('ghl-settings.get');
+        
         // Task Queue Routes
         Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
@@ -663,8 +669,8 @@ Route::get('/ghl/create-contact', function () {
     try {
         $user = User::find(1); // Replace with the actual user ID or logic to get the user
         $ghlService = new AccountCreationGHL();
-        $ghlService->createContact($user, 'lead');
-        return response()->json(['success' => true, 'message' => 'Contact created successfully']);
+        $response = $ghlService->createContact($user, 'lead');
+        return response()->json(['success' => true, 'message' => 'Contact created successfully', 'data' => $response]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }

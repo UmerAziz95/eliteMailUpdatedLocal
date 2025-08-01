@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use App\Models\GhlSetting;
 
 class AccountCreationGHL
 {
@@ -17,20 +18,42 @@ class AccountCreationGHL
      * GHL API token
      */
     private string $apiToken;
+    
     /**
      * GHL API version
      */
     private string $apiVersion;
 
     /**
+     * GHL Location ID
+     */
+    private string $locationId;
+
+    /**
+     * GHL Settings
+     */
+    private GhlSetting $settings;
+
+    /**
      * Constructor
      */
     public function __construct()
     {
-        $this->baseUrl = config('services.ghl.base_url', 'https://rest.gohighlevel.com/v1');
-        $this->apiToken = config('services.ghl.api_token');
-        $this->apiVersion = config('services.ghl.api_version', '2021-07-28');
+        $this->settings = GhlSetting::getCurrentSettings();
+        $this->baseUrl = $this->settings->base_url ?: 'https://rest.gohighlevel.com/v1';
+        $this->apiToken = $this->settings->api_token ?: '';
+        $this->apiVersion = $this->settings->api_version ?: '2021-07-28';
+        $this->locationId = $this->settings->location_id ?: '';
+    }
 
+    /**
+     * Check if GHL integration is enabled
+     *
+     * @return bool
+     */
+    public function isEnabled(): bool
+    {
+        return $this->settings->enabled && !empty($this->apiToken);
     }
 
     /**
@@ -96,6 +119,11 @@ class AccountCreationGHL
     public function createContact(User $user, string $contactType = 'lead'): ?array
     {
         try {
+            if (!$this->isEnabled()) {
+                Log::info('GHL integration is disabled');
+                return null;
+            }
+
             if (!$this->apiToken) {
                 Log::error('GHL API token not configured');
                 return null;
@@ -151,6 +179,7 @@ class AccountCreationGHL
      * @param string $contactType
      * @return array
      */
+    
     private function prepareContactData(User $user, string $contactType): array
     {
         $firstName = $this->extractFirstName($user->name);
@@ -161,7 +190,7 @@ class AccountCreationGHL
             'lastName' => $lastName ?: 'User',
             'name' => $user->name ?: 'Unknown User',
             'email' => $user->email,
-            'locationId' => config('services.ghl.location_id'),
+            'locationId' => $this->locationId,
             'phone' => $user->phone ?? '+1 000-000-0000',
             'address1' => $user->billing_address ?? '',
             'city' => $user->billing_city ?? '',
@@ -260,6 +289,11 @@ class AccountCreationGHL
     public function updateContact(User $user, string $ghlContactId): ?array
     {
         try {
+            if (!$this->isEnabled()) {
+                Log::info('GHL integration is disabled');
+                return null;
+            }
+
             if (!$this->apiToken) {
                 Log::error('GHL API token not configured');
                 return null;
@@ -316,6 +350,11 @@ class AccountCreationGHL
     public function deleteContact(string $ghlContactId): bool
     {
         try {
+            if (!$this->isEnabled()) {
+                Log::info('GHL integration is disabled');
+                return false;
+            }
+
             if (!$this->apiToken) {
                 Log::error('GHL API token not configured');
                 return false;
