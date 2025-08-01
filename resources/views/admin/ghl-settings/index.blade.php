@@ -27,7 +27,7 @@
                         <!-- Status Section -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div class="card bg-dark">
+                                <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
