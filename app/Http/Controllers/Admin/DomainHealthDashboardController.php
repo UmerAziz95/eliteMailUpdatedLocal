@@ -425,13 +425,56 @@ public function checkDomainHealth($orderId = null)
 
 private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $blacklistedDomains, $domainResults): void
 {
-   $message = ":rotating_light: *Domain Health Alert* :rotating_light:\n";
-    $message .= "> *Order ID:* `$orderId`\n";
-    $message .= "> *Total Domains Checked:* *$totalDomains*\n";
-    $message .= "> :warning: *Unhealthy Domains:* *$unhealthyDomains*\n";
-    $message .= "> :no_entry_sign: *Blacklisted Domains:* *$blacklistedDomains*\n";
-    $message .= "\n";
+   
+    $message = 
+     [
+                    'text' => "🛑 *Domain Health Alert*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $orderId?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Total Domains Checked',
+                                    'value' => $totalDomains ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Unhealthy Domains',
+                                    'value' => $unhealthyDomains ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Blacklisted Domains',
+                                    'value' => $blacklistedDomains ?? 'N/A',
+                                    'short' => true
+                                ]
+                               
+                               
+                               
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Domain Health Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
 
+               
+    // Use the actual type key, not label
+    SlackNotificationService::send('inbox-admins', $message);
+}
+
+
+
+//  $message = ":rotating_light: *Domain Health Alert* :rotating_light:\n";
+//     $message .= "> *Order ID:* `$orderId`\n";
+//     $message .= "> *Total Domains Checked:* *$totalDomains*\n";
+//     $message .= "> :warning: *Unhealthy Domains:* *$unhealthyDomains*\n";
+//     $message .= "> :no_entry_sign: *Blacklisted Domains:* *$blacklistedDomains*\n";
     // $message .= "*Domain Details:*\n";
     // foreach ($domainResults as $result) {
     //     if ($result['status'] !== "Healthy") {
@@ -447,13 +490,6 @@ private function notifyOrderSlack($orderId, $totalDomains, $unhealthyDomains, $b
     //         $message .= "\n";
     //     }
     // }
-
-    // Use the actual type key, not label
-    SlackNotificationService::send('inbox-admins', $message);
-}
-
-
-
 
 //  public function checkDomainHealth($orderId =null)
 //     {

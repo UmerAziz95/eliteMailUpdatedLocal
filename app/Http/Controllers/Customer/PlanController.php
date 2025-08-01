@@ -1003,8 +1003,52 @@ class PlanController extends Controller
                 case 'invoice_created':
                 case 'invoice_updated':
                 case 'invoice_paid':
+                    //  case 'invoice_payment_succeeded':
+                    // $invoiceData = $webhookData['content']['invoice'] ?? [];
+
+                    // $subscriptionId = $invoiceData['subscription_id'] ?? null;
+                    // $customerId = $invoiceData['customer_id'] ?? null;
+
+                    // // Attempt to remove any failure records for this subscription
+                    // try {
+                    //     DB::table('payment_failures')
+                    //         ->where('chargebee_subscription_id', $subscriptionId)
+                    //         ->where('chargebee_customer_id', $customerId)
+                    //         ->where('created_at', '>=', now('UTC')->subHours(72)) // Only remove if it's within 72 hours
+                    //         ->delete();
+
+                    //     Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                    // } catch (\Exception $e) {
+                    //     Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                    // }
+
+                    // break;
+
                 case 'invoice_payment_failed':
-                    
+                    if ($eventType === 'invoice_payment_failed') {
+                    try {
+                       DB::table('payment_failures')->updateOrInsert(
+                        [
+                            'chargebee_subscription_id' => $subscriptionId,
+                            'chargebee_customer_id' => $customerId,
+                        ],
+                        [
+                            'reason' => $failureReason,
+                            'invoice_id' => $invoiceId,
+                            'updated_at' => now('UTC'),
+                            'created_at' => now('UTC'), // optional — use only if table doesn't auto-set this
+                        ]
+                    );
+
+                        Log::info('Payment failure recorded successfully', [
+                            'subscription_id' => $invoiceData['subscription_id'] ?? null,
+                            'user_id'         => $user_id,
+                            'plan_id'         => $plan_id,
+                        ]);
+                    } catch (\Exception $ex) {
+                        Log::error('Failed to record payment failure: ' . $ex->getMessage());
+                    }
+                }
                 case 'invoice_generated':
                     $invoiceData = $content['invoice'] ?? null;
                     
