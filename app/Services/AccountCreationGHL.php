@@ -194,20 +194,20 @@ class AccountCreationGHL
         $lastName = $this->extractLastName($user->name);
         
         $contactData = [
-            'firstName' => $firstName ?: 'Unknown',
-            'lastName' => $lastName ?: 'User',
-            'name' => $user->name ?: 'Unknown User',
+            'firstName' => $firstName ?: null,
+            'lastName' => $lastName ?: null,
+            'name' => $user->name ?: null,
             'email' => $user->email,
             'locationId' => $this->locationId,
-            'phone' => $user->phone ?? '+1 000-000-0000',
-            'address1' => $user->billing_address ?? '',
-            'city' => $user->billing_city ?? '',
-            'state' => $user->billing_state ?? '',
-            'postalCode' => $user->billing_zip ?? '',
-            // 'country' => 'US',
+            'phone' => $user->phone ?? null,
+            'address1' => $user->billing_address ?? null,
+            'city' => $user->billing_city ?? null,
+            'state' => $user->billing_state ?? null,
+            'postalCode' => $user->billing_zip ?? null,
+            'country' => $user->billing_country ?? null,
             // 'timezone' => 'America/New_York',
-            'source' => 'public api',
-            'tags' => [$contactType, 'auto-created'],
+            'source' => 'api',
+            'tags' => [$contactType, 'created-app.projectinbox.ai'],
             'customFields' => [
             [
                 'key' => 'contact_type',
@@ -231,9 +231,9 @@ class AccountCreationGHL
 
         if ($user->billing_address) {
             $contactData['address1'] = $user->billing_address;
-            $contactData['city'] = $user->billing_city ?? '';
-            $contactData['state'] = $user->billing_state ?? '';
-            $contactData['postalCode'] = $user->billing_zip ?? '';
+            $contactData['city'] = $user->billing_city ?? null;
+            $contactData['state'] = $user->billing_state ?? null;
+            $contactData['postalCode'] = $user->billing_zip ?? null;
         }
 
         return $contactData;
@@ -311,7 +311,7 @@ class AccountCreationGHL
                 return null;
             }
 
-            $contactData = $this->prepareContactData($user, 'customer');
+            $contactData = $this->prepareContactData($user, 'lead');
             unset($contactData['locationId']); // Don't update location on existing contact
 
             // Get the authorization headers
@@ -397,7 +397,8 @@ class AccountCreationGHL
 
             // Prepare contact data for customer conversion
             $contactData = [
-                'tags' => ['customer', 'auto-created'], // Add customer tag, keep auto-created
+                'type' => $newContactType, // Update type to customer
+                'tags' => ['customer', 'created-app.projectinbox.ai'], // Add customer tag, keep auto-created
                 'customFields' => [
                     [
                         'key' => 'contact_type',
