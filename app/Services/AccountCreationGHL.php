@@ -117,6 +117,7 @@ class AccountCreationGHL
      * @param string $contactType
      * @return array|null
      */
+
     public function createContact(User $user, string $contactType = 'lead'): ?array
     {
         try {
@@ -140,6 +141,12 @@ class AccountCreationGHL
             $response = Http::withHeaders($headers)->post($endpoint, $contactData);
             if ($response->successful()) {
                 $responseData = $response->json();
+                Log::info('GHL contact created successfully RESPONSE', [
+                    'user_id' => $user->id,
+                    'ghl_contact_id' => $responseData ?? null,
+                    'contact_type' => $contactType,
+                    'endpoint_used' => $endpoint
+                ]);
                 Log::info('GHL contact created successfully', [
                     'user_id' => $user->id,
                     'ghl_contact_id' => $responseData['contact']['id'] ?? null,
@@ -271,6 +278,10 @@ class AccountCreationGHL
     {
         try {
             $user->update(['ghl_contact_id' => $ghlContactId]);
+            Log::info('User updated with GHL contact ID', [
+                'user_id' => $user->id,
+                'ghl_contact_id' => $ghlContactId
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to update user with GHL contact ID', [
                 'user_id' => $user->id,
@@ -339,6 +350,142 @@ class AccountCreationGHL
                 'trace' => $e->getTraceAsString()
             ]);
             return null;
+        }
+    }
+
+    /**
+     * Get GHL contact ID from user table
+     *
+     * @param User $user
+     * @return string|null
+     */
+    public function getGhlContactId(User $user): ?string
+    {
+        return $user->ghl_contact_id;
+    }
+
+    /**
+     * Update contact type and tags (convert lead to customer)
+     *
+     * @param User $user
+     * @param string $newContactType
+     * @return array|null
+     */
+    public function updateContactToCustomer(User $user, string $newContactType = 'customer'): ?array
+    {
+        try {
+            if (!$this->isEnabled()) {
+                Log::info('GHL integration is disabled');
+                return null;
+            }
+
+            if (!$this->apiToken) {
+                Log::error('GHL API token not configured');
+                return null;
+            }
+
+            // Get GHL contact ID from user table
+            $ghlContactId = $this->getGhlContactId($user);
+            
+            if (!$ghlContactId) {
+                Log::warning('No GHL contact ID found for user', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+                return null;
+            }
+
+            // Prepare contact data for customer conversion
+            $contactData = [
+                'tags' => ['customer', 'auto-created'], // Add customer tag, keep auto-created
+                'customFields' => [
+                    [
+                        'key' => 'contact_type',
+                        'field_value' => $newContactType
+                    ],
+                    [
+                        'key' => 'converted_to_customer_date',
+                        'field_value' => now()->format('Y-m-d H:i:s')
+                    ]
+                ]
+            ];
+
+            $headers = $this->getAuthHeaders();
+            $endpoint = $this->baseUrl . '/contacts/' . $ghlContactId;
+
+            // First, remove 'lead' tag if it exists
+            $this->removeTagFromContact($ghlContactId, 'lead');
+
+            // Then update the contact with customer data
+            $response = Http::withHeaders($headers)->put($endpoint, $contactData);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                Log::info('GHL contact converted to customer successfully', [
+                    'user_id' => $user->id,
+                    'ghl_contact_id' => $ghlContactId,
+                    'old_type' => 'lead',
+                    'new_type' => $newContactType
+                ]);
+
+                return $responseData;
+            } else {
+                Log::error('Failed to convert GHL contact to customer', [
+                    'user_id' => $user->id,
+                    'ghl_contact_id' => $ghlContactId,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception while converting GHL contact to customer', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+
+
+    /**
+     * Remove a tag from contact
+     *
+     * @param string $ghlContactId
+     * @param string $tagToRemove
+     * @return bool
+     */
+    private function removeTagFromContact(string $ghlContactId, string $tagToRemove): bool
+    {
+        try {
+            $headers = $this->getAuthHeaders();
+            $endpoint = $this->baseUrl . '/contacts/' . $ghlContactId . '/tags/' . $tagToRemove;
+
+            $response = Http::withHeaders($headers)->delete($endpoint);
+
+            if ($response->successful()) {
+                Log::info('Tag removed from GHL contact', [
+                    'ghl_contact_id' => $ghlContactId,
+                    'tag_removed' => $tagToRemove
+                ]);
+                return true;
+            } else {
+                Log::warning('Failed to remove tag from GHL contact', [
+                    'ghl_contact_id' => $ghlContactId,
+                    'tag_to_remove' => $tagToRemove,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception while removing tag from GHL contact', [
+                'ghl_contact_id' => $ghlContactId,
+                'tag_to_remove' => $tagToRemove,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 

@@ -369,7 +369,7 @@ class PlanController extends Controller
                     'additional_info' => null, // Default value
                 ]);
             }
-        
+            
             // Create or update invoice
             $existingInvoice = Invoice::where('chargebee_invoice_id', $invoice->id)->first();
 
@@ -398,6 +398,37 @@ class PlanController extends Controller
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'metadata' => $meta_json,
                 ]);
+            }
+
+            // Update GHL contact to customer when invoice is created/paid
+            // This converts the contact from 'lead' to 'customer' status and updates tags
+            try {
+                $ghlService = new \App\Services\AccountCreationGHL();
+                if ($ghlService->isEnabled()) {
+                    $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
+                    
+                    if ($ghlResult) {
+                        Log::info('GHL contact successfully converted to customer', [
+                            'user_id' => $user->id,
+                            'invoice_id' => $existingInvoice->id,
+                            'ghl_contact_id' => $user->ghl_contact_id
+                        ]);
+                    } else {
+                        Log::warning('Failed to convert GHL contact to customer', [
+                            'user_id' => $user->id,
+                            'invoice_id' => $existingInvoice->id
+                        ]);
+                    }
+                } else {
+                    Log::info('GHL integration is disabled, skipping contact update');
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception while updating GHL contact to customer', [
+                    'user_id' => $user->id,
+                    'invoice_id' => $existingInvoice->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't throw the exception - let the process continue
             }
 
             // Create or update subscription
@@ -1067,6 +1098,44 @@ class PlanController extends Controller
                             'metadata' => $metadata,
                         ]
                     );
+                    
+                    // Update GHL contact to customer when invoice is created/paid via webhook
+                    // This converts the contact from 'lead' to 'customer' status and updates tags
+                    if (in_array($eventType, ['invoice_created', 'invoice_paid', 'invoice_generated']) && $invoice->status === 'paid') {
+                        try {
+                            $user = User::find($invoice->user_id);
+                            if ($user) {
+                                $ghlService = new \App\Services\AccountCreationGHL();
+                                if ($ghlService->isEnabled()) {
+                                    $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
+                                    
+                                    if ($ghlResult) {
+                                        Log::info('GHL contact successfully converted to customer via webhook', [
+                                            'user_id' => $user->id,
+                                            'invoice_id' => $invoice->id,
+                                            'event_type' => $eventType,
+                                            'ghl_contact_id' => $user->ghl_contact_id
+                                        ]);
+                                    } else {
+                                        Log::warning('Failed to convert GHL contact to customer via webhook', [
+                                            'user_id' => $user->id,
+                                            'invoice_id' => $invoice->id,
+                                            'event_type' => $eventType
+                                        ]);
+                                    }
+                                } else {
+                                    Log::info('GHL integration is disabled, skipping contact update via webhook');
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Exception while updating GHL contact to customer via webhook', [
+                                'invoice_id' => $invoice->id,
+                                'event_type' => $eventType,
+                                'error' => $e->getMessage()
+                            ]);
+                            // Don't throw the exception - let the webhook process continue
+                        }
+                    }
                     
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
