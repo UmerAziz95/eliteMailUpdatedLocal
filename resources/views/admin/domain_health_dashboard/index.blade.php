@@ -1509,7 +1509,6 @@
                 return null;
             }
            
-
             try {
                 var table = $table.DataTable({
                     processing: true,
@@ -1680,6 +1679,14 @@
                         {
                             data: 'total_inboxes',
                             name: 'total_inboxes'
+                        },
+                        {
+                            data: 'dns_issues_count',
+                            name: 'dns_issues_count'
+                        },
+                        {
+                            data: 'blacklisted_count',
+                            name: 'blacklisted_count'
                         },
                        
                         {

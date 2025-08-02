@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('payment_failures', function (Blueprint $table) {
+    Schema::create('payment_failures', function (Blueprint $table) {
     $table->id();
     $table->string('chargebee_customer_id')->nullable();
     $table->string('chargebee_subscription_id')->nullable();
+    $table->string('type')->nullable();
+    $table->string('status')->nullable();
     $table->unsignedBigInteger('user_id')->nullable();
     $table->unsignedBigInteger('plan_id')->nullable();
     $table->timestamp('failed_at');
