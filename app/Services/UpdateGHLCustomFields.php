@@ -101,6 +101,27 @@ class UpdateGHLCustomFields
                 return ['success' => false, 'message' => 'No custom fields provided'];
             }
 
+            // Validate custom fields before sending to GHL
+            $validation = $this->validateCustomFields($customFields);
+            
+            if (!$validation['is_valid']) {
+                Log::error('Custom fields validation failed', [
+                    'contact_id' => $contactId,
+                    'errors' => $validation['errors'],
+                    'invalid_fields' => array_diff_key($customFields, $validation['valid'])
+                ]);
+                
+                return [
+                    'success' => false,
+                    'message' => 'Custom fields validation failed',
+                    'errors' => $validation['errors'],
+                    'valid_fields' => $validation['valid']
+                ];
+            }
+
+            // Use only valid fields for the update
+            $customFields = $validation['valid'];
+
             $headers = $this->getAuthHeaders();
             $endpoint = $this->baseUrl . '/contacts/' . $contactId;
 
@@ -173,6 +194,24 @@ class UpdateGHLCustomFields
     public function updateContactCustomFieldsByEmail(string $email, array $customFields): ?array
     {
         try {
+            // Validate custom fields before proceeding
+            $validation = $this->validateCustomFields($customFields);
+            
+            if (!$validation['is_valid']) {
+                Log::error('Custom fields validation failed for email update', [
+                    'email' => $email,
+                    'errors' => $validation['errors'],
+                    'invalid_fields' => array_diff_key($customFields, $validation['valid'])
+                ]);
+                
+                return [
+                    'success' => false,
+                    'message' => 'Custom fields validation failed',
+                    'errors' => $validation['errors'],
+                    'valid_fields' => $validation['valid']
+                ];
+            }
+
             $contactId = $this->getContactIdByEmail($email);
             
             if (!$contactId) {
@@ -184,7 +223,8 @@ class UpdateGHLCustomFields
                 ];
             }
 
-            return $this->updateContactCustomFields($contactId, $customFields);
+            // Use only valid fields for the update
+            return $this->updateContactCustomFields($contactId, $validation['valid']);
 
         } catch (\Exception $e) {
             Log::error('Exception during GHL custom fields update by email', [
@@ -315,7 +355,24 @@ class UpdateGHLCustomFields
      */
     public function updateSingleCustomField(string $contactId, string $fieldKey, $fieldValue): ?array
     {
-        return $this->updateContactCustomFields($contactId, [$fieldKey => $fieldValue]);
+        // Validate the single custom field
+        $validation = $this->validateCustomFields([$fieldKey => $fieldValue]);
+        
+        if (!$validation['is_valid']) {
+            Log::error('Single custom field validation failed', [
+                'contact_id' => $contactId,
+                'field_key' => $fieldKey,
+                'errors' => $validation['errors']
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Custom field validation failed',
+                'errors' => $validation['errors']
+            ];
+        }
+
+        return $this->updateContactCustomFields($contactId, $validation['valid']);
     }
 
     /**
