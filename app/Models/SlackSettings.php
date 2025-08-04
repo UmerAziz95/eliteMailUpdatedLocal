@@ -33,3 +33,4 @@ class SlackSettings extends Model
     }
 }
 
+

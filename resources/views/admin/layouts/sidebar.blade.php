@@ -161,6 +161,17 @@
                     </div>
                 </a>
             </li>
+
+            <!-- GHL Settings -->
+            <li class="nav-item">
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.ghl-settings.index') ? 'active' : '' }}"
+                    href="{{ route('admin.ghl-settings.index') }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="ti ti-settings fs-5"></i></div>
+                        <div class="text">GHL Settings</div>
+                    </div>
+                </a>
+            </li>
     </ul>
 </aside>
 
