@@ -301,6 +301,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
     });
 
 });
+
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
 Route::post('/profile/update-image', [App\Http\Controllers\ProfileController::class, 'updateProfileImage'])->name('profile.update.image');
 

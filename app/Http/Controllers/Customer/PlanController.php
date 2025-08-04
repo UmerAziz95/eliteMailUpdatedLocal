@@ -29,6 +29,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\PaymentFailure;
+use App\Mail\FailedPaymentNotificationMail;
 class PlanController extends Controller
 {
     public function index()
@@ -1763,4 +1764,73 @@ class PlanController extends Controller
         'cancelled_count' => $paymentFailures->count(),
     ]);
 }
+
+
+
+public function sendMailsTo72HoursFailedPayments(Request $request)
+{
+    $now = Carbon::now();
+
+    // Get payment failures where it's within 72 hours from created_at
+    $paymentFailures = PaymentFailure::where("type", "invoice")
+        ->where("status", "!=", "cancelled")
+        ->where("created_at", ">=", $now->copy()->subHours(72))
+        ->get();
+
+    $sentCount = 0;
+
+    foreach ($paymentFailures as $failure) {
+        if (!$failure->user_id || !$failure->chargebee_subscription_id) {
+            continue;
+        }
+
+        $user = User::find($failure->user_id);
+        if (!$user) continue;
+
+        $createdAt = Carbon::parse($failure->created_at);
+        $hoursSinceFailure = $createdAt->diffInHours($now);
+
+        if ($hoursSinceFailure > 72) {
+            continue; // Outside the 72-hour window
+        }
+
+        // Only send one email per calendar day
+        $alreadySentToday = \DB::table('payment_failure_email_logs')
+            ->where('payment_failure_id', $failure->id)
+            ->whereDate('sent_date', $now->toDateString())
+            ->exists();
+
+        if ($alreadySentToday) {
+            continue;
+        }
+
+        try {
+            Mail::to($user->email)->queue(new FailedPaymentNotificationMail($user, $failure));
+
+            \DB::table('payment_failure_email_logs')->insert([
+                'payment_failure_id' => $failure->id,
+                'sent_date' => $now->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $sentCount++;
+        } catch (\Exception $e) {
+            Log::error('Failed to send failed payment email', [
+                'user_id' => $user->id,
+                'failure_id' => $failure->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    return response()->json([
+        'message' => 'Emails sent for failed payments within 72 hours of creation.',
+        'sent_count' => $sentCount,
+    ]);
 }
+
+
+
+}
+
