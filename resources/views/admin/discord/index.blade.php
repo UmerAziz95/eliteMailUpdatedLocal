@@ -231,7 +231,7 @@
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label" for="modalAddressFirstName">First Name</label>
+                            <label class="form-label" for="modalAddress2eFirstName">First Name</label>
                             <input type="text" id="modalAddressFirstName" name="modalAddressFirstName"
                                 class="form-control" placeholder="John">
                             <div
