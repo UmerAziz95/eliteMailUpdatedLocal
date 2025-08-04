@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\PaymentFailure;
 class PlanController extends Controller
 {
     public function index()
@@ -1721,4 +1722,45 @@ class PlanController extends Controller
             ], 500);
         }
     }
+
+
+   public function handleCancelSubscriptionByCron(Request $request)
+{
+    $cutoffTime = Carbon::now()->subHours(72);
+
+    // Get payment failures older than 72 hours
+   $paymentFailures = PaymentFailure::where("type", "invoice")
+    ->where("status", "!=", "cancelled")
+    ->where("created_at", "<=", $cutoffTime)
+    ->get();
+
+    $subscriptionService = new \App\Services\OrderCancelledService();
+    foreach ($paymentFailures as $failure) {
+        // Make sure user_id and subscription_id exist
+        if ($failure->chargebee_subscription_id && $failure->user_id) {
+           $result= $subscriptionService->cancelSubscription(
+                $failure->chargebee_subscription_id,
+                $failure->user_id,
+                'Auto-cancel due to repeated failure after 72 hours',
+                true // or false depending on your logic for removing accounts
+            );
+            if ($result['success']) {
+                // Mark the payment failure as processed
+                $failure->update(['status' => 'cancelled']);
+            } else {
+                Log::error('Failed to cancel subscription via cron', [
+                    'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                    'user_id' => $failure->user_id,
+                    'error' => $result['message']
+                ]);
+            }
+
+        }
+    }
+
+    return response()->json([
+        'message' => 'Checked and processed expired failed payments.',
+        'cancelled_count' => $paymentFailures->count(),
+    ]);
+}
 }

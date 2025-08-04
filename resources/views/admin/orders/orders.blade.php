@@ -4347,7 +4347,7 @@ pointer-events: none
                         if (typeof toastr !== 'undefined') {
                             // toastr.success('Real-time updates connected!', 'WebSocket Connected', {
                             //     timeOut: 2000,
-                            //     closeButton: true
+                            //     closeButton: true    
                             // });
                         }
                     });
