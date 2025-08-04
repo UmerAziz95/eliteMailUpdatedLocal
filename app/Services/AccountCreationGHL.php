@@ -395,20 +395,19 @@ class AccountCreationGHL
                 return null;
             }
 
-            // Prepare contact data for customer conversion
-            $contactData = [
-                'type' => $newContactType, // Update type to customer
-                'tags' => ['customer', 'created-app.projectinbox.ai'], // Add customer tag, keep auto-created
-                'customFields' => [
-                    [
-                        'key' => 'contact_type',
-                        'field_value' => $newContactType
-                    ],
-                    [
-                        'key' => 'converted_to_customer_date',
-                        'field_value' => now()->format('Y-m-d H:i:s')
-                    ]
-                ]
+            // Prepare full contact data for customer conversion
+            $contactData = $this->prepareContactData($user, $newContactType);
+            
+            // Remove locationId as we don't want to update it on existing contact
+            unset($contactData['locationId']);
+            
+            // Override tags to ensure customer tag is set and lead tag is removed
+            $contactData['tags'] = ['customer', 'created-app.projectinbox.ai'];
+            
+            // Add conversion tracking to custom fields
+            $contactData['customFields'][] = [
+                'key' => 'converted_to_customer_date',
+                'field_value' => now()->format('Y-m-d H:i:s')
             ];
 
             $headers = $this->getAuthHeaders();
@@ -417,7 +416,7 @@ class AccountCreationGHL
             // First, remove 'lead' tag if it exists
             $this->removeTagFromContact($ghlContactId, 'lead');
 
-            // Then update the contact with customer data
+            // Then update the full contact with customer data
             $response = Http::withHeaders($headers)->put($endpoint, $contactData);
 
             if ($response->successful()) {
