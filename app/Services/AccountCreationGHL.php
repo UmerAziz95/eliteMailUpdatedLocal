@@ -206,26 +206,35 @@ class AccountCreationGHL
             'postalCode' => $user->billing_zip ?? null,
             'country' => $user->billing_country ?? null,
             // 'timezone' => 'America/New_York',
+            'type' => $contactType,
             'source' => 'api',
             'tags' => [$contactType, 'created-app.projectinbox.ai'],
             'customField' => [
-            // [
-            //     'key' => 'custom_action',
-            //     // 'field_value' => 'payment-failed'
-            //     'field_value' => 'payment-success'
-            // ],
-            [
-                'key' => 'contact_type',
-                'field_value' => $contactType
-            ],
-            [
-                'key' => 'user_id', 
-                'field_value' => (string) $user->id
-            ],
-            [
-                'key' => 'registration_date',
-                'field_value' => $user->created_at->format('Y-m-d H:i:s')
-            ]
+                [
+                    'key' => 'type',
+                    'field_value' => $contactType
+                ],
+                [
+                    'key' => 'contact.type',
+                    'field_value' => $contactType
+                ],
+                [
+                    'key' => 'contact_type',
+                    'field_value' => $contactType
+                ],
+                // custom_action
+                // [
+                //     'key' => 'custom_action',
+                //     'field_value' => 'payment-failed'
+                // ],
+                // [
+                //     'key' => 'failed_payment_counter',
+                //     'field_value' => 10 // Default value, can be updated later
+                // ],
+                // [
+                //     'key' => 'order_id',
+                //     'field_value' => 67
+                // ]
             ]
         ];
 
@@ -410,10 +419,10 @@ class AccountCreationGHL
             $contactData['tags'] = ['customer', 'created-app.projectinbox.ai'];
             
             // Add conversion tracking to custom fields
-            $contactData['customField'][] = [
-                'key' => 'converted_to_customer_date',
-                'field_value' => now()->format('Y-m-d H:i:s')
-            ];
+            // $contactData['customField'][] = [
+            //     'key' => 'type',
+            //     'field_value' => $newContactType
+            // ];
 
             $headers = $this->getAuthHeaders();
             $endpoint = $this->baseUrl . '/contacts/' . $ghlContactId;
