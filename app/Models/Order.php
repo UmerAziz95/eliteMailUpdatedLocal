@@ -177,4 +177,10 @@ class Order extends Model
                is_null($this->completed_at);
     }
 
+    public function domainHealthChecks()
+    {
+        return $this->hasMany(DomainHealthCheck::class);
+    }
+    
+
 }

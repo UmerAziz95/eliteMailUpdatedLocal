@@ -28,6 +28,7 @@ class DomainHealthCheck extends Model
         'blacklist_listed' => 'boolean',
     ];
 
+
     // Relationship to Order (assuming you have an Order model)
     public function order()
     {

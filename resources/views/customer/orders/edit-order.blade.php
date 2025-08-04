@@ -178,7 +178,7 @@
 
 @if(isset($order) && $order->reason)
     <div class="mb-4">
-        <div class="alert border-0 shadow-lg panel-rejection-alert"
+        <div class="alert border-0 shadow-lg panel-rejection-alert mt-5"
             style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
             <!-- Animated background pattern -->
             <div class="alert-pattern"></div>
@@ -1936,7 +1936,7 @@ $(document).ready(function() {
             
             if (invalidDomains.length > 0) {
                 domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, sub.example.com, example.co.uk`);
+                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, example.co.uk`);
                 calculateTotalInboxes();
                 return;
             }

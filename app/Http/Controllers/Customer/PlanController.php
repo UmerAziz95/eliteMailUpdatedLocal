@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\PaymentFailure;
 class PlanController extends Controller
 {
     public function index()
@@ -369,7 +370,7 @@ class PlanController extends Controller
                     'additional_info' => null, // Default value
                 ]);
             }
-        
+            
             // Create or update invoice
             $existingInvoice = Invoice::where('chargebee_invoice_id', $invoice->id)->first();
 
@@ -398,6 +399,43 @@ class PlanController extends Controller
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'metadata' => $meta_json,
                 ]);
+            }
+
+            // Update GHL contact to customer when invoice is created/paid
+            // This converts the contact from 'lead' to 'customer' status and updates tags
+            try {
+                $ghlService = new \App\Services\AccountCreationGHL();
+                // get address details from chargebee customer
+                // $user->billing_address = $invoice->billingAddress->line1 ?? null;
+                // $user->billing_city = $invoice->billingAddress->city ?? null;
+                // $user->billing_state = $invoice->billingAddress->state ?? null;
+                // $user->billing_zip = $invoice->billingAddress->zip ?? null;
+                // $user->billing_country = $invoice->billingAddress->country ?? null;
+                if ($ghlService->isEnabled()) {
+                    $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
+                    
+                    if ($ghlResult) {
+                        Log::info('GHL contact successfully converted to customer', [
+                            'user_id' => $user->id,
+                            'invoice_id' => $existingInvoice->id,
+                            'ghl_contact_id' => $user->ghl_contact_id
+                        ]);
+                    } else {
+                        Log::warning('Failed to convert GHL contact to customer', [
+                            'user_id' => $user->id,
+                            'invoice_id' => $existingInvoice->id
+                        ]);
+                    }
+                } else {
+                    Log::info('GHL integration is disabled, skipping contact update');
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception while updating GHL contact to customer', [
+                    'user_id' => $user->id,
+                    'invoice_id' => $existingInvoice->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't throw the exception - let the process continue
             }
 
             // Create or update subscription
@@ -989,6 +1027,9 @@ class PlanController extends Controller
     public function handleInvoiceWebhook(Request $request)
     {
         try {
+            Log::info('Invoice Webhook Received Chargebee', [
+                'payload' => $request->all()
+            ]);
             // Verify webhook authenticity
             $webhookData = $request->all();
             // Get the event type and content
@@ -1003,9 +1044,56 @@ class PlanController extends Controller
                 case 'invoice_created':
                 case 'invoice_updated':
                 case 'invoice_paid':
+                    //  case 'invoice_payment_succeeded':
+                    // $invoiceData = $webhookData['content']['invoice'] ?? [];
+
+                    // $subscriptionId = $invoiceData['subscription_id'] ?? null;
+                    // $customerId = $invoiceData['customer_id'] ?? null;
+
+                    // // Attempt to remove any failure records for this subscription
+                    // try {
+                    //     DB::table('payment_failures')
+                    //         ->where('chargebee_subscription_id', $subscriptionId)
+                    //         ->where('chargebee_customer_id', $customerId)
+                    //         ->where('created_at', '>=', now('UTC')->subHours(72)) // Only remove if it's within 72 hours
+                    //         ->delete();
+
+                    //     Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                    // } catch (\Exception $e) {
+                    //     Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                    // }
+
+                    // break;
+
                 case 'invoice_payment_failed':
+                    if ($eventType === 'invoice_payment_failed') {
+                    try {
+                       DB::table('payment_failures')->updateOrInsert(
+                        [
+                            'chargebee_subscription_id' => $subscriptionId,
+                            'chargebee_customer_id' => $customerId,
+                        ],
+                        [
+                            'reason' => $failureReason,
+                            'invoice_id' => $invoiceId,
+                            'updated_at' => now('UTC'),
+                            'created_at' => now('UTC'), // optional — use only if table doesn't auto-set this
+                        ]
+                    );
+
+                        Log::info('Payment failure recorded successfully', [
+                            'subscription_id' => $invoiceData['subscription_id'] ?? null,
+                            'user_id'         => $user_id,
+                            'plan_id'         => $plan_id,
+                        ]);
+                    } catch (\Exception $ex) {
+                        Log::error('Failed to record payment failure: ' . $ex->getMessage());
+                    }
+                }
                 case 'invoice_generated':
                     $invoiceData = $content['invoice'] ?? null;
+                     $subscriptionId = $invoiceData['subscription_id'] ?? null;
+                    $customerId = $invoiceData['customer_id'] ?? null;
                     
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
@@ -1068,6 +1156,56 @@ class PlanController extends Controller
                         ]
                     );
                     
+                    // Update GHL contact to customer when invoice is created/paid via webhook
+                    // This converts the contact from 'lead' to 'customer' status and updates tags
+                    // if (in_array($eventType, ['invoice_created', 'invoice_paid', 'invoice_generated']) && $invoice->status === 'paid') {
+                    //     try {
+                    //         $user = User::find($invoice->user_id);
+                    //         if ($user) {
+                    //             $ghlService = new \App\Services\AccountCreationGHL();
+                    //             if ($ghlService->isEnabled()) {
+                    //                 $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
+                                    
+                    //                 if ($ghlResult) {
+                    //                     Log::info('GHL contact successfully converted to customer via webhook', [
+                    //                         'user_id' => $user->id,
+                    //                         'invoice_id' => $invoice->id,
+                    //                         'event_type' => $eventType,
+                    //                         'ghl_contact_id' => $user->ghl_contact_id
+                    //                     ]);
+                    //                 } else {
+                    //                     Log::warning('Failed to convert GHL contact to customer via webhook', [
+                    //                         'user_id' => $user->id,
+                    //                         'invoice_id' => $invoice->id,
+                    //                         'event_type' => $eventType
+                    //                     ]);
+                    //                 }
+                    //             } else {
+                    //                 Log::info('GHL integration is disabled, skipping contact update via webhook');
+                    //             }
+                    //         }
+                    //     } catch (\Exception $e) {
+                    //         Log::error('Exception while updating GHL contact to customer via webhook', [
+                    //             'invoice_id' => $invoice->id,
+                    //             'event_type' => $eventType,
+                    //             'error' => $e->getMessage()
+                    //         ]);
+                    //         // Don't throw the exception - let the webhook process continue
+                    //     }
+                    // }
+                    
+                    // Remove any payment failure records for this subscription
+                try {
+                    DB::table('payment_failures')
+                        ->where('chargebee_subscription_id', $subscriptionId)
+                        ->where('chargebee_customer_id', $customerId)
+                        ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
+                        ->delete();
+
+                    Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                } catch (\Exception $e) {
+                    Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                }
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
                         try {
@@ -1584,4 +1722,45 @@ class PlanController extends Controller
             ], 500);
         }
     }
+
+
+   public function handleCancelSubscriptionByCron(Request $request)
+{
+    $cutoffTime = Carbon::now()->subHours(72);
+
+    // Get payment failures older than 72 hours
+   $paymentFailures = PaymentFailure::where("type", "invoice")
+    ->where("status", "!=", "cancelled")
+    ->where("created_at", "<=", $cutoffTime)
+    ->get();
+
+    $subscriptionService = new \App\Services\OrderCancelledService();
+    foreach ($paymentFailures as $failure) {
+        // Make sure user_id and subscription_id exist
+        if ($failure->chargebee_subscription_id && $failure->user_id) {
+           $result= $subscriptionService->cancelSubscription(
+                $failure->chargebee_subscription_id,
+                $failure->user_id,
+                'Auto-cancel due to repeated failure after 72 hours',
+                true // or false depending on your logic for removing accounts
+            );
+            if ($result['success']) {
+                // Mark the payment failure as processed
+                $failure->update(['status' => 'cancelled']);
+            } else {
+                Log::error('Failed to cancel subscription via cron', [
+                    'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                    'user_id' => $failure->user_id,
+                    'error' => $result['message']
+                ]);
+            }
+
+        }
+    }
+
+    return response()->json([
+        'message' => 'Checked and processed expired failed payments.',
+        'cancelled_count' => $paymentFailures->count(),
+    ]);
+}
 }

@@ -4,8 +4,6 @@
 
 @section('content')
 <section class="py-3 overflow-hidden">
- 
-
     @php
     $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
     $defaultProfilePic =
@@ -27,25 +25,26 @@
             <h6><span class="opacity-50 fs-6">Order Date:</span>
                 {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div
-            class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
-            {{ ucfirst($order->status_manage_by_admin ?? '') }}
-        </div>
+        <a href="{{ route('admin.domains.health.report', [$order->id]) }}"
+            class="inline-block px-4 py-2 border-success text-white bg-green-600 hover:bg-green-700 border border-green-700 rounded-lg shadow-md transition-all duration-200 ease-in-out">
+            🚑 Generate Health Report(CSV)
+        </a>
     </div>
+    @if (session('error'))
+    <div class="bg-red-100 text-red-700 p-3 rounded mb-4 shadow">
+        {{ session('error') }}
+    </div>
+    @endif
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
-       
         <li class="nav-item" role="presentation" style="display: block;">
             <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
                 type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Domains</button>
         </li>
-        
     </ul>
-
     <div class="tab-content mt-3" id="myTabContent">
-    
-
-        <div class="tab-pane fade active show" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
+        <div class="tab-pane fade active show" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab"
+            tabindex="0">
             <div class="col-12">
                 <div class="card p-3">
                     <h6 class="d-flex align-items-center gap-2">
@@ -55,343 +54,89 @@
                         </div>
                         Domains
                     </h6>
-
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
                             <div class="badge rounded-circle bg-primary p-2">
                                 <i class="fa-solid fa-envelope text-white"></i>
                             </div>
-                           
                         </div>
                     </div>
-
                     <div class="table-responsive">
                         <table id="email-configuration" class="display w-100">
                             <thead>
-                               <tr>
+                                <tr>
+                                    <th>Sr No</th>
                                     <th>Domain</th>
                                     <th>Status</th>
                                     <th>Summary</th>
                                     <th>Dns Status</th>
                                     <th>Black Listed</th>
-                                    <!-- <th>Action</th> -->
                                 </tr>
                             </thead>
                             <tbody>
                             </tbody>
                         </table>
                     </div>
-
                     @push('scripts')
                     <script>
                         $(document).ready(function() {
-                                    // Get the total_inboxes from order configuration
-                                    // const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
-                                    const totalInboxes = {{ optional($order->reorderInfo->first())->total_inboxes ?? 0 }};
-                                    const maxEmails = totalInboxes || 0; // If totalInboxes is 0, allow unlimited emails
-
-                                    // Function declarations first
-                                    function updateRowCount(table) {
-                                        const rowCount = table.rows().count();
-                                        if (maxEmails > 0) {
-                                            $('#totalRowCount').text(rowCount + "/" + totalInboxes);
-                                        } else {
-                                            $('#totalRowCount').text(rowCount + " (Unlimited)");
-                                        }
-                                        updateProgressBar(table);
-                                    }
-
-                                    function updateAddButtonState(table) {
-                                        const rowCount = table.rows().count();
-                                        const addButton = $('#addNewBtn');
-
-                                        if (maxEmails > 0 && rowCount >= maxEmails) {
-                                            addButton.prop('disabled', true);
-                                            addButton.attr('title', `Maximum limit of ${maxEmails} emails reached`);
-                                        } else {
-                                            addButton.prop('disabled', false);
-                                            addButton.removeAttr('title');
-                                        }
-                                    }
-
-                                    function updateProgressBar(table) {
-                                        const rowCount = table.rows().count();
-                                        let percentage = 0;
-
-                                        if (maxEmails > 0) {
-                                            percentage = Math.min((rowCount / maxEmails) * 100, 100);
-                                        } else {
-                                            // For unlimited inboxes, use a different logic
-                                            // Show progress based on number of emails (e.g., every 10 emails is 10% until 100)
-                                            percentage = Math.min((rowCount / 100) * 100, 100);
-                                        }
-
-                                        const progressBar = $('#emailProgressBar');
-                                        progressBar.css('width', percentage + '%')
-                                            .attr('aria-valuenow', percentage);
-
-                                        progressBar.removeClass('bg-primary bg-warning bg-danger');
-                                        if (maxEmails > 0) {
-                                            // For limited inboxes
-                                            if (percentage >= 90) {
-                                                progressBar.addClass('bg-danger');
-                                            } else if (percentage >= 70) {
-                                                progressBar.addClass('bg-warning');
-                                            } else {
-                                                progressBar.addClass('bg-primary');
+                            let emailTable = $('#email-configuration').DataTable({
+                                responsive: true,
+                                paging: true,
+                                pageLength: 10,
+                                searching: true,
+                                info: true,
+                                serverSide: true,
+                                processing: true,
+                                dom: 'frtip',
+                                autoWidth: false,
+                                columnDefs: [
+                                    { width: '33%', targets: 1 },
+                                    { width: '33%', targets: 2 },
+                                    { width: '33%', targets: 3 },
+                                ],
+                                responsive: {
+                                    details: {
+                                        display: $.fn.dataTable.Responsive.display.modal({
+                                            header: function(row) {
+                                                return 'Domain Health Details';
                                             }
-                                        } else {
-                                            // For unlimited inboxes, always show primary color
-                                            progressBar.addClass('bg-primary');
-                                        }
+                                        }),
+                                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
                                     }
-
-                                                                    // Initialize DataTable
-                                    let emailTable = $('#email-configuration').DataTable({
-                                    responsive: true,
-                                    paging: false,
-                                    searching: false,
-                                    info: false,
-                                    dom: 'frtip',
-                                    autoWidth: false,
-                                    columnDefs: [
-                                        { width: '33%', targets: 0 }, // Domain column
-                                        { width: '33%', targets: 1 }, // Status column
-                                        { width: '33%', targets: 2 }, // Summary column
-                                    ],
-                                    responsive: {
-                                        details: {
-                                            display: $.fn.dataTable.Responsive.display.modal({
-                                                header: function(row) {
-                                                    return 'Domain Health Details';
-                                                }
-                                            }),
-                                            renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                                        }
+                                },
+                                ajax: {
+                                    url: '/admin/domains/listings/{{ $order->id }}',
+                                    type: 'GET',
+                                    dataSrc: function(json) {
+                                        return json.data || [];
+                                    }
+                                },
+                                columns: [
+                                    {
+                                        data: null,
+                                        render: function(data, type, row, meta) {
+                                            // Sr No: starting from 1 + current page start
+                                            return meta.row + 1 + meta.settings._iDisplayStart;
+                                        },
+                                        title: 'Sr No'
                                     },
-                                    ajax: {
-                                    url: '/admin/domains/listings/{{ $order->id }}', // update your route accordingly
-                                        dataSrc: function(json) {
-                                            return json.data || [];
-                                        }
-                                    },
-                                    columns: [
-                                        {
-                                            data: 'domain',
-                                            render: function(data, type, row) {
-                                                return data || '';
-                                            }
-                                        },
-                                        {
-                                            data: 'status',
-                                            render: function(data, type, row) {
-                                                return data || '';
-                                            }
-                                        },
-                                        {
-                                            data: 'summary',
-                                            render: function(data, type, row) {
-                                                return data || '';
-                                            }
-                                        },
-                                        {
-                                            data: 'dns_status',
-                                            render: function(data, type, row) {
-                                                return data || '';
-                                            }
-                                        },
-                                        {
-                                            data: 'blacklist_listed',
-                                            render: function(data, type, row) {
-                                                return data || '';
-                                            }
-                                        }
-                                        // Add more columns here if you need (e.g., DNS errors, blacklist info, etc)
-                                    ],
-                                    drawCallback: function(settings) {
-                                        updateRowCount(this.api());
-                                        updateAddButtonState(this.api());
-                                    }
-                                });
-
-                                    // Event listeners
-                                    emailTable.on('draw', function() {
-                                        updateRowCount(emailTable);
-                                        updateAddButtonState(emailTable);
-                                        updateProgressBar(emailTable);
-                                    });
-
-                                    // Add new row button click handler
-                                    $('#addNewBtn').click(function() {
-                                        const rowCount = emailTable.rows().count();
-                                        if (maxEmails > 0 && rowCount >= maxEmails) {
-                                            toastr.error(
-                                                `You can only add up to ${maxEmails} email accounts as per your order configuration.`
-                                                );
-                                            return;
-                                        }
-
-                                        emailTable.row.add({
-                                            name: '',
-                                            email: '',
-                                            password: '',
-                                            id: ''
-                                        }).draw(false);
-                                    });
-
-                                    // Save all button click handler
-                                    $('#saveAllBtn').click(function() {
-                                        const emailsToSave = [];
-                                        let isValid = true;
-
-                                        $(emailTable.rows().nodes()).each(function() {
-                                            const row = $(this);
-                                            const nameField = row.find('.name');
-                                            const emailField = row.find('.email');
-                                            const passwordField = row.find('.password');
-
-                                            // Reset validation classes
-                                            nameField.removeClass('is-invalid');
-                                            emailField.removeClass('is-invalid');
-                                            passwordField.removeClass('is-invalid');
-
-                                            const name = nameField.val()?.trim();
-                                            const email = emailField.val()?.trim();
-                                            const password = passwordField.val()?.trim();
-
-                                            // Validate fields
-                                            if (!name) {
-                                                nameField.addClass('is-invalid');
-                                                isValid = false;
-                                            }
-                                            if (!email) {
-                                                emailField.addClass('is-invalid');
-                                                isValid = false;
-                                            }
-                                            if (!password) {
-                                                passwordField.addClass('is-invalid');
-                                                isValid = false;
-                                            }
-
-                                            if (name && email && password) {
-                                                emailsToSave.push({
-                                                    name,
-                                                    email,
-                                                    password
-                                                });
-                                            }
-                                        });
-
-                                        if (!isValid) {
-                                            toastr.error('Please fill in all required fields');
-                                            return;
-                                        }
-
-                                        $.ajax({
-                                            url: '/admin/domains/listings',
-                                            method: 'POST',
-                                            headers: {
-                                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                                            },
-                                            data: {
-                                                _token: '{{ csrf_token() }}',
-                                                order_id: '{{ $order->id }}',
-                                                emails: emailsToSave
-                                            },
-                                            success: function(response) {
-                                                toastr.success('Emails saved successfully');
-                                                emailTable.ajax.reload();
-                                            },
-                                            error: function(xhr) {
-                                                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                                                    // Loop through each error and mark fields as invalid
-                                                    Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                                                        // Handle array fields like emails.0.email
-                                                        if (key.includes('emails.')) {
-                                                            const parts = key.split('.');
-                                                            const index = parseInt(parts[
-                                                            1]); // Get the row index as integer
-                                                            const field = parts[
-                                                            2]; // Get the field name (email, password, etc.)
-                                                            const errorMsg = xhr.responseJSON.errors[key][
-                                                            0]; // Get the first error message
-
-                                                            // Find the input field at the specific row
-                                                            const row = $(emailTable.rows().nodes()).eq(index);
-                                                            const input = row.find(`.${field}`);
-
-                                                            if (input.length) {
-                                                                input.addClass('is-invalid');
-
-                                                                // Add tooltip or display error message
-                                                                input.attr('title', errorMsg);
-
-                                                                // Optionally create/update feedback element
-                                                                let feedback = input.next('.invalid-feedback');
-                                                                if (!feedback.length) {
-                                                                    input.after(
-                                                                        `<div class="invalid-feedback">${errorMsg}</div>`
-                                                                        );
-                                                                } else {
-                                                                    feedback.text(errorMsg);
-                                                                }
-                                                            }
-                                                        }
-                                                    });
-                                                    toastr.error('Please correct the errors in the form');
-                                                } else {
-                                                    toastr.error(xhr.responseJSON?.message || 'Error saving emails');
-                                                }
-                                            }
-                                        });
-                                    });
-
-                                    // Delete button click handler
-                                    $('#email-configuration tbody').on('click', '.deleteEmailBtn', function() {
-                                        const button = $(this);
-                                        const row = button.closest('tr');
-                                        const id = button.data('id');
-
-                                        if (id) {
-                                            // Delete existing record
-                                            $.ajax({
-                                                url: `/admin/orders/emails/${id}`,
-                                                method: 'DELETE',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                                                },
-                                                success: function() {
-                                                    toastr.success('Email deleted successfully');
-                                                    // Remove just the deleted row instead of reloading the entire table
-                                                    emailTable.row(row).remove().draw(false);
-                                                    updateRowCount(emailTable);
-                                                    updateAddButtonState(emailTable);
-                                                },
-                                                error: function(xhr) {
-                                                    toastr.error(xhr.responseJSON?.message || 'Error deleting email');
-                                                }
-                                            });
-                                        } else {
-                                            // Remove unsaved row and redraw the table
-                                            emailTable.row(row).remove().draw(false);
-                                            updateRowCount(emailTable);
-                                            updateAddButtonState(emailTable);
-                                        }
-                                    });
-
-                                    // ...existing code for delete button and other functionality...
-                                });
+                                    { data: 'domain', render: function(data) { return data || ''; } },
+                                    { data: 'status', render: function(data) { return data || ''; } },
+                                    { data: 'summary', render: function(data) { return data || ''; } },
+                                    { data: 'dns_status', render: function(data) { return data || ''; } },
+                                    { data: 'blacklist_listed', render: function(data) { return data || ''; } },
+                                ]
+                            });
+                        });
                     </script>
                     @endpush
                 </div>
             </div>
         </div>
-
-       
-
     </div>
 
-    <!-- Cancel Subscription Modal -->
+    <!-- Cancel Subscription Modal (unchanged) -->
     <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
         aria-hidden="true">
         <div class="modal-dialog">
@@ -407,39 +152,11 @@
                         </div>
                         Cancel Subscription
                     </h6>
-
                     <p class="note">
                         We are sad to to hear you're cancelling. Would you mind sharing the reason
                         for the cancelation? We strive to always improve and would appreciate your
                         feedback.
                     </p>
-
-                    {{-- <form action="{{ route('customer.subscription.cancel') }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="cancellation_reason">Reason *</label>
-                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8"
-                                required></textarea>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
-                            <label class="form-check-label" for="remove_accounts">
-                                I would like to have these email accounts removed and the domains
-                                released immediately. I will not be using these inboxes any longer.
-                            </label>
-                        </div>
-
-                        <div
-                            class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                            <button type="button"
-                                class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                                data-bs-dismiss="modal">No, I changed my mind</button>
-                            <button type="submit"
-                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                                I'm sure</button>
-                        </div>
-                    </form> --}}
                 </div>
             </div>
         </div>

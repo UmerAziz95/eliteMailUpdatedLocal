@@ -44,6 +44,8 @@ use App\Http\Controllers\Admin\AdminCouponController;
 // domain health dashboard
 use App\Http\Controllers\Admin\DomainHealthDashboardController; 
 
+use App\Models\User;
+use App\Services\AccountCreationGHL;
 
 //cron
 use App\Http\Controllers\CronController;
@@ -51,6 +53,8 @@ use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\ShortEncryptedLink;
+use Flasher\Laravel\Facade\Flasher;
+use Flasher\Noty\Prime\NotyInterface;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -241,6 +245,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
         Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
         
+        // GHL Settings Routes
+        Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
+        Route::post('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'update'])->name('ghl-settings.update');
+        Route::post('/ghl-settings/test-connection', [App\Http\Controllers\Admin\GhlSettingsController::class, 'testConnection'])->name('ghl-settings.test-connection');
+        Route::get('/ghl-settings/get', [App\Http\Controllers\Admin\GhlSettingsController::class, 'getSettings'])->name('ghl-settings.get');
+        
         // Task Queue Routes
         Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
@@ -285,6 +295,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/domains/orders/{id}/view', [DomainHealthDashboardController::class, 'view'])->name('domains.orders.view');
         Route::get('/domains/status/check', [DomainHealthDashboardController::class, 'checkDomainHealth'])->name('domains.status.check');
         Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
+        Route::get('/domains/health/report/{id}', [DomainHealthDashboardController::class, 'domainsHelthReport'])->name('domains.health.report');
 
 
     });
@@ -667,3 +678,27 @@ Route::get('/cron/run-domain-removal-slack-alerts', function () {
         ], 500);
     }
 })->name('cron.run-domain-removal-slack-alerts');
+
+
+// $this->ghlService->createContact($user, 'lead');
+Route::get('/ghl/create-contact', function () {
+    try {
+        $user = User::find(1); // Replace with the actual user ID or logic to get the user
+        $ghlService = new AccountCreationGHL();
+        $response = $ghlService->createContact($user, 'lead');
+        return response()->json(['success' => true, 'message' => 'Contact created successfully', 'data' => $response]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('ghl.create-contact');
+
+// testConnection
+Route::get('/ghl/test-connection', function () {
+    try {
+        $ghlService = new AccountCreationGHL();
+        $result = $ghlService->testConnection();
+        return response()->json(['success' => true, 'message' => 'Connection successful', 'data' => $result]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('ghl.test-connection');
