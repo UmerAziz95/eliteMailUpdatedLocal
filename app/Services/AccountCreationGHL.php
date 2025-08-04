@@ -208,7 +208,12 @@ class AccountCreationGHL
             // 'timezone' => 'America/New_York',
             'source' => 'api',
             'tags' => [$contactType, 'created-app.projectinbox.ai'],
-            'customFields' => [
+            'customField' => [
+            // [
+            //     'key' => 'custom_action',
+            //     // 'field_value' => 'payment-failed'
+            //     'field_value' => 'payment-success'
+            // ],
             [
                 'key' => 'contact_type',
                 'field_value' => $contactType
@@ -405,7 +410,7 @@ class AccountCreationGHL
             $contactData['tags'] = ['customer', 'created-app.projectinbox.ai'];
             
             // Add conversion tracking to custom fields
-            $contactData['customFields'][] = [
+            $contactData['customField'][] = [
                 'key' => 'converted_to_customer_date',
                 'field_value' => now()->format('Y-m-d H:i:s')
             ];
