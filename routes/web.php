@@ -179,7 +179,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
         
         // Panel Reassignment routes
-        Route::get('/orders/{orderId}/panels/{panelId}/available-for-reassignment', [AdminOrderController::class, 'getAvailablePanelsForReassignment'])->name('orders.panels.available-for-reassignment');
+        Route::get('/orders/{orderId}/order-panels/{orderPanelId}/available-for-reassignment', [AdminOrderController::class, 'getAvailablePanelsForReassignment'])->name('orders.order-panels.available-for-reassignment');
         Route::post('/orders/panels/reassign', [AdminOrderController::class, 'reassignPanelSplit'])->name('orders.panels.reassign');
         Route::get('/orders/{orderId}/reassignment-history', [AdminOrderController::class, 'getReassignmentHistory'])->name('orders.reassignment-history');
     

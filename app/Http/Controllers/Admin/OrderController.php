@@ -1988,17 +1988,17 @@ class OrderController extends Controller
     /**
      * Get available panels for reassignment
      */
-    public function getAvailablePanelsForReassignment($orderId, $panelId)
+    public function getAvailablePanelsForReassignment($orderId, $orderPanelId)
     {
         try {
             $reassignmentService = new PanelReassignmentService();
-            $result = $reassignmentService->getAvailablePanelsForReassignment($orderId, $panelId);
+            $result = $reassignmentService->getAvailablePanelsForReassignment($orderId, $orderPanelId);
             
             return response()->json($result);
         } catch (Exception $e) {
             Log::error('Error getting available panels for reassignment', [
                 'order_id' => $orderId,
-                'panel_id' => $panelId,
+                'order_panel_id' => $orderPanelId,
                 'error' => $e->getMessage()
             ]);
             
@@ -2017,7 +2017,7 @@ class OrderController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'from_order_panel_id' => 'required|integer|exists:order_panel,id',
-                'to_order_panel_id' => 'required|integer|exists:order_panel,id',
+                'to_panel_id' => 'required|integer|exists:panels,id',
                 'split_id' => 'nullable|integer|exists:order_panel_split,id',
                 'reason' => 'nullable|string|max:500'
             ]);
@@ -2033,7 +2033,7 @@ class OrderController extends Controller
             $reassignmentService = new PanelReassignmentService();
             $result = $reassignmentService->reassignPanelSplit(
                 $request->from_order_panel_id,
-                $request->to_order_panel_id,
+                $request->to_panel_id, // Now panel_id instead of order_panel_id
                 $request->split_id,
                 auth()->id()
             );
@@ -2043,7 +2043,7 @@ class OrderController extends Controller
                 Log::info('Panel reassignment completed by admin', [
                     'admin_id' => auth()->id(),
                     'from_order_panel_id' => $request->from_order_panel_id,
-                    'to_order_panel_id' => $request->to_order_panel_id,
+                    'to_panel_id' => $request->to_panel_id,
                     'split_id' => $request->split_id,
                     'reason' => $request->reason
                 ]);

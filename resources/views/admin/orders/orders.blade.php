@@ -4650,8 +4650,8 @@ pointer-events: none
         // Update modal title
         document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${panelTitle}`;
         
-        // Load available panels
-        loadAvailablePanels(orderId, currentPanelId);
+        // Load available panels using orderPanelId
+        loadAvailablePanels(orderId, orderPanelId);
         
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('reassignPanelModal'));
@@ -4661,11 +4661,11 @@ pointer-events: none
     /**
      * Load available panels for reassignment
      */
-    async function loadAvailablePanels(orderId, currentPanelId) {
+    async function loadAvailablePanels(orderId, orderPanelId) {
         try {
             showReassignLoading(true);
             
-            const response = await fetch(`/admin/orders/${orderId}/panels/${currentPanelId}/available-for-reassignment`);
+            const response = await fetch(`/admin/orders/${orderId}/order-panels/${orderPanelId}/available-for-reassignment`);
             const data = await response.json();
             
             if (data.success) {
@@ -4699,7 +4699,7 @@ pointer-events: none
 
         const panelsHtml = panels.map(panel => `
             <div class="panel-option mb-3 p-3 border rounded ${panel.is_reassignable ? '' : 'bg-light'}" 
-                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.order_panel_id}, '${panel.panel_title}')"` : ''} 
+                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}')"` : ''} 
                  style="${panel.is_reassignable ? 'cursor: pointer;' : 'cursor: not-allowed;'}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
@@ -4710,12 +4710,12 @@ pointer-events: none
                         <div class="small text-white mb-2">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <i class="fas fa-envelope me-1"></i> ${panel.total_inboxes} inboxes
-                                    <br><i class="fas fa-globe me-1"></i> ${panel.total_domains} domains
+                                    <i class="fas fa-database me-1"></i> Space needed: ${panel.space_needed || 0} 
+                                    <br><i class="fas fa-list me-1"></i> Total orders: ${panel.total_orders || 0}
                                 </div>
                                 <div class="col-md-6">
-                                    <i class="fas fa-chart-bar me-1"></i> ${panel.space_assigned}/${panel.panel_limit} capacity
-                                    <br><i class="fas fa-battery-half me-1"></i> ${panel.panel_remaining_limit} remaining
+                                    <i class="fas fa-chart-bar me-1"></i> Capacity: ${panel.panel_limit}
+                                    <br><i class="fas fa-battery-half me-1"></i> Available: ${panel.panel_remaining_limit}
                                 </div>
                             </div>
                         </div>
@@ -4723,13 +4723,13 @@ pointer-events: none
                             <span class="badge ${getStatusBadgeClass(panel.status)}">${panel.status}</span>
                             ${panel.contractor ? 
                                 `<span class="badge bg-secondary"><i class="fas fa-user me-1"></i>${panel.contractor.name}</span>` : 
-                                `<span class="badge bg-light text-dark">Unassigned</span>`
+                                `<span class="badge bg-light text-dark">Available</span>`
                             }
                         </div>
                     </div>
                     <div class="text-end">
                         ${panel.is_reassignable ? 
-                            `<button type="button" class="btn btn-sm btn-outline-primary" onclick="selectTargetPanel(${panel.order_panel_id}, '${panel.panel_title}')">
+                            `<button type="button" class="btn btn-sm btn-outline-primary" onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}')">
                                 <i class="fas fa-arrow-right me-1"></i>Select
                             </button>` :
                             `<span class="badge bg-warning">Not Available</span>`
@@ -4745,7 +4745,7 @@ pointer-events: none
     /**
      * Select target panel for reassignment
      */
-    function selectTargetPanel(targetOrderPanelId, targetPanelTitle) {
+    function selectTargetPanel(targetPanelId, targetPanelTitle) {
         // Remove previous selection
         document.querySelectorAll('.panel-option').forEach(option => {
             option.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
@@ -4755,7 +4755,7 @@ pointer-events: none
         event.currentTarget.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
 
         // Store selection
-        currentReassignData.targetOrderPanelId = targetOrderPanelId;
+        currentReassignData.targetPanelId = targetPanelId;
         currentReassignData.targetPanelTitle = targetPanelTitle;
 
         // Enable reassign button
@@ -4768,7 +4768,7 @@ pointer-events: none
      * Confirm panel reassignment
      */
     async function confirmReassignment() {
-        if (!currentReassignData.targetOrderPanelId) {
+        if (!currentReassignData.targetPanelId) {
             showReassignError('Please select a target panel');
             return;
         }
@@ -4780,12 +4780,12 @@ pointer-events: none
             reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
 
             const formData = {
-                from_order_panel_id: currentReassignData.orderPanelId,
-                to_order_panel_id: currentReassignData.targetOrderPanelId,
+                order_panel_split_id: currentReassignData.orderPanelSplitId,
+                to_panel_id: currentReassignData.targetPanelId,
                 reason: document.getElementById('reassignReason').value || null
             };
 
-            const response = await fetch('/admin/orders/panels/reassign', {
+            const response = await fetch('/admin/panels/reassign', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
