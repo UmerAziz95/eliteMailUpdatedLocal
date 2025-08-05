@@ -1392,7 +1392,7 @@ pointer-events: none
                 </div>
                 
                 <!-- Reason Input -->
-                <div class="mt-3">
+                <div class="mt-3" style="display: none;">
                     <label for="reassignReason" class="form-label">Reason for Reassignment (Optional)</label>
                     <textarea class="form-control" id="reassignReason" rows="2" 
                               placeholder="Enter reason for panel reassignment..."></textarea>
