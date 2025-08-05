@@ -26,6 +26,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use App\Services\PanelReassignmentService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -1980,6 +1981,117 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change order status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available panels for reassignment
+     */
+    public function getAvailablePanelsForReassignment($orderId, $panelId)
+    {
+        try {
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->getAvailablePanelsForReassignment($orderId, $panelId);
+            
+            return response()->json($result);
+        } catch (Exception $e) {
+            Log::error('Error getting available panels for reassignment', [
+                'order_id' => $orderId,
+                'panel_id' => $panelId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get available panels: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process panel split reassignment
+     */
+    public function reassignPanelSplit(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'from_order_panel_id' => 'required|integer|exists:order_panel,id',
+                'to_order_panel_id' => 'required|integer|exists:order_panel,id',
+                'split_id' => 'nullable|integer|exists:order_panel_split,id',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->reassignPanelSplit(
+                $request->from_order_panel_id,
+                $request->to_order_panel_id,
+                $request->split_id,
+                auth()->id()
+            );
+
+            if ($result['success']) {
+                // Log the action
+                Log::info('Panel reassignment completed by admin', [
+                    'admin_id' => auth()->id(),
+                    'from_order_panel_id' => $request->from_order_panel_id,
+                    'to_order_panel_id' => $request->to_order_panel_id,
+                    'split_id' => $request->split_id,
+                    'reason' => $request->reason
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error']
+                ], 400);
+            }
+
+        } catch (Exception $e) {
+            Log::error('Panel reassignment failed', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel reassignment failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get reassignment history for an order
+     */
+    public function getReassignmentHistory($orderId)
+    {
+        try {
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->getReassignmentHistory($orderId);
+            
+            return response()->json($result);
+        } catch (Exception $e) {
+            Log::error('Error getting reassignment history', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get reassignment history: ' . $e->getMessage()
             ], 500);
         }
     }

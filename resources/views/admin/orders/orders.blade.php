@@ -860,6 +860,50 @@ pointer-events: none
     margin-bottom: 1rem;
     opacity: 0.5;
 }
+
+/* Panel Reassignment Styles */
+.panel-option {
+    transition: all 0.2s ease;
+    border: 2px solid transparent !important;
+}
+
+.panel-option:hover:not(.bg-light) {
+    background-color: rgba(13, 110, 253, 0.05) !important;
+    border-color: #0d6efd !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.panel-option.border-primary {
+    border-color: #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.panel-option.bg-light {
+    opacity: 0.7;
+}
+
+.panel-option .badge {
+    font-size: 0.7em;
+}
+
+#reassignPanelModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#availablePanelsContainer {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.reassign-panel-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
     </style>
 @endpush
 
@@ -1316,6 +1360,54 @@ pointer-events: none
     </div>
 </div>
     </section>
+
+<!-- Panel Reassignment Modal -->
+<div class="modal fade" id="reassignPanelModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to. 
+                        This will move all domains and capacity from the current panel to the selected panel.
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="reassignLoader" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading available panels...</p>
+                </div>
+                
+                <!-- Available Panels Container -->
+                <div id="availablePanelsContainer">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+                
+                <!-- Reason Input -->
+                <div class="mt-3">
+                    <label for="reassignReason" class="form-label">Reason for Reassignment (Optional)</label>
+                    <textarea class="form-control" id="reassignReason" rows="2" 
+                              placeholder="Enter reason for panel reassignment..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmReassignBtn" disabled 
+                        onclick="confirmReassignment()">
+                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Action Log -->
 <div class="offcanvas offcanvas-end text-bg-dark" style="min-width: 30rem" tabindex="-1" id="actionLogCanvas"
@@ -3196,6 +3288,10 @@ pointer-events: none
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
+                                        <button type="button" class="btn btn-sm btn-warning" title="Reassign Panel" 
+                                                onclick="openReassignModal(${orderInfo.id}, ${split.panel_id}, ${split.order_panel_id}, '${split.panel_title}')">
+                                            <i class="fas fa-exchange-alt"></i> Reassign
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -4536,6 +4632,240 @@ pointer-events: none
                 });
             }
         });
+
+    // Panel Reassignment Functions
+    let currentReassignData = {};
+
+    /**
+     * Open the panel reassignment modal
+     */
+    function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
+        currentReassignData = {
+            orderId: orderId,
+            currentPanelId: currentPanelId,
+            orderPanelId: orderPanelId,
+            panelTitle: panelTitle
+        };
+
+        // Update modal title
+        document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${panelTitle}`;
+        
+        // Load available panels
+        loadAvailablePanels(orderId, currentPanelId);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('reassignPanelModal'));
+        modal.show();
+    }
+
+    /**
+     * Load available panels for reassignment
+     */
+    async function loadAvailablePanels(orderId, currentPanelId) {
+        try {
+            showReassignLoading(true);
+            
+            const response = await fetch(`/admin/orders/${orderId}/panels/${currentPanelId}/available-for-reassignment`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderAvailablePanels(data.panels);
+            } else {
+                showReassignError(data.error || 'Failed to load available panels');
+            }
+        } catch (error) {
+            console.error('Error loading available panels:', error);
+            showReassignError('Failed to load available panels');
+        } finally {
+            showReassignLoading(false);
+        }
+    }
+
+    /**
+     * Render available panels in the modal
+     */
+    function renderAvailablePanels(panels) {
+        const container = document.getElementById('availablePanelsContainer');
+        
+        if (!panels || panels.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle text-white mb-2"></i>
+                    <p class="text-white">No other panels available for reassignment in this order.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const panelsHtml = panels.map(panel => `
+            <div class="panel-option mb-3 p-3 border rounded ${panel.is_reassignable ? '' : 'bg-light'}" 
+                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.order_panel_id}, '${panel.panel_title}')"` : ''} 
+                 style="${panel.is_reassignable ? 'cursor: pointer;' : 'cursor: not-allowed;'}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            <span class="badge bg-info me-2">PNL-${panel.panel_id}</span>
+                            ${panel.panel_title}
+                        </h6>
+                        <div class="small text-white mb-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <i class="fas fa-envelope me-1"></i> ${panel.total_inboxes} inboxes
+                                    <br><i class="fas fa-globe me-1"></i> ${panel.total_domains} domains
+                                </div>
+                                <div class="col-md-6">
+                                    <i class="fas fa-chart-bar me-1"></i> ${panel.space_assigned}/${panel.panel_limit} capacity
+                                    <br><i class="fas fa-battery-half me-1"></i> ${panel.panel_remaining_limit} remaining
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${getStatusBadgeClass(panel.status)}">${panel.status}</span>
+                            ${panel.contractor ? 
+                                `<span class="badge bg-secondary"><i class="fas fa-user me-1"></i>${panel.contractor.name}</span>` : 
+                                `<span class="badge bg-light text-dark">Unassigned</span>`
+                            }
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        ${panel.is_reassignable ? 
+                            `<button type="button" class="btn btn-sm btn-outline-primary" onclick="selectTargetPanel(${panel.order_panel_id}, '${panel.panel_title}')">
+                                <i class="fas fa-arrow-right me-1"></i>Select
+                            </button>` :
+                            `<span class="badge bg-warning">Not Available</span>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = panelsHtml;
+    }
+
+    /**
+     * Select target panel for reassignment
+     */
+    function selectTargetPanel(targetOrderPanelId, targetPanelTitle) {
+        // Remove previous selection
+        document.querySelectorAll('.panel-option').forEach(option => {
+            option.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+        });
+
+        // Highlight selected panel
+        event.currentTarget.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+
+        // Store selection
+        currentReassignData.targetOrderPanelId = targetOrderPanelId;
+        currentReassignData.targetPanelTitle = targetPanelTitle;
+
+        // Enable reassign button
+        const reassignBtn = document.getElementById('confirmReassignBtn');
+        reassignBtn.disabled = false;
+        reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
+    }
+
+    /**
+     * Confirm panel reassignment
+     */
+    async function confirmReassignment() {
+        if (!currentReassignData.targetOrderPanelId) {
+            showReassignError('Please select a target panel');
+            return;
+        }
+
+        try {
+            const reassignBtn = document.getElementById('confirmReassignBtn');
+            const originalText = reassignBtn.innerHTML;
+            reassignBtn.disabled = true;
+            reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
+
+            const formData = {
+                from_order_panel_id: currentReassignData.orderPanelId,
+                to_order_panel_id: currentReassignData.targetOrderPanelId,
+                reason: document.getElementById('reassignReason').value || null
+            };
+
+            const response = await fetch('/admin/orders/panels/reassign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show success message
+                toastr.success(data.message);
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
+                
+                // Refresh the order splits view if it's open
+                if (document.getElementById('orderSplitsContainer')) {
+                    viewOrderSplits(currentReassignData.orderId);
+                }
+                
+                // Reset form
+                resetReassignModal();
+            } else {
+                showReassignError(data.message || 'Reassignment failed');
+                reassignBtn.disabled = false;
+                reassignBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Error during reassignment:', error);
+            showReassignError('An error occurred during reassignment');
+            document.getElementById('confirmReassignBtn').disabled = false;
+        }
+    }
+
+    /**
+     * Show/hide loading state in reassign modal
+     */
+    function showReassignLoading(show) {
+        const loader = document.getElementById('reassignLoader');
+        const container = document.getElementById('availablePanelsContainer');
+        
+        if (show) {
+            loader.style.display = 'block';
+            container.style.display = 'none';
+        } else {
+            loader.style.display = 'none';
+            container.style.display = 'block';
+        }
+    }
+
+    /**
+     * Show error in reassign modal
+     */
+    function showReassignError(message) {
+        const container = document.getElementById('availablePanelsContainer');
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+            </div>
+        `;
+    }
+
+    /**
+     * Reset reassign modal
+     */
+    function resetReassignModal() {
+        currentReassignData = {};
+        document.getElementById('availablePanelsContainer').innerHTML = '';
+        document.getElementById('reassignReason').value = '';
+        document.getElementById('confirmReassignBtn').disabled = true;
+        document.getElementById('confirmReassignBtn').innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+    }
+
+    // Reset modal when it's hidden
+    document.getElementById('reassignPanelModal').addEventListener('hidden.bs.modal', function () {
+        resetReassignModal();
+    });
 
     </script>
 @endpush
