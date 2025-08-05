@@ -3282,9 +3282,6 @@ pointer-events: none
                                 <td>${split.total_inboxes || 'N/A'}</td>
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <a href="/admin/orders/${split.order_panel_id}/split/view" class="btn btn-sm btn-outline-primary" title="View Split">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
