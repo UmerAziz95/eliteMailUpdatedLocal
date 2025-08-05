@@ -4910,17 +4910,17 @@ pointer-events: none
             
             const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
             const remainingElement = panelOption.querySelector('.panel-remaining');
-            
+            // not need to add on need 
             if (panelId == selectedPanelId) {
                 // This panel will receive the space
                 const newSpaceNeeded = originalSpaceNeeded + currentSpaceNeeded;
                 const newRemaining = originalRemaining - currentSpaceNeeded;
                 
-                if (spaceNeededElement) {
-                    spaceNeededElement.textContent = newSpaceNeeded;
-                    spaceNeededElement.style.color = '#198754'; // Green for increase
-                    spaceNeededElement.style.fontWeight = 'bold';
-                }
+                // if (spaceNeededElement) {
+                //     spaceNeededElement.textContent = newSpaceNeeded;
+                //     spaceNeededElement.style.color = '#198754'; // Green for increase
+                //     spaceNeededElement.style.fontWeight = 'bold';
+                // }
                 if (remainingElement) {
                     remainingElement.textContent = newRemaining;
                     remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545'; // Red
