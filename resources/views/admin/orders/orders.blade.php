@@ -4690,78 +4690,244 @@ pointer-events: none
         if (!panels || panels.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-4">
-                    <i class="fas fa-info-circle text-white mb-2"></i>
-                    <p class="text-white">No other panels available for reassignment in this order.</p>
+                    <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">No panels available for reassignment</p>
                 </div>
             `;
             return;
         }
 
+        // Add search input
+        const searchHtml = `
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" id="panelSearchInput" 
+                           placeholder="Search panels by ID or title..." onkeyup="filterPanels()">
+                </div>
+            </div>
+        `;
+        
         const panelsHtml = panels.map(panel => `
-            <div class="panel-option mb-3 p-3 border rounded ${panel.is_reassignable ? '' : 'bg-light'}" 
-                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}')"` : ''} 
-                 style="${panel.is_reassignable ? 'cursor: pointer;' : 'cursor: not-allowed;'}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <h6 class="mb-1">
-                            <span class="badge bg-info me-2">PNL-${panel.panel_id}</span>
-                            ${panel.panel_title}
-                        </h6>
-                        <div class="small text-white mb-2">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <i class="fas fa-database me-1"></i> Space needed: ${panel.space_needed || 0} 
-                                    <br><i class="fas fa-list me-1"></i> Total orders: ${panel.total_orders || 0}
-                                </div>
-                                <div class="col-md-6">
-                                    <i class="fas fa-chart-bar me-1"></i> Capacity: ${panel.panel_limit}
-                                    <br><i class="fas fa-battery-half me-1"></i> Available: ${panel.panel_remaining_limit}
+            <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card" 
+                 data-panel-id="${panel.panel_id}"
+                 data-panel-title="${panel.panel_title.toLowerCase()}"
+                 data-space-needed="${panel.space_needed || 0}"
+                 data-panel-limit="${panel.panel_limit}"
+                 data-panel-remaining="${panel.panel_remaining_limit}"
+                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})"` : ''} 
+                 style="${panel.is_reassignable ? 'cursor: pointer; transition: all 0.2s ease;' : 'cursor: not-allowed; opacity: 0.6;'}">
+                
+                ${panel.is_reassignable ? '' : '<div class="position-absolute top-0 start-0 w-100 h-100 bg-light bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 2;"><span class="badge bg-warning text-dark">Insufficient Space</span></div>'}
+                
+                <div class="p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="panel-icon me-2">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary bg-gradient" 
+                                     style="width: 35px; height: 35px;">
+                                    <i class="fas fa-server text-white"></i>
                                 </div>
                             </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
+                                    <span class="panel-title-text">${panel.panel_title}</span>
+                                </h6>
+                            </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${getStatusBadgeClass(panel.status)}">${panel.status}</span>
-                            ${panel.contractor ? 
-                                `<span class="badge bg-secondary"><i class="fas fa-user me-1"></i>${panel.contractor.name}</span>` : 
-                                `<span class="badge bg-light text-dark">Available</span>`
-                            }
-                        </div>
-                    </div>
-                    <div class="text-end">
+                        
                         ${panel.is_reassignable ? 
-                            `<button type="button" class="btn btn-sm btn-outline-primary" onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}')">
+                            `<button type="button" class="btn btn-outline-primary btn-sm px-3 select-btn" 
+                                 onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})">
                                 <i class="fas fa-arrow-right me-1"></i>Select
-                            </button>` :
-                            `<span class="badge bg-warning">Not Available</span>`
+                            </button>` : ''
                         }
+                    </div>
+                    
+                    <div class="row g-2 mt-1">
+                        <div class="col-3">
+                            <div class="text-center p-2 rounded bg-light">
+                                <div class="fw-bold text-success panel-space-needed" style="font-size: 0.9rem;">${panel.space_needed || 0}</div>
+                                <small class="text-muted">Need</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 rounded bg-light">
+                                <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_orders || 0}</div>
+                                <small class="text-muted">Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 rounded bg-light">
+                                <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit}</div>
+                                <small class="text-muted">Limit</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center p-2 rounded bg-light">
+                                <div class="fw-bold text-danger panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit}</div>
+                                <small class="text-muted">Free</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         `).join('');
 
-        container.innerHTML = panelsHtml;
+        container.innerHTML = searchHtml + '<div id="panelsList">' + panelsHtml + '</div>';
+        
+        // Add CSS for hover effects
+        const style = document.createElement('style');
+        style.textContent = `
+            .panel-card{
+                border: 1px solid #dee2e6;
+            }
+            .panel-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            }
+            .panel-card.selected {
+                border-color: #0d6efd !important;
+                background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
+                box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+            }
+            .badge-sm {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    /**
+     * Filter panels based on search input
+     */
+    function filterPanels() {
+        const searchTerm = document.getElementById('panelSearchInput').value.toLowerCase();
+        const panelCards = document.querySelectorAll('.panel-card');
+        let visibleCount = 0;
+        
+        panelCards.forEach(card => {
+            const panelId = card.getAttribute('data-panel-id');
+            const panelTitle = card.getAttribute('data-panel-title');
+            
+            const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
+            
+            if (isVisible) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide no results message
+        const panelsList = document.getElementById('panelsList');
+        let noResultsDiv = document.getElementById('noSearchResults');
+        
+        if (visibleCount === 0 && searchTerm.length > 0) {
+            if (!noResultsDiv) {
+                noResultsDiv = document.createElement('div');
+                noResultsDiv.id = 'noSearchResults';
+                noResultsDiv.className = 'text-center py-4';
+                noResultsDiv.innerHTML = `
+                    <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                    <p class="text-muted mb-0">No panels found matching "${searchTerm}"</p>
+                `;
+                panelsList.appendChild(noResultsDiv);
+            }
+        } else if (noResultsDiv) {
+            noResultsDiv.remove();
+        }
     }
 
     /**
      * Select target panel for reassignment
      */
-    function selectTargetPanel(targetPanelId, targetPanelTitle) {
+    function selectTargetPanel(targetPanelId, targetPanelTitle, spaceNeeded = 0, remainingSpace = 0) {
         // Remove previous selection
-        document.querySelectorAll('.panel-option').forEach(option => {
-            option.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+        document.querySelectorAll('.panel-card').forEach(option => {
+            option.classList.remove('selected');
         });
 
         // Highlight selected panel
-        event.currentTarget.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+        const selectedPanel = document.querySelector(`[data-panel-id="${targetPanelId}"]`);
+        if (selectedPanel) {
+            selectedPanel.classList.add('selected');
+        }
+
+        // Update space values dynamically
+        updatePanelSpaceValues(targetPanelId, spaceNeeded);
 
         // Store selection
         currentReassignData.targetPanelId = targetPanelId;
         currentReassignData.targetPanelTitle = targetPanelTitle;
+        currentReassignData.spaceNeeded = spaceNeeded;
+        currentReassignData.remainingSpace = remainingSpace;
 
         // Enable reassign button
         const reassignBtn = document.getElementById('confirmReassignBtn');
         reassignBtn.disabled = false;
         reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
+    }
+
+    /**
+     * Update panel space values after selection
+     */
+    function updatePanelSpaceValues(selectedPanelId, spaceToMove) {
+        // Get current space needed from the selected order panel (from currentReassignData)
+        const currentSpaceNeeded = spaceToMove;
+        
+        // First, reset all panels to their original values
+        document.querySelectorAll('.panel-card').forEach(panelOption => {
+            const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
+            const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+            
+            const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
+            const remainingElement = panelOption.querySelector('.panel-remaining');
+            
+            // Reset to original values and styles
+            if (spaceNeededElement) {
+                spaceNeededElement.textContent = originalSpaceNeeded;
+                spaceNeededElement.style.color = '';
+                spaceNeededElement.style.fontWeight = '';
+            }
+            if (remainingElement) {
+                remainingElement.textContent = originalRemaining;
+                remainingElement.style.color = '';
+                remainingElement.style.fontWeight = '';
+            }
+        });
+        
+        // Then update only the selected panel to show new values after reassignment
+        document.querySelectorAll('.panel-card').forEach(panelOption => {
+            const panelId = panelOption.getAttribute('data-panel-id');
+            const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
+            const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+            
+            const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
+            const remainingElement = panelOption.querySelector('.panel-remaining');
+            
+            if (panelId == selectedPanelId) {
+                // This panel will receive the space
+                const newSpaceNeeded = originalSpaceNeeded + currentSpaceNeeded;
+                const newRemaining = originalRemaining - currentSpaceNeeded;
+                
+                if (spaceNeededElement) {
+                    spaceNeededElement.textContent = newSpaceNeeded;
+                    spaceNeededElement.style.color = '#198754'; // Green for increase
+                    spaceNeededElement.style.fontWeight = 'bold';
+                }
+                if (remainingElement) {
+                    remainingElement.textContent = newRemaining;
+                    remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545'; // Red
+                    remainingElement.style.fontWeight = 'bold';
+                }
+            }
+        });
     }
 
     /**
@@ -4860,6 +5026,18 @@ pointer-events: none
         document.getElementById('reassignReason').value = '';
         document.getElementById('confirmReassignBtn').disabled = true;
         document.getElementById('confirmReassignBtn').innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+        
+        // Reset any modified space values and styles
+        document.querySelectorAll('.panel-space-needed, .panel-remaining').forEach(element => {
+            element.style.color = '';
+            element.style.fontWeight = '';
+        });
+        
+        // Remove any search results
+        const noResultsDiv = document.getElementById('noSearchResults');
+        if (noResultsDiv) {
+            noResultsDiv.remove();
+        }
     }
 
     // Reset modal when it's hidden
