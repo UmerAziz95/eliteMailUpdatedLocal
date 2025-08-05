@@ -55,6 +55,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\ShortEncryptedLink;
 use Flasher\Laravel\Facade\Flasher;
 use Flasher\Noty\Prime\NotyInterface;
+use App\Http\Controllers\Admin\InternalOrderManagerController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -296,6 +297,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/domains/status/check', [DomainHealthDashboardController::class, 'checkDomainHealth'])->name('domains.status.check');
         Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
         Route::get('/domains/health/report/{id}', [DomainHealthDashboardController::class, 'domainsHelthReport'])->name('domains.health.report');
+        //internal order manager
+        Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');   
+        Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');   
+        Route::post('/orders/reorder', [InternalOrderManagerController::class, 'store'])->name('orders.reorder.store');
+
 
 
     });

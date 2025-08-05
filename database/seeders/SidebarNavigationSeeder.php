@@ -163,6 +163,13 @@ class SidebarNavigationSeeder extends Seeder
                         "route" => "admin.slack.settings",
                         "permission" => "Slack Settings",
                         'sub_menu' => []
+            ],
+            [
+                        "name" => "Internal Order Management",
+                        "icon" => "ti ti-brand-slack fs-5",
+                        "route" => "admin.internal_order_management.index",
+                        "permission" => "Internal Order Management",
+                        'sub_menu' => []
             ]
         ];
         // sidebar_navigations delete all existing records
