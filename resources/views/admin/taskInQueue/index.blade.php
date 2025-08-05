@@ -91,19 +91,22 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-tab-pane"
                     type="button" role="tab" aria-controls="pending-tab-pane" aria-selected="true">
-                    Pending Tasks <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span>
+                    Pending Tasks
+                    {{-- <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span> --}}
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
-                    In Progress <span class="badge bg-info ms-1" id="progress-count">0</span>
+                    In Progress 
+                    {{-- <span class="badge bg-info ms-1" id="progress-count">0</span> --}}
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane"
                     type="button" role="tab" aria-controls="completed-tab-pane" aria-selected="false">
-                    Completed <span class="badge bg-success ms-1" id="completed-count">0</span>
+                    Completed 
+                    {{-- <span class="badge bg-success ms-1" id="completed-count">0</span> --}}
                 </button>
             </li>
         </ul>

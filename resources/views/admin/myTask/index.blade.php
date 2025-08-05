@@ -103,6 +103,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="tab-pane fade" id="pills-all-tasks" role="tabpanel" aria-labelledby="pills-all-tasks-tab"
                 tabindex="0">
                 <div id="all-tasks-container"
@@ -273,12 +274,14 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="fw-semibold">#${task.task_id} 
                     <i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
-                       style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;" 
-                       onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
-                       onmouseout="this.style.color=''; this.style.transform='scale(1)'" 
-                       onclick="confirmTaskCompletion(${task.task_id})"
-                       title="${task.status === 'completed' ? 'Task completed' : 'Mark as completed'}"></i>
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="right"
+                        title="${task.status === 'completed' ? 'Task completed' : 'Mark as completed'}"
+                        style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;"
+                        onclick="confirmTaskCompletion(${task.task_id})">
+                    </i>
                 </span>
+
                 <span class="badge ${statusClass} fw-semibold">
                     <i class="${(() => {
                         switch(task.status) {
@@ -344,6 +347,19 @@
                 </div>
             </div>
         `;
+
+        const icon = div.querySelector('i.fa-check-to-slot');
+        const tooltipInstance = new bootstrap.Tooltip(icon, {
+            trigger: 'manual'
+        });
+
+        div.addEventListener('mouseenter', () => {
+            tooltipInstance.show();
+        });
+
+        div.addEventListener('mouseleave', () => {
+            tooltipInstance.hide();
+        });
         return div;
     }
 
@@ -1028,25 +1044,25 @@
                 summary.panels_affected.forEach(panel => {
                     confirmationText += `
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="background: white; border-left: 4px solid #007bff !important;">
+                            <div class="card border-0 shadow-sm h-100" style="background-color: var(--primary-color); border-left: 4px solid #007bff !important;">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 class="card-title mb-0 text-dark fw-bold">${panel.title}</h6>
+                                        <h6 class="card-title mb-0 fw-bold">${panel.title}</h6>
                                         <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 10px;">ID: PNL-${panel.id}</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="text-center">
                                             <div class="p-2 rounded-3" style="background: rgba(108, 117, 125, 0.1);">
-                                                <div class="text-muted small mb-1">Current</div>
+                                                <div class="opacity-50 small mb-1">Current</div>
                                                 <div class="fw-bold text-secondary">${panel.current_available}</div>
                                             </div>
                                         </div>
                                         <div class="text-center mx-2">
-                                            <i class="fas fa-arrow-right text-muted"></i>
+                                            <i class="fas fa-arrow-right opacity-50"></i>
                                         </div>
                                         <div class="text-center">
                                             <div class="p-2 rounded-3" style="background: rgba(25, 135, 84, 0.1);">
-                                                <div class="text-muted small mb-1">After</div>
+                                                <div class="opacity-50 small mb-1">After</div>
                                                 <div class="fw-bold text-success">${panel.new_available}</div>
                                             </div>
                                         </div>
@@ -1067,9 +1083,9 @@
             }
 
             confirmationText += `
-                <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Note:</strong> After this action completed, all splits with assigned spaces will be removed and the spaces will be released back to their respective panels.
+                <div style="background-color: rgba(255, 166, 0, 0.278); border: 1px solid orange" class="alert mt-3 mb-0 text-warning small">
+                    <i class="fas fa-exclamation-triangle me-1  small"></i>
+                    <strong class="small">Note:</strong> After this action completed, all splits with assigned spaces will be removed and the spaces will be released back to their respective panels.
                 </div>
             </div>`;
 
