@@ -44,7 +44,7 @@ class PanelReassignmentService
             // Get available panels that are NOT used in this order and have sufficient capacity
             $availablePanels = Panel::with([
                 'order_panels' => function($query) {
-                    $query->with(['userOrderPanelAssignments.contractor']);
+                    // $query->with(['userOrderPanelAssignments.contractor']);
                 }
             ])
                 ->where('is_active', true)
@@ -152,47 +152,39 @@ class PanelReassignmentService
                 throw new Exception('Destination panel does not have enough capacity');
             }
 
-            // Create new OrderPanel for the destination panel
-            $toOrderPanel = OrderPanel::create([
+            // Store original panel for capacity updates
+            $originalPanel = $fromOrderPanel->panel;
+            $originalPanelId = $fromOrderPanel->panel_id;
+
+            // Update existing OrderPanel to point to the new panel instead of creating new record
+            $fromOrderPanel->update([
                 'panel_id' => $toPanel->id,
-                'order_id' => $fromOrderPanel->order_id,
-                'contractor_id' => $contractorId,
+                'contractor_id' => $contractorId ?? $fromOrderPanel->contractor_id,
                 'space_assigned' => $spaceToTransfer,
-                'inboxes_per_domain' => $fromOrderPanel->inboxes_per_domain,
-                'status' => 'unallocated',
-                'note' => "Reassigned from Panel ID {$fromOrderPanel->panel_id}"
+                'note' => ($fromOrderPanel->note ? $fromOrderPanel->note . ' | ' : '') . "Reassigned from Panel ID {$originalPanelId} to Panel ID {$toPanel->id} on " . now()->format('Y-m-d H:i:s')
             ]);
 
-            // Move splits to new order panel
+            // Move splits to updated order panel (update panel_id reference)
             $movedSplitsCount = 0;
             foreach ($splitsToMove as $split) {
                 $split->update([
-                    'order_panel_id' => $toOrderPanel->id,
                     'panel_id' => $toPanel->id
                 ]);
                 $movedSplitsCount++;
             }
 
             // Update panel capacities
-            $fromOrderPanel->panel->increment('remaining_limit', $spaceToTransfer);
+            $originalPanel->increment('remaining_limit', $spaceToTransfer);
             $toPanel->decrement('remaining_limit', $spaceToTransfer);
 
-            // Update source order panel space assignment
-            $fromOrderPanel->decrement('space_assigned', $spaceToTransfer);
-
-            // Update user assignments
-            $this->updateUserAssignmentsForNewPanel($fromOrderPanelId, $toOrderPanel->id, $splitsToMove, $contractorId);
-
-            // If source order panel has no more splits, delete it
-            if ($fromOrderPanel->orderPanelSplits()->count() === 0) {
-                $fromOrderPanel->delete();
-            }
+            // No need to update source order panel space assignment since we're updating the same record
+            // No need to update status since we're keeping the same OrderPanel record
 
             // Log the reassignment
             Log::info('Panel split reassignment completed', [
-                'from_order_panel_id' => $fromOrderPanelId,
+                'order_panel_id' => $fromOrderPanel->id,
+                'from_panel_id' => $originalPanelId,
                 'to_panel_id' => $toPanelId,
-                'new_order_panel_id' => $toOrderPanel->id,
                 'splits_moved' => $movedSplitsCount,
                 'space_transferred' => $spaceToTransfer,
                 'performed_by' => $contractorId
@@ -205,7 +197,7 @@ class PanelReassignmentService
                 'message' => "Successfully reassigned {$movedSplitsCount} split(s) with {$spaceToTransfer} inbox capacity to panel {$toPanel->title}",
                 'splits_moved' => $movedSplitsCount,
                 'space_transferred' => $spaceToTransfer,
-                'new_order_panel_id' => $toOrderPanel->id
+                'updated_order_panel_id' => $fromOrderPanel->id
             ];
 
         } catch (Exception $e) {
@@ -254,29 +246,31 @@ class PanelReassignmentService
      * @param int|null $contractorId
      * @return void
      */
-    private function updateUserAssignmentsForNewPanel($fromOrderPanelId, $toOrderPanelId, $movedSplits, $contractorId = null)
-    {
-        // Get existing assignments for the source panel
-        $fromAssignments = UserOrderPanelAssignment::where('order_panel_id', $fromOrderPanelId)->get();
+    // private function updateUserAssignmentsForNewPanel($fromOrderPanelId, $toOrderPanelId, $movedSplits, $contractorId = null)
+    // {
+    //     // Get existing assignments for the source panel
+    //     $fromAssignments = UserOrderPanelAssignment::where('order_panel_id', $fromOrderPanelId)->get();
         
-        foreach ($fromAssignments as $assignment) {
-            // Check if the moved splits include this assignment's split
-            $movedSplitIds = $movedSplits->pluck('id')->toArray();
+    //     foreach ($fromAssignments as $assignment) {
+    //         // Check if the moved splits include this assignment's split
+    //         $movedSplitIds = $movedSplits->pluck('id')->toArray();
             
-            if (in_array($assignment->order_panel_split_id, $movedSplitIds)) {
-                // Create new assignment for the new order panel
-                UserOrderPanelAssignment::create([
-                    'order_panel_id' => $toOrderPanelId,
-                    'order_panel_split_id' => $assignment->order_panel_split_id,
-                    'order_id' => $assignment->order_id,
-                    'contractor_id' => $assignment->contractor_id
-                ]);
+    //         if (in_array($assignment->order_panel_split_id, $movedSplitIds)) {
+    //             // Store original order panel ID if not already set
+    //             $originalOrderPanelId = $assignment->original_order_panel_id ?? $assignment->order_panel_id;
                 
-                // Delete the old assignment
-                $assignment->delete();
-            }
-        }
-    }
+    //             // Update existing assignment to point to new order panel with tracking
+    //             $assignment->update([
+    //                 'order_panel_id' => $toOrderPanelId,
+    //                 'contractor_id' => $contractorId ?? $assignment->contractor_id,
+    //                 'status' => 'reassigned',
+    //                 'original_order_panel_id' => $originalOrderPanelId,
+    //                 'reassigned_at' => now(),
+    //                 'reassignment_note' => "Reassigned from Order Panel ID {$fromOrderPanelId} to Order Panel ID {$toOrderPanelId}"
+    //             ]);
+    //         }
+    //     }
+    // }
 
     /**
      * Update user order panel assignments when splits are moved (legacy method for existing panels)
@@ -287,28 +281,28 @@ class PanelReassignmentService
      * @param int|null $contractorId
      * @return void
      */
-    private function updateUserAssignments($fromOrderPanelId, $toOrderPanelId, $movedSplits, $contractorId = null)
-    {
-        // Get existing assignments for the source panel
-        $fromAssignments = UserOrderPanelAssignment::where('order_panel_id', $fromOrderPanelId)->get();
+    // private function updateUserAssignments($fromOrderPanelId, $toOrderPanelId, $movedSplits, $contractorId = null)
+    // {
+    //     // Get existing assignments for the source panel
+    //     $fromAssignments = UserOrderPanelAssignment::where('order_panel_id', $fromOrderPanelId)->get();
         
-        foreach ($fromAssignments as $assignment) {
-            // Check if the moved splits include this assignment's split
-            $movedSplitIds = $movedSplits->pluck('id')->toArray();
+    //     foreach ($fromAssignments as $assignment) {
+    //         // Check if the moved splits include this assignment's split
+    //         $movedSplitIds = $movedSplits->pluck('id')->toArray();
             
-            if (in_array($assignment->order_panel_split_id, $movedSplitIds)) {
-                // Update the assignment to point to the new order panel
-                $assignment->update(['order_panel_id' => $toOrderPanelId]);
-            }
-        }
+    //         if (in_array($assignment->order_panel_split_id, $movedSplitIds)) {
+    //             // Update the assignment to point to the new order panel
+    //             $assignment->update(['order_panel_id' => $toOrderPanelId]);
+    //         }
+    //     }
 
-        // If no contractor is assigned to the destination panel but there are moved assignments,
-        // update the destination panel's contractor_id
-        $toOrderPanel = OrderPanel::find($toOrderPanelId);
-        if (!$toOrderPanel->contractor_id && $contractorId) {
-            $toOrderPanel->update(['contractor_id' => $contractorId]);
-        }
-    }
+    //     // If no contractor is assigned to the destination panel but there are moved assignments,
+    //     // update the destination panel's contractor_id
+    //     $toOrderPanel = OrderPanel::find($toOrderPanelId);
+    //     if (!$toOrderPanel->contractor_id && $contractorId) {
+    //         $toOrderPanel->update(['contractor_id' => $contractorId]);
+    //     }
+    // }
 
     /**
      * Get reassignment history for an order

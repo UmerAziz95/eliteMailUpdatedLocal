@@ -16,6 +16,10 @@ class UserOrderPanelAssignment extends Model
         'order_panel_split_id',
         'order_id',
         'contractor_id',
+        'status',
+        'original_order_panel_id',
+        'reassigned_at',
+        'reassignment_note',
     ];
 
     public function orderPanel()
