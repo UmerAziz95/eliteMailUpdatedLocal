@@ -3251,7 +3251,7 @@ function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
     };
 
     // Update modal title
-    document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${panelTitle}`;
+    document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${'PNL-'+currentPanelId +" "+ panelTitle}`;
     
     // Load available panels using orderPanelId
     loadAvailablePanels(orderId, orderPanelId);
