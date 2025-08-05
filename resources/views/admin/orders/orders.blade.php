@@ -4780,12 +4780,12 @@ pointer-events: none
             reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
 
             const formData = {
-                order_panel_split_id: currentReassignData.orderPanelSplitId,
+                from_order_panel_id: currentReassignData.orderPanelId,
                 to_panel_id: currentReassignData.targetPanelId,
                 reason: document.getElementById('reassignReason').value || null
             };
 
-            const response = await fetch('/admin/panels/reassign', {
+            const response = await fetch('/admin/orders/panels/reassign', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
