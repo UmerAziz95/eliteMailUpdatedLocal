@@ -219,8 +219,11 @@ class DashboardController extends Controller
                         $categories[] = (string)$i; // Day numbers as strings
                     }
 
-                    // Get revenue data
+                    // Get revenue data (exclude force cancelled subscriptions)
                     $data = Order::whereBetween('created_at', [$start, $end])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
                         ->selectRaw('DAY(created_at) as day, SUM(amount) as total')
                         ->groupBy('day')
                         ->pluck('total', 'day')
@@ -237,7 +240,11 @@ class DashboardController extends Controller
                     // Get previous month's total for comparison
                     $prevMonthStart = $start->copy()->subMonth()->startOfMonth();
                     $prevMonthEnd = $start->copy()->subMonth()->endOfMonth();
-                    $prevTotal = Order::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->sum('amount');
+                    $prevTotal = Order::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
+                        ->sum('amount');
                     
                     // Calculate growth percentage
                     if ($prevTotal > 0) {
@@ -261,6 +268,9 @@ class DashboardController extends Controller
 
                     // Get revenue data grouped by weekday (MySQL returns 1=Sunday, 2=Monday, etc.)
                     $data = Order::whereBetween('created_at', [$start, $end])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
                         ->selectRaw('DAYOFWEEK(created_at) as day, SUM(amount) as total')
                         ->groupBy('day')
                         ->pluck('total', 'day')
@@ -282,7 +292,11 @@ class DashboardController extends Controller
                     // Get previous week's total for comparison
                     $prevWeekStart = $start->copy()->subWeek();
                     $prevWeekEnd = $end->copy()->subWeek();
-                    $prevTotal = Order::whereBetween('created_at', [$prevWeekStart, $prevWeekEnd])->sum('amount');
+                    $prevTotal = Order::whereBetween('created_at', [$prevWeekStart, $prevWeekEnd])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
+                        ->sum('amount');
                     
                     // Calculate growth percentage
                     if ($prevTotal > 0) {
@@ -302,8 +316,11 @@ class DashboardController extends Controller
                         $categories[] = sprintf('%02d', $i); // 00, 01, 02, etc.
                     }
 
-                    // Get revenue data
+                    // Get revenue data (exclude force cancelled subscriptions)
                     $data = Order::whereBetween('created_at', [$start, $end])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
                         ->selectRaw('HOUR(created_at) as hour, SUM(amount) as total')
                         ->groupBy('hour')
                         ->pluck('total', 'hour')
@@ -322,7 +339,11 @@ class DashboardController extends Controller
                     // Get previous day's total for comparison
                     $prevDayStart = $start->copy()->subDay();
                     $prevDayEnd = $end->copy()->subDay();
-                    $prevTotal = Order::whereBetween('created_at', [$prevDayStart, $prevDayEnd])->sum('amount');
+                    $prevTotal = Order::whereBetween('created_at', [$prevDayStart, $prevDayEnd])
+                        ->whereHas('subscription', function($query) {
+                            $query->where('is_cancelled_force', false);
+                        })
+                        ->sum('amount');
                     
 
 
@@ -359,20 +380,32 @@ class DashboardController extends Controller
         try {
             $now = Carbon::now();
             
-            // Get daily total (today)
+            // Get daily total (today) - exclude force cancelled subscriptions
             $dayStart = $now->copy()->startOfDay();
             $dayEnd = $now->copy()->endOfDay();
-            $dayTotal = Order::whereBetween('created_at', [$dayStart, $dayEnd])->sum('amount');
+            $dayTotal = Order::whereBetween('created_at', [$dayStart, $dayEnd])
+                ->whereHas('subscription', function($query) {
+                    $query->where('is_cancelled_force', false);
+                })
+                ->sum('amount');
             
-            // Get weekly total (current week)
+            // Get weekly total (current week) - exclude force cancelled subscriptions
             $weekStart = $now->copy()->startOfWeek();
             $weekEnd = $now->copy()->endOfWeek();
-            $weekTotal = Order::whereBetween('created_at', [$weekStart, $weekEnd])->sum('amount');
+            $weekTotal = Order::whereBetween('created_at', [$weekStart, $weekEnd])
+                ->whereHas('subscription', function($query) {
+                    $query->where('is_cancelled_force', false);
+                })
+                ->sum('amount');
             
-            // Get monthly total (current month)
+            // Get monthly total (current month) - exclude force cancelled subscriptions
             $monthStart = $now->copy()->startOfMonth();
             $monthEnd = $now->copy()->endOfMonth();
-            $monthTotal = Order::whereBetween('created_at', [$monthStart, $monthEnd])->sum('amount');
+            $monthTotal = Order::whereBetween('created_at', [$monthStart, $monthEnd])
+                ->whereHas('subscription', function($query) {
+                    $query->where('is_cancelled_force', false);
+                })
+                ->sum('amount');
             
             return response()->json([
                 'day' => $dayTotal,
