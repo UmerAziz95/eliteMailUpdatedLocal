@@ -1810,7 +1810,7 @@ class OrderController extends Controller
         try {
             // Validate the request
             $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
                 'reason' => 'nullable|string|max:500'
             ]);
 
@@ -1841,14 +1841,15 @@ class OrderController extends Controller
                 return response()->json($result);
             }
             // if status is cancelled then also remove customer subscriptoins create service
-            if($newStatus === 'cancelled') {
+            if($newStatus === 'cancelled' || $newStatus === 'cancelled_force') {
                 $order = Order::findOrFail($orderId);
                 $subscriptionService = new \App\Services\OrderCancelledService();
                 $result = $subscriptionService->cancelSubscription(
                     $order->chargebee_subscription_id,
                     $order->user_id,
                     $reason,
-                    false
+                    false,
+                    $newStatus === 'cancelled_force' ? true : false
                 );
                 
                 return response()->json($result);

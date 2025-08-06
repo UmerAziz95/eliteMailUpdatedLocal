@@ -1340,6 +1340,7 @@ pointer-events: none
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="cancelled_force">Cancelled (Force)</option>
                         <option value="reject">Rejected</option>
                         <!-- <option value="in-progress">In Progress</option> -->
                     </select>
@@ -4194,7 +4195,7 @@ pointer-events: none
             return;
         }
         // status is reject or cancelled
-        if ((newStatus === 'reject' || newStatus === 'cancelled') && !reason) {
+        if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Missing Reason',

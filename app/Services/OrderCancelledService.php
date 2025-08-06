@@ -16,7 +16,7 @@ use Carbon\Carbon;
 
 class OrderCancelledService
 {
-    public function cancelSubscription($chargebee_subscription_id, $user_id, $reason, $remove_accounts = false)
+    public function cancelSubscription($chargebee_subscription_id, $user_id, $reason, $remove_accounts = false, $force_cancel = false)
     {
         $subscription = UserSubscription::where('chargebee_subscription_id', $chargebee_subscription_id)
             ->where('user_id', $user_id)
@@ -40,20 +40,25 @@ class OrderCancelledService
             if ($result->subscription()->status === 'cancelled') {
                 $user = User::find($user_id);
 
-                // Calculate proper end date based on billing cycle
+                // Calculate proper end date based on billing cycle or force cancel
                 $endDate = now(); // Default fallback
                 
-                // If subscription has next_billing_date, calculate end date from last billing period
-                if ($subscription->next_billing_date) {
-                    $nextBillingDate = Carbon::parse($subscription->next_billing_date);
-                    // Assume monthly billing - subtract 1 month to get last billing date
-                    $lastBillingDate = $nextBillingDate->copy()->subMonth();
-                    $endDate = $nextBillingDate->copy()->subDay(); // End date is day before next billing
-                }else{
-                    // get last billing date from subscription
-                    $lastBillingDate = $subscription->last_billing_date ? Carbon::parse($subscription->last_billing_date) : null;
-                    if ($lastBillingDate) {
-                        $endDate = $lastBillingDate->copy()->addMonth()->subDay(); // End date is last billing date + 1 month - 1 day
+                if ($force_cancel) {
+                    // For force cancel, set end date to now
+                    $endDate = now();
+                } else {
+                    // If subscription has next_billing_date, calculate end date from last billing period
+                    if ($subscription->next_billing_date) {
+                        $nextBillingDate = Carbon::parse($subscription->next_billing_date);
+                        // Assume monthly billing - subtract 1 month to get last billing date
+                        $lastBillingDate = $nextBillingDate->copy()->subMonth();
+                        $endDate = $nextBillingDate->copy()->subDay(); // End date is day before next billing
+                    }else{
+                        // get last billing date from subscription
+                        $lastBillingDate = $subscription->last_billing_date ? Carbon::parse($subscription->last_billing_date) : null;
+                        if ($lastBillingDate) {
+                            $endDate = $lastBillingDate->copy()->addMonth()->subDay(); // End date is last billing date + 1 month - 1 day
+                        }
                     }
                 }
 
@@ -91,8 +96,13 @@ class OrderCancelledService
                     ]
                 );
                 // Add entry to domain removal queue table
-                // Queue date is set to 72 hours after subscription end date
-                $queueStartDate = $endDate->copy()->addHours(72);
+                // Queue date is set to 72 hours after subscription end date for normal cancel
+                // For force cancel, queue starts immediately (now)
+                if ($force_cancel) {
+                    $queueStartDate = now();
+                } else {
+                    $queueStartDate = $endDate->copy()->addHours(72);
+                }
                 
                 DomainRemovalTask::create([
                     'started_queue_date' => $queueStartDate,
