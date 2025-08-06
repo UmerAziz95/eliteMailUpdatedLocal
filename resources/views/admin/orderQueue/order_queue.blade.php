@@ -220,6 +220,11 @@
             font-size: 11px;
         }
 
+        /* Hide timer for draft orders */
+        .flip-timer[data-status="draft"] {
+            display: none !important;
+        }
+
         /* Timer icon styling */
         .timer-icon {
             font-size: 11px;
@@ -1469,7 +1474,7 @@
                 // Start timer for the order displayed in the offcanvas
                 const timerId = `flip-timer-${orderInfo.order_id}-0`;
                 const timerElement = document.getElementById(timerId);
-                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject') {
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject' && orderInfo.status !== 'draft') {
                     // Use the same timer starting logic as in the main cards
                     startSingleTimer(orderInfo, false, 0);
                 }
@@ -1694,6 +1699,11 @@
 
         // Create timer badge HTML
         function createTimerBadge(order, isDrafts, index) {
+            // Hide timer for draft orders
+            if (order.status === 'draft') {
+                return '';
+            }
+            
             const timer = calculateOrderTimer(
                 order.created_at, 
                 order.status, 
@@ -1812,7 +1822,7 @@
         // Start timers for all rendered orders
         function startTimersForOrders(ordersList, isDrafts, startIndex) {
             ordersList.forEach((order, index) => {
-                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject') {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && order.status !== 'draft') {
                     const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
                     const timer = calculateOrderTimer(
                         order.created_at, 
@@ -1845,7 +1855,7 @@
 
         // Start timer for a single order (used in offcanvas)
         function startSingleTimer(order, isDrafts, index) {
-            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject') return;
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject' || order.status === 'draft') return;
             
             const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
             const timer = calculateOrderTimer(
