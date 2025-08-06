@@ -68,6 +68,7 @@ class OrderCancelledService
                     'reason' => $reason,
                     'end_date' => $endDate,
                     'next_billing_date' => null,
+                    'is_cancelled_force' => $force_cancel,
                 ]);
 
                 if ($user) {

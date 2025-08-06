@@ -10,6 +10,7 @@ class Subscription extends Model
     use HasFactory;
     protected $casts = [
         'meta' => 'array',
+        'is_cancelled_force' => 'boolean',
     ];
     protected $fillable = [
         'user_id',
@@ -25,6 +26,7 @@ class Subscription extends Model
         'end_date',
         'meta',
         'cancellation_at',
+        'is_cancelled_force',
         'reason',
     ];
     public function user()
