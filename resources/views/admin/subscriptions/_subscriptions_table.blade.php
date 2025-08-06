@@ -7,7 +7,6 @@
                 <th>Customer Name</th>  
                 <th>Customer Email</th>
                 <th>Status</th>
-                <th>Force Cancelled</th>
                 <th>Last Billing Date</th>
                 <th>Next Billing Date</th>
                 <th>Actions</th>

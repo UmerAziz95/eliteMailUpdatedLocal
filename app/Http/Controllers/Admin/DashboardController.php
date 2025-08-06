@@ -11,7 +11,9 @@ use App\Models\SupportTicket;
 
 class DashboardController extends Controller
 {
-    //
+    /**
+     * Get subscription statistics for the dashboard.
+     */
     public function getSubscriptionStats(Request $request)
     {
         try {
