@@ -397,6 +397,12 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* Hide timer for draft orders */
+        .flip-timer[data-status="draft"],
+        .timer-badge[data-status="draft"] {
+            display: none !important;
+        }
+
 
         input,
         .form-control,
@@ -1448,12 +1454,12 @@ pointer-events: none
     <script>
         // Debug AJAX calls
         $(document).ajaxSend(function(event, jqXHR, settings) {
-            console.log('AJAX Request:', {
-                url: settings.url,
-                type: settings.type,
-                data: settings.data,
-                headers: jqXHR.headers
-            });
+            // console.log('AJAX Request:', {
+            //     url: settings.url,
+            //     type: settings.type,
+            //     data: settings.data,
+            //     headers: jqXHR.headers
+            // });
         });
 
         function viewOrder(id) {
@@ -1580,6 +1586,11 @@ pointer-events: none
 
         // Create timer badge HTML with pause and cancelled support
         function createTimerBadge(timerData) {
+            // Hide timer for draft orders
+            if (timerData.status === 'draft') {
+                return '';
+            }
+            
             const timer = calculateOrderTimer(
                 timerData.created_at, 
                 timerData.status, 
@@ -3000,6 +3011,11 @@ pointer-events: none
 
     // Create timer badge HTML with flip animation
     function createTimerBadge(order, index = 0) {
+        // Hide timer for draft orders
+        if (order.status === 'draft') {
+            return '';
+        }
+        
         const timer = calculateOrderTimer(
             order.created_at, 
             order.status, 
@@ -4031,8 +4047,8 @@ pointer-events: none
             const timerPausedAt = timerElement.dataset.timerPausedAt;
             const totalPausedSeconds = timerElement.dataset.totalPausedSeconds;
             
-            // Skip updating completed, cancelled, or paused orders
-            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
+            // Skip updating completed, cancelled, reject, draft, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || status === 'draft' || timerPausedAt) {
                 return;
             }
             
@@ -4051,8 +4067,8 @@ pointer-events: none
             const timerPausedAt = badgeElement.dataset.timerPausedAt;
             const totalPausedSeconds = badgeElement.dataset.totalPausedSeconds;
             
-            // Skip updating completed, cancelled, or paused orders
-            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
+            // Skip updating completed, cancelled, reject, draft, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || status === 'draft' || timerPausedAt) {
                 return;
             }
             

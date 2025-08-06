@@ -714,3 +714,32 @@ Route::get('/ghl/test-connection', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('ghl.test-connection');
+
+// Clear Logs
+Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
+    try {
+        // Clear the logs by emptying log files instead of deleting them
+        $logPath = storage_path('logs');
+        $files = glob($logPath . '/*.log');
+        $clearedFiles = [];
+        $adminName = auth()->user() ? auth()->user()->name : 'Unknown Admin';
+
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $clearMessage = "🧹✨ Logs cleared by 👤{$adminName} on " . now()->format('Y-m-d H:i:s') . " 🗑️💨\n";
+                file_put_contents($file, $clearMessage);
+                $clearedFiles[] = basename($file);
+            }
+        }
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'Logs cleared successfully',
+            'cleared_by' => $adminName,
+            'cleared_files' => $clearedFiles,
+            'cleared_at' => now()->format('Y-m-d H:i:s')
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('logs.clear');
