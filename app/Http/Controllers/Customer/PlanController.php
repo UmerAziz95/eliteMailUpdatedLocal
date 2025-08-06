@@ -29,6 +29,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\PaymentFailure;
+use Illuminate\Support\Facades\DB;
 class PlanController extends Controller
 {
     public function index()
