@@ -1345,8 +1345,8 @@ pointer-events: none
                         <option value="">-- Select Status --</option>
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="cancelled_force">Cancelled (Force)</option>
+                        <option value="cancelled">Cancel EOBC</option>
+                        <option value="cancelled_force">Force Cancel</option>
                         <option value="reject">Rejected</option>
                         <!-- <option value="in-progress">In Progress</option> -->
                     </select>
