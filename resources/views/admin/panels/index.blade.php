@@ -132,7 +132,7 @@
     }
 
     /* Split fade-in animation */
-    @keyframes splitFadeIn {
+    /* @keyframes splitFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-15px) scale(0.98);
@@ -147,10 +147,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Domain badge animations */
-    @keyframes domainFadeIn {
+    /* @keyframes domainFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-10px) scale(0.8);
@@ -165,10 +165,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Toast animations */
-    @keyframes toastSlideIn {
+    /* @keyframes toastSlideIn {
         0% {
             opacity: 0;
             transform: translateX(100%) scale(0.8);
@@ -178,7 +178,7 @@
             opacity: 1;
             transform: translateX(0) scale(1);
         }
-    }
+    } */
 
     /* Chevron rotation animation */
     .transition-transform {
@@ -368,6 +368,21 @@
     padding: 1rem;
     margin-bottom: 1rem;
 }
+
+    .card {
+        overflow: hidden
+    }
+
+    .button-container {
+        pointer-events: none;
+        transition: right 0.4s ease, pointer-events 0.4s ease;
+
+    }
+
+    .card:hover .button-container {
+        right: 3% !important;
+        pointer-events: all
+    }
 </style>
 @endpush
 
@@ -628,6 +643,82 @@
                 aria-label="Close"></button>
         </div>
         @endif
+
+        <div class="counters mb-3">
+            <div class="card p-3 counter_1">
+                <div>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Total Panels</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Available Capacity</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
+                                <p class="text-danger mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Used Capacity</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Closed Panels</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
     <!-- Advanced Search Filter UI -->
     <div class="card p-3 mb-4">
@@ -682,7 +773,8 @@
             </form>
         </div>
     </div>
-    
+
+
     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
@@ -1231,7 +1323,7 @@
             let actionButtons = '';
             if (panel.show_edit_delete_buttons) {
                 actionButtons = `
-                    <div class="d-flex gap-2 mt-2">
+                    <div class="d-flex flex-column gap-2">
                         ${panel.can_edit ? `
                             <button class="btn btn-sm btn-outline-warning px-2 py-1" 
                                     onclick="editPanel(${panel.id})" 
@@ -1252,16 +1344,17 @@
             
             return `
                 <div class="card p-3 d-flex flex-column gap-1">                    
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0">${'PNL-' + panel.id || panel.auto_generated_id}</h6>
-                        <div class="d-flex flex-column gap-1">
-                            <div class="d-flex gap-3 justify-content-between">
-                                <small class="total">Total: ${panel.limit}</small>
-                                <small class="remain">Remaining: ${remaining}</small>
-                                <small class="used">Used: ${used}</small>
-                            </div>
-                        </div>
+                    <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
+                        <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                        <h6>Title</h6>
                     </div>
+
+                    <div class="d-flex gap-3 justify-content-between">
+                        <small class="total">Total: ${panel.limit}</small>
+                        <small class="remain">Remaining: ${remaining}</small>
+                        <small class="used">Used: ${used}</small>
+                    </div>
+
                     <div id="chart-${panel.id}"></div>
                     <h6 class="mb-0">Orders</h6>
                     <div style="background-color: #5750bf89; border: 1px solid var(--second-primary);"
@@ -1272,7 +1365,9 @@
                             View
                         </button>                    
                     </div>
-                    ${actionButtons}
+                    <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color); position: absolute; top: 50%; right: -50px; transform: translate(0%, -50%)">
+                        ${actionButtons}    
+                    </div>
                 </div>
             `;
         }
