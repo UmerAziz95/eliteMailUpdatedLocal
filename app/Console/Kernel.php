@@ -83,6 +83,9 @@ class Kernel extends ConsoleKernel
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
                
                 $schedule->command('payments:process-failures')->hourly();
+
+                // Send failed payment emails every hour for payments that failed within the last 72 hours
+                $schedule->command('emails:send-failed-payments')->hourly();
                 }
 
         protected function commands(): void
