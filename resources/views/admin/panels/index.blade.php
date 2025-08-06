@@ -1606,11 +1606,13 @@
                                                                 onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
                                                                 View
                                                             </button>
-                                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
-                                                                title="Reassign to another panel">
-                                                                Reassign
-                                                            </button>
+                                                            ${order.order_status === 'cancelled' || order.order_status === 'reject' ? '' : `
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                    onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
+                                                                    title="Reassign to another panel">
+                                                                    Reassign
+                                                                </button>
+                                                            `}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1639,11 +1641,13 @@
                                                                         onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
                                                                         View
                                                                     </button>
-                                                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                        onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
-                                                                        title="Reassign to another panel">
-                                                                        Reassign
-                                                                    </button>
+                                                                    ${order.order_status === 'cancelled' || order.order_status === 'reject' ? '' : `
+                                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                            onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
+                                                                            title="Reassign to another panel">
+                                                                            Reassign
+                                                                        </button>
+                                                                    `}
                                                                 </div>
                                                             </td>
                                                         </tr>

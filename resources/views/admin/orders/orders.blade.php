@@ -3286,7 +3286,7 @@ pointer-events: none
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
-                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'rejected' ? `
+                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'reject' ? `
                                             <button type="button" class="btn btn-sm btn-warning" title="Reassign Panel" 
                                                     onclick="openReassignModal(${orderInfo.id}, ${split.panel_id}, ${split.order_panel_id}, '${split.panel_title}')">
                                                 <i class="fas fa-exchange-alt"></i> Reassign
