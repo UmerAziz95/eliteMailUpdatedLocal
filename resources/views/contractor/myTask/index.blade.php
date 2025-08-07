@@ -7,7 +7,7 @@
         color: #fff;
         font-size: 13px
     }
-
+    
     /* Fix offcanvas backdrop issues */
     .offcanvas-backdrop {
         z-index: 1040;

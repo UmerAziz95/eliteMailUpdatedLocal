@@ -315,7 +315,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="fw-semibold">#${task.task_id} 
                     ${isShiftedTask ? 
-                        `<small class="badge bg-info text-dark ms-1">${task.action_type || 'reassignment'}</small>` : 
+                        `<small class="badge ${task.action_type === 'removed' ? 'bg-danger text-white' : 'bg-info text-dark'} ms-1">${task.action_type === 'removed' ? 'Removal' : 'Assignment'}</small>` : 
                         `<i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
                             data-bs-toggle="tooltip"
                             data-bs-placement="right"
