@@ -132,7 +132,7 @@
     }
 
     /* Split fade-in animation */
-    @keyframes splitFadeIn {
+    /* @keyframes splitFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-15px) scale(0.98);
@@ -147,10 +147,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Domain badge animations */
-    @keyframes domainFadeIn {
+    /* @keyframes domainFadeIn {
         0% {
             opacity: 0;
             transform: translateY(-10px) scale(0.8);
@@ -165,10 +165,10 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
-    }
+    } */
 
     /* Toast animations */
-    @keyframes toastSlideIn {
+    /* @keyframes toastSlideIn {
         0% {
             opacity: 0;
             transform: translateX(100%) scale(0.8);
@@ -178,7 +178,7 @@
             opacity: 1;
             transform: translateX(0) scale(1);
         }
-    }
+    } */
 
     /* Chevron rotation animation */
     .transition-transform {
@@ -314,6 +314,74 @@
             opacity: 1;
             transform: translateX(0);
         }
+    }
+/* Change Status Modal Styles */
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+/* Panel Reassignment Styles */
+.panel-option {
+    transition: all 0.2s ease;
+    border: 2px solid transparent !important;
+}
+
+.panel-option:hover:not(.bg-light) {
+    background-color: rgba(13, 110, 253, 0.05) !important;
+    border-color: #0d6efd !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.panel-option.border-primary {
+    border-color: #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.panel-option.bg-light {
+    opacity: 0.7;
+}
+
+.panel-option .badge {
+    font-size: 0.7em;
+}
+
+#reassignPanelModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#availablePanelsContainer {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.reassign-panel-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+    .card {
+        overflow: hidden
+    }
+
+    .button-container {
+        pointer-events: none;
+        transition: right 0.4s ease, pointer-events 0.4s ease;
+
+    }
+
+    .card:hover .button-container {
+        right: 3% !important;
+        pointer-events: all
     }
 </style>
 @endpush
@@ -575,6 +643,82 @@
                 aria-label="Close"></button>
         </div>
         @endif
+
+        <div class="counters mb-3">
+            <div class="card p-3 counter_1">
+                <div>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Total Panels</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Available Capacity</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
+                                <p class="text-danger mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Used Capacity</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card p-3 counter_2">
+                <div>
+                    <!-- {{-- //card body --}} -->
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <h6 class="text-heading">Closed Panels</h6>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <p class="text-success mb-0"></p>
+                            </div>
+                            <small class="mb-0"></small>
+                        </div>
+                        <div class="avatar">
+                            <i class="fa-solid fa-solar-panel fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
     <!-- Advanced Search Filter UI -->
     <div class="card p-3 mb-4">
@@ -629,7 +773,8 @@
             </form>
         </div>
     </div>
-    
+
+
     {{-- create panel button --}}
     <div class="col-12 text-end mb-4">
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
@@ -694,6 +839,50 @@
         </div>
     </div>
 </div>
+
+<!-- Panel Reassignment Modal -->
+<div class="modal fade" id="reassignPanelModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to. 
+                        This will move all domains and capacity from the current panel to the selected panel.
+                    </div>
+                </div>
+                <!-- Loading State -->
+                <div id="reassignLoader" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading available panels...</p>
+                </div>
+                
+                <!-- Available Panels Container -->
+                <div id="availablePanelsContainer"></div>
+                
+                <!-- Reassignment Reason -->
+                <div class="mt-3" style="display: none;" id="reassignReasonContainer">
+                    <label for="reassignReason" class="form-label">Reason for reassignment (optional)</label>
+                    <textarea class="form-control" id="reassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmReassignBtn" disabled onclick="confirmReassignment()">
+                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -1134,7 +1323,7 @@
             let actionButtons = '';
             if (panel.show_edit_delete_buttons) {
                 actionButtons = `
-                    <div class="d-flex gap-2 mt-2">
+                    <div class="d-flex flex-column gap-2">
                         ${panel.can_edit ? `
                             <button class="btn btn-sm btn-outline-warning px-2 py-1" 
                                     onclick="editPanel(${panel.id})" 
@@ -1155,16 +1344,17 @@
             
             return `
                 <div class="card p-3 d-flex flex-column gap-1">                    
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0">${'PNL-' + panel.id || panel.auto_generated_id}</h6>
-                        <div class="d-flex flex-column gap-1">
-                            <div class="d-flex gap-3 justify-content-between">
-                                <small class="total">Total: ${panel.limit}</small>
-                                <small class="remain">Remaining: ${remaining}</small>
-                                <small class="used">Used: ${used}</small>
-                            </div>
-                        </div>
+                    <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
+                        <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                        <h6>Title</h6>
                     </div>
+
+                    <div class="d-flex gap-3 justify-content-between">
+                        <small class="total">Total: ${panel.limit}</small>
+                        <small class="remain">Remaining: ${remaining}</small>
+                        <small class="used">Used: ${used}</small>
+                    </div>
+
                     <div id="chart-${panel.id}"></div>
                     <h6 class="mb-0">Orders</h6>
                     <div style="background-color: #5750bf89; border: 1px solid var(--second-primary);"
@@ -1175,7 +1365,9 @@
                             View
                         </button>                    
                     </div>
-                    ${actionButtons}
+                    <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color); position: absolute; top: 50%; right: -50px; transform: translate(0%, -50%)">
+                        ${actionButtons}    
+                    </div>
                 </div>
             `;
         }
@@ -1409,10 +1601,17 @@
                                                     <td>${order.space_assigned || 'N/A'}</td>
                                                     <td>${formatDate(order.created_at)}</td>
                                                     <td>
-                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                                            onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
-                                                            View
-                                                        </button>
+                                                        <div class="d-flex gap-1">
+                                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                                onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
+                                                                View
+                                                            </button>
+                                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
+                                                                title="Reassign to another panel">
+                                                                Reassign
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                                 ${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? 
@@ -1435,10 +1634,17 @@
                                                             <td>${remainingPanel.space_assigned || 'N/A'}</td>
                                                             <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
                                                             <td>
-                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
-                                                                    onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
-                                                                    View
-                                                                </button>
+                                                                <div class="d-flex gap-1">
+                                                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
+                                                                        onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
+                                                                        View
+                                                                    </button>
+                                                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                        onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
+                                                                        title="Reassign to another panel">
+                                                                        Reassign
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     `).join('') : ''
@@ -2586,6 +2792,14 @@
             setTimeout(function() {
                 initializeChevronStates();
             }, 200);
+            
+            // Add event listener for panel reassign modal reset
+            const reassignPanelModal = document.getElementById('reassignPanelModal');
+            if (reassignPanelModal) {
+                reassignPanelModal.addEventListener('hidden.bs.modal', function () {
+                    resetReassignModal();
+                });
+            }
         });
         
 </script>
@@ -3116,5 +3330,419 @@ function refreshPanelCapacityAlert() {
         }
     });
 }
+
+// Panel Reassignment Functions (from orders.blade.php)
+let currentReassignData = {};
+
+/**
+ * Open the panel reassignment modal
+ */
+function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
+    currentReassignData = {
+        orderId: orderId,
+        currentPanelId: currentPanelId,
+        orderPanelId: orderPanelId,
+        panelTitle: panelTitle
+    };
+
+    // Update modal title
+    document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${'PNL-'+currentPanelId +" "+ panelTitle}`;
+    
+    // Load available panels using orderPanelId
+    loadAvailablePanels(orderId, orderPanelId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('reassignPanelModal'));
+    modal.show();
+}
+
+/**
+ * Load available panels for reassignment
+ */
+async function loadAvailablePanels(orderId, orderPanelId) {
+    try {
+        showReassignLoading(true);
+        
+        const response = await fetch(`/admin/orders/${orderId}/order-panels/${orderPanelId}/available-for-reassignment`);
+        const data = await response.json();
+        
+        if (data.success) {
+            renderAvailablePanels(data.panels);
+        } else {
+            showReassignError(data.error || 'Failed to load available panels');
+        }
+    } catch (error) {
+        console.error('Error loading available panels:', error);
+        showReassignError('Failed to load available panels');
+    } finally {
+        showReassignLoading(false);
+    }
+}
+
+/**
+ * Render available panels in the modal
+ */
+function renderAvailablePanels(panels) {
+    const container = document.getElementById('availablePanelsContainer');
+    
+    if (!panels || panels.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No panels available for reassignment</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Add search input
+    const searchHtml = `
+        <div class="mb-3">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" id="panelSearchInput" 
+                       placeholder="Search panels by ID or title..." onkeyup="filterPanels()">
+            </div>
+        </div>
+    `;
+    
+    const panelsHtml = panels.map(panel => `
+        <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card" 
+             data-panel-id="${panel.panel_id}"
+             data-panel-title="${panel.panel_title.toLowerCase()}"
+             data-space-needed="${panel.space_needed || 0}"
+             data-panel-limit="${panel.panel_limit}"
+             data-panel-remaining="${panel.panel_remaining_limit}"
+             ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})"` : ''} 
+             style="${panel.is_reassignable ? 'cursor: pointer; transition: all 0.2s ease;' : 'cursor: not-allowed; opacity: 0.6;'}">
+            
+            ${panel.is_reassignable ? '' : '<div class="position-absolute top-0 start-0 w-100 h-100 bg-light bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 2;"><span class="badge bg-warning text-dark">Insufficient Space</span></div>'}
+            
+            <div class="p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="panel-icon me-2">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary bg-gradient" 
+                                 style="width: 35px; height: 35px;">
+                                <i class="fas fa-server text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
+                                <span class="panel-title-text">${panel.panel_title}</span>
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    ${panel.is_reassignable ? 
+                        `<button type="button" class="btn btn-outline-primary btn-sm px-3 select-btn" 
+                             onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})">
+                            <i class="fas fa-arrow-right me-1"></i>Select
+                        </button>` : ''
+                    }
+                </div>
+                
+                <div class="row g-2 mt-1">
+                    <div class="col-3">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-success panel-space-needed" style="font-size: 0.9rem;">${panel.space_needed || 0}</div>
+                            <small class="text-muted">Need</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_orders || 0}</div>
+                            <small class="text-muted">Orders</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit}</div>
+                            <small class="text-muted">Limit</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-danger panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit}</div>
+                            <small class="text-muted">Free</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = searchHtml + '<div id="panelsList">' + panelsHtml + '</div>';
+    
+    // Add CSS for hover effects
+    const style = document.createElement('style');
+    style.textContent = `
+        .panel-card{
+            border: 1px solid #dee2e6;
+        }
+        .panel-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        .panel-card.selected {
+            border-color: #0d6efd !important;
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+        }
+        .badge-sm {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
+ * Filter panels based on search input
+ */
+function filterPanels() {
+    const searchTerm = document.getElementById('panelSearchInput').value.toLowerCase();
+    const panelCards = document.querySelectorAll('.panel-card');
+    let visibleCount = 0;
+    
+    panelCards.forEach(card => {
+        const panelId = card.getAttribute('data-panel-id');
+        const panelTitle = card.getAttribute('data-panel-title');
+        
+        const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
+        
+        if (isVisible) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Show/hide no results message
+    const panelsList = document.getElementById('panelsList');
+    let noResultsDiv = document.getElementById('noSearchResults');
+    
+    if (visibleCount === 0 && searchTerm.length > 0) {
+        if (!noResultsDiv) {
+            noResultsDiv = document.createElement('div');
+            noResultsDiv.id = 'noSearchResults';
+            noResultsDiv.className = 'text-center py-4';
+            noResultsDiv.innerHTML = `
+                <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                <p class="text-muted mb-0">No panels found matching "${searchTerm}"</p>
+            `;
+            panelsList.appendChild(noResultsDiv);
+        }
+    } else if (noResultsDiv) {
+        noResultsDiv.remove();
+    }
+}
+
+/**
+ * Select target panel for reassignment
+ */
+function selectTargetPanel(targetPanelId, targetPanelTitle, spaceNeeded = 0, remainingSpace = 0) {
+    // Remove previous selection
+    document.querySelectorAll('.panel-card').forEach(option => {
+        option.classList.remove('selected');
+    });
+
+    // Highlight selected panel
+    const selectedPanel = document.querySelector(`[data-panel-id="${targetPanelId}"]`);
+    if (selectedPanel) {
+        selectedPanel.classList.add('selected');
+    }
+
+    // Update space values dynamically
+    updatePanelSpaceValues(targetPanelId, spaceNeeded);
+
+    // Store selection
+    currentReassignData.targetPanelId = targetPanelId;
+    currentReassignData.targetPanelTitle = targetPanelTitle;
+    currentReassignData.spaceNeeded = spaceNeeded;
+    currentReassignData.remainingSpace = remainingSpace;
+
+    // Enable reassign button
+    const reassignBtn = document.getElementById('confirmReassignBtn');
+    reassignBtn.disabled = false;
+    reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
+}
+
+/**
+ * Update panel space values after selection
+ */
+function updatePanelSpaceValues(selectedPanelId, spaceToMove) {
+    // Get current space needed from the selected order panel (from currentReassignData)
+    const currentSpaceNeeded = spaceToMove;
+    
+    // First, reset all panels to their original values
+    document.querySelectorAll('.panel-card').forEach(panelOption => {
+        const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
+        const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+        
+        const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
+        const remainingElement = panelOption.querySelector('.panel-remaining');
+        
+        // Reset to original values and styles
+        if (spaceNeededElement) {
+            spaceNeededElement.textContent = originalSpaceNeeded;
+            spaceNeededElement.style.color = '';
+            spaceNeededElement.style.fontWeight = '';
+        }
+        if (remainingElement) {
+            remainingElement.textContent = originalRemaining;
+            remainingElement.style.color = '';
+            remainingElement.style.fontWeight = '';
+        }
+    });
+    
+    // Then update only the selected panel to show new values after reassignment
+    document.querySelectorAll('.panel-card').forEach(panelOption => {
+        const panelId = panelOption.getAttribute('data-panel-id');
+        const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
+        const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+        
+        const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
+        const remainingElement = panelOption.querySelector('.panel-remaining');
+        // not need to add on need 
+        if (panelId == selectedPanelId) {
+            // This panel will receive the space
+            const newSpaceNeeded = originalSpaceNeeded + currentSpaceNeeded;
+            const newRemaining = originalRemaining - currentSpaceNeeded;
+            
+            // if (spaceNeededElement) {
+            //     spaceNeededElement.textContent = newSpaceNeeded;
+            //     spaceNeededElement.style.color = '#198754'; // Green for increase
+            //     spaceNeededElement.style.fontWeight = 'bold';
+            // }
+            if (remainingElement) {
+                remainingElement.textContent = newRemaining;
+                remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545'; // Red
+                remainingElement.style.fontWeight = 'bold';
+            }
+        }
+    });
+}
+
+/**
+ * Confirm panel reassignment
+ */
+async function confirmReassignment() {
+    if (!currentReassignData.targetPanelId) {
+        showReassignError('Please select a target panel');
+        return;
+    }
+
+    try {
+        const reassignBtn = document.getElementById('confirmReassignBtn');
+        const originalText = reassignBtn.innerHTML;
+        reassignBtn.disabled = true;
+        reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
+
+        const formData = {
+            from_order_panel_id: currentReassignData.orderPanelId,
+            to_panel_id: currentReassignData.targetPanelId,
+            reason: document.getElementById('reassignReason').value || null
+        };
+
+        const response = await fetch('/admin/orders/panels/reassign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Show success message
+            toastr.success(data.message);
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
+            
+            // Refresh the panel orders view
+            const currentPanelId = getCurrentPanelId();
+            if (currentPanelId) {
+                setTimeout(() => {
+                    viewPanelOrders(currentPanelId);
+                }, 1000);
+            }
+            
+            // Refresh panels list
+            loadPanels(currentFilters, 1, false);
+            
+            // Reset form
+            resetReassignModal();
+        } else {
+            showReassignError(data.message || 'Reassignment failed');
+            reassignBtn.disabled = false;
+            reassignBtn.innerHTML = originalText;
+        }
+    } catch (error) {
+        console.error('Error during reassignment:', error);
+        showReassignError('An error occurred during reassignment');
+        document.getElementById('confirmReassignBtn').disabled = false;
+    }
+}
+
+/**
+ * Show/hide loading state in reassign modal
+ */
+function showReassignLoading(show) {
+    const loader = document.getElementById('reassignLoader');
+    const container = document.getElementById('availablePanelsContainer');
+    
+    if (show) {
+        loader.style.display = 'block';
+        container.style.display = 'none';
+    } else {
+        loader.style.display = 'none';
+        container.style.display = 'block';
+    }
+}
+
+/**
+ * Show error in reassign modal
+ */
+function showReassignError(message) {
+    const container = document.getElementById('availablePanelsContainer');
+    container.innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            ${message}
+        </div>
+    `;
+}
+
+/**
+ * Reset reassign modal
+ */
+function resetReassignModal() {
+    currentReassignData = {};
+    document.getElementById('availablePanelsContainer').innerHTML = '';
+    document.getElementById('reassignReason').value = '';
+    document.getElementById('confirmReassignBtn').disabled = true;
+    document.getElementById('confirmReassignBtn').innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+    
+    // Reset any modified space values and styles
+    document.querySelectorAll('.panel-space-needed, .panel-remaining').forEach(element => {
+        element.style.color = '';
+        element.style.fontWeight = '';
+    });
+    
+    // Remove any search results
+    const noResultsDiv = document.getElementById('noSearchResults');
+    if (noResultsDiv) {
+        noResultsDiv.remove();
+    }
+}
+
 </script>
 @endpush

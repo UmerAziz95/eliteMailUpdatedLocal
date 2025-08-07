@@ -127,7 +127,7 @@ class UpdateGHLCustomFields
 
             // Prepare the update data
             $updateData = [
-                'customFields' => $this->formatCustomFields($customFields)
+                'customField' => $this->formatCustomFields($customFields)
             ];
 
             Log::info('Updating GHL contact custom fields', [
