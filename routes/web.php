@@ -262,6 +262,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
         Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
         Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+        
+        // Shifted Panel Reassignment Task Routes
+        Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
+        Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
