@@ -412,7 +412,22 @@
                     </button>
                     
                 </div>
-                ` : ''}
+                ` : `
+                <div class="d-flex gap-2">
+                    ${task.status === 'in-progress' ? `
+                        <button class="btn btn-success btn-sm d-flex align-items-center justify-content-center"
+                            onclick="completeShiftedTask(${task.task_id})"
+                            title="Mark as Completed">
+                            <i class="fas fa-check text-white"></i>
+                        </button>
+                    ` : ''}
+                    ${task.status === 'completed' ? `
+                        <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>Completed
+                        </span>
+                    ` : ''}
+                </div>
+                `}
             </div>
         `;
 
@@ -1265,6 +1280,95 @@
             Swal.fire({
                 title: 'Error',
                 text: error.message || 'Failed to complete task',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Complete shifted task function
+    async function completeShiftedTask(taskId) {
+        try {
+            // Show confirmation dialog
+            const result = await Swal.fire({
+                title: 'Complete Shifted Task?',
+                html: `
+                    <div class="text-start">
+                        <p>Are you sure you want to mark this panel reassignment task as completed?</p>
+                        <div class="mb-3">
+                            <label for="completion_notes" class="form-label">Completion Notes (Optional)</label>
+                            <textarea id="completion_notes" class="form-control" rows="3" 
+                                placeholder="Add any completion notes or comments..."></textarea>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check me-2"></i>Yes, Complete Task',
+                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancel',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                width: '500px',
+                preConfirm: () => {
+                    const notes = document.getElementById('completion_notes').value;
+                    return { notes: notes };
+                }
+            });
+
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Completing Task...',
+                    text: 'Please wait while we update the task status.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Update task status to completed
+                const response = await fetch(`{{ url('admin/taskInQueue/shifted') }}/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        status: 'completed',
+                        completion_notes: result.value.notes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    await Swal.fire({
+                        title: 'Task Completed!',
+                        text: 'The panel reassignment task has been marked as completed successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+
+                    // Reload the shifted tasks to reflect the changes
+                    loadTasks('shifted-tasks');
+                } else {
+                    throw new Error(data.message || 'Failed to complete task');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error completing shifted task:', error);
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Failed to complete the task',
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
