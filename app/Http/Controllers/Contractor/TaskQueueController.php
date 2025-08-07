@@ -215,6 +215,115 @@ class TaskQueueController extends Controller
     }
 
     /**
+     * Get shifted tasks (in-progress and completed) for contractors
+     */
+    public function getShiftedTasks(Request $request)
+    {
+        try {
+            $query = PanelReassignmentHistory::with([
+                'order.user',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->whereIn('status', ['in-progress', 'completed']) // Only in-progress and completed tasks
+              ->whereNotNull('assigned_to'); // Only assigned tasks
+
+            // Apply filters if provided
+            if ($request->filled('user_id')) {
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('assigned_to')) {
+                $query->where('assigned_to', $request->assigned_to);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            // Get all tasks first, then group and filter
+            $allTasks = $query->orderBy('reassignment_date', 'desc')->get();
+
+            // Group tasks by unique combination of order_id, order_panel_id, from_panel_id, to_panel_id
+            $groupedTasks = $allTasks->groupBy(function ($task) {
+                return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
+            });
+
+            // For each group, prioritize 'removed' action over 'added'
+            $filteredTasks = $groupedTasks->map(function ($group) {
+                // If group has both 'removed' and 'added', return only 'removed'
+                $removedTask = $group->where('action_type', 'removed')->first();
+                if ($removedTask) {
+                    return $removedTask;
+                }
+                
+                // Otherwise return the first task (should be 'added')
+                return $group->first();
+            })->values(); // Reset array keys
+
+            // Apply pagination manually
+            $perPage = $request->get('per_page', 12);
+            $page = $request->get('page', 1);
+            $offset = ($page - 1) * $perPage;
+            
+            $paginatedTasks = $filteredTasks->slice($offset, $perPage);
+            $total = $filteredTasks->count();
+            $lastPage = ceil($total / $perPage);
+
+            // Transform the data to include customer information
+            $transformedTasks = $paginatedTasks->map(function ($task) {
+                $order = $task->order;
+                $task->customer_name = $order && $order->user ? $order->user->name : 'N/A';
+                $task->customer_image = $order && $order->user && $order->user->profile_image 
+                    ? asset('storage/profile_images/' . $order->user->profile_image) 
+                    : null;
+                
+                // Add task_id for consistency with frontend
+                $task->task_id = $task->id;
+                
+                // Add assigned_to_name for display
+                $task->assigned_to_name = $task->assignedTo ? $task->assignedTo->name : 'N/A';
+                
+                // Add type for frontend identification
+                $task->type = 'panel_reassignment';
+                
+                return $task;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedTasks->values()->toArray(),
+                'pagination' => [
+                    'current_page' => $page,
+                    'last_page' => $lastPage,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'has_more_pages' => $page < $lastPage
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error loading shifted tasks: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load shifted tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get shifted pending tasks for contractors
      */
     public function getShiftedPendingTasks(Request $request)

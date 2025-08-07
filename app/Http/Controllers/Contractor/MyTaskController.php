@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Contractor;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
+use App\Models\PanelReassignmentHistory;
 use Carbon\Carbon;
 
 class MyTaskController extends Controller
@@ -17,7 +18,12 @@ class MyTaskController extends Controller
     public function getMyTasksData(Request $request)
     {
         try {
-            $type = $request->get('type', 'my-tasks'); // 'my-tasks' or 'all-tasks'
+            $type = $request->get('type', 'my-tasks'); // 'my-tasks', 'all-tasks', or 'shifted-tasks'
+            
+            // Handle shifted tasks separately
+            if ($type === 'shifted-tasks') {
+                return $this->getShiftedTasksData($request);
+            }
             
             $query = DomainRemovalTask::with(['user', 'order.reorderInfo', 'order.orderPanels.orderPanelSplits', 'assignedTo']);
             $query->whereDate('started_queue_date', '<=', now());
@@ -122,6 +128,30 @@ class MyTaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching tasks data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shifted tasks data for contractors
+     */
+    private function getShiftedTasksData(Request $request)
+    {
+        try {
+            // Get shifted tasks data from TaskQueue controller
+            $taskQueueController = new \App\Http\Controllers\Contractor\TaskQueueController();
+            $shiftedTasksResponse = $taskQueueController->getShiftedTasks($request);
+            
+            // Decode the JSON response
+            $responseData = json_decode($shiftedTasksResponse->getContent(), true);
+            
+            return response()->json($responseData);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error fetching shifted tasks data: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shifted tasks data: ' . $e->getMessage()
             ], 500);
         }
     }
