@@ -220,13 +220,6 @@ class TaskQueueController extends Controller
     public function getShiftedPendingTasks(Request $request)
     {
         try {
-            // $query = PanelReassignmentHistory::with([
-            //     'order.user',
-            //     'fromPanel',
-            //     'toPanel',
-            //     'reassignedBy',
-            //     'assignedTo'
-            // ])->where('status', 'pending');
             $query = PanelReassignmentHistory::with([
                 'order.user',
                 'orderPanel.orderPanelSplits',
@@ -234,7 +227,7 @@ class TaskQueueController extends Controller
                 'toPanel',
                 'reassignedBy',
                 'assignedTo'
-            ])->pending(); // Only pending tasks
+            ])->where('status', 'pending'); // Only pending tasks
 
             // Apply filters if provided
             if ($request->filled('user_id')) {
@@ -251,32 +244,62 @@ class TaskQueueController extends Controller
                 $query->whereDate('reassignment_date', '<=', $request->date_to);
             }
 
+            // Get all tasks first, then group and filter
+            $allTasks = $query->orderBy('reassignment_date', 'desc')->get();
+
+            // Group tasks by unique combination of order_id, order_panel_id, from_panel_id, to_panel_id
+            $groupedTasks = $allTasks->groupBy(function ($task) {
+                return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
+            });
+
+            // For each group, prioritize 'removed' action over 'added'
+            $filteredTasks = $groupedTasks->map(function ($group) {
+                // If group has both 'removed' and 'added', return only 'removed'
+                $removedTask = $group->where('action_type', 'removed')->first();
+                if ($removedTask) {
+                    return $removedTask;
+                }
+                
+                // Otherwise return the first task (should be 'added')
+                return $group->first();
+            })->values(); // Reset array keys
+
+            // Apply pagination manually
             $perPage = $request->get('per_page', 12);
-            $shiftedTasks = $query->orderBy('reassignment_date', 'desc')->paginate($perPage);
+            $page = $request->get('page', 1);
+            $offset = ($page - 1) * $perPage;
+            
+            $paginatedTasks = $filteredTasks->slice($offset, $perPage);
+            $total = $filteredTasks->count();
+            $lastPage = ceil($total / $perPage);
 
             // Transform the data to include customer information
-            $shiftedTasks->getCollection()->transform(function ($task) {
+            $transformedTasks = $paginatedTasks->map(function ($task) {
                 $order = $task->order;
                 $task->customer_name = $order && $order->user ? $order->user->name : 'N/A';
                 $task->customer_image = $order && $order->user && $order->user->profile_image 
                     ? asset('storage/profile_images/' . $order->user->profile_image) 
                     : null;
+                
+                // Add task_id for consistency with frontend
+                $task->task_id = $task->id;
+                
                 return $task;
             });
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'data' => $shiftedTasks->items(),
-                    'current_page' => $shiftedTasks->currentPage(),
-                    'last_page' => $shiftedTasks->lastPage(),
-                    'per_page' => $shiftedTasks->perPage(),
-                    'total' => $shiftedTasks->total(),
-                    'has_more_pages' => $shiftedTasks->hasMorePages()
+                    'data' => $transformedTasks->values()->toArray(),
+                    'current_page' => $page,
+                    'last_page' => $lastPage,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'has_more_pages' => $page < $lastPage
                 ]);
             }
 
-            return view('contractor.taskInQueue.shifted-pending', compact('shiftedTasks'));
+            return view('contractor.taskInQueue.shifted-pending', ['shiftedTasks' => $transformedTasks]);
         } catch (\Exception $e) {
             \Log::error("Error loading shifted pending tasks: " . $e->getMessage());
             
