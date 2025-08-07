@@ -477,6 +477,11 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('taskInQueue/data', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
     Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
     Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+    
+    // Shifted Pending Tasks Routes  
+    Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
+    Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
+    Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
 use App\Models\Order;
+use App\Models\PanelReassignmentHistory;
+use App\Services\PanelReassignmentService;
 use Carbon\Carbon;
 
 class TaskQueueController extends Controller
@@ -204,6 +206,172 @@ class TaskQueueController extends Controller
             
         } catch (\Exception $e) {
             \Log::error("Error updating task status {$taskId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update task status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shifted pending tasks for contractors
+     */
+    public function getShiftedPendingTasks(Request $request)
+    {
+        try {
+            // $query = PanelReassignmentHistory::with([
+            //     'order.user',
+            //     'fromPanel',
+            //     'toPanel',
+            //     'reassignedBy',
+            //     'assignedTo'
+            // ])->where('status', 'pending');
+            $query = PanelReassignmentHistory::with([
+                'order.user',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->pending(); // Only pending tasks
+
+            // Apply filters if provided
+            if ($request->filled('user_id')) {
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            $perPage = $request->get('per_page', 12);
+            $shiftedTasks = $query->orderBy('reassignment_date', 'desc')->paginate($perPage);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $shiftedTasks->items(),
+                    'current_page' => $shiftedTasks->currentPage(),
+                    'last_page' => $shiftedTasks->lastPage(),
+                    'per_page' => $shiftedTasks->perPage(),
+                    'total' => $shiftedTasks->total(),
+                    'has_more_pages' => $shiftedTasks->hasMorePages()
+                ]);
+            }
+
+            return view('contractor.taskInQueue.shifted-pending', compact('shiftedTasks'));
+        } catch (\Exception $e) {
+            \Log::error("Error loading shifted pending tasks: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load shifted pending tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign shifted task to contractor
+     */
+    public function assignShiftedTaskToMe(Request $request, $id)
+    {
+        try {
+            $task = PanelReassignmentHistory::find($id);
+            
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+            
+            if ($task->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task is not available for assignment'
+                ], 400);
+            }
+
+            // Start the task (both removal and addition records)
+            $startResult = app(PanelReassignmentService::class)->startPanelReassignmentTask($task, auth()->user()->id);
+            
+            if (!$startResult) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to assign task'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel reassignment task assigned successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error assigning shifted task: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign task: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update shifted task status
+     */
+    public function updateShiftedTaskStatus(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:completed,in-progress',
+                'completion_date' => 'nullable|date'
+            ]);
+
+            $task = PanelReassignmentHistory::find($id);
+            
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+            
+            // Check if contractor is assigned to this task
+            if ($task->assigned_to !== auth()->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only update tasks assigned to you.'
+                ], 403);
+            }
+
+            if ($request->status === 'completed') {
+                // Complete the task (both removal and addition records)
+                $completeResult = app(PanelReassignmentService::class)->completePanelReassignmentTask($task);
+                
+                if (!$completeResult) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to complete task'
+                    ], 500);
+                }
+            } else {
+                $task->status = $request->status;
+                $task->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task status updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error updating shifted task status: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,
