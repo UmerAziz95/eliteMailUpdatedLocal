@@ -439,7 +439,7 @@
                 <!-- Header -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <div class="text-white-50 small mb-1">#${task.task_id} <span class="badge bg-info">Panel Shift</span></div>
+                        <span class="text-white-50 small mb-1">#${task.task_id}</span>
                         <span class="badge px-2 py-1 rounded ${statusClass}">
                             ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
                         </span>
@@ -464,19 +464,17 @@
                     <div class="glass-box mb-2">
                         <div class="d-flex justify-content-between">
                             <span class="small text-white-50">Action Type</span>
-                            <span class="fw-bold text-white">${task.action_type.charAt(0).toUpperCase() + task.action_type.slice(1)}</span>
+                            <span class="fw-bold text-white">
+                                ${task.action_type === 'removed' ? '<i class="fas fa-minus-circle text-danger me-1"></i>Removal' : 
+                                  task.action_type === 'added' ? '<i class="fas fa-plus-circle text-success me-1"></i>Assignment' : 
+                                  task.action_type.charAt(0).toUpperCase() + task.action_type.slice(1)}
+                            </span>
                         </div>
                     </div>
                     <div class="glass-box mb-2">
                         <div class="d-flex justify-content-between">
-                            <span class="small text-white-50">Space Transferred</span>
+                            <span class="small text-white-50">${task.action_type === 'added' ? 'Space Transferred' : 'Space Deleted'}</span>
                             <span class="fw-bold text-white">${task.space_transferred || 0}</span>
-                        </div>
-                    </div>
-                    <div class="glass-box">
-                        <div class="d-flex justify-content-between">
-                            <span class="small text-white-50">Splits Count</span>
-                            <span class="fw-bold text-white">${task.splits_count || 0}</span>
                         </div>
                     </div>
                 </div>
