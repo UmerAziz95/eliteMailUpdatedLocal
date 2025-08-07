@@ -262,24 +262,17 @@ class TaskQueueController extends Controller
                 return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
             });
 
-            // For each group, prioritize based on completion status
+            // For each group, prioritize 'removed' action over 'added'
             $filteredTasks = $groupedTasks->map(function ($group) {
+                // If group has both 'removed' and 'added', return only 'removed'
                 $removedTask = $group->where('action_type', 'removed')->first();
-                $addedTask = $group->where('action_type', 'added')->first();
-                
-                // If there's a removed task
                 if ($removedTask) {
-                    // If removed task is completed, show the added task (if exists and pending)
-                    if ($removedTask->status === 'completed' && $addedTask && $addedTask->status === 'pending') {
-                        return $addedTask;
-                    }
-                    // If removed task is not completed, show the removed task
                     return $removedTask;
                 }
                 
-                // If no removed task, return the added task
-                return $addedTask;
-            })->filter()->values(); // Remove nulls and reset array keys
+                // Otherwise return the first task (should be 'added')
+                return $group->first();
+            })->values(); // Reset array keys
 
             // Apply pagination manually
             $perPage = $request->get('per_page', 12);
@@ -316,6 +309,13 @@ class TaskQueueController extends Controller
                     'space_transferred' => $task->space_transferred,
                     'splits_count' => $task->splits_count,
                     'reason' => $task->reason ?? 'Panel reassignment required',
+                    'status' => $task->status,
+                    'reassignment_date' => $task->reassignment_date,
+                    'created_at' => $task->created_at,
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : null,
+                    'reassigned_by_name' => $task->reassignedBy ? $task->reassignedBy->name : null,
+                    'notes' => $task->notes,
                 ];
             });
 
