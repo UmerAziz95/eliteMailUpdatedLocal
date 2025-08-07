@@ -256,22 +256,49 @@ class PanelReassignmentService
             'status' => 'pending' // Mark as pending
         ];
 
-        // Create removal record (from old panel)
+        // Handle removal record (from old panel)
         if (!empty($data['from_panel_id'])) {
-            PanelReassignmentHistory::create(array_merge($baseData, [
-                'from_panel_id' => $data['from_panel_id'],
-                'to_panel_id' => $data['to_panel_id'] ?? null,
-                'action_type' => 'removed'
-            ]));
+            $existingRemovalRecord = PanelReassignmentHistory::where('status', 'pending')
+                ->where('order_id', $data['order_id'])
+                ->where('order_panel_id', $data['order_panel_id'])
+                ->where('action_type', 'removed')
+                ->first();
+
+            if ($existingRemovalRecord) {
+                $existingRemovalRecord->update(array_merge($baseData, [
+                    'from_panel_id' => $data['from_panel_id'],
+                    'to_panel_id' => $data['to_panel_id'] ?? null
+                ]));
+            } else {
+                PanelReassignmentHistory::create(array_merge($baseData, [
+                    'from_panel_id' => $data['from_panel_id'],
+                    'to_panel_id' => $data['to_panel_id'] ?? null,
+                    'action_type' => 'removed'
+                ]));
+            }
         }
 
-        // Create addition record (to new panel)
+        // Handle addition record (to new panel)
         if (!empty($data['to_panel_id'])) {
-            PanelReassignmentHistory::create(array_merge($baseData, [
-                'from_panel_id' => $data['from_panel_id'] ?? null,
-                'to_panel_id' => $data['to_panel_id'],
-                'action_type' => 'added'
-            ]));
+            $existingAdditionRecord = PanelReassignmentHistory::where('status', 'pending')
+                ->where('order_id', $data['order_id'])
+                ->where('order_panel_id', $data['order_panel_id'])
+                ->where('action_type', 'added')
+                ->first();
+
+            if ($existingAdditionRecord) {
+                $existingAdditionRecord->update(array_merge($baseData, [
+                    'from_panel_id' => $data['from_panel_id'] ?? null,
+                    'to_panel_id' => $data['to_panel_id'],
+                    'action_type' => 'added'
+                ]));
+            } else {
+                PanelReassignmentHistory::create(array_merge($baseData, [
+                    'from_panel_id' => $data['from_panel_id'] ?? null,
+                    'to_panel_id' => $data['to_panel_id'],
+                    'action_type' => 'added'
+                ]));
+            }
         }
     }
 
