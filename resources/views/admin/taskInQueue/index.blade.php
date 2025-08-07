@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 @section('title', 'Task Queue')
 @push('styles')
-
     <style>
         .glass-box {
             background-color: rgba(255, 255, 255, 0.05);
