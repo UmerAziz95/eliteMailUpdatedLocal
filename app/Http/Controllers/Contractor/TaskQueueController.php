@@ -254,6 +254,16 @@ class TaskQueueController extends Controller
             $perPage = $request->get('per_page', 12);
             $shiftedTasks = $query->orderBy('reassignment_date', 'desc')->paginate($perPage);
 
+            // Transform the data to include customer information
+            $shiftedTasks->getCollection()->transform(function ($task) {
+                $order = $task->order;
+                $task->customer_name = $order && $order->user ? $order->user->name : 'N/A';
+                $task->customer_image = $order && $order->user && $order->user->profile_image 
+                    ? asset('storage/profile_images/' . $order->user->profile_image) 
+                    : null;
+                return $task;
+            });
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -283,6 +293,14 @@ class TaskQueueController extends Controller
     public function assignShiftedTaskToMe(Request $request, $id)
     {
         try {
+            // Check if user is authenticated
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
             $task = PanelReassignmentHistory::find($id);
             
             if (!$task) {
@@ -299,8 +317,11 @@ class TaskQueueController extends Controller
                 ], 400);
             }
 
+            // Get the service
+            $service = new \App\Services\PanelReassignmentService();
+            
             // Start the task (both removal and addition records)
-            $startResult = app(PanelReassignmentService::class)->startPanelReassignmentTask($task, auth()->user()->id);
+            $startResult = $service->startPanelReassignmentTask($task, auth()->user()->id);
             
             if (!$startResult) {
                 return response()->json([
@@ -314,7 +335,8 @@ class TaskQueueController extends Controller
                 'message' => 'Panel reassignment task assigned successfully'
             ]);
         } catch (\Exception $e) {
-            \Log::error("Error assigning shifted task: " . $e->getMessage());
+            \Log::error("Error assigning shifted task ID {$id}: " . $e->getMessage());
+            \Log::error("Stack trace: " . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,

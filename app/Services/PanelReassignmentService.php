@@ -435,7 +435,7 @@ class PanelReassignmentService
 
     /**
      * Check if a panel is reassignable
-     *
+     * 
      * @param OrderPanel $orderPanel
      * @return bool
      */
@@ -451,5 +451,128 @@ class PanelReassignmentService
         }
 
         return $orderPanel->orderPanelSplits->isNotEmpty();
+    }
+
+    /**
+     * Start a panel reassignment task by assigning it to a contractor
+     * 
+     * @param PanelReassignmentHistory $task
+     * @param int $contractorId
+     * @return bool
+     */
+    public function startPanelReassignmentTask($task, $contractorId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Update the task status and assign to contractor
+            $task->update([
+                'status' => 'in-progress',
+                'assigned_to' => $contractorId,
+                'updated_at' => now()
+            ]);
+
+            // If this is a dual record system, update the paired record as well
+            if ($task->action_type === 'removed') {
+                // Find the corresponding 'added' record
+                $pairedTask = PanelReassignmentHistory::where('order_id', $task->order_id)
+                    ->where('from_panel_id', $task->from_panel_id)
+                    ->where('to_panel_id', $task->to_panel_id)
+                    ->where('action_type', 'added')
+                    ->where('reassignment_date', $task->reassignment_date)
+                    ->first();
+
+                if ($pairedTask) {
+                    $pairedTask->update([
+                        'status' => 'in-progress',
+                        'assigned_to' => $contractorId,
+                        'updated_at' => now()
+                    ]);
+                }
+            } elseif ($task->action_type === 'added') {
+                // Find the corresponding 'removed' record
+                $pairedTask = PanelReassignmentHistory::where('order_id', $task->order_id)
+                    ->where('from_panel_id', $task->from_panel_id)
+                    ->where('to_panel_id', $task->to_panel_id)
+                    ->where('action_type', 'removed')
+                    ->where('reassignment_date', $task->reassignment_date)
+                    ->first();
+
+                if ($pairedTask) {
+                    $pairedTask->update([
+                        'status' => 'in-progress',
+                        'assigned_to' => $contractorId,
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return true;
+
+        } catch (Exception $e) {
+            DB::rollback();
+            Log::error("Error starting panel reassignment task: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update panel reassignment task status
+     * 
+     * @param PanelReassignmentHistory $task
+     * @param string $status
+     * @param array $additionalData
+     * @return bool
+     */
+    public function updatePanelReassignmentTaskStatus($task, $status, $additionalData = [])
+    {
+        try {
+            DB::beginTransaction();
+
+            $updateData = [
+                'status' => $status,
+                'updated_at' => now()
+            ];
+
+            // Add any additional data
+            $updateData = array_merge($updateData, $additionalData);
+
+            // Update the main task
+            $task->update($updateData);
+
+            // Update the paired record as well
+            if ($task->action_type === 'removed') {
+                $pairedTask = PanelReassignmentHistory::where('order_id', $task->order_id)
+                    ->where('from_panel_id', $task->from_panel_id)
+                    ->where('to_panel_id', $task->to_panel_id)
+                    ->where('action_type', 'added')
+                    ->where('reassignment_date', $task->reassignment_date)
+                    ->first();
+
+                if ($pairedTask) {
+                    $pairedTask->update($updateData);
+                }
+            } elseif ($task->action_type === 'added') {
+                $pairedTask = PanelReassignmentHistory::where('order_id', $task->order_id)
+                    ->where('from_panel_id', $task->from_panel_id)
+                    ->where('to_panel_id', $task->to_panel_id)
+                    ->where('action_type', 'removed')
+                    ->where('reassignment_date', $task->reassignment_date)
+                    ->first();
+
+                if ($pairedTask) {
+                    $pairedTask->update($updateData);
+                }
+            }
+
+            DB::commit();
+            return true;
+
+        } catch (Exception $e) {
+            DB::rollback();
+            Log::error("Error updating panel reassignment task status: " . $e->getMessage());
+            return false;
+        }
     }
 }
