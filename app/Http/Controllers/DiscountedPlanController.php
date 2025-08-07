@@ -7,6 +7,9 @@ use App\Models\Plan;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
 use App\Models\DiscordSettings;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+use App\Models\CustomCheckoutId;
 
 class DiscountedPlanController extends Controller
 {
@@ -20,7 +23,6 @@ class DiscountedPlanController extends Controller
             abort(404, 'Invalid or expired discount link.');
         }
     }
-
 
     session()->put('discounted_plan_id', $id);
     $getMostlyUsed = Plan::getMostlyUsed();
@@ -49,43 +51,48 @@ class DiscountedPlanController extends Controller
        
 
         try {
-           $plan = Plan::findOrFail($planId);
+        //    $plan = Plan::findOrFail($planId);
           
           
-            // get charge_customer_id from user
-            $charge_customer_id =null;
-            if ($charge_customer_id == null) {
-                // Create hosted page for subscription
-                $result = HostedPage::checkoutNewForItems([
-                    "subscription_items" => [
-                        [
-                            "item_price_id" => $plan->chargebee_plan_id,
-                            "quantity" => 1,
-                            "quantity_editable" => true,
-                        ]
-                    ],
-                    "customer" => [
-                        "email" => null,
-                        "first_name" => null,
-                        // "last_name" => "xcxc",
-                        "phone" => null,
-                    ],
-                    "billing_address" => [
-                        "first_name" => null,
+        //     // get charge_customer_id from user
+        //     $charge_customer_id =null;
+        //     if ($charge_customer_id == null) {
+        //         // Create hosted page for subscription
+        //         $result = HostedPage::checkoutNewForItems([
+        //             "subscription_items" => [
+        //                 [
+        //                     "item_price_id" => $plan->chargebee_plan_id,
+        //                     "quantity" => 1,
+        //                     "quantity_editable" => true,
+        //                 ]
+        //             ],
+        //             "customer" => [
+        //                 "email" => null,
+        //                 "first_name" => null,
+        //                 // "last_name" => "xcxc",
+        //                 "phone" => null,
+        //             ],
+        //             "billing_address" => [
+        //                 "first_name" => null,
                        
-                    ],
-                    "allow_plan_change" => true,
-                    "redirect_url" => route('customer.subscription.success'),
-                    "cancel_url" => route('customer.subscription.cancel')
-                ]);
-            } 
+        //             ],
+        //             "allow_plan_change" => true,
+        //             "redirect_url" => route('customer.subscription.success'),
+        //             "cancel_url" => route('customer.subscription.cancel')
+        //         ]);
+        //     } 
 
-            $hostedPage = $result->hostedPage();
+        //     $hostedPage = $result->hostedPage();
+        $uuid=Str::uuid()->toString();
+        $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
+        CustomCheckoutId::create([
+            'page_id'=>$uuid
+        ]);
            
 
             return response()->json([
                 'success' => true,
-                'hosted_page_url' => $hostedPage->url
+                'hosted_page_url' =>  $hostedPageUrl 
             ]);
         } catch (\Exception $e) {
             return response()->json([
