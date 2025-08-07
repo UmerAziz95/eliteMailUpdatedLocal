@@ -314,7 +314,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="fw-semibold">#${task.task_id} 
                     ${isShiftedTask ? 
-                        `<small class="badge bg-info text-dark ms-1">${task.action_type || 'reassignment'}</small>` : 
+                        `<small class="badge text-capitalize ${task.action_type === 'removed' ? 'bg-danger text-white' : 'bg-info text-dark'} ms-1">${task.action_type === 'removed' ? 'Removal' : 'Assignment'}</small>` : 
                         `<i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
                             style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;" 
                             onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
@@ -423,11 +423,6 @@
                             title="Mark as Completed">
                             <i class="fas fa-check text-white"></i>
                         </button>
-                    ` : ''}
-                    ${task.status === 'completed' ? `
-                        <span class="badge bg-success">
-                            <i class="fas fa-check me-1"></i>Completed
-                        </span>
                     ` : ''}
                 </div>
                 `}
@@ -1276,7 +1271,7 @@
                 html: `
                     <div class="text-start">
                         <p>Are you sure you want to mark this panel reassignment task as completed?</p>
-                        <div class="mb-3">
+                        <div class="mb-3" style="display:none;">
                             <label for="completion_notes" class="form-label">Completion Notes (Optional)</label>
                             <textarea id="completion_notes" class="form-control" rows="3" 
                                 placeholder="Add any completion notes or comments..."></textarea>

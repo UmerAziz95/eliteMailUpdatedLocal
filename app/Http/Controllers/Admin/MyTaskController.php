@@ -27,7 +27,8 @@ class MyTaskController extends Controller
                 'toPanel',
                 'reassignedBy',
                 'assignedTo'
-            ])->whereIn('status', ['in-progress', 'completed']); // Only in-progress and completed tasks
+            ])->whereIn('status', ['in-progress', 'completed']) // Only in-progress and completed tasks
+            ->where('assigned_to', auth()->id()); // Only tasks assigned to the current contractor
             
             // Apply additional filters if provided
             if ($request->filled('user_id')) {
@@ -44,37 +45,15 @@ class MyTaskController extends Controller
                 $query->whereDate('reassignment_date', '<=', $request->date_to);
             }
 
-            // Get all tasks first, then group and filter
-            $allTasks = $query->orderBy('reassignment_date', 'desc')->get();
-
-            // Group tasks by unique combination of order_id, order_panel_id, from_panel_id, to_panel_id
-            $groupedTasks = $allTasks->groupBy(function ($task) {
-                return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
-            });
-
-            // For each group, prioritize 'removed' action over 'added'
-            $filteredTasks = $groupedTasks->map(function ($group) {
-                // If group has both 'removed' and 'added', return only 'removed'
-                $removedTask = $group->where('action_type', 'removed')->first();
-                if ($removedTask) {
-                    return $removedTask;
-                }
-                
-                // Otherwise return the first task (should be 'added')
-                return $group->first();
-            })->values(); // Reset array keys
-
-            // Apply pagination manually
+            // Apply pagination parameters
             $perPage = $request->get('per_page', 12);
             $page = $request->get('page', 1);
-            $offset = ($page - 1) * $perPage;
             
-            $paginatedTasks = $filteredTasks->slice($offset, $perPage);
-            $total = $filteredTasks->count();
-            $lastPage = ceil($total / $perPage);
+            // Get paginated results
+            $paginatedTasks = $query->orderBy('reassignment_date', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
             // Format tasks data for the frontend
-            $tasksData = $paginatedTasks->map(function ($task) {
+            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
                 $order = $task->order;
                 
                 return [
@@ -111,18 +90,18 @@ class MyTaskController extends Controller
                     'notes' => $task->notes,
                 ];
             });
-            // dd($tasksData->values()->toArray());
+
             return response()->json([
                 'success' => true,
-                'data' => $tasksData->values()->toArray(),
+                'data' => $tasksData,
                 'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => $lastPage,
-                    'per_page' => $perPage,
-                    'total' => $total,
-                    'has_more_pages' => $page < $lastPage,
-                    'from' => $offset + 1,
-                    'to' => min($offset + $perPage, $total)
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem()
                 ]
             ]);
 

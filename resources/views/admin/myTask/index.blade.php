@@ -421,11 +421,6 @@
                             <i class="fas fa-check text-white"></i>
                         </button>
                     ` : ''}
-                    ${task.status === 'completed' ? `
-                        <span class="badge bg-success">
-                            <i class="fas fa-check me-1"></i>Completed
-                        </span>
-                    ` : ''}
                 </div>
                 `}
             </div>
@@ -1295,7 +1290,7 @@
                 html: `
                     <div class="text-start">
                         <p>Are you sure you want to mark this panel reassignment task as completed?</p>
-                        <div class="mb-3">
+                        <div class="mb-3" style="display:none;">
                             <label for="completion_notes" class="form-label">Completion Notes (Optional)</label>
                             <textarea id="completion_notes" class="form-control" rows="3" 
                                 placeholder="Add any completion notes or comments..."></textarea>

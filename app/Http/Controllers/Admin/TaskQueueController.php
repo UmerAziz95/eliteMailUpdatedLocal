@@ -226,6 +226,7 @@ class TaskQueueController extends Controller
     /**
      * Get shifted pending tasks from panel reassignment history
      */
+    
     public function getShiftedPendingTasks(Request $request)
     {
         try {
@@ -261,17 +262,24 @@ class TaskQueueController extends Controller
                 return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
             });
 
-            // For each group, prioritize 'removed' action over 'added'
+            // For each group, prioritize based on completion status
             $filteredTasks = $groupedTasks->map(function ($group) {
-                // If group has both 'removed' and 'added', return only 'removed'
                 $removedTask = $group->where('action_type', 'removed')->first();
+                $addedTask = $group->where('action_type', 'added')->first();
+                
+                // If there's a removed task
                 if ($removedTask) {
+                    // If removed task is completed, show the added task (if exists and pending)
+                    if ($removedTask->status === 'completed' && $addedTask && $addedTask->status === 'pending') {
+                        return $addedTask;
+                    }
+                    // If removed task is not completed, show the removed task
                     return $removedTask;
                 }
                 
-                // Otherwise return the first task (should be 'added')
-                return $group->first();
-            })->values(); // Reset array keys
+                // If no removed task, return the added task
+                return $addedTask;
+            })->filter()->values(); // Remove nulls and reset array keys
 
             // Apply pagination manually
             $perPage = $request->get('per_page', 12);
@@ -308,13 +316,6 @@ class TaskQueueController extends Controller
                     'space_transferred' => $task->space_transferred,
                     'splits_count' => $task->splits_count,
                     'reason' => $task->reason ?? 'Panel reassignment required',
-                    'status' => $task->status,
-                    'reassignment_date' => $task->reassignment_date,
-                    'created_at' => $task->created_at,
-                    'assigned_to' => $task->assigned_to,
-                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : null,
-                    'reassigned_by_name' => $task->reassignedBy ? $task->reassignedBy->name : null,
-                    'notes' => $task->notes,
                 ];
             });
 
@@ -354,7 +355,8 @@ class TaskQueueController extends Controller
                 'toPanel',
                 'reassignedBy',
                 'assignedTo'
-            ])->whereIn('status', ['in-progress', 'completed']); // Only in-progress and completed tasks
+            ])->whereIn('status', ['in-progress', 'completed']) // Only in-progress and completed tasks
+                ->where('assigned_to', auth()->id()); // Only tasks assigned to the current contractor
             
             // Apply additional filters if provided
             if ($request->filled('user_id')) {
@@ -371,37 +373,18 @@ class TaskQueueController extends Controller
                 $query->whereDate('reassignment_date', '<=', $request->date_to);
             }
 
-            // Get all tasks first, then group and filter
-            $allTasks = $query->orderBy('reassignment_date', 'desc')->get();
+            // Apply ordering and pagination
+            $query->orderBy('reassignment_date', 'desc');
 
-            // Group tasks by unique combination of order_id, order_panel_id, from_panel_id, to_panel_id
-            $groupedTasks = $allTasks->groupBy(function ($task) {
-                return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
-            });
-
-            // For each group, prioritize 'removed' action over 'added'
-            $filteredTasks = $groupedTasks->map(function ($group) {
-                // If group has both 'removed' and 'added', return only 'removed'
-                $removedTask = $group->where('action_type', 'removed')->first();
-                if ($removedTask) {
-                    return $removedTask;
-                }
-                
-                // Otherwise return the first task (should be 'added')
-                return $group->first();
-            })->values(); // Reset array keys
-
-            // Apply pagination manually
+            // Pagination parameters
             $perPage = $request->get('per_page', 12);
             $page = $request->get('page', 1);
-            $offset = ($page - 1) * $perPage;
             
-            $paginatedTasks = $filteredTasks->slice($offset, $perPage);
-            $total = $filteredTasks->count();
-            $lastPage = ceil($total / $perPage);
+            // Get paginated results
+            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
 
             // Format tasks data for the frontend
-            $tasksData = $paginatedTasks->map(function ($task) {
+            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
                 $order = $task->order;
                 
                 return [
@@ -441,15 +424,15 @@ class TaskQueueController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $tasksData->values()->toArray(),
+                'data' => $tasksData,
                 'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => $lastPage,
-                    'per_page' => $perPage,
-                    'total' => $total,
-                    'has_more_pages' => $page < $lastPage,
-                    'from' => $offset + 1,
-                    'to' => min($offset + $perPage, $total)
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem()
                 ]
             ]);
 
