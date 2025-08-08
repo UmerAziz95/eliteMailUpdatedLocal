@@ -218,7 +218,8 @@
                 <h1 class="text-center mb-3">Simple And Fexible Pricing</h1>
                 <p style="font-size: 18px" class="mb-0">Lightning-fast email setup. Unlimited Inboxes.</p>
                 <p style="font-size: 18px">Our email infrastructure is built for <strong>speed</strong> and
-                    <strong>reliability</strong>.</p>
+                    <strong>reliability</strong>.
+                </p>
             </header>
         </div>
 
@@ -350,7 +351,7 @@
                             }
                             if(errorCode==404){
                                 toastr.info("Invalid or expired discount link.")
-                               window.location.reload();    
+                                window.location.reload();    
                             }
                             toastr.info("Operation failed!")
                             // Restore button state

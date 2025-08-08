@@ -309,96 +309,107 @@
 
 <script src="https://js.chargebee.com/v2/chargebee.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-  // 1. Initialize and store Chargebee instance
-  const cbInstance = Chargebee.init({
-    site:'projectinbox-test',
-    publishableKey:'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk'
-  });
-
-  // 2. Load components module
-  cbInstance.load("components").then(() => {
-    // 3. Create the card component
-    const cardComponent = cbInstance.createComponent("card", {
-      placeholder: { number: "Number", expiry: "Expiry", cvv: "CVV" },
-      classes: { focus: "focus", invalid: "invalid", empty: "empty", complete: "complete" },
-style: {
-  base: {
-    backgroundColor: "#2c2f36 !important",        // Light inner panel contrast
-    border: "1px solid #555 !important",
-    borderRadius: "4px",
-    color: "#ffffff !important",                  // Input text color
-    fontFamily: "Lato, BlinkMacSystemFont, Segoe UI, sans-serif",
-    fontSize: "16px",
-    fontSmoothing: "antialiased",
-    "::placeholder": { color: "#bbbbbb" },       // Placeholder color
-    ":focus": { borderColor: "#888" },            // Focus border highlight
-    ":focus::placeholder": { color: "#dddddd" }
-  },
-  empty: {
-    "::placeholder": { color: "#888888" }         // Muted placeholder when empty
-  },
-  invalid: {
-    borderColor: "#e41029",
-    color: "#ff6b6b",                             // Input text for invalid state
-    "::placeholder": { color: "#ff9e9e" },
-    ":focus": { borderColor: "#ff4c4c" }
-  }
-},
-      fonts: ["https://fonts.googleapis.com/css?family=Lato:400,700"],
+    document.addEventListener('DOMContentLoaded', function () {
+    // 1. Initialize Chargebee instance
+    const cbInstance = Chargebee.init({
+        site: 'projectinbox-test',
+        publishableKey: 'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk'
     });
 
-    // Mount card UI
-    cardComponent.mount('#card-component');
-
-    // 4. Set up form submission handling
-    document.getElementById('payment-form').addEventListener('submit', function(event) {
-      event.preventDefault();
-      const submitButton = document.getElementById('pay-button');
-      submitButton.disabled = true;
-      submitButton.innerText = 'Processing...';
-
-      // Use cbInstance.tokenize() with the cardComponent
-      cbInstance.tokenize(cardComponent /*, optional extra data */)
-        .then(data => {
-          console.log("Tokenization successful:", data);
-          if (data.token) createSubscription(data.token);
-        })
-        .catch(error => {
-          console.error("Tokenization failed:", error);
-          submitButton.disabled = false;
-          submitButton.innerText = 'Pay Now';
-          alert("Payment failed: " + (error.message || "Unknown error"));
+    // 2. Load components module
+    cbInstance.load("components").then(() => {
+        // 3. Create the card component with correct gateway
+        const cardComponent = cbInstance.createComponent("card", {
+            gateway_account_id: "gw_Azqb55UtBKcr0Cks", // ✅ Ensure correct gateway here
+            placeholder: {
+                number: "Number",
+                expiry: "Expiry",
+                cvv: "CVV"
+            },
+            classes: {
+                focus: "focus",
+                invalid: "invalid",
+                empty: "empty",
+                complete: "complete"
+            },
+            style: {
+                base: {
+                    backgroundColor: "#2c2f36 !important",
+                    border: "1px solid #555 !important",
+                    borderRadius: "4px",
+                    color: "#ffffff !important",
+                    fontFamily: "Lato, BlinkMacSystemFont, Segoe UI, sans-serif",
+                    fontSize: "16px",
+                    fontSmoothing: "antialiased",
+                    "::placeholder": { color: "#bbbbbb" },
+                    ":focus": { borderColor: "#888" },
+                    ":focus::placeholder": { color: "#dddddd" }
+                },
+                empty: {
+                    "::placeholder": { color: "#888888" }
+                },
+                invalid: {
+                    borderColor: "#e41029",
+                    color: "#ff6b6b",
+                    "::placeholder": { color: "#ff9e9e" },
+                    ":focus": { borderColor: "#ff4c4c" }
+                }
+            },
+            fonts: ["https://fonts.googleapis.com/css?family=Lato:400,700"]
         });
+
+        // 4. Mount card UI
+        cardComponent.mount('#card-component');
+
+        // 5. Form submission handling
+        document.getElementById('payment-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const submitButton = document.getElementById('pay-button');
+            submitButton.disabled = true;
+            submitButton.innerText = 'Processing...';
+
+            // Tokenize payment details
+            cbInstance.tokenize(cardComponent)
+                .then(data => {
+                    console.log("Tokenization successful:", data);
+                    if (data.token) createSubscription(data.token,data.vaultToken);
+                })
+                .catch(error => {
+                    console.error("Tokenization failed:", error);
+                    submitButton.disabled = false;
+                    submitButton.innerText = 'Pay Now';
+                    alert("Payment failed: " + (error.message || "Unknown error"));
+                });
+        });
+
+        // 6. Function to call backend to create subscription
+        function createSubscription(cbtoken,vaultToke) {
+            fetch('/custom/checkout/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ cbtoken: cbtoken,vaultToke:vaultToke})
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('Subscription created:', data);
+                // window.location.href = '/thank-you';
+            })
+            .catch(error => {
+                console.error('Error creating subscription:', error);
+                const button = document.getElementById('pay-button');
+                button.disabled = false;
+                button.innerText = 'Pay Now';
+                alert('There was an error processing your payment. Please try again.');
+            });
+        }
     });
-
-    // Function to call your backend to create subscription
-   function createSubscription(cbtoken) {
-  fetch('/custom/checkout/subscribe', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-    },
-    body: JSON.stringify({ cbtoken: cbtoken })
-  })
-  .then(res => res.json())
-  .then(data => {
-    console.log('Subscription created:', data);
-    //window.location.href = '/thank-you';
-  })
-  .catch(error => {
-    console.error('Error creating subscription:', error);
-    const button = document.getElementById('pay-button');
-    button.disabled = false;
-    button.innerText = 'Pay Now';
-    alert('There was an error processing your payment. Please try again.');
-  });
-}
-
-  });
 });
 </script>
+
 
 
 

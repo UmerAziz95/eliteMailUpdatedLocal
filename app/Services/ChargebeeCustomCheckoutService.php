@@ -6,6 +6,8 @@ use ChargeBee\ChargeBee\Models\Customer;
 use ChargeBee\ChargeBee\Models\PaymentSource;
 use ChargeBee\ChargeBee\Models\Subscription;
 use ChargeBee\ChargeBee\ChargeBee;
+use App\Models\Plan;
+use Log;
 
 class ChargebeeCustomCheckoutService
 {
@@ -20,31 +22,44 @@ class ChargebeeCustomCheckoutService
         return $result->customer();
     }
 
-    public function attachPaymentSource($customerId, $token)
+    public function attachPaymentSource($customerId, $token, $vaultToke)
     {
         $result = PaymentSource::createUsingTempToken([
             'customer_id' => $customerId,
-            'tmp_token' => $token,
-            'type'=> 'card'
+            'tmp_token' => $vaultToke,
+            'type'=> 'card',
+            'gateway_account_id' => 'gw_Azqb55UtBKcr0Cks',
+            'gateway'=>'stripe'
         ]);
 
        
 
-        return $result->paymentSource;
+        return $result->paymentSource();
     }
 
-    public function createSubscription($planId, $customerId)
-    {
-        $result = Subscription::create([
-            'plan_id' => $planId,
-            'plan_quantity' =>10,
-            'customer' => ['id' => $customerId],
-            'billing_cycles' => 1, // optional
-        ]);
+public function createSubscription($itemPriceId, $customerId)
+{
+  $plan = Plan::first();
+       $result = Subscription::createWithItems($customerId, [
+                "subscription_items" => [
+                    [
+                        "item_price_id" =>$plan->chargebee_plan_id,
+                        "quantity" => 1
+                    ]
+                ]
+            ]);
 
-        return [
-            'subscription' => $result->subscription,
-            'invoice' => $result->invoice,
-        ];
-    }
+    return [
+        'subscription' => $result->subscription(),
+        'invoice' => $result->invoice(),
+    ];
 }
+
+
+
+
+}
+
+
+
+

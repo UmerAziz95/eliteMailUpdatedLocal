@@ -24,7 +24,7 @@ class DiscountedPlanController extends Controller
         }
     }
 
-    session()->put('discounted_plan_id', $id);
+    
     $getMostlyUsed = Plan::getMostlyUsed();
     $plans = Plan::with('features')
         ->where('is_active', true)
@@ -43,53 +43,22 @@ class DiscountedPlanController extends Controller
         if(!$planId ){
             abort(404);
         }
-        $encrypted=session()->get('discounted_plan_id');
-          $setting = DiscordSettings::where('url_string', $encrypted)->first();
-        if (!$setting) {
-            abort(404, 'Invalid or expired discount link.');
-        }
+          session()->put('discounted_plan_id', $planId);
+        //   $setting = DiscordSettings::where('url_string', $encrypted)->first();
+        // dd($encrypted);
+        // if (!$setting) {
+        //     abort(404, 'Invalid or expired discount link.');
+        // }
        
 
         try {
-        //    $plan = Plan::findOrFail($planId);
-          
-          
-        //     // get charge_customer_id from user
-        //     $charge_customer_id =null;
-        //     if ($charge_customer_id == null) {
-        //         // Create hosted page for subscription
-        //         $result = HostedPage::checkoutNewForItems([
-        //             "subscription_items" => [
-        //                 [
-        //                     "item_price_id" => $plan->chargebee_plan_id,
-        //                     "quantity" => 1,
-        //                     "quantity_editable" => true,
-        //                 ]
-        //             ],
-        //             "customer" => [
-        //                 "email" => null,
-        //                 "first_name" => null,
-        //                 // "last_name" => "xcxc",
-        //                 "phone" => null,
-        //             ],
-        //             "billing_address" => [
-        //                 "first_name" => null,
-                       
-        //             ],
-        //             "allow_plan_change" => true,
-        //             "redirect_url" => route('customer.subscription.success'),
-        //             "cancel_url" => route('customer.subscription.cancel')
-        //         ]);
-        //     } 
-
-        //     $hostedPage = $result->hostedPage();
+       
         $uuid=Str::uuid()->toString();
         $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
         CustomCheckoutId::create([
             'page_id'=>$uuid
         ]);
            
-
             return response()->json([
                 'success' => true,
                 'hosted_page_url' =>  $hostedPageUrl 

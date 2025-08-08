@@ -32,44 +32,44 @@ class ChargebeeCustomCheckoutController extends Controller
 
 
 
-public function subscribe(Request $request)
-{
-    $request->validate([
-        'cbtoken' => 'required|string',
-    ]);
+        public function subscribe(Request $request)
+        {
+            $request->validate([
+                'cbtoken' => 'required|string',
+            ]);
 
-    try {
-        // ✅ Static test values (you can replace with dynamic later)
-        $email = 'test@gmail.com';
-        $firstName = 'Test';
-        $lastName = 'User';
+            try {
+                $planId = session()->get('discounted_plan_id');
+                dd($planId); // Debugging line, remove in production
+                // ✅ Static test values (you can replace with dynamic later)
+                $email = 'test@gmail.com';
+                $firstName = 'Test';
+                $lastName = 'User';
 
-        // 1. Create the customer
-        $customer = $this->chargebee->createCustomer($email, $firstName, $lastName);
-        $customerId = $customer->id;
-    
-        // 2. Attach the payment source using cbtoken
-     
-      $attachedResult=  $this->chargebee->attachPaymentSource($customerId, $request->cbtoken);
-      dd($attachedResult);
+                // 1. Create the customer
+                $customer = $this->chargebee->createCustomer($email, $firstName, $lastName);
+                $customerId = $customer->id;
+            
+                // 2. Attach the payment source using cbtoken
+            
+               $attachedResult=  $this->chargebee->attachPaymentSource($customerId, $request->cbtoken,$request->vaultToke);
+               
+                $result = $this->chargebee->createSubscription($planId, $customerId);
+            //    $result= $this->chargebee->createSubscriptionWithPaymentToken($request->vaultToke);
+                dd($result); // Debugging line, remove in production
 
-        // 3. Create subscription
-        $planId = 'wew_wew_1752211310_68709f6ea1cc1'; // Replace with real plan
-        $result = $this->chargebee->createSubscription($planId, $customerId);
-        dd($result); // Debugging line, remove in production
-
-        // 4. Return success response
-        return response()->json([
-            'message' => 'Subscription successful',
-            'subscription' => $result->getValue()->subscription,
-            'invoice' => $result->getValue()->invoice
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
+                // 4. Return success response
+                return response()->json([
+                    'message' => 'Subscription successful',
+                    'subscription' => $result->getValue()->subscription,
+                    'invoice' => $result->getValue()->invoice
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        }
 
 
 
