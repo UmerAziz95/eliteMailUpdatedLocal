@@ -5,7 +5,9 @@ namespace App\Observers;
 use App\Models\SupportTicket;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\TicketCreatedMail;
 
 class SupportTicketObserver
@@ -77,6 +79,21 @@ class SupportTicketObserver
                     null
                 ));
         }
+
+        // Send Slack notification for new ticket
+        try {
+            SlackNotificationService::sendSupportTicketCreatedNotification($ticket);
+            Log::info('Slack notification sent for ticket created', [
+                'ticket_id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send Slack notification for ticket created: ' . $e->getMessage(), [
+                'ticket_id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+                'exception' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function updating(SupportTicket $ticket)
@@ -98,6 +115,47 @@ class SupportTicketObserver
                     'new_status' => $ticket->status
                 ]
             ]);
+        }
+
+        // Track changes for Slack notification
+        $changes = [];
+        $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
+        
+        foreach ($trackableFields as $field) {
+            if ($ticket->isDirty($field)) {
+                $oldValue = $ticket->getOriginal($field);
+                $newValue = $ticket->$field;
+                
+                // Format values for better display
+                if ($field === 'assigned_to') {
+                    $oldValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
+                    $newValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
+                }
+                
+                $changes[$field] = [
+                    'from' => ucfirst(str_replace('_', ' ', $oldValue ?? 'N/A')),
+                    'to' => ucfirst(str_replace('_', ' ', $newValue ?? 'N/A'))
+                ];
+            }
+        }
+
+        // Send Slack notification if there are changes
+        if (!empty($changes)) {
+            try {
+                SlackNotificationService::sendSupportTicketUpdatedNotification($ticket, $changes);
+                Log::info('Slack notification sent for ticket updated', [
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'changes' => $changes
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send Slack notification for ticket updated: ' . $e->getMessage(), [
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'changes' => $changes,
+                    'exception' => $e->getTraceAsString()
+                ]);
+            }
         }
     }
 

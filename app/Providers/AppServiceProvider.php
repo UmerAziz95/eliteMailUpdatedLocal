@@ -12,11 +12,15 @@ use App\Models\Panel;
 use App\Models\User;
 use App\Models\DomainRemovalTask;
 use App\Models\Invoice;
+use App\Models\SupportTicket;
+use App\Models\TicketReply;
 use App\Observers\OrderObserver;
 use App\Observers\PanelObserver;
 use App\Observers\UserObserver;
 use App\Observers\DomainRemovalTaskObserver;
 use App\Observers\InvoiceObserver;
+use App\Observers\SupportTicketObserver;
+use App\Observers\TicketReplyObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -39,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
         DomainRemovalTask::observe(DomainRemovalTaskObserver::class);
         Invoice::observe(InvoiceObserver::class);
+        SupportTicket::observe(SupportTicketObserver::class);
+        TicketReply::observe(TicketReplyObserver::class);
         
         // Configure Chargebee environment
         Environment::configure(

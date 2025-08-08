@@ -351,6 +351,95 @@ class SlackNotificationService
         $message = self::formatMessage($messageType, $data);
         return self::send('inbox-subscriptions', $message);
     }
+
+    /**
+     * Send support ticket created notification to Slack
+     *
+     * @param \App\Models\SupportTicket $ticket
+     * @return bool
+     */
+    public static function sendSupportTicketCreatedNotification($ticket)
+    {
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'description' => $ticket->description,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'assigned_to_name' => $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned',
+            'assigned_to_email' => $ticket->assignedTo ? $ticket->assignedTo->email : 'N/A',
+            'order_id' => $ticket->order_id,
+            'created_at' => $ticket->created_at ? $ticket->created_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        $message = self::formatMessage('support-ticket-created', $data);
+        return self::send('inbox-tickets', $message);
+    }
+
+    /**
+     * Send support ticket updated notification to Slack
+     *
+     * @param \App\Models\SupportTicket $ticket
+     * @param array $changes
+     * @return bool
+     */
+    public static function sendSupportTicketUpdatedNotification($ticket, $changes = [])
+    {
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'assigned_to_name' => $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned',
+            'assigned_to_email' => $ticket->assignedTo ? $ticket->assignedTo->email : 'N/A',
+            'order_id' => $ticket->order_id,
+            'changes' => $changes,
+            'updated_at' => $ticket->updated_at ? $ticket->updated_at->format('Y-m-d H:i:s T') : 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+
+        $message = self::formatMessage('support-ticket-updated', $data);
+        return self::send('inbox-tickets', $message);
+    }
+
+    /**
+     * Send support ticket reply notification to Slack
+     *
+     * @param \App\Models\TicketReply $reply
+     * @return bool
+     */
+    public static function sendSupportTicketReplyNotification($reply)
+    {
+        $ticket = $reply->ticket;
+        
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'reply_message' => $reply->message,
+            'is_internal' => $reply->is_internal,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'replied_by_name' => $reply->user ? $reply->user->name : 'Unknown',
+            'replied_by_email' => $reply->user ? $reply->user->email : 'Unknown',
+            'order_id' => $ticket->order_id,
+            'created_at' => $reply->created_at ? $reply->created_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        $message = self::formatMessage('support-ticket-reply', $data);
+        return self::send('inbox-tickets', $message);
+    }
     
     /**
      * Format message based on type and data
@@ -975,7 +1064,214 @@ class SlackNotificationService
                     ]
                 ];
                 
-            
+            case 'support-ticket-created':
+                return [
+                    'text' => "🎫 *New Support Ticket Created*",
+                    'attachments' => [
+                        [
+                            'color' => '#007bff',
+                            'fields' => [
+                                [
+                                    'title' => 'Ticket Number',
+                                    'value' => $data['ticket_number'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Priority',
+                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Category',
+                                    'value' => ucfirst($data['category'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned To',
+                                    'value' => $data['assigned_to_name'] ?? 'Unassigned',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ? '#' . $data['order_id'] : 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Subject',
+                                    'value' => $data['subject'] ?? 'N/A',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Description',
+                                    'value' => isset($data['description']) ? 
+                                        (strlen($data['description']) > 300 ? 
+                                            substr($data['description'], 0, 300) . '...' : 
+                                            $data['description']) : 'N/A',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Created At',
+                                    'value' => $data['created_at'] ?? 'N/A',
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => $appName . ' - Support Ticket System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'support-ticket-updated':
+                $changesText = '';
+                if (!empty($data['changes'])) {
+                    foreach ($data['changes'] as $field => $change) {
+                        $fieldName = ucwords(str_replace('_', ' ', $field));
+                        $changesText .= "• *{$fieldName}*: {$change['from']} → {$change['to']}\n";
+                    }
+                }
+                
+                return [
+                    'text' => "🔄 *Support Ticket Updated*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => [
+                                [
+                                    'title' => 'Ticket Number',
+                                    'value' => $data['ticket_number'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Priority',
+                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Category',
+                                    'value' => ucfirst($data['category'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned To',
+                                    'value' => $data['assigned_to_name'] ?? 'Unassigned',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Subject',
+                                    'value' => $data['subject'] ?? 'N/A',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Changes Made',
+                                    'value' => $changesText ?: 'No specific changes tracked',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Updated By',
+                                    'value' => $data['updated_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? 'N/A',
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' - Support Ticket System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'support-ticket-reply':
+                $replyType = ($data['is_internal'] ?? false) ? '🔒 Internal Note' : '💬 Customer Reply';
+                $color = ($data['is_internal'] ?? false) ? '#6f42c1' : '#28a745';
+                
+                return [
+                    'text' => "💬 *New Reply Added to Support Ticket*",
+                    'attachments' => [
+                        [
+                            'color' => $color,
+                            'fields' => [
+                                [
+                                    'title' => 'Ticket Number',
+                                    'value' => $data['ticket_number'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                // [
+                                //     'title' => 'Reply Type',
+                                //     'value' => $replyType,
+                                //     'short' => true
+                                // ],
+                                [
+                                    'title' => 'Priority',
+                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Replied By',
+                                    'value' => $data['replied_by_name'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Subject',
+                                    'value' => $data['subject'] ?? 'N/A',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Reply Message',
+                                    'value' => isset($data['reply_message']) ? 
+                                        (strlen(strip_tags($data['reply_message'])) > 500 ? 
+                                            substr(strip_tags($data['reply_message']), 0, 500) . '...' : 
+                                            strip_tags($data['reply_message'])) : 'N/A',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Replied At',
+                                    'value' => $data['created_at'] ?? 'N/A',
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => $appName . ' - Support Ticket System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
                 
             default:
                 return [
@@ -1024,6 +1320,10 @@ class SlackNotificationService
             'order-cancellation' => ':x:',
             'order-countdown' => ':alarm_clock:',
             'domain-removal-alerts' => ':warning:',
+            'inbox-tickets' => ':ticket:',
+            'support-ticket-created' => ':new:',
+            'support-ticket-updated' => ':arrows_counterclockwise:',
+            'support-ticket-reply' => ':speech_balloon:',
         ];
         
         return $emojis[$type] ?? ':bell:';
