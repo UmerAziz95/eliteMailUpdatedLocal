@@ -12,6 +12,8 @@ use App\Mail\TicketCreatedMail;
 
 class SupportTicketObserver
 {
+    // Store original values before update
+    private $originalValues = [];
     public function created(SupportTicket $ticket)
     {
         // Notify assigned contractor if one is assigned
@@ -98,20 +100,31 @@ class SupportTicketObserver
 
     public function updating(SupportTicket $ticket)
     {
-        // No need to set old_status here as it's now handled by the model
+        // Store current values before the update (these will become the "old" values)
+        $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
+        $this->originalValues[$ticket->id] = [];
+        
+        foreach ($trackableFields as $field) {
+            // Get the current value (before update), not the original value
+            $this->originalValues[$ticket->id][$field] = $ticket->$field;
+        }
     }
-
+    
     public function updated(SupportTicket $ticket)
     {
-        if ($ticket->isDirty('status') && $ticket->user) {
+        // Get the stored original values
+        $originalValues = $this->originalValues[$ticket->id] ?? [];
+        
+        // Only send status notification to user if status changed
+        if (isset($originalValues['status']) && $originalValues['status'] !== $ticket->status && $ticket->user) {
             $notification = (new Notification())->create([
                 'user_id' => $ticket->user->id,
                 'title' => 'Ticket Status Updated',
-                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$ticket->getOriginal('status')} to {$ticket->status}",
+                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$originalValues['status']} to {$ticket->status}",
                 'type' => 'ticket_status_updated',
                 'data' => [
                     'ticket_id' => $ticket->id,
-                    'old_status' => $ticket->getOriginal('status'),
+                    'old_status' => $originalValues['status'],
                     'new_status' => $ticket->status
                 ]
             ]);
@@ -122,24 +135,29 @@ class SupportTicketObserver
         $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
         
         foreach ($trackableFields as $field) {
-            if ($ticket->isDirty($field)) {
-                $oldValue = $ticket->getOriginal($field);
-                $newValue = $ticket->$field;
-                
+            $oldValue = $originalValues[$field] ?? null;
+            $newValue = $ticket->$field;
+            
+            // Only track if there's actually a change
+            if ($oldValue !== $newValue) {
                 // Format values for better display
                 if ($field === 'assigned_to') {
-                    $oldValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
-                    $newValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
+                    $oldDisplayValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
+                    $newDisplayValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
+                } else {
+                    // For other fields, handle null/empty values properly
+                    $oldDisplayValue = $oldValue ? ucfirst(str_replace('_', ' ', $oldValue)) : 'Not Set';
+                    $newDisplayValue = $newValue ? ucfirst(str_replace('_', ' ', $newValue)) : 'Not Set';
                 }
                 
                 $changes[$field] = [
-                    'from' => ucfirst(str_replace('_', ' ', $oldValue ?? 'N/A')),
-                    'to' => ucfirst(str_replace('_', ' ', $newValue ?? 'N/A'))
+                    'from' => $oldDisplayValue,
+                    'to' => $newDisplayValue
                 ];
             }
         }
 
-        // Send Slack notification if there are changes
+        // Send Slack notification only once if there are changes
         if (!empty($changes)) {
             try {
                 SlackNotificationService::sendSupportTicketUpdatedNotification($ticket, $changes);
@@ -157,6 +175,9 @@ class SupportTicketObserver
                 ]);
             }
         }
+
+        // Clean up stored values after processing
+        unset($this->originalValues[$ticket->id]);
     }
 
     public function deleted(SupportTicket $supportTicket): void

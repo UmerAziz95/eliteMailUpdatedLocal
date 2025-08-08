@@ -1163,7 +1163,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'value' => ucfirst(str_replace('_', ' ', $data['status'] ?? 'N/A')),
                                     'short' => true
                                 ],
                                 [
@@ -1186,11 +1186,11 @@ class SlackNotificationService
                                     'value' => $data['subject'] ?? 'N/A',
                                     'short' => false
                                 ],
-                                [
-                                    'title' => 'Changes Made',
-                                    'value' => $changesText ?: 'No specific changes tracked',
-                                    'short' => false
-                                ],
+                                // [
+                                //     'title' => 'Changes Made',
+                                //     'value' => $changesText ?: 'No specific changes tracked',
+                                //     'short' => false
+                                // ],
                                 [
                                     'title' => 'Updated By',
                                     'value' => $data['updated_by'] ?? 'System',
