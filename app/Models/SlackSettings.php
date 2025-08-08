@@ -25,6 +25,7 @@ class SlackSettings extends Model
         'inbox-cancellation'=> 'Inbox Cancellation',
         'inbox-admins' => 'Inbox Admins',
         'inbox-subscriptions' => 'Inbox Subscriptions',
+        'inbox-tickets' => 'Inbox Tickets',
     ];
     
     public static function getTypes()

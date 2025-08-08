@@ -226,6 +226,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
         Route::get('/panels/order-tracking', [AdminPanelController::class, 'getOrderTrackingData'])->name('panels.order-tracking');
         Route::get('/panels/capacity-alert', [AdminPanelController::class, 'getCapacityAlert'])->name('panels.capacity-alert');
+        Route::get('/panels/statistics', [AdminPanelController::class, 'getStatistics'])->name('panels.statistics');
         Route::get('/splits/{orderId}/orders', [AdminPanelController::class, 'getOrdersSplits'])->name('orders.splits');
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud

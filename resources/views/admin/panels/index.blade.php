@@ -688,7 +688,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Used Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="used_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -707,7 +707,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Closed Panels</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="closed_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -1065,6 +1065,97 @@
         }
     }
 
+    // Function to update panel counters with dynamic data
+    async function updatePanelCounters() {
+        try {
+            console.log('Fetching panel counters...');
+            
+            // Fetch comprehensive panel statistics from server
+            const response = await fetch('/admin/panels/statistics', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.statistics) {
+                    console.log('Panel statistics from server:', result.statistics);
+                    
+                    // Update the main panel counters
+                    $('#total_counter').text(result.statistics.total_panels || 0);
+                    $('#active_counter').text((result.statistics.available_capacity || 0).toLocaleString());
+                    $('#used_counter').text((result.statistics.used_capacity || 0).toLocaleString());
+                    $('#closed_counter').text(result.statistics.closed_panels || 0);
+                    
+                    return;
+                }
+            }
+            
+            // Fallback: calculate from currently loaded panels data
+            console.log('Server endpoint not available, calculating from loaded panels...');
+            
+            if (panels && panels.length > 0) {
+                // Note: This is only based on currently loaded/filtered panels
+                let totalVisible = panels.length;
+                let availableCapacity = 0;
+                let usedCapacity = 0;
+                let closedVisible = 0;
+                
+                panels.forEach(panel => {
+                    availableCapacity += panel.remaining_limit || 0;
+                    usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
+                    if (!panel.is_active) {
+                        closedVisible++;
+                    }
+                });
+                
+                console.log('Calculated from visible panels:', {
+                    totalVisible,
+                    availableCapacity, 
+                    usedCapacity,
+                    closedVisible
+                });
+                
+                // Update counters (note: these are based on filtered/paginated results)
+                $('#total_counter').text(totalVisible);
+                $('#active_counter').text(availableCapacity.toLocaleString());
+                $('#used_counter').text(usedCapacity.toLocaleString());
+                $('#closed_counter').text(closedVisible);
+            } else {
+                console.log('No panels data available for calculation');
+                // Keep existing values if no data available
+            }
+            
+        } catch (error) {
+            console.error('Error updating panel counters:', error);
+            
+            // Final fallback: try to calculate from any available panels data
+            if (panels && panels.length > 0) {
+                let availableCapacity = 0;
+                let usedCapacity = 0;
+                let closedVisible = 0;
+                
+                panels.forEach(panel => {
+                    availableCapacity += panel.remaining_limit || 0;
+                    usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
+                    if (!panel.is_active) {
+                        closedVisible++;
+                    }
+                });
+                
+                $('#total_counter').text(panels.length);
+                $('#active_counter').text(availableCapacity.toLocaleString());
+                $('#used_counter').text(usedCapacity.toLocaleString());
+                $('#closed_counter').text(closedVisible);
+            }
+        }
+    }
+
     let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
@@ -1135,6 +1226,11 @@
                 renderPanels(append);
                 updatePaginationInfo();
                 updateLoadMoreButton();
+                
+                // Update panel counters when panels are loaded (only for non-append requests)
+                if (!append) {
+                    updatePanelCounters();
+                }
                 
             } catch (error) {
                 console.error('Error loading panels:', error);
@@ -1346,7 +1442,7 @@
                 <div class="card p-3 d-flex flex-column gap-1">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                         <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
-                        <h6>Title</h6>
+                        <h6>Title: ${panel.title || 'N/A'}</h6>
                     </div>
 
                     <div class="d-flex gap-3 justify-content-between">
@@ -2926,6 +3022,10 @@ $('#submitPanelFormBtn').on('click', function(e) {
             loadPanels(currentFilters, 1, false);
             // initializeOrderTrackingTable
             initializeOrderTrackingTable();
+            
+            // Update panel counters after create/update
+            updatePanelCounters();
+            
             // Check if response has capacity data
             if (response && response.capacity_data) {
                 if (response.capacity_data.adjusted_panels_needed === 0) {
@@ -3199,6 +3299,10 @@ async function deletePanel(panelId) {
             
             // Reload panels to reflect changes
             loadPanels(currentFilters, 1, false);
+            
+            // Update panel counters after delete
+            updatePanelCounters();
+            
             refreshPanelCapacityAlert();
         } else {
             // Show error message
@@ -3273,6 +3377,9 @@ $(document).ready(function() {
     // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
         refreshPanelCapacityAlert();
+        
+        // Refresh panel counters
+        updatePanelCounters();
         
         // Also refresh counters if the order tracking table exists
         if (orderTrackingTable) {
