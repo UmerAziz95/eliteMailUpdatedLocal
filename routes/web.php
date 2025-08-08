@@ -73,6 +73,23 @@ Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
 Route::view('/plans', 'plans');
 
+// Storage file download route for Slack attachments
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404, 'File not found');
+    }
+    
+    // Check if download parameter is present
+    if (request()->has('download')) {
+        return response()->download($filePath);
+    }
+    
+    // Otherwise, serve the file normally
+    return response()->file($filePath);
+})->where('path', '.*')->name('storage.download');
+
 
 
 // Note: Authentication Routes

@@ -373,6 +373,7 @@ class SlackNotificationService
             'assigned_to_name' => $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned',
             'assigned_to_email' => $ticket->assignedTo ? $ticket->assignedTo->email : 'N/A',
             'order_id' => $ticket->order_id,
+            'attachments' => $ticket->attachments,
             'created_at' => $ticket->created_at ? $ticket->created_at->format('Y-m-d H:i:s T') : 'N/A'
         ];
 
@@ -434,6 +435,7 @@ class SlackNotificationService
             'replied_by_name' => $reply->user ? $reply->user->name : 'Unknown',
             'replied_by_email' => $reply->user ? $reply->user->email : 'Unknown',
             'order_id' => $ticket->order_id,
+            'reply_attachments' => $reply->attachments,
             'created_at' => $reply->created_at ? $reply->created_at->format('Y-m-d H:i:s T') : 'N/A'
         ];
 
@@ -1065,75 +1067,87 @@ class SlackNotificationService
                 ];
                 
             case 'support-ticket-created':
+                $fields = [
+                    [
+                        'title' => 'Ticket Number',
+                        'value' => $data['ticket_number'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Priority',
+                        'value' => ucfirst($data['priority'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Status',
+                        'value' => ucfirst($data['status'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Category',
+                        'value' => ucfirst($data['category'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Assigned To',
+                        'value' => $data['assigned_to_name'] ?? 'Unassigned',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ? '#' . $data['order_id'] : 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Subject',
+                        'value' => $data['subject'] ?? 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Description',
+                        'value' => isset($data['description']) ? 
+                            (strlen(strip_tags($data['description'])) > 300 ? 
+                                substr(strip_tags($data['description']), 0, 300) . '...' : 
+                                strip_tags($data['description'])) : 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Created At',
+                        'value' => $data['created_at'] ?? 'N/A',
+                        'short' => false
+                    ]
+                ];
+
+                $attachments = [
+                    [
+                        'color' => '#007bff',
+                        'fields' => $fields,
+                        'footer' => $appName . ' - Support Ticket System',
+                        'ts' => time()
+                    ]
+                ];
+
+                // Add file attachments if available
+                if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                    foreach ($data['attachments'] as $attachment) {
+                        $fileAttachment = self::buildSlackAttachment($attachment);
+                        $attachments[] = $fileAttachment;
+                    }
+                }
+
                 return [
                     'text' => "🎫 *New Support Ticket Created*",
-                    'attachments' => [
-                        [
-                            'color' => '#007bff',
-                            'fields' => [
-                                [
-                                    'title' => 'Ticket Number',
-                                    'value' => $data['ticket_number'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Priority',
-                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Category',
-                                    'value' => ucfirst($data['category'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'Unknown',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'Unknown',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Assigned To',
-                                    'value' => $data['assigned_to_name'] ?? 'Unassigned',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ? '#' . $data['order_id'] : 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Subject',
-                                    'value' => $data['subject'] ?? 'N/A',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Description',
-                                    'value' => isset($data['description']) ? 
-                                        (strlen($data['description']) > 300 ? 
-                                            substr($data['description'], 0, 300) . '...' : 
-                                            $data['description']) : 'N/A',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Created At',
-                                    'value' => $data['created_at'] ?? 'N/A',
-                                    'short' => false
-                                ]
-                            ],
-                            'footer' => $appName . ' - Support Ticket System',
-                            'ts' => time()
-                        ]
-                    ]
+                    'attachments' => $attachments
                 ];
 
             case 'support-ticket-updated':
@@ -1204,6 +1218,15 @@ class SlackNotificationService
                             ],
                             'footer' => $appName . ' - Support Ticket System',
                             'ts' => time()
+                        ],
+                        [
+                            'color' => '#36a64f',
+                            'title' => 'Need Help?',
+                            'title_link' => 'https://example.com/support',
+                            'text' => "Visit our support page for FAQs and troubleshooting guides.",
+                            'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png',
+                            'footer' => 'Support Team',
+                            'ts' => time()
                         ]
                     ]
                 ];
@@ -1212,65 +1235,76 @@ class SlackNotificationService
                 $replyType = ($data['is_internal'] ?? false) ? '🔒 Internal Note' : '💬 Customer Reply';
                 $color = ($data['is_internal'] ?? false) ? '#6f42c1' : '#28a745';
                 
+                $fields = [
+                    [
+                        'title' => 'Ticket Number',
+                        'value' => $data['ticket_number'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    // [
+                    //     'title' => 'Reply Type',
+                    //     'value' => $replyType,
+                    //     'short' => true
+                    // ],
+                    [
+                        'title' => 'Priority',
+                        'value' => ucfirst($data['priority'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Status',
+                        'value' => ucfirst($data['status'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Replied By',
+                        'value' => $data['replied_by_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Subject',
+                        'value' => $data['subject'] ?? 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Reply Message',
+                        'value' => isset($data['reply_message']) ? 
+                            (strlen(strip_tags($data['reply_message'])) > 500 ? 
+                                substr(strip_tags($data['reply_message']), 0, 500) . '...' : 
+                                strip_tags($data['reply_message'])) : 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Replied At',
+                        'value' => $data['created_at'] ?? 'N/A',
+                        'short' => false
+                    ]
+                ];
+
+                $attachments = [
+                    [
+                        'color' => $color,
+                        'fields' => $fields,
+                        'footer' => $appName . ' - Support Ticket System',
+                        'ts' => time()
+                    ]
+                ];
+                // Add reply file attachments if available
+                if (!empty($data['reply_attachments']) && is_array($data['reply_attachments'])) {
+                    foreach ($data['reply_attachments'] as $attachment) {
+                        $fileAttachment = self::buildSlackAttachment($attachment);
+                        $attachments[] = $fileAttachment;
+                    }
+                }
+                
                 return [
                     'text' => "💬 *New Reply Added to Support Ticket*",
-                    'attachments' => [
-                        [
-                            'color' => $color,
-                            'fields' => [
-                                [
-                                    'title' => 'Ticket Number',
-                                    'value' => $data['ticket_number'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Reply Type',
-                                //     'value' => $replyType,
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Priority',
-                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'Unknown',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Replied By',
-                                    'value' => $data['replied_by_name'] ?? 'Unknown',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Subject',
-                                    'value' => $data['subject'] ?? 'N/A',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Reply Message',
-                                    'value' => isset($data['reply_message']) ? 
-                                        (strlen(strip_tags($data['reply_message'])) > 500 ? 
-                                            substr(strip_tags($data['reply_message']), 0, 500) . '...' : 
-                                            strip_tags($data['reply_message'])) : 'N/A',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Replied At',
-                                    'value' => $data['created_at'] ?? 'N/A',
-                                    'short' => false
-                                ]
-                            ],
-                            'footer' => $appName . ' - Support Ticket System',
-                            'ts' => time()
-                        ]
-                    ]
+                    'attachments' => $attachments
                 ];
                 
             default:
@@ -1327,6 +1361,137 @@ class SlackNotificationService
         ];
         
         return $emojis[$type] ?? ':bell:';
+    }
+
+    /**
+     * Build Slack attachment for file with proper media support
+     *
+     * @param string $filePath
+     * @param string|null $title
+     * @return array
+     */
+    private static function buildSlackAttachment($filePath, $title = null): array
+    {
+        // Check if file exists
+        $fullPath = storage_path('app/public/' . $filePath);
+        if (!file_exists($fullPath)) {
+            return [
+                'color' => '#dc3545',
+                'title' => $title ?? basename($filePath),
+                'text' => '❌ File not found',
+                'footer' => 'Support Team',
+                'ts' => time(),
+            ];
+        }
+
+        $mime = mime_content_type($fullPath);
+        $fileName = basename($filePath);
+        
+        // Ensure the URL is publicly accessible and uses HTTPS for Slack previews
+        $publicUrl = url('storage/' . $filePath);
+        
+        // Force HTTPS if not already (Slack requires HTTPS for image previews)
+        if (!str_starts_with($publicUrl, 'https://')) {
+            $publicUrl = str_replace('http://', 'http://', $publicUrl);
+        }
+
+        $attachment = [
+            'color' => '#36a64f',
+            'title' => $title ?? self::cleanAttachmentName($fileName),
+            'title_link' => $publicUrl,
+            'footer' => 'Support Team',
+            'ts' => time(),
+        ];
+
+        if (str_starts_with($mime, 'image/')) {
+            // For image preview to work in Slack:
+            // 1. URL must be publicly accessible
+            // 2. Must be HTTPS 
+            // 3. Must be direct image URL
+            $attachment['image_url'] = $publicUrl;
+            
+            // Make the title clickable for download
+            $attachment['title'] = "📥 " . self::cleanAttachmentName($fileName);
+            $attachment['title_link'] = $publicUrl . '?download=1';
+            
+            // Add fallback text for better accessibility
+            $attachment['fallback'] = "Image: " . self::cleanAttachmentName($fileName);
+            
+        } elseif ($mime === 'application/pdf') {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "📄 PDF Document: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "PDF: " . self::cleanAttachmentName($fileName);
+            
+        } elseif (str_starts_with($mime, 'audio/')) {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "🎵 Audio File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "Audio: " . self::cleanAttachmentName($fileName);
+            
+        } elseif (str_starts_with($mime, 'video/')) {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "🎥 Video File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "Video: " . self::cleanAttachmentName($fileName);
+            
+        } else {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "📎 File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "File: " . self::cleanAttachmentName($fileName);
+        }
+
+        return $attachment;
+    }
+
+    /**
+     * Clean attachment filename for display
+     *
+     * @param string $attachment
+     * @return string
+     */
+    private static function cleanAttachmentName($attachment): string
+    {
+        if (is_string($attachment)) {
+            // Extract filename from path
+            $filename = basename($attachment);
+            
+            // Remove Laravel's random hash prefixes if present
+            // Pattern 1: Hash with underscore separator (hash_originalname.ext)
+            $cleanName = preg_replace('/^[a-zA-Z0-9]{40,}_/', '', $filename);
+            
+            // Pattern 2: Hash with dot separator but preserve extension (hash.originalname.ext)
+            if ($cleanName === $filename) {
+                $cleanName = preg_replace('/^[a-zA-Z0-9]{40,}\.(?=.+\.)/', '', $filename);
+            }
+            
+            // Pattern 3: Just hash with extension (hash.ext) - make it more readable
+            if ($cleanName === $filename && preg_match('/^[a-zA-Z0-9]{40,}\.(png|jpg|jpeg|gif|pdf|doc|docx|txt|zip|mp4|mp3)$/i', $filename, $matches)) {
+                $extension = strtolower($matches[1]);
+                $fileTypes = [
+                    'png' => 'Image (PNG)',
+                    'jpg' => 'Image (JPG)', 
+                    'jpeg' => 'Image (JPEG)',
+                    'gif' => 'Image (GIF)',
+                    'pdf' => 'PDF Document',
+                    'doc' => 'Word Document',
+                    'docx' => 'Word Document',
+                    'txt' => 'Text File',
+                    'zip' => 'ZIP Archive',
+                    'mp4' => 'Video (MP4)',
+                    'mp3' => 'Audio (MP3)'
+                ];
+                return $fileTypes[$extension] ?? "File ($extension)";
+            }
+            
+            // If still no change or name became empty, use original basename
+            if ($cleanName === $filename || empty($cleanName)) {
+                return $filename;
+            }
+            
+            return $cleanName;
+        } elseif (isset($attachment['name'])) {
+            return $attachment['name'];
+        } else {
+            return 'Unknown file';
+        }
     }
     
     /**
