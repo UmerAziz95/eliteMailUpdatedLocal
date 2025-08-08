@@ -1218,15 +1218,6 @@ class SlackNotificationService
                             ],
                             'footer' => $appName . ' - Support Ticket System',
                             'ts' => time()
-                        ],
-                        [
-                            'color' => '#36a64f',
-                            'title' => 'Need Help?',
-                            'title_link' => 'https://example.com/support',
-                            'text' => "Visit our support page for FAQs and troubleshooting guides.",
-                            'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png',
-                            'footer' => 'Support Team',
-                            'ts' => time()
                         ]
                     ]
                 ];
@@ -1409,6 +1400,7 @@ class SlackNotificationService
             // 2. Must be HTTPS 
             // 3. Must be direct image URL
             $attachment['image_url'] = $publicUrl;
+            // $attachment['image_url'] = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png'; // Example image URL for testing
             
             // Make the title clickable for download
             $attachment['title'] = "📥 " . self::cleanAttachmentName($fileName);
