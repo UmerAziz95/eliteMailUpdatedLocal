@@ -310,9 +310,10 @@
                    
                     const $btn = $(this);
                     const planId = $btn.data('plan-id');
+                    const url_string = @json($url_string); // Use the passed URL string from the controller
                    
                     const token = $('meta[name="csrf-token"]').attr('content');
-                    const url = `/customer/discounted/plans/${planId}/subscribe`;
+                    const url = `/customer/discounted/plans/${planId}/subscribe/${url_string }`;
 
                     // Disable button and show spinner
                     $btn.prop('disabled', true);

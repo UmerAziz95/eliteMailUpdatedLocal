@@ -23,6 +23,9 @@ class DiscountedPlanController extends Controller
             abort(404, 'Invalid or expired discount link.');
         }
     }
+    if($id==null){
+         abort(404, 'Invalid or expired discount link.');
+    }
 
     
     $getMostlyUsed = Plan::getMostlyUsed();
@@ -31,28 +34,40 @@ class DiscountedPlanController extends Controller
         ->where('is_discounted', true)
         ->get();
 
-    $publicPage = true;
-
-    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','id'));
+    $publicPage = true; 
+    $url_string = $id; // Assuming $id is the encrypted string for the discount link
+    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','url_string', 'id'));
 }
 
 
-      public function initiateSubscription(Request $request, $planId,$encrypted=null)
+      public function initiateSubscription(Request $request, $planId, $encrypted=null)
     {
         
-        if(!$planId ){
-            abort(404);
+        if(!$planId){
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan does not found.'
+            ], 500);
         }
-          session()->put('discounted_plan_id', $planId);
-        //   $setting = DiscordSettings::where('url_string', $encrypted)->first();
-        // dd($encrypted);
-        // if (!$setting) {
-        //     abort(404, 'Invalid or expired discount link.');
-        // }
-       
+      
+        $setting = DiscordSettings::where('url_string', $encrypted)->first();
+        if (!$setting) {
+           return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired discount link.'
+            ], 500);
+        }
+        $plan = Plan::where('id', $planId)->where('is_discounted', true)->first();
+        if (!$plan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan not found or not discounted.'
+            ], 404);
+        }
 
-        try {
-       
+        session()->put('discounted_plan_id', $planId);
+        session()->put('discounted_master_plan_id', $plan->master_plan_id);
+    try { 
         $uuid=Str::uuid()->toString();
         $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
         CustomCheckoutId::create([
