@@ -495,7 +495,6 @@
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
-
         $(document).ready(function() {
             var table = $('#ticketsTable').DataTable({
                 responsive: {

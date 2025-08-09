@@ -400,7 +400,7 @@
         /* Hide timer for draft orders */
         .flip-timer[data-status="draft"],
         .timer-badge[data-status="draft"] {
-            display: none !important;
+            /* display: none !important; */
         }
 
 
@@ -1836,6 +1836,53 @@ pointer-events: none
                             render: function(data, type, row) {
                                 try {
                                     const timerData = JSON.parse(data);
+                                    console.log('Timer Data:', timerData.status);
+                                    if( timerData.status === 'draft') {
+                                        return `
+                                            <div class="flip-timer" >
+                                                <i class="fas fa-exclamation-triangle timer-icon" style="margin-right: 4px;"></i>
+                                                &nbsp;
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="timer-separator">:</span>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="timer-separator">:</span>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                    }
                                     return createTimerBadge(timerData);
                                 } catch (e) {
                                     return '<span class="timer-badge completed">N/A</span>';

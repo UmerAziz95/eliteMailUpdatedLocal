@@ -91,6 +91,9 @@ class PanelReleasedSpacedService
             // Update task status to completed
             $task->status = 'completed';
             $task->save();
+            // set order status to removed
+            $order->status_manage_by_admin = 'removed';
+            $order->save();
 
             // Log the completion
             Log::info("Task {$taskId} completed successfully. Released {$releasedSpaces} spaces from " . count(array_unique($processedPanels)) . " panels");

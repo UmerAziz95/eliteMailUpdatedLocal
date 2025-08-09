@@ -285,6 +285,16 @@
                         <p class="small">{{ ucfirst($ticket->category) }}</p>
                         @endif
                     </div>
+                    @if($ticket->category === 'order' && $ticket->order_id)
+                    <div class="mb-3">
+                        <small class="text-light">Order ID</small>
+                        <p>
+                            <span class="badge bg-primary">
+                                {{ $ticket->order_id }}
+                            </span>
+                        </p>
+                    </div>
+                    @endif
                     <div class="mb-3">
                         <small class="opacity-50">Priority</small>
                         <p>

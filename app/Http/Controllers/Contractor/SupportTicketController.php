@@ -283,6 +283,13 @@ class SupportTicketController extends Controller
             ->editColumn('created_at', function ($ticket) {
                 return $ticket->created_at->format('d M, Y');
             })
+            // category 
+            ->editColumn('category', function ($ticket) {
+                if ($ticket->category === 'order') {
+                    return '<span class="badge bg-primary">Order -' . $ticket->order_id . '</span>';
+                }
+                return $ticket->category ? ucfirst($ticket->category) : 'N/A';
+            })
             ->editColumn('status', function ($ticket) {
                 $statusClass = match($ticket->status) {
                     'open' => 'warning',
@@ -301,7 +308,7 @@ class SupportTicketController extends Controller
                 };
                 return '<span class="py-1 px-2 text-'.$priorityClass.' border border-'.$priorityClass.' rounded-2 bg-transparent">'.ucfirst($ticket->priority).'</span>';
             })
-            ->rawColumns(['action', 'status', 'priority'])
+            ->rawColumns(['action', 'status', 'priority', 'category'])
             ->make(true);
     }
 }
