@@ -1370,8 +1370,6 @@ class SlackNotificationService
                 'color' => '#dc3545',
                 'title' => $title ?? basename($filePath),
                 'text' => '❌ File not found',
-                'footer' => 'Support Team',
-                'ts' => time(),
             ];
         }
 
@@ -1389,9 +1387,7 @@ class SlackNotificationService
         $attachment = [
             'color' => '#36a64f',
             'title' => $title ?? self::cleanAttachmentName($fileName),
-            'title_link' => $publicUrl,
-            'footer' => 'Support Team',
-            'ts' => time(),
+            'title_link' => $publicUrl
         ];
 
         if (str_starts_with($mime, 'image/')) {
