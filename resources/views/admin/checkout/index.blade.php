@@ -143,6 +143,7 @@
            class="form-control" 
            id="billingState" 
            name="state" 
+           value=""
            placeholder="Enter State">
 </div>
 
@@ -152,7 +153,7 @@
            id="billingCountry" 
            name="country" 
            placeholder="Enter Country" 
-           value="United States">
+           value="">
 </div>
 
 
