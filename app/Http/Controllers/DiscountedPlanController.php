@@ -65,6 +65,7 @@ class DiscountedPlanController extends Controller
             ], 404);
         }
 
+      
         session()->put('discounted_plan_id', $planId);
         session()->put('discounted_master_plan_id', $plan->master_plan_id);
     try { 
