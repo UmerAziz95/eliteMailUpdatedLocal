@@ -894,6 +894,12 @@ class InternalOrderManagerController extends Controller
     public function assignToUser(Request $request)
     {
         try {
+            // Check if we're creating a new user
+            if ($request->has('create_new_user') && $request->create_new_user) {
+                return $this->createAndAssignUser($request);
+            }
+
+            // Existing user assignment logic
             $validated = $request->validate([
                 'order_id' => 'required|exists:internal_orders,id',
                 'user_id' => 'required|exists:users,id'
@@ -942,6 +948,75 @@ class InternalOrderManagerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to assign order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create new user and assign order to them
+     */
+    private function createAndAssignUser(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:internal_orders,id',
+                'new_user_name' => 'required|string|max:255',
+                'new_user_email' => 'required|email|unique:users,email',
+                'new_user_password' => 'required|string|min:6',
+                'new_user_internal' => 'boolean'
+            ]);
+
+            $order = InternalOrder::findOrFail($validated['order_id']);
+
+            // Create the new user
+            $user = User::create([
+                'name' => $validated['new_user_name'],
+                'email' => $validated['new_user_email'],
+                'password' => bcrypt($validated['new_user_password']),
+                'is_internal' => $request->has('new_user_internal') ? (bool)$validated['new_user_internal'] : true,
+                'email_verified_at' => now(), // Auto-verify internal users
+            ]);
+
+            // Assign the order to the new user
+            $oldAssignedTo = $order->assigned_to;
+            $order->assigned_to = $user->id;
+            $order->save();
+
+            // Log the user creation and assignment activity
+            ActivityLogService::log(
+                'internal-user-created-and-assigned',
+                'New internal user ' . $user->name . ' created and assigned to order #' . $order->id,
+                $order,
+                [
+                    'created_user_id' => $user->id,
+                    'created_user_email' => $user->email,
+                    'old_assigned_to' => $oldAssignedTo,
+                    'new_assigned_to' => $user->id,
+                    'assigned_by' => auth()->id()
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'New user ' . $user->name . ' created and order assigned successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Error creating and assigning user: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create user and assign order: ' . $e->getMessage()
             ], 500);
         }
     }

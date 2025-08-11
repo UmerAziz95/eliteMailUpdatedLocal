@@ -678,14 +678,55 @@
                 <div id="addNewUserSection" class="mb-3" style="display: none;">
                     <div class="alert alert-info">
                         <i class="fa-solid fa-info-circle"></i>
-                        No users found matching your search. 
-                        <a href="{{ route('admin.index') }}" target="_blank" class="alert-link">Click here to manage users</a>
+                        No users found matching your search.
+                        
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="addNewUserBtn">
+                            <i class="fa-solid fa-user-plus"></i> Add New User
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New User Creation Form -->
+                <div id="newUserFormSection" class="mb-3" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Create New Internal User</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="newUserName" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="newUserName" name="new_user_name" required>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label for="newUserEmail" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="newUserEmail" name="new_user_email" required>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label for="newUserPassword" class="form-label">Password *</label>
+                                    <input type="password" class="form-control" id="newUserPassword" name="new_user_password" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="newUserInternal" name="new_user_internal" checked>
+                                        <label class="form-check-label" for="newUserInternal">
+                                            Internal User
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-secondary btn-sm" id="cancelNewUserBtn">
+                                    <i class="fa-solid fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary" id="assignUserBtn">
-                        <i class="fa-solid fa-user-plus"></i> Assign User
+                        <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">Cancel</button>
                 </div>
@@ -1220,7 +1261,7 @@
                 console.error('Error in document ready:', error);
             }
         });
-
+        
         // Assign User Functionality
         $(document).ready(function() {
             // Initialize Select2 for user selection
@@ -1237,6 +1278,20 @@
                     },
                     processResults: function (data, params) {
                         params.page = params.page || 1;
+                        
+                        // Store the search term and results count for later use
+                        window.lastSearchTerm = params.term;
+                        window.lastResultsCount = data.results ? data.results.length : 0;
+                        
+                        // Show/hide Add New User section based on results
+                        if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
+                            setTimeout(() => {
+                                $('#addNewUserSection').show();
+                            }, 100);
+                        } else {
+                            $('#addNewUserSection').hide();
+                        }
+                        
                         return {
                             results: data.results,
                             pagination: {
@@ -1252,24 +1307,73 @@
                 dropdownParent: $('#assignUserOffcanvas')
             });
 
-            // Handle search to show "Add New User" button when no results
+            // Handle Select2 events
             $('#userSelect').on('select2:open', function() {
-                $('.select2-search__field').on('keyup', function() {
+                $('#addNewUserSection').hide(); // Hide by default when opening
+            });
+
+            $('#userSelect').on('select2:close', function() {
+                $('#addNewUserSection').hide(); // Hide when closing dropdown
+            });
+
+            // Additional handling for real-time search feedback
+            $('#userSelect').on('select2:open', function() {
+                // Monitor the search input
+                const $searchField = $('.select2-search__field');
+                
+                $searchField.off('input.addnewuser').on('input.addnewuser', function() {
                     const searchTerm = $(this).val();
+                    
                     if (searchTerm.length > 2) {
-                        // Check if there are results
+                        // Wait for AJAX to complete and check results
                         setTimeout(() => {
-                            const resultsCount = $('.select2-results__option').not('.select2-results__message').length;
-                            if (resultsCount === 0) {
+                            const $results = $('.select2-results__option').not('.select2-results__message');
+                            const hasResults = $results.length > 0;
+                            
+                            if (!hasResults) {
                                 $('#addNewUserSection').show();
                             } else {
                                 $('#addNewUserSection').hide();
                             }
-                        }, 300);
+                        }, 500); // Increased delay to ensure AJAX completes
                     } else {
                         $('#addNewUserSection').hide();
                     }
                 });
+            });
+
+            // Handle Add New User button click
+            $('#addNewUserBtn').on('click', function() {
+                console.log('Add New User button clicked');
+                $('#addNewUserSection').hide();
+                $('#newUserFormSection').show();
+                $('#userSelect').prop('disabled', true);
+                $('#assignBtnText').text('Create & Assign User');
+                
+                // Clear existing values and focus on name field
+                $('#newUserName').val('');
+                $('#newUserEmail').val('');
+                $('#newUserPassword').val('');
+                $('#newUserInternal').prop('checked', true);
+                
+                // Focus on the first field after a short delay
+                setTimeout(() => {
+                    $('#newUserName').focus();
+                }, 200);
+                
+                console.log('New user form section should now be visible');
+            });
+
+            // Handle Cancel New User button click
+            $('#cancelNewUserBtn').on('click', function() {
+                $('#newUserFormSection').hide();
+                $('#userSelect').prop('disabled', false);
+                $('#assignBtnText').text('Assign User');
+                
+                // Clear form fields
+                $('#newUserName').val('');
+                $('#newUserEmail').val('');
+                $('#newUserPassword').val('');
             });
 
             // Handle assign user button click
@@ -1279,20 +1383,66 @@
                 $('#assignOrderId').val(orderId);
                 $('#userSelect').val(null).trigger('change');
                 $('#addNewUserSection').hide();
+                $('#newUserFormSection').hide();
+                $('#userSelect').prop('disabled', false);
+                $('#assignBtnText').text('Assign User');
             });
 
             // Handle assign user form submission
             $('#assignUserForm').on('submit', function(e) {
                 e.preventDefault();
                 
-                const formData = {
-                    order_id: $('#assignOrderId').val(),
-                    user_id: $('#userSelect').val(),
-                    _token: '{{ csrf_token() }}'
-                };
-
-                // Disable submit button
-                $('#assignUserBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Assigning...');
+                const isCreatingNewUser = $('#newUserFormSection').is(':visible');
+                let formData;
+                
+                if (isCreatingNewUser) {
+                    // Validate new user fields
+                    const name = $('#newUserName').val().trim();
+                    const email = $('#newUserEmail').val().trim();
+                    const password = $('#newUserPassword').val();
+                    
+                    if (!name || !email || !password) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Please fill in all required fields',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
+                    // Create and assign new user
+                    formData = {
+                        order_id: $('#assignOrderId').val(),
+                        create_new_user: true,
+                        new_user_name: name,
+                        new_user_email: email,
+                        new_user_password: password,
+                        new_user_internal: $('#newUserInternal').is(':checked'),
+                        _token: '{{ csrf_token() }}'
+                    };
+                    
+                    $('#assignUserBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Creating User...');
+                } else {
+                    // Assign existing user
+                    if (!$('#userSelect').val()) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Please select a user to assign',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
+                    formData = {
+                        order_id: $('#assignOrderId').val(),
+                        user_id: $('#userSelect').val(),
+                        _token: '{{ csrf_token() }}'
+                    };
+                    
+                    $('#assignUserBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Assigning...');
+                }
 
                 $.ajax({
                     url: '{{ route('admin.internal_order_management.assign_user') }}',
@@ -1312,10 +1462,12 @@
                                 confirmButtonText: 'OK'
                             });
 
-                            // Refresh the DataTable
-                            if (window.ordersTable) {
-                                window.ordersTable.ajax.reload(null, false);
-                            }
+                            // Refresh all DataTables
+                            Object.values(window.orderTables).forEach(function(table) {
+                                if (table && typeof table.ajax.reload === 'function') {
+                                    table.ajax.reload(null, false);
+                                }
+                            });
                         }
                     },
                     error: function(xhr) {
@@ -1333,7 +1485,8 @@
                     },
                     complete: function() {
                         // Re-enable submit button
-                        $('#assignUserBtn').prop('disabled', false).html('<i class="fa-solid fa-user-plus"></i> Assign User');
+                        const btnText = $('#newUserFormSection').is(':visible') ? 'Create & Assign User' : 'Assign User';
+                        $('#assignUserBtn').prop('disabled', false).html('<i class="fa-solid fa-user-plus"></i> ' + btnText);
                     }
                 });
             });
@@ -1343,6 +1496,15 @@
                 $('#assignUserForm')[0].reset();
                 $('#userSelect').val(null).trigger('change');
                 $('#addNewUserSection').hide();
+                $('#newUserFormSection').hide();
+                $('#userSelect').prop('disabled', false);
+                $('#assignBtnText').text('Assign User');
+                
+                // Clear new user form fields
+                $('#newUserName').val('');
+                $('#newUserEmail').val('');
+                $('#newUserPassword').val('');
+                $('#newUserInternal').prop('checked', true);
             });
         });
     </script>
