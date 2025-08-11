@@ -423,7 +423,11 @@
         </div>
 
         <div class="card py-3 px-4">
-            {{-- <h2 class="mb-3">Orders</h2> --}}
+            <!-- {{-- <h2 class="mb-3">Orders</h2> --}} -->
+            <button class="btn btn-primary btn-sm float-start" style="width: fit-content" type="button" id="new-order-btn">
+                <a href="{{ url('/admin/internal-order-manager/order') }}">Add Order</a>
+
+            </button>
             <ul class="nav nav-tabs border-0 mb-3" id="myTab" role="tablist" style="display: none;">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-tab-pane"
@@ -439,16 +443,17 @@
                     </li>
                 @endforeach
             </ul>
-
+                                
             <div class="tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
                     tabindex="0">
+                    
                     @include('admin.internal_order_manager._orders_table')
                 </div>
                 @foreach ($plans as $plan)
                     <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
                         aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
-                        @include('admin.orders._orders_table', ['plan_id' => $plan->id])
+                        @include('admin.internal_order_manager._orders_table', ['plan_id' => $plan->id])
                     </div>
                 @endforeach
             </div>
