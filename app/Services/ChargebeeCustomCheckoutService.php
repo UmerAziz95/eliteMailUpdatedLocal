@@ -24,6 +24,20 @@ class ChargebeeCustomCheckoutService
             'email' => $email,
             'first_name' => $firstName,
             'last_name' => $lastName,
+            'billing_address' => [
+                'line1' => "test line1",
+                'city' => "test city",
+                'state' => "test state",
+                'zip' => "12345",
+                'country' => "US"
+            ],
+            'billing_address2' => [
+                 'line1' => "test line1",
+                'city' => "test city",
+                'state' => "test state",
+                'zip' => "12345",
+                'country' => "US"
+            ],
             'address' => [
                 'line1' => $addressLine1,
                 'city' => $city,

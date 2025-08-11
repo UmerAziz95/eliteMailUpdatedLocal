@@ -138,20 +138,24 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <select class="form-select" id="billingState" name="state">
-                            <option value="">Pick a State</option>
-                            <option value="California">California</option>
-                            <option value="Texas">Texas</option>
-                        </select>
-                    </div>
+                  <div class="mb-3">
+    <input type="text" 
+           class="form-control" 
+           id="billingState" 
+           name="state" 
+           value=""
+           placeholder="Enter State">
+</div>
 
-                    <div class="mb-3">
-                        <select class="form-select" id="billingCountry" name="country">
-                            <option value="United States" selected>United States</option>
-                            <option value="Canada">Canada</option>
-                        </select>
-                    </div>
+<div class="mb-3">
+    <input type="text" 
+           class="form-control" 
+           id="billingCountry" 
+           name="country" 
+           placeholder="Enter Country" 
+           value="">
+</div>
+
 
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="sameAddress" name="same_as_shipping">
@@ -497,55 +501,98 @@
         }
 
         // 9. Function to call backend to create subscription
-        function createSubscription(cbtoken, vaultToken) {
-            fetch('/custom/checkout/subscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                        body: JSON.stringify({
-                        cbtoken: cbtoken, 
-                        vaultToken: vaultToken,
-                        email:document.getElementById("billingEmail").value,
-                        first_name: document.getElementById("billingFirstName").value,
-                        last_name: document.getElementById("billingLastName").value,
-                        address_line1: document.getElementById("billingAddress1").value,
-                        city:document.getElementById("billingCity").value,
-                        zip:document.getElementById("billingZip").value,
-                        state: document.getElementById("billingState").value,
-                        country: document.getElementById("billingCountry").value,
-                        quantity:document.getElementById("qty").value
-                     })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log('Subscription created:', data);
-                clearErrors();
-                showSuccess("Subscription created successfully!");
-                submitButton.disabled = false;
-                submitButton.innerText = 'Pay Now';
-                document.getElementById("billingEmail").value=''
-                document.getElementById("billingFirstName").value=''
-                document.getElementById("billingLastName").value=''
-                document.getElementById("billingAddress1").value=''
-                document.getElementById("billingCity").value=''
-                document.getElementById("billingZip").value=''
-                document.getElementById("billingState").value=''
-                document.getElementById("billingCountry").value=''
-                document.getElementById("qty").value=1
-
-
-               
-                // window.location.href = '/thank-you';
-            })
-            .catch(error => {
-               console.log(error)
-                submitButton.disabled = false;
-                submitButton.innerText = 'Pay Now';
-                showErrors(['There was an error processing your payment. Please try again.']);
-            });
+function createSubscription(cbtoken, vaultToken) {
+    fetch('/custom/checkout/subscribe', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            cbtoken: cbtoken,
+            vaultToken: vaultToken,
+            email: document.getElementById("billingEmail").value,
+            first_name: document.getElementById("billingFirstName").value,
+            last_name: document.getElementById("billingLastName").value,
+            address_line1: document.getElementById("billingAddress1").value,
+            city: document.getElementById("billingCity").value,
+            zip: document.getElementById("billingZip").value,
+            state: document.getElementById("billingState").value,
+            country: document.getElementById("billingCountry").value,
+            quantity: document.getElementById("qty").value
+        })
+    })
+    .then(async res => {
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            data = {};
         }
+
+        if (!res.ok) {
+            throw { status: res.status, body: data };
+        }
+
+        return data;
+    })
+    .then(data => {
+        // ✅ Success flow
+        clearErrors();
+        submitButton.disabled = false;
+        submitButton.innerText = 'Pay Now';
+
+        console.log("✅ Subscription created:", data);
+
+        // Show success message from API response if available
+        if (data.message) {
+            showSuccess([data.message]);
+        } else {
+            showSuccess(["Payment successful! Thank you for your purchase."]);
+        }
+
+        // Optionally redirect if your API gives a URL
+        if (data.redirect_url) {
+            
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 3000);
+        }
+
+        // Reset form fields
+        document.getElementById("billingEmail").value = '';
+        document.getElementById("billingFirstName").value = '';
+        document.getElementById("billingLastName").value = '';
+        document.getElementById("billingAddress1").value = '';
+        document.getElementById("billingCity").value = '';
+        document.getElementById("billingZip").value = '';
+        document.getElementById("billingState").value = '';
+        document.getElementById("billingCountry").value = '';
+        document.getElementById("qty").value = 1;
+    })
+    .catch(error => {
+        console.log("❌ Error object:", error);
+
+        submitButton.disabled = false;
+        submitButton.innerText = 'Pay Now';
+
+        if (error.status === 419) {
+            showErrors(["Oops! Page has expired, please go to Discord to access the new discount link."]);
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        } else if (error.status === 422) {
+            if (error.body && error.body.errors) {
+                showErrors(Object.values(error.body.errors).flat());
+            } else {
+                showErrors(["Validation failed"]);
+            }
+        } else {
+            showErrors(["There was an error processing your payment. Please try again."]);
+        }
+    });
+}
+
 
     });
 });

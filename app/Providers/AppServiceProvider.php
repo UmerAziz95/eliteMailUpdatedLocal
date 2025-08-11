@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register model observers
+         View::share('publicPage', false);
         Order::observe(OrderObserver::class);
         Panel::observe(PanelObserver::class);
         User::observe(UserObserver::class);
