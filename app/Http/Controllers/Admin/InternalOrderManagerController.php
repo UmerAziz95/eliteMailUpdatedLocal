@@ -111,6 +111,8 @@ class InternalOrderManagerController extends Controller
         return view('admin.internal_order_manager.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'internalOrder'));
     }
     
+
+
     public function store(Request $request)
     {
        
@@ -217,21 +219,6 @@ class InternalOrderManagerController extends Controller
                             'errors' => ["prefix_variants_details.{$prefixKey}.last_name" => ['Last name is required for this prefix variant.']]
                         ], 422);
                     }
-                    
-                    // if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
-                    //     return response()->json([
-                    //         'success' => false,
-                    //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
-                    //     ], 422);
-                    // }
-                    
-                    // // Validate URL format for profile link
-                    // if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
-                    //     return response()->json([
-                    //         'success' => false,
-                    //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link must be a valid URL.']]
-                    //     ], 422);
-                    // }
                 }
             }
             $status = 'pending'; // Default status for new orders
@@ -242,13 +229,35 @@ class InternalOrderManagerController extends Controller
             $domainCount = count($domains);
             $calculatedTotalInboxes = $domainCount * $request->inboxes_per_domain;
 
+            // Determine plan based on total inboxes using dynamic plan lookup
+            try {
+                $determinedPlanId = $this->determinePlanByInboxes($calculatedTotalInboxes);
+            } catch (\Exception $e) {
+                Log::error('Failed to determine plan by inboxes: ' . $e->getMessage(), [
+                    'total_inboxes' => $calculatedTotalInboxes,
+                    'domain_count' => $domainCount,
+                    'inboxes_per_domain' => $request->inboxes_per_domain
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to determine appropriate plan: ' . $e->getMessage()
+                ], 422);
+            }
+            // dd($determinedPlanId);
+            // Override the plan_id from request with the determined plan
+            $request->merge(['plan_id' => $determinedPlanId]);
+
             // Get requested plan
-            $plan = Plan::findOrFail($request->plan_id);
+            $plan = Plan::findOrFail($determinedPlanId);
             
-            // Store session data if validation passes
-            // $request->session()->put('order_info', $request->all());
-            // set new plan_id on session order_info
-            // $request->session()->put('order_info.plan_id', $request->plan_id);
+            Log::info('Plan determined successfully', [
+                'total_inboxes' => $calculatedTotalInboxes,
+                'determined_plan_id' => $determinedPlanId,
+                'plan_name' => $plan->name,
+                'plan_range' => $plan->min_inbox . '-' . ($plan->max_inbox == 0 ? 'unlimited' : $plan->max_inbox)
+            ]);
+            
             $message = 'Order information saved successfully.';
             
             // for edit internal order
@@ -278,7 +287,7 @@ class InternalOrderManagerController extends Controller
 
                 // Update/Create InternalOrder record (this is now the primary data store)
                 $internalOrder = InternalOrder::updateOrCreate(
-                    ['user_id' => $request->user_id, 'plan_id' => $request->plan_id], // Match condition
+                    ['user_id' => $request->user_id, 'plan_id' => $determinedPlanId], // Match condition
                     [
                         'amount' => 0, // Will be calculated based on plan and inboxes
                         'status' => 'pending',
@@ -326,7 +335,7 @@ class InternalOrderManagerController extends Controller
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
-                        'plan_id' => $request->plan_id,
+                        'plan_id' => $determinedPlanId,
                         'forwarding_url' => $request->forwarding_url,
                         'hosting_platform' => $request->hosting_platform,
                         'other_platform' => $request->other_platform,
@@ -377,7 +386,7 @@ class InternalOrderManagerController extends Controller
                 // Create InternalOrder record directly (no Order or ReorderInfo needed)
                 $internalOrder = InternalOrder::create([
                     'user_id' => $request->user_id,
-                    'plan_id' => $request->plan_id,
+                    'plan_id' => $determinedPlanId,
                     'amount' => 0,
                     'status' => 'pending',
                     'status_manage_by_admin' => $status,
@@ -423,7 +432,7 @@ class InternalOrderManagerController extends Controller
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
-                        'plan_id' => $request->plan_id,
+                        'plan_id' => $determinedPlanId,
                         'total_inboxes' => $calculatedTotalInboxes,
                         'status' => $status
                     ]
@@ -434,7 +443,7 @@ class InternalOrderManagerController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'plan_id' => $request->plan_id,
+                'plan_id' => $determinedPlanId,
                 'user_id' => $request->user_id,
                 'internal_order_id' => $internalOrder->id,
                 'status' => $status
@@ -454,7 +463,58 @@ class InternalOrderManagerController extends Controller
                 'message' => 'Failed to create order: ' . $e->getMessage()
             ], 422);
         }
-    } 
+    }
+    /**
+     * Determine plan ID based on total inboxes using dynamic plan lookup
+     * 
+     * This method finds the appropriate plan based on the total number of inboxes
+     * by checking each plan's min_inbox and max_inbox range. Plans are ordered by
+     * min_inbox to check smaller ranges first.
+     * 
+     * Logic:
+     * - Get all active plans ordered by min_inbox (ascending)
+     * - Find first plan where totalInboxes >= min_inbox AND (max_inbox = 0 OR totalInboxes <= max_inbox)
+     * - max_inbox = 0 means unlimited inboxes
+     * - If no exact match, return the unlimited plan or highest range plan
+     * 
+     * @param int $totalInboxes Total number of inboxes to determine plan for
+     * @return int Plan ID
+     * @throws \Exception If no active plans found
+     */
+    private function determinePlanByInboxes($totalInboxes)
+    {
+        // Get all active plans ordered by min_inbox (ascending) to check smallest ranges first
+        $plans = Plan::where('is_active', true)
+            ->orderBy('min_inbox', 'asc')
+            ->get();
+
+        // If no plans found, throw an exception
+        if ($plans->isEmpty()) {
+            throw new \Exception('No active plans found in the system. Please create at least one active plan.');
+        }
+
+        // Find the appropriate plan based on inbox range
+        foreach ($plans as $plan) {
+            // Check if total inboxes falls within the plan's range
+            // max_inbox = 0 means unlimited
+            if ($totalInboxes >= $plan->min_inbox && 
+                ($plan->max_inbox == 0 || $totalInboxes <= $plan->max_inbox)) {
+                return $plan->id;
+            }
+        }
+
+        // If no plan matches, find the plan with the highest range
+        // This covers cases where totalInboxes exceeds all defined ranges
+        $highestPlan = $plans->where('max_inbox', 0)->first() ?? // Unlimited plan first
+                      $plans->sortByDesc('max_inbox')->first();   // Or highest max_inbox
+
+        if (!$highestPlan) {
+            // Fallback to the first available plan if no suitable plan found
+            $highestPlan = $plans->first();
+        }
+
+        return $highestPlan->id;
+    }
         /**
      * Get orders for import modal (DataTables format)
      */
