@@ -200,6 +200,31 @@
             right: 0.75rem;
         }
 
+        /* Add New User Section Styling */
+        #addNewUserSection {
+            position: relative;
+            z-index: 1;
+            margin-top: 0.5rem;
+        }
+
+        #addNewUserSection .alert {
+            margin-bottom: 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #b3d7ff;
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        #addNewUserBtn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        #addNewUserBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
         /* Dark mode compatibility if needed */
         @media (prefers-color-scheme: dark) {
             .select2-container--default .select2-selection--single,
@@ -674,7 +699,7 @@
                     </select>
                     <div class="form-text">Start typing to search for internal users</div>
                 </div>
-
+                
                 <div id="addNewUserSection" class="mb-3" style="display: none;">
                     <div class="alert alert-info">
                         <i class="fa-solid fa-info-circle"></i>
@@ -1280,17 +1305,20 @@
                         params.page = params.page || 1;
                         
                         // Store the search term and results count for later use
-                        window.lastSearchTerm = params.term;
+                        window.lastSearchTerm = params.term || '';
                         window.lastResultsCount = data.results ? data.results.length : 0;
                         
-                        // Show/hide Add New User section based on results
-                        if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
-                            setTimeout(() => {
+                        // Show/hide Add New User section based on results - but only after dropdown interaction
+                        setTimeout(() => {
+                            if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
                                 $('#addNewUserSection').show();
-                            }, 100);
-                        } else {
-                            $('#addNewUserSection').hide();
-                        }
+                                console.log('Showing Add New User section - no results found for:', params.term);
+                            } else if (!params.term || params.term.length <= 2) {
+                                $('#addNewUserSection').hide();
+                            } else if (window.lastResultsCount > 0) {
+                                $('#addNewUserSection').hide();
+                            }
+                        }, 300);
                         
                         return {
                             results: data.results,
@@ -1307,39 +1335,28 @@
                 dropdownParent: $('#assignUserOffcanvas')
             });
 
-            // Handle Select2 events
+            // Handle Select2 events for better UX
             $('#userSelect').on('select2:open', function() {
-                $('#addNewUserSection').hide(); // Hide by default when opening
+                // Don't hide the section when opening, let the user continue interaction
+                console.log('Select2 opened');
             });
 
             $('#userSelect').on('select2:close', function() {
-                $('#addNewUserSection').hide(); // Hide when closing dropdown
+                // Keep the Add New User section visible even after closing if no results were found
+                console.log('Select2 closed, last search term:', window.lastSearchTerm, 'results count:', window.lastResultsCount);
+                
+                // Only hide if we have results or no search was performed
+                if (!window.lastSearchTerm || window.lastSearchTerm.length <= 2 || window.lastResultsCount > 0) {
+                    $('#addNewUserSection').hide();
+                }
+                // If we searched for something and found no results, keep the "Add New User" section visible
             });
 
-            // Additional handling for real-time search feedback
-            $('#userSelect').on('select2:open', function() {
-                // Monitor the search input
-                const $searchField = $('.select2-search__field');
-                
-                $searchField.off('input.addnewuser').on('input.addnewuser', function() {
-                    const searchTerm = $(this).val();
-                    
-                    if (searchTerm.length > 2) {
-                        // Wait for AJAX to complete and check results
-                        setTimeout(() => {
-                            const $results = $('.select2-results__option').not('.select2-results__message');
-                            const hasResults = $results.length > 0;
-                            
-                            if (!hasResults) {
-                                $('#addNewUserSection').show();
-                            } else {
-                                $('#addNewUserSection').hide();
-                            }
-                        }, 500); // Increased delay to ensure AJAX completes
-                    } else {
-                        $('#addNewUserSection').hide();
-                    }
-                });
+            // Handle clearing of the select
+            $('#userSelect').on('select2:clear', function() {
+                $('#addNewUserSection').hide();
+                window.lastSearchTerm = '';
+                window.lastResultsCount = 0;
             });
 
             // Handle Add New User button click
