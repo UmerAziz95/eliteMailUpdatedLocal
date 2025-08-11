@@ -138,20 +138,23 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <select class="form-select" id="billingState" name="state">
-                            <option value="">Pick a State</option>
-                            <option value="California">California</option>
-                            <option value="Texas">Texas</option>
-                        </select>
-                    </div>
+                  <div class="mb-3">
+    <input type="text" 
+           class="form-control" 
+           id="billingState" 
+           name="state" 
+           placeholder="Enter State">
+</div>
 
-                    <div class="mb-3">
-                        <select class="form-select" id="billingCountry" name="country">
-                            <option value="United States" selected>United States</option>
-                            <option value="Canada">Canada</option>
-                        </select>
-                    </div>
+<div class="mb-3">
+    <input type="text" 
+           class="form-control" 
+           id="billingCountry" 
+           name="country" 
+           placeholder="Enter Country" 
+           value="United States">
+</div>
+
 
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="sameAddress" name="same_as_shipping">
