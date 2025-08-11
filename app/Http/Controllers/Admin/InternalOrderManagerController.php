@@ -57,7 +57,7 @@ class InternalOrderManagerController extends Controller
     {
         $plans = Plan::all();
         $userId = auth()->id();
-        $orders = Order::all();
+        $orders = InternalOrder::all(); // Changed from Order to InternalOrder
         $statuses = $this->statuses;
 
         $totalOrders = $orders->count();
@@ -639,6 +639,125 @@ class InternalOrderManagerController extends Controller
                 'success' => false,
                 'message' => 'Failed to import order data.'
             ]);
+        }
+    }
+
+    /**
+     * Get internal orders data for DataTables
+     */
+    public function getInternalOrders(Request $request)
+    {
+        try {
+            $query = InternalOrder::with(['user', 'plan'])
+                ->select('internal_orders.*');
+
+            return DataTables::of($query)
+                ->addColumn('user_name', function ($order) {
+                    return $order->user ? $order->user->first_name . ' ' . $order->user->last_name : 'N/A';
+                })
+                ->addColumn('user_email', function ($order) {
+                    return $order->user ? $order->user->email : 'N/A';
+                })
+                ->addColumn('plan_name', function ($order) {
+                    return $order->plan ? $order->plan->name : 'N/A';
+                })
+                ->addColumn('total_inboxes', function ($order) {
+                    return $order->total_inboxes ?? 0;
+                })
+                ->addColumn('status_badge', function ($order) {
+                    $status = strtolower($order->status_manage_by_admin ?? 'pending');
+                    $statusClass = $this->statuses[$status] ?? 'secondary';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($status) . '</span>';
+                })
+                ->addColumn('created_at_formatted', function ($order) {
+                    return $order->created_at ? $order->created_at->format('M d, Y H:i') : 'N/A';
+                })
+                ->addColumn('action', function ($order) {
+                    $actions = '<div class="dropdown">
+                                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="' . route('internal_order_management.new_order', $order->id) . '">
+                                            <i class="fa-solid fa-edit"></i> Edit</a></li>';
+                                            
+                    // Add status update options
+                    if ($order->status_manage_by_admin !== 'completed') {
+                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="completed">
+                                        <i class="fa-solid fa-check"></i> Mark Complete</a></li>';
+                    }
+                    
+                    if ($order->status_manage_by_admin !== 'in-progress') {
+                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="in-progress">
+                                        <i class="fa-solid fa-clock"></i> Mark In Progress</a></li>';
+                    }
+                    
+                    if ($order->status_manage_by_admin !== 'reject') {
+                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="reject">
+                                        <i class="fa-solid fa-times"></i> Reject</a></li>';
+                    }
+                    
+                    $actions .= '</ul></div>';
+                    
+                    return $actions;
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+
+        } catch (Exception $e) {
+            Log::error('Error getting internal orders data: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load orders'], 500);
+        }
+    }
+
+    /**
+     * Update internal order status
+     */
+    public function updateStatus(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:internal_orders,id',
+                'status' => 'required|string|in:pending,in-progress,completed,reject,cancelled,draft'
+            ]);
+
+            $internalOrder = InternalOrder::findOrFail($validated['order_id']);
+            $oldStatus = $internalOrder->status_manage_by_admin;
+            
+            $internalOrder->status_manage_by_admin = $validated['status'];
+            $internalOrder->save();
+
+            // Log the status change
+            ActivityLogService::log(
+                'internal-order-status-update',
+                "Internal order status changed from {$oldStatus} to {$validated['status']}",
+                $internalOrder, 
+                [
+                    'old_status' => $oldStatus,
+                    'new_status' => $validated['status'],
+                    'updated_by' => auth()->id()
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated successfully.',
+                'new_status' => $validated['status']
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Error updating internal order status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order status.'
+            ], 500);
         }
     }
 }

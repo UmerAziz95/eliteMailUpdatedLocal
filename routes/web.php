@@ -335,6 +335,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');   
         Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');   
         Route::post('/orders/reorder', [InternalOrderManagerController::class, 'store'])->name('orders.reorder.store');
+        Route::get('/internal-order-manager/data', [InternalOrderManagerController::class, 'getInternalOrders'])->name('internal_order_management.data');
+        Route::post('/internal-order-manager/update-status', [InternalOrderManagerController::class, 'updateStatus'])->name('internal_order_management.update_status');
 
 
 
