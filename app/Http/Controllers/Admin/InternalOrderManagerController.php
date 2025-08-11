@@ -447,5 +447,130 @@ class InternalOrderManagerController extends Controller
             ], 422);
         }
     } 
+        /**
+     * Get orders for import modal (DataTables format)
+     */
+    public function getOrdersForImport(Request $request)
+    {
+        try {
+            $query = Order::with(['plan', 'reorderInfo'])
+                ->where('user_id', auth()->id())
+                ->where('status_manage_by_admin', '!=', 'draft');
 
+            // Exclude current order if editing
+            if ($request->has('exclude_current') && $request->exclude_current) {
+                $query->where('id', '!=', $request->exclude_current);
+            }
+
+            return DataTables::of($query)
+                ->addColumn('domains_preview', function ($order) {
+                    if (!$order->reorderInfo || !$order->reorderInfo->first()) {
+                        return 'N/A';
+                    }
+                    
+                    $domains = $order->reorderInfo->first()->domains ?? '';
+                    return $domains;
+                })
+                ->addColumn('total_inboxes', function ($order) {
+                    if (!$order->reorderInfo || !$order->reorderInfo->first()) {
+                        return 0;
+                    }
+                    
+                    $reorderInfo = $order->reorderInfo->first();
+                    $domains = $reorderInfo->domains ?? '';
+                    $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
+                    
+                    // Parse domains and count them
+                    $domainsArray = [];
+                    $lines = preg_split('/\r\n|\r|\n/', $domains);
+                    foreach ($lines as $line) {
+                        if (trim($line)) {
+                            $lineItems = explode(',', $line);
+                            foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                    $domainsArray[] = trim($item);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalDomains = count($domainsArray);
+                    $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                    
+                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 0);
+                })
+                ->addColumn('status_badge', function ($order) {
+                    $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                    $statusClass = $this->statuses[$status] ?? 'secondary';
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        . ucfirst($status) . '</span>';
+                })
+                ->addColumn('created_at_formatted', function ($order) {
+                    return $order->created_at->format('M d, Y');
+                })
+                ->addColumn('action', function ($order) use ($request) {
+                    if ($request->has('for_import') && $request->for_import) {
+                        // Import action button
+                        return '<button class="btn btn-sm btn-primary import-order-btn" data-order-id="' . $order->id . '" title="Import this order data">
+                                    <i class="fa-solid fa-file-import"></i> Import
+                                </button>';
+                    } else {
+                        // Default action buttons
+                        return '<div class="dropdown">
+                                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
+                                            <i class="fa-solid fa-eye"></i> View</a></li>
+                                        <li><a class="dropdown-item" href="' . route('customer.orders.reorder', $order->id) . '">
+                                            <i class="fa-solid fa-repeat"></i> Reorder</a></li>
+                                    </ul>
+                                </div>';
+                    }
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+
+        } catch (Exception $e) {
+            Log::error('Error getting orders for import: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load orders'], 500);
+        }
+    }
+    /**
+     * Get specific order data for import
+     */
+    public function importOrderData($id)
+    {
+        try {
+            $order = Order::with(['plan', 'reorderInfo'])
+                ->where('id', $id)
+                ->where('user_id', auth()->id())
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found or access denied.'
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $order->id,
+                    'plan' => $order->plan,
+                    'reorder_info' => $order->reorderInfo->first()
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error importing order data: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to import order data.'
+            ]);
+        }
+    }
 }

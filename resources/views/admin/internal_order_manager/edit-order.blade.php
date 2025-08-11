@@ -1,4 +1,4 @@
-@extends('customer.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'New Order')
 
@@ -1269,7 +1269,6 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
     progressBar.css('width', Math.min(percentageUsed, 100) + '%');
     progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
     progressBar.attr('aria-valuemax', 100);
-    
     // Update text display
     if (orderInfo && orderInfo.total_inboxes !== undefined && orderInfo.total_inboxes > 0) {
         const rawTotalInboxes = orderInfo.total_inboxes;
@@ -1314,17 +1313,17 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
             }
         } else {
             // Order has 0 total_inboxes (unlimited)
-            progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
+            progressText.text(`${currentInboxes} inboxes used (Unlimited Inboxes)`);
             progressBar.css('width', '0%'); // Don't show progress for unlimited
             progressNote.html('(Unlimited usage)');
             progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
         }
     } else {
-        // No limit defined for current order - show current usage only
-        progressText.text(`${currentInboxes} inboxes used (No limit defined)`);
-        progressBar.css('width', '0%'); // Don't show progress bar
-        progressNote.html('(No limit set for this order)');
-        progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
+        // No limit defined for current order or total_inboxes is 0 - set unlimited inboxes
+        progressText.text(`${currentInboxes} inboxes used (Unlimited Inboxes)`);
+        progressBar.css('width', '0%'); // Don't show progress bar for unlimited
+        progressNote.html('(Unlimited usage)');
+        progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
     }
 }
 
@@ -1386,7 +1385,7 @@ $(document).ready(function() {
         
         // AJAX call to fetch orders data
         $.ajax({
-            url: "{{ route('customer.orders.import.data') }}",
+            url: "{{ route('admin.orders.import.data') }}",
             type: "GET",
             data: {
                 for_import: true,
@@ -1546,7 +1545,7 @@ $(document).ready(function() {
         });
         
         $.ajax({
-            url: "{{ route('customer.orders.import-data', ':id') }}".replace(':id', orderId),
+            url: "{{ route('admin.orders.import-data', ':id') }}".replace(':id', orderId),
             method: 'GET',
             success: function(response) {
                 if (response.success && response.data) {
@@ -2698,7 +2697,7 @@ $(document).ready(function() {
 
         // If validation passes, submit via AJAX
         $.ajax({
-            url: '{{ route("customer.orders.reorder.store") }}',
+            url: '{{ route("admin.orders.reorder.store") }}',
             method: 'POST',
             data: $('#editOrderForm').serialize(),
             success: function(response) {
@@ -2715,25 +2714,6 @@ $(document).ready(function() {
                         timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
-                        // Send a separate request to run panel capacity check
-                        $.ajax({
-                            url: '{{ route("customer.orders.run-panel-capacity-check") }}',
-                            method: 'POST',
-                            data: {
-                                order_id: response.order_id || '',
-                                user_id: response.user_id || '',
-                                _token: $('meta[name="csrf-token"]').attr('content')
-                            },
-                            success: function(capacityResponse) {
-                                console.log('Panel capacity check completed:', capacityResponse);
-                            },
-                            error: function(xhr) {
-                                console.log('Panel capacity check failed:', xhr.responseJSON);
-                                // Don't show error to user as it's a background process
-                            }
-                        });
-                        
-                        window.location.href = "{{ route('customer.orders') }}";
                     });
                 } else {
                     Swal.fire({
