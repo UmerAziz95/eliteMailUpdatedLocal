@@ -710,7 +710,10 @@ class InternalOrderManagerController extends Controller
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="' . route('admin.internal_order_management.new_order', $order->id) . '">
-                                            <i class="fa-solid fa-edit"></i> Edit</a></li>';
+                                            <i class="fa-solid fa-edit"></i> Edit</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger delete-order" href="#" data-order-id="' . $order->id . '" data-order-user="' . ($order->user ? $order->user->first_name . ' ' . $order->user->last_name : 'Unknown') . '">
+                                            <i class="fa-solid fa-trash"></i> Delete</a></li>';
                                             
                     // Add status update options
                     // if ($order->status_manage_by_admin !== 'completed') {
@@ -787,6 +790,59 @@ class InternalOrderManagerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update order status.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete internal order
+     */
+    public function delete(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:internal_orders,id'
+            ]);
+
+            $internalOrder = InternalOrder::findOrFail($validated['order_id']);
+            
+            // Store order info for logging before deletion
+            $orderInfo = [
+                'id' => $internalOrder->id,
+                'user_id' => $internalOrder->user_id,
+                'user_name' => $internalOrder->user ? $internalOrder->user->first_name . ' ' . $internalOrder->user->last_name : 'Unknown',
+                'user_email' => $internalOrder->user ? $internalOrder->user->email : 'Unknown',
+                'status' => $internalOrder->status_manage_by_admin,
+                'total_inboxes' => $internalOrder->total_inboxes,
+                'domains' => $internalOrder->domains,
+                'created_at' => $internalOrder->created_at
+            ];
+
+            // Delete the internal order
+            $internalOrder->delete();
+
+            Log::info('Internal order deleted successfully', [
+                'internal_order_id' => $orderInfo['id'],
+                'user_name' => $orderInfo['user_name'],
+                'deleted_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Internal order deleted successfully.'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Error deleting internal order: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete internal order: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -986,6 +986,107 @@
                     }
                 });
 
+                // Handle delete functionality for internal orders
+                $(document).on('click', '.delete-order', function(e) {
+                    e.preventDefault();
+                    
+                    const orderId = $(this).data('order-id');
+                    const orderUser = $(this).data('order-user');
+                    
+                    if (!orderId) {
+                        toastr.error('Invalid order data');
+                        return;
+                    }
+                    
+                    // Use SweetAlert2 for better confirmation dialog
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        html: `You are about to delete internal order <strong>#${orderId}</strong> for <strong>${orderUser}</strong>.<br><br>This action cannot be undone!`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel',
+                        focusCancel: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading
+                            Swal.fire({
+                                title: 'Deleting...',
+                                text: 'Please wait while we delete the internal order.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            $.ajax({
+                                url: "{{ route('admin.internal_order_management.delete') }}",
+                                type: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                                    'Accept': 'application/json'
+                                },
+                                data: {
+                                    order_id: orderId
+                                },
+                                success: function(response) {
+                                    Swal.close();
+                                    if (response.success) {
+                                        Swal.fire({
+                                            title: 'Deleted!',
+                                            text: response.message || 'Internal order has been deleted successfully.',
+                                            icon: 'success',
+                                            timer: 3000,
+                                            showConfirmButton: false
+                                        });
+                                        
+                                        // Refresh all active tables
+                                        Object.values(window.orderTables).forEach(function(table) {
+                                            if (table && $(table.table().node()).is(':visible')) {
+                                                table.draw();
+                                            }
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: response.message || 'Failed to delete internal order',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    Swal.close();
+                                    console.error('Delete error:', error);
+                                    let message = 'Failed to delete internal order';
+                                    
+                                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                                        message = xhr.responseJSON.message;
+                                    } else if (xhr.status === 422) {
+                                        message = 'Invalid data provided';
+                                    } else if (xhr.status === 403) {
+                                        message = 'You do not have permission to perform this action';
+                                    } else if (xhr.status === 404) {
+                                        message = 'Internal order not found';
+                                    }
+                                    
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: message,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
             } catch (error) {
                 console.error('Error in document ready:', error);
             }
