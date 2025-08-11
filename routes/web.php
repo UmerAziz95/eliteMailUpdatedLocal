@@ -46,7 +46,8 @@ use App\Http\Controllers\Admin\DomainHealthDashboardController;
 
 use App\Models\User;
 use App\Services\AccountCreationGHL;
-
+//custom checkout
+use App\Http\Controllers\ChargebeeCustomCheckoutController;
 //cron
 use App\Http\Controllers\CronController;
 use App\Http\Controllers\NotificationController;
@@ -407,8 +408,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/support/tickets/{id}', [App\Http\Controllers\Customer\SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::post('/update-address', [App\Http\Controllers\Customer\ProfileController::class, 'updateAddress'])->name('address.update');
+    //custom checkout 
     
-
 });
 
 // Info: Contractor Access
@@ -698,6 +699,7 @@ Route::get('/go/{slug}', function ($slug) {
     $originalUrl = Crypt::decryptString($record->encrypted_url);
     return redirect()->away($originalUrl);
 });
+
 // Manual trigger for domain removal task Slack alerts
 Route::get('/cron/run-domain-removal-slack-alerts', function () {
     try {
@@ -772,3 +774,8 @@ Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('logs.clear');
+
+Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
+Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
+Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.checkout.subscribe');
+Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );

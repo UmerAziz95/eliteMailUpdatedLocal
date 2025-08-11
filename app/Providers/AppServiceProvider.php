@@ -48,8 +48,11 @@ class AppServiceProvider extends ServiceProvider
         
         // Configure Chargebee environment
         Environment::configure(
+          
             config('services.chargebee.site'),
-            config('services.chargebee.api_key')
+            config('services.chargebee.api_key'),
+            
+            
         );
 
         // Share navigations globally

@@ -62,21 +62,21 @@
 
     <div class="d-flex w-100 h-100 ">
         @unless ($publicPage ?? false)
-            <div>
-                @include('customer.layouts.sidebar')
-            </div>
+        <div>
+            @include('customer.layouts.sidebar')
+        </div>
         @endunless
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
                 @unless ($publicPage ?? false)
-                    @include('customer.layouts.header')
+                @include('customer.layouts.header')
                 @endunless
                 <!-- Include Header -->
                 @yield('content')
                 <!-- Main Page Content -->
             </div>
             @unless ($publicPage ?? false)
-                @include('customer.layouts.footer')
+            @include('customer.layouts.footer')
             @endunless
             <!-- Include Footer (Optional) -->
         </div>
@@ -143,6 +143,10 @@
             $btn.prop('disabled', true);
         });
 
+        
+        const publicPage=@json($publicPage==true ? false:true);
+        // Update count every 10 seconds
+     if(publicPage){
         // Notification count update functionality
         function updateNotificationCount() {
             fetch('/notifications/unread-count')
@@ -193,11 +197,11 @@
             });
         });
 
-        // Update count every 10 seconds
         setInterval(updateNotificationCount, 10000);
-
+        
         // Initial update when page loads
         document.addEventListener('DOMContentLoaded', updateNotificationCount);
+    }
     </script>
 </body>
 
