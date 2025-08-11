@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Models\Subscription;
 use App\Models\ReorderInfo;
+use App\Models\InternalOrder;
 use App\Models\HostingPlatform;
 use DataTables;
 use Exception;
@@ -94,22 +95,22 @@ class InternalOrderManagerController extends Controller
 
 
     public function newOrder(Request $request){
-       
+        // Check if we're editing an existing internal order
+        $internalOrder = null;
+        if ($request->has('id') && $request->id) {
+            $internalOrder = InternalOrder::with(['user', 'plan'])->findOrFail($request->id);
+        }
 
-         $order =null;
-         $plan =\App\Models\Plan::first();
-        //  dd($plan);
-        // dd($order);
+        $plan = \App\Models\Plan::first();
         $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
         
-        return view('admin.internal_order_manager.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
-
-       
+        // Pass internal order instead of regular order
+        return view('admin.internal_order_manager.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'internalOrder'));
     }
-
+    
     public function store(Request $request)
     {
        
@@ -250,51 +251,80 @@ class InternalOrderManagerController extends Controller
             // $request->session()->put('order_info.plan_id', $request->plan_id);
             $message = 'Order information saved successfully.';
             
-            // for edit order
-            if($request->edit_id && $request->order_id){
-                $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
-                $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
+            // for edit internal order
+            if($request->edit_id && $request->internal_order_id){
+                // Find existing internal order
+                $existingInternalOrder = InternalOrder::find($request->edit_id);
                 
-                // Validate against order's total_inboxes limit
-                if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes.",
-                        'errors' => [
-                            'domains' => [
-                                "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes."
+                if ($existingInternalOrder) {
+                    $TOTAL_INBOXES = $existingInternalOrder->total_inboxes;
+                    
+                    // Validate against internal order's total_inboxes limit
+                    if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes.",
+                            'errors' => [
+                                'domains' => [
+                                    "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes."
+                                ]
                             ]
-                        ]
-                    ], 422);
+                        ], 422);
+                    }
                 }
-                // "currentInboxes" => "3332" "max_inboxes" => "5000"
-                $currentInboxes = $request->current_inboxes ?? 0;
-                $maxInboxes = $request->max_inboxes ?? 0;
-                $order = Order::with('reorderInfo')->findOrFail($request->order_id);
-                // Set status based on whether total_inboxes equals calculated total from request domains
-                // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
-                // $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
-                $is_draft = $request->is_draft ?? 0;
-                // If is_draft is set to 1, set status to draft, otherwise pending
-                $status = $is_draft == 1 ? 'draft' : 'pending';
-                // Update order status
-                $order->update([
-                    'status_manage_by_admin' => $status,
-                ]);
-
-                if($order->assigned_to && $status != 'draft') {
-                    $order->update([
-                        'status_manage_by_admin' => 'in-progress',
-                    ]);
-                }
-                // Get the current session data
-                $orderInfo = $request->session()->get('order_info', []);
                 
-                // Update session with reorder info data (preserve new form input over old data)
-                if($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
-                    $reorderInfo = $order->reorderInfo->first();
-                    // update data on table ReorderInfo
-                    ReorderInfo::where('id', $reorderInfo->id)->update([
+                $is_draft = $request->is_draft ?? 0;
+                $status = $is_draft == 1 ? 'draft' : 'pending';
+
+                // Update/Create InternalOrder record (this is now the primary data store)
+                $internalOrder = InternalOrder::updateOrCreate(
+                    ['user_id' => $request->user_id, 'plan_id' => $request->plan_id], // Match condition
+                    [
+                        'amount' => 0, // Will be calculated based on plan and inboxes
+                        'status' => 'pending',
+                        'status_manage_by_admin' => $status,
+                        'currency' => 'USD',
+                        // Reorder data
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode(',', array_filter($domains)),
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $is_draft == 1 ? ($existingInternalOrder->total_inboxes ?? $calculatedTotalInboxes) : $calculatedTotalInboxes,
+                        'initial_total_inboxes' => $existingInternalOrder ? ($existingInternalOrder->initial_total_inboxes == 0 ? $existingInternalOrder->total_inboxes : $existingInternalOrder->initial_total_inboxes) : $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                        'prefix_variants' => $request->prefix_variants,
+                        'prefix_variants_details' => $request->prefix_variants_details,
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => '123',
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                        'tutorial_section' => $request->tutorial_section,
+                    ]
+                );
+
+                $message = 'Internal order updated successfully.';
+
+                // Create a new activity log using the custom log service
+                ActivityLogService::log(
+                    'internal-order-update',
+                    'Internal order updated: '. $internalOrder->id,
+                    $internalOrder, 
+                    [
                         'user_id' => $request->user_id,
                         'plan_id' => $request->plan_id,
                         'forwarding_url' => $request->forwarding_url,
@@ -309,126 +339,104 @@ class InternalOrderManagerController extends Controller
                         'sending_platform' => $request->sending_platform,
                         'sequencer_login' => $request->sequencer_login,
                         'sequencer_password' => $request->sequencer_password,
-                        // 'total_inboxes' => ($maxInboxes == $currentInboxes) ? $calculatedTotalInboxes : $reorderInfo->total_inboxes,
-                        'total_inboxes' => $is_draft == 1 ? $reorderInfo->total_inboxes : $calculatedTotalInboxes, // Use existing total_inboxes if draft, otherwise use calculated
-                        // initial_total_inboxes
-                        'initial_total_inboxes' => $reorderInfo->initial_total_inboxes == 0 ? $reorderInfo->total_inboxes : $reorderInfo->initial_total_inboxes, // Store initial total inboxes at reorder time
+                        'total_inboxes' => $calculatedTotalInboxes,
                         'inboxes_per_domain' => $request->inboxes_per_domain,
-                        // 'first_name' => 'N/A',
-                        // 'last_name' => 'N/A',
                         'prefix_variants' => $request->prefix_variants,
                         'prefix_variants_details' => $request->prefix_variants_details,
                         'persona_password' => $request->persona_password,
                         'profile_picture_link' => $request->profile_picture_link,
-                        'email_persona_password' => '123', // Set to 123 as per requirement
+                        'email_persona_password' => $request->email_persona_password,
                         'email_persona_picture_link' => $request->email_persona_picture_link,
                         'master_inbox_email' => $request->master_inbox_email,
                         'additional_info' => $request->additional_info,
-                        'coupon_code' => $request->coupon_code,
-                    ]);
-                   $message = 'Order information updated successfully.';
-                   // Create a new activity log using the custom log service
-                    ActivityLogService::log(
-                        'customer-order-update',
-                        'Order updated: '. $order->id,
-                        $order, 
-                        [
-                            'user_id' => $request->user_id,
-                            'plan_id' => $request->plan_id,
-                            'forwarding_url' => $request->forwarding_url,
-                            'hosting_platform' => $request->hosting_platform,
-                            'other_platform' => $request->other_platform,
-                            'bison_url' => $request->bison_url,
-                            'bison_workspace' => $request->bison_workspace,
-                            'backup_codes' => $request->backup_codes,
-                            'platform_login' => $request->platform_login,
-                            'platform_password' => $request->platform_password,
-                            'domains' => implode(',', array_filter($domains)),
-                            'sending_platform' => $request->sending_platform,
-                            'sequencer_login' => $request->sequencer_login,
-                            'sequencer_password' => $request->sequencer_password,
-                            'total_inboxes' => $calculatedTotalInboxes,
-                            'inboxes_per_domain' => $request->inboxes_per_domain,
-                            // 'first_name' => $request->first_name,
-                            // 'last_name' => $request->last_name,
-                            'prefix_variants' => $request->prefix_variants,
-                            'prefix_variants_details' => $request->prefix_variants_details,
-                            'persona_password' => $request->persona_password,
-                            'profile_picture_link' => $request->profile_picture_link,
-                            'email_persona_password' => $request->email_persona_password,
-                            'email_persona_picture_link' => $request->email_persona_picture_link,
-                            'master_inbox_email' => $request->master_inbox_email,
-                            'additional_info' => $request->additional_info,
-                        ]
-                    );
-                }
-                // 
-                // Send email to admin and customer when order is edited
+                    ]
+                );
+
+                // Send email notifications for internal order updates (optional)
                 try {
                     // Get user information
                     $user = User::findOrFail($request->user_id);
-                    $reorderInfo = $order->reorderInfo->first();
                     
-                    // Send notification to the customer
-                    Mail::to($user->email)
-                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], false));
-                    // dd(config('mail.admin_address', 'admin@example.com'));
-                    // Send notification to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    // You can add email notifications here if needed
+                    // For now, we'll just log the update
+                    Log::info('Internal order updated successfully', [
+                        'internal_order_id' => $internalOrder->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email
+                    ]);
                     
-                    // Check if the order has an assigned contractor
-                    if ($order->assigned_to ) {
-                        // Get the assigned contractor
-                        $contractor = User::find($order->assigned_to);
-                        // dd($contractor);
-                        // Send notification to the assigned contractor if found
-                        if ($contractor) {
-                            Mail::to($contractor->email)
-                                ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
-                        }
-                    } else {
-                        // No assigned contractor, log this information
-                        Log::info('No contractor assigned to order #' . $order->id . ' for edit notification');
-                    }
                 } catch (\Exception $e) {
-                    Log::error('Failed to send order edit notification emails: ' . $e->getMessage());
+                    Log::error('Failed to process internal order update notifications: ' . $e->getMessage());
                     // Continue execution - don't let email failure stop the process
                 }
-            }
-            // status is pending then pannelCreationAndOrderSplitOnPannels
-            if($status == 'pending'){
-                // panel creation
-                // $this->pannelCreationAndOrderSplitOnPannels($order);
-            }
-            // Create order tracking record at the end
-            if($request->edit_id && $request->order_id) {
-                // For existing orders, update or create tracking record
-                $order->orderTracking()->updateOrCreate(
-                    ['order_id' => $order->id],
+            } else {
+                // Handle new internal order creation
+                $is_draft = $request->is_draft ?? 0;
+                $status = $is_draft == 1 ? 'draft' : 'pending';
+                
+                // Create InternalOrder record directly (no Order or ReorderInfo needed)
+                $internalOrder = InternalOrder::create([
+                    'user_id' => $request->user_id,
+                    'plan_id' => $request->plan_id,
+                    'amount' => 0,
+                    'status' => 'pending',
+                    'status_manage_by_admin' => $status,
+                    'currency' => 'USD',
+                    // Reorder data
+                    'forwarding_url' => $request->forwarding_url,
+                    'hosting_platform' => $request->hosting_platform,
+                    'other_platform' => $request->other_platform,
+                    'bison_url' => $request->bison_url,
+                    'bison_workspace' => $request->bison_workspace,
+                    'backup_codes' => $request->backup_codes,
+                    'platform_login' => $request->platform_login,
+                    'platform_password' => $request->platform_password,
+                    'domains' => implode(',', array_filter($domains)),
+                    'sending_platform' => $request->sending_platform,
+                    'sequencer_login' => $request->sequencer_login,
+                    'sequencer_password' => $request->sequencer_password,
+                    'total_inboxes' => $calculatedTotalInboxes,
+                    'initial_total_inboxes' => $calculatedTotalInboxes,
+                    'inboxes_per_domain' => $request->inboxes_per_domain,
+                    'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                    'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                    'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                    'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                    'prefix_variants' => $request->prefix_variants,
+                    'prefix_variants_details' => $request->prefix_variants_details,
+                    'persona_password' => $request->persona_password,
+                    'profile_picture_link' => $request->profile_picture_link,
+                    'email_persona_password' => '123',
+                    'email_persona_picture_link' => $request->email_persona_picture_link,
+                    'master_inbox_email' => $request->master_inbox_email,
+                    'additional_info' => $request->additional_info,
+                    'coupon_code' => $request->coupon_code,
+                    'tutorial_section' => $request->tutorial_section,
+                ]);
+                
+                $message = 'New internal order created successfully.';
+                
+                // Log the creation
+                ActivityLogService::log(
+                    'internal-order-create',
+                    'New internal order created: '. $internalOrder->id,
+                    $internalOrder, 
                     [
-                        'cron_run_time' => now(),
-                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'user_id' => $request->user_id,
+                        'plan_id' => $request->plan_id,
                         'total_inboxes' => $calculatedTotalInboxes,
-                        'status' => 'pending', // Set status to pending for new orders
+                        'status' => $status
                     ]
                 );
-                
-                Log::info('Order tracking record updated for edited order', [
-                    'order_id' => $order->id,
-                    'status' => $status,
-                    'total_inboxes' => $calculatedTotalInboxes,
-                    'inboxes_per_domain' => $request->inboxes_per_domain
-                ]);
             }
             
-            // First check 
+            // Return response
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'plan_id' => $request->plan_id,
                 'user_id' => $request->user_id,
-                'order_id' => isset($order) ? $order->id : null,
+                'internal_order_id' => $internalOrder->id,
                 'status' => $status
             ]);
 
