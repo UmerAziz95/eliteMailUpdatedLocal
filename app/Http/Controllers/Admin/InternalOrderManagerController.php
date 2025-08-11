@@ -95,14 +95,15 @@ class InternalOrderManagerController extends Controller
         ));
     }
 
-    public function newOrder(Request $request){
+    public function newOrder(Request $request, $id = null){
         // Check if we're editing an existing internal order
         $internalOrder = null;
-        if ($request->has('id') && $request->id) {
-            $internalOrder = InternalOrder::with(['plan'])->findOrFail($request->id);
+        if ($id) {
+            $internalOrder = InternalOrder::with(['plan'])->findOrFail($id);
         }
-
-        $plan = \App\Models\Plan::first();
+        // dd($internalOrder);
+        // $plan = \App\Models\Plan::first();
+        $plan = $internalOrder->plan ?? \App\Models\Plan::first();
         $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
@@ -148,8 +149,6 @@ class InternalOrderManagerController extends Controller
                 'sequencer_password' => 'required|string|min:3',
                 'total_inboxes' => 'required|integer|min:1',
                 'inboxes_per_domain' => 'required|integer|min:1|max:3',
-                // 'first_name' => 'required|string|max:50',
-                // 'last_name' => 'required|string|max:50',
                 'prefix_variants' => 'required|array|min:1',
                 'prefix_variants.prefix_variant_1' => 'required|string|max:50',
                 'prefix_variants.prefix_variant_2' => 'nullable|string|max:50',
@@ -164,9 +163,7 @@ class InternalOrderManagerController extends Controller
                 'prefix_variants_details.prefix_variant_3.first_name' => 'nullable|string|max:50',
                 'prefix_variants_details.prefix_variant_3.last_name' => 'nullable|string|max:50',
                 'prefix_variants_details.prefix_variant_3.profile_link' => 'nullable|url|max:255',
-                // 'persona_password' => 'required|string|min:3',
                 'profile_picture_link' => 'nullable|url|max:255',
-                // 'email_persona_password' => 'nullable|string|min:3',
                 'email_persona_picture_link' => 'nullable|url|max:255',
                 'master_inbox_email' => 'nullable|email|max:255',
                 'additional_info' => 'nullable|string',
@@ -180,6 +177,7 @@ class InternalOrderManagerController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
+            
             // Additional validation for prefix variants based on inboxes_per_domain
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
@@ -222,9 +220,11 @@ class InternalOrderManagerController extends Controller
                     }
                 }
             }
+            
             $status = 'pending'; // Default status for new orders
             // persona_password set 123
             $request->persona_password = '123';
+            
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
@@ -245,7 +245,7 @@ class InternalOrderManagerController extends Controller
                     'message' => 'Failed to determine appropriate plan: ' . $e->getMessage()
                 ], 422);
             }
-            // dd($determinedPlanId);
+
             // Override the plan_id from request with the determined plan
             $request->merge(['plan_id' => $determinedPlanId]);
 
@@ -261,72 +261,78 @@ class InternalOrderManagerController extends Controller
             
             $message = 'Order information saved successfully.';
             
-            // for edit internal order
-            if($request->edit_id && $request->internal_order_id){
+            // Check if internal_order_id exists - if yes, edit; if no, create
+            if($request->internal_order_id){
                 // Find existing internal order
-                $existingInternalOrder = InternalOrder::find($request->edit_id);
+                $existingInternalOrder = InternalOrder::find($request->internal_order_id);
                 
-                if ($existingInternalOrder) {
-                    $TOTAL_INBOXES = $existingInternalOrder->total_inboxes;
-                    
-                    // Validate against internal order's total_inboxes limit
-                    if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes.",
-                            'errors' => [
-                                'domains' => [
-                                    "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes."
-                                ]
+                if (!$existingInternalOrder) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Internal order not found.'
+                    ], 404);
+                }
+                
+                $TOTAL_INBOXES = $existingInternalOrder->total_inboxes;
+                // If total_inboxes is 0, use the calculated total
+                $TOTAL_INBOXES = 0;
+                
+                // Validate against internal order's total_inboxes limit
+                if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes.",
+                        'errors' => [
+                            'domains' => [
+                                "Order Limit Exceeded! You have {$calculatedTotalInboxes} inboxes but this order supports only {$TOTAL_INBOXES} inboxes."
                             ]
-                        ], 422);
-                    }
+                        ]
+                    ], 422);
                 }
                 
                 $is_draft = $request->is_draft ?? 0;
                 $status = $is_draft == 1 ? 'draft' : 'pending';
 
-                // Update/Create InternalOrder record (this is now the primary data store)
-                $internalOrder = InternalOrder::updateOrCreate(
-                    ['user_id' => $request->user_id, 'plan_id' => $determinedPlanId], // Match condition
-                    [
-                        'amount' => 0, // Will be calculated based on plan and inboxes
-                        'status' => 'pending',
-                        'status_manage_by_admin' => $status,
-                        'currency' => 'USD',
-                        // Reorder data
-                        'forwarding_url' => $request->forwarding_url,
-                        'hosting_platform' => $request->hosting_platform,
-                        'other_platform' => $request->other_platform,
-                        'bison_url' => $request->bison_url,
-                        'bison_workspace' => $request->bison_workspace,
-                        'backup_codes' => $request->backup_codes,
-                        'platform_login' => $request->platform_login,
-                        'platform_password' => $request->platform_password,
-                        'domains' => implode(',', array_filter($domains)),
-                        'sending_platform' => $request->sending_platform,
-                        'sequencer_login' => $request->sequencer_login,
-                        'sequencer_password' => $request->sequencer_password,
-                        'total_inboxes' => $is_draft == 1 ? ($existingInternalOrder->total_inboxes ?? $calculatedTotalInboxes) : $calculatedTotalInboxes,
-                        'initial_total_inboxes' => $existingInternalOrder ? ($existingInternalOrder->initial_total_inboxes == 0 ? $existingInternalOrder->total_inboxes : $existingInternalOrder->initial_total_inboxes) : $calculatedTotalInboxes,
-                        'inboxes_per_domain' => $request->inboxes_per_domain,
-                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
-                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
-                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
-                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
-                        'prefix_variants' => $request->prefix_variants,
-                        'prefix_variants_details' => $request->prefix_variants_details,
-                        'persona_password' => $request->persona_password,
-                        'profile_picture_link' => $request->profile_picture_link,
-                        'email_persona_password' => '123',
-                        'email_persona_picture_link' => $request->email_persona_picture_link,
-                        'master_inbox_email' => $request->master_inbox_email,
-                        'additional_info' => $request->additional_info,
-                        'coupon_code' => $request->coupon_code,
-                        'tutorial_section' => $request->tutorial_section,
-                    ]
-                );
+                // Update existing internal order
+                $existingInternalOrder->update([
+                    'user_id' => $request->user_id,
+                    'plan_id' => $determinedPlanId,
+                    'amount' => 0,
+                    'status' => 'pending',
+                    'status_manage_by_admin' => $status,
+                    'currency' => 'USD',
+                    'forwarding_url' => $request->forwarding_url,
+                    'hosting_platform' => $request->hosting_platform,
+                    'other_platform' => $request->other_platform,
+                    'bison_url' => $request->bison_url,
+                    'bison_workspace' => $request->bison_workspace,
+                    'backup_codes' => $request->backup_codes,
+                    'platform_login' => $request->platform_login,
+                    'platform_password' => $request->platform_password,
+                    'domains' => implode(',', array_filter($domains)),
+                    'sending_platform' => $request->sending_platform,
+                    'sequencer_login' => $request->sequencer_login,
+                    'sequencer_password' => $request->sequencer_password,
+                    'total_inboxes' => $is_draft == 1 ? $TOTAL_INBOXES : $calculatedTotalInboxes,
+                    'initial_total_inboxes' => $existingInternalOrder->initial_total_inboxes == 0 ? $TOTAL_INBOXES : $existingInternalOrder->initial_total_inboxes,
+                    'inboxes_per_domain' => $request->inboxes_per_domain,
+                    'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                    'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                    'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                    'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                    'prefix_variants' => $request->prefix_variants,
+                    'prefix_variants_details' => $request->prefix_variants_details,
+                    'persona_password' => $request->persona_password,
+                    'profile_picture_link' => $request->profile_picture_link,
+                    'email_persona_password' => '123',
+                    'email_persona_picture_link' => $request->email_persona_picture_link,
+                    'master_inbox_email' => $request->master_inbox_email,
+                    'additional_info' => $request->additional_info,
+                    'coupon_code' => $request->coupon_code,
+                    'tutorial_section' => $request->tutorial_section,
+                ]);
 
+                $internalOrder = $existingInternalOrder;
                 $message = 'Internal order updated successfully.';
 
                 // Create a new activity log using the custom log service
@@ -337,28 +343,8 @@ class InternalOrderManagerController extends Controller
                     [
                         'user_id' => $request->user_id,
                         'plan_id' => $determinedPlanId,
-                        'forwarding_url' => $request->forwarding_url,
-                        'hosting_platform' => $request->hosting_platform,
-                        'other_platform' => $request->other_platform,
-                        'bison_url' => $request->bison_url,
-                        'bison_workspace' => $request->bison_workspace,
-                        'backup_codes' => $request->backup_codes,
-                        'platform_login' => $request->platform_login,
-                        'platform_password' => $request->platform_password,
-                        'domains' => implode(',', array_filter($domains)),
-                        'sending_platform' => $request->sending_platform,
-                        'sequencer_login' => $request->sequencer_login,
-                        'sequencer_password' => $request->sequencer_password,
                         'total_inboxes' => $calculatedTotalInboxes,
-                        'inboxes_per_domain' => $request->inboxes_per_domain,
-                        'prefix_variants' => $request->prefix_variants,
-                        'prefix_variants_details' => $request->prefix_variants_details,
-                        'persona_password' => $request->persona_password,
-                        'profile_picture_link' => $request->profile_picture_link,
-                        'email_persona_password' => $request->email_persona_password,
-                        'email_persona_picture_link' => $request->email_persona_picture_link,
-                        'master_inbox_email' => $request->master_inbox_email,
-                        'additional_info' => $request->additional_info,
+                        'status' => $status
                     ]
                 );
 
@@ -367,8 +353,6 @@ class InternalOrderManagerController extends Controller
                     // Get user information
                     $user = User::findOrFail($request->user_id);
                     
-                    // You can add email notifications here if needed
-                    // For now, we'll just log the update
                     Log::info('Internal order updated successfully', [
                         'internal_order_id' => $internalOrder->id,
                         'user_id' => $user->id,
@@ -377,14 +361,13 @@ class InternalOrderManagerController extends Controller
                     
                 } catch (\Exception $e) {
                     Log::error('Failed to process internal order update notifications: ' . $e->getMessage());
-                    // Continue execution - don't let email failure stop the process
                 }
             } else {
                 // Handle new internal order creation
                 $is_draft = $request->is_draft ?? 0;
                 $status = $is_draft == 1 ? 'draft' : 'pending';
                 
-                // Create InternalOrder record directly (no Order or ReorderInfo needed)
+                // Create InternalOrder record directly
                 $internalOrder = InternalOrder::create([
                     'user_id' => $request->user_id,
                     'plan_id' => $determinedPlanId,
@@ -392,7 +375,6 @@ class InternalOrderManagerController extends Controller
                     'status' => 'pending',
                     'status_manage_by_admin' => $status,
                     'currency' => 'USD',
-                    // Reorder data
                     'forwarding_url' => $request->forwarding_url,
                     'hosting_platform' => $request->hosting_platform,
                     'other_platform' => $request->other_platform,

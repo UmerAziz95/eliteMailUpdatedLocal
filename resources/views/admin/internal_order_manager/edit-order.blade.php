@@ -1103,6 +1103,8 @@
 @endphp
 <script>
    var orderInfo = @json($orderInfo);
+   orderInfo.total_inboxes = 0;
+
     // Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
