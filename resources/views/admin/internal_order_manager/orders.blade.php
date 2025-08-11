@@ -184,7 +184,7 @@
 
     <section class="py-3" data-page="orders">
 
-        <div class="counters mb-4">
+        <div class="counters mb-4" style="display: none;">
             <div class="card p-3 counter_1">
                 <div>
                     <div class="d-flex align-items-start justify-content-between">
@@ -206,7 +206,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_2">
+            <div class="card p-3 counter_2" style="display: none;">
                 <div>
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -228,7 +228,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_1">
+            <div class="card p-3 counter_1" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
@@ -251,7 +251,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_2">
+            <div class="card p-3 counter_2" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
