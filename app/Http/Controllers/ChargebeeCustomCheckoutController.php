@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\CustomCheckoutId;
+use App\Models\CustomCheckOutId;
 use App\Services\ChargebeeCustomCheckoutService;
 use App\Models\Plan;
 //
