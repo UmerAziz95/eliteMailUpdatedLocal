@@ -9,7 +9,7 @@ use ChargeBee\ChargeBee\Models\Subscription;
 use App\Models\DiscordSettings;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use App\Models\CustomCheckoutId;
+use App\Models\CustomCheckOutId;
 
 class DiscountedPlanController extends Controller
 {
@@ -71,7 +71,7 @@ class DiscountedPlanController extends Controller
     try { 
         $uuid=Str::uuid()->toString();
         $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
-        CustomCheckoutId::create([
+        CustomCheckOutId::create([
             'page_id'=>$uuid
         ]);
            
