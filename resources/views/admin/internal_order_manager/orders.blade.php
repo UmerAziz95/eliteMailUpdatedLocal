@@ -138,6 +138,94 @@
             opacity: 0;
             transform: translateX(-100%);
         }
+
+        /* Select2 Dropdown Styling */
+        .select2-container--default .select2-selection--single {
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            height: calc(2.25rem + 2px);
+            color: #212529;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #212529;
+            line-height: 2.25rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #6c757d;
+        }
+
+        .select2-dropdown {
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            color: #212529;
+        }
+
+        .select2-container--default .select2-results__option {
+            background-color: #fff;
+            color: #212529;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .select2-container--default .select2-results__option[aria-selected="true"] {
+            background-color: #e9ecef;
+            color: #212529;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            color: #212529;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .select2-container--default .select2-results__message {
+            color: #6c757d;
+            background-color: #fff;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(2.25rem + 2px);
+            right: 0.75rem;
+        }
+
+        /* Dark mode compatibility if needed */
+        @media (prefers-color-scheme: dark) {
+            .select2-container--default .select2-selection--single,
+            .select2-dropdown,
+            .select2-container--default .select2-results__option,
+            .select2-container--default .select2-search--dropdown .select2-search__field,
+            .select2-container--default .select2-results__message {
+                background-color: #212529;
+                color: #fff;
+                border-color: #495057;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__placeholder {
+                color: #adb5bd;
+            }
+
+            .select2-container--default .select2-results__option--highlighted[aria-selected] {
+                background-color: #0d6efd;
+                color: #fff;
+            }
+
+            .select2-container--default .select2-results__option[aria-selected="true"] {
+                background-color: #495057;
+                color: #fff;
+            }
+        }
     </style>
 @endpush
 
@@ -568,6 +656,42 @@
         </div>
 
     </section>
+
+    <!-- Assign User Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="assignUserOffcanvas" aria-labelledby="assignUserOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="assignUserOffcanvasLabel">Assign Order to User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <form id="assignUserForm">
+                <input type="hidden" id="assignOrderId" name="order_id">
+                
+                <div class="mb-3">
+                    <label for="userSelect" class="form-label">Select User</label>
+                    <select class="form-select" id="userSelect" name="user_id" required>
+                        <option value="">Search for a user...</option>
+                    </select>
+                    <div class="form-text">Start typing to search for internal users</div>
+                </div>
+
+                <div id="addNewUserSection" class="mb-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i>
+                        No users found matching your search. 
+                        <a href="{{ route('admin.index') }}" target="_blank" class="alert-link">Click here to manage users</a>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary" id="assignUserBtn">
+                        <i class="fa-solid fa-user-plus"></i> Assign User
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -1095,6 +1219,131 @@
             } catch (error) {
                 console.error('Error in document ready:', error);
             }
+        });
+
+        // Assign User Functionality
+        $(document).ready(function() {
+            // Initialize Select2 for user selection
+            $('#userSelect').select2({
+                ajax: {
+                    url: '{{ route('admin.internal_order_management.get_users') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+                        return {
+                            results: data.results,
+                            pagination: {
+                                more: data.pagination.more
+                            }
+                        };
+                    },
+                    cache: true
+                },
+                placeholder: 'Search for a user...',
+                minimumInputLength: 0,
+                allowClear: true,
+                dropdownParent: $('#assignUserOffcanvas')
+            });
+
+            // Handle search to show "Add New User" button when no results
+            $('#userSelect').on('select2:open', function() {
+                $('.select2-search__field').on('keyup', function() {
+                    const searchTerm = $(this).val();
+                    if (searchTerm.length > 2) {
+                        // Check if there are results
+                        setTimeout(() => {
+                            const resultsCount = $('.select2-results__option').not('.select2-results__message').length;
+                            if (resultsCount === 0) {
+                                $('#addNewUserSection').show();
+                            } else {
+                                $('#addNewUserSection').hide();
+                            }
+                        }, 300);
+                    } else {
+                        $('#addNewUserSection').hide();
+                    }
+                });
+            });
+
+            // Handle assign user button click
+            $(document).on('click', '.assign-user-btn', function(e) {
+                e.preventDefault();
+                const orderId = $(this).data('order-id');
+                $('#assignOrderId').val(orderId);
+                $('#userSelect').val(null).trigger('change');
+                $('#addNewUserSection').hide();
+            });
+
+            // Handle assign user form submission
+            $('#assignUserForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    order_id: $('#assignOrderId').val(),
+                    user_id: $('#userSelect').val(),
+                    _token: '{{ csrf_token() }}'
+                };
+
+                // Disable submit button
+                $('#assignUserBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Assigning...');
+
+                $.ajax({
+                    url: '{{ route('admin.internal_order_management.assign_user') }}',
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            // Close offcanvas
+                            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('assignUserOffcanvas'));
+                            offcanvas.hide();
+
+                            // Show success message
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            });
+
+                            // Refresh the DataTable
+                            if (window.ordersTable) {
+                                window.ordersTable.ajax.reload(null, false);
+                            }
+                        }
+                    },
+                    error: function(xhr) {
+                        let message = 'Failed to assign user to order';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            title: 'Error!',
+                            text: message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    },
+                    complete: function() {
+                        // Re-enable submit button
+                        $('#assignUserBtn').prop('disabled', false).html('<i class="fa-solid fa-user-plus"></i> Assign User');
+                    }
+                });
+            });
+
+            // Reset form when offcanvas is hidden
+            $('#assignUserOffcanvas').on('hidden.bs.offcanvas', function() {
+                $('#assignUserForm')[0].reset();
+                $('#userSelect').val(null).trigger('change');
+                $('#addNewUserSection').hide();
+            });
         });
     </script>
 

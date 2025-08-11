@@ -338,6 +338,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/internal-order-manager/data', [InternalOrderManagerController::class, 'getInternalOrders'])->name('internal_order_management.data');
         Route::post('/internal-order-manager/update-status', [InternalOrderManagerController::class, 'updateStatus'])->name('internal_order_management.update_status');
         Route::delete('/internal-order-manager/delete', [InternalOrderManagerController::class, 'delete'])->name('internal_order_management.delete');
+        Route::get('/internal-order-manager/users', [InternalOrderManagerController::class, 'getUsers'])->name('internal_order_management.get_users');
+        Route::post('/internal-order-manager/assign-user', [InternalOrderManagerController::class, 'assignToUser'])->name('internal_order_management.assign_user');
 
 
 

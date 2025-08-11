@@ -628,6 +628,7 @@ class InternalOrderManagerController extends Controller
     /**
      * Get internal orders data for DataTables
      */
+      
     public function getInternalOrders(Request $request)
     {
         try {
@@ -671,7 +672,7 @@ class InternalOrderManagerController extends Controller
 
             return DataTables::of($query)
                 ->addColumn('user_name', function ($order) {
-                    return $order->user ? $order->user->first_name . ' ' . $order->user->last_name : 'N/A';
+                    return $order->user ? $order->user->name : 'N/A';
                 })
                 ->addColumn('user_email', function ($order) {
                     return $order->user ? $order->user->email : 'N/A';
@@ -682,7 +683,7 @@ class InternalOrderManagerController extends Controller
                 ->addColumn('assigned_to', function ($order) {
                     if ($order->assigned_to) {
                         $assignedUser = User::find($order->assigned_to);
-                        return $assignedUser ? $assignedUser->first_name . ' ' . $assignedUser->last_name : 'Unknown';
+                        return $assignedUser ? $assignedUser->name : 'Unknown';
                     }
                     return 'Unassigned';
                 })
@@ -711,8 +712,10 @@ class InternalOrderManagerController extends Controller
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="' . route('admin.internal_order_management.new_order', $order->id) . '">
                                             <i class="fa-solid fa-edit"></i> Edit</a></li>
+                                        <li><a class="dropdown-item assign-user-btn" href="#" data-order-id="' . $order->id . '" data-bs-toggle="offcanvas" data-bs-target="#assignUserOffcanvas">
+                                            <i class="fa-solid fa-user-plus"></i> Assign to User</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger delete-order" href="#" data-order-id="' . $order->id . '" data-order-user="' . ($order->user ? $order->user->first_name . ' ' . $order->user->last_name : 'Unknown') . '">
+                                        <li><a class="dropdown-item text-danger delete-order" href="#" data-order-id="' . $order->id . '" data-order-user="' . ($order->user ? $order->user->name : 'Unknown') . '">
                                             <i class="fa-solid fa-trash"></i> Delete</a></li>';
                                             
                     // Add status update options
@@ -810,7 +813,7 @@ class InternalOrderManagerController extends Controller
             $orderInfo = [
                 'id' => $internalOrder->id,
                 'user_id' => $internalOrder->user_id,
-                'user_name' => $internalOrder->user ? $internalOrder->user->first_name . ' ' . $internalOrder->user->last_name : 'Unknown',
+                'user_name' => $internalOrder->user ? $internalOrder->user->name : 'Unknown',
                 'user_email' => $internalOrder->user ? $internalOrder->user->email : 'Unknown',
                 'status' => $internalOrder->status_manage_by_admin,
                 'total_inboxes' => $internalOrder->total_inboxes,
@@ -843,6 +846,102 @@ class InternalOrderManagerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete internal order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get users for Select2 dropdown
+     */
+    public function getUsers(Request $request)
+    {
+        try {
+            $search = $request->get('search', '');
+            
+            $query = User::select('id', 'name', 'email')
+                ->where('is_internal', true); // Only show internal users
+            
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            
+            $users = $query->limit(20)->get();
+            
+            $results = $users->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'text' => $user->name . ' (' . $user->email . ')'
+                ];
+            });
+            
+            return response()->json([
+                'results' => $results,
+                'pagination' => ['more' => false]
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error getting users for assignment: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load users'], 500);
+        }
+    }
+
+    /**
+     * Assign order to user
+     */
+    public function assignToUser(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:internal_orders,id',
+                'user_id' => 'required|exists:users,id'
+            ]);
+
+            $order = InternalOrder::findOrFail($validated['order_id']);
+            $user = User::findOrFail($validated['user_id']);
+            
+            // Check if user is internal
+            if (!$user->is_internal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected user is not an internal user.'
+                ], 400);
+            }
+
+            $oldAssignedTo = $order->assigned_to;
+            $order->assigned_to = $validated['user_id'];
+            $order->save();
+
+            // Log the assignment activity
+            ActivityLogService::log(
+                'internal-order-assignment',
+                'Internal order #' . $order->id . ' assigned to ' . $user->name,
+                $order,
+                [
+                    'old_assigned_to' => $oldAssignedTo,
+                    'new_assigned_to' => $user->id,
+                    'assigned_by' => auth()->id()
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order successfully assigned to ' . $user->name
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Error assigning order to user: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign order: ' . $e->getMessage()
             ], 500);
         }
     }

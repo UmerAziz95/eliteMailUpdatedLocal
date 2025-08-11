@@ -74,6 +74,7 @@ class InternalOrder extends Model
         'additional_info',
         'coupon_code',
         'tutorial_section',
+        'is_internal',
     ];
 
     public function user()
