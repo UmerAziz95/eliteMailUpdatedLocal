@@ -68,6 +68,7 @@ class InternalOrderManagerController extends Controller
         $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
         $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
         $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
+        $expiredOrders = $orders->where('status_manage_by_admin', 'expired')->count();
 
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -87,18 +88,18 @@ class InternalOrderManagerController extends Controller
             'inProgressOrders',
             'cancelledOrders',
             'completedOrders',
-            'draftOrders', 
+            'draftOrders',
+            'expiredOrders',
             'percentageChange',
             'statuses'
         ));
     }
 
-
     public function newOrder(Request $request){
         // Check if we're editing an existing internal order
         $internalOrder = null;
         if ($request->has('id') && $request->id) {
-            $internalOrder = InternalOrder::with(['user', 'plan'])->findOrFail($request->id);
+            $internalOrder = InternalOrder::with(['plan'])->findOrFail($request->id);
         }
 
         $plan = \App\Models\Plan::first();
@@ -651,6 +652,41 @@ class InternalOrderManagerController extends Controller
             $query = InternalOrder::with(['user', 'plan'])
                 ->select('internal_orders.*');
 
+            // Apply filters
+            if ($request->filled('plan_id')) {
+                $query->where('plan_id', $request->plan_id);
+            }
+
+            if ($request->filled('orderId')) {
+                $query->where('id', 'like', '%' . $request->orderId . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status_manage_by_admin', $request->status);
+            }
+
+            if ($request->filled('email')) {
+                $query->whereHas('user', function($q) use ($request) {
+                    $q->where('email', 'like', '%' . $request->email . '%');
+                });
+            }
+
+            if ($request->filled('domain')) {
+                $query->where('forwarding_url', 'like', '%' . $request->domain . '%');
+            }
+
+            if ($request->filled('totalInboxes')) {
+                $query->where('total_inboxes', $request->totalInboxes);
+            }
+
+            if ($request->filled('startDate')) {
+                $query->whereDate('created_at', '>=', $request->startDate);
+            }
+
+            if ($request->filled('endDate')) {
+                $query->whereDate('created_at', '<=', $request->endDate);
+            }
+
             return DataTables::of($query)
                 ->addColumn('user_name', function ($order) {
                     return $order->user ? $order->user->first_name . ' ' . $order->user->last_name : 'N/A';
@@ -660,6 +696,18 @@ class InternalOrderManagerController extends Controller
                 })
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
+                })
+                ->addColumn('assigned_to', function ($order) {
+                    if ($order->assigned_to) {
+                        $assignedUser = User::find($order->assigned_to);
+                        return $assignedUser ? $assignedUser->first_name . ' ' . $assignedUser->last_name : 'Unknown';
+                    }
+                    return 'Unassigned';
+                })
+                ->addColumn('split_counts', function ($order) {
+                    // For internal orders, split counts might not be applicable
+                    // Return a default value or calculate based on your business logic
+                    return '0';
                 })
                 ->addColumn('total_inboxes', function ($order) {
                     return $order->total_inboxes ?? 0;
@@ -679,24 +727,24 @@ class InternalOrderManagerController extends Controller
                                         <i class="fa-solid fa-ellipsis-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="' . route('internal_order_management.new_order', $order->id) . '">
+                                        <li><a class="dropdown-item" href="' . route('admin.internal_order_management.new_order', $order->id) . '">
                                             <i class="fa-solid fa-edit"></i> Edit</a></li>';
                                             
                     // Add status update options
-                    if ($order->status_manage_by_admin !== 'completed') {
-                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="completed">
-                                        <i class="fa-solid fa-check"></i> Mark Complete</a></li>';
-                    }
+                    // if ($order->status_manage_by_admin !== 'completed') {
+                    //     $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="completed">
+                    //                     <i class="fa-solid fa-check"></i> Mark Complete</a></li>';
+                    // }
                     
-                    if ($order->status_manage_by_admin !== 'in-progress') {
-                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="in-progress">
-                                        <i class="fa-solid fa-clock"></i> Mark In Progress</a></li>';
-                    }
+                    // if ($order->status_manage_by_admin !== 'in-progress') {
+                    //     $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="in-progress">
+                    //                     <i class="fa-solid fa-clock"></i> Mark In Progress</a></li>';
+                    // }
                     
-                    if ($order->status_manage_by_admin !== 'reject') {
-                        $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="reject">
-                                        <i class="fa-solid fa-times"></i> Reject</a></li>';
-                    }
+                    // if ($order->status_manage_by_admin !== 'reject') {
+                    //     $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="reject">
+                    //                     <i class="fa-solid fa-times"></i> Reject</a></li>';
+                    // }
                     
                     $actions .= '</ul></div>';
                     

@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Orders')
+@section('title', 'Internal Orders')
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -14,7 +14,18 @@
 
         .avatar .avatar-initial {
             position: absolute;
-            display: flex;
+                    <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
+                    tabindex="0">
+                    @include('admin.internal_order_manager._orders_table')
+                </div>
+                @foreach ($plans as $plan)
+                    <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
+                        aria-labelledby="plan-{{ $plan->id }}-tab" tabindex="0">
+                        @include('admin.internal_order_manager._orders_table', ['plan_id' => $plan->id])
+                    </div>
+                @endforeach
+            </div> flex;
             align-items: center;
             justify-content: center;
             color: var(--second-primary);
@@ -262,7 +273,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card p-3 counter_1">
+            <div class="card p-3 counter_1" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
@@ -285,7 +296,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_2">
+            <div class="card p-3 counter_2" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
@@ -308,7 +319,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_1">
+            <div class="card p-3 counter_1" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
@@ -331,7 +342,7 @@
                 </div>
             </div>
 
-            <div class="card p-3 counter_2">
+            <div class="card p-3 counter_2" style="display: none;">
                 <div>
                     <!-- {{-- //card body --}} -->
                     <div class="d-flex align-items-start justify-content-between">
@@ -355,9 +366,9 @@
             </div>
         </div>
 
-        <div class="row mb-4" style="display: none;">
+        <div class="row mb-4">
             <div class="col-md-12">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm p-3">
                     <div>
                         <div class="row gy-3">
                             <div class="d-flex align-items-center justify-content-between">
@@ -382,15 +393,15 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3" style="display: none;">
                                 <label for="emailFilter" class="form-label">Email</label>
                                 <input type="text" id="emailFilter" class="form-control"
                                     placeholder="Search by email">
                             </div>
                             <div class="col-md-3">
-                                <label for="domainFilter" class="form-label">Domain URL</label>
+                                <label for="domainFilter" class="form-label">Forwarding URL</label>
                                 <input type="text" id="domainFilter" class="form-control"
-                                    placeholder="Search by domain">
+                                    placeholder="Search by forwarding URL">
                             </div>
                             <div class="col-md-3">
                                 <label for="totalInboxesFilter" class="form-label">Total Inboxes</label>
@@ -432,7 +443,7 @@
             <div class="tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab"
                     tabindex="0">
-                    @include('admin.orders._orders_table')
+                    @include('admin.internal_order_manager._orders_table')
                 </div>
                 @foreach ($plans as $plan)
                     <div class="tab-pane fade" id="plan-{{ $plan->id }}-tab-pane" role="tabpanel"
@@ -698,7 +709,7 @@
                         }
                     ],
                     ajax: {
-                        url: "{{ route('admin.orders.data') }}",
+                        url: "{{ route('admin.internal_order_management.data') }}",
                         type: "GET",
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
@@ -718,11 +729,11 @@
                     },
                     columns: [{
                             data: 'id',
-                            name: 'orders.id'
+                            name: 'internal_orders.id'
                         },
                         {
-                            data: 'created_at',
-                            name: 'orders.created_at',
+                            data: 'created_at_formatted',
+                            name: 'internal_orders.created_at',
                             render: function(data) {
                                 return `
                             <div class="d-flex gap-1 align-items-center opacity-50">
@@ -734,7 +745,7 @@
                         },
                         ...(planId ? [] : [{
                             data: 'plan_name',
-                            name: 'plans.name',
+                            name: 'plan_name',
                             render: function(data) {
                                 return `
                             <div class="d-flex gap-1 align-items-center">
@@ -745,16 +756,19 @@
                             }
                         }]),
                         {
-                            data: 'domain_forwarding_url',
-                            name: 'domain_forwarding_url'
+                            data: 'assigned_to',
+                            name: 'assigned_to',
+                            render: function(data) {
+                                return data || 'Unassigned';
+                            }
                         },
                         {
                             data: 'total_inboxes',
                             name: 'total_inboxes'
                         },
                         {
-                            data: 'status',
-                            name: 'orders.status'
+                            data: 'status_badge',
+                            name: 'internal_orders.status_manage_by_admin'
                         },
                         {
                             data: 'action',
@@ -915,6 +929,61 @@
                     $('#statusFilter').val('');
                     $('#startDate, #endDate').val('');
                     applyFilters();
+                });
+
+                // Handle status updates for internal orders
+                $(document).on('click', '.update-status', function(e) {
+                    e.preventDefault();
+                    
+                    const orderId = $(this).data('order-id');
+                    const status = $(this).data('status');
+                    
+                    if (!orderId || !status) {
+                        toastr.error('Invalid order or status data');
+                        return;
+                    }
+                    
+                    if (confirm(`Are you sure you want to change the status to "${status}"?`)) {
+                        $.ajax({
+                            url: "{{ route('admin.internal_order_management.update_status') }}",
+                            type: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                                'Accept': 'application/json'
+                            },
+                            data: {
+                                order_id: orderId,
+                                status: status
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    toastr.success(response.message || 'Status updated successfully');
+                                    // Refresh all active tables
+                                    Object.values(window.orderTables).forEach(function(table) {
+                                        if (table && $(table.table().node()).is(':visible')) {
+                                            table.draw();
+                                        }
+                                    });
+                                } else {
+                                    toastr.error(response.message || 'Failed to update status');
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Status update error:', error);
+                                let message = 'Failed to update status';
+                                
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    message = xhr.responseJSON.message;
+                                } else if (xhr.status === 422) {
+                                    message = 'Invalid data provided';
+                                } else if (xhr.status === 403) {
+                                    message = 'You do not have permission to perform this action';
+                                }
+                                
+                                toastr.error(message);
+                            }
+                        });
+                    }
                 });
 
             } catch (error) {
