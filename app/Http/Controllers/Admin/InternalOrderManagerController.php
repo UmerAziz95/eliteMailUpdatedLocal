@@ -1116,7 +1116,7 @@ class InternalOrderManagerController extends Controller
                 'order_id' => 'required|exists:internal_orders,id',
                 'user_id' => 'required|exists:users,id'
             ]);
-            dd($validated);
+            
             $internalOrder = InternalOrder::findOrFail($validated['order_id']);
             $user = User::findOrFail($validated['user_id']);
             

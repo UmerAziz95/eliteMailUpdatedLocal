@@ -745,11 +745,11 @@
                             <div class="row">
                                 <div class="col-12 mb-3">
                                     <label for="newUserName" class="form-label">Full Name *</label>
-                                    <input type="text" class="form-control" id="newUserName" name="new_user_name" required>
+                                    <input type="text" class="form-control" id="newUserName" name="new_user_name">
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="newUserEmail" class="form-label">Email Address *</label>
-                                    <input type="email" class="form-control" id="newUserEmail" name="new_user_email" required>
+                                    <input type="email" class="form-control" id="newUserEmail" name="new_user_email">
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="newUserPhone" class="form-label">Phone Number</label>
@@ -757,7 +757,7 @@
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="newUserPassword" class="form-label">Password *</label>
-                                    <input type="password" class="form-control" id="newUserPassword" name="new_user_password" required>
+                                    <input type="password" class="form-control" id="newUserPassword" name="new_user_password">
                                 </div>
                             </div>
                             <div class="mt-3">
@@ -1439,6 +1439,9 @@
                 $('#newUserPassword').val('');
                 $('#newUserInternal').prop('checked', true);
                 
+                // Enable required attributes for new user form fields
+                $('#newUserName, #newUserEmail, #newUserPassword').attr('required', true);
+                
                 // Focus on the first field after a short delay
                 setTimeout(() => {
                     $('#newUserName').focus();
@@ -1459,6 +1462,9 @@
                 $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
                 
+                // Disable required attributes for new user form fields when hiding
+                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
+                
                 // Show the button again if we still have no results
                 if (window.lastSearchTerm && window.lastSearchTerm.length > 2 && window.lastResultsCount === 0) {
                     $('#addNewUserBtn').show();
@@ -1478,6 +1484,9 @@
                 $('#newUserFormSection').hide();
                 $('#userSelect').prop('disabled', false);
                 $('#assignBtnText').text('Assign User');
+                
+                // Remove required attributes from new user form fields since form is hidden
+                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
             });
 
             // Handle assign user form submission
@@ -1602,6 +1611,9 @@
                 $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
                 $('#newUserInternal').prop('checked', true);
+                
+                // Remove required attributes from new user form fields
+                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
                 
                 // Reset search variables
                 window.lastSearchTerm = '';
