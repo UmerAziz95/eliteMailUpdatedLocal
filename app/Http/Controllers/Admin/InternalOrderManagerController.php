@@ -28,6 +28,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Artisan;
 
 class InternalOrderManagerController extends Controller
 {
@@ -519,13 +520,14 @@ class InternalOrderManagerController extends Controller
                     $order = Order::create([
                         'user_id' => $request->user_id,
                         'plan_id' => $determinedPlanId,
-                        'amount' => $plan->price ?? 0,
+                        'amount' => $plan->price * $calculatedTotalInboxes,
                         'status' => 'pending',
                         'status_manage_by_admin' => $status,
                         'currency' => 'USD',
-                        'payment_method' => 'internal',
-                        'payment_status' => 'paid', // Internal orders are considered pre-paid
+                        // 'payment_method' => 'internal',
+                        // 'payment_status' => 'paid', // Internal orders are considered pre-paid
                         'internal_order_id' => $internalOrder->id, // Link to internal order
+                        'is_internal' => 1
                     ]);
 
                     // Create ReorderInfo record with detailed configuration
@@ -596,7 +598,15 @@ class InternalOrderManagerController extends Controller
                     ]
                 );
             }
+            // Run the artisan command
+            Artisan::call('panels:check-capacity');
             
+            // Get the command output
+            $output = Artisan::output();
+            
+            Log::info('Panel capacity check completed successfully', [
+                'output' => $output
+            ]);
             // Return response
             return response()->json([
                 'success' => true,
@@ -1106,20 +1116,20 @@ class InternalOrderManagerController extends Controller
                 'order_id' => 'required|exists:internal_orders,id',
                 'user_id' => 'required|exists:users,id'
             ]);
-
-            $order = InternalOrder::findOrFail($validated['order_id']);
+            dd($validated);
+            $internalOrder = InternalOrder::findOrFail($validated['order_id']);
             $user = User::findOrFail($validated['user_id']);
             
 
-            $oldAssignedTo = $order->assigned_to;
-            $order->assigned_to = $validated['user_id'];
-            $order->save();
+            $oldAssignedTo = $internalOrder->assigned_to;
+            $internalOrder->assigned_to = $validated['user_id'];
+            $internalOrder->save();
 
             // Log the assignment activity
             ActivityLogService::log(
                 'internal-order-assignment',
-                'Internal order #' . $order->id . ' assigned to ' . $user->name,
-                $order,
+                'Internal order #' . $internalOrder->id . ' assigned to ' . $user->name,
+                $internalOrder,
                 [
                     'old_assigned_to' => $oldAssignedTo,
                     'new_assigned_to' => $user->id,

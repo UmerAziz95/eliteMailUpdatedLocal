@@ -38,7 +38,9 @@ class Order extends Model
         'total_paused_seconds',
         'rejected_by',
         'rejected_at',
-        'is_internal'
+        'is_internal',
+        'internal_order_id',
+        'internal_order_assignment'
     ];
     
     // status_manage_by_admin
