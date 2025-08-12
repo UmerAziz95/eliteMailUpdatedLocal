@@ -772,12 +772,12 @@
                 <!-- Action Buttons -->
                 <div class="mt-4 pt-3 border-top">
                     <div class="row g-2">
-                        <div class="col-6">
+                        <div class="col-12">
                             <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="offcanvas">
                                 <i class="fa-solid fa-times"></i> Cancel
                             </button>
                         </div>
-                        <div class="col-6">
+                        <div class="col-12">
                             <button type="submit" class="btn btn-primary w-100" id="assignUserBtn">
                                 <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
                             </button>
@@ -1427,6 +1427,10 @@
                 $('#newUserFormSection').show();
                 $('#userSelect').prop('disabled', true);
                 $('#assignBtnText').text('Create & Assign User');
+                
+                // Hide selected user info and reset dropdown
+                $('#selectedUserInfo').hide();
+                $('#userSelect').val(null).trigger('change');
                 
                 // Clear existing values and focus on name field
                 $('#newUserName').val('');
