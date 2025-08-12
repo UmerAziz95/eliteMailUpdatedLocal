@@ -251,6 +251,40 @@
                 color: #fff;
             }
         }
+
+        /* Password Toggle Button Styling */
+        .password-toggle-btn {
+            border: 1px solid #ced4da;
+            border-left: none;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .password-toggle-btn:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .password-toggle-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            border-color: #86b7fe;
+        }
+
+        .password-toggle-btn i {
+            color: #6c757d;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .password-toggle-btn:hover i {
+            color: #495057;
+        }
+
+        /* Ensure input group styling is consistent */
+        .input-group .form-control:focus + .password-toggle-btn {
+            border-color: #86b7fe;
+        }
     </style>
 @endpush
 
@@ -757,11 +791,21 @@
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="newUserPassword" class="form-label">Password *</label>
-                                    <input type="password" class="form-control" id="newUserPassword" name="new_user_password">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="newUserPassword" name="new_user_password">
+                                        <button class="btn btn-outline-secondary password-toggle-btn" type="button" id="togglePassword">
+                                            <i class="fa-solid fa-eye" id="passwordEyeIcon"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="newUserPasswordConfirmation" class="form-label">Confirm Password *</label>
-                                    <input type="password" class="form-control" id="newUserPasswordConfirmation" name="new_user_password_confirmation">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="newUserPasswordConfirmation" name="new_user_password_confirmation">
+                                        <button class="btn btn-outline-secondary password-toggle-btn" type="button" id="togglePasswordConfirmation">
+                                            <i class="fa-solid fa-eye" id="passwordConfirmationEyeIcon"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-3">
@@ -1657,6 +1701,34 @@
                 } else {
                     confirmationField.removeClass('is-valid is-invalid');
                     confirmationField.next('.invalid-feedback').hide();
+                }
+            });
+
+            // Password visibility toggle functionality
+            $('#togglePassword').on('click', function() {
+                const passwordField = $('#newUserPassword');
+                const eyeIcon = $('#passwordEyeIcon');
+                
+                if (passwordField.attr('type') === 'password') {
+                    passwordField.attr('type', 'text');
+                    eyeIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordField.attr('type', 'password');
+                    eyeIcon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Password confirmation visibility toggle functionality
+            $('#togglePasswordConfirmation').on('click', function() {
+                const passwordConfirmationField = $('#newUserPasswordConfirmation');
+                const eyeIcon = $('#passwordConfirmationEyeIcon');
+                
+                if (passwordConfirmationField.attr('type') === 'password') {
+                    passwordConfirmationField.attr('type', 'text');
+                    eyeIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordConfirmationField.attr('type', 'password');
+                    eyeIcon.removeClass('fa-eye-slash').addClass('fa-eye');
                 }
             });
         });
