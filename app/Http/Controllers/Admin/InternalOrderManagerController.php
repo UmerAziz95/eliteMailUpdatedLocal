@@ -115,7 +115,6 @@ class InternalOrderManagerController extends Controller
         return view('admin.internal_order_manager.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'internalOrder'));
     }
     
-
     public function store(Request $request)
     {
        
@@ -438,12 +437,59 @@ class InternalOrderManagerController extends Controller
                     ]);
                 }
 
+                // Update or create subscription for internal order
+                $subscription = Subscription::where('order_id', $order->id)->first();
+                if ($subscription) {
+                    // Update existing subscription
+                    $subscription->update([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'status' => 'active',
+                        'next_billing_date' => now()->addMonths(1),
+                        'last_billing_date' => now(),
+                        'meta' => [
+                            'type' => 'internal_order',
+                            'amount' => $plan->price ?? 0,
+                            'currency' => 'USD',
+                            'updated_via' => 'internal_order_manager'
+                        ]
+                    ]);
+                } else {
+                    // Create new subscription if it doesn't exist
+                    $subscription = Subscription::create([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'order_id' => $order->id,
+                        'status' => 'active',
+                        'start_date' => now(),
+                        'end_date' => now()->addMonths(1), // Default to 1 month subscription
+                        'next_billing_date' => now()->addMonths(1),
+                        'last_billing_date' => now(),
+                        'chargebee_subscription_id' => 'internal_sub_' . time() . '_' . $order->id,
+                        'chargebee_customer_id' => 'internal_cust_' . $request->user_id,
+                        'meta' => [
+                            'type' => 'internal_order',
+                            'amount' => $plan->price ?? 0,
+                            'currency' => 'USD',
+                            'created_via' => 'internal_order_manager'
+                        ]
+                    ]);
+                }
+
+                Log::info('Subscription updated/created for internal order update', [
+                    'subscription_id' => $subscription->id,
+                    'order_id' => $order->id,
+                    'user_id' => $request->user_id,
+                    'plan_id' => $determinedPlanId,
+                    'action' => $subscription->wasRecentlyCreated ? 'created' : 'updated'
+                ]);
+
                 $message = 'Internal order updated successfully with related data.';
 
                 // Create a new activity log using the custom log service
                 ActivityLogService::log(
                     'internal-order-update',
-                    'Internal order updated: '. $internalOrder->id . ' with related Order #' . $order->id,
+                    'Internal order updated: '. $internalOrder->id . ' with related Order #' . $order->id . ' and Subscription #' . $subscription->id,
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
@@ -451,7 +497,8 @@ class InternalOrderManagerController extends Controller
                         'total_inboxes' => $calculatedTotalInboxes,
                         'status' => $status,
                         'related_order_id' => $order->id,
-                        'reorder_info_id' => $reorderInfo->id
+                        'reorder_info_id' => $reorderInfo->id,
+                        'subscription_id' => $subscription->id
                     ]
                 );
 
@@ -564,6 +611,35 @@ class InternalOrderManagerController extends Controller
                         'coupon_code' => $request->coupon_code,
                         'tutorial_section' => $request->tutorial_section,
                     ]);
+
+                    // Create a fake subscription entry for internal orders
+                    $subscription = Subscription::create([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'order_id' => $order->id,
+                        'status' => 'active',
+                        'start_date' => now(),
+                        'end_date' => now()->addMonths(1), // Default to 1 month subscription
+                        'next_billing_date' => now()->addMonths(1),
+                        'last_billing_date' => now(),
+                        'chargebee_subscription_id' => 'internal_sub_' . time() . '_' . $order->id,
+                        'chargebee_customer_id' => 'internal_cust_' . $request->user_id,
+                        'meta' => [
+                            'type' => 'internal_order',
+                            'amount' => $plan->price ?? 0,
+                            'currency' => 'USD',
+                            'created_via' => 'internal_order_manager'
+                        ]
+                    ]);
+
+                    Log::info('Fake subscription created for internal order', [
+                        'subscription_id' => $subscription->id,
+                        'order_id' => $order->id,
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'chargebee_subscription_id' => $subscription->chargebee_subscription_id
+                    ]);
+
                     $order->orderTracking()->updateOrCreate(
                         ['order_id' => $order->id],
                         [
@@ -586,7 +662,7 @@ class InternalOrderManagerController extends Controller
                 // Log the creation
                 ActivityLogService::log(
                     'internal-order-create',
-                    'New internal order created: '. $internalOrder->id . ' with related Order #' . $order->id,
+                    'New internal order created: '. $internalOrder->id . ' with related Order #' . $order->id . ' and Subscription #' . $subscription->id,
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
@@ -594,7 +670,8 @@ class InternalOrderManagerController extends Controller
                         'total_inboxes' => $calculatedTotalInboxes,
                         'status' => $status,
                         'related_order_id' => $order->id,
-                        'reorder_info_id' => $reorderInfo->id
+                        'reorder_info_id' => $reorderInfo->id,
+                        'subscription_id' => $subscription->id
                     ]
                 );
             }
@@ -616,7 +693,10 @@ class InternalOrderManagerController extends Controller
                 'internal_order_id' => $internalOrder->id,
                 'order_id' => isset($order) ? $order->id : null,
                 'reorder_info_id' => isset($reorderInfo) ? $reorderInfo->id : null,
-                'status' => $status
+                'subscription_id' => isset($subscription) ? $subscription->id : null,
+                'status' => $status,
+                'created_at' => $internalOrder->created_at,
+                'updated_at' => $internalOrder->updated_at
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
