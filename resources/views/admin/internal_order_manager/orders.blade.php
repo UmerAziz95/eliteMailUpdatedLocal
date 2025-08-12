@@ -709,6 +709,31 @@
                         <i class="fa-solid fa-info-circle"></i> No users found. Click "Add New" to create a user.
                     </div>
                 </div>
+                
+                <!-- Selected User Information -->
+                <div id="selectedUserInfo" class="mb-3" style="display: none;">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fa-solid fa-user"></i> Selected User Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Name:</strong> <span id="selectedUserName">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Email:</strong> <span id="selectedUserEmail">-</span>
+                                </div>
+                                <div class="col-md-6 mt-2">
+                                    <strong>Phone:</strong> <span id="selectedUserPhone">-</span>
+                                </div>
+                                <div class="col-md-6 mt-2">
+                                    <strong>User Type:</strong> <span id="selectedUserType">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- New User Creation Form -->
                 <div id="newUserFormSection" class="mb-3" style="display: none;">
@@ -727,16 +752,12 @@
                                     <input type="email" class="form-control" id="newUserEmail" name="new_user_email" required>
                                 </div>
                                 <div class="col-12 mb-3">
+                                    <label for="newUserPhone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="newUserPhone" name="new_user_phone" placeholder="+1234567890">
+                                </div>
+                                <div class="col-12 mb-3">
                                     <label for="newUserPassword" class="form-label">Password *</label>
                                     <input type="password" class="form-control" id="newUserPassword" name="new_user_password" required>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="newUserInternal" name="new_user_internal" checked>
-                                        <label class="form-check-label" for="newUserInternal">
-                                            Internal User
-                                        </label>
-                                    </div>
                                 </div>
                             </div>
                             <div class="mt-3">
@@ -748,11 +769,20 @@
                     </div>
                 </div>
                 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary" id="assignUserBtn">
-                        <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">Cancel</button>
+                <!-- Action Buttons -->
+                <div class="mt-4 pt-3 border-top">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="offcanvas">
+                                <i class="fa-solid fa-times"></i> Cancel
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-primary w-100" id="assignUserBtn">
+                                <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1307,6 +1337,12 @@
                         window.lastSearchTerm = params.term || '';
                         window.lastResultsCount = data.results ? data.results.length : 0;
                         
+                        // Auto-reset dropdown when new results are found
+                        if (params.term && params.term.length > 2 && window.lastResultsCount > 0) {
+                            // Hide user info if showing
+                            $('#selectedUserInfo').hide();
+                        }
+                        
                         // Show/hide Add New User button and message based on results
                         setTimeout(() => {
                             if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
@@ -1337,6 +1373,25 @@
                 dropdownParent: $('#assignUserOffcanvas')
             });
 
+            // Handle user selection
+            $('#userSelect').on('select2:select', function(e) {
+                const data = e.params.data;
+                console.log('User selected:', data);
+                
+                // Show selected user information
+                if (data.id && data.text) {
+                    $('#selectedUserName').text(data.name || data.text);
+                    $('#selectedUserEmail').text(data.email || 'N/A');
+                    $('#selectedUserPhone').text(data.phone || 'N/A');
+                    $('#selectedUserType').text(data.is_internal ? 'Internal User' : 'External User');
+                    $('#selectedUserInfo').show();
+                    
+                    // Hide add new user elements
+                    $('#addNewUserBtn').hide();
+                    $('#addNewUserMessage').hide();
+                }
+            });
+
             // Handle Select2 events for better UX
             $('#userSelect').on('select2:open', function() {
                 // Don't hide the button/message when opening, let the user continue interaction
@@ -1359,6 +1414,7 @@
             $('#userSelect').on('select2:clear', function() {
                 $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
+                $('#selectedUserInfo').hide();
                 window.lastSearchTerm = '';
                 window.lastResultsCount = 0;
             });
@@ -1375,6 +1431,7 @@
                 // Clear existing values and focus on name field
                 $('#newUserName').val('');
                 $('#newUserEmail').val('');
+                $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
                 $('#newUserInternal').prop('checked', true);
                 
@@ -1395,6 +1452,7 @@
                 // Clear form fields
                 $('#newUserName').val('');
                 $('#newUserEmail').val('');
+                $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
                 
                 // Show the button again if we still have no results
@@ -1412,6 +1470,7 @@
                 $('#userSelect').val(null).trigger('change');
                 $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
+                $('#selectedUserInfo').hide();
                 $('#newUserFormSection').hide();
                 $('#userSelect').prop('disabled', false);
                 $('#assignBtnText').text('Assign User');
@@ -1428,6 +1487,7 @@
                     // Validate new user fields
                     const name = $('#newUserName').val().trim();
                     const email = $('#newUserEmail').val().trim();
+                    const phone = $('#newUserPhone').val().trim();
                     const password = $('#newUserPassword').val();
                     
                     if (!name || !email || !password) {
@@ -1446,6 +1506,7 @@
                         create_new_user: true,
                         new_user_name: name,
                         new_user_email: email,
+                        new_user_phone: phone,
                         new_user_password: password,
                         new_user_internal: $('#newUserInternal').is(':checked') ? 1 : 0,
                         _token: '{{ csrf_token() }}'
@@ -1526,6 +1587,7 @@
                 $('#userSelect').val(null).trigger('change');
                 $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
+                $('#selectedUserInfo').hide();
                 $('#newUserFormSection').hide();
                 $('#userSelect').prop('disabled', false);
                 $('#assignBtnText').text('Assign User');
@@ -1533,6 +1595,7 @@
                 // Clear new user form fields
                 $('#newUserName').val('');
                 $('#newUserEmail').val('');
+                $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
                 $('#newUserInternal').prop('checked', true);
                 

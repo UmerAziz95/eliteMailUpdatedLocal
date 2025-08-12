@@ -858,13 +858,14 @@ class InternalOrderManagerController extends Controller
         try {
             $search = $request->get('search', '');
             
-            $query = User::select('id', 'name', 'email')
+            $query = User::select('id', 'name', 'email', 'phone', 'is_internal')
                 ->where('is_internal', true); // Only show internal users
             
             if ($search) {
                 $query->where(function($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
                 });
             }
             
@@ -873,7 +874,11 @@ class InternalOrderManagerController extends Controller
             $results = $users->map(function($user) {
                 return [
                     'id' => $user->id,
-                    'text' => $user->name . ' (' . $user->email . ')'
+                    'text' => $user->name . ' (' . $user->email . ')',
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? 'N/A',
+                    'is_internal' => $user->is_internal
                 ];
             });
             
@@ -955,8 +960,9 @@ class InternalOrderManagerController extends Controller
                 'order_id' => 'required|exists:internal_orders,id',
                 'new_user_name' => 'required|string|max:255',
                 'new_user_email' => 'required|email|unique:users,email',
+                'new_user_phone' => 'nullable|string|max:20',
                 'new_user_password' => 'required|string|min:6',
-                // 'new_user_internal' => 'boolean'
+                'new_user_internal' => 'nullable|boolean'
             ]);
 
             $order = InternalOrder::findOrFail($validated['order_id']);
@@ -965,8 +971,9 @@ class InternalOrderManagerController extends Controller
             $user = User::create([
                 'name' => $validated['new_user_name'],
                 'email' => $validated['new_user_email'],
+                'phone' => $validated['new_user_phone'] ?? null,
                 'password' => bcrypt($validated['new_user_password']),
-                'is_internal' => true, // Ensure this is an internal user
+                'is_internal' => $validated['new_user_internal'] ?? true, // Default to internal user
                 'email_verified_at' => now(), // Auto-verify internal users
             ]);
 
@@ -983,6 +990,7 @@ class InternalOrderManagerController extends Controller
                 [
                     'created_user_id' => $user->id,
                     'created_user_email' => $user->email,
+                    'created_user_phone' => $user->phone,
                     'old_assigned_to' => $oldAssignedTo,
                     'new_assigned_to' => $user->id,
                     'assigned_by' => auth()->id()
@@ -995,7 +1003,8 @@ class InternalOrderManagerController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'email' => $user->email
+                    'email' => $user->email,
+                    'phone' => $user->phone
                 ]
             ]);
 
