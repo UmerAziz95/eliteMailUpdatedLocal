@@ -1191,7 +1191,8 @@ class InternalOrderManagerController extends Controller
                 'new_user_name' => 'required|string|max:255',
                 'new_user_email' => 'required|email|unique:users,email',
                 'new_user_phone' => 'nullable|string|max:20',
-                'new_user_password' => 'required|string|min:6',
+                'new_user_password' => 'required|string|min:6|confirmed',
+                'new_user_password_confirmation' => 'required|string|min:6',
                 'new_user_internal' => 'nullable|boolean'
             ]);
 

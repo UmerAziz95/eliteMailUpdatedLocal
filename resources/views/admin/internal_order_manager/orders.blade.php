@@ -759,6 +759,10 @@
                                     <label for="newUserPassword" class="form-label">Password *</label>
                                     <input type="password" class="form-control" id="newUserPassword" name="new_user_password">
                                 </div>
+                                <div class="col-12 mb-3">
+                                    <label for="newUserPasswordConfirmation" class="form-label">Confirm Password *</label>
+                                    <input type="password" class="form-control" id="newUserPasswordConfirmation" name="new_user_password_confirmation">
+                                </div>
                             </div>
                             <div class="mt-3">
                                 <button type="button" class="btn btn-secondary btn-sm" id="cancelNewUserBtn">
@@ -1437,10 +1441,11 @@
                 $('#newUserEmail').val('');
                 $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
+                $('#newUserPasswordConfirmation').val('');
                 $('#newUserInternal').prop('checked', true);
                 
                 // Enable required attributes for new user form fields
-                $('#newUserName, #newUserEmail, #newUserPassword').attr('required', true);
+                $('#newUserName, #newUserEmail, #newUserPassword, #newUserPasswordConfirmation').attr('required', true);
                 
                 // Focus on the first field after a short delay
                 setTimeout(() => {
@@ -1461,9 +1466,10 @@
                 $('#newUserEmail').val('');
                 $('#newUserPhone').val('');
                 $('#newUserPassword').val('');
+                $('#newUserPasswordConfirmation').val('');
                 
                 // Disable required attributes for new user form fields when hiding
-                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
+                $('#newUserName, #newUserEmail, #newUserPassword, #newUserPasswordConfirmation').removeAttr('required');
                 
                 // Show the button again if we still have no results
                 if (window.lastSearchTerm && window.lastSearchTerm.length > 2 && window.lastResultsCount === 0) {
@@ -1471,7 +1477,6 @@
                     $('#addNewUserMessage').show();
                 }
             });
-
             // Handle assign user button click
             $(document).on('click', '.assign-user-btn', function(e) {
                 e.preventDefault();
@@ -1486,7 +1491,7 @@
                 $('#assignBtnText').text('Assign User');
                 
                 // Remove required attributes from new user form fields since form is hidden
-                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
+                $('#newUserName, #newUserEmail, #newUserPassword, #newUserPasswordConfirmation').removeAttr('required');
             });
 
             // Handle assign user form submission
@@ -1502,11 +1507,22 @@
                     const email = $('#newUserEmail').val().trim();
                     const phone = $('#newUserPhone').val().trim();
                     const password = $('#newUserPassword').val();
+                    const passwordConfirmation = $('#newUserPasswordConfirmation').val();
                     
-                    if (!name || !email || !password) {
+                    if (!name || !email || !password || !passwordConfirmation) {
                         Swal.fire({
                             title: 'Error!',
                             text: 'Please fill in all required fields',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
+                    if (password !== passwordConfirmation) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Passwords do not match',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -1521,6 +1537,7 @@
                         new_user_email: email,
                         new_user_phone: phone,
                         new_user_password: password,
+                        new_user_password_confirmation: passwordConfirmation,
                         new_user_internal: $('#newUserInternal').is(':checked') ? 1 : 0,
                         _token: '{{ csrf_token() }}'
                     };
@@ -1613,11 +1630,34 @@
                 $('#newUserInternal').prop('checked', true);
                 
                 // Remove required attributes from new user form fields
-                $('#newUserName, #newUserEmail, #newUserPassword').removeAttr('required');
+                $('#newUserName, #newUserEmail, #newUserPassword, #newUserPasswordConfirmation').removeAttr('required');
                 
                 // Reset search variables
                 window.lastSearchTerm = '';
                 window.lastResultsCount = 0;
+            });
+
+            // Password confirmation validation
+            $('#newUserPassword, #newUserPasswordConfirmation').on('input', function() {
+                const password = $('#newUserPassword').val();
+                const confirmation = $('#newUserPasswordConfirmation').val();
+                const confirmationField = $('#newUserPasswordConfirmation');
+                
+                if (confirmation) {
+                    if (password === confirmation) {
+                        confirmationField.removeClass('is-invalid').addClass('is-valid');
+                        confirmationField.next('.invalid-feedback').hide();
+                    } else {
+                        confirmationField.removeClass('is-valid').addClass('is-invalid');
+                        if (!confirmationField.next('.invalid-feedback').length) {
+                            confirmationField.after('<div class="invalid-feedback">Passwords do not match</div>');
+                        }
+                        confirmationField.next('.invalid-feedback').show();
+                    }
+                } else {
+                    confirmationField.removeClass('is-valid is-invalid');
+                    confirmationField.next('.invalid-feedback').hide();
+                }
             });
         });
     </script>
