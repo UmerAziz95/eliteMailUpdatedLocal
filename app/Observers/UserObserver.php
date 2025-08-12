@@ -70,7 +70,7 @@ class UserObserver
         // Only update GHL contact if integration is enabled and user has GHL contact ID
         if (config('services.ghl.enabled', false) && $user->ghl_contact_id) {
             try {
-                $this->ghlService->updateContact($user, $user->ghl_contact_id);
+                // $this->ghlService->updateContact($user, $user->ghl_contact_id);
                 
                 Log::info('UserObserver: GHL contact update initiated', [
                     'user_id' => $user->id,
