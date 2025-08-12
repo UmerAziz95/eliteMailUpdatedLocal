@@ -186,7 +186,7 @@
             background-color: #fff;
             border: 1px solid #ced4da;
             border-radius: 0.375rem;
-            color: #212529;
+            color: #212529 !important;
             padding: 0.375rem 0.75rem;
         }
 
@@ -233,7 +233,7 @@
             .select2-container--default .select2-search--dropdown .select2-search__field,
             .select2-container--default .select2-results__message {
                 background-color: #212529;
-                color: #fff;
+                color: #0000 !important;
                 border-color: #495057;
             }
 
@@ -694,20 +694,19 @@
                 
                 <div class="mb-3">
                     <label for="userSelect" class="form-label">Select User</label>
-                    <select class="form-select" id="userSelect" name="user_id" required>
-                        <option value="">Search for a user...</option>
-                    </select>
-                    <div class="form-text">Start typing to search for internal users</div>
-                </div>
-                
-                <div id="addNewUserSection" class="mb-3" style="display: none;">
-                    <div class="alert alert-info">
-                        <i class="fa-solid fa-info-circle"></i>
-                        No users found matching your search.
-                        
-                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="addNewUserBtn">
-                            <i class="fa-solid fa-user-plus"></i> Add New User
+                    <div class="position-relative">
+                        <select class="form-select" id="userSelect" name="user_id" required>
+                            <option value="">Search for a user...</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-primary position-absolute" 
+                                id="addNewUserBtn" 
+                                style="top: 2px; right: 2px; z-index: 1000; padding: 0.25rem 0.5rem; display: none;">
+                            <i class="fa-solid fa-user-plus"></i> Add New
                         </button>
+                    </div>
+                    <div class="form-text">Start typing to search for internal users</div>
+                    <div id="addNewUserMessage" class="text-muted small mt-1" style="display: none;">
+                        <i class="fa-solid fa-info-circle"></i> No users found. Click "Add New" to create a user.
                     </div>
                 </div>
 
@@ -748,7 +747,7 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary" id="assignUserBtn">
                         <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
@@ -1308,15 +1307,18 @@
                         window.lastSearchTerm = params.term || '';
                         window.lastResultsCount = data.results ? data.results.length : 0;
                         
-                        // Show/hide Add New User section based on results - but only after dropdown interaction
+                        // Show/hide Add New User button and message based on results
                         setTimeout(() => {
                             if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
-                                $('#addNewUserSection').show();
-                                console.log('Showing Add New User section - no results found for:', params.term);
+                                $('#addNewUserBtn').show();
+                                $('#addNewUserMessage').show();
+                                console.log('Showing Add New User button - no results found for:', params.term);
                             } else if (!params.term || params.term.length <= 2) {
-                                $('#addNewUserSection').hide();
+                                $('#addNewUserBtn').hide();
+                                $('#addNewUserMessage').hide();
                             } else if (window.lastResultsCount > 0) {
-                                $('#addNewUserSection').hide();
+                                $('#addNewUserBtn').hide();
+                                $('#addNewUserMessage').hide();
                             }
                         }, 300);
                         
@@ -1337,24 +1339,26 @@
 
             // Handle Select2 events for better UX
             $('#userSelect').on('select2:open', function() {
-                // Don't hide the section when opening, let the user continue interaction
+                // Don't hide the button/message when opening, let the user continue interaction
                 console.log('Select2 opened');
             });
 
             $('#userSelect').on('select2:close', function() {
-                // Keep the Add New User section visible even after closing if no results were found
+                // Keep the Add New User button visible even after closing if no results were found
                 console.log('Select2 closed, last search term:', window.lastSearchTerm, 'results count:', window.lastResultsCount);
                 
                 // Only hide if we have results or no search was performed
                 if (!window.lastSearchTerm || window.lastSearchTerm.length <= 2 || window.lastResultsCount > 0) {
-                    $('#addNewUserSection').hide();
+                    $('#addNewUserBtn').hide();
+                    $('#addNewUserMessage').hide();
                 }
-                // If we searched for something and found no results, keep the "Add New User" section visible
+                // If we searched for something and found no results, keep the "Add New User" button visible
             });
 
             // Handle clearing of the select
             $('#userSelect').on('select2:clear', function() {
-                $('#addNewUserSection').hide();
+                $('#addNewUserBtn').hide();
+                $('#addNewUserMessage').hide();
                 window.lastSearchTerm = '';
                 window.lastResultsCount = 0;
             });
@@ -1362,7 +1366,8 @@
             // Handle Add New User button click
             $('#addNewUserBtn').on('click', function() {
                 console.log('Add New User button clicked');
-                $('#addNewUserSection').hide();
+                $('#addNewUserBtn').hide();
+                $('#addNewUserMessage').hide();
                 $('#newUserFormSection').show();
                 $('#userSelect').prop('disabled', true);
                 $('#assignBtnText').text('Create & Assign User');
@@ -1391,6 +1396,12 @@
                 $('#newUserName').val('');
                 $('#newUserEmail').val('');
                 $('#newUserPassword').val('');
+                
+                // Show the button again if we still have no results
+                if (window.lastSearchTerm && window.lastSearchTerm.length > 2 && window.lastResultsCount === 0) {
+                    $('#addNewUserBtn').show();
+                    $('#addNewUserMessage').show();
+                }
             });
 
             // Handle assign user button click
@@ -1399,7 +1410,8 @@
                 const orderId = $(this).data('order-id');
                 $('#assignOrderId').val(orderId);
                 $('#userSelect').val(null).trigger('change');
-                $('#addNewUserSection').hide();
+                $('#addNewUserBtn').hide();
+                $('#addNewUserMessage').hide();
                 $('#newUserFormSection').hide();
                 $('#userSelect').prop('disabled', false);
                 $('#assignBtnText').text('Assign User');
@@ -1435,7 +1447,7 @@
                         new_user_name: name,
                         new_user_email: email,
                         new_user_password: password,
-                        new_user_internal: $('#newUserInternal').is(':checked'),
+                        new_user_internal: $('#newUserInternal').is(':checked') ? 1 : 0,
                         _token: '{{ csrf_token() }}'
                     };
                     
@@ -1512,7 +1524,8 @@
             $('#assignUserOffcanvas').on('hidden.bs.offcanvas', function() {
                 $('#assignUserForm')[0].reset();
                 $('#userSelect').val(null).trigger('change');
-                $('#addNewUserSection').hide();
+                $('#addNewUserBtn').hide();
+                $('#addNewUserMessage').hide();
                 $('#newUserFormSection').hide();
                 $('#userSelect').prop('disabled', false);
                 $('#assignBtnText').text('Assign User');
@@ -1522,6 +1535,10 @@
                 $('#newUserEmail').val('');
                 $('#newUserPassword').val('');
                 $('#newUserInternal').prop('checked', true);
+                
+                // Reset search variables
+                window.lastSearchTerm = '';
+                window.lastResultsCount = 0;
             });
         });
     </script>
