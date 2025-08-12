@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Log as ModelLog;
+use Illuminate\Support\Facades\DB;
 use App\Models\Status;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Support\Facades\Mail;
@@ -334,16 +335,122 @@ class InternalOrderManagerController extends Controller
                 $internalOrder = $existingInternalOrder;
                 $message = 'Internal order updated successfully.';
 
+                // Update or create related Order record
+                $order = Order::where('internal_order_id', $internalOrder->id)->first();
+                if ($order) {
+                    // Update existing order
+                    $order->update([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'amount' => $plan->price ?? 0,
+                        'status' => 'pending',
+                        'status_manage_by_admin' => $status,
+                        'currency' => 'USD',
+                        'payment_method' => 'internal',
+                        'payment_status' => 'paid',
+                    ]);
+                } else {
+                    // Create new order if it doesn't exist
+                    $order = Order::create([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'amount' => $plan->price ?? 0,
+                        'status' => 'pending',
+                        'status_manage_by_admin' => $status,
+                        'currency' => 'USD',
+                        'payment_method' => 'internal',
+                        'payment_status' => 'paid',
+                        'internal_order_id' => $internalOrder->id,
+                    ]);
+                }
+
+                // Update or create related ReorderInfo record
+                $reorderInfo = ReorderInfo::where('order_id', $order->id)->first();
+                if ($reorderInfo) {
+                    // Update existing reorder info
+                    $reorderInfo->update([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode("\n", array_filter($domains)),
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $is_draft == 1 ? $TOTAL_INBOXES : $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                        'prefix_variants' => json_encode($request->prefix_variants),
+                        'prefix_variants_details' => json_encode($request->prefix_variants_details),
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => '123',
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                        'tutorial_section' => $request->tutorial_section,
+                    ]);
+                } else {
+                    // Create new reorder info if it doesn't exist
+                    $reorderInfo = ReorderInfo::create([
+                        'order_id' => $order->id,
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode("\n", array_filter($domains)),
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $is_draft == 1 ? $TOTAL_INBOXES : $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                        'prefix_variants' => json_encode($request->prefix_variants),
+                        'prefix_variants_details' => json_encode($request->prefix_variants_details),
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => '123',
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                        'tutorial_section' => $request->tutorial_section,
+                    ]);
+                }
+
+                $message = 'Internal order updated successfully with related data.';
+
                 // Create a new activity log using the custom log service
                 ActivityLogService::log(
                     'internal-order-update',
-                    'Internal order updated: '. $internalOrder->id,
+                    'Internal order updated: '. $internalOrder->id . ' with related Order #' . $order->id,
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
                         'plan_id' => $determinedPlanId,
                         'total_inboxes' => $calculatedTotalInboxes,
-                        'status' => $status
+                        'status' => $status,
+                        'related_order_id' => $order->id,
+                        'reorder_info_id' => $reorderInfo->id
                     ]
                 );
 
@@ -366,57 +473,126 @@ class InternalOrderManagerController extends Controller
                 $is_draft = $request->is_draft ?? 0;
                 $status = $is_draft == 1 ? 'draft' : 'pending';
                 
-                // Create InternalOrder record directly
-                $internalOrder = InternalOrder::create([
-                    'user_id' => $request->user_id,
-                    'plan_id' => $determinedPlanId,
-                    'amount' => 0,
-                    'status' => 'pending',
-                    'status_manage_by_admin' => $status,
-                    'currency' => 'USD',
-                    'forwarding_url' => $request->forwarding_url,
-                    'hosting_platform' => $request->hosting_platform,
-                    'other_platform' => $request->other_platform,
-                    'bison_url' => $request->bison_url,
-                    'bison_workspace' => $request->bison_workspace,
-                    'backup_codes' => $request->backup_codes,
-                    'platform_login' => $request->platform_login,
-                    'platform_password' => $request->platform_password,
-                    'domains' => implode(',', array_filter($domains)),
-                    'sending_platform' => $request->sending_platform,
-                    'sequencer_login' => $request->sequencer_login,
-                    'sequencer_password' => $request->sequencer_password,
-                    'total_inboxes' => $calculatedTotalInboxes,
-                    'initial_total_inboxes' => $calculatedTotalInboxes,
-                    'inboxes_per_domain' => $request->inboxes_per_domain,
-                    'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
-                    'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
-                    'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
-                    'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
-                    'prefix_variants' => $request->prefix_variants,
-                    'prefix_variants_details' => $request->prefix_variants_details,
-                    'persona_password' => $request->persona_password,
-                    'profile_picture_link' => $request->profile_picture_link,
-                    'email_persona_password' => '123',
-                    'email_persona_picture_link' => $request->email_persona_picture_link,
-                    'master_inbox_email' => $request->master_inbox_email,
-                    'additional_info' => $request->additional_info,
-                    'coupon_code' => $request->coupon_code,
-                    'tutorial_section' => $request->tutorial_section,
-                ]);
-                
-                $message = 'New internal order created successfully.';
+                // Use database transaction to ensure data consistency
+                DB::beginTransaction();
+                try {
+                    // Create InternalOrder record directly
+                    $internalOrder = InternalOrder::create([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'amount' => 0,
+                        'status' => 'pending',
+                        'status_manage_by_admin' => $status,
+                        'currency' => 'USD',
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode(',', array_filter($domains)),
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $calculatedTotalInboxes,
+                        'initial_total_inboxes' => $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                        'prefix_variants' => $request->prefix_variants,
+                        'prefix_variants_details' => $request->prefix_variants_details,
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => '123',
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                        'tutorial_section' => $request->tutorial_section,
+                    ]);
+
+                    // Also create corresponding Order record
+                    $order = Order::create([
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'amount' => $plan->price ?? 0,
+                        'status' => 'pending',
+                        'status_manage_by_admin' => $status,
+                        'currency' => 'USD',
+                        'payment_method' => 'internal',
+                        'payment_status' => 'paid', // Internal orders are considered pre-paid
+                        'internal_order_id' => $internalOrder->id, // Link to internal order
+                    ]);
+
+                    // Create ReorderInfo record with detailed configuration
+                    $reorderInfo = ReorderInfo::create([
+                        'order_id' => $order->id,
+                        'user_id' => $request->user_id,
+                        'plan_id' => $determinedPlanId,
+                        'forwarding_url' => $request->forwarding_url,
+                        'hosting_platform' => $request->hosting_platform,
+                        'other_platform' => $request->other_platform,
+                        'bison_url' => $request->bison_url,
+                        'bison_workspace' => $request->bison_workspace,
+                        'backup_codes' => $request->backup_codes,
+                        'platform_login' => $request->platform_login,
+                        'platform_password' => $request->platform_password,
+                        'domains' => implode("\n", array_filter($domains)), // Use newlines for reorder_infos
+                        'sending_platform' => $request->sending_platform,
+                        'sequencer_login' => $request->sequencer_login,
+                        'sequencer_password' => $request->sequencer_password,
+                        'total_inboxes' => $calculatedTotalInboxes,
+                        'inboxes_per_domain' => $request->inboxes_per_domain,
+                        'first_name' => isset($request->prefix_variants_details['prefix_variant_1']['first_name']) ? $request->prefix_variants_details['prefix_variant_1']['first_name'] : null,
+                        'last_name' => isset($request->prefix_variants_details['prefix_variant_1']['last_name']) ? $request->prefix_variants_details['prefix_variant_1']['last_name'] : null,
+                        'prefix_variant_1' => isset($request->prefix_variants['prefix_variant_1']) ? $request->prefix_variants['prefix_variant_1'] : null,
+                        'prefix_variant_2' => isset($request->prefix_variants['prefix_variant_2']) ? $request->prefix_variants['prefix_variant_2'] : null,
+                        'prefix_variants' => json_encode($request->prefix_variants),
+                        'prefix_variants_details' => json_encode($request->prefix_variants_details),
+                        'persona_password' => $request->persona_password,
+                        'profile_picture_link' => $request->profile_picture_link,
+                        'email_persona_password' => '123',
+                        'email_persona_picture_link' => $request->email_persona_picture_link,
+                        'master_inbox_email' => $request->master_inbox_email,
+                        'additional_info' => $request->additional_info,
+                        'coupon_code' => $request->coupon_code,
+                        'tutorial_section' => $request->tutorial_section,
+                    ]);
+                    $order->orderTracking()->updateOrCreate(
+                        ['order_id' => $order->id],
+                        [
+                            'cron_run_time' => now(),
+                            'inboxes_per_domain' => $request->inboxes_per_domain,
+                            'total_inboxes' => $calculatedTotalInboxes,
+                            'status' => 'pending', // Set status to pending for new orders
+                        ]
+                    );
+                    // Commit the transaction
+                    DB::commit();
+                    
+                    $message = 'New internal order created successfully with related data.';
+                } catch (\Exception $e) {
+                    // Rollback the transaction on error
+                    DB::rollback();
+                    throw $e;
+                }
                 
                 // Log the creation
                 ActivityLogService::log(
                     'internal-order-create',
-                    'New internal order created: '. $internalOrder->id,
+                    'New internal order created: '. $internalOrder->id . ' with related Order #' . $order->id,
                     $internalOrder, 
                     [
                         'user_id' => $request->user_id,
                         'plan_id' => $determinedPlanId,
                         'total_inboxes' => $calculatedTotalInboxes,
-                        'status' => $status
+                        'status' => $status,
+                        'related_order_id' => $order->id,
+                        'reorder_info_id' => $reorderInfo->id
                     ]
                 );
             }
@@ -428,6 +604,8 @@ class InternalOrderManagerController extends Controller
                 'plan_id' => $determinedPlanId,
                 'user_id' => $request->user_id,
                 'internal_order_id' => $internalOrder->id,
+                'order_id' => isset($order) ? $order->id : null,
+                'reorder_info_id' => isset($reorderInfo) ? $reorderInfo->id : null,
                 'status' => $status
             ]);
 
@@ -709,14 +887,15 @@ class InternalOrderManagerController extends Controller
                                         <i class="fa-solid fa-ellipsis-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="' . route('admin.internal_order_management.new_order', $order->id) . '">
-                                            <i class="fa-solid fa-edit"></i> Edit</a></li>
+                                       
                                         <li><a class="dropdown-item assign-user-btn" href="#" data-order-id="' . $order->id . '" data-bs-toggle="offcanvas" data-bs-target="#assignUserOffcanvas">
                                             <i class="fa-solid fa-user-plus"></i> Assign to User</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger delete-order" href="#" data-order-id="' . $order->id . '" data-order-user="' . ($order->user ? $order->user->name : 'Unknown') . '">
-                                            <i class="fa-solid fa-trash"></i> Delete</a></li>';
-                                            
+                                        ';
+                                        //  <li><a class="dropdown-item" href="' . route('admin.internal_order_management.new_order', $order->id) . '">
+                                        //     <i class="fa-solid fa-edit"></i> Edit</a></li>
+                                        // <li><hr class="dropdown-divider"></li>
+                                        // <li><a class="dropdown-item text-danger delete-order" href="#" data-order-id="' . $order->id . '" data-order-user="' . ($order->user ? $order->user->name : 'Unknown') . '">
+                                        //     <i class="fa-solid fa-trash"></i> Delete</a></li>
                     // Add status update options
                     // if ($order->status_manage_by_admin !== 'completed') {
                     //     $actions .= '<li><a class="dropdown-item update-status" href="#" data-order-id="' . $order->id . '" data-status="completed">
@@ -820,18 +999,37 @@ class InternalOrderManagerController extends Controller
                 'created_at' => $internalOrder->created_at
             ];
 
+            // Find and delete related Order record
+            $relatedOrder = Order::where('internal_order_id', $internalOrder->id)->first();
+            $deletedOrderInfo = [];
+            if ($relatedOrder) {
+                $deletedOrderInfo['order_id'] = $relatedOrder->id;
+                
+                // Delete related ReorderInfo records first (due to foreign key constraint)
+                $deletedReorderInfos = ReorderInfo::where('order_id', $relatedOrder->id)->get();
+                foreach ($deletedReorderInfos as $reorderInfo) {
+                    $deletedOrderInfo['reorder_info_ids'][] = $reorderInfo->id;
+                    $reorderInfo->delete();
+                }
+                
+                // Then delete the order
+                $relatedOrder->delete();
+            }
+
             // Delete the internal order
             $internalOrder->delete();
 
-            Log::info('Internal order deleted successfully', [
+            Log::info('Internal order and related data deleted successfully', [
                 'internal_order_id' => $orderInfo['id'],
                 'user_name' => $orderInfo['user_name'],
+                'deleted_order_id' => $deletedOrderInfo['order_id'] ?? null,
+                'deleted_reorder_info_ids' => $deletedOrderInfo['reorder_info_ids'] ?? [],
                 'deleted_by' => auth()->id()
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Internal order deleted successfully.'
+                'message' => 'Internal order and all related data deleted successfully.'
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
