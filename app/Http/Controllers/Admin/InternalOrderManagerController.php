@@ -908,13 +908,6 @@ class InternalOrderManagerController extends Controller
             $order = InternalOrder::findOrFail($validated['order_id']);
             $user = User::findOrFail($validated['user_id']);
             
-            // Check if user is internal
-            if (!$user->is_internal) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected user is not an internal user.'
-                ], 400);
-            }
 
             $oldAssignedTo = $order->assigned_to;
             $order->assigned_to = $validated['user_id'];
@@ -963,7 +956,7 @@ class InternalOrderManagerController extends Controller
                 'new_user_name' => 'required|string|max:255',
                 'new_user_email' => 'required|email|unique:users,email',
                 'new_user_password' => 'required|string|min:6',
-                'new_user_internal' => 'boolean'
+                // 'new_user_internal' => 'boolean'
             ]);
 
             $order = InternalOrder::findOrFail($validated['order_id']);
@@ -973,7 +966,7 @@ class InternalOrderManagerController extends Controller
                 'name' => $validated['new_user_name'],
                 'email' => $validated['new_user_email'],
                 'password' => bcrypt($validated['new_user_password']),
-                'is_internal' => $request->has('new_user_internal') ? (bool)$validated['new_user_internal'] : true,
+                'is_internal' => true, // Ensure this is an internal user
                 'email_verified_at' => now(), // Auto-verify internal users
             ]);
 
