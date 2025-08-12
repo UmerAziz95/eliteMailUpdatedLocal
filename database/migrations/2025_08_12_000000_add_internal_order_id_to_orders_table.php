@@ -21,8 +21,8 @@ return new class extends Migration
                   ->references('id')
                   ->on('internal_orders')
                   ->onDelete('cascade');
-            // internal_order_assignment
-            $table->boolean('internal_order_assignment')->default(false);
+            // is_internal_order_assignment
+            $table->boolean('is_internal_order_assignment')->default(false);
 
 
             // Add index for better query performance
@@ -47,7 +47,7 @@ return new class extends Migration
             // Drop the column
             $table->dropColumn('internal_order_id');
 
-            $table->dropColumn('internal_order_assignment');
+            $table->dropColumn('is_internal_order_assignment');
         });
     }
 };

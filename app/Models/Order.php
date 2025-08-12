@@ -17,6 +17,7 @@ class Order extends Model
         'timer_paused_at' => 'datetime',
         'rejected_at' => 'datetime',
         'is_internal' => 'boolean',
+        'is_internal_order_assignment' => 'boolean'
     ];
     protected $fillable = [
         'user_id',
@@ -40,7 +41,7 @@ class Order extends Model
         'rejected_at',
         'is_internal',
         'internal_order_id',
-        'internal_order_assignment'
+        'is_internal_order_assignment'
     ];
     
     // status_manage_by_admin

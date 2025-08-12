@@ -1120,26 +1120,49 @@ class InternalOrderManagerController extends Controller
             $internalOrder = InternalOrder::findOrFail($validated['order_id']);
             $user = User::findOrFail($validated['user_id']);
             
-
+            // Get the related order from orders table
+            $relatedOrder = Order::where('internal_order_id', $internalOrder->id)->first();
+            // dd($relatedOrder, $internalOrder, $validated);
             $oldAssignedTo = $internalOrder->assigned_to;
+            
+            // Update internal order assignment
             $internalOrder->assigned_to = $validated['user_id'];
             $internalOrder->save();
+
+            // Update related order assignment if it exists
+            if ($relatedOrder) {
+                $oldAssignedTo = $relatedOrder->user_id;
+                $relatedOrder->user_id = $validated['user_id'];
+                $relatedOrder->is_internal_order_assignment = true;
+                $relatedOrder->save();
+                
+                // Update reorder info if it exists
+                $reorderInfo = $relatedOrder->reorderInfo()->first();
+                if ($reorderInfo) {
+                    $reorderInfo->user_id = $validated['user_id'];
+                    $reorderInfo->save();
+                }
+            }
 
             // Log the assignment activity
             ActivityLogService::log(
                 'internal-order-assignment',
-                'Internal order #' . $internalOrder->id . ' assigned to ' . $user->name,
+                'Internal order #' . $internalOrder->id . ' assigned to ' . $user->name . 
+                ($relatedOrder ? ' (Order #' . $relatedOrder->id . ' also updated)' : ''),
                 $internalOrder,
                 [
                     'old_assigned_to' => $oldAssignedTo,
                     'new_assigned_to' => $user->id,
-                    'assigned_by' => auth()->id()
+                    'assigned_by' => auth()->id(),
+                    'related_order_id' => $relatedOrder ? $relatedOrder->id : null,
+                    'related_order_updated' => $relatedOrder ? true : false
                 ]
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order successfully assigned to ' . $user->name
+                'message' => 'Order successfully assigned to ' . $user->name . 
+                            ($relatedOrder ? ' (Related order #' . $relatedOrder->id . ' also updated)' : '')
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1172,7 +1195,10 @@ class InternalOrderManagerController extends Controller
                 'new_user_internal' => 'nullable|boolean'
             ]);
 
-            $order = InternalOrder::findOrFail($validated['order_id']);
+            $internalOrder = InternalOrder::findOrFail($validated['order_id']);
+
+            // Get the related order from orders table
+            $relatedOrder = Order::where('internal_order_id', $internalOrder->id)->first();
 
             // Create the new user
             $user = User::create([
@@ -1184,29 +1210,48 @@ class InternalOrderManagerController extends Controller
                 'email_verified_at' => now(), // Auto-verify internal users
             ]);
 
-            // Assign the order to the new user
-            $oldAssignedTo = $order->assigned_to;
-            $order->assigned_to = $user->id;
-            $order->save();
+            // Assign the internal order to the new user
+            $oldAssignedTo = $internalOrder->assigned_to;
+            $internalOrder->assigned_to = $user->id;
+            $internalOrder->save();
+
+            // Assign the related order to the new user if it exists
+            if ($relatedOrder) {
+                $oldAssignedTo = $relatedOrder->user_id;
+                $relatedOrder->user_id = $user->id;
+                $relatedOrder->is_internal_order_assignment = true;
+                // $relatedOrder->reorderInfo()->first()->user_id = $user->id;
+                // Update reorder info if it exists
+                $reorderInfo = $relatedOrder->reorderInfo()->first();
+                if ($reorderInfo) {
+                    $reorderInfo->user_id = $user->id;
+                    $reorderInfo->save();
+                }
+                $relatedOrder->save();
+            }
 
             // Log the user creation and assignment activity
             ActivityLogService::log(
                 'internal-user-created-and-assigned',
-                'New internal user ' . $user->name . ' created and assigned to order #' . $order->id,
-                $order,
+                'New internal user ' . $user->name . ' created and assigned to order #' . $internalOrder->id .
+                ($relatedOrder ? ' (Order #' . $relatedOrder->id . ' also updated)' : ''),
+                $internalOrder,
                 [
                     'created_user_id' => $user->id,
                     'created_user_email' => $user->email,
                     'created_user_phone' => $user->phone,
                     'old_assigned_to' => $oldAssignedTo,
                     'new_assigned_to' => $user->id,
-                    'assigned_by' => auth()->id()
+                    'assigned_by' => auth()->id(),
+                    'related_order_id' => $relatedOrder ? $relatedOrder->id : null,
+                    'related_order_updated' => $relatedOrder ? true : false
                 ]
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'New user ' . $user->name . ' created and order assigned successfully',
+                'message' => 'New user ' . $user->name . ' created and order assigned successfully' .
+                            ($relatedOrder ? ' (Related order #' . $relatedOrder->id . ' also updated)' : ''),
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
