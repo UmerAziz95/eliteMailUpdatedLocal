@@ -397,6 +397,12 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* Hide timer for draft orders */
+        .flip-timer[data-status="draft"],
+        .timer-badge[data-status="draft"] {
+            /* display: none !important; */
+        }
+
 
         input,
         .form-control,
@@ -1339,8 +1345,8 @@ pointer-events: none
                         <option value="">-- Select Status --</option>
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="cancelled_force">Cancelled (Force)</option>
+                        <option value="cancelled">Cancel EOBC</option>
+                        <option value="cancelled_force">Force Cancel</option>
                         <option value="reject">Rejected</option>
                         <!-- <option value="in-progress">In Progress</option> -->
                     </select>
@@ -1448,12 +1454,12 @@ pointer-events: none
     <script>
         // Debug AJAX calls
         $(document).ajaxSend(function(event, jqXHR, settings) {
-            console.log('AJAX Request:', {
-                url: settings.url,
-                type: settings.type,
-                data: settings.data,
-                headers: jqXHR.headers
-            });
+            // console.log('AJAX Request:', {
+            //     url: settings.url,
+            //     type: settings.type,
+            //     data: settings.data,
+            //     headers: jqXHR.headers
+            // });
         });
 
         function viewOrder(id) {
@@ -1580,6 +1586,11 @@ pointer-events: none
 
         // Create timer badge HTML with pause and cancelled support
         function createTimerBadge(timerData) {
+            // Hide timer for draft orders
+            if (timerData.status === 'draft') {
+                return '';
+            }
+            
             const timer = calculateOrderTimer(
                 timerData.created_at, 
                 timerData.status, 
@@ -1825,6 +1836,53 @@ pointer-events: none
                             render: function(data, type, row) {
                                 try {
                                     const timerData = JSON.parse(data);
+                                    console.log('Timer Data:', timerData.status);
+                                    if( timerData.status === 'draft') {
+                                        return `
+                                            <div class="flip-timer" >
+                                                <i class="fas fa-exclamation-triangle timer-icon" style="margin-right: 4px;"></i>
+                                                &nbsp;
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="timer-separator">:</span>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="timer-separator">:</span>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flip-card" data-digit="0">
+                                                        <div class="flip-inner">
+                                                            <div class="flip-front">0</div>
+                                                            <div class="flip-back">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                    }
                                     return createTimerBadge(timerData);
                                 } catch (e) {
                                     return '<span class="timer-badge completed">N/A</span>';
@@ -3000,6 +3058,11 @@ pointer-events: none
 
     // Create timer badge HTML with flip animation
     function createTimerBadge(order, index = 0) {
+        // Hide timer for draft orders
+        if (order.status === 'draft') {
+            return '';
+        }
+        
         const timer = calculateOrderTimer(
             order.created_at, 
             order.status, 
@@ -3286,7 +3349,7 @@ pointer-events: none
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
-                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'rejected' ? `
+                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'reject' ? `
                                             <button type="button" class="btn btn-sm btn-warning" title="Reassign Panel" 
                                                     onclick="openReassignModal(${orderInfo.id}, ${split.panel_id}, ${split.order_panel_id}, '${split.panel_title}')">
                                                 <i class="fas fa-exchange-alt"></i> Reassign
@@ -4031,8 +4094,8 @@ pointer-events: none
             const timerPausedAt = timerElement.dataset.timerPausedAt;
             const totalPausedSeconds = timerElement.dataset.totalPausedSeconds;
             
-            // Skip updating completed, cancelled, or paused orders
-            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
+            // Skip updating completed, cancelled, reject, draft, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || status === 'draft' || timerPausedAt) {
                 return;
             }
             
@@ -4051,8 +4114,8 @@ pointer-events: none
             const timerPausedAt = badgeElement.dataset.timerPausedAt;
             const totalPausedSeconds = badgeElement.dataset.totalPausedSeconds;
             
-            // Skip updating completed, cancelled, or paused orders
-            if (status === 'completed' || status === 'cancelled' || status === 'reject' || timerPausedAt) {
+            // Skip updating completed, cancelled, reject, draft, or paused orders
+            if (status === 'completed' || status === 'cancelled' || status === 'reject' || status === 'draft' || timerPausedAt) {
                 return;
             }
             
@@ -4940,15 +5003,90 @@ pointer-events: none
         }
 
         try {
-            const reassignBtn = document.getElementById('confirmReassignBtn');
-            const originalText = reassignBtn.innerHTML;
-            reassignBtn.disabled = true;
-            reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
+            // Show SweetAlert2 confirmation dialog
+            const result = await Swal.fire({
+                title: 'Confirm Panel Reassignment?',
+                html: `
+                    <div class="text-start">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <div class="card-body text-center text-white">
+                                        <i class="fas fa-exchange-alt fs-2 mb-2"></i>
+                                        <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
+                                        <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
+                                        <small class="text-white-50">From Panel</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                                    <div class="card-body text-center text-white">
+                                        <i class="fas fa-arrow-right fs-2 mb-2"></i>
+                                        <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
+                                        <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
+                                        <small class="text-white-50">To Panel</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                    <div class="card-body text-center text-white">
+                                        <i class="fas fa-inbox fs-2 mb-2"></i>
+                                        <h4 class="card-title mb-1 fw-bold">${currentReassignData.spaceNeeded || 0}</h4>
+                                        <small class="text-white-50">Spaces to Transfer</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Note:</strong> After this action is completed, the selected spaces will be transferred from the source panel to the destination panel.
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
+                cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
+                reverseButtons: true,
+                customClass: {
+                    popup: 'swal-wide'
+                }
+            });
+
+            // If user cancels, return early
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            // Show SweetAlert2 loading dialog
+            Swal.fire({
+                title: 'Reassigning Panel...',
+                html: `
+                    <div class="text-center">
+                        <div class="spinner-border text-warning mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Please wait while we reassign the panel...</p>
+                        <small class="text-muted">This may take a few moments</small>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'swal-loading'
+                }
+            });
 
             const formData = {
                 from_order_panel_id: currentReassignData.orderPanelId,
                 to_panel_id: currentReassignData.targetPanelId,
-                reason: document.getElementById('reassignReason').value || null
+                reason: result.value.reason
             };
 
             const response = await fetch('/admin/orders/panels/reassign', {
@@ -4963,8 +5101,23 @@ pointer-events: none
             const data = await response.json();
 
             if (data.success) {
-                // Show success message
-                toastr.success(data.message);
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Reassignment Successful!',
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                            <p class="mb-2">${data.message}</p>
+                            <small class="text-muted">Panel has been successfully reassigned</small>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Great!'
+                });
                 
                 // Close modal
                 bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
@@ -4976,15 +5129,48 @@ pointer-events: none
                 
                 // Reset form
                 resetReassignModal();
+                
+                // Refresh the orders list
+                if (typeof loadOrders === 'function') {
+                    loadOrders(currentFilters, 1, false);
+                }
             } else {
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Reassignment Failed!',
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                            <p class="mb-2">${data.message || 'Reassignment failed'}</p>
+                            <small class="text-muted">Please try again or contact support</small>
+                        </div>
+                    `,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Try Again'
+                });
+                
                 showReassignError(data.message || 'Reassignment failed');
-                reassignBtn.disabled = false;
-                reassignBtn.innerHTML = originalText;
             }
         } catch (error) {
             console.error('Error during reassignment:', error);
+            
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Error!',
+                html: `
+                    <div class="text-center">
+                        <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                        <p class="mb-2">An error occurred during reassignment</p>
+                        <small class="text-muted">Please check your connection and try again</small>
+                    </div>
+                `,
+                icon: 'error',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'OK'
+            });
+            
             showReassignError('An error occurred during reassignment');
-            document.getElementById('confirmReassignBtn').disabled = false;
         }
     }
 

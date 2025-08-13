@@ -1,4 +1,4 @@
-@extends('customer.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'New Order')
 
@@ -176,7 +176,7 @@
 @section('content')
 
 
-@if(isset($order) && $order->reason)
+@if(isset($internalOrder) && $internalOrder->reason)
     <div class="mb-4">
         <div class="alert border-0 shadow-lg panel-rejection-alert mt-5"
             style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
@@ -194,7 +194,7 @@
                     </h6>
                     <div class="rejection-note-content">
                         <p class="mb-0 text-white fw-medium small">
-                            {{ $order->reason }}
+                            {{ $internalOrder->reason }}
                         </p>
                     </div>
                     <div class="mt-3">
@@ -212,10 +212,9 @@
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
     <input type="hidden" name="plan_id" value="{{ $plan->id ?? '' }}">
-    <!-- order_id -->
-    <input type="hidden" name="order_id" value="{{ isset($order) ? $order->id : '' }}">
-    <input type="hidden" name="edit_id"
-        value="{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->id : '' }}">
+    <!-- internal_order_id -->
+    <input type="hidden" name="internal_order_id" value="{{ isset($internalOrder) ? $internalOrder->id : '' }}">
+    <input type="hidden" name="edit_id" value="{{ isset($internalOrder) ? $internalOrder->id : '' }}">
     <!-- Hidden fields for current and max inboxes -->
     <input type="hidden" name="current_inboxes" id="current_inboxes" value="0">
     <input type="hidden" name="max_inboxes" id="max_inboxes" value="0">
@@ -235,7 +234,7 @@
             <div class="domain-forwarding mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
                 <input type="text" id="forwarding" name="forwarding_url" class="form-control"
-                    value="{{ optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first()->forwarding_url : '' }}"
+                    value="{{ isset($internalOrder) ? $internalOrder->forwarding_url : '' }}"
                     required />
                 <div class="invalid-feedback" id="forwarding-error"></div>
                 <p class="note mb-0">(This is usually your VSL, lead capture form, or main website. It’s where prospects will land if they go to one of your domains that you provide us. Please enter a full URL (e.g. https://yourdomain.com).)</p>
@@ -247,9 +246,7 @@
                     @foreach($hostingPlatforms as $platform)
                     <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
                         data-requires-tutorial="{{ $platform->requires_tutorial }}"
-                        data-tutorial-link="{{ $platform->tutorial_link }}" {{ (optional(optional($order)->
-                        reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
-                        $platform->value) ? ' selected' : '' }}>
+                        data-tutorial-link="{{ $platform->tutorial_link }}" {{ (isset($internalOrder) && $internalOrder->hosting_platform === $platform->value) ? ' selected' : '' }}>
                         {{ $platform->name }}
                     </option>
                     @endforeach
@@ -289,8 +286,7 @@
                     <select id="sending_platform" name="sending_platform" class="form-control" required>
                         @foreach($sendingPlatforms as $platform)
                         <option value="{{ $platform->value }}" data-fields='@json($platform->fields)' {{
-                            (optional(optional($order)->reorderInfo)->count() > 0 &&
-                            $order->reorderInfo->first()->sending_platform === $platform->value) ? ' selected' : '' }}>
+                            (isset($internalOrder) && $internalOrder->sending_platform === $platform->value) ? ' selected' : '' }}>
                             {{ $platform->name }}
                         </option>
                         @endforeach
@@ -309,19 +305,16 @@
                 <div class="inboxes-per-domain col-md-6">
                     <label>Inboxes per Domain / Prefix Variant</label>
                     <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
-                        <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
-                            == 1 ? 'selected' : '' }}>1</option>
-                        <option value="2" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
-                            == 2 ? 'selected' : '' }}>2</option>
-                        <option value="3" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
-                            == 3 ? 'selected' : '' }}>3</option>
+                        <option value="1" {{ isset($internalOrder) && $internalOrder->inboxes_per_domain == 1 ? 'selected' : '' }}>1</option>
+                        <option value="2" {{ isset($internalOrder) && $internalOrder->inboxes_per_domain == 2 ? 'selected' : '' }}>2</option>
+                        <option value="3" {{ isset($internalOrder) && $internalOrder->inboxes_per_domain == 3 ? 'selected' : '' }}>3</option>
                     </select>
                     <p class="note">(How many email accounts you would like us to create per domain - the maximum is 3)</p>
                 </div>
                 <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
                     <input type="number" name="total_inboxes" id="total_inboxes" class="form-control" readonly required
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->total_inboxes : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->total_inboxes : '' }}">
                     <p class="note">(Automatically calculated based on domains and inboxes per domain)</p>
                 </div>
                 <div class="domains mb-3">
@@ -330,7 +323,7 @@
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
                 </label>
                 <textarea id="domains" name="domains" class="form-control" rows="8"
-                    required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
+                    required>{{ isset($internalOrder) ? $internalOrder->domains : '' }}</textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
@@ -369,7 +362,7 @@
                 <div class="col-md-6 first-name" style="display:none;">
                     <label>First Name</label>
                     <input type="text" name="first_name" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->first_name : '' }}"
+                        value="{{ isset($internalOrder) ? $internalOrder->first_name : '' }}"
                         >
                     <div class="invalid-feedback" id="first_name-error"></div>
                     <p class="note">(First name that you wish to use on the inbox profile)</p>
@@ -378,7 +371,7 @@
                 <div class="col-md-6 last-name" style="display:none;">
                     <label>Last Name</label>
                     <input type="text" name="last_name" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->last_name : '' }}"
+                        value="{{ isset($internalOrder) ? $internalOrder->last_name : '' }}"
                         >
                     <div class="invalid-feedback" id="last_name-error"></div>
                     <p class="note">(Last name that you wish to use on the inbox profile)</p>
@@ -388,14 +381,14 @@
                 <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 1</label>
                     <input type="text" name="prefix_variant_1" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->prefix_variant_1 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_1-error"></div>
                 </div>
 
                 <div class="col-md-6" style="display: none;">
                     <label>Email Persona - Prefix Variant 2</label>
                     <input type="text" name="prefix_variant_2" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->prefix_variant_2 : '' }}">
                     <div class="invalid-feedback" id="prefix_variant_2-error"></div>
                 </div>
 
@@ -408,7 +401,7 @@
                 <!-- <div class="col-md-6">
                     <label>Persona Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->persona_password : '' }}" required>
+                        <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($internalOrder) ? $internalOrder->persona_password : '' }}" required>
                         <div class="invalid-feedback" id="persona_password-error"></div>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
@@ -417,7 +410,7 @@
                 <div class="col-md-6 profile-picture" style="display: none;">
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->profile_picture_link : '' }}">
                     <div class="invalid-feedback" id="profile_picture_link-error"></div>
                 </div>
 
@@ -426,7 +419,7 @@
                     <div class="password-wrapper">
                         <input type="password" id="email_persona_password" name="email_persona_password"
                             class="form-control"
-                            value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_password : '' }}">
+                            value="{{ isset($internalOrder) ? $internalOrder->email_persona_password : '' }}">
                         <div class="invalid-feedback" id="email_persona_password-error"></div>
                         <i class="fa-regular fa-eye password-toggle"></i>
                     </div>
@@ -435,14 +428,14 @@
                 <div class="col-md-6 email-picture-link" style="display:none;">
                     <label>Email Persona - Profile Picture Link</label>
                     <input type="url" name="email_persona_picture_link" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} ">
+                        value="{{ isset($internalOrder) ? $internalOrder->email_persona_picture_link : '' }}">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
 
                 <div class="col-md-6 master-inbox">
                     <label>Centralized master inbox email</label>
                     <input type="email" name="master_inbox_email" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->master_inbox_email : '' }}">
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
                     <p class="note">(This is optional - if you want to forward all email inboxes to a
                         specific email, enter above)</p>
@@ -454,14 +447,14 @@
                     <div class="mb-3">
                         <label for="additional_info">Additional Information / Context </label>
                         <textarea id="additional_info" name="additional_info" class="form-control"
-                            rows="8">{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->additional_info : '' }}</textarea>
+                            rows="8">{{ isset($internalOrder) ? $internalOrder->additional_info : '' }}</textarea>
                     </div>
                 </div>
 
                 <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->coupon_code : '' }}">
+                        value="{{ isset($internalOrder) ? $internalOrder->coupon_code : '' }}">
                 </div>
 
                 <!-- Price display section -->
@@ -469,8 +462,8 @@
                     @if(isset($plan))
                     @php
                     $totalInboxes = 0;
-                    if (isset($order) && optional($order->reorderInfo)->count() > 0) {
-                    $totalInboxes = $order->reorderInfo->first()->total_inboxes;
+                    if (isset($internalOrder)) {
+                    $totalInboxes = $internalOrder->total_inboxes;
                     }
                     $originalPrice = $plan->price * $totalInboxes;
                     @endphp
@@ -491,7 +484,7 @@
                 <div class="d-flex gap-2">
                     <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0 purchase-btn">
                         
-                        @if(isset($order) && $order->status_manage_by_admin === 'reject')
+                        @if(isset($internalOrder) && $internalOrder->status_manage_by_admin === 'reject')
                             Fix Order
                         @else
                         <i class="fa-solid fa-cart-shopping"></i>
@@ -1106,10 +1099,14 @@
 
 @push('scripts')
    @php
-    $orderInfo = optional(optional($order)->reorderInfo)->first();
+    $orderInfo = $internalOrder ?? null;
 @endphp
 <script>
    var orderInfo = @json($orderInfo);
+   if (orderInfo) {
+       orderInfo.total_inboxes = 0;
+   }
+
     // Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
@@ -1269,7 +1266,6 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
     progressBar.css('width', Math.min(percentageUsed, 100) + '%');
     progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
     progressBar.attr('aria-valuemax', 100);
-    
     // Update text display
     if (orderInfo && orderInfo.total_inboxes !== undefined && orderInfo.total_inboxes > 0) {
         const rawTotalInboxes = orderInfo.total_inboxes;
@@ -1314,17 +1310,17 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
             }
         } else {
             // Order has 0 total_inboxes (unlimited)
-            progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
+            progressText.text(`${currentInboxes} inboxes used (Unlimited Inboxes)`);
             progressBar.css('width', '0%'); // Don't show progress for unlimited
             progressNote.html('(Unlimited usage)');
             progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
         }
     } else {
-        // No limit defined for current order - show current usage only
-        progressText.text(`${currentInboxes} inboxes used (No limit defined)`);
-        progressBar.css('width', '0%'); // Don't show progress bar
-        progressNote.html('(No limit set for this order)');
-        progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
+        // No limit defined for current order or total_inboxes is 0 - set unlimited inboxes
+        progressText.text(`${currentInboxes} inboxes used (Unlimited Inboxes)`);
+        progressBar.css('width', '0%'); // Don't show progress bar for unlimited
+        progressNote.html('(Unlimited usage)');
+        progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
     }
 }
 
@@ -1386,11 +1382,11 @@ $(document).ready(function() {
         
         // AJAX call to fetch orders data
         $.ajax({
-            url: "{{ route('customer.orders.import.data') }}",
+            url: "{{ route('admin.orders.import.data') }}",
             type: "GET",
             data: {
                 for_import: true,
-                exclude_current: "{{ isset($order) ? $order->id : '' }}"
+                exclude_current: "{{ isset($internalOrder) ? $internalOrder->id : '' }}"
             },
             success: function(response) {
                 // Close loading indicator
@@ -1546,7 +1542,7 @@ $(document).ready(function() {
         });
         
         $.ajax({
-            url: "{{ route('customer.orders.import-data', ':id') }}".replace(':id', orderId),
+            url: "{{ route('admin.orders.import-data', ':id') }}".replace(':id', orderId),
             method: 'GET',
             success: function(response) {
                 if (response.success && response.data) {
@@ -2266,7 +2262,7 @@ $(document).ready(function() {
         
         if (fieldsData) {
             // Get existing values from the order if available
-            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            const existingValues = @json($internalOrder ?? null);
             
             // Use the new paired field generation
             container.append(generatePairedFields(fieldsData, existingValues));
@@ -2323,7 +2319,7 @@ $(document).ready(function() {
         container.empty();
         
         if (fieldsData) {
-            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            const existingValues = @json($internalOrder ?? null);
             
             // Use the new paired field generation
             container.append(generatePairedFields(fieldsData, existingValues));
@@ -2698,7 +2694,7 @@ $(document).ready(function() {
 
         // If validation passes, submit via AJAX
         $.ajax({
-            url: '{{ route("customer.orders.reorder.store") }}',
+            url: '{{ route("admin.orders.reorder.store") }}',
             method: 'POST',
             data: $('#editOrderForm').serialize(),
             success: function(response) {
@@ -2715,25 +2711,6 @@ $(document).ready(function() {
                         timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
-                        // Send a separate request to run panel capacity check
-                        $.ajax({
-                            url: '{{ route("customer.orders.run-panel-capacity-check") }}',
-                            method: 'POST',
-                            data: {
-                                order_id: response.order_id || '',
-                                user_id: response.user_id || '',
-                                _token: $('meta[name="csrf-token"]').attr('content')
-                            },
-                            success: function(capacityResponse) {
-                                console.log('Panel capacity check completed:', capacityResponse);
-                            },
-                            error: function(xhr) {
-                                console.log('Panel capacity check failed:', xhr.responseJSON);
-                                // Don't show error to user as it's a background process
-                            }
-                        });
-                        
-                        window.location.href = "{{ route('customer.orders') }}";
                     });
                 } else {
                     Swal.fire({
@@ -2804,13 +2781,13 @@ $(document).ready(function() {
     // Add header
     container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
     
-    const existingPrefixVariants = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants ?? []);
-    const existingPrefixVariantsDetails = @json(optional(optional($order)->reorderInfo)->first()->prefix_variants_details ?? []);
+    const existingPrefixVariants = @json($internalOrder->prefix_variants ?? []);
+    const existingPrefixVariantsDetails = @json($internalOrder->prefix_variants_details ?? []);
 
     for (let i = 1; i <= count; i++) {
         const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
-            (i === 1 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_1 : '' }}' : '') ||
-            (i === 2 ? '{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->prefix_variant_2 : '' }}' : '');
+            (i === 1 ? '{{ isset($internalOrder) ? $internalOrder->prefix_variant_1 : '' }}' : '') ||
+            (i === 2 ? '{{ isset($internalOrder) ? $internalOrder->prefix_variant_2 : '' }}' : '');
 
         // Get existing values for the detailed fields
         const detailsKey = `prefix_variant_${i}`;
@@ -2993,6 +2970,4 @@ $(document).ready(function() {
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
 </script>
-
-
 @endpush

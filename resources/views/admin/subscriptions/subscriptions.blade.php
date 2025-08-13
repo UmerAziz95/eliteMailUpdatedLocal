@@ -383,7 +383,6 @@
                     return `<span class="${statusClass} text-capitalize py-0">${data}</span>`;
                 }
             },
-
             {
                 data: 'last_billing_date',
                 name: 'last_billing_date',
@@ -480,6 +479,7 @@
             { data: 'name', name: 'users.name' }, // name
             { data: 'email', name: 'users.email' }, // From addColumn() in controller
             { data: 'status', name: 'subscriptions.status' }, // Subscription status
+            { data: 'is_cancelled_force', name: 'is_cancelled_force' },
             { data: 'cancellation_at', name: 'cancellation_at' },
             { data: 'action', name: 'action', orderable: false, searchable: false } // Action buttons
         ],
@@ -572,6 +572,21 @@
                     }
 
                     return `<span class="${statusClass} text-capitalize">${data}</span>`;
+                }
+            },
+            {
+                data: 'is_cancelled_force',
+                name: 'is_cancelled_force',
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex align-items-center justify-content-center">
+                            <span class="${data ? 'text-success' : 'text-danger'}" 
+                                  title="${data ? 'Forced' : 'EOBC'}" 
+                                  data-bs-toggle="tooltip">
+                                ${data ? 'Forced Cancelled' : 'Cancel EOBC'}
+                            </span>
+                        </div>
+                    `;
                 }
             },
             { data: 'cancellation_at', name: 'cancellation_at' }, // Subscription status

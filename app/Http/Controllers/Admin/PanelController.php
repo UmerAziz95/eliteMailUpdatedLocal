@@ -1021,6 +1021,56 @@ class PanelController extends Controller
     }
 
     /**
+     * Get panel statistics for dashboard counters
+     */
+    public function getStatistics(Request $request)
+    {
+        try {
+            // Get all panel statistics
+            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            
+            // Total panels count
+            $totalPanels = Panel::count();
+            
+            // Available capacity (sum of all remaining limits)
+            $availableCapacity = Panel::where('is_active', true)->sum('remaining_limit');
+            
+            // Used capacity (sum of all used space)
+            $usedCapacity = Panel::where('is_active', true)
+                ->selectRaw('SUM(CASE WHEN `remaining_limit` <= `limit` THEN `limit` - `remaining_limit` ELSE 0 END) as used')
+                ->value('used') ?? 0;
+            
+            // Closed panels count (inactive panels)
+            $closedPanels = Panel::where('is_active', false)->count();
+            
+            // Additional statistics
+            $activePanels = Panel::where('is_active', true)->count();
+            $totalCapacity = Panel::where('is_active', true)->sum('limit');
+            
+            return response()->json([
+                'success' => true,
+                'statistics' => [
+                    'total_panels' => $totalPanels,
+                    'available_capacity' => $availableCapacity,
+                    'used_capacity' => $usedCapacity,
+                    'closed_panels' => $closedPanels,
+                    'active_panels' => $activePanels,
+                    'total_capacity' => $totalCapacity,
+                    'utilization_percentage' => $totalCapacity > 0 ? round(($usedCapacity / $totalCapacity) * 100, 2) : 0,
+                    'last_updated' => now()->toDateTimeString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getStatistics: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching panel statistics: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get available panel count for AJAX calls
      */
     public function getAvailablePanelCount(Request $request)

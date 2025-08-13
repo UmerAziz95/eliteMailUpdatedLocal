@@ -8,6 +8,7 @@
                 <th>Customer Name</th>
                 <th>Customer Email</th>
                 <th>Status</th>
+                <th>Cancellation</th>
                 <th>cancellation_at</th>
                 <th>Actions</th>
             </tr>

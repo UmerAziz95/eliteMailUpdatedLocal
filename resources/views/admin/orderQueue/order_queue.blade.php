@@ -220,6 +220,11 @@
             font-size: 11px;
         }
 
+        /* Hide timer for draft orders */
+        .flip-timer[data-status="draft"] {
+            display: none !important;
+        }
+
         /* Timer icon styling */
         .timer-icon {
             font-size: 11px;
@@ -622,6 +627,22 @@
                     loadOrders(currentFilters, currentRejectOrdersPage + 1, true, 'reject-orders');
                 }
             });
+
+            // Add offcanvas event listeners to manage timer cleanup
+            const offcanvasElement = document.getElementById('order-splits-view');
+            if (offcanvasElement) {
+                // Clean up ONLY offcanvas timers when offcanvas is hidden - NEVER touch main card timers
+                offcanvasElement.addEventListener('hidden.bs.offcanvas', function() {
+                    console.log('Offcanvas closed - cleaning up ONLY offcanvas timers, preserving main card timers');
+                    cleanupOffcanvasTimers(); // Only clean offcanvas timers
+                });
+
+                // Clean up ONLY offcanvas timers when offcanvas is about to be shown (for safety)
+                offcanvasElement.addEventListener('show.bs.offcanvas', function() {
+                    console.log('Offcanvas opening - cleaning up existing offcanvas timers only');
+                    cleanupOffcanvasTimers(); // Only clean offcanvas timers
+                });
+            }
         });
 
         // Load orders data
@@ -1464,12 +1485,15 @@
             
             container.innerHTML = splitsHtml;
             
+            // Clean up any existing offcanvas timers before starting new ones
+            cleanupOffcanvasTimers(); // Only clean offcanvas timers, preserve main card timers
+            
             // Start timer for the order in the offcanvas and initialize other features
             setTimeout(function() {
                 // Start timer for the order displayed in the offcanvas
                 const timerId = `flip-timer-${orderInfo.order_id}-0`;
                 const timerElement = document.getElementById(timerId);
-                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject') {
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject' && orderInfo.status !== 'draft') {
                     // Use the same timer starting logic as in the main cards
                     startSingleTimer(orderInfo, false, 0);
                 }
@@ -1694,6 +1718,11 @@
 
         // Create timer badge HTML
         function createTimerBadge(order, isDrafts, index) {
+            // Hide timer for draft orders
+            if (order.status === 'draft') {
+                return '';
+            }
+            
             const timer = calculateOrderTimer(
                 order.created_at, 
                 order.status, 
@@ -1809,11 +1838,24 @@
             `;
         }
 
+        // Global object to store active timer intervals
+        const activeTimerIntervals = {};
+        
+        // Separate tracking for offcanvas timers to prevent accidental cleanup of main timers
+        const offcanvasTimerIntervals = {};
+
         // Start timers for all rendered orders
         function startTimersForOrders(ordersList, isDrafts, startIndex) {
             ordersList.forEach((order, index) => {
-                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject') {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && order.status !== 'draft') {
                     const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
+                    
+                    // Clear any existing interval for this timer
+                    if (activeTimerIntervals[timerId]) {
+                        clearInterval(activeTimerIntervals[timerId]);
+                        delete activeTimerIntervals[timerId];
+                    }
+                    
                     const timer = calculateOrderTimer(
                         order.created_at, 
                         order.status, 
@@ -1826,8 +1868,17 @@
                     if (!timer.isCompleted) {
                         updateTimerDisplay(timerId, timer);
                         
-                        // Set up interval to update timer every second
-                        setInterval(() => {
+                        // Set up interval to update timer every second and store the interval ID
+                        const intervalId = setInterval(() => {
+                            // Check if timer element still exists before updating
+                            const timerElement = document.getElementById(timerId);
+                            if (!timerElement) {
+                                // Timer element no longer exists, clean up this interval
+                                clearInterval(intervalId);
+                                delete activeTimerIntervals[timerId];
+                                return;
+                            }
+                            
                             const updatedTimer = calculateOrderTimer(
                                 order.created_at, 
                                 order.status, 
@@ -1838,6 +1889,9 @@
                             );
                             updateTimerDisplay(timerId, updatedTimer);
                         }, 1000);
+                        
+                        // Store the interval ID for later cleanup
+                        activeTimerIntervals[timerId] = intervalId;
                     }
                 }
             });
@@ -1845,9 +1899,16 @@
 
         // Start timer for a single order (used in offcanvas)
         function startSingleTimer(order, isDrafts, index) {
-            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject') return;
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject' || order.status === 'draft') return;
             
             const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
+            
+            // Clear any existing offcanvas interval for this timer to prevent multiple intervals
+            if (offcanvasTimerIntervals[timerId]) {
+                clearInterval(offcanvasTimerIntervals[timerId]);
+                delete offcanvasTimerIntervals[timerId];
+            }
+            
             const timer = calculateOrderTimer(
                 order.created_at, 
                 order.status, 
@@ -1860,8 +1921,17 @@
             if (!timer.isCompleted) {
                 updateTimerDisplay(timerId, timer);
                 
-                // Set up interval to update timer every second
-                setInterval(() => {
+                // Set up interval to update timer every second and store the interval ID
+                const intervalId = setInterval(() => {
+                    // Check if timer element still exists before updating
+                    const timerElement = document.getElementById(timerId);
+                    if (!timerElement) {
+                        // Timer element no longer exists, clean up this interval
+                        clearInterval(intervalId);
+                        delete offcanvasTimerIntervals[timerId];
+                        return;
+                    }
+                    
                     const updatedTimer = calculateOrderTimer(
                         order.created_at, 
                         order.status, 
@@ -1872,7 +1942,62 @@
                     );
                     updateTimerDisplay(timerId, updatedTimer);
                 }, 1000);
+                
+                // Store the interval ID in offcanvas timers for separate cleanup
+                offcanvasTimerIntervals[timerId] = intervalId;
             }
+        }
+
+        // Function to clean up timer intervals
+        function cleanupTimerIntervals(orderIdToKeep = null) {
+            Object.keys(activeTimerIntervals).forEach(timerId => {
+                // If orderIdToKeep is specified, only clean up timers for other orders
+                if (orderIdToKeep && timerId.includes(`-${orderIdToKeep}-`)) {
+                    return; // Skip this timer, keep it running
+                }
+                
+                // Clear the interval
+                clearInterval(activeTimerIntervals[timerId]);
+                delete activeTimerIntervals[timerId];
+            });
+        }
+
+        // Function specifically to clean up offcanvas timers only (NEVER touches main card timers)
+        function cleanupOffcanvasTimers() {
+            const offcanvasCount = Object.keys(offcanvasTimerIntervals).length;
+            const mainCount = Object.keys(activeTimerIntervals).length;
+            
+            Object.keys(offcanvasTimerIntervals).forEach(timerId => {
+                clearInterval(offcanvasTimerIntervals[timerId]);
+                delete offcanvasTimerIntervals[timerId];
+            });
+            
+            console.log(`Cleaned up ${offcanvasCount} offcanvas timers only - ${mainCount} main card timers preserved and still running`);
+        }
+
+        // Function to clean up specific timer
+        function cleanupSpecificTimer(timerId) {
+            if (activeTimerIntervals[timerId]) {
+                clearInterval(activeTimerIntervals[timerId]);
+                delete activeTimerIntervals[timerId];
+            }
+            if (offcanvasTimerIntervals[timerId]) {
+                clearInterval(offcanvasTimerIntervals[timerId]);
+                delete offcanvasTimerIntervals[timerId];
+            }
+        }
+
+        // Debug function to check timer states (can be called from console)
+        function checkTimerStates() {
+            console.log('=== TIMER STATUS ===');
+            console.log('Main card timers:', Object.keys(activeTimerIntervals).length, 'active');
+            console.log('Offcanvas timers:', Object.keys(offcanvasTimerIntervals).length, 'active');
+            console.log('Main timer IDs:', Object.keys(activeTimerIntervals));
+            console.log('Offcanvas timer IDs:', Object.keys(offcanvasTimerIntervals));
+            return {
+                mainTimers: Object.keys(activeTimerIntervals),
+                offcanvasTimers: Object.keys(offcanvasTimerIntervals)
+            };
         }
 
         // Update timer display

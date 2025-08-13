@@ -112,7 +112,7 @@ public function verifyDiscountedUser($encrypted, $id)
     try { 
         $uuid=Str::uuid()->toString();
         $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
-        CustomCheckoutId::create([
+        CustomCheckOutId::create([
             'page_id'=>$uuid
         ]);
            

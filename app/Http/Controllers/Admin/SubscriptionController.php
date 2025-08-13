@@ -65,6 +65,9 @@ class SubscriptionController extends Controller
                     ? \Carbon\Carbon::parse($subscription->cancellation_at)->format('Y-F-d')
                     : 'N/A';
             })
+            ->addColumn('is_cancelled_force', function ($subscription) {
+                return $subscription->is_cancelled_force ? true : false;
+            })
                 ->addColumn('name', function ($subscription) {
                     return $subscription->user->name ?? 'N/A';
                 })
@@ -144,7 +147,9 @@ class SubscriptionController extends Controller
             $completed = Subscription::where('status', 'completed')->count();
     
             return DataTables::of($subscriptions)
-            
+            ->addColumn('is_cancelled_force', function ($subscription) {
+                return $subscription->is_cancelled_force ? true : false;
+            })
             ->addColumn('name', function ($subscription) {
                 return $subscription->user->name ?? 'N/A';
             })

@@ -778,7 +778,46 @@ class PlanController extends Controller
             ]);
         }
     }
+    // create new subscription with customer_id and plan_id
+    public function createSubscription(Request $request)
+    {
+        try {
+            $plan = Plan::first();
+            $chargebeeCustomerId = 'AzqIC4Ut46lF5IXx';
 
+            // Create subscription using ChargeBee Product Catalog 2.0
+            $result = Subscription::createWithItems($chargebeeCustomerId, [
+                "subscription_items" => [
+                    [
+                        "item_price_id" => $plan->chargebee_plan_id,
+                        "quantity" => 1
+                    ]
+                ]
+            ]);
+
+            $subscription = $result->subscription();
+
+            if ($subscription) {
+                return response()->json([
+                    'success' => true,
+                    'subscription_id' => $subscription->id,
+                    'status' => $subscription->status,
+                    'message' => 'Subscription created successfully'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create subscription'
+            ], 500);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating subscription: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     public function updatePaymentMethod(Request $request)
     {
         try {

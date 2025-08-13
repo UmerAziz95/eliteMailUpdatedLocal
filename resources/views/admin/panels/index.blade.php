@@ -688,7 +688,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Used Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="used_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -707,7 +707,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Closed Panels</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="closed_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -1065,6 +1065,97 @@
         }
     }
 
+    // Function to update panel counters with dynamic data
+    async function updatePanelCounters() {
+        try {
+            console.log('Fetching panel counters...');
+            
+            // Fetch comprehensive panel statistics from server
+            const response = await fetch('/admin/panels/statistics', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.statistics) {
+                    console.log('Panel statistics from server:', result.statistics);
+                    
+                    // Update the main panel counters
+                    $('#total_counter').text(result.statistics.total_panels || 0);
+                    $('#active_counter').text((result.statistics.available_capacity || 0).toLocaleString());
+                    $('#used_counter').text((result.statistics.used_capacity || 0).toLocaleString());
+                    $('#closed_counter').text(result.statistics.closed_panels || 0);
+                    
+                    return;
+                }
+            }
+            
+            // Fallback: calculate from currently loaded panels data
+            console.log('Server endpoint not available, calculating from loaded panels...');
+            
+            if (panels && panels.length > 0) {
+                // Note: This is only based on currently loaded/filtered panels
+                let totalVisible = panels.length;
+                let availableCapacity = 0;
+                let usedCapacity = 0;
+                let closedVisible = 0;
+                
+                panels.forEach(panel => {
+                    availableCapacity += panel.remaining_limit || 0;
+                    usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
+                    if (!panel.is_active) {
+                        closedVisible++;
+                    }
+                });
+                
+                console.log('Calculated from visible panels:', {
+                    totalVisible,
+                    availableCapacity, 
+                    usedCapacity,
+                    closedVisible
+                });
+                
+                // Update counters (note: these are based on filtered/paginated results)
+                $('#total_counter').text(totalVisible);
+                $('#active_counter').text(availableCapacity.toLocaleString());
+                $('#used_counter').text(usedCapacity.toLocaleString());
+                $('#closed_counter').text(closedVisible);
+            } else {
+                console.log('No panels data available for calculation');
+                // Keep existing values if no data available
+            }
+            
+        } catch (error) {
+            console.error('Error updating panel counters:', error);
+            
+            // Final fallback: try to calculate from any available panels data
+            if (panels && panels.length > 0) {
+                let availableCapacity = 0;
+                let usedCapacity = 0;
+                let closedVisible = 0;
+                
+                panels.forEach(panel => {
+                    availableCapacity += panel.remaining_limit || 0;
+                    usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
+                    if (!panel.is_active) {
+                        closedVisible++;
+                    }
+                });
+                
+                $('#total_counter').text(panels.length);
+                $('#active_counter').text(availableCapacity.toLocaleString());
+                $('#used_counter').text(usedCapacity.toLocaleString());
+                $('#closed_counter').text(closedVisible);
+            }
+        }
+    }
+
     let panels = [];
         let currentFilters = {};
         let charts = {}; // Store chart instances
@@ -1135,6 +1226,11 @@
                 renderPanels(append);
                 updatePaginationInfo();
                 updateLoadMoreButton();
+                
+                // Update panel counters when panels are loaded (only for non-append requests)
+                if (!append) {
+                    updatePanelCounters();
+                }
                 
             } catch (error) {
                 console.error('Error loading panels:', error);
@@ -1346,7 +1442,7 @@
                 <div class="card p-3 d-flex flex-column gap-1">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                         <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
-                        <h6>Title</h6>
+                        <h6>Title: ${panel.title || 'N/A'}</h6>
                     </div>
 
                     <div class="d-flex gap-3 justify-content-between">
@@ -1606,11 +1702,13 @@
                                                                 onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
                                                                 View
                                                             </button>
-                                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
-                                                                title="Reassign to another panel">
-                                                                Reassign
-                                                            </button>
+                                                            ${order.order_status === 'cancelled' || order.order_status === 'reject' ? '' : `
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                    onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
+                                                                    title="Reassign to another panel">
+                                                                    Reassign
+                                                                </button>
+                                                            `}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1639,11 +1737,13 @@
                                                                         onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
                                                                         View
                                                                     </button>
-                                                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                        onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
-                                                                        title="Reassign to another panel">
-                                                                        Reassign
-                                                                    </button>
+                                                                    ${order.order_status === 'cancelled' || order.order_status === 'reject' ? '' : `
+                                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
+                                                                            onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
+                                                                            title="Reassign to another panel">
+                                                                            Reassign
+                                                                        </button>
+                                                                    `}
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -2922,6 +3022,10 @@ $('#submitPanelFormBtn').on('click', function(e) {
             loadPanels(currentFilters, 1, false);
             // initializeOrderTrackingTable
             initializeOrderTrackingTable();
+            
+            // Update panel counters after create/update
+            updatePanelCounters();
+            
             // Check if response has capacity data
             if (response && response.capacity_data) {
                 if (response.capacity_data.adjusted_panels_needed === 0) {
@@ -3195,6 +3299,10 @@ async function deletePanel(panelId) {
             
             // Reload panels to reflect changes
             loadPanels(currentFilters, 1, false);
+            
+            // Update panel counters after delete
+            updatePanelCounters();
+            
             refreshPanelCapacityAlert();
         } else {
             // Show error message
@@ -3269,6 +3377,9 @@ $(document).ready(function() {
     // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
         refreshPanelCapacityAlert();
+        
+        // Refresh panel counters
+        updatePanelCounters();
         
         // Also refresh counters if the order tracking table exists
         if (orderTrackingTable) {
@@ -3631,6 +3742,7 @@ function updatePanelSpaceValues(selectedPanelId, spaceToMove) {
 /**
  * Confirm panel reassignment
  */
+
 async function confirmReassignment() {
     if (!currentReassignData.targetPanelId) {
         showReassignError('Please select a target panel');
@@ -3638,10 +3750,85 @@ async function confirmReassignment() {
     }
 
     try {
-        const reassignBtn = document.getElementById('confirmReassignBtn');
-        const originalText = reassignBtn.innerHTML;
-        reassignBtn.disabled = true;
-        reassignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reassigning...';
+        // Show SweetAlert2 confirmation dialog
+        const result = await Swal.fire({
+            title: 'Confirm Panel Reassignment?',
+            html: `
+                <div class="text-start">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-exchange-alt fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
+                                    <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
+                                    <small class="text-white-50">From Panel</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-arrow-right fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
+                                    <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
+                                    <small class="text-white-50">To Panel</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-inbox fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">${currentReassignData.spaceNeeded || 0}</h4>
+                                    <small class="text-white-50">Spaces to Transfer</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> After this action is completed, the selected spaces will be transferred from the source panel to the destination panel.
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
+            cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
+            reverseButtons: true,
+            customClass: {
+                popup: 'swal-wide'
+            }
+        });
+
+        // If user cancels, return early
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        // Show SweetAlert2 loading dialog
+        Swal.fire({
+            title: 'Reassigning Panel...',
+            html: `
+                <div class="text-center">
+                    <div class="spinner-border text-warning mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Please wait while we reassign the panel...</p>
+                    <small class="text-muted">This may take a few moments</small>
+                </div>
+            `,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'swal-loading'
+            }
+        });
 
         const formData = {
             from_order_panel_id: currentReassignData.orderPanelId,
@@ -3661,14 +3848,29 @@ async function confirmReassignment() {
         const data = await response.json();
 
         if (data.success) {
-            // Show success message
-            toastr.success(data.message);
+            // Close loading dialog and show success
+            await Swal.fire({
+                title: 'Reassignment Successful!',
+                html: `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                        <p class="mb-2">${data.message}</p>
+                        <small class="text-muted">Panel has been successfully reassigned</small>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: true,
+                confirmButtonText: 'Great!'
+            });
             
             // Close modal
             bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
             
             // Refresh the panel orders view
-            const currentPanelId = getCurrentPanelId();
+            const currentPanelId = currentReassignData.currentPanelId;
             if (currentPanelId) {
                 setTimeout(() => {
                     viewPanelOrders(currentPanelId);
@@ -3681,14 +3883,42 @@ async function confirmReassignment() {
             // Reset form
             resetReassignModal();
         } else {
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Reassignment Failed!',
+                html: `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                        <p class="mb-2">${data.message || 'Reassignment failed'}</p>
+                        <small class="text-muted">Please try again or contact support</small>
+                    </div>
+                `,
+                icon: 'error',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Try Again'
+            });
+            
             showReassignError(data.message || 'Reassignment failed');
-            reassignBtn.disabled = false;
-            reassignBtn.innerHTML = originalText;
         }
     } catch (error) {
         console.error('Error during reassignment:', error);
+        
+        // Close loading dialog and show error
+        await Swal.fire({
+            title: 'Error!',
+            html: `
+                <div class="text-center">
+                    <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                    <p class="mb-2">An error occurred during reassignment</p>
+                    <small class="text-muted">Please check your connection and try again</small>
+                </div>
+            `,
+            icon: 'error',
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'OK'
+        });
+        
         showReassignError('An error occurred during reassignment');
-        document.getElementById('confirmReassignBtn').disabled = false;
     }
 }
 

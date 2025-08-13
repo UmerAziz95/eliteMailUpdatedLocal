@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
+use App\Models\PanelReassignmentHistory;
 use Carbon\Carbon;
 
 class MyTaskController extends Controller
@@ -13,12 +14,113 @@ class MyTaskController extends Controller
     {
         return view('admin.myTask.index');
     }
+        /**
+     * Get shifted tasks (in-progress and completed) from panel reassignment history
+     */
+    public function getShiftedTasks(Request $request)
+    {
+        try {
+            $query = PanelReassignmentHistory::with([
+                'order.user',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->whereIn('status', ['in-progress', 'completed']) // Only in-progress and completed tasks
+            ->where('assigned_to', auth()->id()); // Only tasks assigned to the current contractor
+            
+            // Apply additional filters if provided
+            if ($request->filled('user_id')) {
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            // Apply pagination parameters
+            $perPage = $request->get('per_page', 12);
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedTasks = $query->orderBy('reassignment_date', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+            // Format tasks data for the frontend
+            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
+                $order = $task->order;
+                
+                return [
+                    'id' => $task->id,
+                    'task_id' => $task->id,
+                    'type' => 'panel_reassignment',
+                    'customer_name' => $order && $order->user ? $order->user->name : 'N/A',
+                    'customer_image' => $order && $order->user && $order->user->profile_image 
+                        ? asset('storage/profile_images/' . $order->user->profile_image) 
+                        : null,
+                    'order_id' => $order ? $order->id : null,
+                    'order_panel_id' => $task->order_panel_id,
+                    'from_panel' => $task->fromPanel ? [
+                        'id' => $task->fromPanel->id,
+                        'title' => $task->fromPanel->title
+                    ] : null,
+                    'to_panel' => $task->toPanel ? [
+                        'id' => $task->toPanel->id,
+                        'title' => $task->toPanel->title
+                    ] : null,
+                    'action_type' => $task->action_type,
+                    'space_transferred' => $task->space_transferred,
+                    'splits_count' => $task->splits_count,
+                    'reason' => $task->reason ?? 'Panel reassignment task',
+                    'status' => $task->status,
+                    'reassignment_date' => $task->reassignment_date,
+                    'task_started_at' => $task->task_started_at,
+                    'task_completed_at' => $task->task_completed_at,
+                    'completion_notes' => $task->completion_notes,
+                    'created_at' => $task->created_at,
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : null,
+                    'reassigned_by_name' => $task->reassignedBy ? $task->reassignedBy->name : null,
+                    'notes' => $task->notes,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $tasksData,
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching shifted tasks: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shifted tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function getMyTasksData(Request $request)
     {
         try {
             $type = $request->get('type', 'my-tasks'); // 'my-tasks' or 'all-tasks'
-            
+            if ($type === 'shifted-tasks') {
+                return $this->getShiftedTasks($request);
+            }
             $query = DomainRemovalTask::with(['user', 'order.reorderInfo', 'order.orderPanels.orderPanelSplits', 'assignedTo']);
             $query->whereDate('started_queue_date', '<=', now());
             if ($type === 'my-tasks') {

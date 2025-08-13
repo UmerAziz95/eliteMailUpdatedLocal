@@ -74,6 +74,23 @@ Route::get('/logs', [AppLogController::class, 'getLogs'])->name('logs.index');
 Route::get('/logs/specific', [AppLogController::class, 'specificLogs'])->name('specific.logs');
 Route::view('/plans', 'plans');
 
+// Storage file download route for Slack attachments
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404, 'File not found');
+    }
+    
+    // Check if download parameter is present
+    if (request()->has('download')) {
+        return response()->download($filePath);
+    }
+    
+    // Otherwise, serve the file normally
+    return response()->file($filePath);
+})->where('path', '.*')->name('storage.download');
+
 
 
 // Note: Authentication Routes
@@ -167,6 +184,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
+        // Route::get('/orders/import/data', [AdminOrderController::class, 'getOrdersForImport'])->name('orders.import.data');
         Route::get('/orders/card', [AdminOrderController::class, 'indexCard'])->name('orders.card');
         Route::get('/orders/card/data', [AdminOrderController::class, 'getCardOrders'])->name('orders.card.data');
         Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
@@ -175,6 +193,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
+
+        // Order Import routes
+        Route::get('/orders/import/data', [InternalOrderManagerController::class, 'getOrdersForImport'])->name('orders.import.data');
+        Route::get('/orders/import-data/{id}', [InternalOrderManagerController::class, 'importOrderData'])->name('orders.import-data');
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
@@ -228,6 +250,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/panels/{panel}/orders', [AdminPanelController::class, 'getPanelOrders'])->name('panels.orders');
         Route::get('/panels/order-tracking', [AdminPanelController::class, 'getOrderTrackingData'])->name('panels.order-tracking');
         Route::get('/panels/capacity-alert', [AdminPanelController::class, 'getCapacityAlert'])->name('panels.capacity-alert');
+        Route::get('/panels/statistics', [AdminPanelController::class, 'getStatistics'])->name('panels.statistics');
         Route::get('/splits/{orderId}/orders', [AdminPanelController::class, 'getOrdersSplits'])->name('orders.splits');
         Route::get('/panels/test', [AdminPanelController::class, 'test'])->name('panels.test');
         //panel crud
@@ -264,6 +287,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
         Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
         Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+        
+        // Shifted Panel Reassignment Task Routes
+        Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
+        Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
+        Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
@@ -308,6 +336,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');   
         Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');   
         Route::post('/orders/reorder', [InternalOrderManagerController::class, 'store'])->name('orders.reorder.store');
+        Route::get('/internal-order-manager/data', [InternalOrderManagerController::class, 'getInternalOrders'])->name('internal_order_management.data');
+        Route::post('/internal-order-manager/update-status', [InternalOrderManagerController::class, 'updateStatus'])->name('internal_order_management.update_status');
+        Route::delete('/internal-order-manager/delete', [InternalOrderManagerController::class, 'delete'])->name('internal_order_management.delete');
+        Route::get('/internal-order-manager/users', [InternalOrderManagerController::class, 'getUsers'])->name('internal_order_management.get_users');
+        Route::post('/internal-order-manager/assign-user', [InternalOrderManagerController::class, 'assignToUser'])->name('internal_order_management.assign_user');
 
 
 
@@ -475,6 +508,12 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('taskInQueue/data', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
     Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
     Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+    
+    // Shifted Pending Tasks Routes  
+    Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
+    Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
+    Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
+    Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
@@ -745,6 +784,34 @@ Route::get('/ghl/test-connection', function () {
     }
 })->name('ghl.test-connection');
 
+// Clear Logs
+Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
+    try {
+        // Clear the logs by emptying log files instead of deleting them
+        $logPath = storage_path('logs');
+        $files = glob($logPath . '/*.log');
+        $clearedFiles = [];
+        $adminName = auth()->user() ? auth()->user()->name : 'Unknown Admin';
+
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $clearMessage = "🧹✨ Logs cleared by 👤{$adminName} on " . now()->format('Y-m-d H:i:s') . " 🗑️💨\n";
+                file_put_contents($file, $clearMessage);
+                $clearedFiles[] = basename($file);
+            }
+        }
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'Logs cleared successfully',
+            'cleared_by' => $adminName,
+            'cleared_files' => $clearedFiles,
+            'cleared_at' => now()->format('Y-m-d H:i:s')
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('logs.clear');
 
 Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
 Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
