@@ -735,6 +735,32 @@ Route::get('/ghl/create-contact', function () {
     }
 })->name('ghl.create-contact');
 
+Route::get('/ghl/update-contact', function () {
+    try {
+        $user = User::find(15);
+        $ghlService = new \App\Services\AccountCreationGHL();
+        // get address details from chargebee customer
+        // $user->billing_address = $invoice->billingAddress->line1 ?? null;
+        // $user->billing_city = $invoice->billingAddress->city ?? null;
+        // $user->billing_state = $invoice->billingAddress->state ?? null;
+        // $user->billing_zip = $invoice->billingAddress->zip ?? null;
+        // $user->billing_country = $invoice->billingAddress->country ?? null;
+        if ($ghlService->isEnabled()) {
+            $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
+            
+            if ($ghlResult) {
+                return $ghlResult;
+            } else {
+                return $ghlResult;
+            }
+        } else {
+            return $ghlResult;
+        }
+    } catch (\Exception $e) {
+        return [$ghlResult, $e];
+        // Don't throw the exception - let the process continue
+    }
+})->name('ghl.update-contact');
 // testConnection
 Route::get('/ghl/test-connection', function () {
     try {
