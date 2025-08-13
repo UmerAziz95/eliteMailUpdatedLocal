@@ -1102,12 +1102,19 @@ class SlackNotificationService
                         'title' => 'Assigned To',
                         'value' => $data['assigned_to_name'] ?? 'Unassigned',
                         'short' => true
-                    ],
-                    [
+                    ]
+                ];
+
+                // Add Order ID field only if category is 'order'
+                if (isset($data['category']) && strtolower($data['category']) === 'order' && !empty($data['order_id'])) {
+                    $fields[] = [
                         'title' => 'Order ID',
-                        'value' => $data['order_id'] ? '#' . $data['order_id'] : 'N/A',
+                        'value' => '#' . $data['order_id'],
                         'short' => true
-                    ],
+                    ];
+                }
+
+                $fields = array_merge($fields, [
                     [
                         'title' => 'Subject',
                         'value' => $data['subject'] ?? 'N/A',
@@ -1126,7 +1133,7 @@ class SlackNotificationService
                         'value' => $data['created_at'] ?? 'N/A',
                         'short' => false
                     ]
-                ];
+                ]);
 
                 $attachments = [
                     [
@@ -1256,7 +1263,19 @@ class SlackNotificationService
                         'title' => 'Replied By',
                         'value' => $data['replied_by_name'] ?? 'Unknown',
                         'short' => true
-                    ],
+                    ]
+                ];
+
+                // Add Order ID field only if category is 'order'
+                if (isset($data['category']) && strtolower($data['category']) === 'order' && !empty($data['order_id'])) {
+                    $fields[] = [
+                        'title' => 'Order ID',
+                        'value' => '#' . $data['order_id'],
+                        'short' => true
+                    ];
+                }
+
+                $fields = array_merge($fields, [
                     [
                         'title' => 'Subject',
                         'value' => $data['subject'] ?? 'N/A',
@@ -1275,7 +1294,7 @@ class SlackNotificationService
                         'value' => $data['created_at'] ?? 'N/A',
                         'short' => false
                     ]
-                ];
+                ]);
 
                 $attachments = [
                     [
