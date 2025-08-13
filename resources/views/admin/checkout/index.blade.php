@@ -330,11 +330,16 @@
 <script src="https://js.chargebee.com/v2/chargebee.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-
+    const CHARGEBEE_PUBLISHABLE_API_KEY = "{{ env('CHARGEBEE_PUBLISHABLE_API_KEY') }}";
+    const CHARGEBEE_SITE = "{{ env('CHARGEBEE_SITE') }}";
+    if (!CHARGEBEE_PUBLISHABLE_API_KEY) {
+        console.error("Chargebee publishable API key is not set in the environment variables.");
+        return;
+    }
     // 1. Initialize Chargebee instance
     const cbInstance = Chargebee.init({
-        site: 'projectinbox-test',
-        publishableKey: 'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk'
+        site: CHARGEBEE_SITE,
+        publishableKey: CHARGEBEE_PUBLISHABLE_API_KEY
     });
 
     // 2. Load components module
