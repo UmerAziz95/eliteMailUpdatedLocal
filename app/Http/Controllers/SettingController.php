@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\ShortEncryptedLink;
-use App\Models\CustomCheckoutId;
+use App\Models\CustomCheckOutId;
 
 class SettingController extends Controller
 {
@@ -79,7 +79,7 @@ public function sendDiscordMessage(Request $request)
         'content' => $fullMessage,
     ]);
 
-    CustomCheckoutId::truncate(); // Clear previous custom checkout IDs
+    CustomCheckOutId::truncate(); // Clear previous custom checkout IDs
     return response()->json([
         "status" => "success",
         "message" => "Message sent successfully to Discord.",
@@ -180,7 +180,7 @@ public function sendDiscordMessage(Request $request)
             Log::error('Discord webhook request failed: ' . $response->body());
             return false;
         }
-        CustomCheckoutId::truncate();
+        CustomCheckOutId::truncate();
         $settings->last_run_at = $nowUtc;
         $settings->save();
 
