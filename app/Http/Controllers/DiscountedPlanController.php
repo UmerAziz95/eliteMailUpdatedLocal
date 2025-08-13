@@ -9,7 +9,7 @@ use ChargeBee\ChargeBee\Models\Subscription;
 use App\Models\DiscordSettings;
 use App\Models\User;
 use Illuminate\Support\Facades\URL;
-use App\Models\CustomCheckoutId;
+use App\Models\CustomCheckOutId;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
