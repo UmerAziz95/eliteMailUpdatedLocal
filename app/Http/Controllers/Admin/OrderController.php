@@ -255,7 +255,7 @@ class OrderController extends Controller
 
                 })
                 ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
+                    return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
@@ -1507,26 +1507,26 @@ class OrderController extends Controller
             $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
-                fputcsv($file, [
-                    '',
-                    'Order_ID: ' . $order->id,
-                ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Order_ID: ' . $order->id,
+                // ]);
 
-                fputcsv($file, [
-                    '',
-                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
-                ]);
-                fputcsv($file, [
-                    '',
-                    'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
-                ]);
-                fputcsv($file, [
-                    '',
-                    'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
-                ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
+                // ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
+                // ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
+                // ]);
 
-                // Add empty row for separation
-                fputcsv($file, []);
+                // // Add empty row for separation
+                // fputcsv($file, []);
                 
                 // Add email data headers with additional columns
                 fputcsv($file, [
@@ -1534,31 +1534,31 @@ class OrderController extends Controller
                     'Last Name',
                     'Email', 
                     'Password',
-                    'Password Hash Function [UPLOAD ONLY]',
+                    // 'Password Hash Function [UPLOAD ONLY]',
                     'Org Unit Path [Required]',
-                    'New Primary Email [UPLOAD ONLY]',
-                    'Recovery Email',
-                    'Home Secondary Email',
-                    'Work Secondary Email',
-                    'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
-                    'Work Phone',
-                    'Home Phone',
-                    'Mobile Phone',
-                    'Work Address',
-                    'Home Address',
-                    'Employee ID',
-                    'Employee Type',
-                    'Employee Title',
-                    'Manager Email',
-                    'Department',
-                    'Cost Center',
-                    'Building ID',
-                    'Floor Name',
-                    'Floor Section',
-                    'Change Password at Next Sign-In',
-                    'New Status [UPLOAD ONLY]',
-                    'New Licenses [UPLOAD ONLY]',
-                    'Advanced Protection Program enrollment'
+                    // 'New Primary Email [UPLOAD ONLY]',
+                    // 'Recovery Email',
+                    // 'Home Secondary Email',
+                    // 'Work Secondary Email',
+                    // 'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
+                    // 'Work Phone',
+                    // 'Home Phone',
+                    // 'Mobile Phone',
+                    // 'Work Address',
+                    // 'Home Address',
+                    // 'Employee ID',
+                    // 'Employee Type',
+                    // 'Employee Title',
+                    // 'Manager Email',
+                    // 'Department',
+                    // 'Cost Center',
+                    // 'Building ID',
+                    // 'Floor Name',
+                    // 'Floor Section',
+                    // 'Change Password at Next Sign-In',
+                    // 'New Status [UPLOAD ONLY]',
+                    // 'New Licenses [UPLOAD ONLY]',
+                    // 'Advanced Protection Program enrollment'
                 ]);
                 
                 // Add email data with corresponding first/last names for each prefix variant
@@ -1568,31 +1568,31 @@ class OrderController extends Controller
                         $data['last_name'], // Last Name from prefix variant details
                         $data['email'], 
                         $data['password'],
-                        '', // Password Hash Function [UPLOAD ONLY]
+                        // '', // Password Hash Function [UPLOAD ONLY]
                         '/', // Org Unit Path [Required]
-                        '', // New Primary Email [UPLOAD ONLY]
-                        '', // Recovery Email
-                        '', // Home Secondary Email
-                        '', // Work Secondary Email
-                        '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
-                        '', // Work Phone
-                        '', // Home Phone
-                        '', // Mobile Phone
-                        '', // Work Address
-                        '', // Home Address
-                        '', // Employee ID
-                        '', // Employee Type
-                        '', // Employee Title
-                        '', // Manager Email
-                        '', // Department
-                        '', // Cost Center
-                        '', // Building ID
-                        '', // Floor Name
-                        '', // Floor Section
-                        '', // Change Password at Next Sign-In
-                        '', // New Status [UPLOAD ONLY]
-                        '', // New Licenses [UPLOAD ONLY]
-                        ''  // Advanced Protection Program enrollment
+                        // '', // New Primary Email [UPLOAD ONLY]
+                        // '', // Recovery Email
+                        // '', // Home Secondary Email
+                        // '', // Work Secondary Email
+                        // '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
+                        // '', // Work Phone
+                        // '', // Home Phone
+                        // '', // Mobile Phone
+                        // '', // Work Address
+                        // '', // Home Address
+                        // '', // Employee ID
+                        // '', // Employee Type
+                        // '', // Employee Title
+                        // '', // Manager Email
+                        // '', // Department
+                        // '', // Cost Center
+                        // '', // Building ID
+                        // '', // Floor Name
+                        // '', // Floor Section
+                        // '', // Change Password at Next Sign-In
+                        // '', // New Status [UPLOAD ONLY]
+                        // '', // New Licenses [UPLOAD ONLY]
+                        // ''  // Advanced Protection Program enrollment
                     ]);
                 }
 
