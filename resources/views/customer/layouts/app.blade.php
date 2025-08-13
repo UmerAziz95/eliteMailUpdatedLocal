@@ -60,22 +60,25 @@
 
 <body>
 
+    @php
+        $publicPage = $publicPage ?? false;
+    @endphp
     <div class="d-flex w-100 h-100 ">
-        @unless ($publicPage ?? false)
+        @unless ($publicPage)
         <div>
             @include('customer.layouts.sidebar')
         </div>
         @endunless
         <div class="h-100 w-100 px-4 py-3 d-flex flex-column justify-content-between overflow-y-auto">
             <div>
-                @unless ($publicPage ?? false)
+                @unless ($publicPage)
                 @include('customer.layouts.header')
                 @endunless
                 <!-- Include Header -->
                 @yield('content')
                 <!-- Main Page Content -->
             </div>
-            @unless ($publicPage ?? false)
+            @unless ($publicPage)
             @include('customer.layouts.footer')
             @endunless
             <!-- Include Footer (Optional) -->

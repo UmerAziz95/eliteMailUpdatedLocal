@@ -37,6 +37,7 @@ class User extends Authenticatable
         'billing_landmark',
         'billing_address_syn',
         'ghl_contact_id',
+        'is_internal',
     ];
 
     /**

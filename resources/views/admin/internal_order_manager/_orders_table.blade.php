@@ -4,15 +4,11 @@
             <tr>
                 <th>Order ID</th>
                 <th>Date</th>
-                <th>Name</th>
-                <th>Email</th>
                 @if(!isset($plan_id))
                 <th>Plan</th>
                 @endif
                 <th>Assigned To</th>
-                <th>Split Counts</th>
                 <th>Total Inboxes</th>
-                <th>Timer</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>

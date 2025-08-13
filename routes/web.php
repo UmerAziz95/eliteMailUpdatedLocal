@@ -183,6 +183,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
+        // Route::get('/orders/import/data', [AdminOrderController::class, 'getOrdersForImport'])->name('orders.import.data');
         Route::get('/orders/card', [AdminOrderController::class, 'indexCard'])->name('orders.card');
         Route::get('/orders/card/data', [AdminOrderController::class, 'getCardOrders'])->name('orders.card.data');
         Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
@@ -191,6 +192,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
+
+        // Order Import routes
+        Route::get('/orders/import/data', [InternalOrderManagerController::class, 'getOrdersForImport'])->name('orders.import.data');
+        Route::get('/orders/import-data/{id}', [InternalOrderManagerController::class, 'importOrderData'])->name('orders.import-data');
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
@@ -330,6 +335,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');   
         Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');   
         Route::post('/orders/reorder', [InternalOrderManagerController::class, 'store'])->name('orders.reorder.store');
+        Route::get('/internal-order-manager/data', [InternalOrderManagerController::class, 'getInternalOrders'])->name('internal_order_management.data');
+        Route::post('/internal-order-manager/update-status', [InternalOrderManagerController::class, 'updateStatus'])->name('internal_order_management.update_status');
+        Route::delete('/internal-order-manager/delete', [InternalOrderManagerController::class, 'delete'])->name('internal_order_management.delete');
+        Route::get('/internal-order-manager/users', [InternalOrderManagerController::class, 'getUsers'])->name('internal_order_management.get_users');
+        Route::post('/internal-order-manager/assign-user', [InternalOrderManagerController::class, 'assignToUser'])->name('internal_order_management.assign_user');
 
 
 
