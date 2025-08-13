@@ -255,7 +255,7 @@ class OrderController extends Controller
 
                 })
                 ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
+                    return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
