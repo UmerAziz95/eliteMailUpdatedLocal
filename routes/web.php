@@ -103,6 +103,7 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
 Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
+Route::get('/discounted/user/verify/{encrypted}/{discord_id?}', [\App\Http\Controllers\DiscountedPlanController::class,'verifyDiscountedUser' ])->name('discounted.plans.verify');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -668,6 +669,7 @@ Route::get('/go/{slug}', function ($slug) {
  
     $record = ShortEncryptedLink::where('slug', $slug)->firstOrFail();
     $originalUrl = Crypt::decryptString($record->encrypted_url);
+   
     return redirect()->away($originalUrl);
 });
 

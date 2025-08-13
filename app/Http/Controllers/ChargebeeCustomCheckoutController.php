@@ -67,71 +67,71 @@ class ChargebeeCustomCheckoutController extends Controller
     }
 
 
-  public function calculateCheckout($qty)
-{
-    $qty = (int) $qty;
-    if ($qty <= 0) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Invalid quantity.'
-        ], 400);
-    }
+    public function calculateCheckout($qty)
+    {
+        $qty = (int) $qty;
+        if ($qty <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid quantity.'
+            ], 400);
+        }
 
-    $master_plan_id = session()->get('discounted_master_plan_id');
-    if (!$master_plan_id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No plan selected for checkout or plan has been removed.'
-        ], 500);
-    }
+        $master_plan_id = session()->get('discounted_master_plan_id');
+        if (!$master_plan_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No plan selected for checkout or plan has been removed.'
+            ], 500);
+        }
 
-    $plans = Plan::where('master_plan_id', $master_plan_id)
-        ->where('is_discounted', true)
-        ->where('is_active', true)
-        ->get();
+        $plans = Plan::where('master_plan_id', $master_plan_id)
+            ->where('is_discounted', true)
+            ->where('is_active', true)
+            ->get();
 
-    if ($plans->isEmpty()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Plan not found.'
-        ], 500);
-    }
+        if ($plans->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan not found.'
+            ], 500);
+        }
 
-    $total_price = 0;
-    $price_per_qty = 0;
+        $total_price = 0;
+        $price_per_qty = 0;
 
-    foreach ($plans as $discountedPlan) {
-        $price = (float) $discountedPlan->price; // 0.68
-        $min_inbox = (int) $discountedPlan->min_inbox;
-        $max_inbox = (int) $discountedPlan->max_inbox;
+        foreach ($plans as $discountedPlan) {
+            $price = (float) $discountedPlan->price; // 0.68
+            $min_inbox = (int) $discountedPlan->min_inbox;
+            $max_inbox = (int) $discountedPlan->max_inbox;
 
 
-        //without infinite
-        if ($min_inbox > 0 && $max_inbox > 0) { 
-            if ($qty >= $min_inbox && $qty <= $max_inbox) {
-                $total_price = $price * $qty;
-                $price_per_qty = $price;
-                session()->put('discounted_plan_id',$discountedPlan->id);
-                break; // stop after finding the matching range
-            }
-            //infinite consition
-        } elseif ($min_inbox > 0 && $max_inbox == 0) {
-            if ($qty >= $min_inbox) {
-                $total_price = $price * $qty;
-                $price_per_qty = $price;
-                session()->put('discounted_plan_id',$discountedPlan->id);
-                break;
+            //without infinite
+            if ($min_inbox > 0 && $max_inbox > 0) { 
+                if ($qty >= $min_inbox && $qty <= $max_inbox) {
+                    $total_price = $price * $qty;
+                    $price_per_qty = $price;
+                    session()->put('discounted_plan_id',$discountedPlan->id);
+                    break; // stop after finding the matching range
+                }
+                //infinite consition
+            } elseif ($min_inbox > 0 && $max_inbox == 0) {
+                if ($qty >= $min_inbox) {
+                    $total_price = $price * $qty;
+                    $price_per_qty = $price;
+                    session()->put('discounted_plan_id',$discountedPlan->id);
+                    break;
+                }
             }
         }
-    }
 
-    return response()->json([
-        'success' => true,
-        'total_price' => round($total_price, 2),
-        'price_per_qty' => round($price_per_qty, 2),
-        'plans'=>$plans
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'total_price' => round($total_price, 2),
+            'price_per_qty' => round($price_per_qty, 2),
+            'plans'=>$plans
+        ]);
+    }
 
 
 
@@ -176,6 +176,11 @@ class ChargebeeCustomCheckoutController extends Controller
                 $quantity = $request->quantity;
 
                 // 1. Create the customer
+                $verified_user=session()->get('verified_discounted_user');
+                if(isset($verified_user)){
+                    $email = $verified_user->email;
+                    $firstName = $verified_user->name;
+                }
                 $customer = $this->chargebee->createCustomer($email, $firstName, $lastName, $addressLine1, $city, $state, $zip, $country);
                 $customerId = $customer->id;
             
@@ -192,7 +197,7 @@ class ChargebeeCustomCheckoutController extends Controller
                                 $isValidPage->delete();
                             }
 
-                            $subscreationCreationResponse=$this->subscriptionSuccess($result,$customer);
+                            $subscreationCreationResponse=$this->subscriptionSuccess($result,$customer); //for database record
                             $responseMessage=$subscreationCreationResponse["success"] ? "Subscription successful":"Subsction Created but failed to save data in system,Please contact support immediately!";
                             return response()->json([
                             'message' =>$responseMessage,
@@ -295,11 +300,20 @@ private function extractBillingData($address)
 
 private function getOrCreateUser($customer, $billingData)
 {
+    
     if (Auth::check()) {
+        $user = Auth::user();
+        $user->chargebee_customer_id = $customer->id;
+        $user->save();
+
         return Auth::user();
     }
 
     $user = User::where('email', $customer->email)->first();
+    if ($user) {
+        $user->chargebee_customer_id = $customer->id;
+        $user->save();
+    }
     if (!$user) {
         $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
         $user = User::create([
@@ -308,6 +322,8 @@ private function getOrCreateUser($customer, $billingData)
             'password' => Hash::make($randomPassword),
             'role_id' => 3,
             'status' => 1,
+            'phone' => $customer->phone ?? '',
+            'chargebee_customer_id' => $customer->id,
             'billing_address' => $billingData['line1'],
             'billing_address2' => $billingData['line2'],
             'billing_city' => $billingData['city'],

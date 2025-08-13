@@ -25,6 +25,10 @@
         font-size: 12px;
         color: #999;
     }
+
+    #card-component {
+        min-height: fit-content !important
+    }
 </style>
 @endpush
 
@@ -46,7 +50,7 @@
             <!-- Step 1: Cart -->
             <div id="error-messages"></div>
             <div id="cart-left">
-                <div class="card card-custom p-4">
+                <div class="card card-custom p-4 mb-4">
                     <div class="d-flex">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google"
                             class="me-3" style="width: 60px; height: 60px; object-fit: contain;">
@@ -84,19 +88,6 @@
 
             <!-- Step 2: Billing Form -->
             <div id="billing-left" class="">
-                <div class="card card-custom p-3 mb-4">
-                    <h5 class="mb-2">Account Details</h5>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <p class="mb-0 small text-white"><strong class="opacity-50 fw-semibold">First Name:</strong>
-                                Paul</p>
-                            <p class="mb-0 small text-white"><strong class="opacity-50 fw-semibold">Email:</strong>
-                                5dsolutions.qualityassurance@gmail.com</p>
-                        </div>
-                        <a href="#" class="text-primary">Edit</a>
-                    </div>
-                </div>
-
 
                 <form class="card p-3">
                     <h5 class="mb-3">Billing Address</h5>
@@ -138,23 +129,15 @@
                         </div>
                     </div>
 
-                  <div class="mb-3">
-    <input type="text" 
-           class="form-control" 
-           id="billingState" 
-           name="state" 
-           value=""
-           placeholder="Enter State">
-</div>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="billingState" name="state" value=""
+                            placeholder="Enter State">
+                    </div>
 
-<div class="mb-3">
-    <input type="text" 
-           class="form-control" 
-           id="billingCountry" 
-           name="country" 
-           placeholder="Enter Country" 
-           value="">
-</div>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="billingCountry" name="country"
+                            placeholder="Enter Country" value="">
+                    </div>
 
 
                     <div class="form-check mb-3">
@@ -310,24 +293,24 @@
                     🔒 Secure Checkout by <strong>Chargebee</strong>
                 </p> --}}
             </div>
+
+            <form id="payment-form" class="card card-custom p-4 mt-4">
+                <h5 class="mb-3">Payment Details</h5>
+
+                <label class="form-label fw-semibold">Card Information</label>
+                <div class="mb-3">
+                    <!-- The card component will be mounted here -->
+                    <div id="card-component" class="border rounded p-3" style="min-height: 150px;"></div>
+                    <div id="card-errors" class="text-danger small mt-2"></div>
+                </div>
+
+                <button type="submit" id="pay-button" class="btn btn-primary w-100 mt-3">Proceed to checkout</button>
+
+                <p class="text-center secure-note mt-3">
+                    🔒 Secure Checkout by <strong>Chargebee</strong>
+                </p>
+            </form>
         </div>
-        <form id="payment-form" class="card card-custom p-4 mt-4">
-            <h5 class="mb-3">Payment Details</h5>
-
-            <label class="form-label fw-semibold">Card Information</label>
-            <div class="mb-3">
-                <!-- The card component will be mounted here -->
-                <div id="card-component" class="border rounded p-3" style="min-height: 150px;"></div>
-                <div id="card-errors" class="text-danger small mt-2"></div>
-            </div>
-
-            <button type="submit" id="pay-button" class="btn btn-primary w-100 mt-3">Proceed to checkout</button>
-
-            <p class="text-center secure-note mt-3">
-                🔒 Secure Checkout by <strong>Chargebee</strong>
-            </p>
-        </form>
-
 
     </div>
 </div>

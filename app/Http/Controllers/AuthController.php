@@ -21,6 +21,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Onboarding;
+use App\Models\DiscordUserLoginSession;
 class AuthController extends Controller
 {
     // testAdmin
@@ -52,13 +53,23 @@ class AuthController extends Controller
         return $user;
     }
     //Show login form
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
-        // Check if user is already logged in
-        if (Auth::check()) {
-            return redirect($this->redirectTo(Auth::user()));
+       $type = $request->query('type');
+       if(isset($type)){
+           $discord_setting_page_session= DiscordUserLoginSession::create([
+                'discord_setting_page_id' => $type
+            ]);
         }
-        return view('modules.auth.login');
+        else{
+            $discord_setting_page_session = null;
+        }
+      
+        // Check if user is already logged in
+       if (Auth::check()) {
+          Auth::logout(); // Log out the user if already logged in
+       }
+        return view('modules.auth.login',compact('discord_setting_page_session'));
     }
 
     //Handle login
@@ -67,17 +78,23 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'discord_setting_page_id'=> 'nullable|exists:discord_user_login_sessions,discord_setting_page_id'
         ]);
     
-        $remember = $request->has('remember');
-        
+         $remember = $request->has('remember');
+         $type_id=session()->get('iam_discounted_user');
+       
+         
         // First login attempt - check credentials before any other validations
+        $credentials = $request->only('email', 'password');
+        
         if (Auth::attempt($credentials, $remember)) {
             // Store successful login attempt temporarily
             $loginSuccessful = true;
         } else {
             $loginSuccessful = false;
         }
+
         // immediately logout to perform additional checks
         Auth::logout();
         // If login failed, return early with error
@@ -89,21 +106,39 @@ class AuthController extends Controller
         // Auth::logout();
 
         $userCheck=User::where('email',$request->email)->first();
-        // dd($userCheck, Auth::user()->status == 0 && $userCheck->role_id == 3 );
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
         
-        if($userCheck->status==0){ //unverified user
+        if($userCheck->status==0){
             // Generate new verification code
             $verificationCode = rand(1000, 9999);
             $userCheck->email_verification_code = $verificationCode;
             $userCheck->save();
 
             // Create verification link
+
             $payload = $userCheck->email . '/' . $verificationCode . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
-            $verificationLink = url('/plans/public/' . $encrypted);
+           if ($userCheck->type == "discounted") {
+                if (isset($type_id)) {
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
+                } 
+                else { 
+                    if(isset($request->discord_setting_page_id)){
+                        $discord_setting_page_id = $request->discord_setting_page_id;
+                    }else{
+                        
+                        $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+                        ->pluck('discord_setting_page_id')
+                        ->first();
+                    }
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                }
+            } else {
+                $verificationLink = url("/plans/public/{$encrypted}");
+            }
+
 
             // Send verification email
             try {
@@ -117,10 +152,30 @@ class AuthController extends Controller
         
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
         if(!$userSubsc && $userCheck->role_id == 3){
+            
             // If user has no subscription and is a customer, redirect to plans/public with encrypted user info
             $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
-            return redirect()->to('/plans/public/' . $encrypted);
+             if ($userCheck->type == "discounted") {
+                
+               
+                if (isset($type_id)) {
+                     
+                      return redirect()->to('/discounted/user/verify/'.$encrypted.'/'.$type_id);
+                } else { 
+                    if(isset($request->discord_setting_page_id)){
+                        $discord_setting_page_id = $request->discord_setting_page_id;
+                    }else{
+                        
+                        $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+                        ->pluck('discord_setting_page_id')
+                        ->first();
+                    }
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                }
+                } else {
+                    return redirect()->to('/plans/public/' . $encrypted);
+                }
         }
         
         if (Auth::attempt($credentials, $remember)) {
@@ -227,6 +282,8 @@ class AuthController extends Controller
             'password_confirmation.required' => 'Password confirmation is required.',
         ]);
 
+        $type_id=session()->get('iam_discounted_user');
+        
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
         if ($existingUser && $existingUser->status == 0) {
@@ -236,8 +293,24 @@ class AuthController extends Controller
 
                 $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
                 $encrypted = Crypt::encryptString($payload);
-                $verificationLink =url('/plans/public/' . $encrypted);
-            
+               if ($existingUser->type == "discounted") {
+                    if (isset($type_id)) {
+                        $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
+                    }
+                     else { 
+                    if(isset($request->discord_setting_page_id)){
+                        $discord_setting_page_id = $request->discord_setting_page_id;
+                    }else{
+                        
+                      $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+                        ->pluck('discord_setting_page_id')
+                        ->first();
+                    }
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                   }
+                } else {
+                    $verificationLink = url("/plans/public/{$encrypted}");
+                }
 
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
@@ -264,7 +337,25 @@ class AuthController extends Controller
 
                 $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
                 $encrypted = Crypt::encryptString($payload);
-                $verificationLink =url('/plans/public/' . $encrypted);
+               if ($existingUser->type == "discounted") {
+                    if (isset($type_id)) {
+                        $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
+                    } 
+                     else { 
+                    if(isset($request->discord_setting_page_id)){
+                        $discord_setting_page_id = $request->discord_setting_page_id;
+                    }else{
+                        
+                        $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+                        ->pluck('discord_setting_page_id')
+                        ->first();
+                    }
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                   }
+                } else {
+                    $verificationLink = url("/plans/public/{$encrypted}");
+                }
+
             
 
                 try {
@@ -292,7 +383,8 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role_id' =>3,
-            'status' => 0
+            'status' => 0,
+            'type'=>$type_id ? "discounted":null
         ]);
 
         // Optional: create Chargebee customer
@@ -340,7 +432,26 @@ class AuthController extends Controller
 
         $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
         $encrypted = Crypt::encryptString($payload);
-        $verificationLink =url('/plans/public/' . $encrypted);
+        $verificationLink="";
+         if ($user->type == "discounted") {
+            if (isset($type_id)) {
+                $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
+            } 
+             else { 
+                    if(isset($request->discord_setting_page_id)){
+                        $discord_setting_page_id = $request->discord_setting_page_id;
+                    }else{
+                        
+                       $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+                        ->pluck('discord_setting_page_id')
+                        ->first();
+                    }
+                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                }
+            } else {
+                $verificationLink = url("/plans/public/{$encrypted}");
+            }
+
         
 
 //to user

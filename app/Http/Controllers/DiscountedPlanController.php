@@ -7,37 +7,78 @@ use App\Models\Plan;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
 use App\Models\DiscordSettings;
+use App\Models\User;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use App\Models\CustomCheckoutId;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class DiscountedPlanController extends Controller
 {
-    //
-   public function index($id = null)
+
+  
+public function index($id = null)
 {
-    if ($id !== null) {
-        $setting = DiscordSettings::where('url_string', $id)->first();
-
-        if (!$setting) {
-            abort(404, 'Invalid or expired discount link.');
-        }
-    }
-    if($id==null){
-         abort(404, 'Invalid or expired discount link.');
+    if (!$id) {
+        abort(404, 'Invalid or expired discount link.');
     }
 
-    
-    $getMostlyUsed = Plan::getMostlyUsed();
-    $plans = Plan::with('features')
-        ->where('is_active', true)
-        ->where('is_discounted', true)
-        ->get();
+    $setting = DiscordSettings::where('url_string', $id)->first();
 
-    $publicPage = true; 
-    $url_string = $id; // Assuming $id is the encrypted string for the discount link
-    return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','url_string', 'id'));
+    if (!$setting) {
+        abort(404, 'Invalid or expired discount link.');
+    }
+
+    session()->put('iam_discounted_user', $setting->url_string);
+
+    return redirect()->to('/?type=' . $setting->url_string);
+     // $getMostlyUsed = Plan::getMostlyUsed();
+    // $plans = Plan::with('features')
+    //     ->where('is_active', true)
+    //     ->where('is_discounted', true)
+    //     ->get();
+
+    // $publicPage = true; 
+    // $url_string = $id; // Assuming $id is the encrypted string for the discount link
+    // return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','url_string', 'id'));
+
+    // The rest of your code for displaying plans
 }
+
+public function verifyDiscountedUser($encrypted, $id)
+{
+    $discordLink = DiscordSettings::where('url_string', $id)->first();
+    if ($discordLink) {
+        $decrypted = Crypt::decryptString($encrypted);
+        [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
+
+        $user = User::where('email', $email)->firstOrFail();
+
+        if ($user) {
+            session()->put('verified_discounted_user', $user);
+            $user->email_verified_at = now();
+            $user->email_verification_code = null;
+            $user->status = 1;
+            $user->save();
+                $getMostlyUsed = Plan::getMostlyUsed();
+                $plans = Plan::with('features')
+                ->where('is_active', true)
+                ->where('is_discounted', true)
+                ->get();
+
+                $publicPage = true; 
+                $url_string = $id; // Assuming $id is the encrypted string for the discount link
+                return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','url_string', 'id'));
+
+        }
+        else{
+            abort(404,"User not found");
+        }
+    } else {
+        abort(404, 'Invalid or expired discount link.');
+    }
+}
+
 
 
       public function initiateSubscription(Request $request, $planId, $encrypted=null)
