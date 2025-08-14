@@ -532,7 +532,7 @@ function createSubscription(cbtoken, vaultToken) {
 
         console.log("✅ Subscription created:", data);
 
-        // Show success message from API response if available
+        // Show success message from API response if availables
         if (data.message) {
             showSuccess([data.message]);
         } else {
@@ -540,8 +540,7 @@ function createSubscription(cbtoken, vaultToken) {
         }
 
         // Optionally redirect if your API gives a URL
-        if (data.redirect_url) {
-            
+        if (data.subscription_id) {
             setTimeout(() => {
                 window.location.href = data.redirect_url;
             }, 3000);

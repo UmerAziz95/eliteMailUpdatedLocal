@@ -121,6 +121,7 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
 Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
 Route::get('/discounted/user/verify/{encrypted}/{discord_id?}', [\App\Http\Controllers\DiscountedPlanController::class,'verifyDiscountedUser' ])->name('discounted.plans.verify');
+Route::get('/discounted/user/redirect/{subscription_id}',[\App\Http\Controllers\DiscountedPlanController::class,'redirectToDashboard'])->name('discounted.plans.redirect');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -277,7 +278,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
         
         // GHL Settings Routes
-        Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
+         Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
         Route::post('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'update'])->name('ghl-settings.update');
         Route::post('/ghl-settings/test-connection', [App\Http\Controllers\Admin\GhlSettingsController::class, 'testConnection'])->name('ghl-settings.test-connection');
         Route::get('/ghl-settings/get', [App\Http\Controllers\Admin\GhlSettingsController::class, 'getSettings'])->name('ghl-settings.get');

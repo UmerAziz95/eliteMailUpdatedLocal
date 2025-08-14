@@ -204,7 +204,7 @@ class ChargebeeCustomCheckoutController extends Controller
                             "chargebee_ok"=>$subscription["id"]? true:false,
                             "saved_db_ok"=>$subscreationCreationResponse["success"] ?true:false,
                             "subscription_id"=>$subscription["id"],
-                            'redirect_url'=>url('/customer/dashboard')
+                            'redirect_url'=>url('/discounted/user/redirect/'.$subscription["id"]),
                             ], 200); 
                   }
                 else{
@@ -403,6 +403,7 @@ private function createReorderInfo($order, $user, $planId, $quantity)
 
 private function createOrUpdateInvoice($invoice, $user, $planId, $order, $subscription, $customer)
 {
+   
     return Invoice::updateOrCreate(
         ['chargebee_invoice_id' => $invoice["id"]],
         [
@@ -411,7 +412,7 @@ private function createOrUpdateInvoice($invoice, $user, $planId, $order, $subscr
             'user_id' => $user->id,
             'plan_id' => $planId,
             'order_id' => $order->id,
-            'amount' => ($invoice["paid_at"] ?? 0) / 100,
+            'amount' => ($invoice["amount_paid"] ?? 0) / 100,
             'status' => $invoice["status"],
             'paid_at' => Carbon::createFromTimestamp($invoice["paid_at"]),
             'metadata' => json_encode(compact('invoice', 'customer', 'subscription')),
