@@ -82,7 +82,7 @@ class AuthController extends Controller
         ]);
     
          $remember = $request->has('remember');
-         $type_id=session()->get('iam_discounted_user');
+         $type_id=session()->get('iam_discounted_user'); // 
        
          
         // First login attempt - check credentials before any other validations
@@ -110,6 +110,7 @@ class AuthController extends Controller
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
         
+        //
         if($userCheck->status==0){
             // Generate new verification code
             $verificationCode = rand(1000, 9999);
@@ -133,10 +134,13 @@ class AuthController extends Controller
                         ->pluck('discord_setting_page_id')
                         ->first();
                     }
-                    $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                    
+                    return redirect()->to("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
                 }
-            } else {
-                $verificationLink = url("/plans/public/{$encrypted}");
+            } 
+            else {
+               
+                return redirect()->to("/plans/public/{$encrypted}");
             }
 
 
@@ -151,33 +155,49 @@ class AuthController extends Controller
         }
         
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
-        if(!$userSubsc && $userCheck->role_id == 3){
-            
+       if (!$userSubsc && $userCheck->role_id == 3) {
             // If user has no subscription and is a customer, redirect to plans/public with encrypted user info
             $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
-             if ($userCheck->type == "discounted") {
-                
-               
+
+            if ($userCheck->type == "discounted") {
                 if (isset($type_id)) {
-                     
-                      return redirect()->to('/discounted/user/verify/'.$encrypted.'/'.$type_id);
-                } else { 
-                    if(isset($request->discord_setting_page_id)){
+                    return redirect()->to('/discounted/user/verify/' . $encrypted . '/' . $type_id);
+                }
+                 else {
+                    if (isset($request->discord_setting_page_id)) {
                         $discord_setting_page_id = $request->discord_setting_page_id;
-                    }else{
-                        
+                    } else {
                         $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
-                        ->pluck('discord_setting_page_id')
-                        ->first();
+                            ->pluck('discord_setting_page_id')
+                            ->first();
                     }
+
                     $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
+                    return redirect()->to('/discounted/user/verify/' . $encrypted . '/' . $discord_setting_page_id);
                 }
-                } else {
-                    return redirect()->to('/plans/public/' . $encrypted);
+            }
+            else {
+                if($type_id !==null){
+                     return redirect()->to('/discounted/user/verify/' . $encrypted . '/' . $type_id);
                 }
+
+                return redirect()->to('/plans/public/' . $encrypted);
+            }
         }
-        
+        else{
+           
+            
+            if($userSubsc && $userCheck->role_id == 3 && $userCheck->type=="discounted" ){
+                if($type_id){
+                     $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+                     $encrypted = Crypt::encryptString($payload); 
+                     return redirect()->to('/discounted/user/verify/' . $encrypted . '/' . $type_id);
+
+                }
+            }
+        }
+
         if (Auth::attempt($credentials, $remember)) {
             // Check if the authenticated user's account is inactive
             if (Auth::user()->status == 0 && $userCheck->role_id == 3 ) {
@@ -333,15 +353,22 @@ class AuthController extends Controller
                 // Email verification code
                 $verificationCode = rand(1000, 9999);
                 $existingUser->email_verification_code = $verificationCode;
+                if(!$type_id || $type_id == null){
+                    $existingUser->type=null;
+                }else{
+                    $existingUser->type = "discounted";
+                }
                 $existingUser->save();
 
                 $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
                 $encrypted = Crypt::encryptString($payload);
+
                if ($existingUser->type == "discounted") {
                     if (isset($type_id)) {
                         $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
+
                     } 
-                     else { 
+                 else { 
                     if(isset($request->discord_setting_page_id)){
                         $discord_setting_page_id = $request->discord_setting_page_id;
                     }else{
@@ -352,11 +379,10 @@ class AuthController extends Controller
                     }
                     $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
                    }
-                } else {
+                }
+                 else {
                     $verificationLink = url("/plans/public/{$encrypted}");
                 }
-
-            
 
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
@@ -451,8 +477,6 @@ class AuthController extends Controller
             } else {
                 $verificationLink = url("/plans/public/{$encrypted}");
             }
-
-        
 
 //to user
         try {

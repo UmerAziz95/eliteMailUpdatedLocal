@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\URL;
 use App\Models\CustomCheckOutId;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
+use App\Models\Invoice;
+use App\Models\Subscription as SubscriptionModel;
+
+
+
 
 class DiscountedPlanController extends Controller
 {
@@ -56,6 +61,8 @@ public function verifyDiscountedUser($encrypted, $id)
 
         if ($user) {
             session()->put('verified_discounted_user', $user);
+            session()->forget('iam_discounted_user');
+ 
             $user->email_verified_at = now();
             $user->email_verification_code = null;
             $user->status = 1;
@@ -128,4 +135,29 @@ public function verifyDiscountedUser($encrypted, $id)
         }
         
     }
+
+
+public function redirectToDashboard($subscription_id)
+{
+    $subscription = SubscriptionModel::where('chargebee_subscription_id', $subscription_id)->first();
+
+    if (!$subscription) {
+        return redirect()->route('customer.dashboard')->with('error', 'Subscription not found.');
+    }
+
+    $plan = Plan::findOrFail($subscription->plan_id);
+
+    $amountPaid = Invoice::where('chargebee_subscription_id', $subscription_id)
+        ->pluck('amount')
+        ->first() ?? 0;
+
+    // Redirect to success page with subscription details
+    return view('customer.plans.subscription-success', [
+        'subscription_id' => $subscription->id,
+        'order_id'        => $subscription->order_id,
+        'plan'            => $plan,
+        'amount'          => $amountPaid,
+    ]);
+}
+
 }
