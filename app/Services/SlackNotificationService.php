@@ -456,6 +456,11 @@ class SlackNotificationService
         
         switch ($type) {
             case 'invoice-generated-new':
+                Log::channel('slack_notifications')->info("Formatting message for type: {$type}", [
+                    'data' => $data,
+                    'amount_with_number_format' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                    'amount_without_format' => ($data['currency'] ?? 'USD') . ' ' . $data['amount'] ?? 0,
+                ]);
                 return [
                     'text' => "💳 *New Payment Invoice Generated*",
                     'attachments' => [
@@ -489,7 +494,8 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Amount',
-                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    // 'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
                                     'short' => true
                                 ],
                                 [

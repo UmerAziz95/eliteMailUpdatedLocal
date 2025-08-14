@@ -1532,7 +1532,7 @@ class OrderController extends Controller
                 fputcsv($file, [
                     'First Name', 
                     'Last Name',
-                    'Email', 
+                    'Email address', 
                     'Password',
                     // 'Password Hash Function [UPLOAD ONLY]',
                     'Org Unit Path [Required]',
