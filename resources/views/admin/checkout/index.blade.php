@@ -52,8 +52,8 @@
             <div id="cart-left">
                 <div class="card card-custom p-4 mb-4">
                     <div class="d-flex">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google"
-                            class="me-3" style="width: 60px; height: 60px; object-fit: contain;">
+                        <img src="{{asset('assets/logo/chargebee_checkout_logo.png') }}" alt="Google" class="me-3"
+                            style="width: 60px; height: 60px; object-fit: contain;">
                         <div class="flex-grow-1">
                             <span class="badge bg-secondary text-uppercase small rounded-5">Plan</span>
                             <h5 class="mt-2 mb-1">Google Workspace Package</h5>
