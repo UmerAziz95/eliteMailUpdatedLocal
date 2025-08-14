@@ -1644,12 +1644,9 @@
                                     aria-controls="order-collapse-${order.order_id}"
                                     onclick="toggleOrderAccordion('order-collapse-${order.order_id}', this, event)">
                                     <small>ORDER ID: #${order.order_id || 0 }</small>
-                                    <small>${handleOrderRelativeTimeCount(order.timer_order) }</small>
-                                    <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''})</small>
+                                    <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>` : ''}</small>
                                     <div class="d-flex align-items-center gap-2">
-                                        ${order.order_status === 'pending' ? `
-                                           
-                                        ` : `
+                                        ${order.order_status === 'pending' ? `<span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">${order.order_status || 'Unknown'}</span>` : `
                                             <span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">
                                                 ${order.order_status || 'Unknown'}
                                             </span>
