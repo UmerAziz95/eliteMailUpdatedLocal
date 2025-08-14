@@ -410,7 +410,7 @@ private function createReorderInfo($order, $user, $planId, $quantity)
     $order->reorderInfo()->create([
         'user_id' => $user->id,
         'plan_id' => $planId,
-        'total_inboxes' => $quantity,
+        'total_inboxes' => (int) $quantity,
         'inboxes_per_domain' => 1,
         'first_name' => $user->name,
         'persona_password' => '123',
