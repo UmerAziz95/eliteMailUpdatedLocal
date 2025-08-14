@@ -253,10 +253,26 @@ class ChargebeeCustomCheckoutController extends Controller
 
         // Create order
         $order = $this->createOrUpdateOrder($invoice, $user, $planId, $subscription, $customer);
-
+        Log::info("Order created/updated successfully: {$order->id}");
+        Log::info("------------------------------------------- Custom Checkout Order Details -------------------------------------------");
+        Log::info("Custom Checkout Order details: ", [
+            'invoice' => $invoice,
+            'user' => $user,
+            'planId' => $planId,
+            'subscription' => $subscription,
+            'customer' => $customer,
+            'order' => $order
+        ]);
         // Create reorder info
         $this->createReorderInfo($order, $user, $planId, $quantity);
 
+        Log::info("Custom Checkout Reorder details: ", [
+            'order' => $order,
+            'user' => $user,
+            'planId' => $planId,
+            'quantity' => $quantity
+        ]);
+        Log::info("------------------------------------------- Custom Checkout Reorder Details End -------------------------------------------");
         // Create invoice
         $existingInvoice = $this->createOrUpdateInvoice($invoice, $user, $planId, $order, $subscription, $customer);
 
