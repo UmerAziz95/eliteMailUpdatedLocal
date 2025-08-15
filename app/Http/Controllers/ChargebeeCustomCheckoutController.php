@@ -164,16 +164,26 @@ class ChargebeeCustomCheckoutController extends Controller
             
             try {
                 $planId = session()->get('discounted_plan_id');
-                // ✅ Static test values (you can replace with dynamic later)
+                
+                // Validate and extract form data
                 $email = $request->email;
                 $firstName = $request->first_name;
-                $lastName =$request->last_name;
+                $lastName = $request->last_name;
                 $addressLine1 = $request->address_line1;
                 $city = $request->city;
                 $state = $request->state;
                 $zip = $request->zip;
                 $country = $request->country;
-                $quantity = $request->quantity;
+                $quantity = (int) $request->quantity;
+                
+                // Additional quantity validation
+                if ($quantity <= 0) {
+                    return response()->json([
+                        'error' => 'Invalid quantity provided: ' . $quantity
+                    ], 400);
+                }
+                
+                Log::info("Processing subscription with quantity: " . $quantity);
 
                 // 1. Create the customer
                 $verified_user=session()->get('verified_discounted_user');
@@ -197,14 +207,24 @@ class ChargebeeCustomCheckoutController extends Controller
                                 $isValidPage->delete();
                             }
 
-                            $subscreationCreationResponse=$this->subscriptionSuccess($result,$customer); //for database record
-                            $responseMessage=$subscreationCreationResponse["success"] ? "Subscription successful":"Subsction Created but failed to save data in system,Please contact support immediately!";
+                            $subscreationCreationResponse = $this->subscriptionSuccess($result, $customer);
+                            $responseMessage = $subscreationCreationResponse["success"] ? 
+                                "Subscription successful" : 
+                                "Subscription Created but failed to save data in system. Please contact support immediately!";
+                            
+                            Log::info("Subscription process completed", [
+                                'subscription_id' => $subscription["id"],
+                                'chargebee_ok' => true,
+                                'saved_db_ok' => $subscreationCreationResponse["success"],
+                                'message' => $subscreationCreationResponse["message"] ?? 'No message'
+                            ]);
+                            
                             return response()->json([
-                            'message' =>$responseMessage,
-                            "chargebee_ok"=>$subscription["id"]? true:false,
-                            "saved_db_ok"=>$subscreationCreationResponse["success"] ?true:false,
-                            "subscription_id"=>$subscription["id"],
-                            'redirect_url'=>url('/discounted/user/redirect/'.$subscription["id"]),
+                                'message' => $responseMessage,
+                                "chargebee_ok" => $subscription["id"] ? true : false,
+                                "saved_db_ok" => $subscreationCreationResponse["success"] ? true : false,
+                                "subscription_id" => $subscription["id"],
+                                'redirect_url' => url('/discounted/user/redirect/' . $subscription["id"]),
                             ], 200); 
                   }
                 else{
@@ -215,6 +235,13 @@ class ChargebeeCustomCheckoutController extends Controller
                     ], 500);
                     }
                 } catch (\Exception $e) {
+                    Log::error("Subscription creation failed: " . $e->getMessage(), [
+                        'email' => $email ?? 'unknown',
+                        'quantity' => $quantity ?? 'unknown',
+                        'plan_id' => $planId ?? 'unknown',
+                        'stack_trace' => $e->getTraceAsString()
+                    ]);
+                    
                     return response()->json([
                         'error' => $e->getMessage()
                     ], 500);
@@ -242,11 +269,26 @@ class ChargebeeCustomCheckoutController extends Controller
         // Create or update user
         $user = $this->getOrCreateUser($customer, $billingData);
 
-        // Determine plan from quantity
-        $quantity  = $subscription["subscription_items"][0]->quantity ?? 1;
-        $plan      = $this->findPlanByQuantity($quantity);
-        $planId    = $plan?->id ?? null;
-        $chargebeePlanId = $subscription["subscription_items"][0]->itemPriceId ?? null;
+        // Determine plan from quantity with proper validation
+        $subscriptionItems = $subscription["subscription_items"] ?? [];
+        if (empty($subscriptionItems) || !isset($subscriptionItems[0])) {
+            throw new \Exception('No subscription items found in the subscription data');
+        }
+        
+        $quantity = (int) ($subscriptionItems[0]->quantity ?? 1);
+        if ($quantity <= 0) {
+            throw new \Exception('Invalid quantity found in subscription: ' . $quantity);
+        }
+        
+        $plan = $this->findPlanByQuantity($quantity);
+        $planId = $plan?->id ?? null;
+        $chargebeePlanId = $subscriptionItems[0]->itemPriceId ?? null;
+        
+        Log::info("Subscription quantity details: ", [
+            'quantity' => $quantity,
+            'planId' => $planId,
+            'chargebeePlanId' => $chargebeePlanId
+        ]);
 
         // Save updated billing info
         $this->updateUserBilling($user, $billingData);
@@ -263,8 +305,26 @@ class ChargebeeCustomCheckoutController extends Controller
             'customer' => $customer,
             'order' => $order
         ]);
-        // Create reorder info
-        $this->createReorderInfo($order, $user, $planId, $quantity);
+        // Create reorder info with proper exception handling
+        try {
+            $this->createReorderInfo($order, $user, $planId, $quantity);
+            Log::info("Reorder info created successfully", [
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'plan_id' => $planId,
+                'quantity' => $quantity
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to create reorder info: " . $e->getMessage(), [
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'plan_id' => $planId,
+                'quantity' => $quantity,
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw the exception to avoid breaking the subscription flow
+            // but log it for debugging
+        }
 
         Log::info("Custom Checkout Reorder details: ", [
             'order' => $order,
@@ -407,14 +467,75 @@ private function createOrUpdateOrder($invoice, $user, $planId, $subscription, $c
 
 private function createReorderInfo($order, $user, $planId, $quantity)
 {
-    $order->reorderInfo()->create([
-        'user_id' => $user->id,
-        'plan_id' => $planId,
-        'total_inboxes' => $quantity,
-        'inboxes_per_domain' => 1,
-        'first_name' => $user->name,
-        'persona_password' => '123',
-    ]);
+    try {
+        // Validate input parameters
+        if (!$order || !$order->id) {
+            throw new \Exception('Invalid order provided for reorder info creation');
+        }
+        
+        if (!$user || !$user->id) {
+            throw new \Exception('Invalid user provided for reorder info creation');
+        }
+        
+        if (!$planId) {
+            throw new \Exception('Invalid plan ID provided for reorder info creation');
+        }
+        
+        $quantity = (int) $quantity;
+        if ($quantity <= 0) {
+            throw new \Exception('Invalid quantity provided for reorder info creation: ' . $quantity);
+        }
+        
+        Log::info("Creating reorder info with data: ", [
+            'order_id' => $order->id,
+            'user_id' => $user->id,
+            'plan_id' => $planId,
+            'total_inboxes' => $quantity,
+            'user_name' => $user->name
+        ]);
+        
+        $reorderInfo = $order->reorderInfo()->create([
+            'user_id' => $user->id,
+            'plan_id' => $planId,
+            'total_inboxes' => $quantity,
+            'inboxes_per_domain' => 1,
+            'first_name' => $user->name,
+            'persona_password' => '123',
+        ]);
+        
+        if (!$reorderInfo || !$reorderInfo->id) {
+            throw new \Exception('Failed to create reorder info record');
+        }
+        
+        // Verify the total_inboxes was saved correctly
+        $savedReorderInfo = ReorderInfo::find($reorderInfo->id);
+        if (!$savedReorderInfo || $savedReorderInfo->total_inboxes != $quantity) {
+            Log::error("Reorder info total_inboxes mismatch", [
+                'expected' => $quantity,
+                'saved' => $savedReorderInfo ? $savedReorderInfo->total_inboxes : 'null',
+                'reorder_info_id' => $reorderInfo->id
+            ]);
+            throw new \Exception('Failed to save total_inboxes correctly in reorder info');
+        }
+        
+        Log::info("Reorder info created and verified successfully", [
+            'reorder_info_id' => $reorderInfo->id,
+            'total_inboxes' => $savedReorderInfo->total_inboxes,
+            'order_id' => $order->id
+        ]);
+        
+        return $reorderInfo;
+        
+    } catch (\Exception $e) {
+        Log::error("Exception in createReorderInfo: " . $e->getMessage(), [
+            'order_id' => $order ? $order->id : 'null',
+            'user_id' => $user ? $user->id : 'null',
+            'plan_id' => $planId,
+            'quantity' => $quantity,
+            'stack_trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+    }
 }
 
 private function createOrUpdateInvoice($invoice, $user, $planId, $order, $subscription, $customer)
