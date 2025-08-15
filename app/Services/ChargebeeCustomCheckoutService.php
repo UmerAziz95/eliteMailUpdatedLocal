@@ -68,11 +68,11 @@ class ChargebeeCustomCheckoutService
 
         public function createSubscription($itemPriceId, $customerId, $quantity)
         {
-        $plan = Plan::first();
+      
             $result = Subscription::createWithItems($customerId, [
                         "subscription_items" => [
                             [
-                                "item_price_id" =>$plan->chargebee_plan_id,
+                                "item_price_id" =>$itemPriceId,
                                 "quantity" => $quantity
                             ]
                         ]
