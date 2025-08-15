@@ -1508,6 +1508,183 @@ class SlackNotificationService
     }
     
     /**
+     * Send task completion notification to Slack
+     *
+     * @param \App\Models\DomainRemovalTask $task
+     * @param array $completionData
+     * @return bool
+     */
+    public static function sendTaskCompletionNotification($task, $completionData = [])
+    {
+        $order = $task->order;
+        $user = $task->user;
+        $assignedTo = $task->assignedTo;
+        
+        $data = [
+            'task_id' => $task->id,
+            'customer_name' => $user ? $user->name : 'Unknown',
+            'customer_email' => $user ? $user->email : 'Unknown', 
+            'order_id' => $order ? $order->id : 'N/A',
+            'assigned_to' => $assignedTo ? $assignedTo->name : 'System',
+            'completed_at' => now()->format('Y-m-d H:i:s T'),
+            'reason' => $task->reason ?? 'Domain removal task',
+            'released_spaces' => $completionData['released_spaces'] ?? 0,
+            'processed_splits' => $completionData['processed_splits'] ?? 0,
+            'affected_panels_count' => isset($completionData['affected_panels']) ? count($completionData['affected_panels']) : 0,
+        ];
+
+        $attachments = [
+            [
+                'color' => 'good',
+                'title' => "✅ Task Completed - #{$task->id}",
+                'fields' => [
+                    [
+                        'title' => 'Customer',
+                        'value' => $data['customer_name'] . ' (' . $data['customer_email'] . ')',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed By',
+                        'value' => $data['assigned_to'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed At',
+                        'value' => $data['completed_at'],
+                        'short' => true
+                    ],
+                    // [
+                    //     'title' => 'Reason',
+                    //     'value' => $data['reason'],
+                    //     'short' => false
+                    // ],
+                    [
+                        'title' => 'Released Spaces',
+                        'value' => $data['released_spaces'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Processed Splits',
+                        'value' => $data['processed_splits'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Affected Panels',
+                        'value' => $data['affected_panels_count'],
+                        'short' => true
+                    ]
+                ],
+                'footer' => config('app.name', 'ProjectInbox'),
+                'ts' => time()
+            ]
+        ];
+
+        $message = [
+            'text' => "✅ Domain removal task #{$task->id} has been completed successfully!",
+            'attachments' => $attachments
+        ];
+
+        return self::send('inbox-cancellation', $message);
+    }
+
+    /**
+     * Send panel reassignment task completion notification to Slack
+     *
+     * @param \App\Models\PanelReassignmentHistory $task
+     * @return bool
+     */
+    public static function sendPanelReassignmentCompletionNotification($task)
+    {
+        $order = $task->order;
+        $user = $order ? $order->user : null;
+        $assignedTo = $task->assignedTo;
+        $fromPanel = $task->fromPanel;
+        $toPanel = $task->toPanel;
+        
+        $data = [
+            'task_id' => $task->id,
+            'customer_name' => $user ? $user->name : 'Unknown',
+            'customer_email' => $user ? $user->email : 'Unknown', 
+            'order_id' => $order ? $order->id : 'N/A',
+            'assigned_to' => $assignedTo ? $assignedTo->name : 'System',
+            'completed_at' => $task->task_completed_at ? $task->task_completed_at->format('Y-m-d H:i:s T') : now()->format('Y-m-d H:i:s T'),
+            'action_type' => $task->action_type,
+            'space_transferred' => $task->space_transferred ?? 0,
+            'splits_count' => $task->splits_count ?? 0,
+            'from_panel' => $fromPanel ? $fromPanel->title : 'N/A',
+            'to_panel' => $toPanel ? $toPanel->title : 'N/A',
+        ];
+
+        $attachments = [
+            [
+                'color' => 'good',
+                'title' => "🔄 Panel Reassignment Completed - #{$task->id}",
+                'fields' => [
+                    [
+                        'title' => 'Customer',
+                        'value' => $data['customer_name'] . ' (' . $data['customer_email'] . ')',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed By',
+                        'value' => $data['assigned_to'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed At',
+                        'value' => $data['completed_at'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Action Type',
+                        'value' => ucfirst($data['action_type']),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Space Transferred',
+                        'value' => $data['space_transferred'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Splits Count',
+                        'value' => $data['splits_count'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'From Panel',
+                        'value' => $data['from_panel'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'To Panel',
+                        'value' => $data['to_panel'],
+                        'short' => true
+                    ]
+                ],
+                'footer' => config('app.name', 'ProjectInbox'),
+                'ts' => time()
+            ]
+        ];
+
+        $message = [
+            'text' => "🔄 Panel reassignment task #{$task->id} has been completed successfully!",
+            'attachments' => $attachments
+        ];
+
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Get available notification types
      *
      * @return array
