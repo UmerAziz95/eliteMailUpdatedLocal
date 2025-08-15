@@ -244,6 +244,7 @@ class PlanController extends Controller
                 // Find plan based on quantity range instead of chargebee_plan_id
                 $plan = Plan::where('is_active', 1)
                     ->where('min_inbox', '<=', $quantity)
+                    ->where('is_discounted', '!=', 1)
                     ->where(function ($query) use ($quantity) {
                         $query->where('max_inbox', '>=', $quantity)
                               ->orWhere('max_inbox', 0); // 0 means unlimited

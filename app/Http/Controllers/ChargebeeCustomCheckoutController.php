@@ -161,10 +161,8 @@ class ChargebeeCustomCheckoutController extends Controller
                 'quantity'    => 'required|integer|min:1',
             ]);
 
-            
             try {
-                $planId = session()->get('discounted_plan_id');
-                
+            
                 // Validate and extract form data
                 $email = $request->email;
                 $firstName = $request->first_name;
@@ -175,7 +173,9 @@ class ChargebeeCustomCheckoutController extends Controller
                 $zip = $request->zip;
                 $country = $request->country;
                 $quantity = (int) $request->quantity;
-                
+                $planCheck = $this->findPlanByQuantity($quantity);
+                $planId=$planCheck->chargebee_plan_id ?? $planId;
+               
                 // Additional quantity validation
                 if ($quantity <= 0) {
                     return response()->json([
@@ -183,6 +183,7 @@ class ChargebeeCustomCheckoutController extends Controller
                     ], 400);
                 }
                 
+                session()->put('observer_total_inboxes', $quantity);
                 Log::info("Processing subscription with quantity: " . $quantity);
 
                 // 1. Create the customer
@@ -208,6 +209,7 @@ class ChargebeeCustomCheckoutController extends Controller
                             }
 
                             $subscreationCreationResponse = $this->subscriptionSuccess($result, $customer);
+
                             $responseMessage = $subscreationCreationResponse["success"] ? 
                                 "Subscription successful" : 
                                 "Subscription Created but failed to save data in system. Please contact support immediately!";
@@ -254,35 +256,34 @@ class ChargebeeCustomCheckoutController extends Controller
 {
     try {
         // Extract and validate data
-        $subscription = $content["subscription"]->getValues() ?? null;
+        $subscription = (array) $content["subscription"]->getValues() ?? null;
         $customer     = $customerData ?? null;
         $invoice      = $content["invoice"]->getValues() ?? null;
-
-        if (!$subscription || !$customer || !$invoice) {
-            return $this->errorResponse('Missing subscription, customer, or invoice data.');
-        }
+        
+        // if (!$subscription || !$customer || !$invoice) {
+        //     return $this->errorResponse('Missing subscription, customer, or invoice data.');
+        // }
 
         // Extract shipping/billing details
         $shippingAddress = $invoice["billing_address"] ?? [];
         $billingData     = $this->extractBillingData($shippingAddress);
-
         // Create or update user
         $user = $this->getOrCreateUser($customer, $billingData);
-
         // Determine plan from quantity with proper validation
         $subscriptionItems = $subscription["subscription_items"] ?? [];
         if (empty($subscriptionItems) || !isset($subscriptionItems[0])) {
             throw new \Exception('No subscription items found in the subscription data');
         }
-        
-        $quantity = (int) ($subscriptionItems[0]->quantity ?? 1);
+        $quantity = (int) ($subscriptionItems[0]['quantity'] ?? 1);
+
         if ($quantity <= 0) {
             throw new \Exception('Invalid quantity found in subscription: ' . $quantity);
         }
         
         $plan = $this->findPlanByQuantity($quantity);
+
         $planId = $plan?->id ?? null;
-        $chargebeePlanId = $subscriptionItems[0]->itemPriceId ?? null;
+        $chargebeePlanId = $subscriptionItems[0]['item_price_id'] ?? null;
         
         Log::info("Subscription quantity details: ", [
             'quantity' => $quantity,
@@ -294,8 +295,9 @@ class ChargebeeCustomCheckoutController extends Controller
         $this->updateUserBilling($user, $billingData);
 
         // Create order
-        $order = $this->createOrUpdateOrder($invoice, $user, $planId, $subscription, $customer);
-        Log::info("Order created/updated successfully: {$order->id}");
+        $order = $this->createOrUpdateOrder($invoice, $user, $planId, (array) $subscription, $customer);
+        
+        Log::info("Order created/updated successfully: {$order}");
         Log::info("------------------------------------------- Custom Checkout Order Details -------------------------------------------");
         Log::info("Custom Checkout Order details: ", [
             'invoice' => $invoice,
@@ -340,7 +342,7 @@ class ChargebeeCustomCheckoutController extends Controller
         $this->updateGHL($user, $existingInvoice);
 
         // Create or update subscription
-        $this->createOrUpdateUserSubscription($subscription, $invoice, $user, $planId, $order, $customer);
+        $subscription_obj = $this->createOrUpdateUserSubscription($subscription, $invoice, $user, $planId, $order, $customer);
 
         // Update user subscription status
         $this->updateUserSubscriptionStatus($user, $subscription, $planId, $customer);
@@ -349,7 +351,7 @@ class ChargebeeCustomCheckoutController extends Controller
         session()->forget('order_info');
 
         // Log activities
-        $this->logActivities($user, $order, $planId, $subscription, $invoice, $existingInvoice);
+        $this->logActivities($user, $order, $planId, $subscription_obj, $existingInvoice);
 
         // Send notifications & emails
         $this->sendOrderEmails($order, $user);
@@ -410,7 +412,7 @@ private function getOrCreateUser($customer, $billingData)
 
         try {
             Mail::to($user->email)->queue(new SendPasswordMail($user, $randomPassword));
-        } catch (\Exception $e) {
+        } catch (\Exception $e) {  
             Log::error("Failed to send user credentials: {$user->email} - " . $e->getMessage());
         }
     }
@@ -423,6 +425,7 @@ private function findPlanByQuantity($quantity)
 {
     return Plan::where('is_active', 1)
         ->where('min_inbox', '<=', $quantity)
+        ->where('is_discounted', 1)
         ->where(function ($query) use ($quantity) {
             $query->where('max_inbox', '>=', $quantity)
                 ->orWhere('max_inbox', 0);
@@ -444,7 +447,7 @@ private function updateUserBilling($user, $billingData)
     ])->save();
 }
 
-private function createOrUpdateOrder($invoice, $user, $planId, $subscription, $customer)
+private function createOrUpdateOrder($invoice, $user, $planId, array $subscription, $customer)
 {
     $order = Order::firstOrCreate(
         ['chargebee_invoice_id' => $invoice["id"]],
@@ -462,6 +465,7 @@ private function createOrUpdateOrder($invoice, $user, $planId, $subscription, $c
     );
 
     $order->update(['status_manage_by_admin' => 'draft']);
+    
     return $order;
 }
 
@@ -524,6 +528,7 @@ private function createReorderInfo($order, $user, $planId, $quantity)
             'order_id' => $order->id
         ]);
         
+        
         return $reorderInfo;
         
     } catch (\Exception $e) {
@@ -541,7 +546,8 @@ private function createReorderInfo($order, $user, $planId, $quantity)
 private function createOrUpdateInvoice($invoice, $user, $planId, $order, $subscription, $customer)
 {
    
-    return Invoice::updateOrCreate(
+   
+    $invoice=Invoice::updateOrCreate(
         ['chargebee_invoice_id' => $invoice["id"]],
         [
             'chargebee_customer_id' => $customer->id,
@@ -555,6 +561,8 @@ private function createOrUpdateInvoice($invoice, $user, $planId, $order, $subscr
             'metadata' => json_encode(compact('invoice', 'customer', 'subscription')),
         ]
     );
+    
+    return $invoice;
 }
 
 private function updateGHL($user, $invoice)
@@ -576,7 +584,7 @@ private function updateGHL($user, $invoice)
 
 private function createOrUpdateUserSubscription($subscription, $invoice, $user, $planId, $order, $customer)
 {
-    UserSubscription::updateOrCreate(
+   $userSubss= UserSubscription::updateOrCreate(
         ['chargebee_subscription_id' => $subscription["id"]],
         [
             'user_id' => $user->id,
@@ -590,23 +598,29 @@ private function createOrUpdateUserSubscription($subscription, $invoice, $user, 
             'next_billing_date' => Carbon::createFromTimestamp($invoice["paid_at"])->addMonth()->addDay(),
         ]
     );
+    return $userSubss;
+
+    
 }
 
 private function updateUserSubscriptionStatus($user, $subscription, $planId, $customer)
 {
-    $user->update([
+    $user=$user->update([
         'subscription_id' => $subscription["id"],
         'subscription_status' => $subscription["status"],
         'plan_id' => $planId,
         'chargebee_customer_id' => $customer->id,
     ]);
+    
 }
 
-private function logActivities($user, $order, $planId, $subscription, $invoice, $existingInvoice)
+private function logActivities($user, $order, $planId, $subscription, $existingInvoice)
 {
-    ActivityLogService::log('customer-order-created', "Order created: {$order->id}", $order);
+   
+    ActivityLogService::log('customer-order-created', "Order created: {$order["id"]}", $order);
     ActivityLogService::log('customer-subscription-created', "Subscription created", $subscription);
     ActivityLogService::log('customer-invoice-processed', "Invoice processed", $existingInvoice);
+    // dd("fklajsf");
 }
 
 private function sendOrderEmails($order, $user)
