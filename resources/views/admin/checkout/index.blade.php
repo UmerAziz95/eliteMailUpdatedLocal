@@ -427,6 +427,7 @@
                     submitButton.disabled = false;
                     submitButton.innerText = 'Pay Now';
                     showErrors(["Payment failed: " + (error.message || "Unknown error")]);
+                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
         });
 
@@ -456,6 +457,7 @@
 
             if (errors.length > 0) {
                 showErrors(errors);
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return false;
             }
 
@@ -530,15 +532,13 @@ function createSubscription(cbtoken, vaultToken) {
         submitButton.disabled = false;
         submitButton.innerText = 'Pay Now';
 
-        console.log("✅ Subscription created:", data);
-
         // Show success message from API response if availables
         if (data.message) {
             showSuccess([data.message]);
         } else {
             showSuccess(["Payment successful! Thank you for your purchase."]);
         }
-
+         window.scrollTo({ top: 0, behavior: 'smooth' });
         // Optionally redirect if your API gives a URL
         if (data.subscription_id) {
             setTimeout(() => {
@@ -559,6 +559,7 @@ function createSubscription(cbtoken, vaultToken) {
     })
     .catch(error => {
         console.log("❌ Error object:", error);
+         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         submitButton.disabled = false;
         submitButton.innerText = 'Pay Now';
