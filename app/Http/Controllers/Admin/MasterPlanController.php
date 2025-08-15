@@ -43,7 +43,9 @@ public function show($id=null)
                     'features' => $item->features->pluck('id')->toArray(),
                     'feature_values' => $item->features->pluck('pivot.value')->toArray(),
                     'tier_discount_type' => $item->tier_discount_type,
-                    'tier_discount_value' => $item->tier_discount_value
+                    'tier_discount_value' => $item->tier_discount_value,
+                    'actual_price_before_discount' => $item->actual_price_before_discount,
+                    'is_discounted' => $item->is_discounted
                 ];
             })->toArray()
         ];
@@ -268,7 +270,11 @@ public function show($id=null)
                     'price' => $item->price,
                     'duration' => $item->duration,
                     'features' => $item->features->pluck('id')->toArray(),
-                    'feature_values' => $item->features->pluck('pivot.value')->toArray()
+                    'feature_values' => $item->features->pluck('pivot.value')->toArray(),
+                    'tier_discount_type' => $item->tier_discount_type,
+                    'tier_discount_value' => $item->tier_discount_value,
+                    'actual_price_before_discount' => $item->actual_price_before_discount,
+                    'is_discounted' => $item->is_discounted
                 ];
             })->toArray()
         ];

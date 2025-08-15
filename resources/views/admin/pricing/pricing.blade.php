@@ -1949,6 +1949,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     feature_values: data.feature_values || [],
                     tier_discount_type: data.tier_discount_type || null,
                     tier_discount_value: data.tier_discount_value || null,
+                    actual_price_before_discount: data.actual_price_before_discount || null,
                 } : {
                     id: null, // New items don't have ID
                     name: '',
@@ -1961,6 +1962,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     feature_values: [],
                     tier_discount_type: null,
                     tier_discount_value: null,
+                    actual_price_before_discount: null,
                 };
                 
               const selectedVal=  $('#planTypeRole').val();
@@ -2012,7 +2014,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                 <label class="form-label">Price per Inbox <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control volume-price tier_volume_price" data-itemindex="${volumeItemIndex}" id="tier_volume_price_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][price]" value="${item.price}" step="0.01" min="0" required>
+                                    <input type="number" class="form-control volume-price tier_volume_price" data-itemindex="${volumeItemIndex}" id="tier_volume_price_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][price]" value="${item.actual_price_before_discount || item.price}" step="0.01" min="0" required>
                                 </div>
                                 <small class="text-muted">Must be 0 or greater</small>
                             </div>
@@ -2023,7 +2025,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                     <label class="form-label">Final Price after applied discount<span class="text-danger"></span></label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" readonly>
+                                        <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" value="${(item.actual_price_before_discount && item.tier_discount_value) ? item.price : ''}" readonly>
                                     </div>
                                     <small class="text-muted">Must be 0 or greater</small>
                                 </div>
@@ -2090,6 +2092,15 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                 volumeItemIndex++;
                 updateTierNumbers();
 
+                // If this is a discounted plan being edited, calculate and show the discounted price
+                const currentIndex = volumeItemIndex - 1;
+                if (data && $('#planTypeRole').val() === 'Discounted' && data.tier_discount_value && data.tier_discount_type) {
+                    // Trigger price calculation for existing discounted items
+                    setTimeout(() => {
+                        $(`#tier_volume_price_${currentIndex}`).trigger('input');
+                    }, 100);
+                }
+
                 // Load available features for this volume item
                 loadFeaturesForVolumeItem(volumeItemIndex - 1, item.features, item.feature_values);
             }
@@ -2100,12 +2111,12 @@ function createTierDiscountFields(volumeItemIndex, item) {
             <div class="row mt-3 mb-3 discount-fields" id="discountFields${volumeItemIndex}">
                 <div class="col-md-4">
                     <label  class="form-label">Discount Type</label>
-                    <select value="${item.tier_discount_type}" class="form-select tier_discount_type" 
+                    <select class="form-select tier_discount_type" 
                         id="tier_discount_type_${volumeItemIndex}" 
                         data-itemindex="${volumeItemIndex}" 
-                        name="volume_items[${volumeItemIndex}][discount_type]">
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed</option>
+                        name="volume_items[${volumeItemIndex}][tier_discount_type]">
+                        <option value="percentage" ${item.tier_discount_type === 'percentage' ? 'selected' : ''}>Percentage</option>
+                        <option value="fixed" ${item.tier_discount_type === 'fixed' ? 'selected' : ''}>Fixed</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -2113,7 +2124,7 @@ function createTierDiscountFields(volumeItemIndex, item) {
                     <input type="number" class="form-control tier_discount_value" 
                         id="tier_discount_value_${volumeItemIndex}" 
                         data-itemindex="${volumeItemIndex}" 
-                        name="volume_items[${volumeItemIndex}][discount_value]" 
+                        name="volume_items[${volumeItemIndex}][tier_discount_value]" 
                         value="${item.tier_discount_value || 0}"
                         placeholder="Discount" step="0.01" />
                 </div>
