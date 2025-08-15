@@ -820,15 +820,4 @@ Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::cla
 Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
 
 
-Route::get("quantity-check",function(){
-    $quantity = 21;
-   return \App\Models\Plan::where('is_active', 1)
-        ->where('min_inbox', '<=', $quantity)
-        ->where('is_discounted', 1)
-        ->where(function ($query) use ($quantity) {
-            $query->where('max_inbox', '>=', $quantity)
-                ->orWhere('max_inbox', 0);
-        })
-        ->orderBy('min_inbox', 'desc')
-        ->first();
-});
+
