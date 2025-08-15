@@ -92,11 +92,7 @@
                 <form class="card p-3">
                     <h5 class="mb-3">Billing Address</h5>
 
-                    <div class="row mb-3">
-                        <div class="col">
-                            <input type="email" class="form-control" id="billingEmail" name="email" placeholder="Email">
-                        </div>
-                    </div>
+                  
 
                     <div class="row mb-3">
                         <div class="col">
@@ -106,6 +102,11 @@
                         <div class="col">
                             <input type="text" class="form-control" id="billingLastName" name="last_name"
                                 placeholder="Last Name">
+                        </div>
+                    </div>
+                      <div class="row mb-3">
+                        <div class="col">
+                            <input type="email" class="form-control" id="billingEmail" name="email" placeholder="Email">
                         </div>
                     </div>
 
