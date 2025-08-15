@@ -242,15 +242,26 @@ class PlanController extends Controller
                 $quantity = $subscription->subscriptionItems[0]->quantity ?? 1;
                 
                 // Find plan based on quantity range instead of chargebee_plan_id
+                // $plan = Plan::where('is_active', 1)
+                //     ->where('min_inbox', '<=', $quantity)
+                //     ->where('is_discounted', '<>', 1)
+                //     ->where(function ($query) use ($quantity) {
+                //         $query->where('max_inbox', '>=', $quantity)
+                //               ->orWhere('max_inbox', 0); // 0 means unlimited
+                //     })
+                //     ->orderBy('min_inbox', 'desc') // Get the most specific plan first
+                //     ->first();
                 $plan = Plan::where('is_active', 1)
-                    ->where('min_inbox', '<=', $quantity)
-                    ->where('is_discounted', '<>', 1)
-                    ->where(function ($query) use ($quantity) {
-                        $query->where('max_inbox', '>=', $quantity)
-                              ->orWhere('max_inbox', 0); // 0 means unlimited
-                    })
-                    ->orderBy('min_inbox', 'desc') // Get the most specific plan first
-                    ->first();
+                        ->where('min_inbox', '<=', $quantity)
+                        ->where(function ($query) use ($quantity) {
+                            $query->where('max_inbox', '>=', $quantity)
+                                  ->orWhere('max_inbox', 0); // 0 means unlimited
+                        })
+                        ->where(function($query) {
+                            $query->where('is_discounted', 0)->orWhereNull('is_discounted');
+                        })
+                        ->orderBy('min_inbox', 'desc') // Get the most specific plan first
+                        ->first();
                     
                 if ($plan) {
                     $plan_id = $plan->id;
