@@ -103,9 +103,14 @@
                                 </ul>
                             </div>
                             @endif
+                          
                             <form action="{{ route('doLogin') }}" method="POST">
                                 @csrf
                                 <div class="input-group">
+                                    @if(isset($discord_setting_page_session) && $discord_setting_page_session != null)
+                                    <input type="hidden" name="discord_setting_page_id"
+                                        value="{{ $discord_setting_page_session->discord_setting_page_id }}">
+                                    @endif
                                     <label for="email">Email</label>
                                     <input type="email" name="email" id="email" placeholder=""
                                         value="{{ old('email') }}">

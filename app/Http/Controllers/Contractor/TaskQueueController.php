@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
 use App\Models\Order;
+use App\Models\PanelReassignmentHistory;
+use App\Services\PanelReassignmentService;
 use Carbon\Carbon;
 
 class TaskQueueController extends Controller
@@ -204,6 +206,307 @@ class TaskQueueController extends Controller
             
         } catch (\Exception $e) {
             \Log::error("Error updating task status {$taskId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update task status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shifted tasks (in-progress and completed) for contractors
+     */
+    public function getShiftedTasks(Request $request)
+    {
+        try {
+            $query = PanelReassignmentHistory::with([
+                'order.user',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->whereIn('status', ['in-progress', 'completed']) // Only in-progress and completed tasks
+              ->where('assigned_to', auth()->id()); // Only tasks assigned to the current contractor
+
+            // Apply filters if provided
+            if ($request->filled('user_id')) {
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('assigned_to')) {
+                $query->where('assigned_to', $request->assigned_to);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            // Apply pagination
+            $perPage = $request->get('per_page', 12);
+            $page = $request->get('page', 1);
+            
+            $paginatedTasks = $query->orderBy('reassignment_date', 'desc')
+                                   ->paginate($perPage, ['*'], 'page', $page);
+
+            // Transform the data to include customer information
+            $transformedTasks = $paginatedTasks->getCollection()->map(function ($task) {
+                $order = $task->order;
+                $task->customer_name = $order && $order->user ? $order->user->name : 'N/A';
+                $task->customer_image = $order && $order->user && $order->user->profile_image 
+                    ? asset('storage/profile_images/' . $order->user->profile_image) 
+                    : null;
+                
+                // Add task_id for consistency with frontend
+                $task->task_id = $task->id;
+                
+                // Add assigned_to_name for display
+                $task->assigned_to_name = $task->assignedTo ? $task->assignedTo->name : 'N/A';
+                
+                // Add type for frontend identification
+                $task->type = 'panel_reassignment';
+                
+                return $task;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedTasks->toArray(),
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error loading shifted tasks: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load shifted tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shifted pending tasks for contractors
+     */
+    public function getShiftedPendingTasks(Request $request)
+    {
+        try {
+            $query = PanelReassignmentHistory::with([
+                'order.user',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->where('status', 'pending'); // Only pending tasks
+
+            // Apply filters if provided
+            if ($request->filled('user_id')) {
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            // Get all tasks first, then group and filter
+            $allTasks = $query->orderBy('reassignment_date', 'desc')->get();
+
+            // Group tasks by unique combination of order_id, order_panel_id, from_panel_id, to_panel_id
+            $groupedTasks = $allTasks->groupBy(function ($task) {
+                return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
+            });
+
+            // For each group, prioritize 'removed' action over 'added', but show 'added' if 'removed' is completed
+            $filteredTasks = $groupedTasks->map(function ($group) {
+                $removedTask = $group->where('action_type', 'removed')->first();
+                $addedTask = $group->where('action_type', 'added')->first();
+                
+                // If removed task exists and is not completed, show removed task
+                if ($removedTask && $removedTask->status !== 'completed') {
+                    return $removedTask;
+                }
+                
+                // If removed task is completed and added task exists, show added task
+                if ($removedTask && $removedTask->status === 'completed' && $addedTask) {
+                    return $addedTask;
+                }
+                
+                // Otherwise return none
+                return null;
+            })->filter(function ($task) {
+                return $task !== null;
+            })->sortByDesc('reassignment_date')->values(); // Sort by reassignment date
+
+            // Apply pagination manually
+            $perPage = $request->get('per_page', 12);
+            $page = $request->get('page', 1);
+            $offset = ($page - 1) * $perPage;
+            
+            $paginatedTasks = $filteredTasks->slice($offset, $perPage);
+            $total = $filteredTasks->count();
+            $lastPage = ceil($total / $perPage);
+
+            // Transform the data to include customer information
+            $transformedTasks = $paginatedTasks->map(function ($task) {
+                $order = $task->order;
+                $task->customer_name = $order && $order->user ? $order->user->name : 'N/A';
+                $task->customer_image = $order && $order->user && $order->user->profile_image 
+                    ? asset('storage/profile_images/' . $order->user->profile_image) 
+                    : null;
+                
+                // Add task_id for consistency with frontend
+                $task->task_id = $task->id;
+                
+                return $task;
+            });
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $transformedTasks->values()->toArray(),
+                    'current_page' => $page,
+                    'last_page' => $lastPage,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'has_more_pages' => $page < $lastPage
+                ]);
+            }
+
+            return view('contractor.taskInQueue.shifted-pending', ['shiftedTasks' => $transformedTasks]);
+        } catch (\Exception $e) {
+            \Log::error("Error loading shifted pending tasks: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load shifted pending tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign shifted task to contractor
+     */
+    public function assignShiftedTaskToMe(Request $request, $id)
+    {
+        try {
+            // Check if user is authenticated
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            $task = PanelReassignmentHistory::find($id);
+            
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+            
+            if ($task->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task is not available for assignment'
+                ], 400);
+            }
+
+            // Get the service
+            $service = new \App\Services\PanelReassignmentService();
+            
+            // Start the task (both removal and addition records)
+            $startResult = $service->startPanelReassignmentTask($task, auth()->user()->id);
+            
+            if (!$startResult) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to assign task'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Panel reassignment task assigned successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error assigning shifted task ID {$id}: " . $e->getMessage());
+            \Log::error("Stack trace: " . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign task: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update shifted task status
+     */
+    public function updateShiftedTaskStatus(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:completed,in-progress',
+                'completion_date' => 'nullable|date',
+                'completion_notes' => 'nullable|string|max:1000'
+            ]);
+
+            $task = PanelReassignmentHistory::find($id);
+            
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+            
+            // Check if contractor is assigned to this task
+            if ($task->assigned_to !== auth()->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only update tasks assigned to you.'
+                ], 403);
+            }
+
+            if ($request->status === 'completed') {
+                // Complete the task (both removal and addition records)
+                $task->markAsCompleted($request->input('completion_notes'));
+            } else {
+                $task->status = $request->status;
+                $task->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task status updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error updating shifted task status: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,

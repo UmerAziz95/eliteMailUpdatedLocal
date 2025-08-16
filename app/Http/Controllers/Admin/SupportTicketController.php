@@ -175,7 +175,14 @@ class SupportTicketController extends Controller
                 };
                 return '<span class="py-1 px-2 text-'.$priorityClass.' border border-'.$priorityClass.' rounded-2 bg-transparent">'.ucfirst($ticket->priority).'</span>';
             })
-            ->rawColumns(['action', 'status', 'priority'])
+            // category 
+            ->editColumn('category', function ($ticket) {
+                if ($ticket->category === 'order') {
+                    return '<span class="badge bg-primary">Order -' . $ticket->order_id . '</span>';
+                }
+                return $ticket->category ? ucfirst($ticket->category) : 'N/A';
+            })
+            ->rawColumns(['action', 'status', 'priority', 'category'])
             ->make(true);
     }
 

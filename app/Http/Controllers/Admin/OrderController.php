@@ -26,6 +26,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use App\Services\PanelReassignmentService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -121,7 +122,7 @@ class OrderController extends Controller
       
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
         // Retrieve subscription metadata if available to view subs
-        $subscriptionMeta = json_decode($order->subscription->meta, true);
+        $subscriptionMeta = $order->subscription ? json_decode($order->subscription->meta, true) : null;
         $nextBillingInfo = [];
         
         if (isset($subscriptionMeta['subscription'])) {
@@ -254,7 +255,7 @@ class OrderController extends Controller
 
                 })
                 ->editColumn('created_at', function ($order) {
-                    return $order->created_at ? $order->created_at->format('d F, Y') : '';
+                    return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
@@ -1506,58 +1507,58 @@ class OrderController extends Controller
             $callback = function () use ($emailData, $orderPanelSplit, $order, $domainsCount, $inboxesPerDomain, $totalInboxes) {
                 $file = fopen('php://output', 'w');
                 // Add CSV headers once at the top
-                fputcsv($file, [
-                    '',
-                    'Order_ID: ' . $order->id,
-                ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Order_ID: ' . $order->id,
+                // ]);
 
-                fputcsv($file, [
-                    '',
-                    'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
-                ]);
-                fputcsv($file, [
-                    '',
-                    'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
-                ]);
-                fputcsv($file, [
-                    '',
-                    'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
-                ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Panel_ID: ' . $orderPanelSplit->orderPanel->id,
+                // ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Panel_Name: ' . ($orderPanelSplit->orderPanel->panel->title ?? 'N/A')
+                // ]);
+                // fputcsv($file, [
+                //     '',
+                //     'Inboxes Per Domain: ' . $inboxesPerDomain.' | Domains_Count: ' . $domainsCount.' | Total_Inboxes: ' . $totalInboxes.' | Status: ' . ($orderPanelSplit->orderPanel->status ?? 'pending').' | Created_At: ' . ($orderPanelSplit->created_at ? $orderPanelSplit->created_at->format('Y-m-d H:i:s') : '')
+                // ]);
 
-                // Add empty row for separation
-                fputcsv($file, []);
+                // // Add empty row for separation
+                // fputcsv($file, []);
                 
                 // Add email data headers with additional columns
                 fputcsv($file, [
                     'First Name', 
                     'Last Name',
-                    'Email', 
+                    'Email address', 
                     'Password',
-                    'Password Hash Function [UPLOAD ONLY]',
+                    // 'Password Hash Function [UPLOAD ONLY]',
                     'Org Unit Path [Required]',
-                    'New Primary Email [UPLOAD ONLY]',
-                    'Recovery Email',
-                    'Home Secondary Email',
-                    'Work Secondary Email',
-                    'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
-                    'Work Phone',
-                    'Home Phone',
-                    'Mobile Phone',
-                    'Work Address',
-                    'Home Address',
-                    'Employee ID',
-                    'Employee Type',
-                    'Employee Title',
-                    'Manager Email',
-                    'Department',
-                    'Cost Center',
-                    'Building ID',
-                    'Floor Name',
-                    'Floor Section',
-                    'Change Password at Next Sign-In',
-                    'New Status [UPLOAD ONLY]',
-                    'New Licenses [UPLOAD ONLY]',
-                    'Advanced Protection Program enrollment'
+                    // 'New Primary Email [UPLOAD ONLY]',
+                    // 'Recovery Email',
+                    // 'Home Secondary Email',
+                    // 'Work Secondary Email',
+                    // 'Recovery Phone [MUST BE IN THE E.164 FORMAT]',
+                    // 'Work Phone',
+                    // 'Home Phone',
+                    // 'Mobile Phone',
+                    // 'Work Address',
+                    // 'Home Address',
+                    // 'Employee ID',
+                    // 'Employee Type',
+                    // 'Employee Title',
+                    // 'Manager Email',
+                    // 'Department',
+                    // 'Cost Center',
+                    // 'Building ID',
+                    // 'Floor Name',
+                    // 'Floor Section',
+                    // 'Change Password at Next Sign-In',
+                    // 'New Status [UPLOAD ONLY]',
+                    // 'New Licenses [UPLOAD ONLY]',
+                    // 'Advanced Protection Program enrollment'
                 ]);
                 
                 // Add email data with corresponding first/last names for each prefix variant
@@ -1567,31 +1568,31 @@ class OrderController extends Controller
                         $data['last_name'], // Last Name from prefix variant details
                         $data['email'], 
                         $data['password'],
-                        '', // Password Hash Function [UPLOAD ONLY]
+                        // '', // Password Hash Function [UPLOAD ONLY]
                         '/', // Org Unit Path [Required]
-                        '', // New Primary Email [UPLOAD ONLY]
-                        '', // Recovery Email
-                        '', // Home Secondary Email
-                        '', // Work Secondary Email
-                        '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
-                        '', // Work Phone
-                        '', // Home Phone
-                        '', // Mobile Phone
-                        '', // Work Address
-                        '', // Home Address
-                        '', // Employee ID
-                        '', // Employee Type
-                        '', // Employee Title
-                        '', // Manager Email
-                        '', // Department
-                        '', // Cost Center
-                        '', // Building ID
-                        '', // Floor Name
-                        '', // Floor Section
-                        '', // Change Password at Next Sign-In
-                        '', // New Status [UPLOAD ONLY]
-                        '', // New Licenses [UPLOAD ONLY]
-                        ''  // Advanced Protection Program enrollment
+                        // '', // New Primary Email [UPLOAD ONLY]
+                        // '', // Recovery Email
+                        // '', // Home Secondary Email
+                        // '', // Work Secondary Email
+                        // '', // Recovery Phone [MUST BE IN THE E.164 FORMAT]
+                        // '', // Work Phone
+                        // '', // Home Phone
+                        // '', // Mobile Phone
+                        // '', // Work Address
+                        // '', // Home Address
+                        // '', // Employee ID
+                        // '', // Employee Type
+                        // '', // Employee Title
+                        // '', // Manager Email
+                        // '', // Department
+                        // '', // Cost Center
+                        // '', // Building ID
+                        // '', // Floor Name
+                        // '', // Floor Section
+                        // '', // Change Password at Next Sign-In
+                        // '', // New Status [UPLOAD ONLY]
+                        // '', // New Licenses [UPLOAD ONLY]
+                        // ''  // Advanced Protection Program enrollment
                     ]);
                 }
 
@@ -1809,7 +1810,7 @@ class OrderController extends Controller
         try {
             // Validate the request
             $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
                 'reason' => 'nullable|string|max:500'
             ]);
 
@@ -1840,14 +1841,15 @@ class OrderController extends Controller
                 return response()->json($result);
             }
             // if status is cancelled then also remove customer subscriptoins create service
-            if($newStatus === 'cancelled') {
+            if($newStatus === 'cancelled' || $newStatus === 'cancelled_force') {
                 $order = Order::findOrFail($orderId);
                 $subscriptionService = new \App\Services\OrderCancelledService();
                 $result = $subscriptionService->cancelSubscription(
                     $order->chargebee_subscription_id,
                     $order->user_id,
                     $reason,
-                    false
+                    false,
+                    $newStatus === 'cancelled_force' ? true : false
                 );
                 
                 return response()->json($result);
@@ -1980,6 +1982,117 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change order status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available panels for reassignment
+     */
+    public function getAvailablePanelsForReassignment($orderId, $orderPanelId)
+    {
+        try {
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->getAvailablePanelsForReassignment($orderId, $orderPanelId);
+            
+            return response()->json($result);
+        } catch (Exception $e) {
+            Log::error('Error getting available panels for reassignment', [
+                'order_id' => $orderId,
+                'order_panel_id' => $orderPanelId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get available panels: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process panel split reassignment
+     */
+    public function reassignPanelSplit(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'from_order_panel_id' => 'required|integer|exists:order_panel,id',
+                'to_panel_id' => 'required|integer|exists:panels,id',
+                'split_id' => 'nullable|integer|exists:order_panel_split,id',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->reassignPanelSplit(
+                $request->from_order_panel_id,
+                $request->to_panel_id, // Now panel_id instead of order_panel_id
+                $request->split_id,
+                auth()->id()
+            );
+
+            if ($result['success']) {
+                // Log the action
+                Log::info('Panel reassignment completed by admin', [
+                    'admin_id' => auth()->id(),
+                    'from_order_panel_id' => $request->from_order_panel_id,
+                    'to_panel_id' => $request->to_panel_id,
+                    'split_id' => $request->split_id,
+                    'reason' => $request->reason
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error']
+                ], 400);
+            }
+
+        } catch (Exception $e) {
+            Log::error('Panel reassignment failed', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel reassignment failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get reassignment history for an order
+     */
+    public function getReassignmentHistory($orderId)
+    {
+        try {
+            $reassignmentService = new PanelReassignmentService();
+            $result = $reassignmentService->getReassignmentHistory($orderId);
+            
+            return response()->json($result);
+        } catch (Exception $e) {
+            Log::error('Error getting reassignment history', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get reassignment history: ' . $e->getMessage()
             ], 500);
         }
     }

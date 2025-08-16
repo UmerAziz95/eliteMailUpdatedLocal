@@ -75,13 +75,18 @@ class Kernel extends ConsoleKernel
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
-$schedule->command('domain:check-health')
-    ->dailyAt('22:00') // 10:00 PM UTC
-    ->timezone('UTC')
-    ->withoutOverlapping()
-    ->runInBackground()
-    ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
- }
+                // $schedule->command('domain:check-health')
+                // ->dailyAt('22:00') // 10:00 PM UTC
+                // ->timezone('UTC')
+                // ->withoutOverlapping()
+                // ->runInBackground()
+                // ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+               
+                $schedule->command('payments:process-failures')->hourly();
+
+                // Send failed payment emails every hour for payments that failed within the last 72 hours
+                $schedule->command('emails:send-failed-payments')->hourly();
+                }
 
         protected function commands(): void
         {

@@ -94,6 +94,12 @@
                     Pending Tasks <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span>
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="shifted-pending-tab" data-bs-toggle="tab" data-bs-target="#shifted-pending-tab-pane"
+                    type="button" role="tab" aria-controls="shifted-pending-tab-pane" aria-selected="false">
+                    Shifted Pending Tasks <span class="badge bg-primary ms-1" id="shifted-pending-count">0</span>
+                </button>
+            </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
@@ -120,6 +126,22 @@
                 </div>
                 <div class="text-center mt-4">
                     <button id="load-more-pending" class="btn btn-outline-light btn-sm d-none">
+                        <i class="fas fa-plus me-1"></i> Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shifted Pending Tasks Tab -->
+            <div class="tab-pane fade" id="shifted-pending-tab-pane" role="tabpanel" aria-labelledby="shifted-pending-tab" tabindex="0">
+                <div id="shifted-pending-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading shifted tasks...</p>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button id="load-more-shifted-pending" class="btn btn-outline-light btn-sm d-none">
                         <i class="fas fa-plus me-1"></i> Load More
                     </button>
                 </div>
@@ -202,11 +224,13 @@
     let currentFilters = {};
     let tasks = {
         pending: [],
+        'shifted-pending': [],
         'in-progress': [],
         completed: []
     };
     let pagination = {
         pending: { currentPage: 1, hasMore: false },
+        'shifted-pending': { currentPage: 1, hasMore: false },
         'in-progress': { currentPage: 1, hasMore: false },
         completed: { currentPage: 1, hasMore: false }
     };
@@ -224,6 +248,9 @@
                 if (tabId === 'pending-tab-pane') {
                     activeTab = 'pending';
                     if (tasks.pending.length === 0) loadTasks('pending');
+                } else if (tabId === 'shifted-pending-tab-pane') {
+                    activeTab = 'shifted-pending';
+                    if (tasks['shifted-pending'].length === 0) loadShiftedPendingTasks();
                 } else if (tabId === 'in-progress-tab-pane') {
                     activeTab = 'in-progress';
                     if (tasks['in-progress'].length === 0) loadTasks('in-progress');
@@ -271,6 +298,12 @@
         document.getElementById('load-more-completed').addEventListener('click', function() {
             if (pagination.completed.hasMore && !isLoading) {
                 loadTasks('completed', true);
+            }
+        });
+
+        document.getElementById('load-more-shifted-pending').addEventListener('click', function() {
+            if (pagination['shifted-pending'].hasMore && !isLoading) {
+                loadShiftedPendingTasks(true);
             }
         });
     });
@@ -585,7 +618,297 @@
     function refreshTasks() {
         tasks[activeTab] = [];
         pagination[activeTab] = { currentPage: 1, hasMore: false };
-        loadTasks(activeTab);
+        
+        if (activeTab === 'shifted-pending') {
+            loadShiftedPendingTasks();
+        } else {
+            loadTasks(activeTab);
+        }
+    }
+
+    // Load shifted pending tasks function
+    async function loadShiftedPendingTasks(append = false) {
+        if (isLoading) return;
+        
+        isLoading = true;
+        const container = document.getElementById('shifted-pending-tasks-container');
+        const loadMoreBtn = document.getElementById('load-more-shifted-pending');
+        
+        try {
+            if (!append) {
+                container.innerHTML = `
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading shifted tasks...</p>
+                    </div>
+                `;
+            }
+
+            const params = new URLSearchParams({
+                page: append ? pagination['shifted-pending'].currentPage + 1 : 1,
+                per_page: 12,
+                ...currentFilters
+            });
+
+            const response = await fetch(`/contractor/taskInQueue/shifted-pending?${params}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (!append) {
+                tasks['shifted-pending'] = [];
+                container.innerHTML = '';
+            }
+
+            if (data.data && data.data.length > 0) {
+                tasks['shifted-pending'] = append ? tasks['shifted-pending'].concat(data.data) : data.data;
+                
+                data.data.forEach(task => {
+                    const taskCard = createShiftedTaskCard(task);
+                    container.appendChild(taskCard);
+                });
+
+                pagination['shifted-pending'].currentPage = data.current_page;
+                pagination['shifted-pending'].hasMore = data.current_page < data.last_page;
+                loadMoreBtn.classList.toggle('d-none', !pagination['shifted-pending'].hasMore);
+            } else {
+                if (!append) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <i class="fas fa-clipboard-list"></i>
+                            <h4>No Shifted Pending Tasks</h4>
+                            <p>There are no panel reassignment tasks pending at the moment.</p>
+                        </div>
+                    `;
+                }
+                loadMoreBtn.classList.add('d-none');
+            }
+
+            // Update tab count
+            document.getElementById('shifted-pending-count').textContent = data.total || 0;
+
+        } catch (error) {
+            console.error('Error loading shifted pending tasks:', error);
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    <h4>Error Loading Tasks</h4>
+                    <p>Failed to load shifted pending tasks. Please try again.</p>
+                    <button class="btn btn-outline-warning btn-sm" onclick="loadShiftedPendingTasks()">
+                        <i class="fas fa-retry"></i> Retry
+                    </button>
+                </div>
+            `;
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // Create shifted task card
+    function createShiftedTaskCard(task) {
+        const card = document.createElement('div');
+        card.className = 'card task-card p-3 rounded-4 border-0 shadow';
+        
+        const statusClass = getStatusClass(task.status);
+
+        card.innerHTML = `
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="text-white-50 small mb-1">#${task.task_id || task.id}</span>
+                    <span class="badge px-2 py-1 rounded ${statusClass}">
+                        ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                    </span>
+                </div>
+                ${task.status === 'pending' ? `
+                    <button class="btn btn-sm border-0 assign-btn" 
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="assignShiftedTaskToMe(${task.task_id || task.id})"
+                            title="Assign to Me">
+                        <i class="fas fa-user-plus text-white"></i>
+                    </button>
+                ` : `
+                    <button class="btn btn-sm border-0"
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;">
+                        <i class="fas fa-arrow-right text-white"></i>
+                    </button>
+                `}
+            </div>
+
+            <!-- Panel Info -->
+            <div class="mb-4">
+                <div class="glass-box mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Action Type</span>
+                        <span class="fw-bold text-white">
+                            ${task.action_type === 'removed' ? '<i class="fas fa-minus-circle text-danger me-1"></i>Removal' : 
+                                task.action_type === 'added' ? '<i class="fas fa-plus-circle text-success me-1"></i>Assignment' : 
+                                task.action_type.charAt(0).toUpperCase() + task.action_type.slice(1)}
+                        </span>
+                    </div>
+                </div>
+                <div class="glass-box mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">${task.action_type === 'added' ? 'Space Transferred' : 'Space Deleted'}</span>
+                        <span class="fw-bold text-white">${task.space_transferred || 0}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Movement Info -->
+            <div class="row g-2 mb-4">
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">From Panel</small>
+                        <span class="fw-semibold text-white">${task.from_panel ? task.from_panel.title : (task.fromPanel ? task.fromPanel.name : 'N/A')}</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">To Panel</small>
+                        <span class="fw-semibold text-white">${task.to_panel ? task.to_panel.title : (task.toPanel ? task.toPanel.name : 'N/A')}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User -->
+            <div class="d-flex align-items-center mt-auto">
+                <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                     alt="User" class="rounded-circle border border-info" width="42" height="42">
+                <div class="ms-3">
+                    <p class="mb-0 fw-semibold text-white">${task.customer_name || 'N/A'}</p>
+                    <small class="text-white-50">
+                        ${task.order_id ? `Order #${task.order_id}` : 'No Order'}
+                        ${task.assigned_to_name ? ` • ${task.assigned_to_name}` : ''}
+                    </small>
+                </div>
+            </div>
+        `;
+
+        return card;
+    }
+
+    // Assign shifted task to contractor
+    async function assignShiftedTaskToMe(taskId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Assign Panel Reassignment Task?',
+                text: 'This will assign the panel reassignment task to you. Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Assigning Task...',
+                text: 'Please wait while we assign the panel reassignment task to you.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const response = await fetch(`/contractor/taskInQueue/shifted/${taskId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to assign panel reassignment task');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Panel reassignment task assigned successfully!',
+                icon: 'success',
+                confirmButtonColor: '#28a745'
+            });
+
+            // Refresh shifted pending tasks
+            loadShiftedPendingTasks();
+
+        } catch (error) {
+            console.error('Error assigning shifted task:', error);
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign panel reassignment task. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    }
+
+    // Update shifted task status
+    async function updateShiftedTaskStatus(taskId, status) {
+        try {
+            const statusText = status === 'in-progress' ? 'start' : 'complete';
+            const result = await Swal.fire({
+                title: `${statusText.charAt(0).toUpperCase() + statusText.slice(1)} Task?`,
+                text: `Are you sure you want to ${statusText} this panel reassignment task?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: status === 'completed' ? '#28a745' : '#007bff',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: `Yes, ${statusText} it!`
+            });
+
+            if (result.isConfirmed) {
+                const requestBody = { status };
+                if (status === 'completed') {
+                    requestBody.completion_date = new Date().toISOString().split('T')[0];
+                }
+
+                const response = await fetch(`/contractor/taskInQueue/shifted/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 2000
+                    });
+                    
+                    // Reload shifted pending tasks
+                    loadShiftedPendingTasks();
+                } else {
+                    throw new Error(data.error || 'Failed to update task status');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating shifted task status:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update task status',
+                icon: 'error'
+            });
+        }
     }
 
     // Reset filters
@@ -742,16 +1065,22 @@
         
         // Clear all task data
         tasks.pending = [];
+        tasks['shifted-pending'] = [];
         tasks['in-progress'] = [];
         tasks.completed = [];
         
         // Reset pagination
         pagination.pending = { currentPage: 1, hasMore: false };
+        pagination['shifted-pending'] = { currentPage: 1, hasMore: false };
         pagination['in-progress'] = { currentPage: 1, hasMore: false };
         pagination.completed = { currentPage: 1, hasMore: false };
         
         // Refresh current active tab
-        loadTasks(activeTab);
+        if (activeTab === 'shifted-pending') {
+            loadShiftedPendingTasks();
+        } else {
+            loadTasks(activeTab);
+        }
         
         // Update tab counts
         updateTabCounts();

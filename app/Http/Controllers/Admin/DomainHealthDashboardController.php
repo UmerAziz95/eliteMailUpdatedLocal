@@ -87,35 +87,42 @@ class DomainHealthDashboardController extends Controller
         
     }
 
- public function getCardOrders(Request $request)
+public function getCardOrders(Request $request)
 {
     try {
-        $query = Order::query()
-            ->select('orders.*')
-            ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits', 'assignedTo'])
-            ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
-            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
-            ->where('orders.status_manage_by_admin', 'completed'); // ✅ Main filter
+        $query = Order::with([
+            'user',
+            'plan',
+            'reorderInfo',
+            'orderPanels.orderPanelSplits',
+            'assignedTo',
+            'domainHealthChecks'
+        ])
+        ->where('status_manage_by_admin', 'completed');
 
         // Additional filters
         if ($request->filled('plan_id')) {
-            $query->where('orders.plan_id', $request->plan_id);
+            $query->where('plan_id', $request->plan_id);
         }
 
         if ($request->filled('orderId')) {
-            $query->where('orders.id', 'like', "%{$request->orderId}%");
+            $query->where('id', 'like', "%{$request->orderId}%");
         }
 
         if ($request->filled('status')) {
-            $query->where('orders.status_manage_by_admin', $request->status);
+            $query->where('status_manage_by_admin', $request->status);
         }
 
         if ($request->filled('email')) {
-            $query->where('users.email', 'like', "%{$request->email}%");
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('email', 'like', "%{$request->email}%");
+            });
         }
 
         if ($request->filled('name')) {
-            $query->where('users.name', 'like', "%{$request->name}%");
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->name}%");
+            });
         }
 
         if ($request->filled('domain')) {
@@ -124,27 +131,39 @@ class DomainHealthDashboardController extends Controller
             });
         }
 
-        if ($request->filled('totalInboxes')) {
-            $query->whereHas('reorderInfo', function ($q) use ($request) {
-                $q->whereRaw('(
-                    CASE 
-                        WHEN domains IS NOT NULL AND domains != "" THEN 
-                            (LENGTH(domains) - LENGTH(REPLACE(REPLACE(REPLACE(domains, ",", ""), CHAR(10), ""), CHAR(13), "")) + 1) * inboxes_per_domain
-                        ELSE total_inboxes 
-                    END
-                ) = ?', [$request->totalInboxes]);
-            });
-        }
+            if ($request->filled('totalInboxes')) {
+                $query->whereHas('reorderInfo', function ($q) use ($request) {
+                    $q->whereRaw('(
+                        CASE 
+                            WHEN domains IS NOT NULL AND domains != "" THEN 
+                                (LENGTH(domains) - LENGTH(REPLACE(REPLACE(REPLACE(domains, ",", ""), CHAR(10), ""), CHAR(13), "")) + 1) * inboxes_per_domain
+                            ELSE total_inboxes 
+                        END
+                    ) = ?', [$request->totalInboxes]);
+                });
+            }
 
-        if ($request->filled('startDate')) {
-            $query->whereDate('orders.created_at', '>=', $request->startDate);
-        }
+            if ($request->filled('startDate')) {
+                $query->whereDate('created_at', '>=', $request->startDate);
+            }
 
-        if ($request->filled('endDate')) {
-            $query->whereDate('orders.created_at', '<=', $request->endDate);
-        }
+            if ($request->filled('endDate')) {
+                $query->whereDate('created_at', '<=', $request->endDate);
+            }
+            if ($request->filled('has_dns_issues')) {
+                $query->whereHas('domainHealthChecks', function ($q) {
+                    $q->where('status', 'DNS Issues');
+                });
+            } 
 
-        $orders = $query->get(); // ✅ Only fetch after applying filters
+            if ($request->filled('is_blacklisted')) {
+                $query->whereHas('domainHealthChecks', function ($q) {
+                    $q->where('blacklist_listed', true);
+                });
+            }
+
+
+        $orders = $query->get(); // Only execute the query after filters
 
         return DataTables::of($orders)
             ->addColumn('action', function ($order) {
@@ -169,7 +188,7 @@ class DomainHealthDashboardController extends Controller
                                 <i class="fa-solid fa-eye"></i> &nbsp;View Domains Health
                             </a>
                         </li>
-                        </ul>
+                    </ul>
                 </div>';
             })
             ->editColumn('created_at', fn($order) => $order->created_at?->format('d F, Y'))
@@ -181,9 +200,7 @@ class DomainHealthDashboardController extends Controller
             })
             ->addColumn('name', fn($order) => $order->user->name ?? 'N/A')
             ->addColumn('email', fn($order) => $order->user->email ?? 'N/A')
-            ->addColumn('split_counts', function ($order) {
-                return $order->orderPanels->sum(fn($panel) => $panel->orderPanelSplits->count()) . ' split(s)';
-            })
+            ->addColumn('split_counts', fn($order) => $order->orderPanels->sum(fn($panel) => $panel->orderPanelSplits->count()) . ' split(s)')
             ->addColumn('plan_name', fn($order) => $order->plan->name ?? 'N/A')
             ->addColumn('total_inboxes', function ($order) {
                 $reorderInfo = $order->reorderInfo->first();
@@ -217,6 +234,12 @@ class DomainHealthDashboardController extends Controller
                 ]);
             })
             ->addColumn('contractor_name', fn($order) => $order->assignedTo->name ?? 'Unassigned')
+            ->addColumn('dns_issues_count', function ($order) {
+                    return $order->domainHealthChecks->where('status', 'DNS Issues')->count();
+                })
+                ->addColumn('blacklisted_count', function ($order) {
+                    return $order->domainHealthChecks->where('blacklist_listed', true)->count();
+                })
             ->rawColumns(['action', 'status', 'timer'])
             ->make(true);
 
@@ -232,6 +255,7 @@ class DomainHealthDashboardController extends Controller
         ], 500);
     }
 }
+
 
 
   public function view($id)

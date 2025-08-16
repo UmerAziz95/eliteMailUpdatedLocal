@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\Panel;
+use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -19,7 +20,6 @@ class PanelReleasedSpacedService
      * @param int $taskId
      * @return array
      */
-    
     public function completeTaskAndReleaseSpaces($taskId)
     {
         try {
@@ -91,9 +91,26 @@ class PanelReleasedSpacedService
             // Update task status to completed
             $task->status = 'completed';
             $task->save();
+            // set order status to removed
+            $order->status_manage_by_admin = 'removed';
+            $order->save();
 
             // Log the completion
             Log::info("Task {$taskId} completed successfully. Released {$releasedSpaces} spaces from " . count(array_unique($processedPanels)) . " panels");
+
+            // Send Slack notification for task completion
+            $completionData = [
+                'task_id' => $taskId,
+                'released_spaces' => $releasedSpaces,
+                'processed_splits' => $processedSplits,
+                'affected_panels' => array_unique($processedPanels)
+            ];
+            
+            try {
+                SlackNotificationService::sendTaskCompletionNotification($task, $completionData);
+            } catch (\Exception $e) {
+                Log::error("Failed to send Slack notification for task completion: " . $e->getMessage());
+            }
 
             DB::commit();
 

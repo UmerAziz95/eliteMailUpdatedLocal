@@ -769,7 +769,8 @@
                             <option value="">-- Select Status --</option>
                             <!-- <option value="pending">Pending</option> -->
                             <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="cancelled">Cancel EOBC</option>
+                            <option value="cancelled_force">Force Cancel</option>
                             <option value="reject">Rejected</option>
                             <!-- <option value="in-progress">In Progress</option> -->
                         </select>
@@ -2366,7 +2367,7 @@ function parseUTCDateTime(dateStr) {
                 return;
             }
             // status is reject or cancelled
-            if ((newStatus === 'reject' || newStatus === 'cancelled') && !reason) {
+            if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Missing Reason',

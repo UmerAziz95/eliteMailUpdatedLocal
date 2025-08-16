@@ -16,6 +16,8 @@ class VerifyCsrfToken extends Middleware
         '/subscribe',
         // /webhook/invoice
         '/webhook/invoice/',
-        '/webhook/payment/done'
+        '/webhook/payment/done',
+        // GHL webhook routes
+        '/webhook/ghl/*'
     ];
 }

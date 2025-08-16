@@ -5,11 +5,15 @@ namespace App\Observers;
 use App\Models\SupportTicket;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\TicketCreatedMail;
 
 class SupportTicketObserver
 {
+    // Store original values before update
+    private $originalValues = [];
     public function created(SupportTicket $ticket)
     {
         // Notify assigned contractor if one is assigned
@@ -77,28 +81,103 @@ class SupportTicketObserver
                     null
                 ));
         }
+
+        // Send Slack notification for new ticket
+        try {
+            SlackNotificationService::sendSupportTicketCreatedNotification($ticket);
+            Log::info('Slack notification sent for ticket created', [
+                'ticket_id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send Slack notification for ticket created: ' . $e->getMessage(), [
+                'ticket_id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+                'exception' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function updating(SupportTicket $ticket)
     {
-        // No need to set old_status here as it's now handled by the model
+        // Store current values before the update (these will become the "old" values)
+        $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
+        $this->originalValues[$ticket->id] = [];
+        
+        foreach ($trackableFields as $field) {
+            // Get the current value (before update), not the original value
+            $this->originalValues[$ticket->id][$field] = $ticket->$field;
+        }
     }
-
+    
     public function updated(SupportTicket $ticket)
     {
-        if ($ticket->isDirty('status') && $ticket->user) {
+        // Get the stored original values
+        $originalValues = $this->originalValues[$ticket->id] ?? [];
+        
+        // Only send status notification to user if status changed
+        if (isset($originalValues['status']) && $originalValues['status'] !== $ticket->status && $ticket->user) {
             $notification = (new Notification())->create([
                 'user_id' => $ticket->user->id,
                 'title' => 'Ticket Status Updated',
-                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$ticket->getOriginal('status')} to {$ticket->status}",
+                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$originalValues['status']} to {$ticket->status}",
                 'type' => 'ticket_status_updated',
                 'data' => [
                     'ticket_id' => $ticket->id,
-                    'old_status' => $ticket->getOriginal('status'),
+                    'old_status' => $originalValues['status'],
                     'new_status' => $ticket->status
                 ]
             ]);
         }
+
+        // Track changes for Slack notification
+        $changes = [];
+        $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
+        
+        foreach ($trackableFields as $field) {
+            $oldValue = $originalValues[$field] ?? null;
+            $newValue = $ticket->$field;
+            
+            // Only track if there's actually a change
+            if ($oldValue !== $newValue) {
+                // Format values for better display
+                if ($field === 'assigned_to') {
+                    $oldDisplayValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
+                    $newDisplayValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
+                } else {
+                    // For other fields, handle null/empty values properly
+                    $oldDisplayValue = $oldValue ? ucfirst(str_replace('_', ' ', $oldValue)) : 'Not Set';
+                    $newDisplayValue = $newValue ? ucfirst(str_replace('_', ' ', $newValue)) : 'Not Set';
+                }
+                
+                $changes[$field] = [
+                    'from' => $oldDisplayValue,
+                    'to' => $newDisplayValue
+                ];
+            }
+        }
+
+        // Send Slack notification only once if there are changes
+        if (!empty($changes)) {
+            try {
+                SlackNotificationService::sendSupportTicketUpdatedNotification($ticket, $changes);
+                Log::info('Slack notification sent for ticket updated', [
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'changes' => $changes
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send Slack notification for ticket updated: ' . $e->getMessage(), [
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'changes' => $changes,
+                    'exception' => $e->getTraceAsString()
+                ]);
+            }
+        }
+
+        // Clean up stored values after processing
+        unset($this->originalValues[$ticket->id]);
     }
 
     public function deleted(SupportTicket $supportTicket): void

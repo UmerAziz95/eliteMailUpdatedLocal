@@ -931,7 +931,7 @@
                                 <div class="content-left">
                                     <h6 class="text-heading">Complete</h6>
                                     <div class="d-flex align-items-center my-1">
-                                        <h4 class="mb-0 me-2 fs-3">{{ number_format($inProgressOrders) }}</h4>
+                                        <h4 class="mb-0 me-2 fs-3">{{ number_format($completedOrders) }}</h4>
                                         <p class="text-success mb-0"></p>
                                     </div>
                                     <small class="mb-0"></small>
@@ -1509,7 +1509,6 @@
                 return null;
             }
            
-
             try {
                 var table = $table.DataTable({
                     processing: true,
@@ -1680,6 +1679,14 @@
                         {
                             data: 'total_inboxes',
                             name: 'total_inboxes'
+                        },
+                        {
+                            data: 'dns_issues_count',
+                            name: 'dns_issues_count'
+                        },
+                        {
+                            data: 'blacklisted_count',
+                            name: 'blacklisted_count'
                         },
                        
                         {

@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 @section('title', 'Task Queue')
 @push('styles')
-
     <style>
         .glass-box {
             background-color: rgba(255, 255, 255, 0.05);
@@ -91,19 +90,29 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-tab-pane"
                     type="button" role="tab" aria-controls="pending-tab-pane" aria-selected="true">
-                    Pending Tasks <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span>
+                    Pending Tasks
+                    {{-- <span class="badge bg-warning text-dark ms-1" id="pending-count">0</span> --}}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="shifted-pending-tab" data-bs-toggle="tab" data-bs-target="#shifted-pending-tab-pane"
+                    type="button" role="tab" aria-controls="shifted-pending-tab-pane" aria-selected="false">
+                    Shifted Pending Tasks
+                    {{-- <span class="badge bg-warning text-dark ms-1" id="shifted-pending-count">0</span> --}}
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
-                    In Progress <span class="badge bg-info ms-1" id="progress-count">0</span>
+                    In Progress 
+                    {{-- <span class="badge bg-info ms-1" id="progress-count">0</span> --}}
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane"
                     type="button" role="tab" aria-controls="completed-tab-pane" aria-selected="false">
-                    Completed <span class="badge bg-success ms-1" id="completed-count">0</span>
+                    Completed 
+                    {{-- <span class="badge bg-success ms-1" id="completed-count">0</span> --}}
                 </button>
             </li>
         </ul>
@@ -120,6 +129,18 @@
                 </div>
                 <div class="text-center mt-4">
                     <button id="load-more-pending" class="btn btn-outline-light btn-sm d-none">
+                        <i class="fas fa-plus me-1"></i> Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shifted Pending Tasks Tab -->
+            <div class="tab-pane fade" id="shifted-pending-tab-pane" role="tabpanel" aria-labelledby="shifted-pending-tab" tabindex="0">
+                <div id="shifted-pending-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="text-center mt-4">
+                    <button id="load-more-shifted-pending" class="btn btn-outline-light btn-sm d-none">
                         <i class="fas fa-plus me-1"></i> Load More
                     </button>
                 </div>
@@ -202,11 +223,13 @@
     let currentFilters = {};
     let tasks = {
         pending: [],
+        'shifted-pending': [],
         'in-progress': [],
         completed: []
     };
     let pagination = {
         pending: { currentPage: 1, hasMore: false },
+        'shifted-pending': { currentPage: 1, hasMore: false },
         'in-progress': { currentPage: 1, hasMore: false },
         completed: { currentPage: 1, hasMore: false }
     };
@@ -224,6 +247,9 @@
                 if (tabId === 'pending-tab-pane') {
                     activeTab = 'pending';
                     if (tasks.pending.length === 0) loadTasks('pending');
+                } else if (tabId === 'shifted-pending-tab-pane') {
+                    activeTab = 'shifted-pending';
+                    if (tasks['shifted-pending'].length === 0) loadTasks('shifted-pending');
                 } else if (tabId === 'in-progress-tab-pane') {
                     activeTab = 'in-progress';
                     if (tasks['in-progress'].length === 0) loadTasks('in-progress');
@@ -262,6 +288,12 @@
             }
         });
 
+        document.getElementById('load-more-shifted-pending').addEventListener('click', function() {
+            if (pagination['shifted-pending'].hasMore && !isLoading) {
+                loadTasks('shifted-pending', true);
+            }
+        });
+
         document.getElementById('load-more-progress').addEventListener('click', function() {
             if (pagination['in-progress'].hasMore && !isLoading) {
                 loadTasks('in-progress', true);
@@ -280,8 +312,21 @@
         if (isLoading) return;
         
         isLoading = true;
-        const container = document.getElementById(`${status === 'in-progress' ? 'in-progress' : status}-tasks-container`);
-        const loadMoreBtn = document.getElementById(`load-more-${status === 'in-progress' ? 'progress' : status}`);
+        const containerMap = {
+            'pending': 'pending-tasks-container',
+            'shifted-pending': 'shifted-pending-tasks-container',
+            'in-progress': 'in-progress-tasks-container',
+            'completed': 'completed-tasks-container'
+        };
+        const loadMoreBtnMap = {
+            'pending': 'load-more-pending',
+            'shifted-pending': 'load-more-shifted-pending',
+            'in-progress': 'load-more-progress',
+            'completed': 'load-more-completed'
+        };
+        
+        const container = document.getElementById(containerMap[status]);
+        const loadMoreBtn = document.getElementById(loadMoreBtnMap[status]);
         
         try {
             console.log('Loading tasks for status:', status, 'append:', append);
@@ -347,7 +392,14 @@
 
     // Render tasks function
     function renderTasks(status, append = false) {
-        const container = document.getElementById(`${status === 'in-progress' ? 'in-progress' : status}-tasks-container`);
+        const containerMap = {
+            'pending': 'pending-tasks-container',
+            'shifted-pending': 'shifted-pending-tasks-container',
+            'in-progress': 'in-progress-tasks-container',
+            'completed': 'completed-tasks-container'
+        };
+        
+        const container = document.getElementById(containerMap[status]);
         const tasksList = tasks[status];
         
         if (tasksList.length === 0 && !append) {
@@ -379,78 +431,158 @@
         div.className = 'card task-card p-3 rounded-4 border-0 shadow';
         
         const statusClass = getStatusClass(task.status);
-        const queueDate = new Date(task.started_queue_date);
-        const now = new Date();
+        const isShiftedTask = task.type === 'panel_reassignment';
         
-        div.innerHTML = `
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <div class="text-white-50 small mb-1">#${task.task_id}</div>
-                    <span class="badge px-2 py-1 rounded ${statusClass}">
-                        ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
-                    </span>
+        // Different content for shifted pending tasks
+        if (isShiftedTask) {
+            div.innerHTML = `
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="text-white-50 small mb-1">#${task.task_id}</span>
+                        <span class="badge px-2 py-1 rounded ${statusClass}">
+                            ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                        </span>
+                    </div>
+                    ${task.status === 'pending' ? `
+                        <button class="btn btn-sm border-0 assign-btn" 
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                                onclick="assignShiftedTaskToMe(${task.task_id})"
+                                title="Assign to Me">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm border-0"
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;">
+                            <i class="fas fa-arrow-right text-white"></i>
+                        </button>
+                    `}
                 </div>
-                ${task.status === 'pending' ? `
-                    <button class="btn btn-sm border-0 assign-btn" 
-                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
-                            onclick="assignTaskToMe(${task.task_id})"
-                            title="Assign to Me">
-                        <i class="fas fa-user-plus text-white"></i>
-                    </button>
-                ` : `
-                    <button class="btn btn-sm border-0"
-                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;">
-                        <i class="fas fa-arrow-right text-white"></i>
-                    </button>
-                `}
-            </div>
 
-            <!-- Stats -->
-            <div class="mb-4">
-                <div class="glass-box mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span class="small text-white-50">Total Inboxes</span>
-                        <span class="fw-bold text-white">${task.total_inboxes || 0}</span>
+                <!-- Panel Info -->
+                <div class="mb-4">
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Action Type</span>
+                            <span class="fw-bold text-white">
+                                ${task.action_type === 'removed' ? '<i class="fas fa-minus-circle text-danger me-1"></i>Removal' : 
+                                  task.action_type === 'added' ? '<i class="fas fa-plus-circle text-success me-1"></i>Assignment' : 
+                                  task.action_type.charAt(0).toUpperCase() + task.action_type.slice(1)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">${task.action_type === 'added' ? 'Space Transferred' : 'Space Deleted'}</span>
+                            <span class="fw-bold text-white">${task.space_transferred || 0}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="glass-box">
-                    <div class="d-flex justify-content-between">
-                        <span class="small text-white-50">Splits</span>
-                        <span class="fw-bold text-white">${task.splits_count || 0}</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Domain Info -->
-            <div class="row g-2 mb-4">
-                <div class="col-6">
-                    <div class="glass-box text-center">
-                        <small class="text-white-50 d-block mb-1">Inboxes / Domain</small>
-                        <span class="fw-semibold text-white">${task.inboxes_per_domain || 1}</span>
+                <!-- Panel Movement Info -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">From Panel</small>
+                            <span class="fw-semibold text-white">${task.from_panel ? task.from_panel.title : 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">To Panel</small>
+                            <span class="fw-semibold text-white">${task.to_panel ? task.to_panel.title : 'N/A'}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6">
-                    <div class="glass-box text-center">
-                        <small class="text-white-50 d-block mb-1">Total Domains</small>
-                        <span class="fw-semibold text-white">${task.total_domains || 0}</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- User -->
-            <div class="d-flex align-items-center mt-auto">
-                <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
-                     alt="User" class="rounded-circle border border-info" width="42" height="42">
-                <div class="ms-3">
-                    <p class="mb-0 fw-semibold text-white">${task.customer_name || 'N/A'}</p>
-                    <small class="text-white-50">
-                        ${task.order_id ? `Order #${task.order_id}` : 'No Order'}
-                        ${task.assigned_to_name ? ` • ${task.assigned_to_name}` : ''}
-                    </small>
+                <!-- User -->
+                <div class="d-flex align-items-center mt-auto">
+                    <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                         alt="User" class="rounded-circle border border-info" width="42" height="42">
+                    <div class="ms-3">
+                        <p class="mb-0 fw-semibold text-white">${task.customer_name || 'N/A'}</p>
+                        <small class="text-white-50">
+                            ${task.order_id ? `Order #${task.order_id}` : 'No Order'}
+                            ${task.assigned_to_name ? ` • ${task.assigned_to_name}` : ''}
+                        </small>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // Regular task card
+            const queueDate = new Date(task.started_queue_date);
+            const now = new Date();
+            
+            div.innerHTML = `
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="text-white-50 small mb-1">#${task.task_id}</div>
+                        <span class="badge px-2 py-1 rounded ${statusClass}">
+                            ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                        </span>
+                    </div>
+                    ${task.status === 'pending' ? `
+                        <button class="btn btn-sm border-0 assign-btn" 
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                                onclick="assignTaskToMe(${task.task_id})"
+                                title="Assign to Me">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm border-0"
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;">
+                            <i class="fas fa-arrow-right text-white"></i>
+                        </button>
+                    `}
+                </div>
+
+                <!-- Stats -->
+                <div class="mb-4">
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Total Inboxes</span>
+                            <span class="fw-bold text-white">${task.total_inboxes || 0}</span>
+                        </div>
+                    </div>
+                    <div class="glass-box">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Splits</span>
+                            <span class="fw-bold text-white">${task.splits_count || 0}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Domain Info -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Inboxes / Domain</small>
+                            <span class="fw-semibold text-white">${task.inboxes_per_domain || 1}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Total Domains</small>
+                            <span class="fw-semibold text-white">${task.total_domains || 0}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User -->
+                <div class="d-flex align-items-center mt-auto">
+                    <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                         alt="User" class="rounded-circle border border-info" width="42" height="42">
+                    <div class="ms-3">
+                        <p class="mb-0 fw-semibold text-white">${task.customer_name || 'N/A'}</p>
+                        <small class="text-white-50">
+                            ${task.order_id ? `Order #${task.order_id}` : 'No Order'}
+                            ${task.assigned_to_name ? ` • ${task.assigned_to_name}` : ''}
+                        </small>
+                    </div>
+                </div>
+            `;
+        }
         
         return div;
     }
@@ -500,7 +632,14 @@
     }
 
     function updateLoadMoreButton(status) {
-        const btn = document.getElementById(`load-more-${status === 'in-progress' ? 'progress' : status}`);
+        const loadMoreBtnMap = {
+            'pending': 'load-more-pending',
+            'shifted-pending': 'load-more-shifted-pending',
+            'in-progress': 'load-more-progress',
+            'completed': 'load-more-completed'
+        };
+        
+        const btn = document.getElementById(loadMoreBtnMap[status]);
         if (pagination[status].hasMore) {
             btn.classList.remove('d-none');
         } else {
@@ -509,7 +648,14 @@
     }
 
     function showError(message, status) {
-        const container = document.getElementById(`${status === 'in-progress' ? 'in-progress' : status}-tasks-container`);
+        const containerMap = {
+            'pending': 'pending-tasks-container',
+            'shifted-pending': 'shifted-pending-tasks-container',
+            'in-progress': 'in-progress-tasks-container',
+            'completed': 'completed-tasks-container'
+        };
+        
+        const container = document.getElementById(containerMap[status]);
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <i class="fas fa-exclamation-triangle text-danger"></i>
@@ -575,6 +721,65 @@
             await Swal.fire({
                 title: 'Error!',
                 text: error.message || 'Failed to assign task. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    }
+
+    // Assign shifted task to current admin
+    async function assignShiftedTaskToMe(taskId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Assign Panel Reassignment Task to Yourself?',
+                text: 'This will assign the panel reassignment task to you. Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Assigning Task...',
+                text: 'Please wait while we assign the panel reassignment task to you.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const response = await fetch(`{{ url('admin/taskInQueue/shifted') }}/${taskId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to assign panel reassignment task');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Panel reassignment task assigned successfully!',
+                icon: 'success',
+                confirmButtonColor: '#28a745'
+            });
+
+            // Refresh tasks
+            refreshTasks();
+
+        } catch (error) {
+            console.error('Error assigning shifted task:', error);
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign panel reassignment task. Please try again.',
                 icon: 'error',
                 confirmButtonColor: '#dc3545'
             });
@@ -742,11 +947,13 @@
         
         // Clear all task data
         tasks.pending = [];
+        tasks['shifted-pending'] = [];
         tasks['in-progress'] = [];
         tasks.completed = [];
         
         // Reset pagination
         pagination.pending = { currentPage: 1, hasMore: false };
+        pagination['shifted-pending'] = { currentPage: 1, hasMore: false };
         pagination['in-progress'] = { currentPage: 1, hasMore: false };
         pagination.completed = { currentPage: 1, hasMore: false };
         

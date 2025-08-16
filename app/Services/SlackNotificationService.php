@@ -351,6 +351,97 @@ class SlackNotificationService
         $message = self::formatMessage($messageType, $data);
         return self::send('inbox-subscriptions', $message);
     }
+
+    /**
+     * Send support ticket created notification to Slack
+     *
+     * @param \App\Models\SupportTicket $ticket
+     * @return bool
+     */
+    public static function sendSupportTicketCreatedNotification($ticket)
+    {
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'description' => $ticket->description,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'assigned_to_name' => $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned',
+            'assigned_to_email' => $ticket->assignedTo ? $ticket->assignedTo->email : 'N/A',
+            'order_id' => $ticket->order_id,
+            'attachments' => $ticket->attachments,
+            'created_at' => $ticket->created_at ? $ticket->created_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        $message = self::formatMessage('support-ticket-created', $data);
+        return self::send('inbox-tickets', $message);
+    }
+
+    /**
+     * Send support ticket updated notification to Slack
+     *
+     * @param \App\Models\SupportTicket $ticket
+     * @param array $changes
+     * @return bool
+     */
+    public static function sendSupportTicketUpdatedNotification($ticket, $changes = [])
+    {
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'assigned_to_name' => $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned',
+            'assigned_to_email' => $ticket->assignedTo ? $ticket->assignedTo->email : 'N/A',
+            'order_id' => $ticket->order_id,
+            'changes' => $changes,
+            'updated_at' => $ticket->updated_at ? $ticket->updated_at->format('Y-m-d H:i:s T') : 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+        ];
+
+        $message = self::formatMessage('support-ticket-updated', $data);
+        return self::send('inbox-tickets', $message);
+    }
+
+    /**
+     * Send support ticket reply notification to Slack
+     *
+     * @param \App\Models\TicketReply $reply
+     * @return bool
+     */
+    public static function sendSupportTicketReplyNotification($reply)
+    {
+        $ticket = $reply->ticket;
+        
+        $data = [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'subject' => $ticket->subject,
+            'priority' => $ticket->priority,
+            'status' => $ticket->status,
+            'category' => $ticket->category,
+            'reply_message' => $reply->message,
+            'is_internal' => $reply->is_internal,
+            'customer_name' => $ticket->user ? $ticket->user->name : 'Unknown',
+            'customer_email' => $ticket->user ? $ticket->user->email : 'Unknown',
+            'replied_by_name' => $reply->user ? $reply->user->name : 'Unknown',
+            'replied_by_email' => $reply->user ? $reply->user->email : 'Unknown',
+            'order_id' => $ticket->order_id,
+            'reply_attachments' => $reply->attachments,
+            'created_at' => $reply->created_at ? $reply->created_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        $message = self::formatMessage('support-ticket-reply', $data);
+        return self::send('inbox-tickets', $message);
+    }
     
     /**
      * Format message based on type and data
@@ -365,6 +456,11 @@ class SlackNotificationService
         
         switch ($type) {
             case 'invoice-generated-new':
+                Log::channel('slack_notifications')->info("Formatting message for type: {$type}", [
+                    'data' => $data,
+                    'amount_with_number_format' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                    'amount_without_format' => ($data['currency'] ?? 'USD') . ' ' . $data['amount'] ?? 0,
+                ]);
                 return [
                     'text' => "💳 *New Payment Invoice Generated*",
                     'attachments' => [
@@ -398,7 +494,8 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Amount',
-                                    'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    // 'value' => ($data['currency'] ?? 'USD') . ' ' . ($data['amount'] ?? '0'),
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
                                     'short' => true
                                 ],
                                 [
@@ -975,7 +1072,256 @@ class SlackNotificationService
                     ]
                 ];
                 
-            
+            case 'support-ticket-created':
+                $fields = [
+                    [
+                        'title' => 'Ticket Number',
+                        'value' => $data['ticket_number'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Priority',
+                        'value' => ucfirst($data['priority'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Status',
+                        'value' => ucfirst($data['status'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Category',
+                        'value' => ucfirst($data['category'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Assigned To',
+                        'value' => $data['assigned_to_name'] ?? 'Unassigned',
+                        'short' => true
+                    ]
+                ];
+
+                // Add Order ID field only if category is 'order'
+                if (isset($data['category']) && strtolower($data['category']) === 'order' && !empty($data['order_id'])) {
+                    $fields[] = [
+                        'title' => 'Order ID',
+                        'value' => '#' . $data['order_id'],
+                        'short' => true
+                    ];
+                }
+
+                $fields = array_merge($fields, [
+                    [
+                        'title' => 'Subject',
+                        'value' => $data['subject'] ?? 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Description',
+                        'value' => isset($data['description']) ? 
+                            (strlen(strip_tags($data['description'])) > 300 ? 
+                                substr(strip_tags($data['description']), 0, 300) . '...' : 
+                                strip_tags($data['description'])) : 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Created At',
+                        'value' => $data['created_at'] ?? 'N/A',
+                        'short' => false
+                    ]
+                ]);
+
+                $attachments = [
+                    [
+                        'color' => '#007bff',
+                        'fields' => $fields,
+                        'footer' => $appName . ' - Support Ticket System',
+                        'ts' => time()
+                    ]
+                ];
+
+                // Add file attachments if available
+                if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                    foreach ($data['attachments'] as $attachment) {
+                        $fileAttachment = self::buildSlackAttachment($attachment);
+                        $attachments[] = $fileAttachment;
+                    }
+                }
+
+                return [
+                    'text' => "🎫 *New Support Ticket Created*",
+                    'attachments' => $attachments
+                ];
+
+            case 'support-ticket-updated':
+                $changesText = '';
+                if (!empty($data['changes'])) {
+                    foreach ($data['changes'] as $field => $change) {
+                        $fieldName = ucwords(str_replace('_', ' ', $field));
+                        $changesText .= "• *{$fieldName}*: {$change['from']} → {$change['to']}\n";
+                    }
+                }
+                
+                return [
+                    'text' => "🔄 *Support Ticket Updated*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => [
+                                [
+                                    'title' => 'Ticket Number',
+                                    'value' => $data['ticket_number'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Priority',
+                                    'value' => ucfirst($data['priority'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Status',
+                                    'value' => ucfirst(str_replace('_', ' ', $data['status'] ?? 'N/A')),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Category',
+                                    'value' => ucfirst($data['category'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'Unknown',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned To',
+                                    'value' => $data['assigned_to_name'] ?? 'Unassigned',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Subject',
+                                    'value' => $data['subject'] ?? 'N/A',
+                                    'short' => false
+                                ],
+                                // [
+                                //     'title' => 'Changes Made',
+                                //     'value' => $changesText ?: 'No specific changes tracked',
+                                //     'short' => false
+                                // ],
+                                [
+                                    'title' => 'Updated By',
+                                    'value' => $data['updated_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? 'N/A',
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' - Support Ticket System',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'support-ticket-reply':
+                $replyType = ($data['is_internal'] ?? false) ? '🔒 Internal Note' : '💬 Customer Reply';
+                $color = ($data['is_internal'] ?? false) ? '#6f42c1' : '#28a745';
+                
+                $fields = [
+                    [
+                        'title' => 'Ticket Number',
+                        'value' => $data['ticket_number'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    // [
+                    //     'title' => 'Reply Type',
+                    //     'value' => $replyType,
+                    //     'short' => true
+                    // ],
+                    [
+                        'title' => 'Priority',
+                        'value' => ucfirst($data['priority'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Status',
+                        'value' => ucfirst($data['status'] ?? 'N/A'),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Replied By',
+                        'value' => $data['replied_by_name'] ?? 'Unknown',
+                        'short' => true
+                    ]
+                ];
+
+                // Add Order ID field only if category is 'order'
+                if (isset($data['category']) && strtolower($data['category']) === 'order' && !empty($data['order_id'])) {
+                    $fields[] = [
+                        'title' => 'Order ID',
+                        'value' => '#' . $data['order_id'],
+                        'short' => true
+                    ];
+                }
+
+                $fields = array_merge($fields, [
+                    [
+                        'title' => 'Subject',
+                        'value' => $data['subject'] ?? 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Reply Message',
+                        'value' => isset($data['reply_message']) ? 
+                            (strlen(strip_tags($data['reply_message'])) > 500 ? 
+                                substr(strip_tags($data['reply_message']), 0, 500) . '...' : 
+                                strip_tags($data['reply_message'])) : 'N/A',
+                        'short' => false
+                    ],
+                    [
+                        'title' => 'Replied At',
+                        'value' => $data['created_at'] ?? 'N/A',
+                        'short' => false
+                    ]
+                ]);
+
+                $attachments = [
+                    [
+                        'color' => $color,
+                        'fields' => $fields,
+                        'footer' => $appName . ' - Support Ticket System',
+                        'ts' => time()
+                    ]
+                ];
+                // Add reply file attachments if available
+                if (!empty($data['reply_attachments']) && is_array($data['reply_attachments'])) {
+                    foreach ($data['reply_attachments'] as $attachment) {
+                        $fileAttachment = self::buildSlackAttachment($attachment);
+                        $attachments[] = $fileAttachment;
+                    }
+                }
+                
+                return [
+                    'text' => "💬 *New Reply Added to Support Ticket*",
+                    'attachments' => $attachments
+                ];
                 
             default:
                 return [
@@ -1024,11 +1370,320 @@ class SlackNotificationService
             'order-cancellation' => ':x:',
             'order-countdown' => ':alarm_clock:',
             'domain-removal-alerts' => ':warning:',
+            'inbox-tickets' => ':ticket:',
+            'support-ticket-created' => ':new:',
+            'support-ticket-updated' => ':arrows_counterclockwise:',
+            'support-ticket-reply' => ':speech_balloon:',
         ];
         
         return $emojis[$type] ?? ':bell:';
     }
+
+    /**
+     * Build Slack attachment for file with proper media support
+     *
+     * @param string $filePath
+     * @param string|null $title
+     * @return array
+     */
+    private static function buildSlackAttachment($filePath, $title = null): array
+    {
+        // Check if file exists
+        $fullPath = storage_path('app/public/' . $filePath);
+        if (!file_exists($fullPath)) {
+            return [
+                'color' => '#dc3545',
+                'title' => $title ?? basename($filePath),
+                'text' => '❌ File not found',
+            ];
+        }
+
+        $mime = mime_content_type($fullPath);
+        $fileName = basename($filePath);
+        
+        // Ensure the URL is publicly accessible and uses HTTPS for Slack previews
+        $publicUrl = url('storage/' . $filePath);
+        
+        // Force HTTPS if not already (Slack requires HTTPS for image previews)
+        if (!str_starts_with($publicUrl, 'https://')) {
+            $publicUrl = str_replace('http://', 'http://', $publicUrl);
+        }
+
+        $attachment = [
+            'color' => '#36a64f',
+            'title' => $title ?? self::cleanAttachmentName($fileName),
+            'title_link' => $publicUrl
+        ];
+
+        if (str_starts_with($mime, 'image/')) {
+            // For image preview to work in Slack:
+            // 1. URL must be publicly accessible
+            // 2. Must be HTTPS 
+            // 3. Must be direct image URL
+            $attachment['image_url'] = $publicUrl;
+            // $attachment['image_url'] = 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png'; // Example image URL for testing
+            
+            // Make the title clickable for download
+            $attachment['title'] = "📥 " . self::cleanAttachmentName($fileName);
+            $attachment['title_link'] = $publicUrl . '?download=1';
+            
+            // Add fallback text for better accessibility
+            $attachment['fallback'] = "Image: " . self::cleanAttachmentName($fileName);
+            
+        } elseif ($mime === 'application/pdf') {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "📄 PDF Document: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "PDF: " . self::cleanAttachmentName($fileName);
+            
+        } elseif (str_starts_with($mime, 'audio/')) {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "🎵 Audio File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "Audio: " . self::cleanAttachmentName($fileName);
+            
+        } elseif (str_starts_with($mime, 'video/')) {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "🎥 Video File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "Video: " . self::cleanAttachmentName($fileName);
+            
+        } else {
+            // Show clean file name instead of URL
+            // $attachment['text'] = "📎 File: " . self::cleanAttachmentName($fileName);
+            $attachment['fallback'] = "File: " . self::cleanAttachmentName($fileName);
+        }
+
+        return $attachment;
+    }
+
+    /**
+     * Clean attachment filename for display
+     *
+     * @param string $attachment
+     * @return string
+     */
+    private static function cleanAttachmentName($attachment): string
+    {
+        if (is_string($attachment)) {
+            // Extract filename from path
+            $filename = basename($attachment);
+            
+            // Remove Laravel's random hash prefixes if present
+            // Pattern 1: Hash with underscore separator (hash_originalname.ext)
+            $cleanName = preg_replace('/^[a-zA-Z0-9]{40,}_/', '', $filename);
+            
+            // Pattern 2: Hash with dot separator but preserve extension (hash.originalname.ext)
+            if ($cleanName === $filename) {
+                $cleanName = preg_replace('/^[a-zA-Z0-9]{40,}\.(?=.+\.)/', '', $filename);
+            }
+            
+            // Pattern 3: Just hash with extension (hash.ext) - make it more readable
+            if ($cleanName === $filename && preg_match('/^[a-zA-Z0-9]{40,}\.(png|jpg|jpeg|gif|pdf|doc|docx|txt|zip|mp4|mp3)$/i', $filename, $matches)) {
+                $extension = strtolower($matches[1]);
+                $fileTypes = [
+                    'png' => 'Image (PNG)',
+                    'jpg' => 'Image (JPG)', 
+                    'jpeg' => 'Image (JPEG)',
+                    'gif' => 'Image (GIF)',
+                    'pdf' => 'PDF Document',
+                    'doc' => 'Word Document',
+                    'docx' => 'Word Document',
+                    'txt' => 'Text File',
+                    'zip' => 'ZIP Archive',
+                    'mp4' => 'Video (MP4)',
+                    'mp3' => 'Audio (MP3)'
+                ];
+                return $fileTypes[$extension] ?? "File ($extension)";
+            }
+            
+            // If still no change or name became empty, use original basename
+            if ($cleanName === $filename || empty($cleanName)) {
+                return $filename;
+            }
+            
+            return $cleanName;
+        } elseif (isset($attachment['name'])) {
+            return $attachment['name'];
+        } else {
+            return 'Unknown file';
+        }
+    }
     
+    /**
+     * Send task completion notification to Slack
+     *
+     * @param \App\Models\DomainRemovalTask $task
+     * @param array $completionData
+     * @return bool
+     */
+    public static function sendTaskCompletionNotification($task, $completionData = [])
+    {
+        $order = $task->order;
+        $user = $task->user;
+        $assignedTo = $task->assignedTo;
+        
+        $data = [
+            'task_id' => $task->id,
+            'customer_name' => $user ? $user->name : 'Unknown',
+            'customer_email' => $user ? $user->email : 'Unknown', 
+            'order_id' => $order ? $order->id : 'N/A',
+            'assigned_to' => $assignedTo ? $assignedTo->name : 'System',
+            'completed_at' => now()->format('Y-m-d H:i:s T'),
+            'reason' => $task->reason ?? 'Domain removal task',
+            'released_spaces' => $completionData['released_spaces'] ?? 0,
+            'processed_splits' => $completionData['processed_splits'] ?? 0,
+            'affected_panels_count' => isset($completionData['affected_panels']) ? count($completionData['affected_panels']) : 0,
+        ];
+
+        $attachments = [
+            [
+                'color' => 'good',
+                'title' => "✅ Task Completed - #{$task->id}",
+                'fields' => [
+                    [
+                        'title' => 'Customer',
+                        'value' => $data['customer_name'] . ' (' . $data['customer_email'] . ')',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed By',
+                        'value' => $data['assigned_to'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed At',
+                        'value' => $data['completed_at'],
+                        'short' => true
+                    ],
+                    // [
+                    //     'title' => 'Reason',
+                    //     'value' => $data['reason'],
+                    //     'short' => false
+                    // ],
+                    [
+                        'title' => 'Released Spaces',
+                        'value' => $data['released_spaces'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Processed Splits',
+                        'value' => $data['processed_splits'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Affected Panels',
+                        'value' => $data['affected_panels_count'],
+                        'short' => true
+                    ]
+                ],
+                'footer' => config('app.name', 'ProjectInbox'),
+                'ts' => time()
+            ]
+        ];
+
+        $message = [
+            'text' => "✅ Domain removal task #{$task->id} has been completed successfully!",
+            'attachments' => $attachments
+        ];
+
+        return self::send('inbox-cancellation', $message);
+    }
+
+    /**
+     * Send panel reassignment task completion notification to Slack
+     *
+     * @param \App\Models\PanelReassignmentHistory $task
+     * @return bool
+     */
+    public static function sendPanelReassignmentCompletionNotification($task)
+    {
+        $order = $task->order;
+        $user = $order ? $order->user : null;
+        $assignedTo = $task->assignedTo;
+        $fromPanel = $task->fromPanel;
+        $toPanel = $task->toPanel;
+        
+        $data = [
+            'task_id' => $task->id,
+            'customer_name' => $user ? $user->name : 'Unknown',
+            'customer_email' => $user ? $user->email : 'Unknown', 
+            'order_id' => $order ? $order->id : 'N/A',
+            'assigned_to' => $assignedTo ? $assignedTo->name : 'System',
+            'completed_at' => $task->task_completed_at ? $task->task_completed_at->format('Y-m-d H:i:s T') : now()->format('Y-m-d H:i:s T'),
+            'action_type' => $task->action_type,
+            'space_transferred' => $task->space_transferred ?? 0,
+            'splits_count' => $task->splits_count ?? 0,
+            'from_panel' => $fromPanel ? $fromPanel->title : 'N/A',
+            'to_panel' => $toPanel ? $toPanel->title : 'N/A',
+        ];
+
+        $attachments = [
+            [
+                'color' => 'good',
+                'title' => "🔄 Panel Reassignment Completed - #{$task->id}",
+                'fields' => [
+                    [
+                        'title' => 'Customer',
+                        'value' => $data['customer_name'] . ' (' . $data['customer_email'] . ')',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed By',
+                        'value' => $data['assigned_to'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Completed At',
+                        'value' => $data['completed_at'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Action Type',
+                        'value' => ucfirst($data['action_type']),
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Space Transferred',
+                        'value' => $data['space_transferred'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Splits Count',
+                        'value' => $data['splits_count'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'From Panel',
+                        'value' => $data['from_panel'],
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'To Panel',
+                        'value' => $data['to_panel'],
+                        'short' => true
+                    ]
+                ],
+                'footer' => config('app.name', 'ProjectInbox'),
+                'ts' => time()
+            ]
+        ];
+
+        $message = [
+            'text' => "🔄 Panel reassignment task #{$task->id} has been completed successfully!",
+            'attachments' => $attachments
+        ];
+
+        return self::send('inbox-setup', $message);
+    }
+
     /**
      * Get available notification types
      *

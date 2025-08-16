@@ -218,7 +218,8 @@
                 <h1 class="text-center mb-3">Simple And Fexible Pricing</h1>
                 <p style="font-size: 18px" class="mb-0">Lightning-fast email setup. Unlimited Inboxes.</p>
                 <p style="font-size: 18px">Our email infrastructure is built for <strong>speed</strong> and
-                    <strong>reliability</strong>.</p>
+                    <strong>reliability</strong>.
+                </p>
             </header>
         </div>
 
@@ -309,9 +310,10 @@
                    
                     const $btn = $(this);
                     const planId = $btn.data('plan-id');
+                    const url_string = @json($url_string); // Use the passed URL string from the controller
                    
                     const token = $('meta[name="csrf-token"]').attr('content');
-                    const url = `/customer/discounted/plans/${planId}/subscribe`;
+                    const url = `/customer/discounted/plans/${planId}/subscribe/${url_string }`;
 
                     // Disable button and show spinner
                     $btn.prop('disabled', true);
@@ -350,7 +352,7 @@
                             }
                             if(errorCode==404){
                                 toastr.info("Invalid or expired discount link.")
-                               window.location.reload();    
+                                window.location.reload();    
                             }
                             toastr.info("Operation failed!")
                             // Restore button state

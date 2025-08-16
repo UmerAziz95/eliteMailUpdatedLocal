@@ -16,6 +16,8 @@ class Order extends Model
         'timer_started_at' => 'datetime',
         'timer_paused_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'is_internal' => 'boolean',
+        'is_internal_order_assignment' => 'boolean'
     ];
     protected $fillable = [
         'user_id',
@@ -36,7 +38,10 @@ class Order extends Model
         'timer_paused_at',
         'total_paused_seconds',
         'rejected_by',
-        'rejected_at'
+        'rejected_at',
+        'is_internal',
+        'internal_order_id',
+        'is_internal_order_assignment'
     ];
     
     // status_manage_by_admin
@@ -176,5 +181,11 @@ class Order extends Model
                is_null($this->timer_paused_at) && 
                is_null($this->completed_at);
     }
+
+    public function domainHealthChecks()
+    {
+        return $this->hasMany(DomainHealthCheck::class);
+    }
+    
 
 }

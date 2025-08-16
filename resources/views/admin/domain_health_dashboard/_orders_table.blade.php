@@ -12,6 +12,8 @@
                 <th>Assigned To</th>
                 <th>Split Counts</th>
                 <th>Total Inboxes</th>
+                <th>DNS Issues</th>
+                <th>Blacklisted</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>

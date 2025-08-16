@@ -6,23 +6,37 @@ use Illuminate\Console\Command;
 use App\Models\Order;
 use App\Services\SlackNotificationService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Log; 
+/**
+ * OrderCountdownNotification Command
+ * 
+ * Sends order countdown notifications to Slack based on timer_started_at field.
+ * 
+ * Notification Schedule:
+ * - Start: When timer is first started (0h elapsed)
+ * - 6h: When 6 hours elapsed (6h remaining)
+ * - 3h: When 9 hours elapsed (3h remaining)  
+ * - 2h: When 10 hours elapsed (2h remaining)
+ * - 1h: When 11 hours elapsed (1h remaining)
+ * - 0h: When 12 hours elapsed (deadline passed)
+ * - Post-deadline: Every hour after deadline (13h, 14h, 15h, etc.)
+ */
+    
 class OrderCountdownNotification extends Command
-{
+{   
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'orders:countdown-notifications';
+    protected $signature = 'orders:countdown-notifications {--reset : Reset all countdown notifications for testing}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send order countdown notifications to Slack based on timer_started_at';
+    protected $description = 'Send order countdown notifications to Slack based on timer_started_at. Includes hourly notifications after deadline is passed.';
 
     /**
      * Execute the console command.
@@ -32,15 +46,21 @@ class OrderCountdownNotification extends Command
         $this->info('Starting Order Countdown Notification process...');
         
         try {
+            // Check if reset option is provided
+            if ($this->option('reset')) {
+                $this->resetAllNotifications();
+            }
+            
             // Get orders that have timer_started_at and are not completed or rejected
             $orders = Order::whereNotNull('timer_started_at')
                           ->whereNotIn('status_manage_by_admin', ['completed', 'reject', 'cancelled'])
-                          ->where(function($query) {
-                              $query->whereRaw('
-                                  (TIMESTAMPDIFF(SECOND, timer_started_at, NOW()) - COALESCE(total_paused_seconds, 0)) < ?
-                              ', [12 * 3600]); // 12 hours in seconds
-                          })
+                        //   ->where(function($query) {
+                        //       $query->whereRaw('
+                        //           (TIMESTAMPDIFF(SECOND, timer_started_at, NOW()) - COALESCE(total_paused_seconds, 0)) < ?
+                        //       ', [12 * 3600]); // 12 hours in seconds
+                        //   })
                           ->get();
+            // dd($orders);
             $this->info("Found {$orders->count()} orders to check for countdown notifications");
 
             foreach ($orders as $order) {
@@ -55,6 +75,36 @@ class OrderCountdownNotification extends Command
                 'trace' => $e->getTraceAsString()
             ]);
         }
+    }
+
+    /**
+     * Reset all countdown notifications for testing
+     */
+    private function resetAllNotifications()
+    {
+        $this->info('Resetting all countdown notifications...');
+        
+        $orders = Order::whereNotNull('timer_started_at')
+                      ->whereNotIn('status_manage_by_admin', ['completed', 'reject', 'cancelled'])
+                      ->get();
+        
+        foreach ($orders as $order) {
+            $meta = $order->meta;
+            if (is_string($meta)) {
+                $meta = json_decode($meta, true) ?? [];
+            } elseif (!is_array($meta)) {
+                $meta = [];
+            }
+            
+            // Remove countdown_notifications
+            if (isset($meta['countdown_notifications'])) {
+                unset($meta['countdown_notifications']);
+                $order->update(['meta' => $meta]);
+                $this->info("Reset notifications for Order #{$order->id}");
+            }
+        }
+        
+        $this->info('All countdown notifications have been reset.');
     }
 
     /**
@@ -76,8 +126,11 @@ class OrderCountdownNotification extends Command
             }
             
             $elapsedSeconds = $now->diffInSeconds($timerStarted) - $totalPausedSeconds - $currentPauseDuration;
-            $elapsedHours = (int) ($elapsedSeconds / 3600);
-            // dd($elapsedHours);
+            $elapsedHours = $elapsedSeconds / 3600; // Keep as float for precision
+            $this->info("Order #{$order->id} - Elapsed Time: " . number_format($elapsedHours, 2) . "h");
+            
+            // Show existing notifications for debugging
+            $this->showExistingNotifications($order);
             // 12-hour timer milestones (in hours elapsed)
             $milestones = [
                 0 => 'start',       // Start: 0h elapsed (timer just started)
@@ -87,6 +140,8 @@ class OrderCountdownNotification extends Command
                 11 => '1h',         // 11h elapsed (1h remaining)
                 12 => '0h'          // 12h elapsed (deadline passed)
             ];
+            
+            // Process regular milestones
             foreach ($milestones as $hours => $type) {
                 if ($this->shouldSendNotification($order, $elapsedHours, $hours, $type)) {
                     $this->sendCountdownNotification($order, $type, $elapsedHours);
@@ -101,8 +156,12 @@ class OrderCountdownNotification extends Command
                         'type' => $type,
                         'elapsed_hours' => $elapsedHours
                     ]);
-
                 }
+            }
+            
+            // Process post-deadline hourly notifications (13h, 14h, 15h, etc.)
+            if ($elapsedHours >= 13) {
+                $this->processPostDeadlineNotifications($order, $elapsedHours);
             }
             
         } catch (\Exception $e) {
@@ -111,6 +170,85 @@ class OrderCountdownNotification extends Command
                 'order_id' => $order->id,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Process post-deadline hourly notifications
+     */
+    private function processPostDeadlineNotifications(Order $order, float $elapsedHours)
+    {
+        try {
+            // Calculate which hourly notification we should be at (13h, 14h, 15h, etc.)
+            $currentHour = (int) floor($elapsedHours);
+            
+            // Only send notifications for specific hours (13, 14, 15, 16, etc.)
+            if ($currentHour >= 13) {
+                $type = "post_deadline_{$currentHour}h";
+                
+                if ($this->shouldSendPostDeadlineNotification($order, $elapsedHours, $currentHour)) {
+                    $this->sendCountdownNotification($order, $type, $elapsedHours);
+                    $this->markNotificationSent($order, $type);
+                    $this->info("Post-deadline notification sent for Order #{$order->id} - Hour: {$currentHour}");
+                }
+            }
+            
+        } catch (\Exception $e) {
+            $this->error("Error processing post-deadline notifications for order {$order->id}: " . $e->getMessage());
+            Log::error("OrderCountdownNotification: Error processing post-deadline notifications", [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check if post-deadline notification should be sent
+     */
+    private function shouldSendPostDeadlineNotification(Order $order, float $elapsedHours, int $currentHour): bool
+    {
+        // Don't send if order is paused
+        if ($order->timer_paused_at) {
+            return false;
+        }
+        
+        $type = "post_deadline_{$currentHour}h";
+        $notificationKey = "countdown_{$type}";
+        
+        // Handle both string and array cases for meta field
+        $meta = $order->meta;
+        if (is_string($meta)) {
+            $meta = json_decode($meta, true) ?? [];
+        } elseif (!is_array($meta)) {
+            $meta = [];
+        }
+        
+        // Check if this notification was already sent
+        if (isset($meta['countdown_notifications'][$notificationKey])) {
+            return false; // Already sent
+        }
+        
+        // Send notification when we reach or pass the hour mark
+        // More flexible: if we're past the hour mark but haven't sent notification yet
+        return $elapsedHours >= $currentHour;
+    }
+
+    /**
+     * Show existing notifications for debugging
+     */
+    private function showExistingNotifications(Order $order)
+    {
+        $meta = $order->meta;
+        if (is_string($meta)) {
+            $meta = json_decode($meta, true) ?? [];
+        } elseif (!is_array($meta)) {
+            $meta = [];
+        }
+        
+        if (isset($meta['countdown_notifications']) && !empty($meta['countdown_notifications'])) {
+            $this->info("Order #{$order->id} - Already sent notifications: " . implode(', ', array_keys($meta['countdown_notifications'])));
+        } else {
+            $this->info("Order #{$order->id} - No notifications sent yet");
         }
     }
 
@@ -140,19 +278,19 @@ class OrderCountdownNotification extends Command
         }
         
         // For start notification (12h timer started)
-        if ($type === 'start' && $elapsedHours >= 0 && $elapsedHours <= 0.05) { // Within 3 minutes of start
+        if ($type === 'start' && $elapsedHours >= 0 && $elapsedHours <= 0.1) { // Within 6 minutes of start
             return true;
         }
         
         // For milestone notifications (6h, 3h, 2h, 1h remaining)
         if ($type !== 'start' && $type !== '0h') {
             $targetHours = $milestoneHours;
-            // Send notification when we reach or pass the milestone (with 5-minute tolerance)
-            return $elapsedHours >= ($targetHours - 0.083) && $elapsedHours <= ($targetHours + 0.083);
+            // Send notification when we reach or pass the milestone (with wider tolerance)
+            return $elapsedHours >= ($targetHours - 0.5) && $elapsedHours <= ($targetHours + 0.5);
         }
         
         // For deadline notification (0h - deadline passed)
-        if ($type === '0h' && $elapsedHours >= 12) {
+        if ($type === '0h' && $elapsedHours >= 11.5) { // Start checking from 11.5h
             return true;
         }
         
@@ -396,6 +534,61 @@ class OrderCountdownNotification extends Command
                 ];
 
             default:
+                // Handle post-deadline hourly notifications (post_deadline_13h, post_deadline_14h, etc.)
+                if (strpos($type, 'post_deadline_') === 0) {
+                    preg_match('/post_deadline_(\d+)h/', $type, $matches);
+                    $hoursElapsed = isset($matches[1]) ? $matches[1] : 'unknown';
+                    $hoursOverdue = $hoursElapsed - 12;
+                    
+                    return [
+                        'text' => "🔴 *ORDER STILL OVERDUE - {$hoursOverdue} HOURS PAST DEADLINE*",
+                        'attachments' => [
+                            [
+                                'color' => '#dc3545',
+                                'fields' => [
+                                    [
+                                        'title' => 'Order ID',
+                                        'value' => $data['order_id'],
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Customer',
+                                        'value' => $data['customer_name'],
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Contractor',
+                                        'value' => $data['contractor_name'],
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Current Status',
+                                        'value' => $data['status'] . ' ❌',
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Total Time Elapsed',
+                                        'value' => $data['elapsed_time'],
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Hours Past Deadline',
+                                        'value' => $hoursOverdue . ' hours',
+                                        'short' => true
+                                    ],
+                                    [
+                                        'title' => 'Status',
+                                        'value' => "⚠️ URGENT: {$hoursOverdue}H OVERDUE",
+                                        'short' => false
+                                    ]
+                                ],
+                                'footer' => $appName . ' - OVERDUE ALERT',
+                                'ts' => time()
+                            ]
+                        ]
+                    ];
+                }
+                
                 return [
                     'text' => "⏰ *Order Countdown Notification*",
                     'attachments' => [

@@ -7,7 +7,7 @@
         color: #fff;
         font-size: 13px
     }
-
+    
     /* Fix offcanvas backdrop issues */
     .offcanvas-backdrop {
         z-index: 1040;
@@ -88,6 +88,11 @@
                 <button class="nav-link" id="pills-all-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-all-tasks"
                     type="button" role="tab" aria-controls="pills-all-tasks" aria-selected="false">All Tasks</button>
             </li>
+
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-shifted-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-shifted-tasks"
+                    type="button" role="tab" aria-controls="pills-shifted-tasks" aria-selected="false">Shifted Tasks</button>
+            </li>
         </ul>
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-mytask" role="tabpanel" aria-labelledby="pills-mytask-tab"
@@ -106,6 +111,14 @@
             <div class="tab-pane fade" id="pills-all-tasks" role="tabpanel" aria-labelledby="pills-all-tasks-tab"
                 tabindex="0">
                 <div id="all-tasks-container"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-shifted-tasks" role="tabpanel" aria-labelledby="pills-shifted-tasks-tab"
+                tabindex="0">
+                <div id="shifted-tasks-container"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
                     <!-- Content will be loaded dynamically -->
                 </div>
@@ -140,11 +153,13 @@
 <script>
     let tasks = {
         'my-tasks': [],
-        'all-tasks': []
+        'all-tasks': [],
+        'shifted-tasks': []
     };
     let pagination = {
         'my-tasks': { currentPage: 1, hasMore: false },
-        'all-tasks': { currentPage: 1, hasMore: false }
+        'all-tasks': { currentPage: 1, hasMore: false },
+        'shifted-tasks': { currentPage: 1, hasMore: false }
     };
     let isLoading = false;
     let activeTab = 'my-tasks';
@@ -167,6 +182,13 @@
                 loadTasks('all-tasks');
             }
         });
+
+        document.getElementById('pills-shifted-tasks-tab').addEventListener('click', function() {
+            activeTab = 'shifted-tasks';
+            if (tasks['shifted-tasks'].length === 0) {
+                loadTasks('shifted-tasks');
+            }
+        });
     });
 
     // Load tasks function
@@ -174,23 +196,30 @@
         if (isLoading) return;
         
         isLoading = true;
-        const containerId = type === 'my-tasks' ? 'my-tasks-container' : 'all-tasks-container';
+        const containerMap = {
+            'my-tasks': 'my-tasks-container',
+            'all-tasks': 'all-tasks-container',
+            'shifted-tasks': 'shifted-tasks-container'
+        };
+        const containerId = containerMap[type];
         const container = document.getElementById(containerId);
         
         try {
             if (!append) {
+                const loadingText = type === 'my-tasks' ? 'my' : 
+                                 type === 'all-tasks' ? 'all' : 'shifted';
                 container.innerHTML = `
                     <div class="loading-state text-center" style="grid-column: 1 / -1;">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <p class="mt-2">Loading ${type === 'my-tasks' ? 'my' : 'all'} tasks...</p>
+                        <p class="mt-2">Loading ${loadingText} tasks...</p>
                     </div>
                 `;
             }
 
             const params = new URLSearchParams({
-                type: type,
+                type: type === 'shifted-tasks' ? 'shifted-tasks' : type,
                 page: append ? pagination[type].currentPage + 1 : 1,
                 per_page: 12
             });
@@ -234,16 +263,25 @@
 
     // Render tasks function
     function renderTasks(type, append = false) {
-        const containerId = type === 'my-tasks' ? 'my-tasks-container' : 'all-tasks-container';
+        const containerMap = {
+            'my-tasks': 'my-tasks-container',
+            'all-tasks': 'all-tasks-container',
+            'shifted-tasks': 'shifted-tasks-container'
+        };
+        const containerId = containerMap[type];
         const container = document.getElementById(containerId);
         const tasksList = tasks[type];
         
         if (tasksList.length === 0 && !append) {
+            const emptyText = type === 'my-tasks' ? 'My' : 
+                            type === 'all-tasks' ? 'All' : 'Shifted';
+            const emptyDescription = type === 'my-tasks' ? 'tasks assigned to you' : 
+                                   type === 'all-tasks' ? 'tasks' : 'shifted panel tasks';
             container.innerHTML = `
                 <div class="empty-state text-center" style="grid-column: 1 / -1;">
                     <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
-                    <h5>No ${type === 'my-tasks' ? 'My' : 'All'} Tasks Found</h5>
-                    <p>There are no ${type === 'my-tasks' ? 'tasks assigned to you' : 'tasks'} to display.</p>
+                    <h5>No ${emptyText} Tasks Found</h5>
+                    <p>There are no ${emptyDescription} to display.</p>
                 </div>
             `;
             return;
@@ -268,17 +306,24 @@
         
         const statusClass = getStatusClass(task.status);
         
+        // Determine if this is a shifted task (panel reassignment)
+        const isShiftedTask = task.type === 'panel_reassignment';
+        
         div.innerHTML = `
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="fw-semibold">#${task.task_id} 
-                    <i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
-                       style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;" 
-                       onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
-                       onmouseout="this.style.color=''; this.style.transform='scale(1)'" 
-                       onclick="confirmTaskCompletion(${task.task_id})"
-                       title="${task.status === 'completed' ? 'Task completed' : 'Mark as completed'}"></i>
+                    ${isShiftedTask ? 
+                        `<small class="badge text-capitalize ${task.action_type === 'removed' ? 'bg-danger text-white' : 'bg-info text-dark'} ms-1">${task.action_type === 'removed' ? 'Removal' : 'Assignment'}</small>` : 
+                        `<i class="fa fa-solid fa-check-to-slot ${task.status === 'completed' ? 'text-success' : 'text-primary'}" 
+                            style="cursor: ${task.status === 'completed' ? 'default' : 'pointer'}; transition: all 0.2s ease;" 
+                            onmouseover="this.style.color='#28a745'; this.style.transform='scale(1.1)'" 
+                            onmouseout="this.style.color=''; this.style.transform='scale(1)'" 
+                            onclick="confirmTaskCompletion(${task.task_id})"
+                            title="${task.status === 'completed' ? 'Task completed' : 'Mark as completed'}"></i>`
+                    }
                 </span>
+
                 <span class="badge ${statusClass} fw-semibold">
                     <i class="${(() => {
                         switch(task.status) {
@@ -296,8 +341,8 @@
             <!-- Stats -->
             <div class="row mb-3">
                 <div class="col-6">
-                    <p class="mb-1 small">Total Inboxes</p>
-                    <h4 class="fw-bold mb-0">${task.total_inboxes || 0}</h4>
+                    <p class="mb-1 small">${isShiftedTask ? (task.action_type === 'removed' ? 'Removed Spaces' : 'Space Transferred') : 'Total Inboxes'}</p>
+                    <h4 class="fw-bold mb-0">${isShiftedTask ? (task.space_transferred || 0) : (task.total_inboxes || 0)}</h4>
                 </div>
                 <div class="col-6 text-end">
                     <p class="mb-1 small">Splits</p>
@@ -305,22 +350,44 @@
                 </div>
             </div>
 
-            <!-- Inboxes & Domains -->
-            <div class="row mb-3">
-                <div class="col">
-                    <div style="background-color: rgba(0, 0, 0, 0.398); border: 1px solid #464646;"
-                        class="rounded py-2 px-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Inboxes/Domain</p>
-                            <h6 class="fw-semibold mb-0">${task.inboxes_per_domain || 1}</h6>
-                        </div>
-                        <div class="text-end">
-                            <p class="mb-1 small">Total Domains</p>
-                            <h6 class="fw-semibold mb-0">${task.total_domains || 0}</h6>
+            <!-- Panel Information for Shifted Tasks or Inboxes & Domains for Regular Tasks -->
+            ${isShiftedTask ? `
+                <div class="row mb-3">
+                    <div class="col">
+                        <div style="background-color: rgba(0, 0, 0, 0.398); border: 1px solid #464646;"
+                            class="rounded py-2 px-3">
+                            ${task.action_type === 'removed' ? `
+                                <!-- Show only From Panel when action is removed -->
+                                <div class="text-center"><small class="mb-1 small">Panel</small><h6 class="fw-semibold mb-0">${task.from_panel ? task.from_panel.title : 'N/A'}</h6><small class="mb-1 small">ID: ${task.from_panel ? task.from_panel.id : 'N/A'}</small></div>
+                            ` : `
+                                <!-- Show To Panel for other actions -->
+                                <div class="text-center">
+                                    <small class="mb-1 small">To Panel</small>
+                                    <h6 class="fw-semibold mb-0">${task.to_panel ? task.to_panel.title : 'N/A'}</h6>
+                                    <small class="mb-1 small">ID: ${task.to_panel ? task.to_panel.id : 'N/A'}</small>
+                                </div>
+                            `}
                         </div>
                     </div>
                 </div>
-            </div>
+            ` : `
+                <!-- Inboxes & Domains for Regular Domain Removal Tasks -->
+                <div class="row mb-3">
+                    <div class="col">
+                        <div style="background-color: rgba(0, 0, 0, 0.398); border: 1px solid #464646;"
+                            class="rounded py-2 px-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-1 small">Inboxes/Domain</p>
+                                <h6 class="fw-semibold mb-0">${task.inboxes_per_domain || 1}</h6>
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-1 small">Total Domains</p>
+                                <h6 class="fw-semibold mb-0">${task.total_domains || 0}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `}
 
             <!-- Footer with User -->
             <div class="d-flex justify-content-between align-items-center">
@@ -331,8 +398,10 @@
                     </div>
                     <div>
                         <p class="mb-0 fw-semibold">${task.customer_name || 'N/A'}</p>
+                        ${isShiftedTask && task.assigned_to_name ? `<small class="mb-1 small">Assigned: ${task.assigned_to_name}</small>` : ''}
                     </div>
                 </div>
+                ${!isShiftedTask ? `
                 <div>
                     ${task.splits_count > 0 ? `
                         <button class="btn btn-primary btn-sm d-flex align-items-center justify-content-center"
@@ -346,6 +415,17 @@
                     `}
                     
                 </div>
+                ` : `
+                <div class="d-flex gap-2">
+                    ${task.status === 'in-progress' ? `
+                        <button class="btn btn-success btn-sm d-flex align-items-center justify-content-center"
+                            onclick="completeShiftedTask(${task.task_id})"
+                            title="Mark as Completed">
+                            <i class="fas fa-check text-white"></i>
+                        </button>
+                    ` : ''}
+                </div>
+                `}
             </div>
         `;
         return div;
@@ -368,7 +448,12 @@
     }
 
     function showError(message, type) {
-        const containerId = type === 'my-tasks' ? 'my-tasks-container' : 'all-tasks-container';
+        const containerMap = {
+            'my-tasks': 'my-tasks-container',
+            'all-tasks': 'all-tasks-container',
+            'shifted-tasks': 'shifted-tasks-container'
+        };
+        const containerId = containerMap[type];
         const container = document.getElementById(containerId);
         container.innerHTML = `
             <div class="empty-state text-center" style="grid-column: 1 / -1;">
@@ -1171,6 +1256,95 @@
             Swal.fire({
                 title: 'Error',
                 text: error.message || 'Failed to complete task',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Complete shifted task function
+    async function completeShiftedTask(taskId) {
+        try {
+            // Show confirmation dialog
+            const result = await Swal.fire({
+                title: 'Complete Shifted Task?',
+                html: `
+                    <div class="text-start">
+                        <p>Are you sure you want to mark this panel reassignment task as completed?</p>
+                        <div class="mb-3" style="display:none;">
+                            <label for="completion_notes" class="form-label">Completion Notes (Optional)</label>
+                            <textarea id="completion_notes" class="form-control" rows="3" 
+                                placeholder="Add any completion notes or comments..."></textarea>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check me-2"></i>Yes, Complete Task',
+                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancel',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                width: '500px',
+                preConfirm: () => {
+                    const notes = document.getElementById('completion_notes').value;
+                    return { notes: notes };
+                }
+            });
+
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Completing Task...',
+                    text: 'Please wait while we update the task status.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Update task status to completed
+                const response = await fetch(`{{ url('contractor/taskInQueue/shifted') }}/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        status: 'completed',
+                        completion_notes: result.value.notes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    await Swal.fire({
+                        title: 'Task Completed!',
+                        text: 'The panel reassignment task has been marked as completed successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+
+                    // Reload the shifted tasks to reflect the changes
+                    loadTasks('shifted-tasks');
+                } else {
+                    throw new Error(data.message || 'Failed to complete task');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error completing shifted task:', error);
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Failed to complete the task',
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
