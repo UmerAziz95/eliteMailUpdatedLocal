@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Feature;
 use App\Models\Invoice;
+use App\Models\OrderPaymentLog;
 use Illuminate\Http\Request;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
@@ -157,35 +158,16 @@ class PlanController extends Controller
         }
         
     }
-    
-   
     public function subscriptionSuccess(Request $request)
     {
         try {
             $hostedPageId = $request->input('id');
-            // dd($hostedPageId);
-            // get session order_info
             if (!$hostedPageId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Missing hosted page ID in request.'
                 ]);
             }
-
-            if(!Auth::check()){
-                $unauthorized_user = session()->get('unauthorized_session');
-                if($unauthorized_user) {
-                    $user = User::where('email', $unauthorized_user->email)->first();
-                    if($user) {
-                        Auth::login($user);
-                        session()->forget('unauthorized_session');
-                    }
-                }
-            }
-
-          
-          
-            
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
             $hostedPage = $result->hostedPage();
@@ -194,6 +176,26 @@ class PlanController extends Controller
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
+            
+            // Log initial payment data
+            $initialLogData = [
+                'chargebee_invoice_id' => $invoice ? $invoice->id : null,
+                'chargebee_subscription_id' => $subscription ? $subscription->id : null,
+                'customer_id' => $customer ? $customer->id : null,
+                'invoice_data' => $invoice ? $invoice->getValues() : null,
+                'customer_data' => $customer ? $customer->getValues() : null,
+                'subscription_data' => $subscription ? $subscription->getValues() : null,
+                'amount' => $invoice ? ($invoice->amountPaid ?? 0) / 100 : null,
+                'response' => [
+                    'hosted_page_status' => $hostedPage->status ?? null,
+                    'hosted_page_type' => $hostedPage->type ?? null,
+                    'timestamp' => now()->toISOString()
+                ]
+            ];
+            
+            $paymentStatus = $invoice ? $invoice->status : 'unknown';
+            $this->logInitialPaymentData($hostedPageId, $initialLogData, $paymentStatus);
+            
             $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
             //shipping address
             $firstName = $shippingAddress['first_name'] ?? '';
@@ -208,9 +210,18 @@ class PlanController extends Controller
             $plan_id = null;
             $charge_plan_id = null;
 
+            if(!Auth::check()){
+                $unauthorized_user = session()->get('unauthorized_session');
+                if($unauthorized_user) {
+                    $user = User::where('email', $unauthorized_user->email)->first();
+                    if($user) {
+                        Auth::login($user);
+                        session()->forget('unauthorized_session');
+                    }
+                }
+            }
 
-              if(!Auth::check()){
-              
+            if(!Auth::check()){
                 $user = User::where('email', $customer->email)->first();
                 if(!$user){
                     $user = new User();
@@ -236,8 +247,7 @@ class PlanController extends Controller
                         Log::error('Failed to send user credentials : '.$user->email.' '.$e->getMessage());
                     }
                 }
-            }   
-         
+            }
 
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
@@ -269,6 +279,7 @@ class PlanController extends Controller
                     $plan_id = $plan->id;
                 }
             }
+            
             // dd($subscription, $customer, $invoice, $plan_id, $charge_plan_id);
             $user = auth()->user();
             $user->billing_address=$line1;
@@ -279,7 +290,14 @@ class PlanController extends Controller
             $user->billing_zip=$zip;
             $user->billing_address_syn=1;
             $user->save(); 
-            // dd($user);
+            // update user_id and plan_id on order_payment_logs
+            $orderPaymentLog = OrderPaymentLog::where('hosted_page_id', $hostedPageId)->first();
+            if ($orderPaymentLog) {
+                $orderPaymentLog->update([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan_id,
+                ]);
+            }
             if (!$subscription || !$customer || !$invoice) {
                 return response()->json([
                     'success' => false,
@@ -292,6 +310,7 @@ class PlanController extends Controller
                 'customer' => $customer->getValues(),
                 'subscription' => $subscription->getValues(),
             ]);
+
             // create session for set observer_total_inboxes
             $request->session()->put('observer_total_inboxes', $subscription->subscriptionItems[0]->quantity ?? 1);
             // Create or update order
@@ -602,6 +621,12 @@ class PlanController extends Controller
                     }
                 }
             }
+            // updated orderPaymentLog
+            if($orderPaymentLog) {
+                $orderPaymentLog->update([
+                    'is_exception' => false
+                ]);
+            }
             // Redirect to success page with subscription details
             return view('customer.plans.subscription-success', [
                 'subscription_id' => $subscription->id,
@@ -610,8 +635,129 @@ class PlanController extends Controller
                 'amount' => ($invoice->amountPaid ?? 0) / 100,
             ]);
         } catch (\Exception $e) {
+            // Log exception data
+            $hostedPageId = $request->input('id');
+            if ($hostedPageId) {
+                $exceptionLogData = [
+                    'user_id' => Auth::check() ? auth()->id() : null,
+                    'chargebee_invoice_id' => null,
+                    'chargebee_subscription_id' => null,
+                    'customer_id' => null,
+                    'plan_id' => $planId ?? null,
+                    'amount' => null,
+                    'invoice_data' => null,
+                    'customer_data' => null,
+                    'subscription_data' => null,
+                    'response' => [
+                        'error_message' => $e->getMessage(),
+                        'hosted_page_id' => $hostedPageId,
+                        'timestamp' => now()->toISOString(),
+                        'hosted_page_data' => null
+                    ]
+                ];
+                
+                // Try to get hosted page data even if there's an exception
+                try {
+                    $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
+                    $hostedPage = $result->hostedPage();
+                    $content = $hostedPage->content();
+                    
+                    $subscription = $content->subscription() ?? null;
+                    $customer = $content->customer() ?? null;
+                    $invoice = $content->invoice() ?? null;
+                    
+                    // Update exception log data with retrieved values
+                    $exceptionLogData['chargebee_invoice_id'] = $invoice ? $invoice->id : null;
+                    $exceptionLogData['chargebee_subscription_id'] = $subscription ? $subscription->id : null;
+                    $exceptionLogData['customer_id'] = $customer ? $customer->id : null;
+                    $exceptionLogData['amount'] = $invoice ? ($invoice->amountPaid ?? 0) / 100 : null;
+                    $exceptionLogData['invoice_data'] = $invoice ? $invoice->getValues() : null;
+                    $exceptionLogData['customer_data'] = $customer ? $customer->getValues() : null;
+                    $exceptionLogData['subscription_data'] = $subscription ? $subscription->getValues() : null;
+                    $exceptionLogData['response']['hosted_page_data'] = $hostedPage ? $hostedPage->getValues() : null;
+                } catch (\Exception $retrieveException) {
+                    $exceptionLogData['response']['retrieve_error'] = 'Could not retrieve hosted page data: ' . $retrieveException->getMessage();
+                }
+                $this->logPaymentException($hostedPageId, $exceptionLogData);
+            }
+            
             \Log::error('Subscription confirmation failed: ' . $e->getMessage());
             return view('customer.plans.subscription-failed')->with('error', 'Failed to confirm subscription: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Log initial payment data to order_payment_logs table (called once at start)
+     */
+    private function logInitialPaymentData($hostedPageId, $data = [], $paymentStatus = null)
+    {
+        try {
+            // Build complete initial data
+            $initialData = [
+                'hosted_page_id' => $hostedPageId,
+                'user_id' => $data['user_id'] ?? null,
+                'is_exception' => true,
+                'chargebee_invoice_id' => $data['chargebee_invoice_id'] ?? null,
+                'chargebee_subscription_id' => $data['chargebee_subscription_id'] ?? null,
+                'customer_id' => $data['customer_id'] ?? null,
+                'plan_id' => $data['plan_id'] ?? null,
+                'amount' => $data['amount'] ?? null,
+                'payment_status' => $paymentStatus,
+                'invoice_data' => $data['invoice_data'] ?? null,
+                'customer_data' => $data['customer_data'] ?? null,
+                'subscription_data' => $data['subscription_data'] ?? null,
+                'response' => $data['response'] ?? null,
+            ];
+
+            // Create initial log entry
+            $paymentLog = OrderPaymentLog::create($initialData);
+            
+            \Log::info('Initial payment data logged successfully', [
+                'hosted_page_id' => $hostedPageId,
+                'payment_status' => $paymentStatus,
+                'log_id' => $paymentLog->id
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to log initial payment data: ' . $e->getMessage(), [
+                'hosted_page_id' => $hostedPageId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Log payment exception (only updates is_exception column and response)
+     */
+    private function logPaymentException($hostedPageId, $exceptionData = [])
+    {
+        try {
+            // Only update is_exception and response fields
+            $updateData = [
+                'is_exception' => true,
+                'response' => $exceptionData['response'] ?? null,
+            ];
+
+            // Update existing log entry
+            $updated = OrderPaymentLog::where('hosted_page_id', $hostedPageId)
+                ->update($updateData);
+            
+            if ($updated) {
+                \Log::info('Payment exception logged successfully', [
+                    'hosted_page_id' => $hostedPageId,
+                    'updated_records' => $updated
+                ]);
+            } else {
+                \Log::warning('No payment log found to update for exception', [
+                    'hosted_page_id' => $hostedPageId
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to log payment exception: ' . $e->getMessage(), [
+                'hosted_page_id' => $hostedPageId,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 

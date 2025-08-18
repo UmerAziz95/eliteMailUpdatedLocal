@@ -3254,7 +3254,50 @@ pointer-events: none
         const container = document.getElementById('orderSplitsContainer');
         
         if (!data.splits || data.splits.length === 0) {
+            const orderInfo = data.order;
+            
+            // Show/hide status update controls for draft/reject orders even when no splits
+            const statusUpdateControls = document.getElementById('statusUpdateControls');
+            const orderStatusIndicator = document.getElementById('order-status-indicator');
+            if (statusUpdateControls && orderInfo) {
+                const isDraftOrReject = orderInfo.status === 'draft' || orderInfo.status === 'reject';
+                statusUpdateControls.style.display = isDraftOrReject ? 'flex' : 'none';
+                
+                // Store current order info for status updates
+                statusUpdateControls.setAttribute('data-order-id', orderInfo.id);
+                statusUpdateControls.setAttribute('data-current-status', orderInfo.status);
+                
+                // Update status indicator
+                if (orderStatusIndicator) {
+                    orderStatusIndicator.textContent = `Status: ${orderInfo.status.charAt(0).toUpperCase() + orderInfo.status.slice(1)}`;
+                    if (isDraftOrReject) {
+                        orderStatusIndicator.innerHTML += ' <span class="badge bg-warning ms-1">Status Update Available</span>';
+                    }
+                }
+            }
+            
             container.innerHTML = `
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6>
+                                ${orderInfo.status_manage_by_admin || orderInfo.status.charAt(0).toUpperCase() + orderInfo.status.slice(1)}
+                                ${createTimerBadge(orderInfo, 0)}
+                            </h6>
+                            <p class="text-white small mb-0">Customer: ${orderInfo.customer_name || 'N/A'} | Date: ${formatDate(orderInfo.created_at)}</p>
+                        </div>
+                        <div>
+                            ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
+                                <button class="btn btn-warning btn-sm px-3 py-2" 
+                                        onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
+                                    Change Status
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
                 <div class="text-center py-5">
                     <i class="fas fa-inbox text-white fs-3 mb-3"></i>
                     <h5>No Splits Found</h5>
@@ -3276,6 +3319,26 @@ pointer-events: none
             `;
         }
 
+        // Show/hide status update controls based on order status
+        const statusUpdateControls = document.getElementById('statusUpdateControls');
+        const orderStatusIndicator = document.getElementById('order-status-indicator');
+        if (statusUpdateControls && orderInfo) {
+            const isDraftOrReject = orderInfo.status === 'draft' || orderInfo.status === 'reject';
+            statusUpdateControls.style.display = isDraftOrReject ? 'flex' : 'none';
+            
+            // Store current order info for status updates
+            statusUpdateControls.setAttribute('data-order-id', orderInfo.id);
+            statusUpdateControls.setAttribute('data-current-status', orderInfo.status);
+            
+            // Update status indicator
+            if (orderStatusIndicator) {
+                orderStatusIndicator.textContent = `Status: ${orderInfo.status.charAt(0).toUpperCase() + orderInfo.status.slice(1)}`;
+                if (isDraftOrReject) {
+                    orderStatusIndicator.innerHTML += ' <span class="badge bg-warning ms-1">Status Update Available</span>';
+                }
+            }
+        }
+
         const splitsHtml = `
             <div class="mb-4">
                 <div class="d-flex align-items-center justify-content-between">
@@ -3287,7 +3350,7 @@ pointer-events: none
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
                     <div>
-                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'completed' ? `
+                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
                             <button class="btn btn-warning btn-sm px-3 py-2" 
                                     onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                     style="font-size: 13px;">
@@ -3349,7 +3412,7 @@ pointer-events: none
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
-                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'reject' ? `
+                                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'reject' && orderInfo?.status !== 'removed' ? `
                                             <button type="button" class="btn btn-sm btn-warning" title="Reassign Panel" 
                                                     onclick="openReassignModal(${orderInfo.id}, ${split.panel_id}, ${split.order_panel_id}, '${split.panel_title}')">
                                                 <i class="fas fa-exchange-alt"></i> Reassign
@@ -4220,7 +4283,106 @@ pointer-events: none
         
         // Initialize timers immediately for any existing elements
         updateAllTimers();
+        
+        // Initialize status update controls
+        initializeStatusUpdateControls();
     });
+
+    // Initialize status update controls for draft/reject orders
+    function initializeStatusUpdateControls() {
+        const quickStatusSelect = document.getElementById('quickStatusSelect');
+        const applyStatusUpdate = document.getElementById('applyStatusUpdate');
+        
+        if (quickStatusSelect && applyStatusUpdate) {
+            // Enable/disable apply button based on selection
+            quickStatusSelect.addEventListener('change', function() {
+                applyStatusUpdate.disabled = !this.value;
+            });
+            
+            // Handle status update
+            applyStatusUpdate.addEventListener('click', function() {
+                const statusUpdateControls = document.getElementById('statusUpdateControls');
+                const orderId = statusUpdateControls?.getAttribute('data-order-id');
+                const currentStatus = statusUpdateControls?.getAttribute('data-current-status');
+                const newStatus = quickStatusSelect.value;
+                
+                if (orderId && newStatus && (currentStatus === 'draft' || currentStatus === 'reject')) {
+                    updateOrderStatus(orderId, newStatus, currentStatus);
+                }
+            });
+        }
+    }
+
+    // Update order status function for draft/reject orders
+    async function updateOrderStatus(orderId, newStatus, currentStatus) {
+        const applyBtn = document.getElementById('applyStatusUpdate');
+        const quickStatusSelect = document.getElementById('quickStatusSelect');
+        
+        try {
+            // Show loading state
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            
+            const response = await fetch(`/admin/orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    status: newStatus,
+                    from_status: currentStatus
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Show success message
+                showToast('Order status updated successfully!', 'success');
+                
+                // Hide status update controls since status is no longer draft/reject
+                const statusUpdateControls = document.getElementById('statusUpdateControls');
+                if (statusUpdateControls) {
+                    statusUpdateControls.style.display = 'none';
+                }
+                
+                // Update status indicator
+                const orderStatusIndicator = document.getElementById('order-status-indicator');
+                if (orderStatusIndicator) {
+                    orderStatusIndicator.textContent = `Status: ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`;
+                }
+                
+                // Update offcanvas title to reflect new status
+                const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+                if (offcanvasTitle) {
+                    offcanvasTitle.innerHTML = `Details Order #${orderId} - ${newStatus.toUpperCase()}`;
+                }
+                
+                // Refresh the main table to show updated status
+                if (typeof table !== 'undefined' && table.ajax) {
+                    table.ajax.reload(null, false);
+                } else if (typeof loadOrders === 'function') {
+                    loadOrders();
+                }
+                
+            } else {
+                throw new Error(data.message || 'Failed to update status');
+            }
+            
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            // Reset button state
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
+            
+            // Reset dropdown
+            quickStatusSelect.value = '';
+        }
+    }
 
     // Change Status Modal Functions
     function openChangeStatusModal(orderId, currentStatus) {

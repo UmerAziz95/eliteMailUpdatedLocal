@@ -58,9 +58,9 @@
                             <span class="badge bg-secondary text-uppercase small rounded-5">Plan</span>
                             <h5 class="mt-2 mb-1">Google Workspace Package</h5>
                             <ul class="mb-2">
-                                <li class="small opacity-75">1 - 249 Inboxes: $3.50 / Inbox</li>
-                                <li class="small opacity-75">250 - 1,249 Inboxes: $3.00 / Inbox</li>
-                                <li class="small opacity-75">1,250+ Inboxes: $2.50 / Inbox</li>
+                                <li class="small opacity-75">1 - 249 Inboxes: $2.50 / Inbox</li>
+                                <li class="small opacity-75">250 - 499 Inboxes: $1.75 / Inbox</li>
+                                <li class="small opacity-75">500+ Inboxes: $1.00 / Inbox</li>
                             </ul>
                             <p class="small mb-3">
                                 Complete technical setup (DKIM, DMARC, MX Records, SPF, Custom Domain Tracking, and
