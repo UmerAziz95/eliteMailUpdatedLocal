@@ -1522,12 +1522,25 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     `;
                                 }
                             })()}
-                            <button class="btn btn-warning btn-sm px-3 py-2" 
-                                    onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
-                                    style="font-size: 13px;">
-                                <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
-                                Change Status
-                            </button>
+                            
+                            ${(() => {
+                                // Only show Change Status button for specific statuses and when splits exist
+                                const allowedStatuses = ['pending', 'in-progress', 'completed'];
+                                const shouldShowButton = allowedStatuses.includes(orderInfo?.status) && splits && splits.length > 0;
+                                
+                                if (shouldShowButton) {
+                                    return `
+                                        <button class="btn btn-warning btn-sm px-3 py-2" 
+                                                onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
+                                                style="font-size: 13px;">
+                                            <i class="fas fa-edit me-1" style="font-size: 12px;"></i>
+                                            Change Status
+                                        </button>
+                                    `;
+                                } else {
+                                    return '';
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>
