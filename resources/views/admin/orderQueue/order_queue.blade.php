@@ -1222,7 +1222,61 @@
             const container = document.getElementById('orderSplitsContainer');
             
             if (!data.splits || data.splits.length === 0) {
+                const orderInfo = data.order;
+                
+                // Update offcanvas title with timer
+                const offcanvasTitle = document.getElementById('order-splits-viewLabel');
+                if (offcanvasTitle && orderInfo) {
+                    offcanvasTitle.innerHTML = `
+                        Order Details #${orderInfo.id} 
+                    `;
+                }
+                
                 container.innerHTML = `
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6>
+                                    <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin.charAt(0).toUpperCase() + orderInfo.status_manage_by_admin.slice(1)}</span>
+                                    ${createTimerBadge(orderInfo, false, 0)}
+                                </h6>
+                                <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                ${(() => {
+                                    let buttonsHtml = '';
+                                    
+                                    // Add reject button if order is not already rejected or completed
+                                    // if (orderInfo.status_manage_by_admin !== 'reject' && orderInfo.status_manage_by_admin !== 'completed') {
+                                    //     buttonsHtml += `
+                                    //         <button class="btn btn-danger btn-sm px-3 py-2" 
+                                    //                 onclick="rejectOrder(${orderInfo.id})"
+                                    //                 id="rejectOrderBtn"
+                                    //                 style="font-size: 11px;">
+                                    //             <i class="fas fa-times me-1" style="font-size: 10px;"></i>
+                                    //             Reject Order
+                                    //         </button>
+                                    //     `;
+                                    // }
+                                    
+                                    // Add Change Status button if order is not draft or rejected
+                                    if (orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed') {
+                                        buttonsHtml += `
+                                            <button class="btn btn-warning btn-sm px-3 py-2" 
+                                                    onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status_manage_by_admin || orderInfo?.status}')"
+                                                    style="font-size: 11px;">
+                                                <i class="fas fa-edit me-1" style="font-size: 10px;"></i>
+                                                Change Status
+                                            </button>
+                                        `;
+                                    }
+                                    
+                                    return buttonsHtml;
+                                })()}
+                            </div>
+                        </div>
+                    </div>
                     <div class="text-center py-5">
                         <i class="fas fa-inbox fs-3 mb-3"></i>
                         <h5>No Splits Found</h5>
@@ -1291,7 +1345,6 @@
                                         </button>
                                     `;
                                 }
-                                
                                 // Add Change Status button if order has splits and is not draft or rejected
                                 if (splits.length > 0 && orderInfo.status_manage_by_admin !== 'draft' && orderInfo.status_manage_by_admin !== 'reject' && orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed') {
                                     buttonsHtml += `
