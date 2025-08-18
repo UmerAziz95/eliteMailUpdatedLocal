@@ -1292,6 +1292,18 @@
                                     `;
                                 }
                                 
+                                // Add Change Status button if order has splits and is not draft or rejected
+                                if (splits.length > 0 && orderInfo.status_manage_by_admin !== 'draft' && orderInfo.status_manage_by_admin !== 'reject' && orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed') {
+                                    buttonsHtml += `
+                                        <button class="btn btn-warning btn-sm px-3 py-2" 
+                                                onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status_manage_by_admin || orderInfo?.status}')"
+                                                style="font-size: 11px;">
+                                            <i class="fas fa-edit me-1" style="font-size: 10px;"></i>
+                                            Change Status
+                                        </button>
+                                    `;
+                                }
+                                
                                 return buttonsHtml;
                             })()}
                         </div>
@@ -2825,6 +2837,200 @@
         if (typeof module !== 'undefined' && module.exports) {
             module.exports = { initializeOrderWebSocket, withEcho };
         }
+
+        // Change Status Modal Functions
+        function openChangeStatusModal(orderId, currentStatus) {
+            // Set the order ID and current status in the modal
+            document.getElementById('modalOrderId').textContent = '#' + orderId;
+            
+            // Set current status with appropriate styling
+            const statusBadge = document.getElementById('modalCurrentStatus');
+            statusBadge.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+            statusBadge.className = 'badge ' + getOrderStatusBadgeClass(currentStatus);
+            
+            // Reset form
+            document.getElementById('newStatus').value = '';
+            document.getElementById('statusReason').value = '';
+            
+            // Store order ID for later use
+            document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
+            modal.show();
+        }
+
+        async function updateOrderStatus() {
+            const modal = document.getElementById('changeStatusModal');
+            const orderId = modal.getAttribute('data-order-id');
+            const newStatus = document.getElementById('newStatus').value;
+            const reason = document.getElementById('statusReason').value;
+            
+            if (!newStatus) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please select a new status',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            // status is reject or cancelled
+            if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Reason',
+                    text: 'Please provide a reason for rejecting or cancelling the order',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            // Show SweetAlert2 confirmation dialog
+            const result = await Swal.fire({
+                title: 'Confirm Status Change',
+                text: `Are you sure you want to change the status to "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, update status!',
+                cancelButtonText: 'Cancel'
+            });
+
+            // If user cancels, return early
+            if (!result.isConfirmed) {
+                return;
+            }
+            
+            // Show SweetAlert2 loading dialog
+            Swal.fire({
+                title: 'Updating Status...',
+                text: 'Please wait while we update the order status.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const response = await fetch(`/admin/orders/${orderId}/change-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        reason: reason
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update status');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Close loading dialog and show success
+                    await Swal.fire({
+                        title: 'Success!',
+                        text: 'Status updated successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    
+                    // Hide modal
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    
+                    // Refresh the order details if currently viewing this order
+                    const currentOrderId = document.querySelector('[data-order-id="' + orderId + '"]');
+                    if (currentOrderId) {
+                        viewOrderSplits(orderId);
+                        // if order status is not completed, then close the canvas
+                        if (newStatus !== 'completed') {
+                            const offcanvas = document.querySelector('.offcanvas.show');
+                            if (offcanvas) {
+                                const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+                                offcanvasInstance.hide();
+                            }
+                        }
+                    }
+                    
+                    // Refresh the orders list
+                    if (activeTab === 'in-queue') {
+                        loadOrders(currentFilters, 1, false, 'in-queue');
+                    } else if (activeTab === 'in-draft') {
+                        loadOrders(currentFilters, 1, false, 'in-draft');
+                    } else {
+                        loadOrders(currentFilters, 1, false, 'reject-orders');
+                    }
+                    
+                } else {
+                    throw new Error(result.message || 'Failed to update status');
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    text: 'Error updating status: ' + error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
     </script>
+
+    <!-- Change Status Modal -->
+    <div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeStatusModalLabel">Change Order Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Order ID: <span id="modalOrderId" class="fw-bold text-primary"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Status: <span id="modalCurrentStatus" class="badge"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">Select New Status</label>
+                        <select class="form-select" id="newStatus" required>
+                            <option value="">-- Select Status --</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancel EOBC</option>
+                            <option value="cancelled_force">Force Cancel</option>
+                            <option value="reject">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
+                        <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmStatusChange" onclick="updateOrderStatus()">
+                        <i class="fas fa-save me-1"></i>
+                        Update Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 <!-- Added websocket functionality -->
 @endpush
