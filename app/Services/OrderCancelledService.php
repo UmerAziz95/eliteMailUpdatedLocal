@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Subscription as UserSubscription;
 use App\Models\Order;
+use App\Models\OrderPanel;
 use App\Models\User;
 use App\Models\DomainRemovalTask;
 use App\Mail\SubscriptionCancellationMail;
@@ -96,24 +97,34 @@ class OrderCancelledService
                         'status' => $subscription->status,
                     ]
                 );
-                // Add entry to domain removal queue table
-                // Queue date is set to 72 hours after subscription end date for normal cancel
-                // For force cancel, queue starts immediately (now)
-                if ($force_cancel) {
-                    $queueStartDate = now();
-                } else {
-                    $queueStartDate = $endDate->copy()->addHours(72);
+                
+                // Check if order has splits before creating domain removal task
+                $hasSplits = false;
+                if ($order) {
+                    $hasSplits = OrderPanel::where('order_id', $order->id)->exists();
                 }
                 
-                DomainRemovalTask::create([
-                    'started_queue_date' => $queueStartDate,
-                    'user_id' => $user_id,
-                    'order_id' => $order ? $order->id : null,
-                    'chargebee_subscription_id' => $chargebee_subscription_id,
-                    'reason' => $reason,
-                    'assigned_to' => null, // Assuming no specific user assigned yet
-                    'status' => 'pending'
-                ]);
+                // Only create domain removal task if splits are found
+                if ($hasSplits) {
+                    // Add entry to domain removal queue table
+                    // Queue date is set to 72 hours after subscription end date for normal cancel
+                    // For force cancel, queue starts immediately (now)
+                    if ($force_cancel) {
+                        $queueStartDate = now();
+                    } else {
+                        $queueStartDate = $endDate->copy()->addHours(72);
+                    }
+                    
+                    DomainRemovalTask::create([
+                        'started_queue_date' => $queueStartDate,
+                        'user_id' => $user_id,
+                        'order_id' => $order ? $order->id : null,
+                        'chargebee_subscription_id' => $chargebee_subscription_id,
+                        'reason' => $reason,
+                        'assigned_to' => null, // Assuming no specific user assigned yet
+                        'status' => 'pending'
+                    ]);
+                }
 
                 try {
                     $reasonString = $reason ?? '';
