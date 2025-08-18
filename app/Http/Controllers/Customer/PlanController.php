@@ -621,7 +621,12 @@ class PlanController extends Controller
                     }
                 }
             }
-            
+            // updated orderPaymentLog
+            if($orderPaymentLog) {
+                $orderPaymentLog->update([
+                    'is_exception' => false
+                ]);
+            }
             // Redirect to success page with subscription details
             return view('customer.plans.subscription-success', [
                 'subscription_id' => $subscription->id,
@@ -691,7 +696,7 @@ class PlanController extends Controller
             $initialData = [
                 'hosted_page_id' => $hostedPageId,
                 'user_id' => $data['user_id'] ?? null,
-                'is_exception' => false,
+                'is_exception' => true,
                 'chargebee_invoice_id' => $data['chargebee_invoice_id'] ?? null,
                 'chargebee_subscription_id' => $data['chargebee_subscription_id'] ?? null,
                 'customer_id' => $data['customer_id'] ?? null,
