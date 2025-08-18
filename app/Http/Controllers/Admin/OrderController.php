@@ -1871,6 +1871,9 @@ class OrderController extends Controller
             
             // Set completion timestamp if status is completed
             if ($newStatus === 'completed') {
+                if (!$order->assigned_to) {
+                    $order->assigned_to = $adminId;
+                }
                 $order->completed_at = now();
             }
             
