@@ -216,24 +216,26 @@ class PlanController extends Controller
                     $user = new User();
                     $user->email = $customer->email;
                     $user->name = $customer->firstName.' '. $customer->lastName ?? 'Guest';
-                     $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
-                     $user->password=Hash::make($randomPassword);
-                        $user->role_id = 3; // Assuming 3 is the role_id for customers
-                        $user->status=1;
-                        $user->billing_address = $line1;
-                        $user->billing_address2 = $line2;
-                        $user->billing_city = $city;
-                        $user->billing_state = $state;
-                        $user->billing_country = $country;
-                        $user->billing_zip = $zip;
-                        $user->save();
-                        Auth::login($user);
-                }  
-            try {
-            Mail::to($user->email)->queue(new SendPasswordMail($user,$randomPassword));
-             } catch (\Exception $e) {
-               Log::error('Failed to send user credentials : '.$user->email . $e->getMessage());
-              }
+                    $randomPassword = Str::upper(Str::random(5)) . rand(100, 999);
+                    $user->password = Hash::make($randomPassword);
+                    $user->role_id = 3;
+                    $user->status = 1;
+                    $user->billing_address = $line1;
+                    $user->billing_address2 = $line2;
+                    $user->billing_city = $city;
+                    $user->billing_state = $state;
+                    $user->billing_country = $country;
+                    $user->billing_zip = $zip;
+                    $user->save();
+
+                    Auth::login($user);
+
+                    try {
+                        Mail::to($user->email)->queue(new SendPasswordMail($user, $randomPassword));
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send user credentials : '.$user->email.' '.$e->getMessage());
+                    }
+                }
             }   
          
 
