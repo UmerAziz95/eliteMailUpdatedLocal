@@ -399,6 +399,7 @@
                     </div>
                     <div>
                         <p class="mb-0 fw-semibold">${task.customer_name || 'N/A'}</p>
+                        <small class="mb-1 small">${task.order_id ? `Order ID #${task.order_id}` : ''}</small><br>
                         ${isShiftedTask && task.assigned_to_name ? `<small class="mb-1 small">Assigned: ${task.assigned_to_name}</small>` : ''}
                     </div>
                 </div>
