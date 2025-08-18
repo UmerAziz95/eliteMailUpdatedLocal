@@ -118,13 +118,15 @@ class OrderObserver
                         'previous_status' => $previousStatus,
                         'new_status' => $newStatus
                     ];
-                    
-                    SlackNotificationService::sendNewOrderAvailableNotification($orderData);
-                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order available', [
-                        'order_id' => $order->id,
-                        'previous_status' => $previousStatus,
-                        'new_status' => $newStatus
-                    ]);
+                    // if new status is not equal to cancelled
+                    if (strtolower($newStatus) !== 'cancelled') {
+                        SlackNotificationService::sendNewOrderAvailableNotification($orderData);
+                        \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for new order available', [
+                            'order_id' => $order->id,
+                            'previous_status' => $previousStatus,
+                            'new_status' => $newStatus
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for new order available', [
                         'order_id' => $order->id,
