@@ -134,7 +134,8 @@ class OrderQueueController extends Controller
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
                     }),
-                    'rejected_by' => $order->rejectedBy->name ?? 'N/A'
+                    'rejected_by' => $order->rejectedBy->name ?? 'N/A',
+                    'reason' => $order->reason ?? 'N/A'
                 ];
             });
 

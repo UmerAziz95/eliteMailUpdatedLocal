@@ -97,7 +97,7 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="shifted-pending-tab" data-bs-toggle="tab" data-bs-target="#shifted-pending-tab-pane"
                     type="button" role="tab" aria-controls="shifted-pending-tab-pane" aria-selected="false">
-                    Shifted Pending Tasks <span class="badge bg-primary ms-1" id="shifted-pending-count">0</span>
+                    Migration Pending Tasks <span class="badge bg-primary ms-1" id="shifted-pending-count">0</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
@@ -131,7 +131,7 @@
                 </div>
             </div>
 
-            <!-- Shifted Pending Tasks Tab -->
+            <!-- Migration Pending Tasks Tab -->
             <div class="tab-pane fade" id="shifted-pending-tab-pane" role="tabpanel" aria-labelledby="shifted-pending-tab" tabindex="0">
                 <div id="shifted-pending-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
                     <!-- Loading state -->
@@ -684,7 +684,7 @@
                     container.innerHTML = `
                         <div class="empty-state" style="grid-column: 1 / -1;">
                             <i class="fas fa-clipboard-list"></i>
-                            <h4>No Shifted Pending Tasks</h4>
+                            <h4>No Migration Pending Tasks</h4>
                             <p>There are no panel reassignment tasks pending at the moment.</p>
                         </div>
                     `;

@@ -289,7 +289,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
         Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
         
-        // Shifted Panel Reassignment Task Routes
+        // Migration Panel Reassignment Task Routes
         Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
         Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
         Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
@@ -510,7 +510,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
     Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
     
-    // Shifted Pending Tasks Routes  
+    // Migration Pending Tasks Routes  
     Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
     Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
     Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");

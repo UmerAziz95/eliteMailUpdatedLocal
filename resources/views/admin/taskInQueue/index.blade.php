@@ -97,7 +97,7 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="shifted-pending-tab" data-bs-toggle="tab" data-bs-target="#shifted-pending-tab-pane"
                     type="button" role="tab" aria-controls="shifted-pending-tab-pane" aria-selected="false">
-                    Shifted Pending Tasks
+                    Migration Pending Tasks
                     {{-- <span class="badge bg-warning text-dark ms-1" id="shifted-pending-count">0</span> --}}
                 </button>
             </li>
@@ -134,7 +134,7 @@
                 </div>
             </div>
 
-            <!-- Shifted Pending Tasks Tab -->
+            <!-- Migration Pending Tasks Tab -->
             <div class="tab-pane fade" id="shifted-pending-tab-pane" role="tabpanel" aria-labelledby="shifted-pending-tab" tabindex="0">
                 <div id="shifted-pending-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
                     <!-- Content will be loaded dynamically -->

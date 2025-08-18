@@ -91,7 +91,7 @@
 
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="pills-shifted-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-shifted-tasks"
-                    type="button" role="tab" aria-controls="pills-shifted-tasks" aria-selected="false">Shifted Tasks</button>
+                    type="button" role="tab" aria-controls="pills-shifted-tasks" aria-selected="false">Migration Tasks</button>
             </li>
         </ul>
         <div class="tab-content" id="pills-tabContent">
@@ -274,9 +274,9 @@
         
         if (tasksList.length === 0 && !append) {
             const emptyText = type === 'my-tasks' ? 'My' : 
-                            type === 'all-tasks' ? 'All' : 'Shifted';
+                            type === 'all-tasks' ? 'All' : 'Migration';
             const emptyDescription = type === 'my-tasks' ? 'tasks assigned to you' : 
-                                   type === 'all-tasks' ? 'tasks' : 'shifted panel tasks';
+                                   type === 'all-tasks' ? 'tasks' : 'migration tasks';
             container.innerHTML = `
                 <div class="empty-state text-center" style="grid-column: 1 / -1;">
                     <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
@@ -350,7 +350,7 @@
                 </div>
             </div>
 
-            <!-- Panel Information for Shifted Tasks or Inboxes & Domains for Regular Tasks -->
+            <!-- Panel Information for Migration Tasks or Inboxes & Domains for Regular Tasks -->
             ${isShiftedTask ? `
                 <div class="row mb-3">
                     <div class="col">
@@ -1267,7 +1267,7 @@
         try {
             // Show confirmation dialog
             const result = await Swal.fire({
-                title: 'Complete Shifted Task?',
+                title: 'Complete Migration Task?',
                 html: `
                     <div class="text-start">
                         <p>Are you sure you want to mark this panel reassignment task as completed?</p>

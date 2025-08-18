@@ -1023,7 +1023,9 @@
                         ${order.status === 'reject' ? `
                             <div class="d-flex align-items-center justify-content-center" 
                                 style="height: 30px; width: 30px; border-radius: 50px; background-color: var(--second-primary); cursor: pointer;"
-                                onclick="rejectReasonAlert(${order.rejected_by ? `'${order.rejected_by}'` : 'null'}, '${order.reason || ''}')">
+                                onclick="viewOrderSplits(${order.order_id})" 
+                                data-bs-toggle="offcanvas" 
+                                data-bs-target="#order-splits-view">
                                 <i class="fa-solid fa-chevron-right"></i>
                             </div>
                         ` : `
@@ -1256,7 +1258,7 @@
                                     <span class="badge border ${getOrderStatusBadgeClass(orderInfo.status_manage_by_admin)} me-2">${orderInfo.status_manage_by_admin.charAt(0).toUpperCase() + orderInfo.status_manage_by_admin.slice(1)}</span>
                                     ${createTimerBadge(orderInfo, false, 0)}
                                 </h6>
-                                <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                                <p class="small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)} ${orderInfo.assigned_to_name ? `| Assigned to: ${orderInfo.assigned_to_name}` : ''}</p>
                             </div>
                             
                             <div class="d-flex gap-2">

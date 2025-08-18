@@ -127,7 +127,8 @@ class OrderQueueController extends Controller
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
                     }),
-                    'rejected_by' => $order->rejectedBy->name ?? 'N/A'
+                    'rejected_by' => $order->rejectedBy->name ?? 'N/A',
+                    'reason' => $order->reason ?? 'N/A'
                 ];
             });
 
@@ -201,6 +202,7 @@ class OrderQueueController extends Controller
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
                     'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
                     'total_paused_seconds' => $order->total_paused_seconds ?? 0,
+                    'assigned_to_name' => $order->assignedTo->name ?? 'N/A'
                 ],
                 'reorder_info' => $reorderInfo ? [
                     'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
