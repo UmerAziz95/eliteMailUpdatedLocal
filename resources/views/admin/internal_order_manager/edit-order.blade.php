@@ -2711,6 +2711,8 @@ $(document).ready(function() {
                         timer: 5000,
                         showConfirmButton: false
                     }).then(() => {
+                        // Redirect to the orders list page
+                        window.location.href = '{{ route("admin.internal_order_management.index") }}';
                     });
                 } else {
                     Swal.fire({

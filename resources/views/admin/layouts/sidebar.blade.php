@@ -8,7 +8,6 @@
             style="height: 17px; width: 17px; border-radius: 50px !important; cursor: pointer" type="checkbox"
             value="" id="checkDefault">
     </div> -->
-
     <ul class="nav flex-column list-unstyled">
         <!-- Dashboard -->
 
@@ -25,7 +24,7 @@
             </li>
         @endcan
 
-
+        @cannot('Internal Order Management')
         <li class="nav-item">
             <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.orderQueue.order_queue') ? 'active' : '' }}"
                 href="{{ route('admin.orderQueue.order_queue') }}">
@@ -54,6 +53,7 @@
                 </div>
             </a>
         </li>
+        @endcannot
         <div>
         @php
             $allowedItems = ['My Orders', 'Orders'];
@@ -152,6 +152,7 @@
 
 
             <!-- Support -->
+            @cannot('Internal Order Management')
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('admin.support') ? 'active' : '' }}"
                     href="{{ url('admin/support') }}">
@@ -172,6 +173,7 @@
                     </div>
                 </a>
             </li>
+            @endcannot
     </ul>
 </aside>
 
