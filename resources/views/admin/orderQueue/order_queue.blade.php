@@ -221,7 +221,14 @@
         }
 
         /* Hide timer for draft orders */
-        .flip-timer[data-status="draft"] {
+        .flip-timer[data-status="draft"],
+        .flip-timer[data-admin-status="draft"] {
+            display: none !important;
+        }
+
+        /* Hide timer in offcanvas when order status is draft */
+        .offcanvas .flip-timer[data-status="draft"],
+        .offcanvas .flip-timer[data-admin-status="draft"] {
             display: none !important;
         }
 
@@ -641,6 +648,15 @@
                 offcanvasElement.addEventListener('show.bs.offcanvas', function() {
                     console.log('Offcanvas opening - cleaning up existing offcanvas timers only');
                     cleanupOffcanvasTimers(); // Only clean offcanvas timers
+                });
+
+                // Hide timers for draft orders when offcanvas is shown
+                offcanvasElement.addEventListener('shown.bs.offcanvas', function() {
+                    // Hide any timers with draft status in the offcanvas
+                    const draftTimers = offcanvasElement.querySelectorAll('.flip-timer[data-status="draft"], .flip-timer[data-admin-status="draft"]');
+                    draftTimers.forEach(timer => {
+                        timer.style.display = 'none';
+                    });
                 });
             }
         });
@@ -1558,7 +1574,7 @@
                 // Start timer for the order displayed in the offcanvas
                 const timerId = `flip-timer-${orderInfo.order_id}-0`;
                 const timerElement = document.getElementById(timerId);
-                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject' && orderInfo.status !== 'draft') {
+                if (timerElement && orderInfo.status !== 'completed' && orderInfo.status !== 'cancelled' && orderInfo.status !== 'reject' && orderInfo.status !== 'draft' && orderInfo.status_manage_by_admin !== 'draft') {
                     // Use the same timer starting logic as in the main cards
                     startSingleTimer(orderInfo, false, 0);
                 }
@@ -1784,7 +1800,7 @@
         // Create timer badge HTML
         function createTimerBadge(order, isDrafts, index) {
             // Hide timer for draft orders
-            if (order.status === 'draft') {
+            if (order.status === 'draft' || order.status_manage_by_admin === 'draft') {
                 return '';
             }
             
@@ -1852,6 +1868,7 @@
                      data-order-id="${order.order_id}" 
                      data-created-at="${order.created_at}" 
                      data-status="${order.status}" 
+                     data-admin-status="${order.status_manage_by_admin || order.status}"
                      data-completed-at="${order.completed_at || ''}"
                      data-timer-started-at="${order.timer_started_at || ''}"
                      data-timer-paused-at="${order.timer_paused_at || ''}"
@@ -1912,7 +1929,7 @@
         // Start timers for all rendered orders
         function startTimersForOrders(ordersList, isDrafts, startIndex) {
             ordersList.forEach((order, index) => {
-                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && order.status !== 'draft') {
+                if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'reject' && order.status !== 'draft' && order.status_manage_by_admin !== 'draft') {
                     const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${startIndex + index}`;
                     
                     // Clear any existing interval for this timer
@@ -1964,7 +1981,7 @@
 
         // Start timer for a single order (used in offcanvas)
         function startSingleTimer(order, isDrafts, index) {
-            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject' || order.status === 'draft') return;
+            if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'reject' || order.status === 'draft' || order.status_manage_by_admin === 'draft') return;
             
             const timerId = `flip-timer-${isDrafts ? 'draft-' : ''}${order.order_id}-${index}`;
             
