@@ -209,10 +209,7 @@ class PlanController extends Controller
             $charge_plan_id = null;
 
 
-              if(!Auth::check()){
-              
-                $user = User::where('email', $customer->email)->first();
-              if(!Auth::check()){
+            if(!Auth::check()){
                 $user = User::where('email', $customer->email)->first();
                 if(!$user){
                     $user = new User();
@@ -239,9 +236,6 @@ class PlanController extends Controller
                     }
                 }
             }
-
-            }   
-         
 
             if ($subscription && $subscription->subscriptionItems) {
                 $charge_plan_id = $subscription->subscriptionItems[0]->itemPriceId ?? null;
@@ -283,7 +277,7 @@ class PlanController extends Controller
             $user->billing_zip=$zip;
             $user->billing_address_syn=1;
             $user->save(); 
-            // dd($user);
+            
             if (!$subscription || !$customer || !$invoice) {
                 return response()->json([
                     'success' => false,
