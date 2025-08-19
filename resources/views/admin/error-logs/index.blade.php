@@ -5,28 +5,60 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" />
 <style>
+    .glass-box {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.55rem .5rem;
+    }
+
+    .error-card {
+        background: linear-gradient(145deg, #2c2c54, #1a1a2e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        min-height: 280px;
+    }
+
+    .error-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
     .error-severity {
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
+        border-radius: 12px;
         font-weight: 600;
     }
-    .severity-error { background-color: #f8d7da; color: #721c24; }
-    .severity-warning { background-color: #fff3cd; color: #856404; }
-    .severity-info { background-color: #d1ecf1; color: #0c5460; }
-    .severity-debug { background-color: #e2e3e5; color: #383d41; }
-    .trace-preview {
-        max-height: 100px;
-        overflow-y: auto;
-        font-family: monospace;
-        font-size: 0.85rem;
-        background-color: #f8f9fa;
-        padding: 0.5rem;
-        border-radius: 0.25rem;
+    
+    .severity-error { 
+        background: linear-gradient(45deg, #dc3545, #c82333);
+        color: white;
     }
+    .severity-warning { 
+        background: linear-gradient(45deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+    .severity-info { 
+        background: linear-gradient(45deg, #17a2b8, #138496);
+        color: white;
+    }
+    .severity-debug { 
+        background: linear-gradient(45deg, #6c757d, #5a6268);
+        color: white;
+    }
+
     .error-message {
         word-break: break-word;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 0.5rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        border-left: 3px solid #dc3545;
     }
+
     .btn-loading {
         position: relative;
         pointer-events: none;
@@ -49,174 +81,228 @@
         from { transform: translate(-50%, -50%) rotate(0turn); }
         to { transform: translate(-50%, -50%) rotate(1turn); }
     }
+
+    .error-id-badge {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+        grid-column: 1 / -1;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .nav-link {
+        font-size: 13px;
+        color: #fff
+    }
+
+    .filter-card {
+        background: linear-gradient(145deg, #2c2c54, #1a1a2e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 </style>
 @endpush
 
 @section('content')
 <section class="py-3">
-    <div class="row gy-3 mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Error Logs</h5>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearOldModal">
-                            <i class="fa fa-trash"></i> Clear Old Logs
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkDelete()" id="bulkDeleteBtn" style="display: none;">
-                            <i class="fa fa-trash"></i> Delete Selected
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <!-- Filters -->
-                    <form method="GET" action="{{ route('admin.error-logs.index') }}" class="mb-4">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Severity</label>
-                                <select name="severity" class="form-select">
-                                    <option value="">All Severities</option>
-                                    @foreach($severityOptions as $severity)
-                                        <option value="{{ $severity }}" {{ request('severity') == $severity ? 'selected' : '' }}>
-                                            {{ ucfirst($severity) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Date From</label>
-                                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Date To</label>
-                                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Search</label>
-                                <input type="text" name="search" class="form-control" placeholder="Search in message, exception, file..." value="{{ request('search') }}">
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fa fa-search"></i> Filter
-                                </button>
-                                <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fa fa-refresh"></i> Clear Filters
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-
-                    @if(session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
-                    <!-- Error Logs Table -->
-                    <div class="table-responsive">
-                        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.error-logs.bulk-delete') }}">
-                            @csrf
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                                        </th>
-                                        <th>ID</th>
-                                        <th>Date/Time</th>
-                                        <th>Severity</th>
-                                        <th>Exception</th>
-                                        <th>Message</th>
-                                        <th>File</th>
-                                        <th>URL</th>
-                                        <th>User</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="errorLogsTableBody">
-                                    @forelse($errorLogs as $log)
-                                        <tr id="error-log-row-{{ $log->id }}">
-                                            <td>
-                                                <input type="checkbox" name="error_log_ids[]" value="{{ $log->id }}" class="error-log-checkbox" onchange="toggleBulkDelete()">
-                                            </td>
-                                            <td>{{ $log->id }}</td>
-                                            <td>
-                                                <small>
-                                                    {{ $log->created_at->format('Y-m-d') }}<br>
-                                                    {{ $log->created_at->format('H:i:s') }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <span class="error-severity severity-{{ $log->severity }}">
-                                                    {{ ucfirst($log->severity) }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <code>{{ class_basename($log->exception_class) }}</code>
-                                            </td>
-                                            <td>
-                                                <div class="error-message" style="max-width: 300px;">
-                                                    {{ Str::limit($log->message, 100) }}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <small>
-                                                    {{ basename($log->file) }}:{{ $log->line }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <small>
-                                                    {{ $log->url ? Str::limit($log->url, 40) : '-' }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                {{ $log->user ? $log->user->name : 'Guest' }}
-                                            </td>
-                                            <td>
-                                                <div class="d-flex gap-1">
-                                                    <a href="{{ route('admin.error-logs.show', $log) }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                                                        <i class="fa fa-eye"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-error-log" 
-                                                            data-id="{{ $log->id }}" 
-                                                            data-url="{{ route('admin.error-logs.destroy', $log) }}" 
-                                                            title="Delete">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="10" class="text-center py-4">
-                                                <div class="text-muted">
-                                                    <i class="fa fa-info-circle fa-3x mb-3"></i>
-                                                    <p>No error logs found.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </form>
-                    </div>
-
-                    <!-- Pagination -->
-                    {{ $errorLogs->appends(request()->query())->links() }}
-                </div>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="text-white mb-0">Error Logs Management</h4>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="refreshErrorLogs()">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearOldModal">
+                <i class="fa fa-trash me-1"></i> Clear Old Logs
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkDelete()" id="bulkDeleteBtn" style="display: none;">
+                <i class="fa fa-trash me-1"></i> Delete Selected
+            </button>
         </div>
     </div>
+
+    <!-- Filters Card -->
+    <div class="card filter-card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.error-logs.index') }}" class="mb-0">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-white-50">Severity</label>
+                        <select name="severity" class="form-select bg-dark text-white border-secondary">
+                            <option value="">All Severities</option>
+                            @foreach($severityOptions as $severity)
+                                <option value="{{ $severity }}" {{ request('severity') == $severity ? 'selected' : '' }}>
+                                    {{ ucfirst($severity) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white-50">Date From</label>
+                        <input type="date" name="date_from" class="form-control bg-dark text-white border-secondary" value="{{ request('date_from') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white-50">Date To</label>
+                        <input type="date" name="date_to" class="form-control bg-dark text-white border-secondary" value="{{ request('date_to') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white-50">Search</label>
+                        <input type="text" name="search" class="form-control bg-dark text-white border-secondary" placeholder="Search..." value="{{ request('search') }}">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <i class="fa fa-search"></i> Filter
+                        </button>
+                        <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-refresh"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Error Logs Grid -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="glass-box">
+            <span class="text-white-50">Total: </span>
+            <span class="text-white fw-bold">{{ $errorLogs->total() }} logs</span>
+        </div>
+        <div class="glass-box">
+            <input type="checkbox" id="selectAll" class="form-check-input me-2" onchange="toggleSelectAll()">
+            <label for="selectAll" class="text-white-50">Select All</label>
+        </div>
+    </div>
+
+    <div class="row g-3" id="errorLogsGrid">
+        @forelse($errorLogs as $errorLog)
+            <div class="col-lg-6 col-xl-4" id="error-log-card-{{ $errorLog->id }}">
+                <div class="card error-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <!-- Header -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="checkbox" class="error-log-checkbox form-check-input" value="{{ $errorLog->id }}" name="error_log_ids[]" onchange="toggleBulkDelete()">
+                                <span class="error-id-badge">#{{ $errorLog->id }}</span>
+                            </div>
+                            <span class="error-severity severity-{{ $errorLog->severity }}">
+                                {{ ucfirst($errorLog->severity) }}
+                            </span>
+                        </div>
+
+                        <!-- Exception Type -->
+                        <div class="glass-box mb-3">
+                            <div class="d-flex align-items-center text-white-50 mb-1">
+                                <i class="fas fa-bug me-2"></i>
+                                <span class="small">Exception</span>
+                            </div>
+                            <code class="text-warning">{{ class_basename($errorLog->exception_class) }}</code>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div class="flex-grow-1 mb-3">
+                            <div class="d-flex align-items-center text-white-50 mb-2">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span class="small">Message</span>
+                            </div>
+                            <div class="error-message">
+                                {{ Str::limit($errorLog->message, 120) }}
+                            </div>
+                        </div>
+
+                        <!-- File Location -->
+                        <div class="glass-box mb-3">
+                            <div class="d-flex align-items-center text-white-50 mb-1">
+                                <i class="fas fa-file-code me-2"></i>
+                                <span class="small">Location</span>
+                            </div>
+                            <div class="text-white small">
+                                <strong>{{ basename($errorLog->file) }}</strong>:{{ $errorLog->line }}
+                            </div>
+                        </div>
+
+                        <!-- Footer Info -->
+                        <div class="mt-auto">
+                            <div class="row g-2 align-items-center">
+                                <div class="col">
+                                    <div class="glass-box">
+                                        <div class="d-flex align-items-center text-white-50 mb-1">
+                                            <i class="fas fa-user me-2"></i>
+                                            <span class="small">User</span>
+                                        </div>
+                                        <div class="text-white small">
+                                            @if($errorLog->user)
+                                                {{ $errorLog->user->name }}
+                                            @else
+                                                Guest
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="glass-box">
+                                        <div class="d-flex align-items-center text-white-50 mb-1">
+                                            <i class="fas fa-clock me-2"></i>
+                                            <span class="small">Time</span>
+                                        </div>
+                                        <div class="text-white small">
+                                            {{ $errorLog->created_at->format('M j, H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="{{ route('admin.error-logs.show', $errorLog) }}" class="btn btn-outline-light btn-sm flex-fill">
+                                    <i class="fas fa-eye me-1"></i> View Details
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm delete-error-log" 
+                                        data-id="{{ $errorLog->id }}" 
+                                        data-url="{{ route('admin.error-logs.destroy', $errorLog) }}" 
+                                        title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fas fa-info-circle"></i>
+                    <h5 class="text-white-50">No Error Logs Found</h5>
+                    <p class="text-white-50">No error logs match your current filters.</p>
+                    <!-- @if(request()->anyFilled(['severity', 'date_from', 'date_to', 'search']))
+                        <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-refresh"></i> Clear Filters
+                        </a>
+                    @endif -->
+                </div>
+            </div>
+        @endforelse
+    </div>
+
+    <!-- Pagination -->
+    @if($errorLogs->hasPages())
+        <div class="d-flex justify-content-center mt-4">
+            {{ $errorLogs->appends(request()->query())->links() }}
+        </div>
+    @endif
 </section>
 
 <!-- Clear Old Logs Modal -->
@@ -280,6 +366,92 @@
         }
     }
 
+    function refreshErrorLogs() {
+        window.location.reload();
+    }
+
+    function deleteErrorLog(errorId) {
+        const deleteUrl = '{{ route("admin.error-logs.destroy", ":id") }}'.replace(':id', errorId);
+        
+        Swal.fire({
+            title: 'Confirm Delete',
+            text: 'Are you sure you want to delete this error log?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Deleting...',
+                    text: 'Please wait while we delete the error log.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make AJAX request
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'DELETE',
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        // Remove card from grid
+                        $(`#error-log-card-${errorId}`).fadeOut(300, function() {
+                            $(this).remove();
+                            
+                            // Check if grid is empty
+                            if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
+                                // Show no data message
+                                $('#errorLogsGrid').html(`
+                                    <div class="col-12">
+                                        <div class="empty-state">
+                                            <i class="fas fa-info-circle"></i>
+                                            <h5 class="text-white-50">No Error Logs Found</h5>
+                                            <p class="text-white-50">All error logs have been deleted.</p>
+                                        </div>
+                                    </div>
+                                `);
+                            }
+                        });
+
+                        // Reset bulk delete if needed
+                        toggleBulkDelete();
+                    },
+                    error: function(xhr) {
+                        let message = 'An error occurred while deleting the error log.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        } else if (xhr.status === 404) {
+                            message = 'Error log not found. It may have already been deleted.';
+                        } else if (xhr.status === 403) {
+                            message = 'You do not have permission to delete this error log.';
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: message,
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     function bulkDelete() {
         const checkboxes = document.querySelectorAll('.error-log-checkbox:checked');
         
@@ -334,9 +506,9 @@
                             showConfirmButton: false
                         });
 
-                        // Remove deleted rows from table
+                        // Remove deleted cards from grid
                         selectedIds.forEach(id => {
-                            $(`#error-log-row-${id}`).fadeOut(300, function() {
+                            $(`#error-log-card-${id}`).fadeOut(300, function() {
                                 $(this).remove();
                             });
                         });
@@ -345,19 +517,18 @@
                         document.getElementById('selectAll').checked = false;
                         toggleBulkDelete();
 
-                        // Check if table is empty after deletion
+                        // Check if grid is empty after deletion
                         setTimeout(() => {
-                            if ($('#errorLogsTableBody tr:visible').length === 0) {
+                            if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
                                 // Show no data message
-                                $('#errorLogsTableBody').html(`
-                                    <tr>
-                                        <td colspan="10" class="text-center py-4">
-                                            <div class="text-muted">
-                                                <i class="fa fa-info-circle fa-3x mb-3"></i>
-                                                <p>No error logs found.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                $('#errorLogsGrid').html(`
+                                    <div class="col-12">
+                                        <div class="empty-state">
+                                            <i class="fas fa-info-circle"></i>
+                                            <h5 class="text-white-50">No Error Logs Found</h5>
+                                            <p class="text-white-50">All error logs have been deleted.</p>
+                                        </div>
+                                    </div>
                                 `);
                             }
                         }, 500);
@@ -423,22 +594,21 @@
                             showConfirmButton: false
                         });
 
-                        // Remove row from table
-                        $(`#error-log-row-${errorId}`).fadeOut(300, function() {
+                        // Remove card from grid
+                        $(`#error-log-card-${errorId}`).fadeOut(300, function() {
                             $(this).remove();
                             
-                            // Check if table is empty
-                            if ($('#errorLogsTableBody tr:visible').length === 0) {
+                            // Check if grid is empty
+                            if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
                                 // Show no data message
-                                $('#errorLogsTableBody').html(`
-                                    <tr>
-                                        <td colspan="10" class="text-center py-4">
-                                            <div class="text-muted">
-                                                <i class="fa fa-info-circle fa-3x mb-3"></i>
-                                                <p>No error logs found.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                $('#errorLogsGrid').html(`
+                                    <div class="col-12">
+                                        <div class="empty-state">
+                                            <i class="fas fa-info-circle"></i>
+                                            <h5 class="text-white-50">No Error Logs Found</h5>
+                                            <p class="text-white-50">All error logs have been deleted.</p>
+                                        </div>
+                                    </div>
                                 `);
                             }
                         });
