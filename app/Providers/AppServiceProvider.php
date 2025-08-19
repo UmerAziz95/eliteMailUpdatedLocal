@@ -59,8 +59,8 @@ class AppServiceProvider extends ServiceProvider
         // Share navigations globally
         View::composer('*', function ($view) {
             if (Auth::check()) {
-                $navigations = DB::table('sidebar_navigations')
-                    ->orderBy('id')
+                $navigations = \App\Models\SidebarNavigation::where('is_active', true)
+                    ->orderBy('order')
                     ->get()
                     ->filter(function ($item) {
                         return Auth::user()->can($item->permission);

@@ -108,7 +108,7 @@ class AdminController extends Controller
     public function dashboard()
     {
         $user=Auth::user();
-        if($user->hasPermissionTo('Internal Order Management')){
+        if($user->hasPermissionTo('Internal Order Management') && !$user->hasRole('super-admin')){
             return redirect()->route('admin.internal_order_management.index');
         }
         // Get total customers (users with role_id 3)
