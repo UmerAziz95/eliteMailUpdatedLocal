@@ -732,9 +732,10 @@
                         <select class="form-select" id="userSelect" name="user_id" required>
                             <option value="">Search for a user...</option>
                         </select>
+                        
                         <button type="button" class="btn btn-sm btn-outline-primary position-absolute" 
                                 id="addNewUserBtn" 
-                                style="top: 2px; right: 2px; z-index: 1000; padding: 0.25rem 0.5rem; display: none;">
+                                style="top: 2px; right: 2px; z-index: 1000; padding: 0.25rem 0.5rem;">
                             <i class="fa-solid fa-user-plus"></i> Add New
                         </button>
                     </div>
@@ -809,7 +810,7 @@
                                 </div>
                             </div>
                             <div class="mt-3">
-                                <button type="button" class="btn btn-secondary btn-sm" id="cancelNewUserBtn">
+                                <button type="button" class="btn btn-danger btn-sm" id="cancelNewUserBtn">
                                     <i class="fa-solid fa-times"></i> Cancel
                                 </button>
                             </div>
@@ -820,11 +821,11 @@
                 <!-- Action Buttons -->
                 <div class="mt-4 pt-3 border-top">
                     <div class="row g-2">
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="offcanvas">
                                 <i class="fa-solid fa-times"></i> Cancel
                             </button>
-                        </div>
+                        </div> -->
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary w-100" id="assignUserBtn">
                                 <i class="fa-solid fa-user-plus"></i> <span id="assignBtnText">Assign User</span>
@@ -1390,7 +1391,6 @@
                             // Hide user info if showing
                             $('#selectedUserInfo').hide();
                         }
-                        
                         // Show/hide Add New User button and message based on results
                         setTimeout(() => {
                             if (params.term && params.term.length > 2 && window.lastResultsCount === 0) {
@@ -1398,10 +1398,8 @@
                                 $('#addNewUserMessage').show();
                                 console.log('Showing Add New User button - no results found for:', params.term);
                             } else if (!params.term || params.term.length <= 2) {
-                                $('#addNewUserBtn').hide();
                                 $('#addNewUserMessage').hide();
                             } else if (window.lastResultsCount > 0) {
-                                $('#addNewUserBtn').hide();
                                 $('#addNewUserMessage').hide();
                             }
                         }, 300);
@@ -1435,7 +1433,6 @@
                     $('#selectedUserInfo').show();
                     
                     // Hide add new user elements
-                    $('#addNewUserBtn').hide();
                     $('#addNewUserMessage').hide();
                 }
             });
@@ -1452,7 +1449,6 @@
                 
                 // Only hide if we have results or no search was performed
                 if (!window.lastSearchTerm || window.lastSearchTerm.length <= 2 || window.lastResultsCount > 0) {
-                    $('#addNewUserBtn').hide();
                     $('#addNewUserMessage').hide();
                 }
                 // If we searched for something and found no results, keep the "Add New User" button visible
@@ -1460,7 +1456,6 @@
 
             // Handle clearing of the select
             $('#userSelect').on('select2:clear', function() {
-                $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
                 $('#selectedUserInfo').hide();
                 window.lastSearchTerm = '';
@@ -1470,7 +1465,6 @@
             // Handle Add New User button click
             $('#addNewUserBtn').on('click', function() {
                 console.log('Add New User button clicked');
-                $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
                 $('#newUserFormSection').show();
                 $('#userSelect').prop('disabled', true);
@@ -1527,7 +1521,6 @@
                 const orderId = $(this).data('order-id');
                 $('#assignOrderId').val(orderId);
                 $('#userSelect').val(null).trigger('change');
-                $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
                 $('#selectedUserInfo').hide();
                 $('#newUserFormSection').hide();
@@ -1659,7 +1652,6 @@
             $('#assignUserOffcanvas').on('hidden.bs.offcanvas', function() {
                 $('#assignUserForm')[0].reset();
                 $('#userSelect').val(null).trigger('change');
-                $('#addNewUserBtn').hide();
                 $('#addNewUserMessage').hide();
                 $('#selectedUserInfo').hide();
                 $('#newUserFormSection').hide();
