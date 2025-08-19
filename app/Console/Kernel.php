@@ -74,7 +74,7 @@ class Kernel extends ConsoleKernel
                 ->withoutOverlapping()
                 ->runInBackground()
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
-
+        
         $schedule->command('domain:check-health')
                 ->dailyAt('22:00') // 10:00 PM UTC
                 ->timezone('UTC')

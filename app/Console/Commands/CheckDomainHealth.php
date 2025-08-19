@@ -12,14 +12,14 @@ class CheckDomainHealth extends Command
      *
      * @var string
      */
-     protected $signature = 'domain:check-health';
-    protected $description = 'Check domain health for all completed orders';
-      
+    protected $signature = 'domain:check-health';
+
     /**
      * The console command description.
      *
      * @var string
      */
+    protected $description = 'Check domain health for all completed orders (requires DOMAIN_HEALTH_CHECK_ENABLED=true)';
    
 
     /**
@@ -27,9 +27,18 @@ class CheckDomainHealth extends Command
      */
     public function handle()
     {
-         $controller = new DomainHealthDashboardController();
+        // Check if domain health check is enabled via environment flag
+        if (!env('DOMAIN_HEALTH_CHECK_ENABLED', false)) {
+            $this->info('Domain health check is disabled. Set DOMAIN_HEALTH_CHECK_ENABLED=true to enable.');
+            return Command::SUCCESS;
+        }
+
+        $this->info('Starting domain health check...');
+        
+        $controller = new DomainHealthDashboardController();
         $controller->checkDomainHealth();
+        
+        $this->info('Domain health check completed successfully.');
         return Command::SUCCESS;
-        //
     }
 } 
