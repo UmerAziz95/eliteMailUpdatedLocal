@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\PaymentFailure;
 use Illuminate\Support\Facades\DB;
 use App\Mail\FailedPaymentNotificationMail;
+use App\Models\OrderPaymentLog;
 
 class ChargebeeCustomCheckoutController extends Controller
 {
@@ -199,14 +200,18 @@ class ChargebeeCustomCheckoutController extends Controller
             $result = $this->chargebee->createSubscription($planId, $customerId, $quantity);
             
             $subscription = $result["subscription"]->getValues();
+            
             if($subscription["id"]){
                 $page_id=session()->get("checkout_page_id");
                 $isValidPage=CustomCheckOutId::where('id', $page_id)->first();
                 if($isValidPage){
                     $isValidPage->delete();
                 }
-
+                $this->createOrderPaymentLog($subscription["id"], $result, $customer);
                 $subscreationCreationResponse = $this->subscriptionSuccess($result, $customer);
+                // update is_exception
+                $updateOrderPaymentLog = OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"])
+                    ->update(['is_exception' => false]);
 
                 $responseMessage = $subscreationCreationResponse["success"] ? 
                     "Subscription successful" : 
@@ -227,6 +232,9 @@ class ChargebeeCustomCheckoutController extends Controller
                     'redirect_url' => url('/discounted/user/redirect/' . $subscription["id"]),
                 ], 200); 
             } else {
+                // update is_exception
+                OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"])
+                    ->update(['is_exception' => true]);
                 return response()->json([
                     'message' =>"Failed to create subscription",
                     'subscription' =>null,
@@ -234,6 +242,9 @@ class ChargebeeCustomCheckoutController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
+            // update is_exception
+            OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"] ?? null)
+                ->update(['is_exception' => true]);
             Log::error("Subscription creation failed: " . $e->getMessage(), [
                 'email' => $email ?? 'unknown',
                 'quantity' => $quantity ?? 'unknown',
@@ -655,6 +666,58 @@ private function successResponse($message)
 private function errorResponse($message)
 {
     return ['success' => false, 'message' => $message];
+}
+
+private function createOrderPaymentLog($subscriptionId, $result, $customer)
+{
+    try {
+        $subscription = $result["subscription"]->getValues();
+        $invoice = $result["invoice"]->getValues();
+        
+        // Get the current user if authenticated, otherwise get from verified session
+        $user = Auth::check() ? Auth::user() : session()->get('verified_discounted_user');
+        $userId = $user ? $user->id : null;
+        
+        // Get the plan information
+        $quantity = session()->get('observer_total_inboxes', 1);
+        $plan = $this->findPlanByQuantity($quantity);
+        $planId = $plan ? $plan->id : null;
+        
+        $paymentLogData = [
+            'hosted_page_id' => null, // Set to null as requested for custom checkout
+            'user_id' => $userId,
+            'is_exception' => true,
+            'chargebee_invoice_id' => $invoice["id"] ?? null,
+            'chargebee_subscription_id' => $subscriptionId,
+            'customer_id' => $customer->id ?? null,
+            'plan_id' => $planId,
+            'amount' => isset($invoice["amount_paid"]) ? ($invoice["amount_paid"] / 100) : null,
+            'payment_status' => $invoice["status"] ?? 'active',
+            'invoice_data' => $invoice,
+            'customer_data' => $customer->getValues(),
+            'subscription_data' => $subscription,
+            'response' => $result,
+        ];
+        
+        $paymentLog = OrderPaymentLog::create($paymentLogData);
+        
+        Log::info('OrderPaymentLog created successfully for custom checkout', [
+            'subscription_id' => $subscriptionId,
+            'payment_log_id' => $paymentLog->id,
+            'user_id' => $userId,
+            'plan_id' => $planId
+        ]);
+        
+        return $paymentLog;
+        
+    } catch (\Exception $e) {
+        Log::error('Failed to create OrderPaymentLog for custom checkout: ' . $e->getMessage(), [
+            'subscription_id' => $subscriptionId,
+            'error' => $e->getMessage(),
+            'stack_trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+    }
 }
 
 
