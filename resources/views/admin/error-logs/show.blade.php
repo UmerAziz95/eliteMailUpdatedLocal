@@ -36,6 +36,35 @@
         border-left: 4px solid #dc3545;
         /* background-color: #fff5f5; */
     }
+    
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+    }
+    
+    .action-buttons .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .action-buttons .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .code-block {
+        max-height: 400px;
+        overflow-y: auto;
+        transition: max-height 0.3s ease;
+    }
+    
+    .code-block.collapsed {
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    
+    .table-borderless td {
+        padding: 0.5rem 0.75rem;
+    }
 </style>
 @endpush
 
@@ -49,13 +78,11 @@
                     <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-secondary">
                         <i class="fa fa-arrow-left"></i> Back to Error Logs
                     </a>
-                    <form method="POST" action="{{ route('admin.error-logs.destroy', $errorLog) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this error log?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger">
-                            <i class="fa fa-trash"></i> Delete
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-outline-danger delete-error-log-detail" 
+                            data-id="{{ $errorLog->id }}" 
+                            data-url="{{ route('admin.error-logs.destroy', $errorLog) }}">
+                        <i class="fa fa-trash"></i> Delete
+                    </button>
                 </div>
             </div>
 
@@ -134,14 +161,17 @@
 
             <!-- Stack Trace -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fa fa-code text-primary"></i>
                         Stack Trace
                     </h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleStackTrace()" id="stackTraceToggle">
+                        <i class="fa fa-compress"></i> Collapse
+                    </button>
                 </div>
                 <div class="card-body">
-                    <div class="code-block">{{ $errorLog->trace }}</div>
+                    <div class="code-block" id="stackTraceBlock">{{ $errorLog->trace }}</div>
                 </div>
             </div>
 
@@ -184,10 +214,24 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex gap-2 flex-wrap">
+                    <div class="d-flex gap-2 flex-wrap action-buttons">
                         <button type="button" class="btn btn-outline-primary" onclick="copyToClipboard()">
                             <i class="fa fa-copy"></i> Copy Error Details
                         </button>
+                        
+                        <!-- @if($errorLog->url)
+                        <a href="{{ $errorLog->url }}" target="_blank" class="btn btn-outline-info">
+                            <i class="fa fa-external-link"></i> Visit URL
+                        </a>
+                        @endif -->
+                        
+                        <!-- <button type="button" class="btn btn-outline-success" onclick="markAsResolved()">
+                            <i class="fa fa-check"></i> Mark as Resolved
+                        </button>
+                        
+                        <button type="button" class="btn btn-outline-warning" onclick="reportSimilar()">
+                            <i class="fa fa-search"></i> Find Similar Errors
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -198,6 +242,96 @@
 
 @push('scripts')
 <script>
+    // CSRF token setup for AJAX requests
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    // Handle delete button click
+    $(document).on('click', '.delete-error-log-detail', function() {
+        const button = $(this);
+        const errorId = button.data('id');
+        const deleteUrl = button.data('url');
+
+        // Prevent multiple clicks
+        if (button.hasClass('btn-loading')) {
+            return;
+        }
+
+        Swal.fire({
+            title: 'Confirm Delete',
+            text: 'Are you sure you want to delete this error log? This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Deleting Error Log...',
+                    text: 'Please wait while we delete this error log.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Add loading state to button
+                button.addClass('btn-loading').prop('disabled', true);
+                const originalText = button.html();
+                button.html('<i class="fa fa-spinner fa-spin"></i> Deleting...');
+
+                // Make AJAX request
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'DELETE',
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted Successfully!',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        // Redirect to index page after a short delay
+                        setTimeout(() => {
+                            window.location.href = '{{ route("admin.error-logs.index") }}';
+                        }, 1500);
+                    },
+                    error: function(xhr) {
+                        // Remove loading state
+                        button.removeClass('btn-loading').prop('disabled', false);
+                        button.html(originalText);
+                        
+                        let message = 'An error occurred while deleting the error log.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        } else if (xhr.status === 404) {
+                            message = 'Error log not found. It may have already been deleted.';
+                        } else if (xhr.status === 403) {
+                            message = 'You do not have permission to delete this error log.';
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Deletion Failed!',
+                            text: message,
+                        });
+                    }
+                });
+            }
+        });
+    });
+
     function copyToClipboard() {
         const errorDetails = `
 Error Log #{{ $errorLog->id }}
@@ -212,27 +346,191 @@ Stack Trace:
 {{ $errorLog->trace }}
         `.trim();
         
-        navigator.clipboard.writeText(errorDetails).then(function() {
-            alert('Error details copied to clipboard!');
-        }).catch(function(err) {
-            console.error('Could not copy text: ', err);
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = errorDetails;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('Error details copied to clipboard!');
+        // Show loading
+        Swal.fire({
+            title: 'Copying...',
+            text: 'Preparing error details for clipboard.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            timer: 500,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
+
+        // Use modern clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(errorDetails).then(function() {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Copied!',
+                    text: 'Error details have been copied to your clipboard.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                fallbackCopyTextToClipboard(errorDetails);
+            });
+        } else {
+            // Fallback for older browsers or non-HTTPS
+            fallbackCopyTextToClipboard(errorDetails);
+        }
+    }
+
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Copied!',
+                    text: 'Error details have been copied to your clipboard.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                throw new Error('Copy command failed');
+            }
+        } catch (err) {
+            document.body.removeChild(textArea);
+            Swal.fire({
+                icon: 'error',
+                title: 'Copy Failed',
+                text: 'Unable to copy to clipboard. Please select and copy the text manually.',
+                showConfirmButton: true
+            });
+        }
     }
     
     function markAsResolved() {
-        // This could be extended to update the error log status
-        if (confirm('Mark this error as resolved? This will help track which errors have been addressed.')) {
-            // You could implement a resolution tracking system here
-            alert('Feature coming soon: Resolution tracking system');
+        Swal.fire({
+            title: 'Mark as Resolved',
+            text: 'This will help track which errors have been addressed. Are you sure this error has been resolved?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, mark as resolved',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show success message (placeholder for future feature)
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Feature Coming Soon',
+                    text: 'Resolution tracking system will be implemented in a future update.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+
+    function reportSimilar() {
+        Swal.fire({
+            title: 'Finding Similar Errors...',
+            text: 'Searching for errors with similar characteristics.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Simulate search and redirect
+        setTimeout(() => {
+            const searchQuery = '{{ addslashes($errorLog->exception_class) }}';
+            const searchUrl = '{{ route("admin.error-logs.index") }}' + '?search=' + encodeURIComponent(searchQuery);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Search Complete',
+                text: 'Redirecting to similar errors...',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            setTimeout(() => {
+                window.location.href = searchUrl;
+            }, 1000);
+        }, 1500);
+    }
+
+    function toggleStackTrace() {
+        const stackTraceBlock = $('#stackTraceBlock');
+        const toggleButton = $('#stackTraceToggle');
+        
+        if (stackTraceBlock.hasClass('collapsed')) {
+            // Expand
+            stackTraceBlock.removeClass('collapsed').css('max-height', 'none');
+            toggleButton.html('<i class="fa fa-compress"></i> Collapse');
+        } else {
+            // Collapse
+            stackTraceBlock.addClass('collapsed').css('max-height', '150px');
+            toggleButton.html('<i class="fa fa-expand"></i> Expand');
         }
     }
+
+    // Show session messages with SweetAlert2
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: '{{ session("success") }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: '{{ session("error") }}',
+        });
+    @endif
+
+    // Add loading styles for buttons
+    $('<style>')
+        .prop('type', 'text/css')
+        .html(`
+            .btn-loading {
+                position: relative;
+                pointer-events: none;
+            }
+            .btn-loading:after {
+                content: '';
+                position: absolute;
+                width: 16px;
+                height: 16px;
+                margin: auto;
+                border: 2px solid transparent;
+                border-top-color: #ffffff;
+                border-radius: 50%;
+                animation: button-loading-spinner 1s ease infinite;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            @keyframes button-loading-spinner {
+                from { transform: translate(-50%, -50%) rotate(0turn); }
+                to { transform: translate(-50%, -50%) rotate(1turn); }
+            }
+        `)
+        .appendTo('head');
 </script>
 @endpush
