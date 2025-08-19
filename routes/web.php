@@ -820,4 +820,3 @@ Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::cla
 Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
 
 
-
