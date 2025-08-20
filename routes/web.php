@@ -827,3 +827,19 @@ Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::cla
 Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
 
 
+// call exception for 
+Route::get('/test-exception', function () {
+    $messages = [
+        'This is a test exception',
+        'Another test exception occurred',
+        'Testing exception handling system',
+        'Random test exception triggered',
+        'Exception test in progress',
+        'Sample exception for testing',
+        'Debug exception generated',
+        'Test error simulation active'
+    ];
+    
+    $randomMessage = $messages[array_rand($messages)];
+    throw new \Exception($randomMessage . ' - ' . now()->format('Y-m-d H:i:s'));
+});

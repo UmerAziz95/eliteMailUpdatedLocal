@@ -219,6 +219,7 @@ class OrderQueueController extends Controller
                     'prefix_variant_2' => $reorderInfo->prefix_variant_2,
                     'backup_codes' => $reorderInfo->backup_codes,
                     'additional_info' => $reorderInfo->additional_info,
+                    'master_inbox_email' => $reorderInfo->master_inbox_email,
                     'data_obj' => json_decode($reorderInfo->data_obj, true) ?: [
                         'backup_codes' => $reorderInfo->backup_codes,
                         'additional_info' => $reorderInfo->additional_info,

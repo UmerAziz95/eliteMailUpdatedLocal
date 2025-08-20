@@ -113,6 +113,60 @@
         background: linear-gradient(145deg, #2c2c54, #1a1a2e);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+    }
+    .btn-loading i.fa-search {
+        opacity: 0;
+    }
+    .btn-loading::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        margin: auto;
+        border: 2px solid transparent;
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: button-loading-spinner 1s ease infinite;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    @keyframes button-loading-spinner {
+        from { transform: translate(-50%, -50%) rotate(0turn); }
+        to { transform: translate(-50%, -50%) rotate(1turn); }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #loadingIndicator {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+    }
+
+    .auto-refresh-enabled {
+        background: linear-gradient(45deg, #28a745, #20c997) !important;
+        border-color: #28a745 !important;
+        animation: pulse-success 2s infinite;
+    }
+
+    @keyframes pulse-success {
+        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
 </style>
 @endpush
 
@@ -136,29 +190,42 @@
     <!-- Filters Card -->
     <div class="card filter-card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.error-logs.index') }}" class="mb-0">
+            <form id="filterForm" class="mb-0">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label text-white-50">Date From</label>
-                        <input type="date" name="date_from" class="form-control bg-dark text-white border-secondary" value="{{ request('date_from') }}">
+                        <input type="date" name="date_from" id="date_from" class="form-control bg-dark text-white border-secondary" value="{{ request('date_from') }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-white-50">Date To</label>
-                        <input type="date" name="date_to" class="form-control bg-dark text-white border-secondary" value="{{ request('date_to') }}">
+                        <input type="date" name="date_to" id="date_to" class="form-control bg-dark text-white border-secondary" value="{{ request('date_to') }}">
+                    </div>
+                    <div class="col-md-3" style="display: none;">
+                        <label class="form-label text-white-50">Severity</label>
+                        <select name="severity" id="severity" class="form-control bg-dark text-white border-secondary">
+                            <option value="">All Severities</option>
+                            <option value="error" {{ request('severity') == 'error' ? 'selected' : '' }}>Error</option>
+                            <option value="warning" {{ request('severity') == 'warning' ? 'selected' : '' }}>Warning</option>
+                            <option value="info" {{ request('severity') == 'info' ? 'selected' : '' }}>Info</option>
+                            <option value="debug" {{ request('severity') == 'debug' ? 'selected' : '' }}>Debug</option>
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-white-50">Search</label>
-                        <input type="text" name="search" class="form-control bg-dark text-white border-secondary" placeholder="Search..." value="{{ request('search') }}">
+                        <input type="text" name="search" id="search" class="form-control bg-dark text-white border-secondary" placeholder="Search..." value="{{ request('search') }}">
                     </div>
                 </div>
                 <div class="row mt-3">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-light btn-sm">
+                        <button type="submit" class="btn btn-outline-light btn-sm" id="filterBtn">
                             <i class="fa fa-search"></i> Filter
                         </button>
-                        <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearFiltersBtn">
                             <i class="fa fa-refresh"></i> Clear Filters
-                        </a>
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" id="autoRefreshToggle">
+                            <i class="fas fa-sync-alt"></i> <span id="autoRefreshText">Enable Auto Refresh</span>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -168,7 +235,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="glass-box">
             <span class="text-white-50">Total: </span>
-            <span class="text-white fw-bold">{{ $errorLogs->total() }} logs</span>
+            <span class="text-white fw-bold" id="totalCount">{{ $errorLogs->total() }} logs</span>
         </div>
         <div class="glass-box">
             <input type="checkbox" id="selectAll" class="form-check-input me-2" onchange="toggleSelectAll()">
@@ -176,122 +243,129 @@
         </div>
     </div>
 
-    <div class="row g-3" id="errorLogsGrid">
-        @forelse($errorLogs as $errorLog)
-            <div class="col-lg-6 col-xl-4" id="error-log-card-{{ $errorLog->id }}">
-                <div class="card error-card h-100">
-                    <div class="card-body d-flex flex-column">
-                        <!-- Header -->
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="checkbox" class="error-log-checkbox form-check-input" value="{{ $errorLog->id }}" name="error_log_ids[]" onchange="toggleBulkDelete()">
-                                <span class="error-id-badge">#{{ $errorLog->id }}</span>
-                            </div>
-                            <span class="error-severity severity-{{ $errorLog->severity }}">
-                                {{ ucfirst($errorLog->severity) }}
-                            </span>
-                        </div>
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-white-50 mt-2">Loading error logs...</p>
+    </div>
 
-                        <!-- Exception Type -->
-                        <div class="glass-box mb-3">
-                            <div class="d-flex align-items-center text-white-50 mb-1">
-                                <i class="fas fa-bug me-2"></i>
-                                <span class="small">Exception</span>
+    <div id="errorLogsContainer">
+        <div class="row g-3" id="errorLogsGrid">
+            @forelse($errorLogs as $errorLog)
+                <div class="col-lg-6 col-xl-4" id="error-log-card-{{ $errorLog->id }}">
+                    <div class="card error-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="checkbox" class="error-log-checkbox form-check-input" value="{{ $errorLog->id }}" name="error_log_ids[]" onchange="toggleBulkDelete()">
+                                    <span class="error-id-badge">#{{ $errorLog->id }}</span>
+                                </div>
+                                <span class="error-severity severity-{{ $errorLog->severity }}">
+                                    {{ ucfirst($errorLog->severity) }}
+                                </span>
                             </div>
-                            <code class="text-warning">{{ class_basename($errorLog->exception_class) }}</code>
-                        </div>
 
-                        <!-- Error Message -->
-                        <div class="flex-grow-1 mb-3">
-                            <div class="d-flex align-items-center text-white-50 mb-2">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <span class="small">Message</span>
+                            <!-- Exception Type -->
+                            <div class="glass-box mb-3">
+                                <div class="d-flex align-items-center text-white-50 mb-1">
+                                    <i class="fas fa-bug me-2"></i>
+                                    <span class="small">Exception</span>
+                                </div>
+                                <code class="text-warning">{{ class_basename($errorLog->exception_class) }}</code>
                             </div>
-                            <div class="error-message">
-                                {{ Str::limit($errorLog->message, 120) }}
-                            </div>
-                        </div>
 
-                        <!-- File Location -->
-                        <div class="glass-box mb-3">
-                            <div class="d-flex align-items-center text-white-50 mb-1">
-                                <i class="fas fa-file-code me-2"></i>
-                                <span class="small">Location</span>
+                            <!-- Error Message -->
+                            <div class="flex-grow-1 mb-3">
+                                <div class="d-flex align-items-center text-white-50 mb-2">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <span class="small">Message</span>
+                                </div>
+                                <div class="error-message">
+                                    {{ Str::limit($errorLog->message, 120) }}
+                                </div>
                             </div>
-                            <div class="text-white small">
-                                <strong>{{ basename($errorLog->file) }}</strong>:{{ $errorLog->line }}
-                            </div>
-                        </div>
 
-                        <!-- Footer Info -->
-                        <div class="mt-auto">
-                            <div class="row g-2 align-items-center">
-                                <div class="col">
-                                    <div class="glass-box">
-                                        <div class="d-flex align-items-center text-white-50 mb-1">
-                                            <i class="fas fa-user me-2"></i>
-                                            <span class="small">User</span>
+                            <!-- File Location -->
+                            <div class="glass-box mb-3">
+                                <div class="d-flex align-items-center text-white-50 mb-1">
+                                    <i class="fas fa-file-code me-2"></i>
+                                    <span class="small">Location</span>
+                                </div>
+                                <div class="text-white small">
+                                    <strong>{{ basename($errorLog->file) }}</strong>:{{ $errorLog->line }}
+                                </div>
+                            </div>
+
+                            <!-- Footer Info -->
+                            <div class="mt-auto">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col">
+                                        <div class="glass-box">
+                                            <div class="d-flex align-items-center text-white-50 mb-1">
+                                                <i class="fas fa-user me-2"></i>
+                                                <span class="small">User</span>
+                                            </div>
+                                            <div class="text-white small">
+                                                @if($errorLog->user)
+                                                    {{ $errorLog->user->name }}
+                                                @else
+                                                    Guest
+                                                @endif
+                                            </div>
                                         </div>
-                                        <div class="text-white small">
-                                            @if($errorLog->user)
-                                                {{ $errorLog->user->name }}
-                                            @else
-                                                Guest
-                                            @endif
+                                    </div>
+                                    <div class="col">
+                                        <div class="glass-box">
+                                            <div class="d-flex align-items-center text-white-50 mb-1">
+                                                <i class="fas fa-clock me-2"></i>
+                                                <span class="small">Time</span>
+                                            </div>
+                                            <div class="text-white small">
+                                                {{ $errorLog->created_at->format('M j, H:i') }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col">
-                                    <div class="glass-box">
-                                        <div class="d-flex align-items-center text-white-50 mb-1">
-                                            <i class="fas fa-clock me-2"></i>
-                                            <span class="small">Time</span>
-                                        </div>
-                                        <div class="text-white small">
-                                            {{ $errorLog->created_at->format('M j, H:i') }}
-                                        </div>
-                                    </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-2 mt-3">
+                                    <a href="{{ route('admin.error-logs.show', $errorLog) }}" class="btn btn-outline-light btn-sm flex-fill">
+                                        <i class="fas fa-eye me-1"></i> View Details
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm delete-error-log" 
+                                            data-id="{{ $errorLog->id }}" 
+                                            data-url="{{ route('admin.error-logs.destroy', $errorLog) }}" 
+                                            title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="d-flex gap-2 mt-3">
-                                <a href="{{ route('admin.error-logs.show', $errorLog) }}" class="btn btn-outline-light btn-sm flex-fill">
-                                    <i class="fas fa-eye me-1"></i> View Details
-                                </a>
-                                <button type="button" class="btn btn-outline-danger btn-sm delete-error-log" 
-                                        data-id="{{ $errorLog->id }}" 
-                                        data-url="{{ route('admin.error-logs.destroy', $errorLog) }}" 
-                                        title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        @empty
-            <div class="col-12">
-                <div class="empty-state">
-                    <i class="fas fa-info-circle"></i>
-                    <h5 class="text-white-50">No Error Logs Found</h5>
-                    <p class="text-white-50">No error logs match your current filters.</p>
-                    <!-- @if(request()->anyFilled(['severity', 'date_from', 'date_to', 'search']))
-                        <a href="{{ route('admin.error-logs.index') }}" class="btn btn-outline-light btn-sm">
-                            <i class="fas fa-refresh"></i> Clear Filters
-                        </a>
-                    @endif -->
+            @empty
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <h5 class="text-white-50">No Error Logs Found</h5>
+                        <p class="text-white-50">No error logs match your current filters.</p>
+                    </div>
                 </div>
-            </div>
-        @endforelse
-    </div>
-
-    <!-- Pagination -->
-    @if($errorLogs->hasPages())
-        <div class="d-flex justify-content-center mt-4">
-            {{ $errorLogs->appends(request()->query())->links() }}
+            @endforelse
         </div>
-    @endif
+
+        <!-- Pagination -->
+        <div id="paginationContainer">
+            @if($errorLogs->hasPages())
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $errorLogs->appends(request()->query())->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
 </section>
 
 <!-- Clear Old Logs Modal -->
@@ -333,6 +407,244 @@
         }
     });
 
+    // Auto refresh variables
+    let autoRefreshInterval = null;
+    let isAutoRefreshEnabled = false;
+    const REFRESH_INTERVAL = 30000; // 30 seconds
+
+    // Current filters state
+    let currentFilters = {
+        date_from: '{{ request('date_from') }}',
+        date_to: '{{ request('date_to') }}',
+        severity: '{{ request('severity') }}',
+        search: '{{ request('search') }}',
+        page: 1
+    };
+
+    $(document).ready(function() {
+        // Initialize filter form handlers
+        initializeFilters();
+        
+        // Initialize pagination handlers
+        initializePagination();
+        
+        // Auto apply filters on input change with debounce
+        let searchTimeout;
+        $('#search').on('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                applyFilters();
+            }, 500);
+        });
+
+        // Apply filters on date change
+        $('#date_from, #date_to, #severity').on('change', function() {
+            applyFilters();
+        });
+    });
+
+    function initializeFilters() {
+        // Handle filter form submission
+        $('#filterForm').on('submit', function(e) {
+            e.preventDefault();
+            applyFilters();
+        });
+
+        // Handle clear filters button
+        $('#clearFiltersBtn').on('click', function() {
+            clearAllFilters();
+        });
+
+        // Handle auto refresh toggle
+        $('#autoRefreshToggle').on('click', function() {
+            toggleAutoRefresh();
+        });
+    }
+
+    function initializePagination() {
+        // Handle pagination clicks
+        $(document).on('click', '#paginationContainer .pagination a', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            const page = new URL(url).searchParams.get('page') || 1;
+            currentFilters.page = page;
+            loadErrorLogs(currentFilters);
+        });
+    }
+
+    function applyFilters() {
+        // Get current filter values
+        currentFilters = {
+            date_from: $('#date_from').val(),
+            date_to: $('#date_to').val(),
+            severity: $('#severity').val(),
+            search: $('#search').val(),
+            page: 1 // Reset to first page when applying filters
+        };
+
+        // Load error logs with new filters
+        loadErrorLogs(currentFilters);
+
+        // Update URL without page reload
+        updateUrl(currentFilters);
+    }
+
+    function clearAllFilters() {
+        // Clear form inputs
+        $('#date_from, #date_to, #search').val('');
+        $('#severity').val('');
+        
+        // Reset filters
+        currentFilters = {
+            date_from: '',
+            date_to: '',
+            severity: '',
+            search: '',
+            page: 1
+        };
+
+        // Load error logs without filters
+        loadErrorLogs(currentFilters);
+
+        // Update URL
+        updateUrl(currentFilters);
+    }
+
+    function loadErrorLogs(filters = {}) {
+        // Show loading indicator
+        showLoading();
+
+        // Prepare data for request
+        const requestData = {};
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                requestData[key] = filters[key];
+            }
+        });
+
+        $.ajax({
+            url: '{{ route("admin.error-logs.index") }}',
+            type: 'GET',
+            data: requestData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Hide loading indicator
+                hideLoading();
+
+                // Update the error logs container
+                $('#errorLogsContainer').html(response.html);
+
+                // Update total count
+                $('#totalCount').text(response.total + ' logs');
+
+                // Reset checkboxes
+                $('#selectAll').prop('checked', false);
+                toggleBulkDelete();
+
+                // Re-initialize pagination handlers
+                initializePagination();
+
+                // Show success message if no results
+                if (response.total === 0) {
+                    showNoResultsMessage();
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                
+                let message = 'An error occurred while loading error logs.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: message,
+                });
+            }
+        });
+    }
+
+    function showLoading() {
+        $('#loadingIndicator').show();
+        $('#errorLogsContainer').hide();
+        $('#filterBtn').addClass('btn-loading').prop('disabled', true);
+        $('#filterBtn i').removeClass('fa-search').addClass('fa-spinner fa-spin');
+    }
+
+    function hideLoading() {
+        $('#loadingIndicator').hide();
+        $('#errorLogsContainer').show();
+        $('#filterBtn').removeClass('btn-loading').prop('disabled', false);
+        $('#filterBtn i').removeClass('fa-spinner fa-spin').addClass('fa-search');
+    }
+
+    function showNoResultsMessage() {
+        const hasFilters = currentFilters.date_from || currentFilters.date_to || 
+                          currentFilters.severity || currentFilters.search;
+        
+        let message = hasFilters ? 
+            'No error logs match your current filters.' : 
+            'No error logs found.';
+
+        $('#errorLogsGrid').html(`
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fas fa-info-circle"></i>
+                    <h5 class="text-white-50">No Error Logs Found</h5>
+                    <p class="text-white-50">${message}</p>
+                    ${hasFilters ? '<button class="btn btn-outline-light btn-sm" onclick="clearAllFilters()"><i class="fas fa-refresh"></i> Clear Filters</button>' : ''}
+                </div>
+            </div>
+        `);
+    }
+
+    function updateUrl(filters) {
+        const url = new URL(window.location);
+        
+        // Clear existing parameters
+        url.searchParams.delete('date_from');
+        url.searchParams.delete('date_to');
+        url.searchParams.delete('severity');
+        url.searchParams.delete('search');
+        url.searchParams.delete('page');
+
+        // Add new parameters
+        Object.keys(filters).forEach(key => {
+            if (filters[key] && key !== 'page') {
+                url.searchParams.set(key, filters[key]);
+            }
+        });
+
+        // Update browser history
+        window.history.pushState({}, '', url);
+    }
+
+    function toggleAutoRefresh() {
+        if (isAutoRefreshEnabled) {
+            // Disable auto refresh
+            clearInterval(autoRefreshInterval);
+            isAutoRefreshEnabled = false;
+            $('#autoRefreshText').text('Enable Auto Refresh');
+            $('#autoRefreshToggle').removeClass('btn-outline-success').addClass('btn-outline-info');
+        } else {
+            // Enable auto refresh
+            autoRefreshInterval = setInterval(function() {
+                loadErrorLogs(currentFilters);
+            }, REFRESH_INTERVAL);
+            isAutoRefreshEnabled = true;
+            $('#autoRefreshText').text('Disable Auto Refresh');
+            $('#autoRefreshToggle').removeClass('btn-outline-info').addClass('btn-outline-success');
+        }
+    }
+
+    function refreshErrorLogs() {
+        loadErrorLogs(currentFilters);
+    }
+
     function toggleSelectAll() {
         const selectAll = document.getElementById('selectAll');
         const checkboxes = document.querySelectorAll('.error-log-checkbox');
@@ -353,10 +665,6 @@
         } else {
             bulkDeleteBtn.style.display = 'none';
         }
-    }
-
-    function refreshErrorLogs() {
-        window.location.reload();
     }
 
     function deleteErrorLog(errorId) {
@@ -404,16 +712,7 @@
                             
                             // Check if grid is empty
                             if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
-                                // Show no data message
-                                $('#errorLogsGrid').html(`
-                                    <div class="col-12">
-                                        <div class="empty-state">
-                                            <i class="fas fa-info-circle"></i>
-                                            <h5 class="text-white-50">No Error Logs Found</h5>
-                                            <p class="text-white-50">All error logs have been deleted.</p>
-                                        </div>
-                                    </div>
-                                `);
+                                showNoResultsMessage();
                             }
                         });
 
@@ -495,32 +794,8 @@
                             showConfirmButton: false
                         });
 
-                        // Remove deleted cards from grid
-                        selectedIds.forEach(id => {
-                            $(`#error-log-card-${id}`).fadeOut(300, function() {
-                                $(this).remove();
-                            });
-                        });
-
-                        // Reset checkboxes
-                        document.getElementById('selectAll').checked = false;
-                        toggleBulkDelete();
-
-                        // Check if grid is empty after deletion
-                        setTimeout(() => {
-                            if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
-                                // Show no data message
-                                $('#errorLogsGrid').html(`
-                                    <div class="col-12">
-                                        <div class="empty-state">
-                                            <i class="fas fa-info-circle"></i>
-                                            <h5 class="text-white-50">No Error Logs Found</h5>
-                                            <p class="text-white-50">All error logs have been deleted.</p>
-                                        </div>
-                                    </div>
-                                `);
-                            }
-                        }, 500);
+                        // Reload the current page with filters
+                        loadErrorLogs(currentFilters);
                     },
                     error: function(xhr) {
                         let message = 'An error occurred while deleting error logs.';
@@ -583,22 +858,17 @@
                             showConfirmButton: false
                         });
 
-                        // Remove card from grid
+                        // Remove card from grid with animation
                         $(`#error-log-card-${errorId}`).fadeOut(300, function() {
                             $(this).remove();
                             
+                            // Update total count
+                            const currentTotal = parseInt($('#totalCount').text().replace(/\D/g, ''));
+                            $('#totalCount').text((currentTotal - 1) + ' logs');
+                            
                             // Check if grid is empty
                             if ($('#errorLogsGrid .col-lg-6:visible').length === 0) {
-                                // Show no data message
-                                $('#errorLogsGrid').html(`
-                                    <div class="col-12">
-                                        <div class="empty-state">
-                                            <i class="fas fa-info-circle"></i>
-                                            <h5 class="text-white-50">No Error Logs Found</h5>
-                                            <p class="text-white-50">All error logs have been deleted.</p>
-                                        </div>
-                                    </div>
-                                `);
+                                showNoResultsMessage();
                             }
                         });
 
@@ -678,10 +948,8 @@
                             showConfirmButton: false
                         });
 
-                        // Reload page after a delay
-                        setTimeout(() => {
-                            location.reload();
-                        }, 2000);
+                        // Reload the current page with filters
+                        loadErrorLogs(currentFilters);
                     },
                     error: function(xhr) {
                         let message = 'An error occurred while clearing old logs.';

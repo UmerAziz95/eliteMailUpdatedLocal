@@ -1166,7 +1166,7 @@
                             </div>
                             <div class="d-flex flex-column mt-3">
                                 <span class="opacity-50">Additional Notes</span>
-                                <span>${reorderInfo?.additional_notes || 'N/A'}</span>
+                                <span>${reorderInfo?.additional_info || 'N/A'}</span>
                             </div>
                         </div>
                     </div>

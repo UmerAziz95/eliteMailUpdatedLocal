@@ -38,6 +38,22 @@ class ErrorLogController extends Controller
         
         $errorLogs = $query->paginate(20);
         
+        // If this is an AJAX request, return JSON data
+        if ($request->ajax()) {
+            $html = view('admin.error-logs.partials.error-logs-grid', compact('errorLogs'))->render();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'total' => $errorLogs->total(),
+                'current_page' => $errorLogs->currentPage(),
+                'last_page' => $errorLogs->lastPage(),
+                'per_page' => $errorLogs->perPage(),
+                'from' => $errorLogs->firstItem(),
+                'to' => $errorLogs->lastItem()
+            ]);
+        }
+        
         $severityOptions = ['error', 'warning', 'info', 'debug'];
         
         return view('admin.error-logs.index', compact('errorLogs', 'severityOptions'));
