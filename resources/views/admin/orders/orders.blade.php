@@ -296,6 +296,19 @@
             border-color: rgba(108, 117, 125, 0.2);
         }
 
+        .flip-timer.removed {
+            background: rgba(108, 117, 125, 0.1);
+            border-color: rgba(108, 117, 125, 0.3);
+            color: #6c757d;
+        }
+
+        .flip-timer.removed .flip-front,
+        .flip-timer.removed .flip-back {
+            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+            color: #495057;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
         /* Timer badge styling */
         .timer-badge {
             font-family: 'Courier New', monospace;
@@ -379,6 +392,13 @@
         }
 
         .timer-badge.cancelled {
+            background: linear-gradient(135deg, #6c757d, #495057) !important;
+            color: white !important;
+            border-color: rgba(108, 117, 125, 0.3) !important;
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2) !important;
+        }
+
+        .timer-badge.removed {
             background: linear-gradient(135deg, #6c757d, #495057) !important;
             color: white !important;
             border-color: rgba(108, 117, 125, 0.3) !important;
@@ -1348,6 +1368,7 @@ pointer-events: none
                         <option value="cancelled">Cancel EOBC</option>
                         <option value="cancelled_force">Force Cancel</option>
                         <option value="reject">Rejected</option>
+                        <option value="removed">Removed</option>
                         <!-- <option value="in-progress">In Progress</option> -->
                     </select>
                 </div>
@@ -1474,16 +1495,16 @@ pointer-events: none
             const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
             const twelveHours = 12 * 60 * 60 * 1000;
 
-            // ⏸ If paused OR cancelled OR rejected, treat as paused
-            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+            // ⏸ If paused OR cancelled OR rejected OR removed, treat as paused
+            if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject' || status === 'removed') {
                 const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
 
                 const timeElapsedBeforePause = pausedTime - startTime;
                 const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
                 const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
 
-                const label = (status === 'cancelled' || status === 'reject') ? '' : '';
-                const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+                const label = (status === 'cancelled' || status === 'reject' || status === 'removed') ? '' : '';
+                const timerClass = (status === 'cancelled' || status === 'reject' || status === 'removed') ? status : 'paused';
 
                 if (timeDiffAtPause > 0) {
                     // Was overdue - for paused, show as paused regardless of being overdue
@@ -1606,6 +1627,8 @@ pointer-events: none
                 iconClass = 'fas fa-exclamation-triangle'; // warning icon
             } else if (timerData.status === 'reject') {
                 iconClass = 'fas fa-ban'; // ban icon for rejected
+            } else if (timerData.status === 'removed') {
+                iconClass = 'fas fa-trash'; // trash icon for removed
             } else if (timer.isCompleted) {
                 iconClass = 'fas fa-check';
             } else if (timer.isPaused) {
@@ -1620,6 +1643,8 @@ pointer-events: none
                 tooltip = `Order was cancelled on ${formatDate(timerData.completed_at || timerData.timer_paused_at || timerData.created_at)}`;
             } else if (timerData.status === 'reject') {
                 tooltip = `Order was rejected on ${formatDate(timerData.completed_at || timerData.timer_paused_at || timerData.created_at)}`;
+            } else if (timerData.status === 'removed') {
+                tooltip = `Order was removed on ${formatDate(timerData.completed_at || timerData.timer_paused_at || timerData.created_at)}`;
             } else if (timer.isCompleted) {
                 tooltip = timerData.completed_at 
                     ? `Order completed on ${formatDate(timerData.completed_at)}` 
@@ -2473,6 +2498,8 @@ pointer-events: none
                     return 'bg-info';
                 case 'rejected':
                     return 'bg-danger';
+                case 'removed':
+                    return 'bg-secondary';
                 case 'in-progress':
                     return 'bg-primary';
                 default:
@@ -2558,13 +2585,29 @@ pointer-events: none
                 const status = $badge.data('status');
                 const completedAt = $badge.data('completed-at');
                 const timerStartedAt = $badge.data('timer-started-at');
+                const timerPausedAt = $badge.data('timer-paused-at');
+                const totalPausedSeconds = $badge.data('total-paused-seconds') || 0;
 
-                if (createdAt && status !== 'completed') {
-                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt);
-                    const iconClass = timer.isCompleted ? 'fas fa-check' : (timer.isNegative ?
-                        'fas fa-exclamation-triangle' : 'fas fa-clock');
+                if (createdAt) {
+                    const timer = calculateOrderTimer(createdAt, status, completedAt, timerStartedAt, timerPausedAt, totalPausedSeconds);
+                    
+                    // Determine the icon class based on status and timer
+                    let iconClass = '';
+                    if (status === 'cancelled') {
+                        iconClass = 'fas fa-exclamation-triangle';
+                    } else if (status === 'reject') {
+                        iconClass = 'fas fa-ban';
+                    } else if (status === 'removed') {
+                        iconClass = 'fas fa-trash';
+                    } else if (timer.isCompleted) {
+                        iconClass = 'fas fa-check';
+                    } else if (timer.isPaused) {
+                        iconClass = 'fas fa-pause';
+                    } else {
+                        iconClass = timer.isNegative ? 'fas fa-exclamation-triangle' : 'fas fa-clock';
+                    }
 
-                    $badge.removeClass('positive negative completed').addClass(timer.class);
+                    $badge.removeClass('positive negative completed paused cancelled removed').addClass(timer.class);
                     $badge.html(`<i class="${iconClass} timer-icon"></i>${timer.display}`);
                 }
             });
@@ -2933,6 +2976,7 @@ pointer-events: none
             case 'unallocated': return 'bg-warning text-dark';
             case 'allocated': return 'bg-info';
             case 'rejected': return 'bg-danger';
+            case 'removed': return 'bg-secondary';
             case 'in-progress': return 'bg-primary';
             default: return 'bg-secondary';
         }
@@ -2959,16 +3003,16 @@ pointer-events: none
         const startTime = timerStartedAt ? new Date(timerStartedAt) : new Date(createdAt);
         const twelveHours = 12 * 60 * 60 * 1000;
 
-        // ⏸ If paused OR cancelled OR rejected, treat as paused
-        if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject') {
+        // ⏸ If paused OR cancelled OR rejected OR removed, treat as paused
+        if ((timerPausedAt && status !== 'completed') || status === 'cancelled' || status === 'reject' || status === 'removed') {
             const pausedTime = timerPausedAt ? new Date(timerPausedAt) : now;
 
             const timeElapsedBeforePause = pausedTime - startTime;
             const effectiveTimeAtPause = Math.max(0, timeElapsedBeforePause - (totalPausedSeconds * 1000));
             const timeDiffAtPause = effectiveTimeAtPause - twelveHours;
 
-            const label = (status === 'cancelled' || status === 'reject') ? '' : '';
-            const timerClass = (status === 'cancelled' || status === 'reject') ? status : 'paused';
+            const label = (status === 'cancelled' || status === 'reject' || status === 'removed') ? '' : '';
+            const timerClass = (status === 'cancelled' || status === 'reject' || status === 'removed') ? status : 'paused';
 
             if (timeDiffAtPause > 0) {
                 // Was overdue - for paused, show as paused regardless of being overdue
@@ -3078,6 +3122,8 @@ pointer-events: none
             iconClass = 'fas fa-exclamation-triangle'; // warning icon
         } else if (order.status === 'reject') {
             iconClass = 'fas fa-ban'; // ban icon for rejected
+        } else if (order.status === 'removed') {
+            iconClass = 'fas fa-trash'; // trash icon for removed
         } else if (timer.isCompleted) {
             iconClass = 'fas fa-check';
         } else if (timer.isPaused) {
@@ -3720,6 +3766,7 @@ pointer-events: none
             case 'unallocated': return 'bg-warning text-dark';
             case 'allocated': return 'bg-info';
             case 'rejected': return 'bg-danger';
+            case 'removed': return 'bg-secondary';
             case 'in-progress': return 'bg-primary';
             default: return 'bg-secondary';
         }
