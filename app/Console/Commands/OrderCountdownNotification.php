@@ -53,7 +53,7 @@ class OrderCountdownNotification extends Command
             
             // Get orders that have timer_started_at and are not completed or rejected
             $orders = Order::whereNotNull('timer_started_at')
-                          ->whereNotIn('status_manage_by_admin', ['completed', 'reject', 'cancelled'])
+                          ->whereNotIn('status_manage_by_admin', ['completed', 'reject', 'cancelled','removed'])
                         //   ->where(function($query) {
                         //       $query->whereRaw('
                         //           (TIMESTAMPDIFF(SECOND, timer_started_at, NOW()) - COALESCE(total_paused_seconds, 0)) < ?
