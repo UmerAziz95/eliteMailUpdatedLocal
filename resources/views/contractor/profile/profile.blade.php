@@ -230,9 +230,8 @@
                             {{-- <i class="fa-regular fa-user fs-2"></i> --}}
                             @else
                             <div class="d-flex justify-content-center align-items-center text-white fw-bold"
-                                style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: var(--second-primary);">
-                                {{-- {{ $initials }} --}}
-                                <i class="fa-regular fa-user" style="font-size: 64px !important"></i>
+                                style="width: 160px; height: 160px; font-size: 48px; border-radius: 50%; background-color: #007bff;">
+                                {{ $initials }}
                             </div>
                             @endif
                         </div>

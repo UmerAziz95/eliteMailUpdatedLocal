@@ -535,6 +535,40 @@
 
 @push('scripts')
     <script>
+        // Avatar generation functions
+        function getInitials(name) {
+            if (!name) return 'N/A';
+            const words = name.trim().split(' ');
+            if (words.length === 1) {
+                return words[0].charAt(0).toUpperCase();
+            }
+            return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+        }
+
+        function getAvatarColor(name) {
+            if (!name) return '#6c757d';
+            const colors = [
+                '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+                '#1abc9c', '#e67e22', '#34495e', '#e91e63', '#00bcd4'
+            ];
+            const hash = name.split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+            }, 0);
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function createAvatar(name, image = null, size = 40) {
+            if (image && image !== '' && !image.includes('pexels')) {
+                return `<img src="${image}" width="${size}" height="${size}" class="object-fit-cover" style="border-radius: 50px" alt="${name}" onerror="this.outerHTML = createAvatar('${name}', null, ${size})">`;
+            }
+            
+            const initials = getInitials(name);
+            const backgroundColor = getAvatarColor(name);
+            
+            return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${backgroundColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: ${Math.floor(size * 0.4)}px;">${initials}</div>`;
+        }
+
         let orders = [];
         let drafts = [];
         let rejectedOrders = [];
@@ -1014,7 +1048,7 @@
 
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-1">
-                            <img src="${customerImage}" width="40" height="40" class="object-fit-cover" style="border-radius: 50px" alt="" onerror="this.src='https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg'">
+                            ${createAvatar(order.customer_name, order.customer_image, 40)}
                             <div class="d-flex flex-column gap-0">
                                 <h6 class="mb-0">${order.customer_name}</h6>
                                 <small>${formatDate(order.created_at)}</small>

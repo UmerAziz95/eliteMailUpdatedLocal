@@ -114,8 +114,7 @@
         @else
             <div class="d-flex justify-content-center align-items-center text-white fw-bold"
                 style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
-                <i class="fa-regular fa-user fs-6"></i>
-                {{-- {{ $initials }} --}}
+                {{ $initials }}
             </div>
         @endif
 
@@ -134,8 +133,7 @@
             @else
                 <div class="d-flex justify-content-center align-items-center text-white fw-bold"
                     style="border-radius: 50%; width: 40px; height: 40px; font-size: 14px; background-color: var(--second-primary);">
-                    {{-- {{ $initials }} --}}
-                    <i class="fa-regular fa-user fs-6"></i>
+                    {{ $initials }}
                 </div>
             @endif
 

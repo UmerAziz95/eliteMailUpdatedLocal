@@ -721,6 +721,40 @@
 
 
 <script>
+    // Avatar generation functions
+    function getInitials(name) {
+        if (!name) return 'N/A';
+        const words = name.trim().split(' ');
+        if (words.length === 1) {
+            return words[0].charAt(0).toUpperCase();
+        }
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function getAvatarColor(name) {
+        if (!name) return '#6c757d';
+        const colors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+            '#1abc9c', '#e67e22', '#34495e', '#e91e63', '#00bcd4'
+        ];
+        const hash = name.split('').reduce((a, b) => {
+            a = ((a << 5) - a) + b.charCodeAt(0);
+            return a & a;
+        }, 0);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    function createAvatar(name, image = null, size = 60) {
+        if (image && image !== '' && !image.includes('pexels')) {
+            return `<img src="${image}" width="${size}" height="${size}" style="border-radius: 50px; object-fit: cover;" alt="${name}" onerror="this.outerHTML = createAvatar('${name}', null, ${size})">`;
+        }
+        
+        const initials = getInitials(name);
+        const backgroundColor = getAvatarColor(name);
+        
+        return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${backgroundColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: ${Math.floor(size * 0.35)}px;">${initials}</div>`;
+    }
+
     let orders = [];
         let currentFilters = {};
         let currentPage = 1;
@@ -970,12 +1004,7 @@
 
                     <div class="mt-3 d-flex gap-3 align-items-center">
                         <div>
-                            ${order.customer_image ? 
-                                `<img src="${order.customer_image}" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="${order.customer_name}">` :
-                                `<div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50px; background-color: #f8f9fa; border: 2px solid #dee2e6;">
-                                    <i class="fas fa-user text-muted" style="font-size: 24px;"></i>
-                                </div>`
-                            }
+                            ${createAvatar(order.customer_name, order.customer_image, 60)}
                         </div>
 
                         <div class="d-flex flex-column gap-1">

@@ -132,32 +132,21 @@
             </button>
         </div>
     </div>
-
+    
     <!-- Filters Card -->
     <div class="card filter-card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('admin.error-logs.index') }}" class="mb-0">
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label text-white-50">Severity</label>
-                        <select name="severity" class="form-select bg-dark text-white border-secondary">
-                            <option value="">All Severities</option>
-                            @foreach($severityOptions as $severity)
-                                <option value="{{ $severity }}" {{ request('severity') == $severity ? 'selected' : '' }}>
-                                    {{ ucfirst($severity) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label text-white-50">Date From</label>
                         <input type="date" name="date_from" class="form-control bg-dark text-white border-secondary" value="{{ request('date_from') }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label text-white-50">Date To</label>
                         <input type="date" name="date_to" class="form-control bg-dark text-white border-secondary" value="{{ request('date_to') }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label text-white-50">Search</label>
                         <input type="text" name="search" class="form-control bg-dark text-white border-secondary" placeholder="Search..." value="{{ request('search') }}">
                     </div>

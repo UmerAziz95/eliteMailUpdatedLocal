@@ -1487,6 +1487,51 @@ pointer-events: none
             window.location.href = `{{ url('/admin/orders/${id}/view') }}`;
         }
 
+        // Function to generate initials from a name
+        function getInitials(name) {
+            if (!name) return 'U';
+            
+            return name
+                .split(' ')
+                .filter(word => word.length > 0)
+                .map(word => word.charAt(0).toUpperCase())
+                .slice(0, 2) // Take only first 2 initials
+                .join('');
+        }
+
+        // Function to generate a consistent color for initials based on the name
+        function getInitialsColor(name) {
+            if (!name) return '#6c757d';
+            
+            const colors = [
+                '#007bff', '#6f42c1', '#e83e8c', '#dc3545', '#fd7e14',
+                '#ffc107', '#28a745', '#20c997', '#17a2b8', '#6c757d'
+            ];
+            
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // Function to create avatar with initials fallback
+        function createAvatar(imageUrl, name, size = 25) {
+            if (imageUrl) {
+                return `<img src="${imageUrl}" style="width: ${size}px; height: ${size}px; border-radius: 50%; object-fit: cover;" alt="${name}">`;
+            } else {
+                const initials = getInitials(name);
+                const color = getInitialsColor(name);
+                return `
+                    <div class="d-flex align-items-center justify-content-center" 
+                         style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${color}; color: white; font-weight: 600; font-size: ${Math.max(10, size * 0.4)}px;">
+                        ${initials}
+                    </div>
+                `;
+            }
+        }
+
         // Timer calculation functions with pause and cancelled support
         function calculateOrderTimer(createdAt, status, completedAt = null, timerStartedAt = null, timerPausedAt = null, totalPausedSeconds = 0) {
             
@@ -1794,11 +1839,10 @@ pointer-events: none
                             data: 'name',
                             name: 'name',
                             render: function(data, type, row) {
+                                const avatar = createAvatar(row.customer_image, data, 25);
                                 return `
-                                <div class="d-flex gap-1 align-items-center">
-                                    <div>
-                                        <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
-                                    </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    ${avatar}
                                     <span class="text-nowrap">${data}</span>    
                                 </div>
                             `;
@@ -2871,12 +2915,7 @@ pointer-events: none
 
                 <div class="mt-3 d-flex gap-3 align-items-center">
                     <div>
-                        ${order.customer_image ? 
-                            `<img src="${order.customer_image}" width="60" height="60" style="border-radius: 50px; object-fit: cover;" alt="${order.customer_name}">` :
-                            `<div class="d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50px; background-color: #f8f9fa; border: 2px solid #dee2e6;">
-                                <i class="fas fa-user text-muted" style="font-size: 24px;"></i>
-                            </div>`
-                        }
+                        ${createAvatar(order.customer_image, order.customer_name, 60)}
                     </div>
 
                     <div class="d-flex flex-column gap-1">
