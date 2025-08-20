@@ -2047,7 +2047,6 @@
        
 </script>
 
-//card view
 <script>
     let orders = [];
     let currentFilters = {};
