@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Models\ErrorLog;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -24,7 +25,14 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
+            // Log exception to database
+            try {
+                ErrorLog::logException($e);
+            } catch (\Exception $logException) {
+                // If logging fails, just continue with the original exception
+                // This prevents infinite loops if there's an issue with the database
+                \Log::error('Failed to log exception to database: ' . $logException->getMessage());
+            }
         });
     }
 }

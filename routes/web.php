@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PanelController as AdminPanelController;
 use App\Http\Controllers\Contractor\PanelController as ContractorPanelController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
+use App\Http\Controllers\Admin\ErrorLogController;
 use App\Http\Controllers\AppLogController;
 
 use App\Http\Controllers\Customer\PlanController as CustomerPlanController;
@@ -343,6 +344,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/internal-order-manager/users', [InternalOrderManagerController::class, 'getUsers'])->name('internal_order_management.get_users');
         Route::post('/internal-order-manager/assign-user', [InternalOrderManagerController::class, 'assignToUser'])->name('internal_order_management.assign_user');
 
+        // Error Logs Management
+        Route::get('/error-logs', [App\Http\Controllers\Admin\ErrorLogController::class, 'index'])->name('error-logs.index');
+        Route::get('/error-logs/{errorLog}', [App\Http\Controllers\Admin\ErrorLogController::class, 'show'])->name('error-logs.show');
+        Route::delete('/error-logs/{errorLog}', [App\Http\Controllers\Admin\ErrorLogController::class, 'destroy'])->name('error-logs.destroy');
+        Route::post('/error-logs/bulk-delete', [App\Http\Controllers\Admin\ErrorLogController::class, 'bulkDelete'])->name('error-logs.bulk-delete');
+        Route::post('/error-logs/clear-old', [App\Http\Controllers\Admin\ErrorLogController::class, 'clearOld'])->name('error-logs.clear-old');
 
 
     });
@@ -818,6 +825,5 @@ Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 's
 Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
 Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.checkout.subscribe');
 Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
-
 
 

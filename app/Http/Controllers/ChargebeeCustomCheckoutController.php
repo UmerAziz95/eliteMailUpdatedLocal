@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\PaymentFailure;
 use Illuminate\Support\Facades\DB;
 use App\Mail\FailedPaymentNotificationMail;
+use App\Models\OrderPaymentLog;
 
 class ChargebeeCustomCheckoutController extends Controller
 {
@@ -137,118 +138,125 @@ class ChargebeeCustomCheckoutController extends Controller
 
 
 
-        public function subscribe(Request $request)
-        {
-             $page_id=session()->get("checkout_page_id");
-              $isValidPage=CustomCheckOutId::where('id', $page_id)->first();
-           if (!$isValidPage) {
-                return response()->json([
-                    'message' => 'Page has expired!',
-                    'status'=>419
-                ], 419);
-            }
-           $request->validate([
-                'cbtoken'      => 'required|string',
-                'vaultToken'   => 'required|string',
-                'email'        => 'required|email',
-                'first_name'   => 'required|string|max:255',
-                'last_name'    => 'required|string|max:255',
-                'address_line1'=> 'required|string|max:500',
-                'city'         => 'required|string|max:255',
-                'state'        => 'required|string|max:255',
-                'zip'          => 'required|string|max:20',
-                'country'      => 'required|string|max:255',
-                'quantity'    => 'required|integer|min:1',
-            ]);
-
-            try {
-            
-                // Validate and extract form data
-                $email = $request->email;
-                $firstName = $request->first_name;
-                $lastName = $request->last_name;
-                $addressLine1 = $request->address_line1;
-                $city = $request->city;
-                $state = $request->state;
-                $zip = $request->zip;
-                $country = $request->country;
-                $quantity = (int) $request->quantity;
-                $planCheck = $this->findPlanByQuantity($quantity);
-                $planId=$planCheck->chargebee_plan_id ?? $planId;
-               
-                // Additional quantity validation
-                if ($quantity <= 0) {
-                    return response()->json([
-                        'error' => 'Invalid quantity provided: ' . $quantity
-                    ], 400);
-                }
-                
-                session()->put('observer_total_inboxes', $quantity);
-                Log::info("Processing subscription with quantity: " . $quantity);
-
-                // 1. Create the customer
-                $verified_user=session()->get('verified_discounted_user');
-                if(isset($verified_user)){
-                    $email = $verified_user->email;
-                    $firstName = $verified_user->name;
-                }
-                $customer = $this->chargebee->createCustomer($email, $firstName, $lastName, $addressLine1, $city, $state, $zip, $country);
-                $customerId = $customer->id;
-            
-                $attachedResult=  $this->chargebee->attachPaymentSource($customerId, $request->cbtoken, $request->vaultToken);
-
-                $result = $this->chargebee->createSubscription($planId, $customerId, $quantity);
-                 //$result= $this->chargebee->createSubscriptionWithPaymentToken($request->vaultToke);
-                 //d($result["subscription"],$result["subscription"]); // Debugging line, remove in production
-                 $subscription = $result["subscription"]->getValues();
-                 if($subscription["id"]){
-                            $page_id=session()->get("checkout_page_id");
-                            $isValidPage=CustomCheckOutId::where('id', $page_id)->first();
-                            if($isValidPage){
-                                $isValidPage->delete();
-                            }
-
-                            $subscreationCreationResponse = $this->subscriptionSuccess($result, $customer);
-
-                            $responseMessage = $subscreationCreationResponse["success"] ? 
-                                "Subscription successful" : 
-                                "Subscription Created but failed to save data in system. Please contact support immediately!";
-                            
-                            Log::info("Subscription process completed", [
-                                'subscription_id' => $subscription["id"],
-                                'chargebee_ok' => true,
-                                'saved_db_ok' => $subscreationCreationResponse["success"],
-                                'message' => $subscreationCreationResponse["message"] ?? 'No message'
-                            ]);
-                            
-                            return response()->json([
-                                'message' => $responseMessage,
-                                "chargebee_ok" => $subscription["id"] ? true : false,
-                                "saved_db_ok" => $subscreationCreationResponse["success"] ? true : false,
-                                "subscription_id" => $subscription["id"],
-                                'redirect_url' => url('/discounted/user/redirect/' . $subscription["id"]),
-                            ], 200); 
-                  }
-                else{
-                    return response()->json([
-                        'message' =>"Failed to create subscription",
-                        'subscription' =>null,
-                        'invoice' => null,
-                    ], 500);
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Subscription creation failed: " . $e->getMessage(), [
-                        'email' => $email ?? 'unknown',
-                        'quantity' => $quantity ?? 'unknown',
-                        'plan_id' => $planId ?? 'unknown',
-                        'stack_trace' => $e->getTraceAsString()
-                    ]);
-                    
-                    return response()->json([
-                        'error' => $e->getMessage()
-                    ], 500);
-                }
+    public function subscribe(Request $request)
+    {
+        $page_id=session()->get("checkout_page_id");
+        $isValidPage=CustomCheckOutId::where('id', $page_id)->first();
+        if (!$isValidPage) {
+            return response()->json([
+                'message' => 'Page has expired!',
+                'status'=>419
+            ], 419);
         }
+        $request->validate([
+            'cbtoken'      => 'required|string',
+            'vaultToken'   => 'required|string',
+            'email'        => 'required|email',
+            'first_name'   => 'required|string|max:255',
+            'last_name'    => 'required|string|max:255',
+            'address_line1'=> 'required|string|max:500',
+            'city'         => 'required|string|max:255',
+            'state'        => 'required|string|max:255',
+            'zip'          => 'required|string|max:20',
+            'country'      => 'required|string|max:255',
+            'quantity'    => 'required|integer|min:1',
+        ]);
+
+        try {
+            // Validate and extract form data
+            $email = $request->email;
+            $firstName = $request->first_name;
+            $lastName = $request->last_name;
+            $addressLine1 = $request->address_line1;
+            $city = $request->city;
+            $state = $request->state;
+            $zip = $request->zip;
+            $country = $request->country;
+            $quantity = (int) $request->quantity;
+            $planCheck = $this->findPlanByQuantity($quantity);
+            $planId=$planCheck->chargebee_plan_id ?? $planId;
+            
+            // Additional quantity validation
+            if ($quantity <= 0) {
+                return response()->json([
+                    'error' => 'Invalid quantity provided: ' . $quantity
+                ], 400);
+            }
+            
+            session()->put('observer_total_inboxes', $quantity);
+            Log::info("Processing subscription with quantity: " . $quantity);
+
+            // 1. Create the customer
+            $verified_user=session()->get('verified_discounted_user');
+            if(isset($verified_user)){
+                $email = $verified_user->email;
+                $firstName = $verified_user->name;
+            }
+            $customer = $this->chargebee->createCustomer($email, $firstName, $lastName, $addressLine1, $city, $state, $zip, $country);
+            $customerId = $customer->id;
+        
+            $attachedResult=  $this->chargebee->attachPaymentSource($customerId, $request->cbtoken, $request->vaultToken);
+
+            $result = $this->chargebee->createSubscription($planId, $customerId, $quantity);
+            
+            $subscription = $result["subscription"]->getValues();
+            
+            if($subscription["id"]){
+                $page_id=session()->get("checkout_page_id");
+                $isValidPage=CustomCheckOutId::where('id', $page_id)->first();
+                if($isValidPage){
+                    $isValidPage->delete();
+                }
+                $this->createOrderPaymentLog($subscription["id"], $result, $customer);
+                $subscreationCreationResponse = $this->subscriptionSuccess($result, $customer);
+                // update is_exception
+                $updateOrderPaymentLog = OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"])
+                    ->update(['is_exception' => false]);
+
+                $responseMessage = $subscreationCreationResponse["success"] ? 
+                    "Subscription successful" : 
+                    "Subscription Created but failed to save data in system. Please contact support immediately!";
+                
+                Log::info("Subscription process completed", [
+                    'subscription_id' => $subscription["id"],
+                    'chargebee_ok' => true,
+                    'saved_db_ok' => $subscreationCreationResponse["success"],
+                    'message' => $subscreationCreationResponse["message"] ?? 'No message'
+                ]);
+                
+                return response()->json([
+                    'message' => $responseMessage,
+                    "chargebee_ok" => $subscription["id"] ? true : false,
+                    "saved_db_ok" => $subscreationCreationResponse["success"] ? true : false,
+                    "subscription_id" => $subscription["id"],
+                    'redirect_url' => url('/discounted/user/redirect/' . $subscription["id"]),
+                ], 200); 
+            } else {
+                // update is_exception
+                OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"])
+                    ->update(['is_exception' => true]);
+                return response()->json([
+                    'message' =>"Failed to create subscription",
+                    'subscription' =>null,
+                    'invoice' => null,
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            // update is_exception
+            OrderPaymentLog::where('chargebee_subscription_id', $subscription["id"] ?? null)
+                ->update(['is_exception' => true]);
+            Log::error("Subscription creation failed: " . $e->getMessage(), [
+                'email' => $email ?? 'unknown',
+                'quantity' => $quantity ?? 'unknown',
+                'plan_id' => $planId ?? 'unknown',
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 
 
@@ -660,7 +668,58 @@ private function errorResponse($message)
     return ['success' => false, 'message' => $message];
 }
 
+private function createOrderPaymentLog($subscriptionId, $result, $customer)
+{
+    try {
+        $subscription = $result["subscription"]->getValues();
+        $invoice = $result["invoice"]->getValues();
+        
+        // Get the current user if authenticated, otherwise get from verified session
+        $user = Auth::check() ? Auth::user() : session()->get('verified_discounted_user');
+        $userId = $user ? $user->id : null;
+        
+        // Get the plan information
+        $quantity = session()->get('observer_total_inboxes', 1);
+        $plan = $this->findPlanByQuantity($quantity);
+        $planId = $plan ? $plan->id : null;
+        
+        $paymentLogData = [
+            'hosted_page_id' => null, // Set to null as requested for custom checkout
+            'user_id' => $userId,
+            'is_exception' => true,
+            'chargebee_invoice_id' => $invoice["id"] ?? null,
+            'chargebee_subscription_id' => $subscriptionId,
+            'customer_id' => $customer->id ?? null,
+            'plan_id' => $planId,
+            'amount' => isset($invoice["amount_paid"]) ? ($invoice["amount_paid"] / 100) : null,
+            'payment_status' => $invoice["status"] ?? 'active',
+            'invoice_data' => $invoice,
+            'customer_data' => $customer->getValues(),
+            'subscription_data' => $subscription,
+            'response' => $result,
+        ];
+        
+        $paymentLog = OrderPaymentLog::create($paymentLogData);
+        
+        Log::info('OrderPaymentLog created successfully for custom checkout', [
+            'subscription_id' => $subscriptionId,
+            'payment_log_id' => $paymentLog->id,
+            'user_id' => $userId,
+            'plan_id' => $planId
+        ]);
+        
+        return $paymentLog;
+        
+    } catch (\Exception $e) {
+        Log::error('Failed to create OrderPaymentLog for custom checkout: ' . $e->getMessage(), [
+            'subscription_id' => $subscriptionId,
+            'error' => $e->getMessage(),
+            'stack_trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+    }
+}
+
 
    
 } 
-

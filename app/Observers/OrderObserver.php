@@ -320,11 +320,12 @@ class OrderObserver
             }
             
             // If status is changing to rejected, pause the timer
-            if ($newStatus === 'reject' && !is_null($order->timer_started_at) && is_null($order->timer_paused_at)) {
+            // if ($newStatus === 'reject' && !is_null($order->timer_started_at) && is_null($order->timer_paused_at)) {
+            if ($newStatus === 'reject') {
                 $order->timer_paused_at = now();
             }
             
-            if ($newStatus === 'cancelled' && !is_null($order->timer_started_at) && is_null($order->timer_paused_at)) {
+            if ($newStatus === 'cancelled') {
                 $order->timer_paused_at = now();
             }
             

@@ -217,6 +217,14 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 20
             ],
+            // [
+            //     "name" => "Error Logs",
+            //     "icon" => "ti ti-bug fs-5",
+            //     "route" => "admin.error-logs.index",
+            //     "permission" => "Error Logs",
+            //     'sub_menu' => [],
+            //     'order' => 21
+            // ],
             [
                 "name" => "GHL Settings",
                 "icon" => "ti ti-settings fs-5",
@@ -257,7 +265,7 @@ class SidebarNavigationSeeder extends Seeder
             );
         }
 
-        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings"];
+        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings", "Error Logs"];
         foreach ($extraPermissions as $permission) {
             DB::table('permissions')->updateOrInsert(
                 [
