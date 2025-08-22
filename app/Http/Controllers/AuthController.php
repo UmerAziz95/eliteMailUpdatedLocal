@@ -143,7 +143,6 @@ class AuthController extends Controller
                 return redirect()->to("/plans/public/{$encrypted}");
             }
 
-
             // Send verification email
             try {
                 Mail::to($userCheck->email)->queue(new EmailVerificationMail($userCheck, $verificationLink));

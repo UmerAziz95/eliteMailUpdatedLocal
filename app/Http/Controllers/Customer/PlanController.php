@@ -894,7 +894,6 @@ class PlanController extends Controller
     public function refundPayment(Request $request)
     {
         $invoiceId = $request->get('invoice_id'); // Get invoice ID from request
-
         try {
             // Fetch the invoice to check if it's refundable
             $invoiceResult = Invoice::retrieve($invoiceId);

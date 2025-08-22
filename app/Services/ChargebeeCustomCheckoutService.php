@@ -57,14 +57,14 @@ class ChargebeeCustomCheckoutService
                 'customer_id' => $customerId,
                 'tmp_token' => $vaultToke,
                 'type'=> 'card',
-                'gateway_account_id' => 'gw_Azqb55UtBKcr0Cks',
+                'gateway_account_id' => env('PAYMENT_GATEWAY_ID'),
                 'gateway'=>'stripe'
             ]);
 
         
 
             return $result->paymentSource();
-        }
+        } 
 
         public function createSubscription($itemPriceId, $customerId, $quantity)
         {
