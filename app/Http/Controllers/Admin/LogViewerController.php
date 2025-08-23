@@ -88,7 +88,7 @@ class LogViewerController extends Controller
     public function clear($filename)
     {
         $logPath = storage_path('logs/' . $filename);
-        
+        // dd($logPath);
         if (!File::exists($logPath) || !str_ends_with($filename, '.log')) {
             abort(404, 'Log file not found');
         }

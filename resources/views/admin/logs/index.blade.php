@@ -74,7 +74,7 @@
                                     <i class="fas fa-file-alt text-white"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="text-white mb-1">{{ $log['name'] }}</h6>
+                                    <h6 class="text-white mb-1 text-truncate" title="{{ $log['name'] }}">{{ Str::limit($log['name'], 30) }}</h6>
                                     <small class="text-white-50">{{ $log['modified_diff'] }}</small>
                                 </div>
                             </div>
@@ -101,10 +101,10 @@
                                    class="btn btn-outline-success btn-action">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <button type="button" class="btn btn-outline-warning btn-action" 
+                                <!-- <button type="button" class="btn btn-outline-warning btn-action" 
                                         onclick="clearLog('{{ basename($log['name']) }}')">
                                     <i class="fas fa-eraser"></i>
-                                </button>
+                                </button> -->
                                 <!-- <button type="button" class="btn btn-outline-danger btn-action" 
                                         onclick="deleteLog('{{ basename($log['name']) }}')">
                                     <i class="fas fa-trash"></i>

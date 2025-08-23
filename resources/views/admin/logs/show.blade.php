@@ -94,9 +94,9 @@
             <a href="{{ route('admin.logs.download', $logInfo['name']) }}" class="btn btn-outline-success btn-sm">
                 <i class="fas fa-download me-1"></i> Download
             </a>
-            <button type="button" class="btn btn-outline-warning btn-sm" onclick="clearLog('{{ $logInfo['name'] }}')">
+            <!-- <button type="button" class="btn btn-outline-warning btn-sm" onclick="clearLog('{{ $logInfo['name'] }}')">
                 <i class="fas fa-eraser me-1"></i> Clear
-            </button>
+            </button> -->
             <button type="button" class="btn btn-outline-light btn-sm" onclick="window.location.reload()">
                 <i class="fas fa-sync-alt me-1"></i> Refresh
             </button>
