@@ -157,7 +157,7 @@ class AdminController extends Controller
 
     public function settings()
     {
-        return view('admin.settings.settings');
+        return view('admin.settings.index');
     }
 
 

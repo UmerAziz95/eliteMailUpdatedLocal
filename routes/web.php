@@ -824,7 +824,7 @@ Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
 Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
 Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
 Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.checkout.subscribe');
-Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
+// Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
 
 
 // call exception for 

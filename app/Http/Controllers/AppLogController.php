@@ -75,7 +75,7 @@ class AppLogController extends Controller
                 ->make(true);
         }
 
-        return view('admin.logs.index'); // Make sure you create this Blade view  
+        // return view('admin.logs.index'); // Make sure you create this Blade view  
     }
 
     public function specificLogs(Request $request)
