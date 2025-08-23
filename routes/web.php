@@ -351,6 +351,13 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/error-logs/bulk-delete', [App\Http\Controllers\Admin\ErrorLogController::class, 'bulkDelete'])->name('error-logs.bulk-delete');
         Route::post('/error-logs/clear-old', [App\Http\Controllers\Admin\ErrorLogController::class, 'clearOld'])->name('error-logs.clear-old');
 
+        // System Log Viewer
+        Route::get('/logs', [App\Http\Controllers\Admin\LogViewerController::class, 'index'])->name('logs.index');
+        Route::get('/logs/{filename}', [App\Http\Controllers\Admin\LogViewerController::class, 'show'])->name('logs.show');
+        Route::get('/logs/{filename}/download', [App\Http\Controllers\Admin\LogViewerController::class, 'download'])->name('logs.download');
+        Route::post('/logs/{filename}/clear', [App\Http\Controllers\Admin\LogViewerController::class, 'clear'])->name('logs.clear');
+        Route::delete('/logs/{filename}', [App\Http\Controllers\Admin\LogViewerController::class, 'delete'])->name('logs.delete');
+
 
     });
 
