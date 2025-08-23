@@ -94,6 +94,10 @@ class AuthController extends Controller
         } else {
             $loginSuccessful = false;
         }
+        // check session then forget it
+        if (session()->has('temp_user_custom_checkout')) {
+            session()->forget('temp_user_custom_checkout');
+        }
         // create temp user session custom checkout
         session()->put('temp_user_custom_checkout', Auth::user());
         // immediately logout to perform additional checks
@@ -412,7 +416,11 @@ class AuthController extends Controller
             'status' => 0,
             'type'=>$type_id ? "discounted":null
         ]);
-
+        // set temp_user_custom_checkout
+        if(session()->has('temp_user_custom_checkout')) {
+            session()->forget('temp_user_custom_checkout');
+        }
+        session()->put('temp_user_custom_checkout', $user);
         // Optional: create Chargebee customer
         
             try {

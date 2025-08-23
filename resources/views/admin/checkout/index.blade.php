@@ -594,11 +594,15 @@ function createSubscription(cbtoken, vaultToken) {
             setTimeout(() => {
                 window.location.reload();
             }, 5000);
-        } else if (error.status === 422) {
+        } else if (error.status === 422 || error.status === 500) {
             if (error.body && error.body.errors) {
                 showErrors(Object.values(error.body.errors).flat());
             } else {
-                showErrors(["Validation failed"]);
+                if (error.body && error.body.error) {
+                    showErrors([error.body.error]);
+                } else {
+                    showErrors(["Validation failed"]);
+                }
             }
         } else {
             showErrors(["There was an error processing your payment. Please try again."]);
