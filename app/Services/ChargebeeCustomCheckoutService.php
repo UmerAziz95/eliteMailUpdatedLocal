@@ -7,6 +7,7 @@ use ChargeBee\ChargeBee\Models\PaymentSource;
 use ChargeBee\ChargeBee\Models\Subscription;
 use ChargeBee\ChargeBee\ChargeBee;
 use App\Models\Plan;
+use App\Models\User;
 use Log;
 
 class ChargebeeCustomCheckoutService
@@ -17,39 +18,79 @@ class ChargebeeCustomCheckoutService
         if (empty($email)) {
             throw new \InvalidArgumentException('Email is required to create a customer.');
         }
-
-        // Optional fields can be added as needed
-    {
+        
+        // Check if user exists in our database
+        $user = User::where('email', $email)->first();
+        // chargebee_customer_id
+        if ($user && !empty($user->chargebee_customer_id)) {
+            $result = null;
+            // dd($user->chargebee_customer_id);
+            // User exists and has a Chargebee customer ID - update existing customer
+            try {
+                $result = Customer::update($user->chargebee_customer_id, [
+                    'first_name' => $firstName ?: $user->name,
+                    'last_name' => $lastName,
+                    'billing_address' => [
+                        'line1' => $addressLine1 ?: $user->billing_address,
+                        'line2' => $user->billing_address2,
+                        'city' => $city ?: $user->billing_city,
+                        'state' => $state ?: $user->billing_state,
+                        'zip' => $zip ?: $user->billing_zip,
+                        'country' => $country ?: $user->billing_country
+                    ]
+                ]);
+                $result = Customer::updateBillingInfo($chargebee_customer_id, [
+                    "billing_address" => [
+                        "first_name" => $firstName,
+                        "line1" => $addressLine1,
+                        "line2" => $user->billing_address2 ?? "",
+                        "city" => $city,
+                        "state" => $state ?? "",
+                        "zip" => $zip,
+                        "country" => $countryCode                           
+                    ]
+                ]);
+                
+                // return $result->customer();
+            } catch (\Exception $e) {
+                // If update fails, create new customer
+                Log::warning('Failed to update existing Chargebee customer: ' . $e->getMessage());
+            }
+            return $result->customer();
+        }
+        
+        if ($user) {
+            // User exists but no Chargebee customer ID - use user data as defaults
+            $firstName = $firstName ?: $user->name;
+            $addressLine1 = $addressLine1 ?: $user->billing_address;
+            $city = $city ?: $user->billing_city;
+            $state = $state ?: $user->billing_state;
+            $zip = $zip ?: $user->billing_zip;
+            $country = $country ?: $user->billing_country;
+        }
+        // dd($firstName, $lastName, $email, $addressLine1, $city, $state, $zip, $country);
+        // Create new customer in Chargebee
         $result = Customer::create([
             'email' => $email,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'billing_address' => [
-                'line1' => "test line1",
-                'city' => "test city",
-                'state' => "test state",
-                'zip' => "12345",
-                'country' => "US"
-            ],
-            'billing_address2' => [
-                 'line1' => "test line1",
-                'city' => "test city",
-                'state' => "test state",
-                'zip' => "12345",
-                'country' => "US"
-            ],
-            'address' => [
-                'line1' => $addressLine1,
-                'city' => $city,
-                'state' => $state,
-                'zip' => $zip,
-                'country' => $country
+                'line1' => $addressLine1 ?: 'N/A',
+                'line2' => $user->billing_address2 ?? '',
+                'city' => $city ?: 'N/A',
+                'state' => $state ?: 'N/A',
+                'zip' => $zip ?: '00000',
+                'country' => $country ?: 'US'
             ]
         ]);
 
+        // Update user with Chargebee customer ID if user exists
+        if ($user) {
+            $user->update(['chargebee_customer_id' => $result->customer()->id]);
+        }
+
         return $result->customer();
     }
-}
 
         public function attachPaymentSource($customerId, $token, $vaultToke)
         {

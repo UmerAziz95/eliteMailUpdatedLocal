@@ -94,7 +94,8 @@ class AuthController extends Controller
         } else {
             $loginSuccessful = false;
         }
-
+        // create temp user session custom checkout
+        session()->put('temp_user_custom_checkout', Auth::user());
         // immediately logout to perform additional checks
         Auth::logout();
         // If login failed, return early with error

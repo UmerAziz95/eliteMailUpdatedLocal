@@ -4,8 +4,22 @@
 
 @push('styles')
 <style>
-    .qty-input {
-        width: 60px;
+    .qt                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="text" class="form-control" id="billingFirstName" name="first_name"
+                                placeholder="First Name" value="{{ $user->first_name ?? '' }}">
+                        </div>
+                        <div class="col">
+                            <input type="text" class="form-control" id="billingLastName" name="last_name"
+                                placeholder="Last Name" value="{{ $user->last_name ?? '' }}">
+                        </div>
+                    </div>
+                      <div class="row mb-3">
+                        <div class="col">
+                            <input type="email" class="form-control" id="billingEmail" name="email" placeholder="Email"
+                            value="{{ $user->email ?? '' }}">
+                        </div>
+                    </div>  width: 60px;
         text-align: center;
         background: transparent;
         border: none;
@@ -85,7 +99,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <!-- Step 2: Billing Form -->
             <div id="billing-left" class="">
 
@@ -97,47 +111,57 @@
                     <div class="row mb-3">
                         <div class="col">
                             <input type="text" class="form-control" id="billingFirstName" name="first_name"
-                                placeholder="First Name">
+                                    placeholder="First Name" value="{{ old('first_name', $user->name ?? '') }}">
                         </div>
                         <div class="col">
                             <input type="text" class="form-control" id="billingLastName" name="last_name"
-                                placeholder="Last Name">
+                                    placeholder="Last Name" value="{{ old('last_name', $user->last_name ?? '') }}">
                         </div>
                     </div>
                       <div class="row mb-3">
                         <div class="col">
-                            <input type="email" class="form-control" id="billingEmail" name="email" placeholder="Email">
+                            <input type="email" class="form-control" id="billingEmail" name="email" placeholder="Email"
+                            value="{{ $user->email ?? '' }}">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <input type="text" class="form-control" id="billingAddress1" name="address_line1"
-                            placeholder="Address Line 1">
+                            placeholder="Address Line 1" value="{{ $user->billing_address ?? '' }}">
                     </div>
 
                     <div class="mb-3">
                         <input type="text" class="form-control" id="billingAddress2" name="address_line2"
-                            placeholder="Address Line 2 (optional)">
+                            placeholder="Address Line 2 (optional)" value="{{ $user->billing_address2 ?? '' }}">
                     </div>
 
                     <div class="row mb-3">
                         <div class="col">
-                            <input type="text" class="form-control" id="billingCity" name="city" placeholder="City">
+                            <input type="text" class="form-control" id="billingCity" name="city" placeholder="City"
+                            value="{{ $user->billing_city ?? '' }}">
                         </div>
                         <div class="col">
                             <input type="text" class="form-control" id="billingZip" name="zip"
-                                placeholder="ZIP (optional)">
+                                placeholder="ZIP (optional)" value="{{ $user->billing_zip ?? '' }}">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="billingState" name="state" value=""
-                            placeholder="Enter State">
+                        <input type="text" class="form-control" id="billingState" name="state"
+                            placeholder="Enter State" value="{{ $user->billing_state ?? '' }}">
                     </div>
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="billingCountry" name="country"
-                            placeholder="Enter Country" value="">
+                        <!-- <input type="text" class="form-control" id="billingCountry" name="country"
+                            placeholder="Enter Country" value="{{ $user->billing_country ?? '' }}"> -->
+                        <select class="form-control" id="billingCountry" name="country">
+                            <option value="">Select Country</option>
+                            @foreach($countries as $country => $code)
+                                <option value="{{ $code }}" {{ $user->billing_country ?? "" == $code ? 'selected' : '' }}>
+                                    {{ $country }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
 

@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payment_failures', function (Blueprint $table) {
-            $table->string('status')->nullable()->after('type'); 
-            // `nullable()` is optional; remove if you want it required.
-            // `after('id')` places it after the `id` column (adjust as needed).
+            if (!Schema::hasColumn('payment_failures', 'status')) {
+                $table->string('status')->nullable()->after('type');
+                // `nullable()` is optional; remove if you want it required.
+                // `after('id')` places it after the `id` column (adjust as needed).
+            }
         });
     }
 
@@ -24,7 +26,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('payment_failures', function (Blueprint $table) {
-            $table->dropColumn('status');
+            if (Schema::hasColumn('payment_failures', 'status')) {
+                $table->dropColumn('status');
+            }
         });
     }
 };
