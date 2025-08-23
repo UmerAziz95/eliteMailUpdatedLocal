@@ -157,7 +157,7 @@
                         <select class="form-control" id="billingCountry" name="country">
                             <option value="">Select Country</option>
                             @foreach($countries as $country => $code)
-                                <option value="{{ $code }}" {{ $user->billing_country ?? "" == $code ? 'selected' : '' }}>
+                                <option value="{{ $code }}" {{ ($user->billing_country ?? '') == $code ? 'selected' : '' }}>
                                     {{ $country }}
                                 </option>
                             @endforeach

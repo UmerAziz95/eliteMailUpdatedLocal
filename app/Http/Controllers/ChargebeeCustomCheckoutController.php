@@ -268,7 +268,6 @@ class ChargebeeCustomCheckoutController extends Controller
         }  
         // temp_user_custom_checkout
         $user = session()->get('temp_user_custom_checkout');
-        // dd($user);
         $countries = $this->countries();
         $publicPage = true; // Assuming this is a public page will hide the header and footer
         return view('admin.checkout.index', compact('page_id','publicPage','planId','plan','user','countries'));
