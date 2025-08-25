@@ -192,7 +192,7 @@ class AuthController extends Controller
         else{
            
             
-            if($userSubsc && $userCheck->role_id == 3 && $userCheck->type=="discounted" ){
+            if($userSubsc && $userCheck->role_id == 3){
                 if($type_id){
                      $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
                      $encrypted = Crypt::encryptString($payload); 
