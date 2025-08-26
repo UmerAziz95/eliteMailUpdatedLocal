@@ -266,11 +266,100 @@ class ChargebeeCustomCheckoutController extends Controller
         if (!$plan) {
             abort(404, 'Plan not found.');
         }  
+        $planId = $plan->id;
         // temp_user_custom_checkout
         $user = session()->get('temp_user_custom_checkout');
         $countries = $this->countries();
         $publicPage = true; // Assuming this is a public page will hide the header and footer
-        return view('admin.checkout.index', compact('page_id','publicPage','planId','plan','user','countries'));
+        $url = $this->initiateSubscription($planId);
+        // redirect to url
+        // dd($url);
+        return redirect($url);
+        // return view('admin.checkout.index', compact('page_id','publicPage','planId','plan','user','countries'));
+    }
+    public function initiateSubscription($planId)
+    {
+        if(!$planId ){
+            abort(404);
+        }
+        
+        try {
+           $plan = Plan::findOrFail($planId);
+           
+            // Check if user is already logged in
+            $user = Auth::check() ? auth()->user() : null;
+            if($user == null){
+                $user = session()->get('temp_user_custom_checkout');
+            }
+            if (!$user) {
+                abort(404, 'User not found, auth failed please login or contact to support');
+            }
+
+            // get charge_customer_id from user
+            $charge_customer_id = $user->chargebee_customer_id ?? null;
+            
+            if ($charge_customer_id == null) {
+                // Create hosted page for subscription
+                $result = HostedPage::checkoutNewForItems([
+                    "subscription_items" => [
+                        [
+                            "item_price_id" => $plan->chargebee_plan_id,
+                            "quantity" => session()->has('order_info') ? session()->get('order_info')['total_inboxes'] : 1,
+                            "quantity_editable" => true,
+                        ]
+                    ],
+                    "customer" => [
+                        "email" => $user->email,
+                        "first_name" => $user->name,
+                        "phone" => $user->phone,
+                    ],
+                    "billing_address" => [
+                        "first_name" => $user->name,
+                    ],
+                    "allow_plan_change" => true,
+                    "redirect_url" => route('customer.subscription.success'),
+                    "cancel_url" => route('customer.subscription.cancel'),
+                    // Expire hosted page after one use and set time limit
+                    "expires_at" => time() + (1 * 60), // Expire after 15 minutes
+                    "embed" => false, // Ensure it's not embeddable to prevent multiple uses
+                ]);
+            } else {
+                // payment done with old customer
+                $result = HostedPage::checkoutNewForItems([
+                    "subscription_items" => [
+                        [
+                            "item_price_id" => $plan->chargebee_plan_id,
+                            "quantity" => session()->has('order_info') ? session()->get('order_info')['total_inboxes'] : 1
+                        ]
+                    ],
+                    "customer" => [
+                        "id" => $charge_customer_id,
+                    ],
+                    "billing_address" => [
+                        "first_name" => $user->name,
+                        "last_name" => "",
+                        "line1" => "Address Line 1", // Default value
+                        "city" => "City", // Default value
+                        "state" => "State", // Default value
+                        "zip" => "12345", // Default value
+                        "country" => "US" // Default value
+                    ],
+                    "allow_plan_change" => true,
+                    "redirect_url" => route('customer.subscription.success'),
+                    "cancel_url" => route('customer.subscription.cancel'),
+                    // Expire hosted page after one use and set time limit
+                    "expires_at" => time() + (1 * 60), // Expire after 15 minutes
+                    "embed" => false, // Ensure it's not embeddable to prevent multiple uses
+                ]);
+            }
+            $hostedPage = $result->hostedPage();
+
+            return $hostedPage->url;
+        } catch (\Exception $e) {
+            Log::error('Failed to initiate subscription: ' . $e->getMessage());
+            abort(500, 'Failed to initiate subscription: ' . $e->getMessage());
+        }
+        
     }
 
 

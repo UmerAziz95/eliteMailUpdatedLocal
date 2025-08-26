@@ -247,6 +247,7 @@ class PlanController extends Controller
                         Log::error('Failed to send user credentials : '.$user->email.' '.$e->getMessage());
                     }
                 }
+                Auth::login($user);
             }
 
             if ($subscription && $subscription->subscriptionItems) {
