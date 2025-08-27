@@ -78,7 +78,6 @@ class AdminOrderEmailController extends Controller
 
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->findOrFail($orderPanelId);
-            
             // Get the first order panel split (assuming one split per panel for now)
             $orderPanelSplit = $orderPanel->orderPanelSplits->first();
             
@@ -152,6 +151,15 @@ class AdminOrderEmailController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => "Cannot import " . count($csv) . " emails. Maximum allowed for this panel: {$splitTotalInboxes}"
+                ], 422);
+            }
+
+            // Check if CSV count matches space_assigned from OrderPanel
+            $spaceAssigned = $orderPanel->space_assigned ?? 0;
+            if ($spaceAssigned > 0 && count($csv) != $spaceAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "CSV row count (" . count($csv) . ") must equal the panel's space assigned ({$spaceAssigned}). Please ensure your CSV contains exactly {$spaceAssigned} email records."
                 ], 422);
             }
 

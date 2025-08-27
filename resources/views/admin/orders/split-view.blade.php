@@ -345,7 +345,7 @@
 
                             <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
-                                <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
+                                <i class="fa-solid fa-plus me-1"></i> Customization Emails
                             </button>
                             
                             <button id="downloadCsvBtn" class="btn btn-outline-success me-2" style="display: none;" 

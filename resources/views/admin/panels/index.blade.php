@@ -1716,13 +1716,7 @@
                                                                 title="Download CSV">
                                                                 <i class="fa-solid fa-download"></i>
                                                             </button>
-                                                            ${order.customized_note ? `
-                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
-                                                                    onclick="showCustomizedNoteModal('${order.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
-                                                                    title="View Customized Note">
-                                                                    <i class="fa-solid fa-sticky-note"></i>
-                                                                </button>
-                                                            ` : ''}
+                                                            
                                                             ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                                     onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
@@ -1730,6 +1724,13 @@
                                                                     Reassign
                                                                 </button>
                                                             `}
+                                                            ${order.customized_note ? `
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
+                                                                    onclick="showCustomizedNoteModal('${order.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
+                                                                    title="View Customized Note">
+                                                                    <i class="fa-solid fa-sticky-note"></i>
+                                                                </button>
+                                                            ` : ''}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1770,17 +1771,11 @@
                                                                         View
                                                                     </button>
                                                                     <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-info"
-                                                                        onclick="window.open('/admin/orders/split/${order.order_panel_id}/export-csv-domains', '_blank')"
+                                                                        onclick="window.open('/admin/orders/split/${remainingPanel.order_panel_id}/export-csv-domains', '_blank')"
                                                                         title="Download CSV">
                                                                         <i class="fa-solid fa-download"></i>
                                                                     </button>
-                                                                    ${remainingPanel.customized_note ? `
-                                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
-                                                                            onclick="showCustomizedNoteModal('${remainingPanel.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
-                                                                            title="View Customized Note">
-                                                                            <i class="fa-solid fa-sticky-note"></i>
-                                                                        </button>
-                                                                    ` : ''}
+                                                                    
                                                                     ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                                             onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
@@ -1788,6 +1783,13 @@
                                                                             Reassign
                                                                         </button>
                                                                     `}
+                                                                    ${remainingPanel.customized_note ? `
+                                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
+                                                                            onclick="showCustomizedNoteModal('${remainingPanel.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
+                                                                            title="View Customized Note">
+                                                                            <i class="fa-solid fa-sticky-note"></i>
+                                                                        </button>
+                                                                    ` : ''}
                                                                 </div>
                                                             </td>
                                                         </tr>
