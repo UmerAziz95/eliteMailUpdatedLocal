@@ -18,6 +18,7 @@ class OrderPanel extends Model
         'inboxes_per_domain',
         'status',
         'note',
+        'customized_note',
         'accepted_at',
         'released_at',
     ];

@@ -147,6 +147,10 @@
                     <span class="opacity-50">Master Inbox Email</span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
                 </div>
+                <div class="d-flex flex-column mt-3">
+                    <span class="opacity-50">Customized Note</span>
+                    <span class="small">{{ $orderPanel->customized_note ?? 'No customized notes added yet.' }}</span>
+                </div>
                 @else
                 <div class="text-muted">No email configuration data available</div>
                 @endif
@@ -273,6 +277,24 @@
     </div>               
     <div class="tab-pane fade" id="other-tab-pane" role="tabpanel" aria-labelledby="other-tab" tabindex="0">
         <div class="col-12">
+            <!-- Custom Note Alert -->
+            @if($orderPanel->customized_note)
+            <div class="alert alert-info d-flex align-items-start border-0 rounded-3 mb-3" style="border-left: 4px solid #2196f3 !important;">
+                <div class="me-3">
+                    <div class="d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px; background: rgba(33, 150, 243, 0.1); border-radius: 50%; color: #2196f3;">
+                        <i class="fa-solid fa-sticky-note"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1 fw-bold" style="color: #1976d2;">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Custom Note
+                    </h6>
+                    <p class="mb-0 text-dark" style="line-height: 1.5;">{{ $orderPanel->customized_note }}</p>
+                </div>
+            </div>
+            @endif
             <div class="card p-3">
                 <h6 class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center justify-content-center"
@@ -372,7 +394,7 @@
                     <i class="fa-solid fa-check-circle me-2"></i>
                     <span id="selectedFileName">File selected successfully</span>
                 </div>
-
+                
                 <form id="BulkImportForm" action="{{ route('admin.order.panel.email.bulkImport') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="order_panel_id" value="{{ $orderPanel->id }}">
@@ -380,6 +402,14 @@
                         <label for="bulk_file" class="form-label">Select CSV *</label>
                         <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
                             required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customized_note" class="form-label">Customized Note</label>
+                        <textarea class="form-control" id="customized_note" name="customized_note" rows="3" 
+                                placeholder="Enter any special instructions or notes for this import..." 
+                                value="{{ $orderPanel->customized_note ?? '' }}">{{ $orderPanel->customized_note ?? '' }}</textarea>
+                        <small class="form-text text-muted">Optional: Add any special instructions or notes related to this email import.</small>
                     </div>
 
                     <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
@@ -914,6 +944,9 @@
             if (form) {
                 form.reset();
             }
+            
+            // Set the current customized note value
+            $('#customized_note').val('{{ addslashes($orderPanel->customized_note ?? '') }}');
             
             // Clear file input
             $('#bulk_file').val('').trigger('change');

@@ -62,7 +62,8 @@ class AdminOrderEmailController extends Controller
             // Validate the request
             $validator = Validator::make($request->all(), [
                 'bulk_file' => 'required|file|mimes:csv,txt|max:2048',
-                'order_panel_id' => 'required|exists:order_panel,id'
+                'order_panel_id' => 'required|exists:order_panel,id',
+                'customized_note' => 'nullable|string|max:1000'
             ]);
 
             if ($validator->fails()) {
@@ -251,6 +252,13 @@ class AdminOrderEmailController extends Controller
                 for ($i = 0; $i < count($emailsToImport); $i += $batchSize) {
                     $batch = array_slice($emailsToImport, $i, $batchSize);
                     OrderEmail::insert($batch);
+                }
+
+                // Update the order panel with customized note if provided
+                if ($request->has('customized_note') && !empty(trim($request->customized_note))) {
+                    $orderPanel->update([
+                        'customized_note' => trim($request->customized_note)
+                    ]);
                 }
 
                 // Create notification for customer
