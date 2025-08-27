@@ -342,12 +342,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div>
-
-                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
-                                data-bs-target="#BulkImportModal">
-                                <i class="fa-solid fa-plus me-1"></i> Customization Emails
-                            </button>
-                            
+                            @if($orderPanel->order->status_manage_by_admin === 'pending')
+                                <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                                    data-bs-target="#BulkImportModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Emails Customization 
+                                </button>
+                            @endif
                             <button id="downloadCsvBtn" class="btn btn-outline-success me-2" style="display: none;" 
                                     title="Download existing emails as CSV">
                                 <i class="fa-solid fa-download me-1"></i> Download CSV
