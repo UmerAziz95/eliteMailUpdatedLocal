@@ -279,19 +279,54 @@
         <div class="col-12">
             <!-- Custom Note Alert -->
             @if($orderPanel->customized_note)
-            <div class="alert alert-info d-flex align-items-start border-0 rounded-3 mb-3" style="border-left: 4px solid #2196f3 !important;">
-                <div class="me-3">
-                    <div class="d-flex align-items-center justify-content-center" 
-                         style="width: 40px; height: 40px; background: rgba(33, 150, 243, 0.1); border-radius: 50%; color: #2196f3;">
-                        <i class="fa-solid fa-sticky-note"></i>
-                    </div>
+            <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm mb-3" 
+                style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                
+                <!-- Decorative Background Pattern -->
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                  <div class="position-absolute" style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #ffc107, #fd7e14); border-radius: 50%; opacity: 0.3;"></div>
+                  <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #20c997, #0dcaf0); border-radius: 50%; opacity: 0.2;"></div>
                 </div>
-                <div class="flex-grow-1">
-                    <h6 class="mb-1 fw-bold" style="color: #1976d2;">
-                        <i class="fa-solid fa-info-circle me-1"></i>
-                        Custom Note
-                    </h6>
-                    <p class="mb-0 text-dark" style="line-height: 1.5;">{{ $orderPanel->customized_note }}</p>
+                
+                <!-- Content Container -->
+                <div class="position-relative p-4">
+                  <!-- Header with Icon -->
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="me-3 d-flex align-items-center justify-content-center" 
+                        style="width: 45px; height: 45px; background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);">
+                       <i class="fa-solid fa-sticky-note text-white fs-5"></i>
+                    </div>
+                    <div>
+                       <h6 class="mb-0 fw-bold text-dark">Customized Note</h6>
+                       <small class="text-muted">Additional information provided</small>
+                    </div>
+                  </div>
+                  
+                  <!-- Note Content -->
+                  <div class="p-4 rounded-3 border-0 position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(253, 126, 20, 0.05) 100%); border-left: 4px solid #ffc107 !important;">
+                    <!-- Quote Icon -->
+                    <div class="position-absolute top-0 start-0 mt-2 ms-3">
+                       <i class="fas fa-quote-left text-warning opacity-25 fs-4"></i>
+                    </div>
+                    
+                    <!-- Note Text -->
+                    <div class="ms-4">
+                       <p class="mb-0 text-dark fw-medium" 
+                         style="line-height: 1.7; font-size: 15px; text-indent: 1rem;">
+                         {{ $orderPanel->customized_note }}
+                       </p>
+                    </div>
+                    
+                    <!-- Bottom Quote Icon -->
+                    <div class="position-absolute bottom-0 end-0 mb-2 me-3">
+                       <i class="fas fa-quote-right text-warning opacity-25 fs-4"></i>
+                    </div>
+                  </div>
+                  
+                  <!-- Bottom Accent Line -->
+                  <div class="mt-3 mx-auto rounded-pill" 
+                     style="width: 60px; height: 3px; background: linear-gradient(90deg, #ffc107, #fd7e14);"></div>
                 </div>
             </div>
             @endif

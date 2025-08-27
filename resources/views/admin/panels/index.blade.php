@@ -1704,6 +1704,13 @@
                                                                 title="Download CSV">
                                                                 <i class="fa-solid fa-download"></i>
                                                             </button>
+                                                            ${order.customized_note ? `
+                                                                <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
+                                                                    onclick="showCustomizedNoteModal('${order.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
+                                                                    title="View Customized Note">
+                                                                    <i class="fa-solid fa-sticky-note"></i>
+                                                                </button>
+                                                            ` : ''}
                                                             ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                                     onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
@@ -1744,6 +1751,13 @@
                                                                         title="Download CSV">
                                                                         <i class="fa-solid fa-download"></i>
                                                                     </button>
+                                                                    ${remainingPanel.customized_note ? `
+                                                                        <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-warning"
+                                                                            onclick="showCustomizedNoteModal('${remainingPanel.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"
+                                                                            title="View Customized Note">
+                                                                            <i class="fa-solid fa-sticky-note"></i>
+                                                                        </button>
+                                                                    ` : ''}
                                                                     ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                                             onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
@@ -3981,5 +3995,81 @@ function resetReassignModal() {
     }
 }
 
+// Function to show customized note modal
+function showCustomizedNoteModal(note) {
+    // Decode HTML entities
+    const decodedNote = note.replace(/&apos;/g, "'").replace(/&quot;/g, '"');
+    
+    // Set the note content
+    document.getElementById('customizedNoteContent').textContent = decodedNote;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('customizedNoteModal'));
+    modal.show();
+}
+
 </script>
 @endpush
+
+<!-- Customized Note Modal -->
+<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body p-0">
+                <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm" 
+                    style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                    <!-- Close Button -->
+                    <button type="button" class="btn-close position-absolute top-0 end-0 mt-3 me-3" 
+                            style="z-index: 10;" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
+                    <!-- Decorative Background Pattern -->
+                    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                       <div class="position-absolute" style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #ffc107, #fd7e14); border-radius: 50%; opacity: 0.3;"></div>
+                       <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #20c997, #0dcaf0); border-radius: 50%; opacity: 0.2;"></div>
+                    </div>
+                    
+                    <!-- Content Container -->
+                    <div class="position-relative p-4">
+                       <!-- Header with Icon -->
+                       <div class="d-flex align-items-center mb-3">
+                          <div class="me-3 d-flex align-items-center justify-content-center" 
+                              style="width: 45px; height: 45px; background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);">
+                             <i class="fa-solid fa-sticky-note text-white fs-5"></i>
+                          </div>
+                          <div>
+                             <h6 class="mb-0 fw-bold text-dark">Customized Note</h6>
+                             <small class="text-muted">Additional information provided</small>
+                          </div>
+                       </div>
+                       
+                       <!-- Note Content -->
+                       <div class="p-4 rounded-3 border-0 position-relative overflow-hidden" 
+                           style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(253, 126, 20, 0.05) 100%); border-left: 4px solid #ffc107 !important;">
+                          <!-- Quote Icon -->
+                          <div class="position-absolute top-0 start-0 mt-2 ms-3">
+                             <i class="fas fa-quote-left text-warning opacity-25 fs-4"></i>
+                          </div>
+                          
+                          <!-- Note Text -->
+                          <div class="ms-4">
+                             <p class="mb-0 text-dark fw-medium" id="customizedNoteContent" 
+                                style="line-height: 1.7; font-size: 15px; text-indent: 1rem;">
+                                <!-- Note content will be populated by JavaScript -->
+                             </p>
+                          </div>
+                          
+                          <!-- Bottom Quote Icon -->
+                          <div class="position-absolute bottom-0 end-0 mb-2 me-3">
+                             <i class="fas fa-quote-right text-warning opacity-25 fs-4"></i>
+                          </div>
+                       </div>
+                       
+                       <!-- Bottom Accent Line -->
+                       <div class="mt-3 mx-auto rounded-pill" 
+                           style="width: 60px; height: 3px; background: linear-gradient(90deg, #ffc107, #fd7e14);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

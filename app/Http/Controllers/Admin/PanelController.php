@@ -188,6 +188,7 @@ class PanelController extends Controller
                             'status' => $remainingPanel->status,
                             'contractor_id' => $remainingAssignment ? $remainingAssignment->contractor_id : null,
                             'is_assigned' => $remainingAssignment ? true : false,
+                            'customized_note' => $remainingPanel->customized_note,
                             'domains_count' => $remainingSplits->sum(function ($split) {
                                 return is_array($split->domains) ? count($split->domains) : 0;
                             }),
@@ -232,6 +233,7 @@ class PanelController extends Controller
                     'status' => $orderPanel->status,
                     'assignment_status' => $assignmentStatus,
                     'is_assigned_to_current_user' => $isAssignedToCurrentUser,
+                    'customized_note' => $orderPanel->customized_note,
                     'domains_count' => $splits->sum(function ($split) {
                         return is_array($split->domains) ? count($split->domains) : 0;
                     }),
