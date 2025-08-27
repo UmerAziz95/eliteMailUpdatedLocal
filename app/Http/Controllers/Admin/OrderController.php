@@ -1361,6 +1361,7 @@ class OrderController extends Controller
 /**
      * Export CSV file with domains data for a specific order panel split
      */
+    
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
@@ -2099,6 +2100,99 @@ class OrderController extends Controller
                 'success' => false,
                 'error' => 'Failed to get reassignment history: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Export CSV file with smart data selection based on order_emails availability
+     * If order_emails data exists for order panels, use that data
+     * Otherwise, fall back to the existing domain-based generation method
+     */
+    public function exportCsvSplitDomainsSmartById($splitId)
+    {
+        try {
+            // Find the order panel split
+            $orderPanelSplit = OrderPanelSplit::with([
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                    $query->where('contractor_id', auth()->id());
+                },
+                'orderPanel.order.reorderInfo',
+                'orderPanel.panel'
+            ])->findOrFail($splitId);
+
+            $order = $orderPanelSplit->orderPanel->order;
+            $orderPanelId = $orderPanelSplit->order_panel_id;
+
+            // Check if order_emails data is available for this order panel
+            $orderEmails = OrderEmail::whereHas('orderSplit', function($query) use ($orderPanelId) {
+                $query->where('order_panel_id', $orderPanelId);
+            })->get();
+
+            // If order_emails data exists, use it for CSV generation
+            if ($orderEmails->count() > 0) {
+                return $this->exportCsvFromOrderEmails($splitId, $orderEmails);
+            }
+
+            // Otherwise, fall back to the existing domain-based method
+            return $this->exportCsvSplitDomainsById($splitId);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting CSV with smart selection: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export CSV using existing order_emails data
+     */
+    private function exportCsvFromOrderEmails($splitId, $orderEmails)
+    {
+        try {
+            $orderPanelSplit = OrderPanelSplit::with([
+                'orderPanel.order',
+                'orderPanel.panel'
+            ])->findOrFail($splitId);
+
+            $order = $orderPanelSplit->orderPanel->order;
+
+            $filename = "order_{$order->id}_split_{$splitId}_emails_from_database.csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($orderEmails, $orderPanelSplit, $order) {
+                $file = fopen('php://output', 'w');
+                
+                // Add CSV headers matching the existing format
+                fputcsv($file, [
+                    'First Name', 
+                    'Last Name',
+                    'Email address', 
+                    'Password',
+                    'Org Unit Path [Required]',
+                ]);
+                
+                // Add email data from database
+                foreach ($orderEmails as $orderEmail) {
+                    fputcsv($file, [
+                        $orderEmail->name ?? 'N/A', // First Name
+                        $orderEmail->last_name ?? 'N/A', // Last Name
+                        $orderEmail->email, // Email address
+                        $orderEmail->password, // Password
+                        '/', // Org Unit Path [Required]
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting CSV from order emails: ' . $e->getMessage());
+            throw $e;
         }
     }
 }

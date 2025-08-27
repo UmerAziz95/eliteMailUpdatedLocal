@@ -1699,6 +1699,11 @@
                                                                 onclick="window.location.href='/admin/orders/${order.order_panel_id}/split/view'">
                                                                 View
                                                             </button>
+                                                            <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-info"
+                                                                onclick="window.open('/admin/orders/split/${order.order_panel_id}/export-csv-domains', '_blank')"
+                                                                title="Download CSV">
+                                                                <i class="fa-solid fa-download"></i>
+                                                            </button>
                                                             ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
                                                                     onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
@@ -1733,6 +1738,11 @@
                                                                     <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-primary"
                                                                         onclick="window.location.href='/admin/orders/${remainingPanel.order_panel_id}/split/view'">
                                                                         View
+                                                                    </button>
+                                                                    <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-info"
+                                                                        onclick="window.open('/admin/orders/split/${order.order_panel_id}/export-csv-domains', '_blank')"
+                                                                        title="Download CSV">
+                                                                        <i class="fa-solid fa-download"></i>
                                                                     </button>
                                                                     ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"

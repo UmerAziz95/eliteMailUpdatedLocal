@@ -24,7 +24,7 @@
 
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
-            <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Panel {{ $orderPanel->id }}</h5>
+            <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Split Id #{{ $orderPanel->id }}</h5>
             <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
         <!-- <div class="d-flex align-items-center gap-2">
@@ -46,7 +46,7 @@
                 data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
                 aria-selected="true">Configuration</button>
         </li>
-        <li class="nav-item" role="presentation" style="display: none;">
+        <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane"
                 type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">Emails</button>
         </li>
@@ -279,23 +279,30 @@
                         style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                         <i class="fa-solid fa-envelope"></i>
                     </div>
-                    Email Accounts for Panel #{{ $orderPanel->id }}
+                    Email Accounts for Split Id #{{ $orderPanel->id }}
                 </h6>
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
-                        <!-- <div>
+                        <div>
+
                             <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
                             </button>
-                            <button id="addNewBtn" class="btn btn-primary me-2">
+                            
+                            <button id="downloadCsvBtn" class="btn btn-outline-success me-2" style="display: none;" 
+                                    title="Download existing emails as CSV">
+                                <i class="fa-solid fa-download me-1"></i> Download CSV
+                            </button>
+                            
+                            <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email
                             </button>
                             <button id="saveAllBtn" class="btn btn-success">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save All
-                            </button>
-                        </div> -->
+                            </button> -->
+                        </div>
                     </div>
                     <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
                         <div class="badge rounded-circle bg-primary p-2">
@@ -322,7 +329,7 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Password</th>
-                                <th>Action</th>
+                                <!-- <th>Action</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -350,9 +357,9 @@
                         style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                         <i class="fa-solid fa-cart-plus"></i>
                     </div>
-                    Bulk Import Emails for Panel #{{ $orderPanel->id }}
+                    Bulk Import Emails for Split Id #{{ $orderPanel->id }}
                 </h6>
-                <div class="row text-muted">
+                <div class="row text-muted" id="csvInstructions">
                     <p class="text-danger">Only .csv files are accepted.</p>
                     <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
                         <strong>email</strong>, and <strong>password</strong>.
@@ -360,8 +367,30 @@
                     <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                 Sample File</strong></a></p>
                 </div>
-
                 
+                <div class="alert alert-success d-none" id="fileSelectedInfo">
+                    <i class="fa-solid fa-check-circle me-2"></i>
+                    <span id="selectedFileName">File selected successfully</span>
+                </div>
+
+                <form id="BulkImportForm" action="{{ route('admin.order.panel.email.bulkImport') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" value="{{ $orderPanel->id }}">
+                    <div class="mb-3">
+                        <label for="bulk_file" class="form-label">Select CSV *</label>
+                        <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
+                            required>
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                            class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">Yes,
+                            Import</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -607,7 +636,7 @@
         // Initialize DataTable
         let emailTable = $('#email-configuration').DataTable({
             responsive: true,
-            paging: true,
+            paging: false,
             searching: false,
             info: false,
             dom: 'frtip',
@@ -616,7 +645,7 @@
                 { width: '30%', targets: 0 }, // Name column
                 { width: '30%', targets: 1 }, // Email column
                 { width: '30%', targets: 2 }, // Password column
-                { width: '10%', targets: 3 }  // Action column
+                // { width: '10%', targets: 3 }  // Action column
             ],
             responsive: {
                 details: {
@@ -652,13 +681,13 @@
                     render: function(data, type, row) {
                         return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
                     }
-                },
-                {
-                    data: 'id',
-                    render: function(data, type, row) {
-                        return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
-                    }
                 }
+                // {
+                //     data: 'id',
+                //     render: function(data, type, row) {
+                //         return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
+                //     }
+                // }
             ],
             drawCallback: function(settings) {
                 updateRowCount(this.api());
@@ -827,8 +856,137 @@
             $('#BulkImportModal').modal('show');
         });
 
-        $('#BulkImportForm').on('submit', function(e) {
+        // Enhanced file selection handler
+        $(document).on('change', '#bulk_file', function() {
+            console.log('File input changed');
+            
+            const fileInput = $(this);
+            const file = fileInput[0].files[0];
+            const csvInstructions = $('#csvInstructions');
+            const fileSelectedInfo = $('#fileSelectedInfo');
+            const selectedFileName = $('#selectedFileName');
+            
+            // Clear previous validation states
+            fileInput.removeClass('is-invalid is-valid');
+            fileInput.next('.invalid-feedback').remove();
+            
+            if (file) {
+                console.log('File selected:', file.name, 'Type:', file.type);
+                
+                // Check if it's a CSV file
+                if (file.type === 'text/csv' || file.type === 'application/csv' || file.name.toLowerCase().endsWith('.csv')) {
+                    // Valid CSV file selected
+                    csvInstructions.addClass('d-none');
+                    fileSelectedInfo.removeClass('d-none');
+                    selectedFileName.text(`File selected: ${file.name}`);
+                    fileInput.addClass('is-valid');
+                    
+                    console.log('Valid CSV file selected');
+                } else {
+                    // Invalid file type
+                    csvInstructions.removeClass('d-none');
+                    fileSelectedInfo.addClass('d-none');
+                    fileInput.addClass('is-invalid');
+                    
+                    // Add error feedback
+                    if (!fileInput.next('.invalid-feedback').length) {
+                        fileInput.after('<div class="invalid-feedback">Please select a valid CSV file.</div>');
+                    }
+                    
+                    console.log('Invalid file type selected');
+                }
+            } else {
+                // No file selected
+                csvInstructions.removeClass('d-none');
+                fileSelectedInfo.addClass('d-none');
+                fileInput.removeClass('is-invalid is-valid');
+                
+                console.log('No file selected');
+            }
+        });
+
+        // Enhanced modal management
+        $('#BulkImportModal').on('show.bs.modal', function() {
+            console.log('BulkImportModal opening, initializing form state');
+            
+            // Reset the form completely
+            const form = $('#BulkImportForm')[0];
+            if (form) {
+                form.reset();
+            }
+            
+            // Clear file input
+            $('#bulk_file').val('').trigger('change');
+            
+            // Remove all validation states
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
+            
+            // Reset UI messages
+            $('#csvInstructions').removeClass('d-none');
+            $('#fileSelectedInfo').addClass('d-none');
+            
+            // Ensure submit button is enabled
+            $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+        });
+
+        $('#BulkImportModal').on('hidden.bs.modal', function() {
+            console.log('BulkImportModal closed, performing cleanup');
+            
+            // Complete form reset
+            const form = $('#BulkImportForm')[0];
+            if (form) {
+                form.reset();
+            }
+            
+            // Clear file input and trigger change event
+            $('#bulk_file').val('').trigger('change');
+            
+            // Remove all validation and styling
+            $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
+            $('#BulkImportForm .invalid-feedback').remove();
+            
+            // Reset UI messages
+            $('#csvInstructions').removeClass('d-none');
+            $('#fileSelectedInfo').addClass('d-none');
+            
+            // Close any lingering SweetAlert dialogs
+            if (typeof Swal !== 'undefined') {
+                Swal.close();
+            }
+        });
+
+        $(document).on('submit', '#BulkImportForm', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Bulk import form submitted');
+            
+            const form = $(this);
+            const fileInput = $('#bulk_file');
+            const file = fileInput[0].files[0];
+            
+            // Validate file selection
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No File Selected',
+                    text: 'Please select a CSV file to import.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
+            
+            // Validate file type
+            if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid CSV file.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
 
             const formData = new FormData(this);
             const order_panel_id = {{ $orderPanel->id }};
@@ -836,19 +994,33 @@
 
             Swal.fire({
                 title: 'Are you sure?',
+                text: 'Do you want to import this CSV file?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes!'
+                confirmButtonText: 'Yes, Import!',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // For file uploads, we still need to use FormData, not JSON
+                    // Add additional form data
                     formData.append('order_panel_id', order_panel_id);
                     formData.append('split_total_inboxes', split_total_inboxes);
 
+                    // Show processing dialog
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we process your file...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
                     $.ajax({
-                        url: $(this).attr('action'),
+                        url: form.attr('action'),
                         method: 'POST',
                         data: formData,
                         contentType: false,
@@ -856,50 +1028,65 @@
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
-                        beforeSend: function() {
-                            Swal.fire({
-                                title: 'Processing...',
-                                text: 'Please wait a while...',
-                                allowOutsideClick: false,
-                                allowEscapeKey: false,
-                                showConfirmButton: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-                                }
-                            });
-                        },
+                        timeout: 60000, // 60 second timeout for file processing
                         success: function(response) {
+                            console.log('Import success:', response);
+                            
+                            // Close the modal first
                             $('#BulkImportModal').modal('hide');
+                            
+                            // Show success message
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
-                                text: 'File has been imported successfully.',
-                                confirmButtonColor: '#3085d6'
+                                text: response.message || 'File has been imported successfully.',
+                                confirmButtonColor: '#3085d6',
+                                timer: 5000,
+                                timerProgressBar: true
                             }).then(() => {
-                                emailTable.ajax.reload();
+                                // Reload the email table
+                                if (typeof emailTable !== 'undefined') {
+                                    emailTable.ajax.reload();
+                                }
                             });
                         },
-                        error: function(xhr) {
+                        error: function(xhr, status, error) {
+                            console.error('Import error:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText
+                            });
+                            
                             let errorMessage = 'An error occurred while processing the file.';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                            
+                            if (status === 'timeout') {
+                                errorMessage = 'File processing timed out. Please try with a smaller file.';
+                            } else if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
                             } else if (xhr.responseText) {
-                                console.error('Error response:', xhr.responseText);
-                                // Check if it's a PHP max_input_vars error
+                                // Check for specific error patterns
                                 if (xhr.responseText.includes('max_input_vars')) {
                                     errorMessage = 'File too large. Please try with a smaller file or contact administrator.';
+                                } else if (xhr.responseText.includes('validation')) {
+                                    errorMessage = 'File validation failed. Please check your CSV format.';
                                 }
                             }
+                            
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Oops...',
+                                title: 'Import Failed',
                                 text: errorMessage,
-                                confirmButtonColor: '#3085d6'
+                                confirmButtonColor: '#3085d6',
+                                allowOutsideClick: true
                             });
                         }
                     });
+                } else {
+                    console.log('Import cancelled by user');
                 }
             });
+            
+            return false;
         });
     });
 </script>

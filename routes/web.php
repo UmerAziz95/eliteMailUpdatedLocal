@@ -194,6 +194,10 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
+        Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderEmailController::class, 'getPanelEmails']);
+        Route::get('/orders/panel/{orderPanelId}/emails/check', [AdminOrderEmailController::class, 'checkEmailsExist']);
+        Route::get('/orders/panel/{orderPanelId}/emails/download-csv', [AdminOrderEmailController::class, 'downloadCsv'])->name('order.panel.email.downloadCsv');
+        Route::post('/orders/panel/email/bulk-import', [AdminOrderEmailController::class, 'bulkImport'])->name('order.panel.email.bulkImport');
         Route::post('/subscription/cancel-process', [AdminOrderController::class, 'subscriptionCancelProcess'])->name('order.cancel.process');
 
         // Order Import routes
@@ -201,7 +205,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/import-data/{id}', [InternalOrderManagerController::class, 'importOrderData'])->name('orders.import-data');
         // Split Panel Email routes
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderController::class, 'getSplitEmails']);
-        Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+        Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
+        // Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+        Route::get('/orders/split/{splitId}/export-csv-smart', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');
         Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
         
@@ -501,6 +507,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // CSV Export routes
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
     Route::get('/orders/split/{splitId}/export-csv-domains', [ContractorOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
+    Route::get('/orders/split/{splitId}/export-csv-smart', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');
     
     // Support ticket routes
     Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
