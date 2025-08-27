@@ -268,8 +268,8 @@
                 </div>
                 @endif
                 @else
-                <div class="text-muted">No configuration information available</div>
-                    @endif
+                    <div class="text-muted">No configuration information available</div>
+                @endif
                 </div>
             </div>
         </div>
