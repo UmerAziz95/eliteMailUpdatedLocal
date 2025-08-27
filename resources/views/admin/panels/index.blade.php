@@ -1669,6 +1669,7 @@
                                                     <th scope="col">Inboxes/Domain</th>
                                                     <th scope="col">Total Domains</th>
                                                     <th scope="col">Inboxes</th>
+                                                    <th scope="col">Customized Type</th>
                                                     <th scope="col">Date</th>
                                                     <th scope="col">Action</th>
                                                 </tr>
@@ -1692,6 +1693,17 @@
                                                     
                                                     
                                                     <td>${order.space_assigned || 'N/A'}</td>
+                                                    <td>
+                                                        ${order.email_count > 0 ? `
+                                                            <span class="badge bg-success" style="font-size: 10px;">
+                                                                <i class="fa-solid fa-check me-1"></i>Customized (${order.email_count})
+                                                            </span>
+                                                        ` : `
+                                                            <span class="badge bg-secondary" style="font-size: 10px;">
+                                                                <i class="fa-solid fa-cog me-1"></i>Default
+                                                            </span>
+                                                        `}
+                                                    </td>
                                                     <td>${formatDate(order.created_at)}</td>
                                                     <td>
                                                         <div class="d-flex gap-1">
@@ -1739,6 +1751,17 @@
                                                                 </span>
                                                             </td>
                                                             <td>${remainingPanel.space_assigned || 'N/A'}</td>
+                                                            <td>
+                                                                ${remainingPanel.email_count > 0 ? `
+                                                                    <span class="badge bg-success" style="font-size: 10px;">
+                                                                        <i class="fa-solid fa-check me-1"></i>Customized (${remainingPanel.email_count})
+                                                                    </span>
+                                                                ` : `
+                                                                    <span class="badge bg-secondary" style="font-size: 10px;">
+                                                                        <i class="fa-solid fa-cog me-1"></i>Default
+                                                                    </span>
+                                                                `}
+                                                            </td>
                                                             <td>${formatDate(remainingPanel.created_at || order.created_at)}</td>
                                                             <td>
                                                                 <div class="d-flex gap-1">

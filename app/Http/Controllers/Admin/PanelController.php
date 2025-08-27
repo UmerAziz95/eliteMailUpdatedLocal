@@ -8,6 +8,7 @@ use App\Models\Panel;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\Order;
+use App\Models\OrderEmail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -189,6 +190,7 @@ class PanelController extends Controller
                             'contractor_id' => $remainingAssignment ? $remainingAssignment->contractor_id : null,
                             'is_assigned' => $remainingAssignment ? true : false,
                             'customized_note' => $remainingPanel->customized_note,
+                            'email_count' => OrderEmail::whereIn('order_split_id', [$remainingPanel->id])->count(),
                             'domains_count' => $remainingSplits->sum(function ($split) {
                                 return is_array($split->domains) ? count($split->domains) : 0;
                             }),
@@ -234,6 +236,7 @@ class PanelController extends Controller
                     'assignment_status' => $assignmentStatus,
                     'is_assigned_to_current_user' => $isAssignedToCurrentUser,
                     'customized_note' => $orderPanel->customized_note,
+                    'email_count' => OrderEmail::whereIn('order_split_id', [$orderPanel->id])->count(),
                     'domains_count' => $splits->sum(function ($split) {
                         return is_array($split->domains) ? count($split->domains) : 0;
                     }),
