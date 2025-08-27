@@ -1696,7 +1696,7 @@
                                                     <td>
                                                         ${order.email_count > 0 ? `
                                                             <span class="badge bg-success" style="font-size: 10px;">
-                                                                <i class="fa-solid fa-check me-1"></i>Customized (${order.email_count})
+                                                                <i class="fa-solid fa-check me-1"></i>Customized
                                                             </span>
                                                         ` : `
                                                             <span class="badge bg-secondary" style="font-size: 10px;">
@@ -1755,7 +1755,7 @@
                                                             <td>
                                                                 ${remainingPanel.email_count > 0 ? `
                                                                     <span class="badge bg-success" style="font-size: 10px;">
-                                                                        <i class="fa-solid fa-check me-1"></i>Customized (${remainingPanel.email_count})
+                                                                        <i class="fa-solid fa-check me-1"></i>Customized
                                                                     </span>
                                                                 ` : `
                                                                     <span class="badge bg-secondary" style="font-size: 10px;">
