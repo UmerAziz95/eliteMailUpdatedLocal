@@ -1,6 +1,6 @@
-name,email,password
-test1,test01@gmail.com,jaksdjffaksdj
-test2,test02@gmail.com,jaksdjffaksdj
-test3,test03@gmail.com,jaksdjffaksdj
-test4,test04@gmail.com,jaksdjffaksdj
-test5,test05@gmail.com,jaksdjffaksdj
+First Name,Last Name,Email address,Password
+John,Doe,john.doe@example.com,SecurePass123!
+Jane,Smith,jane.smith@example.com,StrongPwd456@
+Michael,Johnson,michael.johnson@example.com,ComplexKey789#
+Sarah,Williams,sarah.williams@example.com,SafeCode321$
+David,Brown,david.brown@example.com,PowerWord654%

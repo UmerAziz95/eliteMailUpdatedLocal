@@ -361,8 +361,8 @@
                 </h6>
                 <div class="row text-muted" id="csvInstructions">
                     <p class="text-danger">Only .csv files are accepted.</p>
-                    <p class="text-danger">The CSV file must include the following headers: <strong>name</strong>,
-                        <strong>email</strong>, and <strong>password</strong>.
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>,
+                        <strong>Last Name</strong>, <strong>Email address</strong>, and <strong>Password</strong>.
                     </p>
                     <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
                                 Sample File</strong></a></p>
