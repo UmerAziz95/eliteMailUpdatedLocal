@@ -267,6 +267,59 @@
     </div>               
     <div class="tab-pane fade" id="other-tab-pane" role="tabpanel" aria-labelledby="other-tab" tabindex="0">
         <div class="col-12">
+            <!-- Custom Note Alert -->
+            @if($orderPanel->customized_note)
+            <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm mb-3" 
+                style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%);">
+                
+                <!-- Decorative Background Pattern -->
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                  <div class="position-absolute" style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #4f46e5, #7c3aed); border-radius: 50%; opacity: 0.3;"></div>
+                  <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #06b6d4, #3b82f6); border-radius: 50%; opacity: 0.2;"></div>
+                </div>
+                
+                <!-- Content Container -->
+                <div class="position-relative p-4">
+                  <!-- Header with Icon -->
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="me-3 d-flex align-items-center justify-content-center" 
+                        style="width: 45px; height: 45px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                       <i class="fa-solid fa-sticky-note text-white fs-5"></i>
+                    </div>
+                    <div>
+                       <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
+                       <small class="text-light opacity-75">Additional information provided</small>
+                    </div>
+                  </div>
+                  
+                  <!-- Note Content -->
+                  <div class="p-4 rounded-3 border-0 position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(124, 58, 237, 0.08) 100%); border-left: 4px solid #4f46e5 !important;">
+                    <!-- Quote Icon -->
+                    <div class="position-absolute top-0 start-0 mt-2 ms-3">
+                       <i class="fas fa-quote-left text-info opacity-25 fs-4"></i>
+                    </div>
+                    
+                    <!-- Note Text -->
+                    <div class="ms-4">
+                       <p class="mb-0 text-white fw-medium" 
+                         style="line-height: 1.7; font-size: 15px; text-indent: 1rem;">
+                         {{ $orderPanel->customized_note }}
+                       </p>
+                    </div>
+                    
+                    <!-- Bottom Quote Icon -->
+                    <div class="position-absolute bottom-0 end-0 mb-2 me-3">
+                       <i class="fas fa-quote-right text-info opacity-25 fs-4"></i>
+                    </div>
+                  </div>
+                  
+                  <!-- Bottom Accent Line -->
+                  <div class="mt-3 mx-auto rounded-pill" 
+                     style="width: 60px; height: 3px; background: linear-gradient(90deg, #4f46e5, #7c3aed);"></div>
+                </div>
+            </div>
+            @endif
             <div class="card p-3">
                 <h6 class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center justify-content-center"
@@ -279,11 +332,12 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div>
+                            @if($orderPanel->order->status_manage_by_admin === 'pending' || $orderPanel->order->status_manage_by_admin === 'in-progress')
                             <button id="addBulkEmail" class="btn btn-primary me-2 btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
-                                <i class="fa-solid fa-plus me-1"></i> Import Bulk Emails
+                                <i class="fa-solid fa-plus me-1"></i> Emails Customization
                             </button>
-                            
+                            @endif
                             @php
                                 // Get the uploaded file path from order panel splits
                                 $uploadedFilePath = null;
@@ -389,6 +443,15 @@
                         <label for="bulk_file" class="form-label">Select CSV *</label>
                         <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv"
                             required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customized_note" class="form-label">Customized Note (Optional)</label>
+                        <textarea class="form-control" id="customized_note" name="customized_note" rows="3" 
+                                  placeholder="Add any customized notes or instructions for this import..." maxlength="1000"></textarea>
+                        <div class="form-text" style="display:none;">
+                            <span id="note-char-count">0</span> / 1000 characters
+                        </div>
                     </div>
 
                     <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
@@ -761,78 +824,78 @@
         // Initialize DataTable with non-blocking configuration
         let emailTable = $('#email-configuration').DataTable({
             responsive: true,
-            paging: true,
+            paging: false,
             searching: false,
             info: false,
             dom: 'frtip',
             autoWidth: false,
             deferRender: true, // Improve performance and reduce blocking
             columnDefs: [
-                { width: '20%', targets: 0 }, // First Name column
-                { width: '20%', targets: 1 }, // Last Name column
-                { width: '25%', targets: 2 }, // Email column
-                { width: '25%', targets: 3 }, // Password column
-                { width: '10%', targets: 4 }  // Action column
+            { width: '25%', targets: 0 }, // First Name column
+            { width: '25%', targets: 1 }, // Last Name column
+            { width: '25%', targets: 2 }, // Email column
+            { width: '25%', targets: 3 }, // Password column
+            { visible: false, targets: 4 }  // Hide Action column
             ],
             responsive: {
-                details: {
-                    display: $.fn.dataTable.Responsive.display.modal({
-                        header: function(row) {
-                            return 'Email Details';
-                        }
-                    }),
-                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+            details: {
+                display: $.fn.dataTable.Responsive.display.modal({
+                header: function(row) {
+                    return 'Email Details';
                 }
+                }),
+                renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+            }
             },
             ajax: {
-                url: '/contractor/orders/panel/{{ $orderPanel->id }}/emails',
-                dataSrc: function(json) {
-                    return json.data || [];
-                }
+            url: '/contractor/orders/panel/{{ $orderPanel->id }}/emails',
+            dataSrc: function(json) {
+                return json.data || [];
+            }
             },
             columns: [
-                { 
-                    data: 'name',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter first name">`;
-                    }
-                },
-                { 
-                    data: 'last_name',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
-                    }
-                },
-                { 
-                    data: 'email',
-                    render: function(data, type, row) {
-                        return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
-                    }
-                },
-                { 
-                    data: 'password',
-                    render: function(data, type, row) {
-                        return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
-                    }
-                },
-                {
-                    data: 'id',
-                    render: function(data, type, row) {
-                        return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
-                    }
+            { 
+                data: 'name',
+                render: function(data, type, row) {
+                return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter first name">`;
                 }
+            },
+            { 
+                data: 'last_name',
+                render: function(data, type, row) {
+                return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
+                }
+            },
+            { 
+                data: 'email',
+                render: function(data, type, row) {
+                return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
+                }
+            },
+            { 
+                data: 'password',
+                render: function(data, type, row) {
+                return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
+                }
+            },
+            {
+                data: 'id',
+                render: function(data, type, row) {
+                return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
+                }
+            }
             ],
             drawCallback: function(settings) {
-                updateRowCount(this.api());
-                updateAddButtonState(this.api());
-                
-                // Ensure tab remains functional after draw
-                $('#other-tab').removeClass('disabled').prop('disabled', false);
+            updateRowCount(this.api());
+            updateAddButtonState(this.api());
+            
+            // Ensure tab remains functional after draw
+            $('#other-tab').removeClass('disabled').prop('disabled', false);
             },
             initComplete: function() {
-                // Ensure tab is functional after initialization
-                $('#other-tab').removeClass('disabled').prop('disabled', false);
-                console.log('Email DataTable initialized - tab should be fully functional');
+            // Ensure tab is functional after initialization
+            $('#other-tab').removeClass('disabled').prop('disabled', false);
+            console.log('Email DataTable initialized - tab should be fully functional');
             }
         });
 
@@ -1198,6 +1261,10 @@
             // Clear file input
             $('#bulk_file').val('').trigger('change');
             
+            // Clear customized note and reset character count
+            $('#customized_note').val('');
+            $('#note-char-count').text('0').css('color', '#6c757d');
+            
             // Remove all validation states
             $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
             $('#BulkImportForm .invalid-feedback').remove();
@@ -1228,6 +1295,10 @@
             
             // Clear file input and trigger change event
             $('#bulk_file').val('').trigger('change');
+            
+            // Clear customized note and reset character count
+            $('#customized_note').val('');
+            $('#note-char-count').text('0').css('color', '#6c757d');
             
             // Remove all validation and styling
             $('#BulkImportForm .form-control').removeClass('is-invalid is-valid');
@@ -1295,6 +1366,23 @@
                 fileInput.removeClass('is-invalid is-valid');
                 
                 console.log('No file selected');
+            }
+        });
+
+        // Character count for customized note
+        $(document).on('input', '#customized_note', function() {
+            const currentLength = $(this).val().length;
+            const maxLength = 1000;
+            $('#note-char-count').text(currentLength);
+            
+            // Change color based on usage
+            const charCountElement = $('#note-char-count');
+            if (currentLength > maxLength * 0.9) {
+                charCountElement.css('color', '#dc3545'); // Red when near limit
+            } else if (currentLength > maxLength * 0.7) {
+                charCountElement.css('color', '#ffc107'); // Yellow when getting close
+            } else {
+                charCountElement.css('color', '#6c757d'); // Default gray
             }
         });
 

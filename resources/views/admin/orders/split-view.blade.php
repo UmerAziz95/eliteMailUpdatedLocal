@@ -348,10 +348,26 @@
                                     <i class="fa-solid fa-plus me-1"></i> Emails Customization 
                                 </button>
                             @endif
-                            <button id="downloadCsvBtn" class="btn btn-outline-success me-2" style="display: none;" 
-                                    title="Download existing emails as CSV">
-                                <i class="fa-solid fa-download me-1"></i> Download CSV
-                            </button>
+                            @php
+                                // Get the uploaded file path from order panel splits
+                                $uploadedFilePath = null;
+                                if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
+                                    foreach ($orderPanel->orderPanelSplits as $split) {
+                                        if ($split->uploaded_file_path) {
+                                            $uploadedFilePath = $split->uploaded_file_path;
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp
+                            
+                            @if($uploadedFilePath)
+                                <a href="{{ route('admin.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
+                                   class="btn btn-outline-success me-2 btn-sm" 
+                                   title="Download uploaded CSV file">
+                                    <i class="fa-solid fa-download me-1"></i> Download CSV
+                                </a>
+                            @endif
                             
                             <!-- <button id="addNewBtn" class="btn btn-primary me-2">
                                 <i class="fa-solid fa-plus me-1"></i> Add Email

@@ -12,6 +12,7 @@ use App\Models\ReorderInfo;
 use App\Models\HostingPlatform;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -1761,9 +1762,10 @@ class OrderController extends Controller
         try {
             // Verify the contractor has access to this order panel
             $orderPanel = OrderPanel::with(['order'])
-                ->whereHas('userOrderPanelAssignments', function($query) {
-                    $query->where('contractor_id', auth()->id());
-                })
+                // ->whereHas('userOrderPanelAssignments', function($query) {
+                //     $query->where('contractor_id', auth()->id());
+                // })
+                ->where('contractor_id', auth()->id())
                 ->find($orderPanelId);
 
             // Get the order panel split for this panel
@@ -1980,62 +1982,104 @@ class OrderController extends Controller
      */
     public function orderSplitImportProcess(Request $request)
     {
-        // Validate file and order_panel_id
-        $validator = Validator::make($request->all(), [
-            'bulk_file' => 'required|file|mimes:csv,txt',
-            'order_panel_id' => 'required|exists:order_panel,id',
-            'split_total_inboxes' => 'required|integer'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            // Verify the contractor has access to this order panel
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'bulk_file' => 'required|file|mimes:csv,txt|max:2048',
+                'order_panel_id' => 'required|exists:order_panel,id',
+                'split_total_inboxes' => 'required|integer',
+                'customized_note' => 'nullable|string|max:1000'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', $validator->errors()->all())
+                ], 422);
+            }
+
+            $orderPanelId = $request->order_panel_id;
+            $file = $request->file('bulk_file');
+
+            // First check if the order panel exists
+            if (!OrderPanel::where('id', $orderPanelId)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order panel not found. The panel may have been deleted or the ID is incorrect.',
+                    'debug' => [
+                        'order_panel_id' => $orderPanelId,
+                        'contractor_id' => auth()->id()
+                    ]
+                ], 404);
+            }
+
+            // Get the order panel with its splits and verify contractor access
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])
-                ->whereHas('userOrderPanelAssignments', function($query) {
-                    $query->where('contractor_id', auth()->id());
-                })
-                ->findOrFail($request->order_panel_id);
+                // ->whereHas('userOrderPanelAssignments', function($query) {
+                //     $query->where('contractor_id', auth()->id());
+                // })
+                ->where('contractor_id', auth()->id())
+                ->where('id', $orderPanelId)
+                ->first();
+
+            if (!$orderPanel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. You do not have permission to import emails for this order panel.',
+                    'debug' => [
+                        'order_panel_id' => $orderPanelId,
+                        'contractor_id' => auth()->id()
+                    ]
+                ], 403);
+            }
 
             // Get the first order panel split (assuming one split per panel for now)
             $orderPanelSplit = $orderPanel->orderPanelSplits->first();
-            // dd($orderPanelSplit);
+            
             if (!$orderPanelSplit) {
-                return response()->json(['message' => 'No order panel split found'], 404);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No order panel split found for this panel.',
+                    'debug' => [
+                        'order_panel_id' => $orderPanelId,
+                        'splits_count' => $orderPanel->orderPanelSplits->count()
+                    ]
+                ], 404);
             }
 
-            // Read the uploaded CSV file
-            $file = $request->file('bulk_file');
+            // Read and parse CSV file
             $filePath = $file->getRealPath();
             
-            // Check if file is readable
             if (!is_readable($filePath)) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'The uploaded file is not readable.'
                 ], 400);
             }
 
             $csv = array_map('str_getcsv', file($filePath));
-
+            
             if (empty($csv)) {
                 return response()->json([
-                    'message' => 'The uploaded file is empty.'
-                ], 400);
+                    'success' => false,
+                    'message' => 'CSV file is empty or invalid.'
+                ], 422);
             }
 
-            // Find the header row (look for First Name, Last Name, Email, Password)
+            // Find the header row
             $headerRowIndex = -1;
             $headers = [];
             
             for ($i = 0; $i < count($csv); $i++) {
                 $row = array_map('trim', $csv[$i]);
-                // Check if this row contains the expected headers
-                if (in_array('First Name', $row) && in_array('Last Name', $row) && in_array('Email', $row) && in_array('Password', $row)) {
+                // Check for new format (name, email, password)
+                if (in_array('name', array_map('strtolower', $row)) && in_array('email', array_map('strtolower', $row)) && in_array('password', array_map('strtolower', $row))) {
+                    $headerRowIndex = $i;
+                    $headers = array_map('strtolower', $row);
+                    break;
+                }
+                // Check for contractor format (First Name, Last Name, Email address, Password)
+                elseif (in_array('First Name', $row) && in_array('Last Name', $row) && in_array('Email address', $row) && in_array('Password', $row)) {
                     $headerRowIndex = $i;
                     $headers = $row;
                     break;
@@ -2050,8 +2094,9 @@ class OrderController extends Controller
             
             if ($headerRowIndex === -1) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'File format is incorrect. Could not find header row with required columns.',
-                    'required_format' => 'CSV file must contain columns: First Name, Last Name, Email, Password OR Domain, Email, Password'
+                    'required_format' => 'CSV file must contain columns: First Name, Last Name, Email address, Password OR Domain, Email, Password OR name, email, password'
                 ], 400);
             }
 
@@ -2060,42 +2105,33 @@ class OrderController extends Controller
             
             if (empty($csv)) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'No data rows found after header.'
                 ], 400);
             }
-           
-            if (count($csv) > $request->split_total_inboxes) {
+
+            // Check for split total inboxes limit
+            $splitTotalInboxes = $request->split_total_inboxes ?? 0;
+            if ($splitTotalInboxes > 0 && count($csv) > $splitTotalInboxes) {
                 return response()->json([
-                    'message' => 'Oops! Limit exceeded. File contains more emails than allowed for this panel split.',
+                    'success' => false,
+                    'message' => "Cannot import " . count($csv) . " emails. Maximum allowed for this panel: {$splitTotalInboxes}",
                     'count' => count($csv)
-                ], 400);
+                ], 422);
             }
 
-            // Save the uploaded file to server
-            $uploadedFileName = 'order_' . $orderPanel->order_id . '_panel_' . $orderPanel->id . '_split_' . $orderPanelSplit->id . '_' . time() . '.csv';
-            $uploadPath = 'uploads/order_files/';
-            
-            // Create directory if it doesn't exist
-            if (!file_exists(storage_path('app/public/' . $uploadPath))) {
-                mkdir(storage_path('app/public/' . $uploadPath), 0755, true);
+            // Check if CSV count matches space_assigned from OrderPanel
+            $spaceAssigned = $orderPanel->space_assigned ?? 0;
+            if ($spaceAssigned > 0 && count($csv) != $spaceAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "CSV row count (" . count($csv) . ") must equal the panel's space assigned ({$spaceAssigned}). Please ensure your CSV contains exactly {$spaceAssigned} email records."
+                ], 422);
             }
-            
-            // Save file to storage
-            $savedFilePath = $uploadPath . $uploadedFileName;
-            $file->storeAs('public/' . $uploadPath, $uploadedFileName);
-            // Update order panel split with file path
-            $orderPanelSplit->update([
-                'uploaded_file_path' => $savedFilePath
-            ]);
 
-            // Delete existing emails for this specific order panel split
-            OrderEmail::where('order_id', $orderPanel->order_id)
-                ->where('order_split_id', $orderPanelSplit->id)
-                ->delete();
-
-            $emails = [];
+            $emailsToImport = [];
             $errors = [];
-            $rowNumber = 1; // Start from 1 since we removed header
+            $rowNumber = $headerRowIndex + 1; // Start from header row + 1
 
             foreach ($csv as $row) {
                 $rowNumber++;
@@ -2103,21 +2139,28 @@ class OrderController extends Controller
                 if (count($row) !== count($headers)) {
                     $errors[] = "Row {$rowNumber}: Column count mismatch. Expected " . count($headers) . " columns, got " . count($row);
                     continue;
-                }  
+                }
 
                 $data = array_combine($headers, $row);
                 
-                // Validate required fields - handle both new and old formats
+                // Handle different formats
                 $firstName = '';
                 $lastName = '';
                 $email = '';
                 $password = '';
                 
-                // New format (First Name, Last Name, Email, Password)
-                if (isset($data['First Name']) && isset($data['Last Name'])) {
+                // Admin format (name, email, password)
+                if (isset($data['name'])) {
+                    $firstName = trim($data['name'] ?? '');
+                    $lastName = ''; // Admin format doesn't have last name
+                    $email = trim($data['email'] ?? '');
+                    $password = trim($data['password'] ?? '');
+                }
+                // Contractor format (First Name, Last Name, Email address, Password)
+                elseif (isset($data['First Name']) && isset($data['Last Name'])) {
                     $firstName = trim($data['First Name'] ?? '');
                     $lastName = trim($data['Last Name'] ?? '');
-                    $email = trim($data['Email'] ?? '');
+                    $email = trim($data['Email address'] ?? '');
                     $password = trim($data['Password'] ?? '');
                 }
                 // Old format (Domain, Email, Password) - use Domain as firstName
@@ -2127,9 +2170,10 @@ class OrderController extends Controller
                     $email = trim($data['Email'] ?? '');
                     $password = trim($data['Password'] ?? '');
                 }
-                
+
+                // Validate required fields
                 if (empty($firstName)) {
-                    $errors[] = "Row {$rowNumber}: First Name is required";
+                    $errors[] = "Row {$rowNumber}: Name is required";
                     continue;
                 }
                 
@@ -2143,13 +2187,13 @@ class OrderController extends Controller
                     continue;
                 }
 
-                $emails[] = [
+                $emailsToImport[] = [
                     'order_id' => $orderPanel->order_id,
                     'user_id' => $orderPanel->order->user_id,
                     'order_split_id' => $orderPanelSplit->id,
                     'contractor_id' => auth()->id(),
-                    'name' => $firstName, // Store firstName as name
-                    'last_name' => $lastName, // Store lastName separately
+                    'name' => $firstName,
+                    'last_name' => $lastName,
                     'email' => $email,
                     'password' => $password,
                     'created_at' => now(),
@@ -2160,51 +2204,130 @@ class OrderController extends Controller
             // If there are validation errors, return them
             if (!empty($errors)) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'File contains validation errors.',
                     'errors' => $errors,
-                    'valid_rows' => count($emails),
+                    'valid_rows' => count($emailsToImport),
                     'total_rows' => count($csv)
                 ], 400);
             }
 
-            // If no valid emails after processing
-            if (empty($emails)) {
+            if (empty($emailsToImport)) {
                 return response()->json([
-                    'message' => 'No valid email data found in the file.'
-                ], 400);
+                    'success' => false,
+                    'message' => 'No valid email records found in CSV file.'
+                ], 422);
             }
 
-            // Insert all at once
-            OrderEmail::insert($emails);
+            // Save the uploaded file to server
+            $uploadedFileName = 'order_' . $orderPanel->order_id . '_panel_' . $orderPanel->id . '_split_' . $orderPanelSplit->id . '_' . time() . '.csv';
+            $uploadPath = 'uploads/order_files/';
             
-            // Update order assignment if not already assigned
-            if ($orderPanel->order->assigned_to == null) {
-                $orderPanel->order->assigned_to = auth()->id();
-                $orderPanel->order->save();
+            // Create directory if it doesn't exist
+            if (!file_exists(storage_path('app/public/' . $uploadPath))) {
+                mkdir(storage_path('app/public/' . $uploadPath), 0755, true);
+            }
+            
+            // Begin transaction
+            DB::beginTransaction();
+
+            try {
+                // Save file to storage
+                $savedFilePath = $uploadPath . $uploadedFileName;
+                $file->storeAs('public/' . $uploadPath, $uploadedFileName);
+                
+                // Update order panel split with file path
+                $orderPanelSplit->update([
+                    'uploaded_file_path' => $savedFilePath
+                ]);
+
+                // Delete existing emails for this specific order panel split
+                OrderEmail::where('order_id', $orderPanel->order_id)
+                    ->where('order_split_id', $orderPanelSplit->id)
+                    ->delete();
+
+                // Insert new emails in batches
+                $batchSize = 500;
+                for ($i = 0; $i < count($emailsToImport); $i += $batchSize) {
+                    $batch = array_slice($emailsToImport, $i, $batchSize);
+                    OrderEmail::insert($batch);
+                }
+
+                // Update the order panel with customized note if provided
+                if ($request->has('customized_note') && !empty(trim($request->customized_note))) {
+                    $orderPanel->update([
+                        'customized_note' => trim($request->customized_note)
+                    ]);
+                }
+
+                // Update order assignment if not already assigned
+                if ($orderPanel->order->assigned_to == null) {
+                    $orderPanel->order->assigned_to = auth()->id();
+                    $orderPanel->order->save();
+                }
+
+                // Create notification for customer
+                Notification::create([
+                    'user_id' => $orderPanel->order->user_id,
+                    'type' => 'email_created',
+                    'title' => 'Bulk Email Accounts Created',
+                    'message' => 'Bulk email accounts have been imported for your order #' . $orderPanel->order_id . ' panel #' . $orderPanel->id,
+                    'data' => [
+                        'order_id' => $orderPanel->order_id,
+                        'order_panel_id' => $orderPanel->id,
+                        'email_count' => count($emailsToImport)
+                    ]
+                ]);
+
+                DB::commit();
+
+                Log::info('Contractor bulk email import successful', [
+                    'order_panel_id' => $orderPanelId,
+                    'imported_count' => count($emailsToImport),
+                    'contractor_id' => auth()->id(),
+                    'file_saved' => $savedFilePath
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => count($emailsToImport) . ' emails imported successfully for panel split.',
+                    'count' => count($emailsToImport),
+                    'imported_count' => count($emailsToImport),
+                    'file_saved' => $savedFilePath,
+                    'errors' => $errors
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
 
-            // Create notification for customer
-            Notification::create([
-                'user_id' => $orderPanel->order->user_id,
-                'type' => 'email_created',
-                'title' => 'Bulk Email Accounts Created',
-                'message' => 'Bulk email accounts have been imported for your order #' . $orderPanel->order_id . ' panel #' . $orderPanel->id,
-                'data' => [
-                    'order_id' => $orderPanel->order_id,
-                    'order_panel_id' => $orderPanel->id,
-                    'email_count' => count($emails)
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order panel not found or access denied.',
+                'debug' => [
+                    'order_panel_id' => $request->order_panel_id ?? 'not provided',
+                    'contractor_id' => auth()->id(),
+                    'error_type' => 'ModelNotFoundException'
                 ]
-            ]);
-            
-            return response()->json([
-                'message' => 'Emails imported successfully for panel split.',
-                'count' => count($emails),
-                'file_saved' => $savedFilePath
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Contractor bulk email import failed', [
+                'error' => $e->getMessage(),
+                'order_panel_id' => $request->order_panel_id ?? null,
+                'contractor_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
             ]);
 
-        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error importing emails: ' . $e->getMessage()
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage(),
+                'debug' => [
+                    'order_panel_id' => $request->order_panel_id ?? 'not provided',
+                    'contractor_id' => auth()->id(),
+                    'error_type' => get_class($e)
+                ]
             ], 500);
         }
     }
