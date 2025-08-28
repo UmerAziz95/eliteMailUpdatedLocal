@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use DataTables;
 use App\Models\Status; // Assuming you have a Status model for order statuses
-//models
+use App\Models\OrderEmail;
 
 class PanelController extends Controller
 {
@@ -176,8 +176,9 @@ class PanelController extends Controller
                         'domains_count' => count($domains),
                         'total_inboxes' => $split->inboxes_per_domain * count($domains),
                         'status' => $orderPanel->status,
-                        'created_at' => $split->created_at
-                        
+                        'created_at' => $split->created_at,
+                        'customized_note' => $orderPanel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$orderPanel->id])->count(),
                     ];
                 }
             }

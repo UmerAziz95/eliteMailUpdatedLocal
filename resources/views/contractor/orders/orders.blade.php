@@ -954,11 +954,14 @@
                     <div class="d-flex gap-1">
                         <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
                         <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/contractor/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
+                        ${split.customized_note ? `
+                            <i class="fa-solid fa-sticky-note" style="cursor: pointer; color: #ffc107;" onclick="event.stopPropagation(); showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note"></i>
+                        ` : ''}
                     </div>
                 </td>
                 </tr>
             `).join('')
-            : `<tr><td colspan="5" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
+            : `<tr><td colspan="6" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
 
             return `
             <div class="anim_card rounded-2">
@@ -1447,6 +1450,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
+                                <th scope="col">Customized Type</th>
                                 <th scope="col">Split timer</th>
                                 <th scope="col">Actions</th>
                             </tr>
@@ -1473,6 +1477,17 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                         </span>
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
+                                    <td>
+                                        ${split.email_count > 0 ? `
+                                            <span class="badge bg-success" style="font-size: 10px;">
+                                                <i class="fa-solid fa-check me-1"></i>Custom
+                                            </span>
+                                        ` : `
+                                            <span class="badge bg-secondary" style="font-size: 10px;">
+                                                <i class="fa-solid fa-cog me-1"></i>Default
+                                            </span>
+                                        `}
+                                    </td>
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
@@ -1482,6 +1497,11 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                             <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
+                                            ${split.customized_note ? `
+                                                <button type="button" class="btn btn-sm btn-warning" style="font-size: 10px;" onclick="showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note">
+                                                    <i class="fa-solid fa-sticky-note"></i> Note
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </td>
                                 </tr>
@@ -2578,5 +2598,78 @@ function parseUTCDateTime(dateStr) {
             }
         }, 5000);
     }
+
+    // Function to show customized note modal
+    function showCustomizedNoteModal(note) {
+        const noteContent = document.getElementById('customizedNoteContent');
+        if (noteContent) {
+            noteContent.innerHTML = note || 'No note available';
+            const modal = new bootstrap.Modal(document.getElementById('customizedNoteModal'));
+            modal.show();
+        }
+    }
 </script>
 @endpush
+
+<!-- Customized Note Modal -->
+<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="background: #1d2239;">
+            <div class="modal-body p-0">
+                <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm" 
+                    style="background: linear-gradient(135deg, #1d2239 0%, #252c4a 100%);">
+                    <!-- Close Button -->
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 mt-3 me-3" 
+                            style="z-index: 10;" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
+                    <!-- Decorative Background Pattern -->
+                    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                       <div class="position-absolute" style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #667eea, #764ba2); border-radius: 50%; opacity: 0.3;"></div>
+                       <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #667eea, #4facfe); border-radius: 50%; opacity: 0.2;"></div>
+                    </div>
+                    
+                    <!-- Content Container -->
+                    <div class="position-relative p-4">
+                       <!-- Header with Icon -->
+                       <div class="d-flex align-items-center mb-3">
+                          <div class="me-3 d-flex align-items-center justify-content-center" 
+                              style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                             <i class="fa-solid fa-sticky-note text-white fs-5"></i>
+                          </div>
+                          <div>
+                             <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
+                             <small class="text-light opacity-75">Additional information provided</small>
+                          </div>
+                       </div>
+                       
+                       <!-- Note Content -->
+                       <div class="p-4 rounded-3 border-0 position-relative overflow-hidden" 
+                           style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.08) 100%); border-left: 4px solid #667eea !important; border: 1px solid rgba(102, 126, 234, 0.2);">
+                          <!-- Quote Icon -->
+                          <div class="position-absolute top-0 start-0 mt-2 ms-3">
+                             <i class="fas fa-quote-left text-primary opacity-25 fs-4"></i>
+                          </div>
+                          
+                          <!-- Note Text -->
+                          <div class="ms-4">
+                             <p class="mb-0 text-white fw-medium" id="customizedNoteContent" 
+                                style="line-height: 1.7; font-size: 15px; text-indent: 1rem;">
+                                <!-- Note content will be populated by JavaScript -->
+                             </p>
+                          </div>
+                          
+                          <!-- Bottom Quote Icon -->
+                          <div class="position-absolute bottom-0 end-0 mb-2 me-3">
+                             <i class="fas fa-quote-right text-primary opacity-25 fs-4"></i>
+                          </div>
+                       </div>
+                       
+                       <!-- Bottom Accent Line -->
+                       <div class="mt-3 mx-auto rounded-pill" 
+                           style="width: 60px; height: 3px; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

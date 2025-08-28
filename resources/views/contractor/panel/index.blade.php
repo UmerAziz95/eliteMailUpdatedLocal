@@ -1329,6 +1329,7 @@
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
+                                <th scope="col">Customized Type</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -1354,6 +1355,17 @@
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
                                     <td>
+                                        ${split.email_count > 0 ? `
+                                            <span class="badge bg-success" style="font-size: 10px;">
+                                                <i class="fa-solid fa-check me-1"></i>Custom
+                                            </span>
+                                        ` : `
+                                            <span class="badge bg-secondary" style="font-size: 10px;">
+                                                <i class="fa-solid fa-cog me-1"></i>Default
+                                            </span>
+                                        `}
+                                    </td>
+                                    <td>
                                         <div class="d-flex gap-1">
                                             <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 11px" class="me-2 btn btn-sm btn-outline-primary" title="View Split" target="_blank">
                                                 <i class="fas fa-eye"></i> View
@@ -1361,6 +1373,11 @@
                                             <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 11px" class="me-2 btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
+                                            ${split.customized_note ? `
+                                                <button type="button" class="btn btn-sm btn-warning" style="font-size: 11px;" onclick="showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note">
+                                                    <i class="fa-solid fa-sticky-note"></i> Note
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </td>
                                 </tr>
@@ -1471,6 +1488,20 @@
                                                 <span class="badge bg-white bg-opacity-25 me-2" style="font-size: 9px;">
                                                     ${split.domains_count || 0} domains
                                                 </span>
+                                                ${split.email_count > 0 ? `
+                                                    <span class="badge bg-success me-2" style="font-size: 8px;">
+                                                        <i class="fa-solid fa-check me-1"></i>Custom
+                                                    </span>
+                                                ` : `
+                                                    <span class="badge bg-secondary me-2" style="font-size: 8px;">
+                                                        <i class="fa-solid fa-cog me-1"></i>Default
+                                                    </span>
+                                                `}
+                                                ${split.customized_note ? `
+                                                    <i class="fa-solid fa-sticky-note me-2" style="font-size: 10px; cursor: pointer; color: #ffc107;" 
+                                                       title="View Customized Note" 
+                                                       onclick="event.stopPropagation(); showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')"></i>
+                                                ` : ''}
                                                 <i class="fa-solid fa-copy me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                    title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
                                                    onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
@@ -2791,5 +2822,37 @@
             module.exports = { initializeOrderWebSocket, withEcho };
         }
 
+        // Function to show customized note modal
+        function showCustomizedNoteModal(note) {
+            const noteContent = document.getElementById('customizedNoteContent');
+            if (noteContent) {
+                noteContent.innerHTML = note || 'No note available';
+                const modal = new bootstrap.Modal(document.getElementById('customizedNoteModal'));
+                modal.show();
+            }
+        }
+
     </script>
 @endpush
+
+<!-- Customized Note Modal -->
+<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customizedNoteModalLabel">
+                    <i class="fa-solid fa-sticky-note me-2"></i>Customized Note
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" role="alert">
+                    <div id="customizedNoteContent"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
