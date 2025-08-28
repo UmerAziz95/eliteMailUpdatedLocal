@@ -731,7 +731,9 @@ class OrderController extends Controller
                         'domains_count' => count($domains),
                         'total_inboxes' => $split->inboxes_per_domain * count($domains),
                         'status' => $orderPanel->status,
-                        'created_at' => $split->created_at
+                        'created_at' => $split->created_at,
+                        'customized_note' => $orderPanel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$orderPanel->id])->count(),
                         
                     ];
                 }
