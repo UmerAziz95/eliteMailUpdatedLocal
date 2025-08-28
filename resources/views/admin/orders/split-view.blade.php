@@ -342,7 +342,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div>
-                            @if($orderPanel->order->status_manage_by_admin === 'pending')
+                            @if($orderPanel->order->status_manage_by_admin === 'pending' || $orderPanel->order->status_manage_by_admin === 'in-progress')
                                 <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
                                     data-bs-target="#BulkImportModal">
                                     <i class="fa-solid fa-plus me-1"></i> Emails Customization 
@@ -378,12 +378,12 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="table-responsive">
                     <table id="email-configuration" class="display w-100">
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Last Name</th>
                                 <th>Email</th>
                                 <th>Password</th>
                                 <!-- <th>Action</th> -->
@@ -707,10 +707,11 @@
             dom: 'frtip',
             autoWidth: false,
             columnDefs: [
-                { width: '30%', targets: 0 }, // Name column
-                { width: '30%', targets: 1 }, // Email column
-                { width: '30%', targets: 2 }, // Password column
-                // { width: '10%', targets: 3 }  // Action column
+                { width: '25%', targets: 0 }, // Name column
+                { width: '25%', targets: 1 }, // Last Name column
+                { width: '25%', targets: 2 }, // Email column
+                { width: '25%', targets: 3 }, // Password column
+                // { width: '10%', targets: 4 }  // Action column
             ],
             responsive: {
                 details: {
@@ -733,6 +734,13 @@
                     data: 'name',
                     render: function(data, type, row) {
                         return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
+                    }
+                },
+                { 
+                    data: 'last_name',
+                    defaultContent: '',
+                    render: function(data, type, row) {
+                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
                     }
                 },
                 { 
@@ -777,6 +785,7 @@
 
             emailTable.row.add({
                 name: '',
+                last_name: '',
                 email: '',
                 password: '',
                 id: ''
@@ -791,21 +800,28 @@
             $(emailTable.rows().nodes()).each(function() {
                 const row = $(this);
                 const nameField = row.find('.name');
+                const lastNameField = row.find('.last_name');
                 const emailField = row.find('.email');
                 const passwordField = row.find('.password');
 
                 // Reset validation classes
                 nameField.removeClass('is-invalid');
+                lastNameField.removeClass('is-invalid');
                 emailField.removeClass('is-invalid');
                 passwordField.removeClass('is-invalid');
 
                 const name = nameField.val()?.trim();
+                const lastName = lastNameField.val()?.trim();
                 const email = emailField.val()?.trim();
                 const password = passwordField.val()?.trim();
 
                 // Validate fields
                 if (!name) {
                     nameField.addClass('is-invalid');
+                    isValid = false;
+                }
+                if (!lastName) {
+                    lastNameField.addClass('is-invalid');
                     isValid = false;
                 }
                 if (!email) {
@@ -817,8 +833,8 @@
                     isValid = false;
                 }
 
-                if (name && email && password) {
-                    emailsToSave.push({ name, email, password });
+                if (name && lastName && email && password) {
+                    emailsToSave.push({ name, last_name: lastName, email, password });
                 }
             });
 
@@ -852,7 +868,7 @@
                             if (key.includes('emails.')) {
                                 const parts = key.split('.');
                                 const index = parseInt(parts[1]); // Get the row index as integer
-                                const field = parts[2]; // Get the field name (email, password, etc.)
+                                const field = parts[2]; // Get the field name (email, password, last_name, etc.)
                                 const errorMsg = xhr.responseJSON.errors[key][0]; // Get the first error message
                                 
                                 // Find the input field at the specific row

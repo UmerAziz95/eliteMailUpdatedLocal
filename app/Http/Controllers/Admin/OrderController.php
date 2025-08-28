@@ -1087,7 +1087,7 @@ class OrderController extends Controller
                     ->whereHas('orderSplit', function($query) use ($orderPanelId) {
                         $query->where('order_panel_id', $orderPanelId);
                     })
-                    ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                    ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id', 'last_name')
                     ->get();
                     
             } catch (\Exception $relationshipError) {
