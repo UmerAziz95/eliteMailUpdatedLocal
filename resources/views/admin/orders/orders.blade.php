@@ -2926,17 +2926,6 @@ pointer-events: none
             <td style="font-size: 10px; padding: 5px !important;"><span class="badge ${getStatusBadgeClass(split.status)}" style="font-size: 9px;">${split.status || 'Unknown'}</span></td>
             <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
             <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
-            <td style="font-size: 10px; padding: 5px !important;">
-                ${split.email_count > 0 ? `
-                    <span class="badge bg-success" style="font-size: 8px;">
-                        <i class="fa-solid fa-check me-1"></i>Custom
-                    </span>
-                ` : `
-                    <span class="badge bg-secondary" style="font-size: 8px;">
-                        <i class="fa-solid fa-cog me-1"></i>Default
-                    </span>
-                `}
-            </td>
             <td style="padding: 5px !important;">
                 <div class="d-flex gap-1">
                     <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
@@ -2969,7 +2958,6 @@ pointer-events: none
                     <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Split Status</th>
                     <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
                     <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
-                    <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Customized Type</th>
                     <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
                     </tr>
                 </thead>

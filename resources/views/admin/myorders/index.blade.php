@@ -999,11 +999,14 @@
                     <div class="d-flex gap-1">
                         <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
                         <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/admin/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
+                        ${split.customized_note ? `
+                            <i class="fa-solid fa-sticky-note" style="cursor: pointer; color: #ffc107;" onclick="event.stopPropagation(); showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note"></i>
+                        ` : ''}
                     </div>
                 </td>
                 </tr>
             `).join('')
-            : `<tr><td colspan="5" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
+            : `<tr><td colspan="6" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
 
             return `
             <div class="anim_card rounded-2">
@@ -1556,6 +1559,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
+                                <th scope="col">Customized Type</th>
                                 <th scope="col">Split timer</th>
                                 <th scope="col">Actions</th>
                             </tr>
@@ -1582,6 +1586,17 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                         </span>
                                     </td>
                                     <td>${split.total_inboxes || 'N/A'}</td>
+                                    <td>
+                                        ${split.email_count > 0 ? `
+                                            <span class="badge bg-success" style="font-size: 10px;">
+                                                <i class="fa-solid fa-check me-1"></i>Custom
+                                            </span>
+                                        ` : `
+                                            <span class="badge bg-secondary" style="font-size: 10px;">
+                                                <i class="fa-solid fa-cog me-1"></i>Default
+                                            </span>
+                                        `}
+                                    </td>
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
@@ -1591,6 +1606,11 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                             <a href="/admin/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                                 <i class="fas fa-download"></i> CSV
                                             </a>
+                                            ${split.customized_note ? `
+                                                <button type="button" class="btn btn-sm btn-warning" style="font-size: 10px;" onclick="showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note">
+                                                    <i class="fa-solid fa-sticky-note"></i> Note
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </td>
                                 </tr>
@@ -2657,5 +2677,37 @@ function parseUTCDateTime(dateStr) {
             // Also update timers immediately after DOM load
             setTimeout(updateAllTimers, 500);
         });
+
+        // Function to show customized note modal
+        function showCustomizedNoteModal(note) {
+            const noteContent = document.getElementById('customizedNoteContent');
+            if (noteContent) {
+                noteContent.innerHTML = note || 'No note available';
+                const modal = new bootstrap.Modal(document.getElementById('customizedNoteModal'));
+                modal.show();
+            }
+        }
     </script>
     @endpush
+
+    <!-- Customized Note Modal -->
+    <div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customizedNoteModalLabel">
+                        <i class="fa-solid fa-sticky-note me-2"></i>Customized Note
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" role="alert">
+                        <div id="customizedNoteContent"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
