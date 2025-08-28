@@ -146,6 +146,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Customized Note Modal -->
+    <div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customizedNoteModalLabel">
+                        <i class="fa-solid fa-sticky-note me-2"></i>Customized Note
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" role="alert">
+                        <div id="customizedNoteContent"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -1356,6 +1378,16 @@
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
+        }
+    }
+
+    // Function to show customized note modal
+    function showCustomizedNoteModal(note) {
+        const noteContent = document.getElementById('customizedNoteContent');
+        if (noteContent) {
+            noteContent.innerHTML = note || 'No note available';
+            const modal = new bootstrap.Modal(document.getElementById('customizedNoteModal'));
+            modal.show();
         }
     }
 </script>
