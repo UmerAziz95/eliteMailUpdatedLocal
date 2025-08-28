@@ -125,7 +125,6 @@
             </div>
         </div>
     </section>
-
     <!-- Task Details Offcanvas -->
     <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="task-details-view"
         aria-labelledby="task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
@@ -611,9 +610,17 @@
                                 <td>${split.total_inboxes || 'N/A'}</td>
                                 <td>
                                     <div class="d-flex gap-1">
+                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
                                         <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
+                                        ${split.customized_note ? `
+                                            <button type="button" class="btn btn-sm btn-warning" style="font-size: 10px;" onclick="showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note">
+                                                <i class="fa-solid fa-sticky-note"></i> Note
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 </td>
                             </tr>
