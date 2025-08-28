@@ -40,10 +40,10 @@
                 data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
                 aria-selected="true">Configuration</button>
         </li>
-        {{-- <li class="nav-item" role="presentation ">
+        <li class="nav-item" role="presentation ">
             <button class="nav-link fs-6 px-5" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane"
                 type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">Emails</button>
-        </li> --}}
+        </li>
     </ul>
 
     <div class="tab-content mt-3" id="myTabContent">

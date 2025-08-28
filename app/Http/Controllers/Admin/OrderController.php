@@ -1100,13 +1100,13 @@ class OrderController extends Controller
                     $emails = OrderEmail::query()
                         ->where('order_id', $orderPanel->order_id)
                         ->whereIn('order_split_id', $splitIds)
-                        ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                        ->select('id', 'name', 'last_name', 'email', 'password', 'order_split_id', 'contractor_id')
                         ->get();
                 } else {
                     // Method 3: Get all emails for this order as last resort
                     $emails = OrderEmail::query()
                         ->where('order_id', $orderPanel->order_id)
-                        ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
+                        ->select('id', 'name', 'last_name', 'email', 'password', 'order_split_id', 'contractor_id')
                         ->get();
                 }
             }
