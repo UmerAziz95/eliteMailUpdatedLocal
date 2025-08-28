@@ -3571,6 +3571,9 @@ pointer-events: none
                                 </td>
                                 <td>
                                     <div class="d-flex gap-1">
+                                       <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')">
+                                           <i class="fas fa-eye"></i> View
+                                       </button>
                                         <a href="/admin/orders/split/${split.id}/export-csv-domains" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
                                             <i class="fas fa-download"></i> CSV
                                         </a>
