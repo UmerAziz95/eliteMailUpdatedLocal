@@ -293,6 +293,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Task Queue Routes
         Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
+        Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
         Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
         Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
         
