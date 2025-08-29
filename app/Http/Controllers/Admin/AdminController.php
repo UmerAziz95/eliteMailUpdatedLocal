@@ -111,6 +111,32 @@ class AdminController extends Controller
         if($user->hasPermissionTo('Internal Order Management') && !$user->hasRole('super-admin')){
             return redirect()->route('admin.internal_order_management.index');
         }
+        // Order Reassign Permission
+        if($user->hasPermissionTo('Order Reassign') && !$user->hasRole('super-admin')){
+            return redirect()->route('admin.orders');
+        }
+
+        // Check if user has no dashboard access, redirect to first available permission
+        if(!$user->hasPermissionTo('Dashboard') && !$user->hasRole('super-admin')){
+            $firstPermission = $user->getDirectPermissions()->first() ?? $user->getPermissionsViaRoles()->first();
+            if($firstPermission) {
+            // Map permissions to routes (add more mappings as needed)
+            $permissionRoutes = [
+                'Internal Order Management' => 'admin.internal_order_management.index',
+                'Order Reassign' => 'admin.orders',
+                'Orders' => 'admin.orders',
+                // Add more permission to route mappings here
+            ];
+            
+            // Only redirect if the permission has a mapped route, otherwise show access denied
+            if(isset($permissionRoutes[$firstPermission->name])) {
+                return redirect()->route($permissionRoutes[$firstPermission->name]);
+            } else {
+                // abort(403, 'Access denied. No valid dashboard or permissions found.');
+            }
+            }
+        }
+        
         // Get total customers (users with role_id 3)
         $totalCustomers = User::where('role_id', 3)->count();
 
