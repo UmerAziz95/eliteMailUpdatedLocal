@@ -46,7 +46,7 @@ class SidebarNavigationSeeder extends Seeder
                 'name' => 'My Orders',
                 'icon' => 'ti ti-shopping-cart fs-5',
                 'route' => 'admin.orderQueue.my_orders',
-                'permission' => 'Orders',
+                'permission' => 'My Orders',
                 'sub_menu' => [],
                 'order' => 5
             ],
@@ -273,7 +273,7 @@ class SidebarNavigationSeeder extends Seeder
             );
         }
 
-        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings", "Error Logs", "System Logs"];
+        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings", "Error Logs", "System Logs", "Order Reassign"];
         foreach ($extraPermissions as $permission) {
             DB::table('permissions')->updateOrInsert(
                 [

@@ -2,6 +2,51 @@
     @csrf
     <input type="hidden" name="role_id" id="roleId">
 
+    <style>
+        /* Dark theme for Select2 */
+        .select2-container .select2-selection--multiple {
+            background-color: #2f3349 !important;
+            border: 1px solid #444 !important;
+            color: #fff !important;
+        }
+        
+        .select2-container .select2-selection--multiple .select2-selection__choice {
+            background-color: #495057 !important;
+            border: 1px solid #6c757d !important;
+            color: #fff !important;
+        }
+        
+        .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+            color: #fff !important;
+        }
+        
+        .select2-dropdown {
+            background-color: #2f3349 !important;
+            border: 1px solid #444 !important;
+        }
+        
+        .select2-results__option {
+            background-color: #2f3349 !important;
+            color: #fff !important;
+        }
+        
+        .select2-results__option--highlighted {
+            background-color: #495057 !important;
+            color: #fff !important;
+        }
+        
+        .select2-search--dropdown .select2-search__field {
+            background-color: #495057 !important;
+            border: 1px solid #6c757d !important;
+            color: #fff !important;
+        }
+        
+        .select2-container .select2-search--inline .select2-search__field {
+            background-color: transparent !important;
+            color: #fff !important;
+        }
+    </style>
+
     <div class="col-12 mb-3">
         <label class="form-label" for="modalRoleName">Role Name</label>
         <input type="text" id="name" name="name" class="form-control" placeholder="Enter a role name">
@@ -34,19 +79,79 @@
         $('#permissions').select2({
             dropdownAutoWidth: true,
             width: '100%',
-            dropdownParent: $('#permissions').parent() // helps if inside a modal
+            dropdownParent: $('#permissions').parent(), // helps if inside a modal
+            theme: 'bootstrap-5'
         });
+
+        // Apply dark theme styles after initialization
+        setTimeout(function() {
+            // Style the main selection container
+            $('.select2-container .select2-selection--multiple').css({
+                'background-color': '#2f3349',
+                'border': '1px solid #444',
+                'color': '#fff'
+            });
+
+            // Style selected tags
+            $('.select2-container .select2-selection--multiple .select2-selection__choice').css({
+                'background-color': '#495057',
+                'border': '1px solid #6c757d',
+                'color': '#fff'
+            });
+
+            // Style the search input
+            $('.select2-container .select2-search--inline .select2-search__field').css({
+                'background-color': 'transparent',
+                'color': '#fff'
+            });
+        }, 100);
 
         // When dropdown opens, style options and dropdown container
         $('#permissions').on('select2:open', function() {
-            $('.select2-results__option').each(function() {
-                $(this).attr('style', 'background-color: #2f3349 !important; color: #fff !important;');
-            });
+            setTimeout(function() {
+                // Style dropdown container
+                $('.select2-dropdown').css({
+                    'background-color': '#2f3349',
+                    'border': '1px solid #444',
+                    'color': '#fff'
+                });
 
-            $('.select2-results').parent().attr('style', 'background-color: #2f3349 !important; color: #fff !important; border: 1px solid #444 !important;');
+                // Style search input in dropdown
+                $('.select2-search--dropdown .select2-search__field').css({
+                    'background-color': '#495057',
+                    'border': '1px solid #6c757d',
+                    'color': '#fff'
+                });
+
+                // Style options
+                $('.select2-results__option').css({
+                    'background-color': '#2f3349',
+                    'color': '#fff'
+                });
+
+                // Style highlighted option
+                $('.select2-results__option--highlighted').css({
+                    'background-color': '#495057 !important',
+                    'color': '#fff !important'
+                });
+            }, 10);
         });
 
-        // Style the selected area
-        $('.select2-selection').attr('style', 'background-color: #2f3349 !important; color: #fff !important; border: 1px solid #444 !important;');
+        // Handle option hover
+        $(document).on('mouseenter', '.select2-results__option', function() {
+            $(this).css({
+                'background-color': '#495057',
+                'color': '#fff'
+            });
+        });
+
+        $(document).on('mouseleave', '.select2-results__option', function() {
+            if (!$(this).hasClass('select2-results__option--highlighted')) {
+                $(this).css({
+                    'background-color': '#2f3349',
+                    'color': '#fff'
+                });
+            }
+        });
     });
 </script>

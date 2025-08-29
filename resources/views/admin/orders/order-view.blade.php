@@ -41,15 +41,11 @@
                 class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
                 {{ ucfirst($order->status_manage_by_admin ?? '') }}
             </div>
-            
+            @can('Order Reassign')
             <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
                 <i class="fa fa-user-edit"></i> Reassign Contractor
             </button>
-            <!-- @can('admin')
-            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
-                <i class="fa fa-user-edit"></i> Reassign Contractor
-            </button>
-            @endcan -->
+            @endcan
         </div>
     </div>
 
