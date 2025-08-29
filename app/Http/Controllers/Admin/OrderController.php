@@ -27,6 +27,7 @@ use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Services\PanelReassignmentService;
+use App\Services\OrderContractorReassignmentService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -2101,6 +2102,58 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to get reassignment history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reassign contractor for an order
+     */
+    public function reassignContractor(Request $request, $orderId)
+    {
+        try {
+            $request->validate([
+                'contractor_id' => 'required|exists:users,id'
+            ]);
+
+            $service = new OrderContractorReassignmentService();
+            $result = $service->reassignContractor($orderId, $request->contractor_id);
+
+            if ($result['success']) {
+                // Log the activity
+                ActivityLogService::log(
+                    'order_contractor_reassigned',
+                    "Order #{$orderId} contractor reassigned to user ID {$request->contractor_id}",
+                    Order::find($orderId),
+                    [
+                        'order_id' => $orderId,
+                        'old_contractor_id' => $result['old_contractor_id'],
+                        'new_contractor_id' => $result['new_contractor_id'],
+                        'reassigned_by' => auth()->id()
+                    ],
+                    auth()->id()
+                );
+
+                return response()->json([
+                    'success' => true, 
+                    'message' => $result['message']
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false, 
+                    'message' => $result['error']
+                ], 400);
+            }
+        } catch (Exception $e) {
+            Log::error('Error reassigning contractor', [
+                'order_id' => $orderId,
+                'contractor_id' => $request->contractor_id ?? null,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reassign contractor: ' . $e->getMessage()
             ], 500);
         }
     }

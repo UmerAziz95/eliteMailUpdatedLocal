@@ -62,7 +62,7 @@ class OrderObserver
     {
         // Get the changes made to the order
         $changes = $order->getChanges();
-        
+        // dd($changes);
         \Log::info('OrderObserver: Order updated event triggered', [
             'order_id' => $order->id,
             'changes' => $changes
@@ -195,7 +195,7 @@ class OrderObserver
         \Log::info('OrderObserver: OrderUpdated event fired', [
             'order_id' => $order->id
         ]);
-
+        // dd($changes, $order->assigned_to, $order->getOriginal('assigned_to'));
         // Check if assigned_to was changed
         if (isset($changes['assigned_to'])) {
             $newAssignedTo = $order->assigned_to;
@@ -208,7 +208,7 @@ class OrderObserver
             ]);
             
             // Create notification when order is assigned to contractor (from null to assigned)
-            if ($newAssignedTo && !$oldAssignedTo) {
+            if ($newAssignedTo && $oldAssignedTo) {
                 \Log::info('OrderObserver: Creating notification for contractor assignment', [
                     'order_id' => $order->id,
                     'assigned_to' => $newAssignedTo,

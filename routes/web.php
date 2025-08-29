@@ -215,6 +215,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{orderId}/order-panels/{orderPanelId}/available-for-reassignment', [AdminOrderController::class, 'getAvailablePanelsForReassignment'])->name('orders.order-panels.available-for-reassignment');
         Route::post('/orders/panels/reassign', [AdminOrderController::class, 'reassignPanelSplit'])->name('orders.panels.reassign');
         Route::get('/orders/{orderId}/reassignment-history', [AdminOrderController::class, 'getReassignmentHistory'])->name('orders.reassignment-history');
+        
+        // Contractor Reassignment routes
+        Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');

@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Orders')
-
 @section('content')
 <section class="py-3 overflow-hidden">
     {{-- <div class="d-flex align-items-center justify-content-between">
@@ -21,6 +20,7 @@
     'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
     @endphp
 
+
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
             <div style="cursor: pointer; display: inline-flex; align-items: center; margin-bottom: 10px;">
@@ -36,11 +36,88 @@
             <h6><span class="opacity-50 fs-6">Order Date:</span>
                 {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div
-            class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
-            {{ ucfirst($order->status_manage_by_admin ?? '') }}
+        <div class="d-flex align-items-center gap-2">
+            <div
+                class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
+                {{ ucfirst($order->status_manage_by_admin ?? '') }}
+            </div>
+            
+            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                <i class="fa fa-user-edit"></i> Reassign Contractor
+            </button>
+            <!-- @can('admin')
+            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                <i class="fa fa-user-edit"></i> Reassign Contractor
+            </button>
+            @endcan -->
         </div>
     </div>
+
+    <!-- Reassign Contractor Modal -->
+    <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="reassignContractorForm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="contractorSelect" class="form-label">Select Contractor</label>
+                            <select class="form-select" id="contractorSelect" name="contractor_id" required>
+                                <option value="">-- Select Contractor --</option>
+                                @foreach(App\Models\User::whereHas('role', function($q){ $q->where('name', 'contractor'); })->get() as $contractor)
+                                    <option value="{{ $contractor->id }}" @if($order->assigned_to == $contractor->id) selected @endif>{{ $contractor->name }} ({{ $contractor->email }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Reassign</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+@push('scripts')
+<script>
+$(function() {
+    $('#reassignContractorForm').on('submit', function(e) {
+        e.preventDefault();
+        var contractorId = $('#contractorSelect').val();
+        if (!contractorId) {
+            toastr.error('Please select a contractor');
+            return;
+        }
+        $.ajax({
+            url: '/admin/orders/{{ $order->id }}/reassign-contractor',
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                $('#reassignContractorForm button[type="submit"]').prop('disabled', true);
+            },
+            success: function(response) {
+                toastr.success('Contractor reassigned successfully');
+                $('#reassignContractorModal').modal('hide');
+                // setTimeout(function(){ location.reload(); }, 1000);
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                toastr.error(msg);
+            },
+            complete: function() {
+                $('#reassignContractorForm button[type="submit"]').prop('disabled', false);
+            }
+        });
+    });
+});
+</script>
+@endpush
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
