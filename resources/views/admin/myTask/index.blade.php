@@ -604,6 +604,7 @@
                             <th scope="col">Inboxes/Domain</th>
                             <th scope="col">Total Domains</th>
                             <th scope="col">Total Inboxes</th>
+                            <th scope="col">Customized Type</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -625,6 +626,17 @@
                                     </span>
                                 </td>
                                 <td>${split.total_inboxes || 'N/A'}</td>
+                                <td>
+                                    ${split.email_count > 0 ? `
+                                        <span class="badge bg-success" style="font-size: 10px;">
+                                            <i class="fa-solid fa-check me-1"></i>Custom
+                                        </span>
+                                    ` : `
+                                        <span class="badge bg-secondary" style="font-size: 10px;">
+                                            <i class="fa-solid fa-cog me-1"></i>Default
+                                        </span>
+                                    `}
+                                </td>
                                 <td>
                                     <div class="d-flex gap-1">
                                         <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">

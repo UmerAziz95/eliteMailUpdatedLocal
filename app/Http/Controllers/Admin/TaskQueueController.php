@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\PanelReassignmentHistory;
 use App\Services\PanelReassignmentService;
 use Carbon\Carbon;
+use App\Models\OrderEmail;
 
 class TaskQueueController extends Controller
 {
@@ -214,6 +215,7 @@ class TaskQueueController extends Controller
                             'status' => $panel->status ?? 'pending'
                         ],
                         'customized_note' => $panel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$panel->id])->count(),
                     ];
                 }
             }

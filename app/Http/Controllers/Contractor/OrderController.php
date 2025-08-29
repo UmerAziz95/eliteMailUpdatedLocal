@@ -2177,10 +2177,10 @@ class OrderController extends Controller
                     continue;
                 }
                 
-                if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $errors[] = "Row {$rowNumber}: Valid email is required";
-                    continue;
-                }
+                // if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                //     $errors[] = "Row {$rowNumber}: Valid email is required";
+                //     continue;
+                // }
                 
                 if (empty($password)) {
                     $errors[] = "Row {$rowNumber}: Password is required";
