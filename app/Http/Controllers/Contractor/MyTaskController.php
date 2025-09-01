@@ -311,4 +311,159 @@ class MyTaskController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get shifted task details for the offcanvas view
+     */
+    public function getShiftedTaskDetails($taskId)
+    {
+        try {
+            // Find the panel reassignment task by ID
+            $task = PanelReassignmentHistory::with([
+                'order.user',
+                'order.reorderInfo',
+                'order.orderPanels.orderPanelSplits',
+                'order.orderPanels.panel',
+                'orderPanel.orderPanelSplits',
+                'fromPanel',
+                'toPanel',
+                'reassignedBy',
+                'assignedTo'
+            ])->findOrFail($taskId);
+
+            // Get the full order with all relationships for splits data
+            $order = \App\Models\Order::with([
+                'user',
+                'reorderInfo',
+                'orderPanels.orderPanelSplits',
+                'orderPanels.panel'
+            ])->findOrFail($task->order_id);
+
+            // Get order information (similar to regular task details)
+            $orderInfo = [
+                'id' => $order->id,
+                'customer_name' => $order->user->name ?? 'N/A',
+                'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
+                'status' => $order->status_manage_by_admin ?? 'pending',
+                'created_at' => $order->created_at,
+                'completed_at' => $order->completed_at,
+                'status_manage_by_admin' => $this->getOrderStatusBadge($order->status_manage_by_admin)
+            ];
+
+            // Get reorder info (similar to regular task details)
+            $reorderInfo = $order->reorderInfo->first();
+            $reorderData = null;
+            if ($reorderInfo) {
+                $reorderData = [
+                    'hosting_platform' => $reorderInfo->hosting_platform,
+                    'platform_login' => $reorderInfo->platform_login,
+                    'platform_password' => $reorderInfo->platform_password,
+                    'forwarding_url' => $reorderInfo->forwarding_url,
+                    'sending_platform' => $reorderInfo->sending_platform,
+                    'sequencer_login' => $reorderInfo->sequencer_login,
+                    'sequencer_password' => $reorderInfo->sequencer_password,
+                    'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                    'prefix_variants' => $reorderInfo->prefix_variants,
+                    'prefix_variant_1' => $reorderInfo->prefix_variant_1,
+                    'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                    'data_obj' => $reorderInfo->data_obj ? json_decode($reorderInfo->data_obj, true) : null
+                ];
+            }
+
+            // Get splits information (similar to regular task details)
+            $splits = [];
+            foreach ($order->orderPanels as $panel) {
+                foreach ($panel->orderPanelSplits as $split) {
+                    // Get domains from the domains array field (not a relationship)
+                    $domains = $split->domains ? (is_array($split->domains) ? $split->domains : json_decode($split->domains, true)) : [];
+                    if($task->from_panel_id && $task->from_panel_id != $panel->panel_id){
+                        continue;
+                    }
+                    $splits[] = [
+                        'id' => $split->id,
+                        'panel_id' => $panel->panel_id,
+                        'panel_title' => $panel->panel->title ?? 'N/A',
+                        'order_panel_id' => $panel->id,
+                        'status' => $split->status ?? 'unallocated',
+                        'inboxes_per_domain' => $reorderInfo ? $reorderInfo->inboxes_per_domain : 1,
+                        'domains_count' => count($domains),
+                        'total_inboxes' => count($domains) * ($reorderInfo ? $reorderInfo->inboxes_per_domain : 1),
+                        'domains' => $domains,
+                        'order_panel' => [
+                            'timer_started_at' => $panel->timer_started_at,
+                            'completed_at' => $panel->completed_at,
+                            'status' => $panel->status ?? 'pending'
+                        ],
+                        'customized_note' => $panel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$panel->id])->count(),
+                    ];
+                }
+            }
+
+            // Task-specific information for panel reassignment
+            $taskInfo = [
+                'id' => $task->id,
+                'task_id' => $task->id,
+                'order_id' => $task->order_id,
+                'order_panel_id' => $task->order_panel_id,
+                'from_panel_id' => $task->from_panel_id,
+                'to_panel_id' => $task->to_panel_id,
+                'action_type' => $task->action_type,
+                'space_transferred' => $task->space_transferred,
+                'reason' => $task->reason,
+                'status' => $task->status,
+                'reassignment_date' => $task->reassignment_date,
+                'task_started_at' => $task->task_started_at,
+                'task_completed_at' => $task->task_completed_at,
+                'completion_notes' => $task->completion_notes,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+                'assigned_to' => $task->assigned_to,
+                'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : null,
+                'reassigned_by_name' => $task->reassignedBy ? $task->reassignedBy->name : null,
+                'notes' => $task->notes,
+                'started_queue_date' => $task->reassignment_date, // Use reassignment_date as queue date
+            ];
+
+            // From panel information
+            $fromPanel = null;
+            if ($task->fromPanel) {
+                $fromPanel = [
+                    'id' => $task->fromPanel->id,
+                    'title' => $task->fromPanel->title,
+                    'location' => $task->fromPanel->location ?? 'N/A',
+                    'capacity' => $task->fromPanel->capacity ?? 'N/A',
+                ];
+            }
+
+            // To panel information
+            $toPanel = null;
+            if ($task->toPanel) {
+                $toPanel = [
+                    'id' => $task->toPanel->id,
+                    'title' => $task->toPanel->title,
+                    'location' => $task->toPanel->location ?? 'N/A',
+                    'capacity' => $task->toPanel->capacity ?? 'N/A',
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskInfo,
+                'order' => $orderInfo,
+                'reorder_info' => $reorderData,
+                'splits' => $splits,
+                'from_panel' => $fromPanel,
+                'to_panel' => $toPanel,
+                'message' => 'Panel reassignment task details with order splits retrieved successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching shifted task details (MyTask): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel reassignment task not found or error fetching details'
+            ], 404);
+        }
+    }
 }

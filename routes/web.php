@@ -548,6 +548,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
     Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
     Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+    Route::get('myTask/shifted/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getShiftedTaskDetails'])->name("myTask.shifted.details");
     Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
 
