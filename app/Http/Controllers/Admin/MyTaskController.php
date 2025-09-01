@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
 use App\Models\PanelReassignmentHistory;
+use App\Models\OrderEmail;
 use Carbon\Carbon;
 
 class MyTaskController extends Controller
@@ -296,7 +297,9 @@ class MyTaskController extends Controller
                             'timer_started_at' => $panel->timer_started_at,
                             'completed_at' => $panel->completed_at,
                             'status' => $panel->status ?? 'pending'
-                        ]
+                        ],
+                        'customized_note' => $panel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$panel->id])->count(),
                     ];
                 }
             }

@@ -1098,7 +1098,7 @@
                                 <td>
                                     ${split.email_count > 0 ? `
                                         <span class="badge bg-success" style="font-size: 10px;">
-                                            <i class="fa-solid fa-check me-1"></i>Custom
+                                            <i class="fa-solid fa-check me-1"></i>Customized
                                         </span>
                                     ` : `
                                         <span class="badge bg-secondary" style="font-size: 10px;">
