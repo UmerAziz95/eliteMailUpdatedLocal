@@ -540,6 +540,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // Migration Pending Tasks Routes  
     Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
     Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
+    Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
     Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
     Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
