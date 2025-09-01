@@ -148,6 +148,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Shifted Task Details Offcanvas -->
+    <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="shifted-task-details-view"
+        aria-labelledby="shifted-task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+            <h5 class="offcanvas-title" id="shifted-task-details-viewLabel">Panel Reassignment Details</h5>
+            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times fs-5"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body pt-2">
+            <div id="shiftedTaskDetailsContainer">
+                <!-- Dynamic content will be loaded here -->
+                <div id="shiftedTaskLoadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading panel reassignment details...</span>
+                    </div>
+                    <p class="mt-2">Loading panel reassignment details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -422,6 +444,13 @@
                             <i class="fas fa-check text-white"></i>
                         </button>
                     ` : ''}
+                    <button class="btn btn-primary btn-sm d-flex align-items-center justify-content-center"
+                        onclick="viewShiftedTaskDetails(${task.task_id})" 
+                        data-bs-toggle="offcanvas" 
+                        data-bs-target="#shifted-task-details-view"
+                        title="View Panel Reassignment Details">
+                        <i class="fas fa-eye text-white"></i>
+                    </button>
                 </div>
                 `}
             </div>
@@ -788,6 +817,417 @@
                     </div>
                 </div>
             </div>
+        `;
+        
+        container.innerHTML = detailsHtml;
+        
+        // Initialize chevron states and animations after rendering
+        setTimeout(function() {
+            initializeChevronStates();
+        }, 100);
+    }
+
+    // View shifted task details function
+    async function viewShiftedTaskDetails(taskId) {
+        try {
+            // Show loading in shifted task offcanvas
+            const container = document.getElementById('shiftedTaskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="shiftedTaskLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading panel reassignment details...</span>
+                        </div>
+                        <p class="mt-2 text-white">Loading panel reassignment details...</p>
+                    </div>
+                `;
+            }
+            
+            // Show offcanvas with proper cleanup
+            const offcanvasElement = document.getElementById('shifted-task-details-view');
+            const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+            
+            // Add event listeners for proper cleanup
+            offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
+                // Clean up any remaining backdrop elements
+                const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                // Ensure body classes are removed
+                document.body.classList.remove('offcanvas-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                // Reset offcanvas title
+                const offcanvasTitle = document.getElementById('shifted-task-details-viewLabel');
+                if (offcanvasTitle) {
+                    offcanvasTitle.innerHTML = 'Panel Reassignment Details';
+                }
+            }, { once: true });
+            
+            offcanvas.show();
+            
+            // Fetch shifted task details using admin route
+            const response = await fetch(`{{ url('admin/taskInQueue/shifted') }}/${taskId}/details`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch panel reassignment details');
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load panel reassignment details');
+            }
+            
+            renderShiftedTaskDetails(data);
+            
+        } catch (error) {
+            console.error('Error loading shifted task details:', error);
+            const container = document.getElementById('shiftedTaskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                        <h5 class="text-white">Error Loading Panel Reassignment Details</h5>
+                        <p class="text-white-50">Failed to load panel reassignment details. Please try again.</p>
+                        <button class="btn btn-primary" onclick="viewShiftedTaskDetails(${taskId})">Retry</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Render shifted task details in offcanvas
+    function renderShiftedTaskDetails(data) {
+        const container = document.getElementById('shiftedTaskDetailsContainer');
+        
+        if (!data.splits || data.splits.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exchange-alt text-white fs-3 mb-3"></i>
+                    <h5 class="text-white">No Order Data Found</h5>
+                    <p class="text-white-50">This panel reassignment task doesn't have any order data yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const task = data.task;
+        const orderInfo = data.order;
+        const reorderInfo = data.reorder_info;
+        const splits = data.splits;
+        const fromPanel = data.from_panel;
+        const toPanel = data.to_panel;
+
+        // Update offcanvas title
+        const offcanvasTitle = document.getElementById('shifted-task-details-viewLabel');
+        if (offcanvasTitle && orderInfo) {
+            offcanvasTitle.innerHTML = `Panel Migration - Order #${orderInfo.id}`;
+        }
+
+        const detailsHtml = `
+            <!-- Panel Migration Header -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-white">Panel Migration Task #${task.task_id || task.id}</h6>
+                        <p class="text-white-50 small mb-0">
+                            Customer: ${orderInfo.customer_name} | 
+                            Created: ${formatDate(orderInfo.created_at)} |
+                            Action: <span class="badge ${task.action_type === 'added' ? 'bg-success' : 'bg-danger'}">${task.action_type === 'added' ? 'Space Assignment' : 'Space Removal'}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Movement Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card p-3 text-white">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-exchange-alt"></i>
+                            </div>
+                            Panel Migration Details
+                        </h6>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 border-0" 
+                                    style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.08) 100%); border-left: 4px solid #dc3545 !important; border: 1px solid rgba(220, 53, 69, 0.2);">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-arrow-left text-danger me-2"></i>
+                                        <small class="text-white-50">From Panel</small>
+                                    </div>
+                                    <div class="ms-4">
+                                        <span class="fw-bold text-white">${fromPanel ? fromPanel.title : 'N/A'}</span>
+                                        <small class="d-block text-white-50">ID: ${fromPanel ? fromPanel.id : 'N/A'}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 border-0" 
+                                    style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.12) 0%, rgba(40, 167, 69, 0.08) 100%); border-left: 4px solid #28a745 !important; border: 1px solid rgba(40, 167, 69, 0.2);">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-arrow-right text-success me-2"></i>
+                                        <small class="text-white-50">To Panel</small>
+                                    </div>
+                                    <div class="ms-4">
+                                        <span class="fw-bold text-white">${toPanel ? toPanel.title : 'N/A'}</span>
+                                        <small class="d-block text-white-50">ID: ${toPanel ? toPanel.id : 'N/A'}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50 small">Space ${task.action_type === 'added' ? 'Transferred' : 'Deleted'}</span>
+                            <span class="text-white fw-bold fs-5">${task.space_transferred || 0} GB</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 text-white">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-tasks"></i>
+                            </div>
+                            Task Status
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2);">
+                                    <small class="text-white-50 d-block">Status</small>
+                                    <span class="badge ${getStatusClass(task.status)} fw-bold">${task.status.charAt(0).toUpperCase() + task.status.slice(1)}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2);">
+                                    <small class="text-white-50 d-block">Created</small>
+                                    <small class="text-white fw-bold">${formatDate(task.created_at || new Date())}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${task.assigned_to_name ? `
+                            <div class="mt-3 p-2 rounded-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2);">
+                                <span class="opacity-50 small d-block">Assigned To</span>
+                                <span class="text-white fw-bold">${task.assigned_to_name}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Splits Table -->
+            <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
+                <table class="table table-striped table-hover position-sticky top-0 border-0">
+                    <thead class="border-0">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Id</th>
+                            <th scope="col">Panel Title</th>
+                            <th scope="col">Inboxes/Domain</th>
+                            <th scope="col">Total Domains</th>
+                            <th scope="col">Total Inboxes</th>
+                            <th scope="col">Customized Type</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${splits.map((split, index) => `
+                            <tr>
+                                <th scope="row">${index + 1}</th>
+                                <td>
+                                    <span class="badge bg-primary" style="font-size: 10px;">
+                                        SPL-${split.id || 'N/A'}
+                                    </span>
+                                </td>
+                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_title || 'N/A'}</td>
+                                <td>${split.inboxes_per_domain || 'N/A'}</td>
+                                <td>
+                                    <span class="py-1 px-2 rounded-1 border border-success success" style="font-size: 10px;">
+                                        ${split.domains_count || 0} domain(s)
+                                    </span>
+                                </td>
+                                <td>${split.total_inboxes || 'N/A'}</td>
+                                <td>
+                                    ${split.email_count > 0 ? `
+                                        <span class="badge bg-success" style="font-size: 10px;">
+                                            <i class="fa-solid fa-check me-1"></i>Customized
+                                        </span>
+                                    ` : `
+                                        <span class="badge bg-secondary" style="font-size: 10px;">
+                                            <i class="fa-solid fa-cog me-1"></i>Default
+                                        </span>
+                                    `}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="/admin/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
+                                            <i class="fas fa-download"></i> CSV
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="card p-3 mb-3 text-white">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-regular fa-envelope"></i>
+                            </div>
+                            Email configurations
+                        </h6>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span style="font-size: 12px" class="text-white">${(() => {
+                                const totalInboxes = splits.reduce((total, split) => total + (split.total_inboxes || 0), 0);
+                                const totalDomains = splits.reduce((total, split) => total + (split.domains_count || 0), 0);
+                                const inboxesPerDomain = reorderInfo?.inboxes_per_domain || 0;
+                                
+                                let splitDetails = '';
+                                splits.forEach((split, index) => {
+                                    splitDetails += `
+                                        <br>
+                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                            Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                });
+                                
+                                return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                            })()}</span>
+                        </div>
+                         
+                        <hr>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50 small">Prefix Variants</span>
+                            <small class="text-white">${renderPrefixVariants(reorderInfo)}</small>
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50 small">Profile Picture URLS</span>
+                         <small class="text-white">${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
+                        </div>
+                       
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card p-3 overflow-y-auto text-white" style="max-height: 50rem">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-earth-europe"></i>
+                            </div>
+                            Domains &amp; Configuration
+                        </h6>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Hosting Platform</span>
+                            <small class="text-white">${reorderInfo?.hosting_platform || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Platform Login</span>
+                            <small class="text-white">${reorderInfo?.platform_login || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Platform Password</span>
+                            <small class="text-white">${reorderInfo?.platform_password || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Domain Forwarding Destination URL</span>
+                            <small class="text-white">${reorderInfo?.forwarding_url || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Sending Platform</span>
+                            <small class="text-white">${reorderInfo?.sending_platform || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Cold email platform - Login</span>
+                            <small class="text-white">${reorderInfo?.sequencer_login || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50 small">Cold email platform - Password</span>
+                            <small class="text-white">${reorderInfo?.sequencer_password || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column">
+                            <h6 class="d-flex align-items-center gap-1">
+                                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-solid fa-globe"></i>
+                                </div>
+                               <span>All Domains & Splits</span>
+                            </h6>
+                            
+                            <!-- Task Splits Domains -->
+                            ${splits.map((split, index) => `
+                                <div class="domain-split-container mb-3">
+                                    <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top" 
+                                         style="background: var(--filter-color); cursor: pointer; border: 1px solid var(--second-primary)"
+                                         onclick="toggleSplit('split-${orderInfo.id}-${index}')">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                Split ${String(index + 1).padStart(2, '0')}
+                                            </span>
+                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
+                                                ${split.domains_count || 0} domains
+                                            </span>
+                                            <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
+                                               title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
+                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                            <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="split-content collapse" id="split-${orderInfo.id}-${index}">
+                                        <div class="p-3" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-top: none; border-radius: 0 0 8px 8px;">
+                                            <div class="domains-grid">
+                                                ${renderDomainsWithStyle([split])}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Back up codes</span>
+                            <span class="text-white">${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+
+                            <span class="opacity-50">Additional Notes</span>
+                            <span class="text-white">${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            ${task.status === 'pending' ? `
+                <div class="mt-3 text-center">
+                    <button class="btn btn-success" onclick="completeShiftedTask(${task.task_id || task.id})">
+                        <i class="fas fa-check me-2"></i>Mark as Completed
+                    </button>
+                </div>
+            ` : ''}
         `;
         
         container.innerHTML = detailsHtml;
