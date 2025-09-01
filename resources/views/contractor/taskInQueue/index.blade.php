@@ -3,10 +3,6 @@
 @push('styles')
 
     <style>
-        :root {
-            --filter-color: rgba(102, 126, 234, 0.2);
-            --second-primary: #667eea;
-        }
         
         .glass-box {
             background-color: rgba(255, 255, 255, 0.05);
