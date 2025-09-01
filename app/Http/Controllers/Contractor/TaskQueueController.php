@@ -696,9 +696,9 @@ class TaskQueueController extends Controller
                 foreach ($panel->orderPanelSplits as $split) {
                     // Get domains from the domains array field (not a relationship)
                     $domains = $split->domains ? (is_array($split->domains) ? $split->domains : json_decode($split->domains, true)) : [];
-                    if($task->from_panel_id && $task->from_panel_id != $panel->panel_id){
-                        continue;
-                    }
+                    // if($task->from_panel_id && $task->from_panel_id != $panel->panel_id){
+                    //     continue;
+                    // }
                     $splits[] = [
                         'id' => $split->id,
                         'panel_id' => $panel->panel_id,

@@ -986,7 +986,7 @@
 
                         <div class="d-flex flex-column">
                             <span class="opacity-50 small">Space ${task.action_type === 'added' ? 'Transferred' : 'Deleted'}</span>
-                            <span class="text-white fw-bold fs-5">${task.space_transferred || 0} GB</span>
+                            <span class="text-white fw-bold fs-5">${task.space_transferred || 0}</span>
                         </div>
                     </div>
                 </div>
