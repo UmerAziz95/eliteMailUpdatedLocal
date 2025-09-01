@@ -302,6 +302,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Migration Panel Reassignment Task Routes
         Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
+        Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
         Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
         Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
