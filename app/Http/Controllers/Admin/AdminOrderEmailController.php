@@ -8,6 +8,7 @@ use App\Models\OrderEmail;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\Notification;
+use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,7 @@ class AdminOrderEmailController extends Controller
             ], 500);
         }
     }
-
+    
     public function bulkImport(Request $request)
     {
         try {
@@ -281,6 +282,21 @@ class AdminOrderEmailController extends Controller
                         'email_count' => count($emailsToImport)
                     ]
                 ]);
+
+                // Send Slack notification to inbox-setup channel
+                try {
+                    SlackNotificationService::sendCustomizedEmailCreatedNotification(
+                        $orderPanel, 
+                        count($emailsToImport), 
+                        $request->customized_note
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('Failed to send Slack notification for customized email creation', [
+                        'error' => $e->getMessage(),
+                        'order_panel_id' => $orderPanelId,
+                        'admin_id' => auth()->id()
+                    ]);
+                }
 
                 DB::commit();
 

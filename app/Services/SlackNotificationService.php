@@ -461,6 +461,31 @@ class SlackNotificationService
         $message = self::formatMessage('support-ticket-reply', $data);
         return self::send('inbox-tickets', $message);
     }
+
+    /**
+     * Send customized email creation notification to Slack
+     *
+     * @param \App\Models\OrderPanel $orderPanel
+     * @param int $emailCount
+     * @param string|null $customizedNote
+     * @return bool
+     */
+    public static function sendCustomizedEmailCreatedNotification($orderPanel, $emailCount, $customizedNote = null)
+    {
+        $data = [
+            'order_id' => $orderPanel->order_id,
+            'order_panel_id' => $orderPanel->id,
+            'customer_name' => $orderPanel->order && $orderPanel->order->user ? $orderPanel->order->user->name : 'Unknown',
+            'customer_email' => $orderPanel->order && $orderPanel->order->user ? $orderPanel->order->user->email : 'Unknown',
+            'email_count' => $emailCount,
+            'customized_note' => $customizedNote,
+            'created_by' => auth()->user() ? auth()->user()->name : 'Admin',
+            'created_at' => now()->format('Y-m-d H:i:s T')
+        ];
+
+        $message = self::formatMessage('customized-emails-created', $data);
+        return self::send('inbox-setup', $message);
+    }
     
     /**
      * Format message based on type and data
@@ -1045,6 +1070,66 @@ class SlackNotificationService
                             'ts' => time()
                         ]
                     ]
+                ];
+
+            case 'customized-emails-created':
+                $attachments = [
+                    [
+                        'color' => '#17a2b8',
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => '#' . ($data['order_id'] ?? 'N/A'),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Split ID',
+                                'value' => '#' . ($data['order_panel_id'] ?? 'N/A'),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Name',
+                                'value' => $data['customer_name'] ?? 'Unknown',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Email',
+                                'value' => $data['customer_email'] ?? 'Unknown',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Email Count',
+                                'value' => $data['email_count'] ?? '0',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Created By',
+                                'value' => $data['created_by'] ?? 'Admin',
+                                'short' => true
+                            ]
+                        ],
+                        'footer' => $appName . ' - Email Management System',
+                        'ts' => time()
+                    ]
+                ];
+
+                // Add customized note as a separate attachment if provided
+                if (!empty($data['customized_note'])) {
+                    $attachments[] = [
+                        'color' => '#6c757d',
+                        'fields' => [
+                            [
+                                'title' => 'Customized Note',
+                                'value' => $data['customized_note'],
+                                'short' => false
+                            ]
+                        ]
+                    ];
+                }
+
+                return [
+                    'text' => "📧 *Customized Emails Created*",
+                    'attachments' => $attachments
                 ];
 
             case 'order-cancellation':
