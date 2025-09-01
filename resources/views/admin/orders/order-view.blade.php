@@ -58,15 +58,31 @@
                         <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body"> 
+                        {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}}   --}}
                         <div class="mb-3">
                             <label for="contractorSelect" class="form-label">Select Contractor</label>
-                            <select class="form-select" id="contractorSelect" name="contractor_id" required>
-                                <option value="">-- Select Contractor --</option>
-                                @foreach(App\Models\User::whereHas('role', function($q){ $q->where('name', 'contractor'); })->get() as $contractor)
-                                    <option value="{{ $contractor->id }}" @if($order->assigned_to == $contractor->id) selected @endif>{{ $contractor->name }} ({{ $contractor->email }})</option>
-                                @endforeach
-                            </select>
+                           <select class="form-select" id="contractorSelect" name="contractor_id" required>
+    <option value="">-- Select Contractor --</option>
+    @php
+        $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
+        $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                $q->whereIn('name', $roleNames);
+            })
+            ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
+                $q->whereIn('name', $roleNames);
+            })
+            ->get();
+    @endphp
+
+    @foreach($contractors as $contractor)
+        <option value="{{ $contractor->id }}" 
+            @if($order->assigned_to == $contractor->id) selected @endif>
+            {{ $contractor->name }} ({{ $contractor->email }})
+        </option>
+    @endforeach
+</select>
+
                         </div>
                     </div>
                     <div class="modal-footer">

@@ -70,6 +70,7 @@ class OrderObserver
         
         // Check if status_manage_by_admin was changed
         if (isset($changes['status_manage_by_admin'])) {
+            
             $previousStatus = $order->getOriginal('status_manage_by_admin');
             $newStatus = $order->status_manage_by_admin;
             $reason = $order->reason ?? $order->subscription->reason ?? null;
@@ -191,13 +192,15 @@ class OrderObserver
         
         // Fire the general OrderUpdated event for real-time updates
         event(new OrderUpdated($order, $changes));
-        
+
         \Log::info('OrderObserver: OrderUpdated event fired', [
             'order_id' => $order->id
         ]);
         
         // Check if assigned_to was changed
+       
         if (isset($changes['assigned_to'])) {
+
             $newAssignedTo = $order->assigned_to;
             $oldAssignedTo = $order->getOriginal('assigned_to');
 
@@ -208,7 +211,7 @@ class OrderObserver
             ]);
             
             // Create notification when order is assigned to contractor (from null to assigned)
-            if ($newAssignedTo && $oldAssignedTo) {
+            if ($newAssignedTo) {
                 \Log::info('OrderObserver: Creating notification for contractor assignment', [
                     'order_id' => $order->id,
                     'assigned_to' => $newAssignedTo,
@@ -216,6 +219,7 @@ class OrderObserver
                 ]);
 
                 try {
+
                     // Create a notification for the contractor
                     Notification::create([
                         'user_id' => $newAssignedTo,
@@ -252,6 +256,7 @@ class OrderObserver
                         'assigned_to' => $newAssignedTo
                     ]);
                 } catch (\Exception $e) {
+
                     \Log::error('OrderObserver: Failed to create assignment notification', [
                         'order_id' => $order->id,
                         'assigned_to' => $newAssignedTo,

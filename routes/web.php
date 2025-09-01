@@ -216,7 +216,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/panels/reassign', [AdminOrderController::class, 'reassignPanelSplit'])->name('orders.panels.reassign');
         Route::get('/orders/{orderId}/reassignment-history', [AdminOrderController::class, 'getReassignmentHistory'])->name('orders.reassignment-history');
         
-        // Contractor Reassignment routes
+        // Contractor Reassignment routes 
         Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
     
         //contractors 

@@ -2115,6 +2115,7 @@ class OrderController extends Controller
             $request->validate([
                 'contractor_id' => 'required|exists:users,id'
             ]);
+           Log::channel('slack_notifications')->info("test 1 controller============================".$orderId.'-'. $request->contractor_id);
 
             $service = new OrderContractorReassignmentService();
             $result = $service->reassignContractor($orderId, $request->contractor_id);
@@ -2158,9 +2159,9 @@ class OrderController extends Controller
         }
     }
 
-    /**
+    /**  
      * Export CSV file with smart data selection based on order_emails availability
-     * If order_emails data exists for order panels, use that data
+     * If order_emails data exists for order panels, usev that data
      * Otherwise, fall back to the existing domain-based generation method
      */
     public function exportCsvSplitDomainsSmartById($splitId)

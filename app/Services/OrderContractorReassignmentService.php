@@ -9,6 +9,7 @@ use App\Models\UserOrderPanelAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Services\SlackNotificationService;
 
 class OrderContractorReassignmentService
 {
@@ -22,26 +23,29 @@ class OrderContractorReassignmentService
     public function reassignContractor($orderId, $newContractorId)
     {
         try {
+           Log::channel('slack_notifications')->info("test 2 service ============================");
+
             DB::beginTransaction();
 
             $order = Order::findOrFail($orderId);
             $oldContractorId = $order->assigned_to;
             $order->assigned_to = $newContractorId;
             $order->save();
-
-            // Update all order panels
+            //  SlackNotificationService::sendOrderAssignmentNotification($order, $newContractorId);
+        
             OrderPanel::where('order_id', $orderId)
                 ->update(['contractor_id' => $newContractorId]);
 
-            // Update all order emails
             OrderEmail::where('order_id', $orderId)
                 ->update(['contractor_id' => $newContractorId]);
 
-            // Update all user order panel assignments
             UserOrderPanelAssignment::where('order_id', $orderId)
                 ->update(['contractor_id' => $newContractorId]);
 
+            Log::channel('slack_notifications')->info("after UserOrderPanelAssignment update");
+            
             DB::commit();
+
             return [
                 'success' => true,
                 'message' => 'Contractor reassigned successfully',
@@ -49,6 +53,8 @@ class OrderContractorReassignmentService
                 'new_contractor_id' => $newContractorId
             ];
         } catch (Exception $e) {
+        Log::channel('slack_notifications')->info("test 4 service============================");
+
             DB::rollBack();
             Log::error('Order contractor reassignment failed', [
                 'order_id' => $orderId,
