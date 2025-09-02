@@ -46,7 +46,7 @@
     a {
         text-decoration: none
     }
-
+    
     .pricing-card:hover {
         /* box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15); */
         transform: translateY(-10px);
@@ -54,7 +54,7 @@
 
     .popular {
         position: relative;
-        background: var(--second-primary);
+        /* background: var(--second-primary); */
         color: white;
     }
 
@@ -328,7 +328,7 @@
         <div class="row" id="discounted-plans-container">
             @foreach ($discountedPlans as $plan)
             <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
-                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}" style="border: 2px solid #28a745;">
+                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}" style="border: 2px solid #28a745;">
                     <div class="position-relative">
                         <span class="badge bg-success position-absolute top-0 end-0 m-2">
                             <i class="fa-solid fa-percent me-1"></i>Discounted
@@ -393,7 +393,7 @@
         <div class="row" id="regular-plans-container">
             @foreach ($regularPlans as $plan)
             <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
-                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                     <div class="inner-content d-flex flex-column justify-content-between">
                         <div>
                             <div class="text-start">
@@ -439,7 +439,7 @@
     <div class="row mt-5" id="plans-container" style="display: none;">
         @foreach ($plans as $plan)
         <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
-            <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+            <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
                 <div class="inner-content d-flex flex-column justify-content-between">
                     <div>
                         <div class="text-start">
@@ -650,6 +650,8 @@
                                 <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
                                 </option>
                             </select>
+                            <!-- Hidden field to maintain discounted status -->
+                            <input type="hidden" name="is_discounted" value="1">
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="name{{ $plan->id }}">Plan Name:</label>
@@ -789,6 +791,8 @@
                                 <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
                                 </option>
                             </select>
+                            <!-- Hidden field to maintain non-discounted status -->
+                            <input type="hidden" name="is_discounted" value="0">
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="name{{ $plan->id }}">Plan Name:</label>
@@ -909,6 +913,10 @@
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-4">
                         <h4>Add New Plan</h4>
+                        <div class="alert alert-info mt-3">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <small><strong>Note:</strong> Only one discounted plan and one non-discounted plan are allowed in the system.</small>
+                        </div>
                     </div>
                     <form id="addPlanForm">
                         @csrf
@@ -935,6 +943,15 @@
                                 <label for="description">Description:</label>
                                 <textarea class="form-control mb-3" id="description" name="description"
                                     rows="2"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="is_discounted" name="is_discounted" value="1">
+                                    <label class="form-check-label text-white" for="is_discounted">
+                                        <i class="fa-solid fa-tags me-1"></i>Is Discounted Plan
+                                    </label>
+                                    <small class="d-block text-white">Check this if this plan should have discounts applied</small>
+                                </div>
                             </div>
                             <div class="col-md=6">
                                 <h5 class="mt-2">Inbox Limits</h5>
@@ -1519,8 +1536,10 @@
 
                     // Add feature to preview - don't show value if null/empty
                     featuresList.append(`
-                        <li class="mb-2">
-                            <i class="fas fa-check text-success"></i> 
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <div>
+                                <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png" width="20" alt="">
+                            </div>
                             ${featureTitle}${featureValue ? ' ' + featureValue : ''}
                         </li>
                     `);
@@ -1541,6 +1560,21 @@
                 // Validate form completeness
                 if (!validateFormCompleteness($(this), 'plan')) {
                     return;
+                }
+
+                // Check if user is trying to create a plan type that might already exist
+                const isDiscounted = $('#is_discounted').is(':checked');
+                const planType = isDiscounted ? 'discounted' : 'non-discounted';
+                
+                // Show warning but allow submission (server will validate)
+                if (isDiscounted && $('.pricing-card[style*="border: 2px solid #28a745"]').length > 0) {
+                    if (!confirm(`A discounted plan may already exist. Only one discounted plan is allowed. Continue anyway?`)) {
+                        return;
+                    }
+                } else if (!isDiscounted && $('.pricing-card:not([style*="border: 2px solid #28a745"])').length > 0) {
+                    if (!confirm(`A non-discounted plan may already exist. Only one non-discounted plan is allowed. Continue anyway?`)) {
+                        return;
+                    }
                 }
 
                 const submitBtn = $(this).find('button[type="submit"]');
@@ -1728,8 +1762,10 @@
                         // Don't show value if null/empty
                         const featureValue = feature.pivot.value;
                         featuresHtml += `
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success"></i> 
+                            <li class="mb-2 d-flex align-items-center gap-2">
+                                <div>
+                                    <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png" width="20" alt="">
+                                </div>
                                 ${feature.title}${featureValue ? ' ' + featureValue : ''}
                             </li>
                         `;
@@ -1737,12 +1773,13 @@
                 }
                 card.find('.features-list').html(featuresHtml);
 
-                // Set popular class if needed
-                if (plan.name === 'Standard') {
+                // Set popular class if needed based on getMostlyUsed
+                card.find('.pricing-card').removeClass('popular');
+                @if($getMostlyUsed)
+                if (plan.id === {{ $getMostlyUsed->id }}) {
                     card.find('.pricing-card').addClass('popular');
-                } else {
-                    card.find('.pricing-card').removeClass('popular');
                 }
+                @endif
             }
 
             // Toast helpers
@@ -1922,7 +1959,7 @@
                             featuresHtml = plan.features.map(feature => {
                                 const featureValue = feature.pivot && feature.pivot.value ? ' ' +
                                     feature.pivot.value : '';
-                                return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                                return `<li class="mb-2 d-flex align-items-center gap-2"><div><img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png" width="20" alt=""></div>${feature.title}${featureValue}</li>`;
                             }).join('');
                         } else {
                             featuresHtml = '<li class="mb-2 text-white">No features available</li>';
@@ -1980,7 +2017,7 @@
                         featuresHtml = plan.features.map(feature => {
                             const featureValue = feature.pivot && feature.pivot.value ? ' ' +
                                 feature.pivot.value : '';
-                            return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
+                            return `<li class="mb-2 d-flex align-items-center gap-2"><div><img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png" width="20" alt=""></div>${feature.title}${featureValue}</li>`;
                         }).join('');
                     } else {
                         featuresHtml = '<li class="mb-2 text-white">No features available</li>';
