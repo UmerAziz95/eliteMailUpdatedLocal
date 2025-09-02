@@ -227,6 +227,48 @@
             gap: 30px;
         }
     }
+
+    /* Section headers styling */
+    .section-header {
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+    }
+
+    .section-header h3 {
+        position: relative;
+    }
+
+    /* Discounted plans specific styling */
+    /* .pricing-card[style*="border: 2px solid #28a745"] {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pricing-card[style*="border: 2px solid #28a745"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        z-index: 1;
+    } */
+
+    /* Badge styling for discounted plans */
+    .badge.bg-success {
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 15px;
+        z-index: 2;
+    }
+
+    /* Section divider */
+    .section-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 40px 0;
+    }
 </style>
 @endpush
 
@@ -268,17 +310,138 @@
                     @endif
                 </div> -->
 
-    <div class="row mt-5" id="plans-container">
+    <!-- Discounted Plans Section -->
+    @php
+        $discountedPlans = $plans->where('is_discounted', 1);
+        $regularPlans = $plans->where('is_discounted', 0);
+    @endphp
+
+    @if($discountedPlans->count() > 0)
+    <div class="mt-5">
+        <div class="text-center mb-4 section-header">
+            <h3 class="text-white fw-bold">
+                <i class="fa-solid fa-tags me-2 theme-text"></i>
+                Discounted Plans
+            </h3>
+            <p class="text-white">Special pricing plans with applied discounts</p>
+        </div>
+        <div class="row" id="discounted-plans-container">
+            @foreach ($discountedPlans as $plan)
+            <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
+                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}" style="border: 2px solid #28a745;">
+                    <div class="position-relative">
+                        <span class="badge bg-success position-absolute top-0 end-0 m-2">
+                            <i class="fa-solid fa-percent me-1"></i>Discounted
+                        </span>
+                    </div>
+                    <div class="inner-content d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="text-start">
+                                <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
+                                    {{ $plan->name }}</h4>
+                                <div class="mb-3 ">
+                                    <span>
+                                        <span class="number">{{ $plan->min_inbox }}
+                                            {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
+                                        Inboxes
+                                    </span>
+                                </div>
+
+                                <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
+                                    ${{ number_format($plan->price, 2) }}
+                                    <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
+                                        /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
+                                        per Inboxes
+                                    </span>
+                                </h2>
+                                <ul class="list-unstyled features-list text-start">
+                                    @foreach ($plan->features as $feature)
+                                    <li style="font-size: 14px" class="mb-2 d-flex align-items-center gap-2">
+                                        <div>
+                                            <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
+                                                width="20" alt="">
+                                        </div>
+                                        {{ $feature->title }} {{ $feature->pivot->value }}
+                                    </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Section Divider -->
+    @if($discountedPlans->count() > 0 && $regularPlans->count() > 0)
+    <div class="section-divider"></div>
+    @endif
+
+    <!-- Regular Plans Section -->
+    @if($regularPlans->count() > 0)
+    <div class="mt-5">
+        <div class="text-center mb-4 section-header">
+            <h3 class="text-white fw-bold">
+                <i class="fa-solid fa-list me-2 theme-text"></i>
+                Without Discount Plans
+            </h3>
+            <p class="text-white">Standard pricing plans without discounts</p>
+        </div>
+        <div class="row" id="regular-plans-container">
+            @foreach ($regularPlans as $plan)
+            <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
+                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
+                    <div class="inner-content d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="text-start">
+                                <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
+                                    {{ $plan->name }}</h4>
+                                <div class="mb-3 ">
+                                    <span>
+                                        <span class="number">{{ $plan->min_inbox }}
+                                            {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
+                                        Inboxes
+                                    </span>
+                                </div>
+
+                                <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
+                                    ${{ number_format($plan->price, 2) }}
+                                    <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
+                                        /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
+                                        per Inboxes
+                                    </span>
+                                </h2>
+                                <ul class="list-unstyled features-list text-start">
+                                    @foreach ($plan->features as $feature)
+                                    <li style="font-size: 14px" class="mb-2 d-flex align-items-center gap-2">
+                                        <div>
+                                            <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
+                                                width="20" alt="">
+                                        </div>
+                                        {{ $feature->title }} {{ $feature->pivot->value }}
+                                    </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- All Plans Container (for legacy compatibility) -->
+    <div class="row mt-5" id="plans-container" style="display: none;">
         @foreach ($plans as $plan)
         <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
             <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? '' : '' }}">
                 <div class="inner-content d-flex flex-column justify-content-between">
                     <div>
-                        {{-- <div class="d-flex align-items-center justify-content-center mb-0">
-                            <div class="plan-header">
-                                <h6 class="fs-6 text-uppercase fw-bold">{{ $plan->name }}</h6>
-                            </div>
-                        </div> --}}
                         <div class="text-start">
                             <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 {{ $plan->name }}</h4>
@@ -290,8 +453,6 @@
                                 </span>
                             </div>
 
-                            {{-- <small class="plan-description text-capitalize opacity-75"
-                                style="line-height: 1px !important">{{ $plan->description }}</small> --}}
                             <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
                                 ${{ number_format($plan->price, 2) }}
                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
@@ -311,27 +472,6 @@
                                 @endforeach
                             </ul>
                         </div>
-
-                        {{-- <div class="text-center mt-4">
-                            @php
-                            $activeSubscription = auth()
-                            ->user()
-                            ->subscription()
-                            ->where('plan_id', $plan->id)
-                            ->where('status', 'active')
-                            ->first();
-                            @endphp
-                            @if ($activeSubscription)
-                            <button class="btn text-white subscribe-btn w-100" data-plan-id="{{ $plan->id }}"
-                                style="background-color: rgb(5, 163, 23)">
-                                <i class="fas fa-check me-2"></i>Subscribed Plan
-                            </button>
-                            @else
-                            <button class="btn btn-primary subscribe-btn w-100" data-plan-id="{{ $plan->id }}">
-                                Get Started Now
-                            </button>
-                            @endif
-                        </div> --}}
                     </div>
                 </div>
             </div>
@@ -387,7 +527,7 @@
                                             <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
                                                 name="min_inbox" value="{{ $plan->min_inbox }}" min="1" step="1"
                                                 required>
-                                            <small class="text-muted">Must be 1 or greater</small>
+                                            <small class="text-white">Must be 1 or greater</small>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
@@ -395,7 +535,7 @@
                                             <input type="number" class="form-control mb-3" id="max_inbox{{ $plan->id }}"
                                                 name="max_inbox" value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1"
                                                 required>
-                                            <small class="text-muted">Use 0 for unlimited</small>
+                                            <small class="text-white">Use 0 for unlimited</small>
                                         </div>
                                     </div>
                                 </div>
@@ -482,6 +622,284 @@
         @endforeach
     </div>
 
+    <!-- Edit Modals for Discounted Plans -->
+    @foreach ($discountedPlans as $plan)
+        <!-- Edit Modal for discounted plan {{ $plan->id }} -->
+        <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body p-3 p-md-5 position-relative">
+                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="text-center mb-4">
+                            <h4>Edit Discounted Plan</h4>
+                        </div>
+                        <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form" data-id="{{ $plan->id }}">
+                            @csrf
+                            <label style="display: none;" for="chargebee_plan_id{{ $plan->id }}">Chargebee Plan
+                                ID:</label>
+                            <input style="display: none;" type="text" class="form-control mb-3"
+                                id="chargebee_plan_id{{ $plan->id }}" name="chargebee_plan_id"
+                                value="{{ $plan->chargebee_plan_id }}">
+                            <label style="display: none;" for="duration{{ $plan->id }}">Duration:</label>
+                            <select style="display: none;" class="form-control mb-3" id="duration{{ $plan->id }}"
+                                name="duration" required>
+                                <option value="monthly" {{ $plan->duration === 'monthly' ? 'selected' : '' }}>
+                                    Monthly
+                                </option>
+                                <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
+                                </option>
+                            </select>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="name{{ $plan->id }}">Plan Name:</label>
+                                    <input type="text" class="form-control mb-3" id="name{{ $plan->id }}" name="name"
+                                        value="{{ $plan->name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="price{{ $plan->id }}">Price Per Inboxes ($):</label>
+                                    <input type="number" class="form-control mb-3" id="price{{ $plan->id }}"
+                                        name="price" step="0.01" value="{{ $plan->price }}" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="description{{ $plan->id }}">Description:</label>
+                                    <textarea class="form-control mb-3" id="description{{ $plan->id }}"
+                                        name="description" rows="2">{{ $plan->description }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <h5 class="mt-2">Inbox Limits</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
+                                            <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
+                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" step="1"
+                                                required>
+                                            <small class="text-white">Must be 1 or greater</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
+                                                unlimited):</label>
+                                            <input type="number" class="form-control mb-3" id="max_inbox{{ $plan->id }}"
+                                                name="max_inbox" value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1"
+                                                required>
+                                            <small class="text-white">Use 0 for unlimited</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4">Features</h5>
+                            <div class="selected-features-container" id="selectedFeatures{{ $plan->id }}">
+                                @foreach ($plan->features as $feature)
+                                <div class="feature-item" data-feature-id="{{ $feature->id }}">
+                                    <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <strong>{{ $feature->title }}</strong>
+                                            <input type="hidden" name="feature_ids[]" value="{{ $feature->id }}">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <input type="text" class="form-control form-control-sm feature-value-input"
+                                                name="feature_values[]" value="{{ $feature->pivot->value }}"
+                                                placeholder="Value">
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <div class="row mt-3 gy-3">
+                                <div class="col-md-7">
+                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $plan->id }}">
+                                        <option value="">Select an existing feature</option>
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                </div>
+                                <div class="col-md-5" style="text-align: right;">
+                                    <button type="button" class="btn btn-secondary add-selected-feature"
+                                        data-plan-id="{{ $plan->id }}">
+                                        <i class="fa-solid fa-plus"></i> Selected Feature
+                                    </button>
+                                    <button type="button" class="btn btn-primary toggle-new-feature-form"
+                                        data-plan-id="{{ $plan->id }}">
+                                        <i class="fa-solid fa-plus"></i> New
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="new-feature-form mt-3" id="newFeatureForm{{ $plan->id }}"
+                                style="display: none;">
+                                <h6>New Feature</h6>
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-title"
+                                            placeholder="Feature Title">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-value"
+                                            placeholder="Feature Value">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary add-new-feature-btn"
+                                            data-plan-id="{{ $plan->id }}">
+                                            <i class="fa-solid fa-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Update
+                                    Plan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+
+    <!-- Edit Modals for Regular Plans -->
+    @foreach ($regularPlans as $plan)
+        <!-- Edit Modal for regular plan {{ $plan->id }} -->
+        <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body p-3 p-md-5 position-relative">
+                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="text-center mb-4">
+                            <h4>Edit Plan</h4>
+                        </div>
+                        <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form" data-id="{{ $plan->id }}">
+                            @csrf
+                            <label style="display: none;" for="chargebee_plan_id{{ $plan->id }}">Chargebee Plan
+                                ID:</label>
+                            <input style="display: none;" type="text" class="form-control mb-3"
+                                id="chargebee_plan_id{{ $plan->id }}" name="chargebee_plan_id"
+                                value="{{ $plan->chargebee_plan_id }}">
+                            <label style="display: none;" for="duration{{ $plan->id }}">Duration:</label>
+                            <select style="display: none;" class="form-control mb-3" id="duration{{ $plan->id }}"
+                                name="duration" required>
+                                <option value="monthly" {{ $plan->duration === 'monthly' ? 'selected' : '' }}>
+                                    Monthly
+                                </option>
+                                <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
+                                </option>
+                            </select>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="name{{ $plan->id }}">Plan Name:</label>
+                                    <input type="text" class="form-control mb-3" id="name{{ $plan->id }}" name="name"
+                                        value="{{ $plan->name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="price{{ $plan->id }}">Price Per Inboxes ($):</label>
+                                    <input type="number" class="form-control mb-3" id="price{{ $plan->id }}"
+                                        name="price" step="0.01" value="{{ $plan->price }}" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="description{{ $plan->id }}">Description:</label>
+                                    <textarea class="form-control mb-3" id="description{{ $plan->id }}"
+                                        name="description" rows="2">{{ $plan->description }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <h5 class="mt-2">Inbox Limits</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
+                                            <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
+                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" step="1"
+                                                required>
+                                            <small class="text-white">Must be 1 or greater</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
+                                                unlimited):</label>
+                                            <input type="number" class="form-control mb-3" id="max_inbox{{ $plan->id }}"
+                                                name="max_inbox" value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1"
+                                                required>
+                                            <small class="text-white">Use 0 for unlimited</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4">Features</h5>
+                            <div class="selected-features-container" id="selectedFeatures{{ $plan->id }}">
+                                @foreach ($plan->features as $feature)
+                                <div class="feature-item" data-feature-id="{{ $feature->id }}">
+                                    <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <strong>{{ $feature->title }}</strong>
+                                            <input type="hidden" name="feature_ids[]" value="{{ $feature->id }}">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <input type="text" class="form-control form-control-sm feature-value-input"
+                                                name="feature_values[]" value="{{ $feature->pivot->value }}"
+                                                placeholder="Value">
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <div class="row mt-3 gy-3">
+                                <div class="col-md-7">
+                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $plan->id }}">
+                                        <option value="">Select an existing feature</option>
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                </div>
+                                <div class="col-md-5" style="text-align: right;">
+                                    <button type="button" class="btn btn-secondary add-selected-feature"
+                                        data-plan-id="{{ $plan->id }}">
+                                        <i class="fa-solid fa-plus"></i> Selected Feature
+                                    </button>
+                                    <button type="button" class="btn btn-primary toggle-new-feature-form"
+                                        data-plan-id="{{ $plan->id }}">
+                                        <i class="fa-solid fa-plus"></i> New
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="new-feature-form mt-3" id="newFeatureForm{{ $plan->id }}"
+                                style="display: none;">
+                                <h6>New Feature</h6>
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-title"
+                                            placeholder="Feature Title">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-value"
+                                            placeholder="Feature Value">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary add-new-feature-btn"
+                                            data-plan-id="{{ $plan->id }}">
+                                            <i class="fa-solid fa-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Update
+                                    Plan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+
     <!-- Add New Plan Modal -->
     <div class="modal fade" id="addPlan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -525,13 +943,13 @@
                                         <label for="min_inbox">Min Inboxes:</label>
                                         <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox"
                                             value="1" min="1" step="1" required>
-                                        <small class="text-muted">Must be 1 or greater</small>
+                                        <small class="text-white">Must be 1 or greater</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="max_inbox">Max Inboxes (0 for unlimited):</label>
                                         <input type="number" class="form-control mb-3" id="max_inbox" name="max_inbox"
                                             value="0" min="0" step="1" required>
-                                        <small class="text-muted">Use 0 for unlimited</small>
+                                        <small class="text-white">Use 0 for unlimited</small>
                                     </div>
                                 </div>
                             </div>
@@ -1110,7 +1528,7 @@
 
                 // If no features, add a placeholder
                 if (featuresList.find('li').length === 0) {
-                    featuresList.append('<li class="mb-2 text-muted">No features added yet</li>');
+                    featuresList.append('<li class="mb-2 text-white">No features added yet</li>');
                 }
             }
             // Submit new plan form
@@ -1390,7 +1808,7 @@
 
                     $container.html(html);
                 } else {
-                    $container.html('<p class="text-muted">No master plans found.</p>');
+                    $container.html('<p class="text-white">No master plans found.</p>');
                 }
 
                 $container.fadeIn(200);
@@ -1507,7 +1925,7 @@
                                 return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
                             }).join('');
                         } else {
-                            featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
+                            featuresHtml = '<li class="mb-2 text-white">No features available</li>';
                         }
                         $planCard.find('.features-list').html(featuresHtml);
 
@@ -1565,7 +1983,7 @@
                             return `<li class="mb-2"><i class="fas fa-check text-success"></i> ${feature.title}${featureValue}</li>`;
                         }).join('');
                     } else {
-                        featuresHtml = '<li class="mb-2 text-muted">No features available</li>';
+                        featuresHtml = '<li class="mb-2 text-white">No features available</li>';
                     }
 
                     plansHtml += `
@@ -1999,7 +2417,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                             <div class="">
                                 <label class="form-label">Min Inboxes <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control volume-min-inbox" name="volume_items[${volumeItemIndex}][min_inbox]" value="${item.min_inbox}" min="1" step="1" required>
-                                <small class="text-muted">Must be 1 or greater</small>
+                                <small class="text-white">Must be 1 or greater</small>
                             </div>
                         </div>
                         <div class="col-md-3 mb-2">
@@ -2016,7 +2434,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                     <span class="input-group-text">$</span>
                                     <input type="number" class="form-control volume-price tier_volume_price" data-itemindex="${volumeItemIndex}" id="tier_volume_price_${volumeItemIndex}" name="volume_items[${volumeItemIndex}][price]" value="${item.actual_price_before_discount || item.price}" step="0.01" min="0" required>
                                 </div>
-                                <small class="text-muted">Must be 0 or greater</small>
+                                <small class="text-white">Must be 0 or greater</small>
                             </div>
                         </div>
                         ${selectedVal == "Discounted" ?
@@ -2027,7 +2445,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                                         <span class="input-group-text">$</span>
                                         <input type="number" class="form-control" id="price_after_discount_${volumeItemIndex}" value="${(item.actual_price_before_discount && item.tier_discount_value) ? item.price : ''}" readonly>
                                     </div>
-                                    <small class="text-muted">Must be 0 or greater</small>
+                                    <small class="text-white">Must be 0 or greater</small>
                                 </div>
                             </div>` : ''
                          }
@@ -3102,7 +3520,7 @@ function collectVolumeItems() {
                                         <input type="text" class="form-control" id="masterPlanExternalName" required>
                                         <small class="opacity-50" style="display: none;">This will be shown to
                                             customers</small>
-                                        <small class="text-muted d-block mt-1" style="display: none !important;">
+                                        <small class="text-white d-block mt-1" style="display: none !important;">
                                             Internal name: <span id="internalNamePreview"
                                                 class="text-primary">plan_name_preview</span>
                                         </small>
@@ -3257,7 +3675,7 @@ function collectVolumeItems() {
                                         </small>
                                     </div>
                                     <!-- <div class="col-md-4 text-end">
-                                                            <small class="text-muted">
+                                                            <small class="text-white">
                                                                 <i class="fa-solid fa-clock me-1"></i>Auto-saves every change
                                                             </small>
                                                         </div> -->
