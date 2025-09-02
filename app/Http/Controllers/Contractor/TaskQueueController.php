@@ -340,26 +340,25 @@ class TaskQueueController extends Controller
                 return $task->order_id . '_' . $task->order_panel_id . '_' . $task->from_panel_id . '_' . $task->to_panel_id;
             });
 
-            // For each group, prioritize 'removed' action over 'added', but show 'added' if 'removed' is completed
-            $filteredTasks = $groupedTasks->map(function ($group) {
+            // For each group, show 'removed' action first, then 'added' only if 'removed' is completed
+            $filteredTasks = collect();
+            $groupedTasks->each(function ($group) use (&$filteredTasks) {
                 $removedTask = $group->where('action_type', 'removed')->first();
                 $addedTask = $group->where('action_type', 'added')->first();
-                
-                // If removed task exists and is not completed, show removed task
-                if ($removedTask && $removedTask->status !== 'completed') {
-                    return $removedTask;
+
+                // Always show 'removed' if exists
+                if ($removedTask) {
+                    $filteredTasks->push($removedTask);
+                    // If 'removed' is completed and 'added' exists, show 'added' after
+                    if ($removedTask->status === 'completed' && $addedTask) {
+                        $filteredTasks->push($addedTask);
+                    }
+                } elseif ($addedTask) {
+                    // If no 'removed', show 'added'
+                    $filteredTasks->push($addedTask);
                 }
-                
-                // If removed task is completed and added task exists, show added task
-                if ($removedTask && $removedTask->status === 'completed' && $addedTask) {
-                    return $addedTask;
-                }
-                
-                // Otherwise return none
-                return null;
-            })->filter(function ($task) {
-                return $task !== null;
-            })->sortByDesc('reassignment_date')->values(); // Sort by reassignment date
+            });
+            $filteredTasks = $filteredTasks->sortByDesc('reassignment_date')->values();
 
             // Apply pagination manually
             $perPage = $request->get('per_page', 12);
