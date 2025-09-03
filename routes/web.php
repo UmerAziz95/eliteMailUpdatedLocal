@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\SpecialPlanController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
@@ -161,6 +162,14 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Plans routes
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
+        
+        // Special Plans routes (is_discounted = 3)
+        Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');
+        Route::post('special-plans', [SpecialPlanController::class, 'store'])->name('special-plans.store');
+        Route::get('special-plans/{id}', [SpecialPlanController::class, 'show'])->name('special-plans.show');
+        Route::put('special-plans/{id}', [SpecialPlanController::class, 'update'])->name('special-plans.update');
+        Route::delete('special-plans/{id}', [SpecialPlanController::class, 'destroy'])->name('special-plans.destroy');
+        Route::get('special-plans-with-features', [SpecialPlanController::class, 'getPlansWithFeatures'])->name('special-plans.with.features');
         
         // Master Plan routes
         Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
