@@ -343,11 +343,12 @@
                     <div class="d-flex align-items-center gap-3">
                         <div>
                             <!-- @if($orderPanel->order->status_manage_by_admin === 'pending' || $orderPanel->order->status_manage_by_admin === 'in-progress') -->
-                                <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
-                                    data-bs-target="#BulkImportModal">
-                                    <i class="fa-solid fa-plus me-1"></i> Emails Customization 
-                                </button>
+                                
                             <!-- @endif -->
+                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                                data-bs-target="#BulkImportModal">
+                                <i class="fa-solid fa-plus me-1"></i> Emails Customization 
+                            </button>
                             @php
                                 // Get the uploaded file path from order panel splits
                                 $uploadedFilePath = null;
