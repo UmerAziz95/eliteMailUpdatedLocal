@@ -575,6 +575,46 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/static-plans/clear-session', [\App\Http\Controllers\StaticPlansController::class, 'clearSession'])->name('static-plans.clear-session');
 // });
 
+// Simple Static Link Route
+Route::get('/static-link', function (Request $request) {
+    $encryptedData = $request->get('data');
+    
+    if (!$encryptedData) {
+        return redirect()->route('login')->withErrors(['error' => 'Invalid link']);
+    }
+    
+    try {
+        $linkData = json_decode(decrypt($encryptedData), true);
+        
+        if (!$linkData || !isset($linkData['type']) || $linkData['type'] !== 'static_plan') {
+            return redirect()->route('login')->withErrors(['error' => 'Invalid link format']);
+        }
+        
+        // Set session data for static plan access
+        session([
+            'static_link_hit' => true,
+            'static_plan_data' => [
+                'master_plan_id' => $linkData['master_plan_id'],
+                'chargebee_plan_id' => $linkData['chargebee_plan_id']
+            ]
+        ]);
+        
+        if (auth()->check()) {
+            // User is already logged in, create encrypted data and redirect to static plans page
+            $user = auth()->user();
+            $payload = $user->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            return redirect()->to('/static-plans/' . $encrypted);
+        } else {
+            // User is not logged in, redirect to login
+            return redirect()->route('login');
+        }
+        
+    } catch (\Exception $e) {
+        return redirect()->route('login')->withErrors(['error' => 'Invalid or expired link']);
+    }
+})->name('static-link');
+
 Route::get('/forget_password', function () {
     return view('admin/auth/forget_password');
 });
