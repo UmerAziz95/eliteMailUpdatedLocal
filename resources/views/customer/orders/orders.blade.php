@@ -131,6 +131,15 @@
 @endpush
 
 @section('content')
+    <!-- Order cannot be edited error alert -->
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show draft-alert py-2 rounded-1" 
+             role="alert" style="background-color: rgba(220, 53, 69, 0.414); color: #fff; border: 2px solid #dc3545;">
+            <i class="ti ti-alert-circle me-2 alert-icon"></i>
+            <strong>Error Alert:</strong> {{ session('error') }}
+            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
     <!-- Draft Orders Notification -->
     <!-- @if (isset($draftOrders) && $draftOrders > 0)
     <div class="alert alert-warning alert-dismissible fade show draft-alert py-2" role="alert" style="background-color: rgba(255, 166, 0, 0.359); color: #fff; border: 2px solid orange;">
