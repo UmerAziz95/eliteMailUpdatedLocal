@@ -201,6 +201,23 @@ public function show($id=null)
             try {
                 DB::beginTransaction();
 
+                // Check if this is creating a new plan (not updating an existing one)
+                $isNewPlan = !$request->masterPlanId;
+                $isDiscounted = $request->discountMode === 'Discounted';
+                
+                // Restriction: Only allow one discounted and one non-discounted master plan
+                if ($isNewPlan) {
+                    $existingPlan = MasterPlan::where('is_discounted', $isDiscounted ? 1 : 0)->first();
+                    
+                    if ($existingPlan) {
+                        $planType = $isDiscounted ? 'discounted' : 'non-discounted';
+                        return response()->json([
+                            'success' => false,
+                            'message' => "A {$planType} master plan already exists. Only one {$planType} plan is allowed. Please edit the existing plan instead."
+                        ], 422);
+                    }
+                }
+
                 // dd($request->masterPlanId);
                 $masterPlan = MasterPlan::find($request->masterPlanId);
                 

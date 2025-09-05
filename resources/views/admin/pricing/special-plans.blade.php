@@ -310,23 +310,23 @@
                     @endif
                 </div> -->
 
-    <!-- Discounted Plans Section -->
+    <!-- Special Plans Section (is_discounted = 3) -->
     @php
-        $discountedPlans = $plans->where('is_discounted', 1);
-        $regularPlans = $plans->where('is_discounted', 0);
+        // All plans passed from controller are already filtered for is_discounted = 3
+        $specialPlans = $plans;
     @endphp
 
-    @if($discountedPlans->count() > 0)
+    @if($specialPlans->count() > 0)
     <div class="mt-5">
         <div class="text-center mb-4 section-header">
             <h3 class="text-white fw-bold">
-                <i class="fa-solid fa-tags me-2 theme-text"></i>
-                Discounted Plans
+                <i class="fa-solid fa-star me-2 theme-text"></i>
+                Special Plans
             </h3>
-            <p class="text-white">Special pricing plans with applied discounts</p>
+            <p class="text-white">Special pricing plans with unique discounts</p>
         </div>
-        <div class="row" id="discounted-plans-container">
-            @foreach ($discountedPlans as $plan)
+        <div class="row" id="special-plans-container">
+            @foreach ($specialPlans as $plan)
             <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
                 <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}" style="border: 2px solid #28a745;">
                     <div class="position-relative">
@@ -375,13 +375,13 @@
     </div>
     @endif
 
-    <!-- Section Divider -->
-    @if($discountedPlans->count() > 0 && $regularPlans->count() > 0)
+    {{-- Section Divider --}}
+    {{-- @if($discountedPlans->count() > 0 && $regularPlans->count() > 0)
     <div class="section-divider"></div>
-    @endif
+    @endif --}}
 
-    <!-- Regular Plans Section -->
-    @if($regularPlans->count() > 0)
+    {{-- Regular Plans Section - Commented out for Special Plans page --}}
+    {{-- @if($regularPlans->count() > 0)
     <div class="mt-5">
         <div class="text-center mb-4 section-header">
             <h3 class="text-white fw-bold">
@@ -433,7 +433,7 @@
             @endforeach
         </div>
     </div>
-    @endif
+    @endif --}}
 
     <!-- All Plans Container (for legacy compatibility) -->
     <div class="row mt-5" id="plans-container" style="display: none;">
@@ -622,9 +622,9 @@
         @endforeach
     </div>
 
-    <!-- Edit Modals for Discounted Plans -->
-    @foreach ($discountedPlans as $plan)
-        <!-- Edit Modal for discounted plan {{ $plan->id }} -->
+    <!-- Edit Modals for Special Plans -->
+    @foreach ($specialPlans as $plan)
+        <!-- Edit Modal for special plan {{ $plan->id }} -->
         <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
@@ -632,7 +632,7 @@
                         <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                             data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                         <div class="text-center mb-4">
-                            <h4>Edit Discounted Plan</h4>
+                            <h4>Edit Special Plan</h4>
                         </div>
                         <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form" data-id="{{ $plan->id }}">
                             @csrf
@@ -763,7 +763,7 @@
         </div>
     @endforeach
 
-    <!-- Edit Modals for Regular Plans -->
+    {{-- Edit Modals for Regular Plans - Commented out for Special Plans page
     @foreach ($regularPlans as $plan)
         <!-- Edit Modal for regular plan {{ $plan->id }} -->
         <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
@@ -902,7 +902,7 @@
                 </div>
             </div>
         </div>
-    @endforeach
+    @endforeach --}}
 
     <!-- Add New Plan Modal -->
     <div class="modal fade" id="addPlan" tabindex="-1" aria-hidden="true">
@@ -912,10 +912,10 @@
                     <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-4">
-                        <h4>Add New Plan</h4>
+                        <h4>Add New Special Plan</h4>
                         <div class="alert alert-info mt-3">
                             <i class="fa-solid fa-info-circle me-2"></i>
-                            <small><strong>Note:</strong> Only one discounted plan and one non-discounted plan are allowed in the system.</small>
+                            <small><strong>Note:</strong> This will create a new special plan with is_discounted = 3.</small>
                         </div>
                     </div>
                     <form id="addPlanForm">
@@ -1581,7 +1581,7 @@
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
                 $.ajax({
-                    url: "{{ route('admin.plans.store') }}",
+                    url: "{{ route('admin.special-plans.store') }}",
                     type: "POST",
                     data: $(this).serialize(),
                     dataType: "json",
@@ -1644,7 +1644,7 @@
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
 
                 $.ajax({
-                    url: `/admin/plans/${planId}`,
+                    url: `/admin/special-plans/${planId}`,
                     type: "PUT",
                     data: $(this).serialize(),
                     dataType: "json",
@@ -1710,7 +1710,7 @@
 
                         // Perform the AJAX request
                         $.ajax({
-                            url: `/admin/plans/${planId}`,
+                            url: `/admin/special-plans/${planId}`,
                             type: "DELETE",
                             data: {
                                 _token: "{{ csrf_token() }}"
@@ -1867,7 +1867,7 @@
                     '<div id="refresh-loading" class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Updating plans...</div>'
                 );
 
-                $.get('{{ route('admin.plans.with.features') }}')
+                $.get('{{ route('admin.special-plans.with.features') }}')
                     .done(function(response) {
                         console.log('Received response:', response);
 

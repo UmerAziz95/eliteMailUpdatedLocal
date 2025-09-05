@@ -30,12 +30,24 @@ class PlanController extends Controller
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
-                'currency_code' => 'nullable|string|size:3'
+                'currency_code' => 'nullable|string|size:3',
+                'is_discounted' => 'nullable|boolean'
             ]);
 
             $min = $request->min_inbox;
             $max = $request->max_inbox;
             $newMax = ($max == 0) ? PHP_INT_MAX : $max;
+            $isDiscounted = $request->is_discounted ?? false;
+
+            // Restriction: Only allow one discounted and one non-discounted plan
+            $existingPlanOfType = Plan::where('is_discounted', $isDiscounted ? 1 : 0)
+                ->where('is_active', 1)
+                ->first();
+            
+            if ($existingPlanOfType) {
+                $planType = $isDiscounted ? 'discounted' : 'non-discounted';
+                throw new \Exception("A {$planType} plan already exists. Only one {$planType} plan is allowed. Please edit the existing plan instead.");
+            }
 
             // ✅ CASE 0: Prevent multiple unlimited plans
             if ($min == 0 && $max == 0) {
@@ -103,6 +115,7 @@ class PlanController extends Controller
                 'description' => $request->description,
                 'min_inbox' => $min,
                 'max_inbox' => $max,
+                'is_discounted' => $isDiscounted,
                 'is_active' => true
             ]);
 
@@ -245,12 +258,27 @@ class PlanController extends Controller
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
-                'currency_code' => 'nullable|string|size:3'
+                'currency_code' => 'nullable|string|size:3',
+                'is_discounted' => 'nullable|boolean'
             ]);
 
             $min = $request->min_inbox;
             $max = $request->max_inbox;
             $newMax = ($max == 0) ? PHP_INT_MAX : $max;
+            $isDiscounted = $request->is_discounted ?? false;
+
+            // Restriction: If changing discount status, check if a plan of the new type already exists
+            if ($plan->is_discounted != $isDiscounted) {
+                $existingPlanOfNewType = Plan::where('is_discounted', $isDiscounted ? 1 : 0)
+                    ->where('is_active', 1)
+                    ->where('id', '!=', $plan->id)
+                    ->first();
+                
+                if ($existingPlanOfNewType) {
+                    $planType = $isDiscounted ? 'discounted' : 'non-discounted';
+                    throw new \Exception("A {$planType} plan already exists. Cannot change this plan's discount status. Only one {$planType} plan is allowed.");
+                }
+            }
 
             // ✅ CASE 0: Prevent multiple unlimited plans (excluding the current one)
             if ($min == 0 && $max == 0) {
@@ -309,7 +337,8 @@ class PlanController extends Controller
                 'duration' => $request->duration,
                 'description' => $request->description,
                 'min_inbox' => $min,
-                'max_inbox' => $max
+                'max_inbox' => $max,
+                'is_discounted' => $isDiscounted
             ]);
 
             // Sync features

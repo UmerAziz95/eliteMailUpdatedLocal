@@ -114,8 +114,15 @@ class OrderController extends Controller
     public function edit($id)
     {
         $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
+        
+        // Check if order status allows editing
+        $allowedStatuses = ['draft', 'reject'];
+        if (!in_array(strtolower($order->status_manage_by_admin), $allowedStatuses)) {
+            return redirect()->route('customer.orders')
+                ->with('error', 'Order cannot be edited. Only orders with Draft or Reject status can be modified.');
+        }
+        
         $plan = $order->plan;
-        // dd($order);
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();

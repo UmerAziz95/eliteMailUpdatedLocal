@@ -40,7 +40,7 @@ public function index($id = null)
      // $getMostlyUsed = Plan::getMostlyUsed();
     // $plans = Plan::with('features')
     //     ->where('is_active', true)
-    //     ->where('is_discounted', true)
+    //     ->where('is_discounted', 1)
     //     ->get();
 
     // $publicPage = true; 
@@ -70,7 +70,7 @@ public function verifyDiscountedUser($encrypted, $id)
                 $getMostlyUsed = Plan::getMostlyUsed();
                 $plans = Plan::with('features')
                 ->where('is_active', true)
-                ->where('is_discounted', true)
+                ->where('is_discounted', 1)
                 ->get();
 
                 $publicPage = true; 

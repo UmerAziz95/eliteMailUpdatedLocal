@@ -112,13 +112,21 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 7
             ],
+            // [
+            //     'name' => 'Special Plans',
+            //     'icon' => 'ti ti-star fs-5',
+            //     'route' => 'admin.special-plans.index',
+            //     'permission' => 'Special Plans',
+            //     'sub_menu' => [],
+            //     'order' => 8
+            // ],
             [
                 "name" => "Panels",
                 "icon" => "ti ti-file-invoice fs-5",
                 "route" => "admin.panels.index",
                 "permission" => "Panels",
                 'sub_menu' => [],
-                'order' => 8
+                'order' => 9
             ],
             [
                 'name' => 'Subscriptions',
@@ -126,7 +134,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.subs.view',
                 'permission' => 'Subscriptions',
                 'sub_menu' => [],
-                'order' => 9
+                'order' => 10
             ],
             [
                 'name' => 'Invoices',
@@ -134,7 +142,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.invoices.index',
                 'permission' => 'Invoices',
                 'sub_menu' => [],
-                'order' => 10
+                'order' => 11
             ],
             
             [
@@ -143,7 +151,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.index',
                 'permission' => 'Admins',
                 'sub_menu' => [],
-                'order' => 11
+                'order' => 12
             ],
             [
                 'name' => 'Customer',
@@ -151,7 +159,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.customerList',
                 'permission' => 'Customer',
                 'sub_menu' => [],
-                'order' => 12
+                'order' => 13
             ],
             [
                 'name' => 'Contractors',
@@ -159,7 +167,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.contractorList',
                 'permission' => 'Contractors',
                 'sub_menu' => [],
-                'order' => 13
+                'order' => 14
             ],
             [
                 'name' => 'Roles',
@@ -167,7 +175,7 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.role.index',
                 'permission' => 'Roles',
                 'sub_menu' => [],
-                'order' => 14
+                'order' => 15
             ],
             [
                 "name" => "Internal Order Management",
@@ -175,7 +183,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.internal_order_management.index",
                 "permission" => "Internal Order Management",
                 'sub_menu' => [],
-                'order' => 15
+                'order' => 16
             ],
             [
                 "name" => "Support",
@@ -183,7 +191,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.support",
                 "permission" => "Support",
                 'sub_menu' => [],
-                'order' => 16
+                'order' => 17
             ],
             [
                 "name" => "Settings",
@@ -191,7 +199,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.system.config",
                 "permission" => "Settings",
                 'sub_menu' => [],
-                'order' => 17
+                'order' => 18
             ],
             [
                 "name" => "Discord Settings",
@@ -199,7 +207,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.discord.settings",
                 "permission" => "Discord Settings",
                 'sub_menu' => [],
-                'order' => 18
+                'order' => 19
             ],
             [
                 "name" => "Domain Health Dashboard",
@@ -207,7 +215,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.domain_health_dashboard.index",
                 "permission" => "Domain Health Dashboard",
                 'sub_menu' => [],
-                'order' => 19
+                'order' => 20
             ],
             [
                 "name" => "Slack Settings",
@@ -215,7 +223,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.slack.settings",
                 "permission" => "Slack Settings",
                 'sub_menu' => [],
-                'order' => 20
+                'order' => 21
             ],
             [
                 "name" => "Error Logs",
@@ -223,7 +231,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.error-logs.index",
                 "permission" => "Error Logs",
                 'sub_menu' => [],
-                'order' => 21
+                'order' => 22
             ],
             [
                 "name" => "System Logs",
@@ -231,7 +239,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.logs.index",
                 "permission" => "System Logs",
                 'sub_menu' => [],
-                'order' => 22
+                'order' => 23
             ],
             [
                 "name" => "GHL Settings",
@@ -239,7 +247,7 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.ghl-settings.index",
                 "permission" => "GHL Settings",
                 'sub_menu' => [],
-                'order' => 23
+                'order' => 24
             ]
         ];
 
@@ -273,7 +281,7 @@ class SidebarNavigationSeeder extends Seeder
             );
         }
 
-        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings", "Error Logs", "System Logs", "Order Reassign"];
+        $extraPermissions = ["Mod", "Panels", "Order Queue", "Task Queue", "My Task", "Support", "GHL Settings", "Error Logs", "System Logs", "Order Reassign", "Special Plans"];
         foreach ($extraPermissions as $permission) {
             DB::table('permissions')->updateOrInsert(
                 [
