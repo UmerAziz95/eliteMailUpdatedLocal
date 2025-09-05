@@ -12,7 +12,7 @@ class RoleMiddleware
     {
         // Check if user is logged in
         if (!Auth::check()) {
-            Log::info('Unauthorized access attempt to ' . $request->path() . ' at ' . now());
+            Log::info('🚫 Unauthorized access attempt to ' . $request->path() . ' from IP ' . $request->ip() . ' with User-Agent: ' . $request->header('User-Agent') . ' at ' . now());
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
