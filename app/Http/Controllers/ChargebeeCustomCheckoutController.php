@@ -382,7 +382,7 @@ class ChargebeeCustomCheckoutController extends Controller
         }
 
         $plans = Plan::where('master_plan_id', $master_plan_id)
-            ->where('is_discounted', true)
+            ->where('is_discounted', 1)
             ->where('is_active', true)
             ->get();
 
