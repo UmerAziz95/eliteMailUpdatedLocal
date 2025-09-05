@@ -3,6 +3,7 @@
 @section('title', 'Pricing Plans')
 
 @push('styles')
+
 <style>
     .is-invalid {
         border-color: #dc3545 !important;
@@ -1799,6 +1800,99 @@
                 // For simplicity, using error toast for warnings
                 showErrorToast(message);
             }
+
+            // Handle Generate Static Link button click
+            $(document).on('click', '.generateStaticLinkBtn', function() {
+                const $btn = $(this);
+                const masterPlanId = $btn.data('master-plan-id');
+                const chargebeePlanId = $btn.data('chargebee-plan-id');
+                
+                if (!chargebeePlanId) {
+                    showErrorToast('Chargebee Plan ID is required to generate static link. Please sync the plan with Chargebee first.');
+                    return;
+                }
+                
+                // Disable button while processing
+                $btn.prop('disabled', true);
+                const originalText = $btn.html();
+                $btn.html('<i class="fa-solid fa-spinner fa-spin"></i> Generating...');
+                
+                $.ajax({
+                    url: '{{ route("admin.generate-static-link") }}',
+                    method: 'POST',
+                    data: {
+                        master_plan_id: masterPlanId,
+                        chargebee_plan_id: chargebeePlanId,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showStaticLinkModal(response.link, masterPlanId, chargebeePlanId);
+                        } else {
+                            showErrorToast(response.message || 'Failed to generate static link');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to generate static link';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showErrorToast(errorMessage);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false);
+                        $btn.html(originalText);
+                    }
+                });
+            });
+            
+            // Function to show the generated static link in a modal
+            function showStaticLinkModal(link, masterPlanId, chargebeePlanId) {
+                const modalHtml = `
+                    <div class="modal fade" id="staticLinkModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Generated Static Link</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Master Plan ID:</strong> ${masterPlanId}</p>
+                                    <p><strong>Chargebee Plan ID:</strong> ${chargebeePlanId}</p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="staticLinkInput" value="${link}" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copyStaticLink()">
+                                            <i class="fa-solid fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">This link can be shared externally. When clicked, users will be redirected to login and then to the static plans page for subscription.</small>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                $('#staticLinkModal').remove();
+                $('body').append(modalHtml);
+                $('#staticLinkModal').modal('show');
+            }
+            
+            // Function to copy static link to clipboard
+            function copyStaticLink() {
+                const linkInput = document.getElementById('staticLinkInput');
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999);
+                
+                try {
+                    document.execCommand('copy');
+                    showSuccessToast('Static link copied to clipboard!');
+                } catch (err) {
+                    showErrorToast('Failed to copy link. Please copy manually.');
+                }
+            }
             // autofixing volume tier plan range start like [10-20, 0-9, 21-0] don't miss the range same functionality perform like chagebee side handle not skip range
             // Function to update master plan display dynamically
           function updateMasterPlanDisplay(masterPlans) {
@@ -1838,6 +1932,13 @@
                                 </div>
                                 <div class="text-end mt-2">
                                     <button class="btn btn-sm btn-primary editMasterPlanBtn" data-id="${plan.id}">Edit Plan</button>
+                                    ${plan.chargebee_plan_id ? `
+                                        <button class="btn btn-sm btn-success ms-2 generateStaticLinkBtn" 
+                                                data-master-plan-id="${plan.id}" 
+                                                data-chargebee-plan-id="${plan.chargebee_plan_id}">
+                                            <i class="fa-solid fa-link"></i> Generate Static Link
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;

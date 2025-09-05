@@ -157,9 +157,22 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Please verify your account. Unable to send verification email at this time. Please try again later.']);
             }
         }
-        
+        // Don't check static link here - it should be checked after authentication
+        // Check if user came from a static link BEFORE redirecting to public plans
+        if (session('static_link_hit') && session('static_plan_data')) {
+            // dd('here');
+            // Create encrypted data for the user
+            $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            
+            // Remove the flag to prevent repeated redirects
+            // session()->forget('static_link_hit');
+            return redirect()->to('/static-plans/' . $encrypted);
+        }
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
        if (!$userSubsc && $userCheck->role_id == 3) {
+            
+            
             // If user has no subscription and is a customer, redirect to plans/public with encrypted user info
             $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
@@ -251,6 +264,13 @@ class AuthController extends Controller
         if (!$user) {
             return route('login');
         }
+
+        // Check if user came from a static link - this takes priority for customers
+        // if (session('static_link_hit') && session('static_plan_data') && $user->role_id == 3) {
+        //     // Remove the flag to prevent repeated redirects
+        //     session()->forget('static_link_hit');
+        //     return route('static-plans');
+        // }
 
         switch ($user->role_id) {
             case 1:

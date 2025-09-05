@@ -264,18 +264,21 @@ class PlanController extends Controller
                 //     })
                 //     ->orderBy('min_inbox', 'desc') // Get the most specific plan first
                 //     ->first();
+                // get master_plan_id from this seesion static_plan_data
+                
                 $plan = Plan::where('is_active', 1)
+                        ->where('chargebee_plan_id', $charge_plan_id)
                         ->where('min_inbox', '<=', $quantity)
                         ->where(function ($query) use ($quantity) {
                             $query->where('max_inbox', '>=', $quantity)
                                   ->orWhere('max_inbox', 0); // 0 means unlimited
                         })
-                        ->where(function($query) {
-                            $query->where('is_discounted', 0)->orWhereNull('is_discounted');
-                        })
+                        // ->where(function($query) {
+                        //     $query->where('is_discounted', 0)->orWhereNull('is_discounted');
+                        // })
                         ->orderBy('min_inbox', 'desc') // Get the most specific plan first
                         ->first();
-                    
+                
                 if ($plan) {
                     $plan_id = $plan->id;
                 }
