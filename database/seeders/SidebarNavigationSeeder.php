@@ -112,14 +112,14 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 7
             ],
-            [
-                'name' => 'Special Plans',
-                'icon' => 'ti ti-star fs-5',
-                'route' => 'admin.special-plans.index',
-                'permission' => 'Special Plans',
-                'sub_menu' => [],
-                'order' => 8
-            ],
+            // [
+            //     'name' => 'Special Plans',
+            //     'icon' => 'ti ti-star fs-5',
+            //     'route' => 'admin.special-plans.index',
+            //     'permission' => 'Special Plans',
+            //     'sub_menu' => [],
+            //     'order' => 8
+            // ],
             [
                 "name" => "Panels",
                 "icon" => "ti ti-file-invoice fs-5",
