@@ -1861,7 +1861,7 @@
                                     <p><strong>Chargebee Plan ID:</strong> ${chargebeePlanId}</p>
                                     <div class="input-group mb-3">
                                         <input type="text" class="form-control" id="staticLinkInput" value="${link}" readonly>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="copyStaticLink()">
+                                        <button class="btn btn-outline-secondary copy-static-link-btn" type="button">
                                             <i class="fa-solid fa-copy"></i> Copy
                                         </button>
                                     </div>
@@ -1880,8 +1880,8 @@
                 $('#staticLinkModal').modal('show');
             }
             
-            // Function to copy static link to clipboard
-            function copyStaticLink() {
+            // Handle copy static link button click using event delegation
+            $(document).on('click', '.copy-static-link-btn', function() {
                 const linkInput = document.getElementById('staticLinkInput');
                 linkInput.select();
                 linkInput.setSelectionRange(0, 99999);
@@ -1892,7 +1892,7 @@
                 } catch (err) {
                     showErrorToast('Failed to copy link. Please copy manually.');
                 }
-            }
+            });
             // autofixing volume tier plan range start like [10-20, 0-9, 21-0] don't miss the range same functionality perform like chagebee side handle not skip range
             // Function to update master plan display dynamically
           function updateMasterPlanDisplay(masterPlans) {

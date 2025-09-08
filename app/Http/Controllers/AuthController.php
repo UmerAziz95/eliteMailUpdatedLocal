@@ -159,7 +159,7 @@ class AuthController extends Controller
         }
         // Don't check static link here - it should be checked after authentication
         // Check if user came from a static link BEFORE redirecting to public plans
-        if (session('static_link_hit') && session('static_plan_data')) {
+        if (session('static_link_hit') && session('static_plan_data') && $userCheck->role_id == 3) {
             // dd('here');
             // Create encrypted data for the user
             $payload = $userCheck->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
