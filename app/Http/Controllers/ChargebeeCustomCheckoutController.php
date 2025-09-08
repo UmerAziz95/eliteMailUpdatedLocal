@@ -249,7 +249,7 @@ class ChargebeeCustomCheckoutController extends Controller
     }
 
 
-     public function showCustomCheckout($page_id)
+     public function showCustomCheckout($page_id, $user_id = null)
     {
         $isValidPage=CustomCheckOutId::where('page_id', $page_id)->first();
         if (!$isValidPage) {
@@ -271,13 +271,13 @@ class ChargebeeCustomCheckoutController extends Controller
         $user = session()->get('temp_user_custom_checkout');
         $countries = $this->countries();
         $publicPage = true; // Assuming this is a public page will hide the header and footer
-        $url = $this->initiateSubscription($planId);
+        $url = $this->initiateSubscription($planId, $user_id);
         // redirect to url
         // dd($url);
         return redirect($url);
         // return view('admin.checkout.index', compact('page_id','publicPage','planId','plan','user','countries'));
     }
-    public function initiateSubscription($planId)
+    public function initiateSubscription($planId, $user_id = null)
     {
         if(!$planId ){
             abort(404);
@@ -292,7 +292,12 @@ class ChargebeeCustomCheckoutController extends Controller
                 $user = session()->get('temp_user_custom_checkout');
             }
             if (!$user) {
-                abort(404, 'User not found, auth failed please login or contact to support');
+                $user_id = Crypt::decryptString($user_id);
+                $user = User::where('id', $user_id)->first();
+                if(!$user) {
+                    abort(404, 'User not found, auth failed please login or contact to support');
+                }
+                // abort(404, 'User not found, auth failed please login or contact to support');
             }
 
             // get charge_customer_id from user
@@ -320,7 +325,7 @@ class ChargebeeCustomCheckoutController extends Controller
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel'),
                     // Expire hosted page after one use and set time limit
-                    "expires_at" => time() + (1 * 60), // Expire after 15 minutes
+                    "expires_at" => time() + (10 * 60), // Expire after 10 minutes
                     "embed" => false, // Ensure it's not embeddable to prevent multiple uses
                 ]);
             } else {
@@ -348,7 +353,7 @@ class ChargebeeCustomCheckoutController extends Controller
                     "redirect_url" => route('customer.subscription.success'),
                     "cancel_url" => route('customer.subscription.cancel'),
                     // Expire hosted page after one use and set time limit
-                    "expires_at" => time() + (1 * 60), // Expire after 15 minutes
+                    "expires_at" => time() + (10 * 60), // Expire after 10 minutes
                     "embed" => false, // Ensure it's not embeddable to prevent multiple uses
                 ]);
             }

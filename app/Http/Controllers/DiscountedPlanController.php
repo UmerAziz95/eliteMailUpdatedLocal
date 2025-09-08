@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use App\Models\Invoice;
 use App\Models\Subscription as SubscriptionModel;
-
+use App\Models\ShortEncryptedLink;
 
 
 
@@ -58,7 +58,7 @@ public function verifyDiscountedUser($encrypted, $id)
         [$email, $expectedCode, $timestamp] = explode('/', $decrypted);
 
         $user = User::where('email', $email)->firstOrFail();
-
+        $encrypted_user_id = Crypt::encryptString($user->id) ?? null;
         if ($user) {
             session()->put('verified_discounted_user', $user);
             session()->forget('iam_discounted_user');
@@ -75,7 +75,7 @@ public function verifyDiscountedUser($encrypted, $id)
 
                 $publicPage = true; 
                 $url_string = $id; // Assuming $id is the encrypted string for the discount link
-                return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage','url_string', 'id'));
+                return view('customer.public_outside.discounted_plans', compact('plans', 'getMostlyUsed', 'publicPage', 'url_string', 'id', 'user', 'encrypted_user_id'));
 
         }
         else{
@@ -88,22 +88,48 @@ public function verifyDiscountedUser($encrypted, $id)
 
 
 
-      public function initiateSubscription(Request $request, $planId, $encrypted=null)
+      public function initiateSubscription(Request $request, $planId, $encrypted=null, $user_id=null)
     {
         
         if(!$planId){
             return response()->json([
                 'success' => false,
                 'message' => 'Plan does not found.'
-            ], 500);
+            ], 404);
         }
-      
+        $discordLink = DiscordSettings::where('url_string', $encrypted)->first()->embedded_url ?? null;
+
+        if(!$discordLink){
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired discount link.'
+            ], 422);
+        }
+        
+        if(!$user_id){
+            return response()->json([
+                'discord_link' => $discordLink,
+                'success' => false,
+                'message' => 'User session not found.'
+            ], 422);
+        }
+        $user_id = Crypt::decryptString($user_id);
+        $user = User::where('id', $user_id)->first();
+        $encrypted_user_id = Crypt::encryptString($user->id);
+        if(!$user){
+            return response()->json([
+                'discord_link' => $discordLink,
+                'success' => false,
+                'message' => 'User session not found.'
+            ], 422);
+        }
+
         $setting = DiscordSettings::where('url_string', $encrypted)->first();
         if (!$setting) {
            return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired discount link.'
-            ], 500);
+            ], 422);
         }
         $plan = Plan::where('id', $planId)->where('is_discounted', true)->first();
         if (!$plan) {
@@ -118,12 +144,14 @@ public function verifyDiscountedUser($encrypted, $id)
         session()->put('discounted_master_plan_id', $plan->master_plan_id);
     try { 
         $uuid=Str::uuid()->toString();
-        $hostedPageUrl = URL::to('/custom/checkout/'.$uuid);
+        $hostedPageUrl = URL::to('/custom/checkout/'.$uuid.'/user_id/'.$encrypted_user_id);
         CustomCheckOutId::create([
             'page_id'=>$uuid
         ]);
-           
             return response()->json([
+                'discord_link' => $discordLink,
+                'user_id' => $user->id,
+                'user' => $user,
                 'success' => true,
                 'hosted_page_url' =>  $hostedPageUrl 
             ]);

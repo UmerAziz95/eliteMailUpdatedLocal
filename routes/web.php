@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\MediaHandlerController;
 //supports
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Customer\CustomerSupportController;
+use App\Http\Controllers\Admin\StaticLinkController;
 //configuration
 use App\Http\Controllers\Admin\AdminSettingsController;
 //coupons
@@ -139,7 +140,7 @@ Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptio
 
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
-Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
+Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}/user_id/{user_id}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
@@ -150,6 +151,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/', [AdminController::class, 'index'])->name('index');
         
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
+        Route::post('/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('generate-static-link');
         //create admin 
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
         Route::post('users/customer/store', [AdminController::class, 'storeCustomer'])->name('users.customer.store');
@@ -563,6 +565,52 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
 
     // Domains Removal Tasks
 }); 
+// Static Plans Routes
+// Route::middleware(['auth'])->group(function () {
+    Route::get('/static-plans/{encrypted?}', [\App\Http\Controllers\StaticPlansController::class, 'index'])->name('static-plans');
+    Route::post('/static-plans/select', [\App\Http\Controllers\StaticPlansController::class, 'selectPlan'])->name('static-plans.select');
+    Route::post('/static-plans/clear-session', [\App\Http\Controllers\StaticPlansController::class, 'clearSession'])->name('static-plans.clear-session');
+// });
+
+// Simple Static Link Route
+Route::get('/static-link', function (Request $request) {
+    $encryptedData = $request->get('data');
+    
+    if (!$encryptedData) {
+        return redirect()->route('login')->withErrors(['error' => 'Invalid link']);
+    }
+    
+    try {
+        $linkData = json_decode(decrypt($encryptedData), true);
+        
+        if (!$linkData || !isset($linkData['type']) || $linkData['type'] !== 'static_plan') {
+            return redirect()->route('login')->withErrors(['error' => 'Invalid link format']);
+        }
+        
+        // Set session data for static plan access
+        session([
+            'static_link_hit' => true,
+            'static_plan_data' => [
+                'master_plan_id' => $linkData['master_plan_id'],
+                'chargebee_plan_id' => $linkData['chargebee_plan_id']
+            ]
+        ]);
+        
+        if (auth()->check()) {
+            // User is already logged in, create encrypted data and redirect to static plans page
+            $user = auth()->user();
+            $payload = $user->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            return redirect()->to('/static-plans/' . $encrypted);
+        } else {
+            // User is not logged in, redirect to login
+            return redirect()->route('login');
+        }
+        
+    } catch (\Exception $e) {
+        return redirect()->route('login')->withErrors(['error' => 'Invalid or expired link']);
+    }
+})->name('static-link');
 
 Route::get('/forget_password', function () {
     return view('admin/auth/forget_password');
@@ -746,8 +794,39 @@ Route::get('/test-discord-cron', [\App\Http\Controllers\SettingController::class
 Route::get('/go/{slug}', function ($slug) {
  
     $record = ShortEncryptedLink::where('slug', $slug)->firstOrFail();
+    
+    try {
+        // First try to decrypt as JSON (new format for static plans)
+        $decryptedData = decrypt($record->encrypted_url);
+        $linkData = json_decode($decryptedData, true);
+        
+        if ($linkData && isset($linkData['type']) && $linkData['type'] === 'static_plan') {
+            // Handle static plan link
+            session([
+                'static_link_hit' => true,
+                'static_plan_data' => [
+                    'master_plan_id' => $linkData['master_plan_id'],
+                    'chargebee_plan_id' => $linkData['chargebee_plan_id']
+                ]
+            ]);
+            
+            if (auth()->check()) {
+                // User is already logged in, create encrypted data and redirect to static plans page
+                $user = auth()->user();
+                $payload = $user->email . '/' . rand(1000, 9999) . '/' . now()->timestamp;
+                $encrypted = Crypt::encryptString($payload);
+                return redirect()->to('/static-plans/' . $encrypted);
+            } else {
+                // User is not logged in, redirect to login
+                return redirect()->route('login');
+            }
+        }
+    } catch (\Exception $e) {
+        // Fall back to old decryption method for existing links
+    }
+    
+    // Original behavior for existing links
     $originalUrl = Crypt::decryptString($record->encrypted_url);
-   
     return redirect()->away($originalUrl);
 });
 
@@ -852,7 +931,7 @@ Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
     }
 })->name('logs.clear');
 
-Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
+Route::get('custom/checkout/{id}/user_id/{user_id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
 Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
 Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.checkout.subscribe');
 // Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
