@@ -597,7 +597,7 @@ class AuthController extends Controller
 
         $user_type=null;
         // Create new user
-        if($type_id && $type_id != null){
+        if($type_id && $type_id != null && !empty($type_id)){
             $user_type="discounted";
         }
         Log::info('Registering user with type: ' . $user_type. ' for email: ' . $data['email'].' with type_id: '.$type_id.' at '.Carbon::now());
