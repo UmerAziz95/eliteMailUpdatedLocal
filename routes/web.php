@@ -139,7 +139,7 @@ Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptio
 
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
-Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
+Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}/user_id/{user_id}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
@@ -747,7 +747,7 @@ Route::get('/go/{slug}', function ($slug) {
  
     $record = ShortEncryptedLink::where('slug', $slug)->firstOrFail();
     $originalUrl = Crypt::decryptString($record->encrypted_url);
-   
+    
     return redirect()->away($originalUrl);
 });
 
@@ -852,7 +852,7 @@ Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
     }
 })->name('logs.clear');
 
-Route::get('custom/checkout/{id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
+Route::get('custom/checkout/{id}/user_id/{user_id}', [ChargebeeCustomCheckoutController::class, 'showCustomCheckout'])->name('custom.checkout.show');
 Route::get('custom/checkout/calculate/{qty}', [ChargebeeCustomCheckoutController::class, 'calculateCheckout'])->name('calculate.checkout');
 Route::post('custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.checkout.subscribe');
 // Route::post('/custom/checkout/subscribe', [ChargebeeCustomCheckoutController::class, 'subscribe'])->name('custom.subscribe'  );
