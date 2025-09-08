@@ -495,7 +495,7 @@ class AuthController extends Controller
             'password_confirmation.required' => 'Password confirmation is required.',
         ]);
 
-        $type_id=session()->get('iam_discounted_user');
+        $type_id = session()->get('iam_discounted_user');
         
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
@@ -612,26 +612,26 @@ class AuthController extends Controller
         session()->put('temp_user_custom_checkout', $user);
         // Optional: create Chargebee customer
         
-            try {
-                $result = \ChargeBee\ChargeBee\Models\Customer::create([
-                    'firstName' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'autoCollection' => 'on',
-                ]);
+        try {
+            $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                'firstName' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'autoCollection' => 'on',
+            ]);
 
-                $customer = $result->customer();
-                $user->update(['chargebee_customer_id' => $customer->id]);
+            $customer = $result->customer();
+            $user->update(['chargebee_customer_id' => $customer->id]);
 
-                Log::info('Chargebee customer created for user', [
-                    'user_id' => $user->id,
-                    'chargebee_customer_id' => $customer->id
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
-                    'user_id' => $user->id
-                ]);
-            }
+            Log::info('Chargebee customer created for user', [
+                'user_id' => $user->id,
+                'chargebee_customer_id' => $customer->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
 
         // Log activity
         ActivityLogService::log(
@@ -656,26 +656,24 @@ class AuthController extends Controller
         $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
         $encrypted = Crypt::encryptString($payload);
         $verificationLink="";
-         if ($user->type == "discounted") {
+        if ($user->type == "discounted") {
             if (isset($type_id)) {
                 $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
-            } 
-             else { 
-                    if(isset($request->discord_setting_page_id)){
-                        $discord_setting_page_id = $request->discord_setting_page_id;
-                    }else{
-                        
-                       $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+            } else { 
+                if(isset($request->discord_setting_page_id)){
+                    $discord_setting_page_id = $request->discord_setting_page_id;
+                }else{
+                    $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
                         ->pluck('discord_setting_page_id')
                         ->first();
                     }
                     $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
-                }
-            } else {
-                $verificationLink = url("/plans/public/{$encrypted}");
             }
+        } else {
+            $verificationLink = url("/plans/public/{$encrypted}");
+        }
 
-//to user
+        //to user
         try {
             Log::info("sending email to user: ".$user->email);
             Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));

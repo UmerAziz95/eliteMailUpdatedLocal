@@ -60,6 +60,8 @@ use App\Models\ShortEncryptedLink;
 use Flasher\Laravel\Facade\Flasher;
 use Flasher\Noty\Prime\NotyInterface;
 use App\Http\Controllers\Admin\InternalOrderManagerController;
+
+use Illuminate\Support\Facades\Session;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -953,3 +955,13 @@ Route::get('/test-exception', function () {
     $randomMessage = $messages[array_rand($messages)];
     throw new \Exception($randomMessage . ' - ' . now()->format('Y-m-d H:i:s'));
 });
+
+
+Route::get('/clear-session', function () {
+    try {
+        Session::flush();
+        return response()->json(['success' => true, 'message' => 'Session cleared successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('clear.session');
