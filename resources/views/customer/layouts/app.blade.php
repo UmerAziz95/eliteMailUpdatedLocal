@@ -31,7 +31,7 @@
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- added env check if base url is equal then then works this scrpot -->
+    <!-- Added env check if base url is equal then then works this script -->
     @php
         $allowed_domains = ['https://app.projectinbox.ai'];
         $current_domain = rtrim(env('APP_URL'), '/');
