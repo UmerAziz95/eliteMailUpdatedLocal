@@ -299,7 +299,7 @@
             </div>
             @endif
         </div>
-        <div><input type="hidden" name="encrypted_id" id="encrypted_id" value={{ $id }}></div>
+        <div><input type="hidden" name="encrypted_id" id="encrypted_id" value="{{ $id }}"></div>
     </div>
 </section>
 
@@ -311,9 +311,9 @@
                     const $btn = $(this);
                     const planId = $btn.data('plan-id');
                     const url_string = @json($url_string); // Use the passed URL string from the controller
-                   
+                    const user_id = @json($encrypted_user_id ?? null); // Get user ID if available
                     const token = $('meta[name="csrf-token"]').attr('content');
-                    const url = `/customer/discounted/plans/${planId}/subscribe/${url_string }`;
+                    const url = `/customer/discounted/plans/${planId}/subscribe/${url_string}/user_id/${user_id}`;
 
                     // Disable button and show spinner
                     $btn.prop('disabled', true);
@@ -349,6 +349,22 @@
                                 setTimeout(() => {
                                     window.location.reload();
                                 }, 4000);
+                            }
+                            if(errorCode==422){
+                                console.log(errorMsg);
+                                toastr.info(errorMsg)
+                                // Restore button state
+                                $btn.prop('disabled', false);
+                                $btn.find('.btn-text').text('Subscribe Now');
+                                $btn.find('.spinner-border').addClass('d-none');
+                                // xhr.responseJSON.discord_link
+                                // discord_link
+                                const discordLink = xhr.responseJSON.discord_link;
+                                if (discordLink) {
+                                    toastr.info("Redirecting to Discord...");
+                                    window.location.href = discordLink;
+                                }
+                                return;
                             }
                             if(errorCode==404){
                                 toastr.info("Invalid or expired discount link.")
