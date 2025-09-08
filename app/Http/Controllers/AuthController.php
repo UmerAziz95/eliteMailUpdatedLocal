@@ -496,6 +496,7 @@ class AuthController extends Controller
         ]);
 
         $type_id = session()->get('iam_discounted_user');
+        dd($type_id);
         
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
