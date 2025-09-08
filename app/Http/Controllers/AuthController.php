@@ -496,7 +496,7 @@ class AuthController extends Controller
         ]);
 
         $type_id = session()->get('iam_discounted_user');
-        dd($type_id);
+        // dd($type_id);
         
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
@@ -595,16 +595,26 @@ class AuthController extends Controller
         }
 
 
-
+        $user_type=null;
         // Create new user
-        
+        if($type_id && $type_id != null){
+            $user_type="discounted";
+        }
+        dd([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role_id' =>3,
+            'status' => 0,
+            'type'=>$user_type
+        ]);
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role_id' =>3,
             'status' => 0,
-            'type'=>$type_id ? "discounted":null
+            'type'=>$user_type
         ]);
         // set temp_user_custom_checkout
         if(session()->has('temp_user_custom_checkout')) {
