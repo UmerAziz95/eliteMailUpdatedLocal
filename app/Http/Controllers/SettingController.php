@@ -112,7 +112,7 @@ public function sendDiscordMessage(Request $request)
         ]);
     }
 
-      public static function discorSendMessageCron()
+     public static function discorSendMessageCron()
 {
     Log::info('✅ discorSendMessageCron method triggered.');
     
@@ -169,12 +169,21 @@ public function sendDiscordMessage(Request $request)
             'encrypted_url' => $encrypted,
         ]);
         $shortUrl = URL::to('/go/' . $short);
-        $fullMessage = $cronMessage . "\n" . $shortUrl;
+
+        // Expiry calculation based on settings
+        $expiresAt = match ($cronOccurrence) {
+            'daily'   => $nowUtc->copy()->addDay(),
+            'weekly'  => $nowUtc->copy()->addWeek(),
+            'monthly' => $nowUtc->copy()->addMonth(),
+            default   => $nowUtc->copy()->addWeek(),
+        };
+
+        // Keep original message format, just append expiry info
+        $fullMessage = $cronMessage . "\n" . $shortUrl . "\n⏰ Expires: " . $expiresAt->toDateTimeString() . " UTC";
 
         $response = Http::post($webhookUrl, [
             'content' => $fullMessage,
         ]);
-
 
         if ($response->failed()) {
             Log::error('Discord webhook request failed: ' . $response->body());
@@ -186,11 +195,13 @@ public function sendDiscordMessage(Request $request)
 
         return [
             'message' => 'Discord message sent.',
-            'at' => $nowUtc->toDateTimeString()
+            'at' => $nowUtc->toDateTimeString(),
+            'expires_at' => $expiresAt->toDateTimeString()
         ];
     } catch (\Exception $e) {
         Log::error('Failed to send Discord message: ' . $e->getMessage());
         return false;
     }
-}
+} 
+
 }
