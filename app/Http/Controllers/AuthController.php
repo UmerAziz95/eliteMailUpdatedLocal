@@ -302,9 +302,178 @@ class AuthController extends Controller
         return view('modules.auth.signup');
     }
 
- 
+    // Handle static plans registration
+    public function registerForStaticPlans(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'role' => 'required|in:customer',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            ],
+            'password_confirmation' => 'required',
+        ], [
+            'password.required' => 'Password is required.',
+            'password.string' => 'Password must be a valid string.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'password.regex' => 'Password must contain at least one uppercase letter, one number, and one special character.',
+            'password_confirmation.required' => 'Password confirmation is required.',
+        ]);
+
+        // Check if the user is already registered
+        $existingUser = User::where('email', $data['email'])->first();
+        if ($existingUser && $existingUser->status == 0) {
+            $verificationCode = rand(1000, 9999);
+            $existingUser->email_verification_code = $verificationCode;
+            $existingUser->save();
+
+            $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+            $encrypted = Crypt::encryptString($payload);
+            $verificationLink = url("/static-plans/{$encrypted}");
+
+            try {
+                Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+            } catch (\Exception $e) {
+                Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+            }
+
+            return response()->json([
+                'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+            ], 200);
+        }
+        
+        if ($existingUser) {
+            $userSubs = Subscription::where('user_id', $existingUser->id)->first();
+            if ($userSubs) {
+                return response()->json([
+                    'message' => 'Account already exists. Please login.',
+                ], 403);
+            } else {
+                // Email verification code
+                $verificationCode = rand(1000, 9999);
+                $existingUser->email_verification_code = $verificationCode;
+                $existingUser->save();
+
+                $payload = $existingUser->email . '/' . $verificationCode . '/' . now()->timestamp;
+                $encrypted = Crypt::encryptString($payload);
+                $verificationLink = url("/static-plans/{$encrypted}");
+
+                try {
+                    Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                }
+
+                return response()->json([
+                    'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+                    'redirect' => '/static-plans/' . $encrypted,
+                    'user' => $existingUser,
+                    'verificationLink' => $verificationLink
+                ], 200);
+            }
+        }
+
+        // Create new user
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role_id' => 3,
+            'status' => 0,
+            'type' => 'static'
+        ]);
+
+        // set temp_user_custom_checkout
+        if(session()->has('temp_user_custom_checkout')) {
+            session()->forget('temp_user_custom_checkout');
+        }
+        session()->put('temp_user_custom_checkout', $user);
+
+        // Optional: create Chargebee customer
+        try {
+            $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                'firstName' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'autoCollection' => 'on',
+            ]);
+
+            $customer = $result->customer();
+            $user->update(['chargebee_customer_id' => $customer->id]);
+
+            Log::info('Chargebee customer created for user', [
+                'user_id' => $user->id,
+                'chargebee_customer_id' => $customer->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
+
+        // Log activity
+        ActivityLogService::log(
+            'user_signup',
+            'New user registered successfully for static plans',
+            $user,
+            [
+                'email' => $user->email,
+                'role_id' => $user->role_id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'chargebee_customer_id' => $user->chargebee_customer_id,
+            ],
+            $user->id
+        );
+
+        // Email verification code
+        $verificationCode = rand(1000, 9999);
+        $user->email_verification_code = $verificationCode;
+        $user->save();
+
+        $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
+        $encrypted = Crypt::encryptString($payload);
+        $verificationLink = url("/static-plans/{$encrypted}");
+
+        // Send email to user
+        try {
+            Log::info("sending email to user: ".$user->email);
+            Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
+        } catch (\Exception $e) {
+            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+        }
+
+        // Send email to super admin
+        try {
+            Log::info("sending email to super admins");
+            $superAdmins = User::whereIn('role_id', [1])->get();
+            foreach ($superAdmins as $superAdmin) {
+                Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send registration email to admin. Error: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'User registered successfully! We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
+            'redirect' => '/static-plans/' . $encrypted,
+            'user' => $user,
+            'verificationLink' => $verificationLink
+        ], 200);
+    }
     public function register(Request $request)
     {
+        // check session for static plan
+        // Check if static plan session is set
+        if (session('static_link_hit')) {
+            return $this->registerForStaticPlans($request);
+        }
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
@@ -326,7 +495,7 @@ class AuthController extends Controller
             'password_confirmation.required' => 'Password confirmation is required.',
         ]);
 
-        $type_id=session()->get('iam_discounted_user');
+        $type_id = session()->get('iam_discounted_user');
         
         // Check if the user is already registered
         $existingUser = User::where('email', $data['email'])->first();
@@ -443,26 +612,26 @@ class AuthController extends Controller
         session()->put('temp_user_custom_checkout', $user);
         // Optional: create Chargebee customer
         
-            try {
-                $result = \ChargeBee\ChargeBee\Models\Customer::create([
-                    'firstName' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'autoCollection' => 'on',
-                ]);
+        try {
+            $result = \ChargeBee\ChargeBee\Models\Customer::create([
+                'firstName' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'autoCollection' => 'on',
+            ]);
 
-                $customer = $result->customer();
-                $user->update(['chargebee_customer_id' => $customer->id]);
+            $customer = $result->customer();
+            $user->update(['chargebee_customer_id' => $customer->id]);
 
-                Log::info('Chargebee customer created for user', [
-                    'user_id' => $user->id,
-                    'chargebee_customer_id' => $customer->id
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
-                    'user_id' => $user->id
-                ]);
-            }
+            Log::info('Chargebee customer created for user', [
+                'user_id' => $user->id,
+                'chargebee_customer_id' => $customer->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create Chargebee customer: ' . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
 
         // Log activity
         ActivityLogService::log(
@@ -487,26 +656,24 @@ class AuthController extends Controller
         $payload = $user->email . '/' . $verificationCode . '/' . now()->timestamp;
         $encrypted = Crypt::encryptString($payload);
         $verificationLink="";
-         if ($user->type == "discounted") {
+        if ($user->type == "discounted") {
             if (isset($type_id)) {
                 $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
-            } 
-             else { 
-                    if(isset($request->discord_setting_page_id)){
-                        $discord_setting_page_id = $request->discord_setting_page_id;
-                    }else{
-                        
-                       $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
+            } else { 
+                if(isset($request->discord_setting_page_id)){
+                    $discord_setting_page_id = $request->discord_setting_page_id;
+                }else{
+                    $discord_setting_page_id = DiscordUserLoginSession::orderBy('id', 'desc')
                         ->pluck('discord_setting_page_id')
                         ->first();
                     }
                     $verificationLink = url("/discounted/user/verify/{$encrypted}/{$discord_setting_page_id}");
-                }
-            } else {
-                $verificationLink = url("/plans/public/{$encrypted}");
             }
+        } else {
+            $verificationLink = url("/plans/public/{$encrypted}");
+        }
 
-//to user
+        //to user
         try {
             Log::info("sending email to user: ".$user->email);
             Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
