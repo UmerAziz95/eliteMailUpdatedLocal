@@ -1,8 +1,9 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Pricing Plans')
+@section('title', 'Special Plans Management')
 
 @push('styles')
+
 <style>
     .is-invalid {
         border-color: #dc3545 !important;
@@ -269,6 +270,32 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         margin: 40px 0;
     }
+
+    /* Special Plans specific styling */
+    .pricing-card[style*="border: 2px solid #e74c3c"] {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pricing-card[style*="border: 2px solid #e74c3c"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
+        z-index: 1;
+    }
+
+    /* Badge styling for special plans */
+    .badge.bg-danger {
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 15px;
+        z-index: 2;
+        background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    }
 </style>
 @endpush
 
@@ -310,9 +337,9 @@
                     @endif
                 </div> -->
 
-    <!-- Special Plans Section (is_discounted = 3) -->
+    <!-- Special Plans Section -->
     @php
-        // All plans passed from controller are already filtered for is_discounted = 3
+        // Since controller already filters for is_discounted = 3, all plans are special plans
         $specialPlans = $plans;
     @endphp
 
@@ -323,15 +350,15 @@
                 <i class="fa-solid fa-star me-2 theme-text"></i>
                 Special Plans
             </h3>
-            <p class="text-white">Special pricing plans with unique discounts</p>
+            <p class="text-white">Exclusive special pricing plans (is_discounted = 3)</p>
         </div>
         <div class="row" id="special-plans-container">
             @foreach ($specialPlans as $plan)
             <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
-                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}" style="border: 2px solid #28a745;">
+                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}" style="border: 2px solid #e74c3c;">
                     <div class="position-relative">
-                        <span class="badge bg-success position-absolute top-0 end-0 m-2">
-                            <i class="fa-solid fa-percent me-1"></i>Discounted
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-2">
+                            <i class="fa-solid fa-star me-1"></i>Special
                         </span>
                     </div>
                     <div class="inner-content d-flex flex-column justify-content-between">
@@ -373,67 +400,14 @@
             @endforeach
         </div>
     </div>
-    @endif
-
-    {{-- Section Divider --}}
-    {{-- @if($discountedPlans->count() > 0 && $regularPlans->count() > 0)
-    <div class="section-divider"></div>
-    @endif --}}
-
-    {{-- Regular Plans Section - Commented out for Special Plans page --}}
-    {{-- @if($regularPlans->count() > 0)
+    @else
     <div class="mt-5">
-        <div class="text-center mb-4 section-header">
-            <h3 class="text-white fw-bold">
-                <i class="fa-solid fa-list me-2 theme-text"></i>
-                Without Discount Plans
-            </h3>
-            <p class="text-white">Standard pricing plans without discounts</p>
-        </div>
-        <div class="row" id="regular-plans-container">
-            @foreach ($regularPlans as $plan)
-            <div class="col-sm-6 col-lg-4 mb-5" id="plan-{{ $plan->id }}">
-                <div class="pricing-card card {{ $getMostlyUsed && $plan->id === $getMostlyUsed->id ? 'popular' : '' }}">
-                    <div class="inner-content d-flex flex-column justify-content-between">
-                        <div>
-                            <div class="text-start">
-                                <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
-                                    {{ $plan->name }}</h4>
-                                <div class="mb-3 ">
-                                    <span>
-                                        <span class="number">{{ $plan->min_inbox }}
-                                            {{ $plan->max_inbox == 0 ? '+' : '- ' . $plan->max_inbox }}</span>
-                                        Inboxes
-                                    </span>
-                                </div>
-
-                                <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
-                                    ${{ number_format($plan->price, 2) }}
-                                    <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
-                                        /{{ $plan->duration == 'monthly' ? 'mo' : $plan->duration }}
-                                        per Inboxes
-                                    </span>
-                                </h2>
-                                <ul class="list-unstyled features-list text-start">
-                                    @foreach ($plan->features as $feature)
-                                    <li style="font-size: 14px" class="mb-2 d-flex align-items-center gap-2">
-                                        <div>
-                                            <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
-                                                width="20" alt="">
-                                        </div>
-                                        {{ $feature->title }} {{ $feature->pivot->value }}
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endforeach
+        <div class="text-center">
+            <h4 class="text-white mb-3">No Special Plans Available</h4>
+            <p class="text-muted">There are currently no special plans (is_discounted = 3) to display.</p>
         </div>
     </div>
-    @endif --}}
+    @endif
 
     <!-- All Plans Container (for legacy compatibility) -->
     <div class="row mt-5" id="plans-container" style="display: none;">
@@ -623,7 +597,7 @@
     </div>
 
     <!-- Edit Modals for Special Plans -->
-    @foreach ($specialPlans as $plan)
+    @foreach ($plans as $plan)
         <!-- Edit Modal for special plan {{ $plan->id }} -->
         <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -650,8 +624,8 @@
                                 <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
                                 </option>
                             </select>
-                            <!-- Hidden field to maintain discounted status -->
-                            <input type="hidden" name="is_discounted" value="1">
+                            <!-- Hidden field to maintain special plan status -->
+                            <input type="hidden" name="is_discounted" value="3">
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="name{{ $plan->id }}">Plan Name:</label>
@@ -763,147 +737,6 @@
         </div>
     @endforeach
 
-    {{-- Edit Modals for Regular Plans - Commented out for Special Plans page
-    @foreach ($regularPlans as $plan)
-        <!-- Edit Modal for regular plan {{ $plan->id }} -->
-        <div class="modal fade" id="editPlan{{ $plan->id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-body p-3 p-md-5 position-relative">
-                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
-                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-                        <div class="text-center mb-4">
-                            <h4>Edit Plan</h4>
-                        </div>
-                        <form id="editPlanForm{{ $plan->id }}" class="edit-plan-form" data-id="{{ $plan->id }}">
-                            @csrf
-                            <label style="display: none;" for="chargebee_plan_id{{ $plan->id }}">Chargebee Plan
-                                ID:</label>
-                            <input style="display: none;" type="text" class="form-control mb-3"
-                                id="chargebee_plan_id{{ $plan->id }}" name="chargebee_plan_id"
-                                value="{{ $plan->chargebee_plan_id }}">
-                            <label style="display: none;" for="duration{{ $plan->id }}">Duration:</label>
-                            <select style="display: none;" class="form-control mb-3" id="duration{{ $plan->id }}"
-                                name="duration" required>
-                                <option value="monthly" {{ $plan->duration === 'monthly' ? 'selected' : '' }}>
-                                    Monthly
-                                </option>
-                                <option value="yearly" {{ $plan->duration === 'yearly' ? 'selected' : '' }}>Yearly
-                                </option>
-                            </select>
-                            <!-- Hidden field to maintain non-discounted status -->
-                            <input type="hidden" name="is_discounted" value="0">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="name{{ $plan->id }}">Plan Name:</label>
-                                    <input type="text" class="form-control mb-3" id="name{{ $plan->id }}" name="name"
-                                        value="{{ $plan->name }}" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="price{{ $plan->id }}">Price Per Inboxes ($):</label>
-                                    <input type="number" class="form-control mb-3" id="price{{ $plan->id }}"
-                                        name="price" step="0.01" value="{{ $plan->price }}" required>
-                                </div>
-                                <div class="col-md-12">
-                                    <label for="description{{ $plan->id }}">Description:</label>
-                                    <textarea class="form-control mb-3" id="description{{ $plan->id }}"
-                                        name="description" rows="2">{{ $plan->description }}</textarea>
-                                </div>
-                                <div class="col-md-12">
-                                    <h5 class="mt-2">Inbox Limits</h5>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <label for="min_inbox{{ $plan->id }}">Min Inboxes:</label>
-                                            <input type="number" class="form-control mb-3" id="min_inbox{{ $plan->id }}"
-                                                name="min_inbox" value="{{ $plan->min_inbox }}" min="1" step="1"
-                                                required>
-                                            <small class="text-white">Must be 1 or greater</small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="max_inbox{{ $plan->id }}">Max Inboxes (0 for
-                                                unlimited):</label>
-                                            <input type="number" class="form-control mb-3" id="max_inbox{{ $plan->id }}"
-                                                name="max_inbox" value="{{ $plan->max_inbox ?? 0 }}" min="0" step="1"
-                                                required>
-                                            <small class="text-white">Use 0 for unlimited</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="mt-4">Features</h5>
-                            <div class="selected-features-container" id="selectedFeatures{{ $plan->id }}">
-                                @foreach ($plan->features as $feature)
-                                <div class="feature-item" data-feature-id="{{ $feature->id }}">
-                                    <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
-                                        <i class="fa-solid fa-times"></i>
-                                    </button>
-                                    <div class="row">
-                                        <div class="col-md-5">
-                                            <strong>{{ $feature->title }}</strong>
-                                            <input type="hidden" name="feature_ids[]" value="{{ $feature->id }}">
-                                        </div>
-                                        <div class="col-md-7">
-                                            <input type="text" class="form-control form-control-sm feature-value-input"
-                                                name="feature_values[]" value="{{ $feature->pivot->value }}"
-                                                placeholder="Value">
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-
-                            <div class="row mt-3 gy-3">
-                                <div class="col-md-7">
-                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $plan->id }}">
-                                        <option value="">Select an existing feature</option>
-                                        <!-- Will be populated via AJAX -->
-                                    </select>
-                                </div>
-                                <div class="col-md-5" style="text-align: right;">
-                                    <button type="button" class="btn btn-secondary add-selected-feature"
-                                        data-plan-id="{{ $plan->id }}">
-                                        <i class="fa-solid fa-plus"></i> Selected Feature
-                                    </button>
-                                    <button type="button" class="btn btn-primary toggle-new-feature-form"
-                                        data-plan-id="{{ $plan->id }}">
-                                        <i class="fa-solid fa-plus"></i> New
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="new-feature-form mt-3" id="newFeatureForm{{ $plan->id }}"
-                                style="display: none;">
-                                <h6>New Feature</h6>
-                                <div class="row">
-                                    <div class="col-md-5">
-                                        <input type="text" class="form-control mb-2 new-feature-title"
-                                            placeholder="Feature Title">
-                                    </div>
-                                    <div class="col-md-5">
-                                        <input type="text" class="form-control mb-2 new-feature-value"
-                                            placeholder="Feature Value">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="btn btn-primary add-new-feature-btn"
-                                            data-plan-id="{{ $plan->id }}">
-                                            <i class="fa-solid fa-plus"></i> Add
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4">
-                                <button type="submit" class="m-btn py-2 px-4 rounded-2 w-100 update-plan-btn">Update
-                                    Plan</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endforeach --}}
-
     <!-- Add New Plan Modal -->
     <div class="modal fade" id="addPlan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -912,10 +745,10 @@
                     <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-4">
-                        <h4>Add New Special Plan</h4>
+                        <h4>Add New Plan</h4>
                         <div class="alert alert-info mt-3">
                             <i class="fa-solid fa-info-circle me-2"></i>
-                            <small><strong>Note:</strong> This will create a new special plan with is_discounted = 3.</small>
+                            <small><strong>Note:</strong> Only one discounted plan and one non-discounted plan are allowed in the system.</small>
                         </div>
                     </div>
                     <form id="addPlanForm">
@@ -945,12 +778,11 @@
                                     rows="2"></textarea>
                             </div>
                             <div class="col-md-12">
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="is_discounted" name="is_discounted" value="1">
-                                    <label class="form-check-label text-white" for="is_discounted">
-                                        <i class="fa-solid fa-tags me-1"></i>Is Discounted Plan
-                                    </label>
-                                    <small class="d-block text-white">Check this if this plan should have discounts applied</small>
+                                <!-- Hidden field to set is_discounted = 3 for special plans -->
+                                <input type="hidden" id="is_discounted" name="is_discounted" value="3">
+                                <div class="alert alert-info mb-3">
+                                    <i class="fa-solid fa-star me-2"></i>
+                                    <strong>Special Plan:</strong> This plan will be created as a special plan (is_discounted = 3)
                                 </div>
                             </div>
                             <div class="col-md=6">
@@ -1068,10 +900,10 @@
                 $('.new-feature-title').val('');
                 $('.new-feature-value').val('');
             });
-
+            
             function loadFeatures() {
                 $.ajax({
-                    url: "{{ route('admin.features.list') }}",
+                    url: "{{ route('admin.special-plans.with.features') }}",
                     type: "GET",
                     dataType: "json",
                     success: function(response) {
@@ -1365,7 +1197,7 @@
 
                 // Create new feature via AJAX
                 $.ajax({
-                    url: "{{ route('admin.features.store') }}",
+                    url: "{{ route('admin.special-plans.features.store') }}",
                     type: "POST",
                     data: {
                         _token: "{{ csrf_token() }}",
@@ -1562,20 +1394,12 @@
                     return;
                 }
 
-                // Check if user is trying to create a plan type that might already exist
-                const isDiscounted = $('#is_discounted').is(':checked');
-                const planType = isDiscounted ? 'discounted' : 'non-discounted';
+                // Check if user is trying to create a special plan
+                const isDiscountedValue = $('#is_discounted').val();
+                const planType = 'special';
                 
-                // Show warning but allow submission (server will validate)
-                if (isDiscounted && $('.pricing-card[style*="border: 2px solid #28a745"]').length > 0) {
-                    if (!confirm(`A discounted plan may already exist. Only one discounted plan is allowed. Continue anyway?`)) {
-                        return;
-                    }
-                } else if (!isDiscounted && $('.pricing-card:not([style*="border: 2px solid #28a745"])').length > 0) {
-                    if (!confirm(`A non-discounted plan may already exist. Only one non-discounted plan is allowed. Continue anyway?`)) {
-                        return;
-                    }
-                }
+                // Show info about creating special plan
+                console.log(`Creating special plan with is_discounted = ${isDiscountedValue}`);
 
                 const submitBtn = $(this).find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
@@ -1799,6 +1623,99 @@
                 // For simplicity, using error toast for warnings
                 showErrorToast(message);
             }
+
+            // Handle Generate Static Link button click
+            $(document).on('click', '.generateStaticLinkBtn', function() {
+                const $btn = $(this);
+                const masterPlanId = $btn.data('master-plan-id');
+                const chargebeePlanId = $btn.data('chargebee-plan-id');
+                
+                if (!chargebeePlanId) {
+                    showErrorToast('Chargebee Plan ID is required to generate static link. Please sync the plan with Chargebee first.');
+                    return;
+                }
+                
+                // Disable button while processing
+                $btn.prop('disabled', true);
+                const originalText = $btn.html();
+                $btn.html('<i class="fa-solid fa-spinner fa-spin"></i> Generating...');
+                
+                $.ajax({
+                    url: '{{ route("admin.special-plans.generate-static-link") }}',
+                    method: 'POST',
+                    data: {
+                        master_plan_id: masterPlanId,
+                        chargebee_plan_id: chargebeePlanId,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showStaticLinkModal(response.link, masterPlanId, chargebeePlanId);
+                        } else {
+                            showErrorToast(response.message || 'Failed to generate static link');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to generate static link';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showErrorToast(errorMessage);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false);
+                        $btn.html(originalText);
+                    }
+                });
+            });
+            
+            // Function to show the generated static link in a modal
+            function showStaticLinkModal(link, masterPlanId, chargebeePlanId) {
+                const modalHtml = `
+                    <div class="modal fade" id="staticLinkModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Generated Static Link</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Master Plan ID:</strong> ${masterPlanId}</p>
+                                    <p><strong>Chargebee Plan ID:</strong> ${chargebeePlanId}</p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="staticLinkInput" value="${link}" readonly>
+                                        <button class="btn btn-outline-secondary copy-static-link-btn" type="button">
+                                            <i class="fa-solid fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">This link can be shared externally. When clicked, users will be redirected to login and then to the static plans page for subscription.</small>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                $('#staticLinkModal').remove();
+                $('body').append(modalHtml);
+                $('#staticLinkModal').modal('show');
+            }
+            
+            // Handle copy static link button click using event delegation
+            $(document).on('click', '.copy-static-link-btn', function() {
+                const linkInput = document.getElementById('staticLinkInput');
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999);
+                
+                try {
+                    document.execCommand('copy');
+                    showSuccessToast('Static link copied to clipboard!');
+                } catch (err) {
+                    showErrorToast('Failed to copy link. Please copy manually.');
+                }
+            });
             // autofixing volume tier plan range start like [10-20, 0-9, 21-0] don't miss the range same functionality perform like chagebee side handle not skip range
             // Function to update master plan display dynamically
           function updateMasterPlanDisplay(masterPlans) {
@@ -1838,6 +1755,13 @@
                                 </div>
                                 <div class="text-end mt-2">
                                     <button class="btn btn-sm btn-primary editMasterPlanBtn" data-id="${plan.id}">Edit Plan</button>
+                                    ${plan.chargebee_plan_id ? `
+                                        <button class="btn btn-sm btn-success ms-2 generateStaticLinkBtn" 
+                                                data-master-plan-id="${plan.id}" 
+                                                data-chargebee-plan-id="${plan.chargebee_plan_id}">
+                                            <i class="fa-solid fa-link"></i> Generate Static Link
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
@@ -1854,17 +1778,17 @@
 
 
 
-            // Function to refresh the simple plans section
+            // Function to refresh the special plans section
             function refreshPlansSection() {
-                console.log('Refreshing plans section...');
+                console.log('Refreshing special plans section...');
 
                 // Add loading indicator
-                const plansContainer = $('#plans-container');
+                const plansContainer = $('#special-plans-container');
                 const originalContent = plansContainer.html();
 
                 // Show loading state
                 plansContainer.append(
-                    '<div id="refresh-loading" class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Updating plans...</div>'
+                    '<div id="refresh-loading" class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Updating special plans...</div>'
                 );
 
                 $.get('{{ route('admin.special-plans.with.features') }}')
@@ -1882,7 +1806,7 @@
                         $('#refresh-loading').remove();
 
                         // Check if plan count changed or if we have new plans
-                        const currentPlanCount = $('#plans-container .col-sm-6').length;
+                        const currentPlanCount = $('#special-plans-container .col-sm-6').length;
                         const newPlanCount = plans.length;
 
                         console.log(`Current plan count: ${currentPlanCount}, New plan count: ${newPlanCount}`);
@@ -1910,7 +1834,7 @@
 
                 // Get current plan IDs on the page
                 const currentPlanIds = [];
-                $('#plans-container .col-sm-6').each(function() {
+                $('#special-plans-container .col-sm-6').each(function() {
                     const planId = $(this).attr('id').replace('plan-', '');
                     currentPlanIds.push(parseInt(planId));
                 });
@@ -2000,7 +1924,7 @@
                 console.log('Rebuilding plans section with new data:', plans);
                 console.log('Most popular plan data:', mostlyUsed);
 
-                const plansContainer = $('#plans-container');
+                const plansContainer = $('#special-plans-container');
                 const mostlyUsedId = mostlyUsed ? mostlyUsed.id : null;
 
                 // Build new HTML for all plans
@@ -2053,7 +1977,7 @@
             // Master Plan Functions
             function loadMasterPlan() {
                
-                $.get('{{ route('admin.master-plan.show') }}')
+                $.get('{{ route('admin.special-plans.master-plan.show') }}')
                     .done(function(response) {
 
                         console.log('Master plan data:', response);
@@ -2070,7 +1994,7 @@
             // // Create/Edit Master Plan
             $('#createMasterPlan').click(function() {
                 // Load existing data if available
-                // $.get('{{ route('admin.master-plan.show') }}')
+                // $.get('{{ route('admin.special-plans.master-plan.show') }}')
                 //     .done(function(response) {
                 //         if (response && response.id) {
                 //             $('#masterPlanExternalName').val(response.name || '');
@@ -2309,7 +2233,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     '✅ All volume tier ranges validated successfully - no gaps or overlaps detected');
 
                 $.ajax({
-                        url: '{{ route('admin.master-plan.store') }}',
+                        url: '{{ route('admin.special-plans.master-plan.store') }}',
                         method: 'POST',
                         data: formData,
                         dataType: 'json'
@@ -3229,7 +3153,7 @@ function collectVolumeItems() {
 
             // Load features for a specific volume item
             function loadFeaturesForVolumeItem(itemIndex, selectedFeatures = [], selectedValues = []) {
-                $.get('{{ route('admin.features.list') }}')
+                $.get('{{ route('admin.special-plans.with.features') }}')
                     .done(function(response) {
                         if (response.success && response.features) {
                             const $select = $(`#featureSelect${itemIndex}`);
@@ -3374,7 +3298,7 @@ function collectVolumeItems() {
 
                 // Create new feature via AJAX
                 $.ajax({
-                    url: "{{ route('admin.features.store') }}",
+                    url: "{{ route('admin.special-plans.features.store') }}",
                     type: "POST",
                     data: {
                         _token: "{{ csrf_token() }}",
@@ -3423,7 +3347,12 @@ function collectVolumeItems() {
         $('#masterPlanInternalName').val(generatedInternalName);
         $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
         $('#masterPlanDescription').val(plan.description || '');
-        $('#planTypeRole').val(plan.is_discounted ? 'Discounted' : 'Without Discount');
+        // Handle special plans (is_discounted = 3)
+        if (plan.is_discounted === 3) {
+            $('#planTypeRole').val('Special');
+        } else {
+            $('#planTypeRole').val(plan.is_discounted ? 'Discounted' : 'Without Discount');
+        }
 
         // Clear and add volume items
         $('#volumeItemsContainer').empty();
@@ -3581,10 +3510,7 @@ function collectVolumeItems() {
                                     <label for="planType" class="form-label">Type <span
                                             class="text-danger">*</span></label>
                                     <select class="form-select" id="planTypeRole" required>
-                                        <option value="">-- Select Type --</option>
-                                        <option value="Discounted">Discounted</option>
-                                        <option value="Without Discount">Without Discount</option>
-
+                                        <option value="Special" selected>Special Plan (is_discounted = 3)</option>
                                     </select>
                                 </div>
 

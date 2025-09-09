@@ -169,11 +169,21 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Special Plans routes (is_discounted = 3)
         Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');
-        Route::post('special-plans', [SpecialPlanController::class, 'store'])->name('special-plans.store');
+        Route::post('special-plans', [SpecialPlanController::class, 'storeSpecialPlan'])->name('special-plans.store');
         Route::get('special-plans/{id}', [SpecialPlanController::class, 'show'])->name('special-plans.show');
         Route::put('special-plans/{id}', [SpecialPlanController::class, 'update'])->name('special-plans.update');
         Route::delete('special-plans/{id}', [SpecialPlanController::class, 'destroy'])->name('special-plans.destroy');
         Route::get('special-plans-with-features', [SpecialPlanController::class, 'getPlansWithFeatures'])->name('special-plans.with.features');
+        
+        // Special Plans Features routes
+        Route::post('special-plans/features', [SpecialPlanController::class, 'storeFeature'])->name('special-plans.features.store');
+        
+        // Special Plans Master Plan routes
+        Route::get('special-plans/master-plan/{id?}', [SpecialPlanController::class, 'show'])->name('special-plans.master-plan.show');
+        Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
+        
+        // Special Plans Static Link Generation
+        Route::post('special-plans/generate-static-link', [SpecialPlanController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
         
         // Master Plan routes
         Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
