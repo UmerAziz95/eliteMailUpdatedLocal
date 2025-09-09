@@ -145,8 +145,8 @@ class PlanController extends Controller
 
 
             $hostedPage = $result->hostedPage();
-            session()->forget(['static_plan_data']);
-            session()->forget(['static_link_hit']);
+            // session()->forget(['static_plan_data']);
+            // session()->forget(['static_link_hit']);
 
             return response()->json([
                 'success' => true,
