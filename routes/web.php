@@ -183,7 +183,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
         
         // Special Plans Static Link Generation
-        Route::post('special-plans/generate-static-link', [SpecialPlanController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
+        Route::post('special-plans/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
         
         // Master Plan routes
         Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');

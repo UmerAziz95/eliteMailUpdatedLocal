@@ -216,51 +216,50 @@ class SpecialPlanController extends Controller
      * Display the special master plans with volume items
      */
     public function show($id=null)
-{
-    
-    if($id !==null){
-        // Show specific special master plan
-        $masterPlans = MasterPlan::with('volumeItems.features')
-            ->where('id', $id)
-            ->where('is_discounted', 3)
-            ->get();
-    }else{
-        // Show all special master plans
-        $masterPlans = MasterPlan::with('volumeItems.features')
-            ->where('is_discounted', 3)
-            ->get();
+    {
+        if($id !==null && is_numeric($id)){
+            // Show specific special master plan
+            $masterPlans = MasterPlan::with('volumeItems.features')
+                ->where('id', $id)
+                ->where('is_discounted', 3)
+                ->get();
+        }else{
+            // Show all special master plans
+            $masterPlans = MasterPlan::with('volumeItems.features')
+                ->where('is_discounted', 3)
+                ->get();
+                // dd($masterPlans);
+        }
+        $formattedData = $masterPlans->map(function ($plan) {
+            return [ 
+                'id' => $plan->id,
+                'external_name' => $plan->external_name,
+                'internal_name' => $plan->internal_name,
+                'description' => $plan->description,
+                'chargebee_plan_id' => $plan->chargebee_plan_id,
+                'is_discounted' => $plan->is_discounted,
+                'volume_items' => $plan->volumeItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'description' => $item->description,
+                        'min_inbox' => $item->min_inbox,
+                        'max_inbox' => $item->max_inbox,
+                        'price' => $item->price,
+                        'duration' => $item->duration,
+                        'features' => $item->features->pluck('id')->toArray(),
+                        'feature_values' => $item->features->pluck('pivot.value')->toArray(),
+                        'tier_discount_type' => $item->tier_discount_type,
+                        'tier_discount_value' => $item->tier_discount_value,
+                        'actual_price_before_discount' => $item->actual_price_before_discount,
+                        'is_discounted' => $item->is_discounted
+                    ];
+                })->toArray()
+            ];
+        });
+
+        return response()->json($formattedData);
     }
-
-    $formattedData = $masterPlans->map(function ($plan) {
-        return [ 
-            'id' => $plan->id,
-            'external_name' => $plan->external_name,
-            'internal_name' => $plan->internal_name,
-            'description' => $plan->description,
-            'chargebee_plan_id' => $plan->chargebee_plan_id,
-            'is_discounted' => $plan->is_discounted,
-            'volume_items' => $plan->volumeItems->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'description' => $item->description,
-                    'min_inbox' => $item->min_inbox,
-                    'max_inbox' => $item->max_inbox,
-                    'price' => $item->price,
-                    'duration' => $item->duration,
-                    'features' => $item->features->pluck('id')->toArray(),
-                    'feature_values' => $item->features->pluck('pivot.value')->toArray(),
-                    'tier_discount_type' => $item->tier_discount_type,
-                    'tier_discount_value' => $item->tier_discount_value,
-                    'actual_price_before_discount' => $item->actual_price_before_discount,
-                    'is_discounted' => $item->is_discounted
-                ];
-            })->toArray()
-        ];
-    });
-
-    return response()->json($formattedData);
-}
 
    /**
      * Create or update the master plan with volume items
