@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Signup</title>
     <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
+    <meta name="app-url" content="{{ config('app.url') }}">
 
     <link rel="stylesheet" href="{{ url('assets/style.css') }}">
     <!-- <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> -->
@@ -253,10 +254,12 @@
 
                     // Get email from input
                     const email = $('#email').val();
-                     fpr("referral", {
-                        email: email,
-                        });
-                    // Set email in modal
+                                    // Safely call fpr only if function exists AND app URL matches
+                    const appUrl = $('meta[name="app-url"]').attr('content');
+                    if (typeof fpr === "function" && window.location.origin === appUrl) {
+                        fpr("referral", { email: email });
+                    }
+                                    // Set email in modal
                     $('#userEmail').text(email);
                     //cleaning input
                       $('#email').val('');
