@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Signup</title>
     <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
-    
+
     <link rel="stylesheet" href="{{ url('assets/style.css') }}">
     <!-- <link rel="stylesheet" href="{{ asset('assets/plugins/toastr/toastr.min.css') }}" /> -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -61,7 +61,7 @@
     </style>
     <!-- Include tracking scripts -->
     @if(View::exists('promoter.tracking-scripts'))
-        @include('promoter.tracking-scripts')
+    @include('promoter.tracking-scripts')
     @endif
 </head>
 <script>
@@ -126,8 +126,7 @@
                                 </div>
                                 <div class="input-group">
                                     <label for="password">Password</label>
-                                    <input type="password" name="password" id="password" placeholder=""
-                                        required>
+                                    <input type="password" name="password" id="password" placeholder="" required>
                                     <span id="togglePassword"
                                         class="input-group-text bg-transparent text-white border-0">
                                         <i class="fas fa-eye-slash"></i>
@@ -168,11 +167,15 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                                         <label class="form-check-label" for="flexCheckDefault">
-                                            I agree to the  <a style="text-decoration:none;" class="theme-text" href="https://projectinbox.ai/privacy-policy">Privacy Policy</a> and <a style="text-decoration:none" class="theme-text" href="https://projectinbox.ai/terms-conditions">Terms Of Service</a> 
+                                            I agree to the <a style="text-decoration:none;" class="theme-text"
+                                                href="https://projectinbox.ai/privacy-policy">Privacy Policy</a> and <a
+                                                style="text-decoration:none" class="theme-text"
+                                                href="https://projectinbox.ai/terms-conditions">Terms Of Service</a>
                                         </label>
                                     </div>
                                 </div>
-                                <button type="submit" id="submitBtn" class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Sign
+                                <button type="submit" id="submitBtn"
+                                    class="mt-3 w-100 m-btn py-2 px-4 border-0 rounded-2">Sign
                                     up</button>
                             </form>
 
@@ -224,7 +227,6 @@
         });
     </script>
     <script>
-        
         $(document).ready(function() {
             $("#registerForm").submit(function(event) {
             event.preventDefault(); // Prevent default form submission
@@ -251,6 +253,9 @@
 
                     // Get email from input
                     const email = $('#email').val();
+                     fpr("referral", {
+                        email: email,
+                        });
                     // Set email in modal
                     $('#userEmail').text(email);
                     //cleaning input
