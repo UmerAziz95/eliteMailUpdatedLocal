@@ -288,6 +288,10 @@ class PlanController extends Controller
             
             // dd($subscription, $customer, $invoice, $plan_id, $charge_plan_id);
             $user = auth()->user();
+            if($user->status != 1){
+                $user->status = 1;
+                $user->save();
+            }
             $user->billing_address=$line1;
             $user->billing_address2=$line2;
             $user->billing_city=$city;
