@@ -57,6 +57,10 @@
             border-radius: 4px !important
         }
     </style>
+    <!-- Include tracking scripts -->
+    @if(View::exists('promoter.tracking-scripts'))
+        @include('promoter.tracking-scripts')
+    @endif
 </head>
 <script>
     var baseurl = "{{ url('/') }}";

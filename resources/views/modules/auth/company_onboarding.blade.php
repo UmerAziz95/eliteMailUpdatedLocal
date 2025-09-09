@@ -144,6 +144,10 @@
             color: white;
         }
     </style>
+    <!-- Include tracking scripts -->
+    @if(View::exists('promoter.tracking-scripts'))
+        @include('promoter.tracking-scripts')
+    @endif
 </head>
 
 <body>
