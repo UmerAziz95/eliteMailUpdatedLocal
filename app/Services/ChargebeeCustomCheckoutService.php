@@ -16,7 +16,7 @@ class ChargebeeCustomCheckoutService
     public function createCustomer($email, $firstName = '', $lastName = '', $addressLine1 = '', $city = '', $state = '', $zip = '', $country = '')
     {
         try {
-            // Create a new customer in Chargebee
+            // Create a new customer in Chargebees
             if (empty($email)) {
                 throw new \InvalidArgumentException('Email is required to create a customer.');
             }
