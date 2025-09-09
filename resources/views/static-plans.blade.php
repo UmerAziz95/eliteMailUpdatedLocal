@@ -181,7 +181,7 @@
         <div class="">
             @if($masterPlan->volumeItems->count() > 0)
                 <div id="plans-container" class="plans px-xl-5">
-                    @foreach ($masterPlan->volumeItems->sortBy('max_inbox') as $plan)
+                    @foreach ($masterPlan->volumeItems->sortBy('id') as $plan)
                         <div id="plan-{{ $plan->id }}">
                             <div class="pricing-card h-100 {{ $plan->id === $selectedPlan->id ? '' : '' }}">
                                 <div class="inner-content d-flex flex-column justify-content-between">
@@ -261,14 +261,14 @@
         </div>
 
         <div class="text-center mt-5">
-            <p class="text-muted">
+            {{-- <p class="text-muted">
                 <i class="fa-solid fa-info-circle"></i> 
                 This is a special access link. You can only access these plans through this page.
-            </p>
-            <a href="{{ route('login') }}" class="btn grey-btn">
+            </p> --}}
+            {{-- <a href="{{ route('login') }}" class="btn grey-btn">
                 <i class="fa-solid fa-sign-in-alt me-1"></i> 
                 Login to Continue
-            </a>
+            </a> --}}
         </div>
     </div>
 </section>
