@@ -768,11 +768,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 // Plan Name
                                 [
                                     'title' => 'Plan Name',
@@ -828,11 +828,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Contractor Name',
                                     'value' => $data['contractor_name'] ?? 'Unassigned',
@@ -897,11 +897,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Contractor Name',
                                     'value' => $data['contractor_name'] ?? 'Unassigned',
@@ -961,11 +961,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Contractor Name',
                                     'value' => $data['contractor_name'] ?? 'Unassigned',
@@ -1030,11 +1030,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Assigned To',
                                     'value' => $data['contractor_name'] ?? 'Unassigned',
@@ -1092,11 +1092,11 @@ class SlackNotificationService
                                 'value' => $data['customer_name'] ?? 'Unknown',
                                 'short' => true
                             ],
-                            [
-                                'title' => 'Customer Email',
-                                'value' => $data['customer_email'] ?? 'Unknown',
-                                'short' => true
-                            ],
+                            // [
+                            //     'title' => 'Customer Email',
+                            //     'value' => $data['customer_email'] ?? 'Unknown',
+                            //     'short' => true
+                            // ],
                             [
                                 'title' => 'Email Count',
                                 'value' => $data['email_count'] ?? '0',

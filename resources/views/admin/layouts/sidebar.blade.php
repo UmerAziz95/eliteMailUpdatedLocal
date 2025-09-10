@@ -7,19 +7,51 @@
     <ul class="nav flex-column list-unstyled">
         {{-- Dynamic Navigation from Database --}}
         @foreach ($navigations as $item)
-            @can($item->permission)
+        @can($item['permission'])
+        <li class="nav-item">
+            @if (!empty($item['sub_menu']) && count($item['sub_menu']) > 0)
+            {{-- Parent with Submenu --}}
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item['route']) ? 'active' : '' }}"
+                data-bs-toggle="collapse" href="#submenu-{{ $loop->index }}" role="button" aria-expanded="false"
+                aria-controls="submenu-{{ $loop->index }}">
+                <div class="d-flex align-items-center" style="gap: 13px; flex: 1;">
+                    <div class="icons"><i class="{{ $item['icon'] }}"></i></div>
+                    <div class="text">{{ $item['name'] }}</div>
+                </div>
+                <i class="ti ti-chevron-down rotate-icon ms-auto"></i>
+            </a>
+
+            <ul class="collapse list-unstyled ps-4" id="submenu-{{ $loop->index }}">
+                @foreach ($item['sub_menu'] as $sub_item)
+                @can($sub_item['permission'])
                 <li class="nav-item">
-                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item->route) ? 'active' : '' }}"
-                        href="{{ route($item->route) }}">
-                        <div class="d-flex align-items-center" style="gap: 13px">
-                            <div class="icons"><i class="{{ $item->icon }}"></i></div>
-                            <div class="text">{{ $item->name }}</div>
+                    <a class="nav-link d-flex align-items-center {{ Route::is($sub_item['route']) ? 'active' : '' }}"
+                        href="{{ route($sub_item['route']) }}">
+                        <div class="d-flex align-items-center" style="gap: 10px">
+                            <div class="icons"><i class="{{ $sub_item['icon'] }}"></i></div>
+                            <div class="text">{{ $sub_item['name'] }}</div>
                         </div>
                     </a>
                 </li>
-            @endcan
+                @endcan
+                @endforeach
+            </ul>
+            @else
+            {{-- Normal menu without submenu --}}
+            <a class="nav-link px-3 d-flex align-items-center {{ Route::is($item['route']) ? 'active' : '' }}"
+                href="{{ route($item['route']) }}">
+                <div class="d-flex align-items-center" style="gap: 13px">
+                    <div class="icons"><i class="{{ $item['icon'] }}"></i></div>
+                    <div class="text">{{ $item['name'] }}</div>
+                </div>
+            </a>
+            @endif
+        </li>
+        @endcan
         @endforeach
     </ul>
+
+
 </aside>
 
 <script>

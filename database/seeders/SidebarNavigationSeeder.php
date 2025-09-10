@@ -57,50 +57,15 @@ class SidebarNavigationSeeder extends Seeder
                 'route' => 'admin.orders',
                 'permission' => 'Orders',
                 'sub_menu' => [
-                    [
-                        "name" => "Plans",
-                        "icon" => "ti ti-devices-dollar fs-5",
-                        "route" => "admin.pricing",
-                        "permission" => "Plans"
-                    ],
-                    [
-                        "name" => "Orders",
-                        "icon" => "ti ti-box fs-5",
-                        "route" => "admin.orders",
-                        "permission" => "Orders"
-                    ],
-                    [
-                        "name" => "Subscriptions",
-                        "icon" => "ti ti-currency-dollar fs-5",
-                        "route" => "admin.subs.view",
-                        "permission" => "Subscriptions"
-                    ],
-                    [
-                        "name" => "Invoices",
-                        "icon" => "ti ti-file-invoice fs-5",
-                        "route" => "admin.invoices.index",
-                        "permission" => "Invoices"
-                    ],
-                    [
-                        "name" => "Panels",
-                        "icon" => "ti ti-file-invoice fs-5",
-                        "route" => "admin.panels.index",
-                        "permission" => "Panels"
-                    ]
+                    //  [
+                    //     "name" => "Order Dashoard",
+                    //     "icon" => "ti ti-devices-dollar fs-5",
+                    //     "route" => "admin.order.dashboard",
+                    //     "permission" => "Orders"
+                    // ],
                 ],
                 'nested_menu' => [
-                    [
-                        "name" => "Card",
-                        "icon" => "ti ti-credit-card fs-5",
-                        "route" => "admin.orders.card",
-                        "permission" => "Order"
-                    ],
-                    [
-                        "name" => "List",
-                        "icon" => "ti ti-list fs-5",
-                        "route" => "admin.orders",
-                        "permission" => "Order"
-                    ]
+                   
                 ],
                 'order' => 6
             ],

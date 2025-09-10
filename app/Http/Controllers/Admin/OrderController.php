@@ -66,6 +66,7 @@ class OrderController extends Controller
         $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
         $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
         $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
+        $removedOrders = $orders->where('status_manage_by_admin', 'removed')->count();
 
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -87,7 +88,8 @@ class OrderController extends Controller
             'completedOrders',
             'draftOrders', 
             'percentageChange',
-            'statuses'
+            'statuses',
+            'removedOrders'
         ));
     }
 

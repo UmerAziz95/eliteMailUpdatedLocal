@@ -241,6 +241,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Contractor Reassignment routes 
         Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
+        Route::get('/order/dashboard', [AdminOrderController::class, 'getOrderDashboardData'])->name('order.dashboard');
     
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
