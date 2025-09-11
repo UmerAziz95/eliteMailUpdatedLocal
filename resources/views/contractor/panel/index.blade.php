@@ -3,305 +3,305 @@
 @section('title', 'Orders-Queue')
 @push('styles')
 
-    <style>
-        input,
-        .form-control,
-        .form-label {
-            font-size: 12px
-        }
+<style>
+    input,
+    .form-control,
+    .form-label {
+        font-size: 12px
+    }
 
-        small {
-            font-size: 11px
-        }
+    small {
+        font-size: 11px
+    }
 
-        .total {
-            color: var(--second-primary);
-        }
+    .total {
+        color: var(--second-primary);
+    }
 
 
-        .used {
-            color: #43C95C;
-        }
+    .used {
+        color: #43C95C;
+    }
 
-        .remain {
-            color: orange
-        }
+    .remain {
+        color: orange
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #6c757d;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 
-        .table>:not(caption)>*>* {
-            border-bottom-width: 0 !important
-        }
+    .table>:not(caption)>*>* {
+        border-bottom-width: 0 !important
+    }
 
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
 
-        /* Loading state styling */
-        #loadingState {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4rem 2rem;
-        }
+    /* Loading state styling */
+    #loadingState {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
 
-        /* Fix offcanvas backdrop issues */
-        .offcanvas-backdrop {
-            transition: opacity 0.15s linear !important;
-        }
+    /* Fix offcanvas backdrop issues */
+    .offcanvas-backdrop {
+        transition: opacity 0.15s linear !important;
+    }
 
-        .offcanvas-backdrop.fade {
-            opacity: 0;
-        }
+    .offcanvas-backdrop.fade {
+        opacity: 0;
+    }
 
-        .offcanvas-backdrop.show {
-            opacity: 0.5;
-        }
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
+    }
 
-        /* Ensure body doesn't keep backdrop classes */
-        body:not(.offcanvas-open) {
-            overflow: visible !important;
-            padding-right: 0 !important;
-        }
+    /* Ensure body doesn't keep backdrop classes */
+    body:not(.offcanvas-open) {
+        overflow: visible !important;
+        padding-right: 0 !important;
+    }
 
-        /* Fix any remaining backdrop elements */
-        .modal-backdrop,
-        .offcanvas-backdrop.fade:not(.show) {
-            display: none !important;
-        }
+    /* Fix any remaining backdrop elements */
+    .modal-backdrop,
+    .offcanvas-backdrop.fade:not(.show) {
+        display: none !important;
+    }
 
-        .flip-card {
-            position: relative;
-            width: 15px;
-            height: 15px;
-            perspective: 1000px;
-            font-family: "Space Grotesk";
-        }
+    .flip-card {
+        position: relative;
+        width: 15px;
+        height: 15px;
+        perspective: 1000px;
+        font-family: "Space Grotesk";
+    }
 
-        .flip-inner {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
-            transition: transform 0.6s ease-in-out;
-        }
+    .flip-inner {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.6s ease-in-out;
+    }
 
-        .flip-front,
-        .flip-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
-            border-radius: 2px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #222;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* border: 1px solid #aaa; */
-        }
+    .flip-front,
+    .flip-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        background: linear-gradient(to bottom, #eee 50%, #ccc 50%);
+        border-radius: 2px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* border: 1px solid #aaa; */
+    }
 
-        .flip-front {
-            z-index: 2;
-        }
+    .flip-front {
+        z-index: 2;
+    }
 
-        .flip-back {
-            transform: rotateX(180deg);
-        }
+    .flip-back {
+        transform: rotateX(180deg);
+    }
 
-        /* Flip timer container styles */
-        .flip-timer {
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-            font-family: "Space Grotesk", "Courier New", monospace;
-            font-size: 12px;
-            padding: 4px 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(2px);
-        }
+    /* Flip timer container styles */
+    .flip-timer {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-family: "Space Grotesk", "Courier New", monospace;
+        font-size: 12px;
+        padding: 4px 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(2px);
+    }
 
-        .flip-timer.positive {
-            background: transparent;
-            color: #28a745;
-        }
+    .flip-timer.positive {
+        background: transparent;
+        color: #28a745;
+    }
 
-        .flip-timer.positive .flip-front,
-        .flip-timer.positive .flip-back {
-            color: #155724;
-            border-color: rgba(40, 167, 69, 0.2);
-        }
+    .flip-timer.positive .flip-front,
+    .flip-timer.positive .flip-back {
+        color: #155724;
+        border-color: rgba(40, 167, 69, 0.2);
+    }
 
-        .flip-timer.negative {
-            background: transparent;
-            color: #dc3545;
-        }
+    .flip-timer.negative {
+        background: transparent;
+        color: #dc3545;
+    }
 
-        .flip-timer.negative .flip-front,
-        .flip-timer.negative .flip-back {
-            color: #dc3545;
-            background-color: rgba(255, 0, 0, 0.16);
-            border-color: rgb(220, 53, 70);
-        }
+    .flip-timer.negative .flip-front,
+    .flip-timer.negative .flip-back {
+        color: #dc3545;
+        background-color: rgba(255, 0, 0, 0.16);
+        border-color: rgb(220, 53, 70);
+    }
 
-        .flip-timer.completed {
-            background: rgba(108, 117, 125, 0.1);
-            border-color: rgba(108, 117, 125, 0.3);
-            color: #6c757d;
-        }
+    .flip-timer.completed {
+        background: rgba(108, 117, 125, 0.1);
+        border-color: rgba(108, 117, 125, 0.3);
+        color: #6c757d;
+    }
 
-        .flip-timer.completed .flip-front,
-        .flip-timer.completed .flip-back {
-            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
-            color: #495057;
-            border-color: rgba(108, 117, 125, 0.2);
-        }
+    .flip-timer.completed .flip-front,
+    .flip-timer.completed .flip-back {
+        background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+        color: #495057;
+        border-color: rgba(108, 117, 125, 0.2);
+    }
 
-        .flip-timer.paused {
-            background: rgba(255, 193, 7, 0.1);
-            border-color: rgba(255, 193, 7, 0.3);
-            color: #856404;
-        }
+    .flip-timer.paused {
+        background: rgba(255, 193, 7, 0.1);
+        border-color: rgba(255, 193, 7, 0.3);
+        color: #856404;
+    }
 
-        .flip-timer.paused .flip-front,
-        .flip-timer.paused .flip-back {
-            background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
-            color: #856404;
-            border-color: rgba(255, 193, 7, 0.2);
-        }
+    .flip-timer.paused .flip-front,
+    .flip-timer.paused .flip-back {
+        background: linear-gradient(to bottom, #fff3cd 50%, #ffeaa7 50%);
+        color: #856404;
+        border-color: rgba(255, 193, 7, 0.2);
+    }
 
-        .flip-timer.cancelled {
-            background: rgba(108, 117, 125, 0.1);
-            border-color: rgba(108, 117, 125, 0.3);
-            color: #6c757d;
-        }
+    .flip-timer.cancelled {
+        background: rgba(108, 117, 125, 0.1);
+        border-color: rgba(108, 117, 125, 0.3);
+        color: #6c757d;
+    }
 
-        .flip-timer.cancelled .flip-front,
-        .flip-timer.cancelled .flip-back {
-            background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
-            color: #495057;
-            border-color: rgba(108, 117, 125, 0.2);
-        }
+    .flip-timer.cancelled .flip-front,
+    .flip-timer.cancelled .flip-back {
+        background: linear-gradient(to bottom, #e2e6ea 50%, #dae0e5 50%);
+        color: #495057;
+        border-color: rgba(108, 117, 125, 0.2);
+    }
 
-        .flip-timer.reject {
-            background: rgba(220, 53, 69, 0.1);
-            border-color: rgba(220, 53, 69, 0.3);
-            color: #721c24;
-        }
+    .flip-timer.reject {
+        background: rgba(220, 53, 69, 0.1);
+        border-color: rgba(220, 53, 69, 0.3);
+        color: #721c24;
+    }
 
-        .flip-timer.reject .flip-front,
-        .flip-timer.reject .flip-back {
-            background: linear-gradient(to bottom, #f8d7da 50%, #f5c6cb 50%);
-            color: #721c24;
-            border-color: rgba(220, 53, 69, 0.2);
-        }
+    .flip-timer.reject .flip-front,
+    .flip-timer.reject .flip-back {
+        background: linear-gradient(to bottom, #f8d7da 50%, #f5c6cb 50%);
+        color: #721c24;
+        border-color: rgba(220, 53, 69, 0.2);
+    }
 
-        /* Timer separator styling */
-        .timer-separator {
-            font-weight: bold;
-            margin: 0 2px;
-            opacity: 0.7;
-            font-size: 11px;
-        }
+    /* Timer separator styling */
+    .timer-separator {
+        font-weight: bold;
+        margin: 0 2px;
+        opacity: 0.7;
+        font-size: 11px;
+    }
 
-        /* Timer icon styling */
-        .timer-icon {
-            font-size: 11px;
-            margin-right: 4px;
-        }
+    /* Timer icon styling */
+    .timer-icon {
+        font-size: 11px;
+        margin-right: 4px;
+    }
 
-        .card-draft {
-            background-color: rgba(0, 225, 255, 0.037);
-        }
+    .card-draft {
+        background-color: rgba(0, 225, 255, 0.037);
+    }
 
-        .domain-split-container {
-            transition: all 0.3s ease;
-        }
+    .domain-split-container {
+        transition: all 0.3s ease;
+    }
 
-        .split-header {
-            transition: all 0.2s ease;
-        }
+    .split-header {
+        transition: all 0.2s ease;
+    }
 
-        .split-header:hover {
-            /* background-color: var(--second-primary) !important; */
-        }
+    .split-header:hover {
+        /* background-color: var(--second-primary) !important; */
+    }
 
-        .split-content {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-        }
+    .split-content {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
 
-        .split-content.show {
-            display: block !important;
-        }
+    .split-content.show {
+        display: block !important;
+    }
 
-        .transition-transform {
-            transition: transform 0.3s ease;
-        }
+    .transition-transform {
+        transition: transform 0.3s ease;
+    }
 
-        .domain-badge:hover {
-            background-color: var(--second-primary) !important;
-            transform: scale(1.05);
-        }
+    .domain-badge:hover {
+        background-color: var(--second-primary) !important;
+        transform: scale(1.05);
+    }
 
-        /* Collapse animation styles */
-        .collapse {
-            transition: height 0.35s ease, opacity 0.35s ease;
-        }
+    /* Collapse animation styles */
+    .collapse {
+        transition: height 0.35s ease, opacity 0.35s ease;
+    }
 
-        .collapse:not(.show) {
-            height: 0 !important;
-            opacity: 0;
-        }
+    .collapse:not(.show) {
+        height: 0 !important;
+        opacity: 0;
+    }
 
-        .collapse.show {
-            height: auto !important;
-            opacity: 1;
-        }
-    </style>
+    .collapse.show {
+        height: auto !important;
+        opacity: 1;
+    }
+</style>
 @endpush
 
 @section('content')
-    <section class="py-3">
+<section class="py-3">
 
-        <!-- Advanced Search Filter UI -->
-        <div class="card p-3 mb-4">
-            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
-                role="button" aria-expanded="false" aria-controls="filter_1">
-                <div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
-                        <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
-                            width="30" alt="">
-                    </div>
-                    <small>Click here to open advance search for orders</small>
+    <!-- Advanced Search Filter UI -->
+    <div class="card p-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
+            role="button" aria-expanded="false" aria-controls="filter_1">
+            <div>
+                <div class="d-flex gap-2 align-items-center">
+                    <h6 class="text-uppercase fs-6 mb-0">Filters</h6>
+                    <img src="https://static.vecteezy.com/system/resources/previews/052/011/341/non_2x/3d-white-down-pointing-backhand-index-illustration-png.png"
+                        width="30" alt="">
                 </div>
+                <small>Click here to open advance search for orders</small>
             </div>
+        </div>
 
-            <div class="row collapse" id="filter_1">
-                <form id="filterForm">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label mb-0">Order ID</label>
-                            <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
-                        </div>
-                        <!-- <div class="col-md-3 mb-3">
+        <div class="row collapse" id="filter_1">
+            <form id="filterForm">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label mb-0">Order ID</label>
+                        <input type="text" name="order_id" class="form-control" placeholder="Enter order ID">
+                    </div>
+                    <!-- <div class="col-md-3 mb-3">
                             <label class="form-label mb-0">Status</label>
                             <select name="status" class="form-select">
                                 <option value="">All Status</option>
@@ -311,15 +311,15 @@
                                 <option value="completed">Completed</option>
                             </select>
                         </div> -->
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label mb-0">Min Inboxes</label>
-                            <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label mb-0">Max Inboxes</label>
-                            <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
-                        </div>
-                        <!-- <div class="col-md-3 mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label mb-0">Min Inboxes</label>
+                        <input type="number" name="min_inboxes" class="form-control" placeholder="e.g. 10">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label mb-0">Max Inboxes</label>
+                        <input type="number" name="max_inboxes" class="form-control" placeholder="e.g. 100">
+                    </div>
+                    <!-- <div class="col-md-3 mb-3">
                             <div class="form-check" style="padding-top: 1.5rem;">
                                 <input class="form-check-input" type="checkbox" name="assigned_to_me" id="assignedToMeFilter" value="1">
                                 <label class="form-check-label" for="assignedToMeFilter">
@@ -328,207 +328,205 @@
                                 </label>
                             </div>
                         </div> -->
-                        <div class="col-12 text-end">
-                            <button type="button" id="resetFilters"
-                                class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
-                            <button type="submit" id="submitBtn"
-                                class="btn btn-primary btn-sm border-0 px-3">Search</button>
-                        </div>
+                    <div class="col-12 text-end">
+                        <button type="button" id="resetFilters"
+                            class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                        <button type="submit" id="submitBtn"
+                            class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
+                data-bs-target="#in-queue-tab-pane" type="button" role="tab" aria-controls="in-queue-tab-pane"
+                aria-selected="true">in-queue</button>
+        </li>
+        <li class="nav-item" role="presentation" style="display:none;">
+            <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
+                data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
+                aria-selected="false">in-draft</button>
+        </li>
+        @php
+        $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
+        @endphp
+        <li class="d-none nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};"
+            id="reject-orders-tab-li">
+            <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
+                data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
+                aria-selected="false">
+                reject orders
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="in-queue-tab-pane" role="tabpanel" aria-labelledby="in-queue-tab"
+            tabindex="0">
+            <div id="ordersContainer" class="mb-4"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Loading state -->
+                <div id="loadingState"
+                    style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading orders...</p>
+                </div>
+            </div>
+
+            <!-- Load More Button -->
+            <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+                <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                    <span id="loadMoreText">Load More</span>
+                    <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                        style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                </button>
+                <div id="paginationInfo" class="mt-2 text-light small">
+                    Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
+                        id="totalOrders">0</span> orders
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="in-draft-tab-pane" role="tabpanel" aria-labelledby="in-draft-tab" tabindex="0">
+            <div id="draftsContainer" class="mb-4"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Loading state -->
+                <div id="draftsLoadingState"
+                    style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading draft orders...</p>
+                </div>
+            </div>
+            <!-- Load More Button for Drafts -->
+            <div id="loadMoreDraftsContainer" class="text-center mt-4" style="display: none;">
+                <button id="loadMoreDraftsBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
+                    <span id="loadMoreDraftsText">Load More</span>
+                    <span id="loadMoreDraftsSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                        style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                </button>
+                <div id="paginationDraftsInfo" class="mt-2 text-light small">
+                    Showing <span id="showingDraftsFrom">0</span> to <span id="showingDraftsTo">0</span> of <span
+                        id="totalDrafts">0</span> orders
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="reject-orders-tab-pane" role="tabpanel" aria-labelledby="reject-orders-tab"
+            tabindex="0">
+            <div id="rejectOrdersContainer" class="mb-4"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Loading state -->
+                <div id="rejectOrdersLoadingState"
+                    style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading rejected orders...</p>
+                </div>
+            </div>
+            <!-- Load More Button for Rejected Orders -->
+            <div id="loadMoreRejectOrdersContainer" class="text-center mt-4" style="display: none;">
+                <button id="loadMoreRejectOrdersBtn" class="btn btn-lg btn-danger px-4 me-2 border-0">
+                    <span id="loadMoreRejectOrdersText">Load More</span>
+                    <span id="loadMoreRejectOrdersSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
+                        style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                </button>
+                <div id="paginationRejectOrdersInfo" class="mt-2 text-light small">
+                    Showing <span id="showingRejectOrdersFrom">0</span> to <span id="showingRejectOrdersTo">0</span> of
+                    <span id="totalRejectOrders">0</span> orders
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+</section>
+<!-- Order Details Offcanvas -->
+<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
+    aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="orderSplitsContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="splitsLoadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading order details...</span>
+                </div>
+                <p class="mt-2">Loading order details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Order Modal -->
+<div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="rejectOrderModalLabel">
+                    <i class="fas fa-times me-2"></i>Reject Order
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        This action will mark the order as rejected and cannot be undone.
+                    </div>
+                </div>
+
+                <form id="rejectOrderForm">
+                    <div class="mb-3">
+                        <label for="rejectionReason" class="form-label fw-bold">
+                            Rejection Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="rejectionReason" name="rejection_reason" rows="4"
+                            placeholder="Please provide a detailed reason for rejecting this order..." required
+                            minlength="5"></textarea>
+                        <div class="form-text">Minimum 5 characters required</div>
+                        <div class="invalid-feedback" id="rejectionReasonError"></div>
                     </div>
                 </form>
             </div>
-        </div>
-        
-        <ul class="nav nav-pills mb-3 border-0" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link py-1 text-capitalize text-white active" id="in-queue-tab" data-bs-toggle="tab"
-                    data-bs-target="#in-queue-tab-pane" type="button" role="tab" aria-controls="in-queue-tab-pane"
-                    aria-selected="true">in-queue</button>
-            </li>
-            <li class="nav-item" role="presentation" style="display:none;">
-                <button class="nav-link py-1 text-capitalize text-white" id="in-draft-tab" data-bs-toggle="tab"
-                    data-bs-target="#in-draft-tab-pane" type="button" role="tab" aria-controls="in-draft-tab-pane"
-                    aria-selected="false">in-draft</button>
-            </li>
-            @php
-                $is_rejected = \App\Models\Order::where('status_manage_by_admin', 'reject')->count();
-            @endphp
-            <li class="nav-item" role="presentation" style="display: {{ $is_rejected ? 'block' : 'none' }};" id="reject-orders-tab-li">
-                <button class="nav-link py-1 text-capitalize text-white" id="reject-orders-tab" data-bs-toggle="tab"
-                    data-bs-target="#reject-orders-tab-pane" type="button" role="tab" aria-controls="reject-orders-tab-pane"
-                    aria-selected="false">
-                    reject orders
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
                 </button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="in-queue-tab-pane" role="tabpanel" aria-labelledby="in-queue-tab"
-                tabindex="0">
-                <div id="ordersContainer" class="mb-4"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Loading state -->
-                    <div id="loadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2 mb-0">Loading orders...</p>
-                    </div>
-                </div>
-
-                <!-- Load More Button -->
-                <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-                    <button id="loadMoreBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                        <span id="loadMoreText">Load More</span>
-                        <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                            style="display: none;">
-                            <span class="visually-hidden">Loading...</span>
-                        </span>
-                    </button>
-                    <div id="paginationInfo" class="mt-2 text-light small">
-                        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span
-                            id="totalOrders">0</span> orders
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="in-draft-tab-pane" role="tabpanel" aria-labelledby="in-draft-tab"
-                tabindex="0">
-                <div id="draftsContainer" class="mb-4"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Loading state -->
-                    <div id="draftsLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2 mb-0">Loading draft orders...</p>
-                    </div>
-                </div>
-                <!-- Load More Button for Drafts -->
-                <div id="loadMoreDraftsContainer" class="text-center mt-4" style="display: none;">
-                    <button id="loadMoreDraftsBtn" class="btn btn-lg btn-primary px-4 me-2 border-0 animate-gradient">
-                        <span id="loadMoreDraftsText">Load More</span>
-                        <span id="loadMoreDraftsSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                            style="display: none;">
-                            <span class="visually-hidden">Loading...</span>
-                        </span>
-                    </button>
-                    <div id="paginationDraftsInfo" class="mt-2 text-light small">
-                        Showing <span id="showingDraftsFrom">0</span> to <span id="showingDraftsTo">0</span> of <span
-                            id="totalDrafts">0</span> orders
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="reject-orders-tab-pane" role="tabpanel" aria-labelledby="reject-orders-tab"
-                tabindex="0">
-                <div id="rejectOrdersContainer" class="mb-4"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Loading state -->
-                    <div id="rejectOrdersLoadingState" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <div class="spinner-border text-danger" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2 mb-0">Loading rejected orders...</p>
-                    </div>
-                </div>
-                <!-- Load More Button for Rejected Orders -->
-                <div id="loadMoreRejectOrdersContainer" class="text-center mt-4" style="display: none;">
-                    <button id="loadMoreRejectOrdersBtn" class="btn btn-lg btn-danger px-4 me-2 border-0">
-                        <span id="loadMoreRejectOrdersText">Load More</span>
-                        <span id="loadMoreRejectOrdersSpinner" class="spinner-border spinner-border-sm ms-2" role="status"
-                            style="display: none;">
-                            <span class="visually-hidden">Loading...</span>
-                        </span>
-                    </button>
-                    <div id="paginationRejectOrdersInfo" class="mt-2 text-light small">
-                        Showing <span id="showingRejectOrdersFrom">0</span> to <span id="showingRejectOrdersTo">0</span> of <span
-                            id="totalRejectOrders">0</span> orders
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-
-
-    </section>
-    <!-- Order Details Offcanvas -->
-    <div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="order-splits-view"
-        aria-labelledby="order-splits-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="order-splits-viewLabel">Order Details</h5>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="offcanvas-body">
-            <div id="orderSplitsContainer">
-                <!-- Dynamic content will be loaded here -->
-                <div id="splitsLoadingState" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading order details...</span>
-                    </div>
-                    <p class="mt-2">Loading order details...</p>
-                </div>
+                <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+                    <i class="fas fa-check me-1"></i>Reject Order
+                </button>
             </div>
         </div>
     </div>
-
-    <!-- Reject Order Modal -->
-    <div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="rejectOrderModalLabel">
-                        <i class="fas fa-times me-2"></i>Reject Order
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <div>
-                            This action will mark the order as rejected and cannot be undone.
-                        </div>
-                    </div>
-                    
-                    <form id="rejectOrderForm">
-                        <div class="mb-3">
-                            <label for="rejectionReason" class="form-label fw-bold">
-                                Rejection Reason <span class="text-danger">*</span>
-                            </label>
-                            <textarea 
-                                class="form-control" 
-                                id="rejectionReason" 
-                                name="rejection_reason"
-                                rows="4" 
-                                placeholder="Please provide a detailed reason for rejecting this order..."
-                                required
-                                minlength="5"
-                            ></textarea>
-                            <div class="form-text">Minimum 5 characters required</div>
-                            <div class="invalid-feedback" id="rejectionReasonError"></div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger" id="confirmRejectBtn">
-                        <i class="fas fa-check me-1"></i>Reject Order
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
 @endsection
 
 
 
 @push('scripts')
-    <script>
-        // Avatar generation functions
+<script>
+    // Avatar generation functions
         function getInitials(name) {
             if (!name) return 'N/A';
             const words = name.trim().split(' ');
@@ -2530,11 +2528,11 @@
                 currentOrderIdForRejection = null;
             }
         });
-    </script>
+</script>
 
-     
-    <script>
-        // Laravel Echo WebSocket Implementation for Real-time Order Updates
+
+<script>
+    // Laravel Echo WebSocket Implementation for Real-time Order Updates
         document.addEventListener('DOMContentLoaded', function() {
             // Check if Echo is available (consistent check using window.Echo)
             if (typeof window.Echo !== 'undefined') {
@@ -2832,11 +2830,12 @@
             }
         }
 
-    </script>
+</script>
 @endpush
 
 <!-- Customized Note Modal -->
-<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
+<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">

@@ -65,7 +65,7 @@
                     class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.taskInQueue.index') ? 'active' : '' }}">
                     <div class="d-flex align-items-center gap-2">
                         <i class="ti ti-list-check fs-5"></i>
-                        <span class="text">Tasks In Queue</span>
+                        <span class="text">Cancellations in queue</span>
                     </div>
                 </a>
             </li> 

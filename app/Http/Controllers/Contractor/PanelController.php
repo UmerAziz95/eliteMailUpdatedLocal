@@ -32,6 +32,7 @@ class PanelController extends Controller
             return $this->getOrdersData($request);
         }
 
+        
         return view('contractor.panel.index');
     }    
     public function getOrdersData(Request $request)

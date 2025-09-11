@@ -1149,11 +1149,11 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                [
-                                    'title' => 'Customer Email',
-                                    'value' => $data['customer_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Customer Email',
+                                //     'value' => $data['customer_email'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Cancelled By',
                                     'value' => $data['cancelled_by'] ?? 'System',

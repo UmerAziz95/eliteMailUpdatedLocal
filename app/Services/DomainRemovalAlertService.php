@@ -218,11 +218,11 @@ class DomainRemovalAlertService
                             'value' => $taskData['customer_name'],
                             'short' => true
                         ],
-                        [
-                            'title' => 'Customer Email',
-                            'value' => $taskData['customer_email'],
-                            'short' => true
-                        ],
+                        // [
+                        //     'title' => 'Customer Email',
+                        //     'value' => $taskData['customer_email'],
+                        //     'short' => true
+                        // ],
                         [
                             'title' => 'Contractor',
                             'value' => $taskData['contractor_name'],

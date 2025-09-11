@@ -57,6 +57,7 @@ class OrderController extends Controller
 
     public function index()
     {
+       
         $plans = Plan::where('is_active', true)->get();
         
         // Get orders that are either unassigned or assigned to the current contractor
@@ -1624,7 +1625,7 @@ class OrderController extends Controller
             //     });
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
                 ->where('assigned_to', auth()->id())
-                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending']);
             // Apply filters if provided
             if ($request->filled('order_id')) {
                 $query->where('id', 'like', '%' . $request->order_id . '%');
