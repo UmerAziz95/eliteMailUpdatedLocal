@@ -36,7 +36,7 @@
     .domain-badge:hover {
         background-color: rgba(102, 126, 234, 0.8) !important;
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
     }
 
     /* Transition for chevron icons */
@@ -49,13 +49,14 @@
         transform: scale(1.01);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     /* Domain fade in animation */
     @keyframes domainFadeIn {
         from {
             opacity: 0;
             transform: translateY(-5px) scale(0.9);
         }
+
         to {
             opacity: 1;
             transform: translateY(0) scale(1);
@@ -76,123 +77,129 @@
 @endpush
 
 @section('content')
-    <section class="py-3">
-        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="pills-mytask-tab" data-bs-toggle="pill" data-bs-target="#pills-mytask"
-                    type="button" role="tab" aria-controls="pills-mytask" aria-selected="true">My Task</button>
-            </li>
+<section class="py-3">
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-mytask-tab" data-bs-toggle="pill" data-bs-target="#pills-mytask"
+                type="button" role="tab" aria-controls="pills-mytask" aria-selected="true">My Task</button>
+        </li>
 
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="pills-all-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-all-tasks"
-                    type="button" role="tab" aria-controls="pills-all-tasks" aria-selected="false">All Tasks</button>
-            </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-all-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-all-tasks"
+                type="button" role="tab" aria-controls="pills-all-tasks" aria-selected="false">All Tasks</button>
+        </li>
 
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="pills-shifted-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-shifted-tasks"
-                    type="button" role="tab" aria-controls="pills-shifted-tasks" aria-selected="false">Migration Tasks</button>
-            </li>
-        </ul>
-        
-        <div class="tab-content" id="pills-tabContent">
-            <div class="tab-pane fade show active" id="pills-mytask" role="tabpanel" aria-labelledby="pills-mytask-tab"
-                tabindex="0">
-                <div id="my-tasks-container"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Loading state -->
-                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading my tasks...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tab-pane fade" id="pills-all-tasks" role="tabpanel" aria-labelledby="pills-all-tasks-tab"
-                tabindex="0">
-                <div id="all-tasks-container"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-            </div>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-shifted-tasks-tab" data-bs-toggle="pill"
+                data-bs-target="#pills-shifted-tasks" type="button" role="tab" aria-controls="pills-shifted-tasks"
+                aria-selected="false">Migration Tasks</button>
+        </li>
+    </ul>
 
-            <div class="tab-pane fade" id="pills-shifted-tasks" role="tabpanel" aria-labelledby="pills-shifted-tasks-tab"
-                tabindex="0">
-                <div id="shifted-tasks-container"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Task Details Offcanvas -->
-    <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="task-details-view"
-        aria-labelledby="task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
-            <h5 class="offcanvas-title" id="task-details-viewLabel">Task Details</h5>
-            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times fs-5"></i>
-            </button>
-        </div>
-        <div class="offcanvas-body pt-2">
-            <div id="taskDetailsContainer">
-                <!-- Dynamic content will be loaded here -->
-                <div id="taskLoadingState" class="text-center py-5">
+    <div class="tab-content" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="pills-mytask" role="tabpanel" aria-labelledby="pills-mytask-tab"
+            tabindex="0">
+            <div id="my-tasks-container"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Loading state -->
+                <div class="loading-state text-center" style="grid-column: 1 / -1;">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading task details...</span>
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2">Loading task details...</p>
+                    <p class="mt-2">Loading my tasks...</p>
                 </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-all-tasks" role="tabpanel" aria-labelledby="pills-all-tasks-tab"
+            tabindex="0">
+            <div id="all-tasks-container"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-shifted-tasks" role="tabpanel" aria-labelledby="pills-shifted-tasks-tab"
+            tabindex="0">
+            <div id="shifted-tasks-container"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                <!-- Content will be loaded dynamically -->
             </div>
         </div>
     </div>
+</section>
 
-    <!-- Shifted Task Details Offcanvas -->
-    <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="shifted-task-details-view"
-        aria-labelledby="shifted-task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
-        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
-            <h5 class="offcanvas-title" id="shifted-task-details-viewLabel">Panel Reassignment Details</h5>
-            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
-                <i class="fas fa-times fs-5"></i>
-            </button>
-        </div>
-        <div class="offcanvas-body pt-2">
-            <div id="shiftedTaskDetailsContainer">
-                <!-- Dynamic content will be loaded here -->
-                <div id="shiftedTaskLoadingState" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading panel reassignment details...</span>
-                    </div>
-                    <p class="mt-2">Loading panel reassignment details...</p>
+<!-- Task Details Offcanvas -->
+<div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="task-details-view"
+    aria-labelledby="task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+        <h5 class="offcanvas-title" id="task-details-viewLabel">Task Details</h5>
+        <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times fs-5"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body pt-2">
+        <div id="taskDetailsContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="taskLoadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading task details...</span>
                 </div>
+                <p class="mt-2">Loading task details...</p>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Customized Note Modal -->
-    <div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg" style="background: #1d2239;">
-                <div class="modal-body p-0">
-                    <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm" 
-                        style="background: linear-gradient(135deg, #1d2239 0%, #252c4a 100%);">
-                        <!-- Close Button -->
-                        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 mt-3 me-3" 
-                                style="z-index: 10;" data-bs-dismiss="modal" aria-label="Close"></button>
-                        
-                        <!-- Decorative Background Pattern -->
-                        <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
-                        <div class="position-absolute" style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #667eea, #764ba2); border-radius: 50%; opacity: 0.3;"></div>
-                        <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #667eea, #4facfe); border-radius: 50%; opacity: 0.2;"></div>
+<!-- Shifted Task Details Offcanvas -->
+<div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="shifted-task-details-view"
+    aria-labelledby="shifted-task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+        <h5 class="offcanvas-title" id="shifted-task-details-viewLabel">Panel Reassignment Details</h5>
+        <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times fs-5"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body pt-2">
+        <div id="shiftedTaskDetailsContainer">
+            <!-- Dynamic content will be loaded here -->
+            <div id="shiftedTaskLoadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading panel reassignment details...</span>
+                </div>
+                <p class="mt-2">Loading panel reassignment details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customized Note Modal -->
+<div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="background: #1d2239;">
+            <div class="modal-body p-0">
+                <div class="position-relative overflow-hidden rounded-4 border-0 shadow-sm"
+                    style="background: linear-gradient(135deg, #1d2239 0%, #252c4a 100%);">
+                    <!-- Close Button -->
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 mt-3 me-3"
+                        style="z-index: 10;" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <!-- Decorative Background Pattern -->
+                    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                        <div class="position-absolute"
+                            style="top: -20px; right: -20px; width: 80px; height: 80px; background: linear-gradient(45deg, #667eea, #764ba2); border-radius: 50%; opacity: 0.3;">
                         </div>
-                        
-                        <!-- Content Container -->
-                        <div class="position-relative p-4">
+                        <div class="position-absolute"
+                            style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: linear-gradient(45deg, #667eea, #4facfe); border-radius: 50%; opacity: 0.2;">
+                        </div>
+                    </div>
+
+                    <!-- Content Container -->
+                    <div class="position-relative p-4">
                         <!-- Header with Icon -->
                         <div class="d-flex align-items-center mb-3">
-                            <div class="me-3 d-flex align-items-center justify-content-center" 
+                            <div class="me-3 d-flex align-items-center justify-content-center"
                                 style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
                                 <i class="fa-solid fa-sticky-note text-white fs-5"></i>
                             </div>
@@ -201,38 +208,39 @@
                                 <small class="text-light opacity-75">Additional information provided</small>
                             </div>
                         </div>
-                        
+
                         <!-- Note Content -->
-                        <div class="p-4 rounded-3 border-0 position-relative overflow-hidden" 
+                        <div class="p-4 rounded-3 border-0 position-relative overflow-hidden"
                             style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.08) 100%); border-left: 4px solid #667eea !important; border: 1px solid rgba(102, 126, 234, 0.2);">
                             <!-- Quote Icon -->
                             <div class="position-absolute top-0 start-0 mt-2 ms-3">
                                 <i class="fas fa-quote-left text-primary opacity-25 fs-4"></i>
                             </div>
-                            
+
                             <!-- Note Text -->
                             <div class="ms-4">
-                                <p class="mb-0 text-white fw-medium" id="customizedNoteContent" 
+                                <p class="mb-0 text-white fw-medium" id="customizedNoteContent"
                                     style="line-height: 1.7; font-size: 15px; text-indent: 1rem;">
                                     <!-- Note content will be populated by JavaScript -->
                                 </p>
                             </div>
-                            
+
                             <!-- Bottom Quote Icon -->
                             <div class="position-absolute bottom-0 end-0 mb-2 me-3">
                                 <i class="fas fa-quote-right text-primary opacity-25 fs-4"></i>
                             </div>
                         </div>
-                        
+
                         <!-- Bottom Accent Line -->
-                        <div class="mt-3 mx-auto rounded-pill" 
-                            style="width: 60px; height: 3px; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                        <div class="mt-3 mx-auto rounded-pill"
+                            style="width: 60px; height: 3px; background: linear-gradient(90deg, #667eea, #764ba2);">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 @endsection
 
 @push('scripts')
