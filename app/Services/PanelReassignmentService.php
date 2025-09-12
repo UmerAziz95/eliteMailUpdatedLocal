@@ -138,7 +138,7 @@ class PanelReassignmentService
             $splitsToMove = $splitsQuery->get();
 
             if ($splitsToMove->isEmpty()) {
-                throw new Exception('No splits found to reassign');
+                throw new Exception('No panel break found to reassign');
             }
 
             // Calculate space to transfer

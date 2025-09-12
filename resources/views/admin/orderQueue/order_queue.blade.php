@@ -1394,8 +1394,8 @@
                     </div>
                     <div class="text-center py-5">
                         <i class="fas fa-inbox fs-3 mb-3"></i>
-                        <h5>No Splits Found</h5>
-                        <p>This order doesn't have any splits yet.</p>
+                        <h5>No Panel Break Found</h5>
+                        <p>This order doesn't have any panel breaks yet.</p>
                     </div>
                 `;
                 return;

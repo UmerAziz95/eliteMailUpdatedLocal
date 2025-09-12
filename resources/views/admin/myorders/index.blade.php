@@ -997,7 +997,7 @@
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
                     <div class="d-flex gap-1">
-                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
+                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/admin/orders/${split.order_panel_id}/split/view', '_blank')" title="View Panel Break"></i>
                         <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/admin/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
                         ${split.customized_note ? `
                             <i class="fa-solid fa-sticky-note" style="cursor: pointer; color: #ffc107;" onclick="event.stopPropagation(); showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note"></i>
@@ -1026,7 +1026,7 @@
                     <thead>
                         <tr>
                         <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">ID #</th>
-                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Split Status</th>
+                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Panel Break Status</th>
                         <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
                         <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
                         <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
@@ -1063,7 +1063,7 @@
                         <div class="d-flex flex-column gap-1">
                         <span class="fw-bold">${order.customer_name}</span>
                         <small>
-                            Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Split${order.splits_count === 1 ? '' : 's'}
+                            Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Panel Breaks${order.splits_count === 1 ? '' : 's'}
                         </small>
                         </div>
                     </div>
@@ -1461,8 +1461,8 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-inbox text-white fs-3 mb-3"></i>
-                        <h5>No Splits Found</h5>
-                        <p>This order doesn't have any splits yet.</p>
+                        <h5>No Panel Break Found</h5>
+                        <p>This order doesn't have any panel breaks yet.</p>
                     </div>
                 `;
                 return;
@@ -1520,7 +1520,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     return `
                                         <span class="bg-success rounded-1 px-3 py-2 text-white" style="font-size: 13px;">
                                             <i class="fas fa-check me-1" style="font-size: 12px;"></i>
-                                            All Splits Assigned
+                                            All Panel Breaks Assigned
                                         </span>
                                     `;
                                 }
@@ -1552,15 +1552,15 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                         <thead class="border-0">
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Split ID</th>
+                                <th scope="col">Panel Break ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
-                                <th scope="col">Split Status</th>
+                                <th scope="col">Panel Break Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
                                 <th scope="col">Customized Type</th>
-                                <th scope="col">Split timer</th>
+                                <th scope="col">Panel Break timer</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -1600,7 +1600,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     <td>${calculateSplitTime(split)|| 'N/A'}</td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                            <a href="/admin/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Panel Break">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
                                             <a href="/admin/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
@@ -1639,7 +1639,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     splits.forEach((split, index) => {
                                         splitDetails += `
                                             <br>
-                                            <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                            <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
                                                 Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                     });
                                     
@@ -1709,7 +1709,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                         <i class="fa-solid fa-globe"></i>
                                     </div>
-                                   <span>All Domains & Splits</span>
+                                   <span>All Domains & Panel Breaks</span>
                                 </h6>
                                 
                                 <!-- Order Splits Domains -->
@@ -1720,7 +1720,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                    Split ${String(index + 1).padStart(2, '0')}
+                                                    Panel Break ${String(index + 1).padStart(2, '0')}
                                                 </span>
                                                 <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
@@ -1729,8 +1729,8 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                                     ${split.domains_count || 0} domains
                                                 </span>
                                                 <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                                   title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
-                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                   title="Copy all domains from Panel Break ${String(index + 1).padStart(2, '0')}" 
+                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Panel Break ${String(index + 1).padStart(2, '0')}')"></i>
                                                 <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                             </div>
                                         </div>
@@ -2205,7 +2205,7 @@ function parseUTCDateTime(dateStr) {
         function copyAllDomainsFromSplit(splitId, splitName) {
             const splitContainer = document.getElementById(splitId);
             if (!splitContainer) {
-                showToast('Split container not found', 'error');
+                showToast('Panel Break container not found', 'error');
                 return;
             }
             

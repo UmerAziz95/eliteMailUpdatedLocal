@@ -1817,14 +1817,14 @@
                                                         const inboxesPerDomain = order.reorder_info?.inboxes_per_domain || 0;
                                                         const mainTotalInboxes = mainDomainsCount * inboxesPerDomain;
                                                         
-                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split 01</span> Inboxes: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
+                                                        let splitDetails = `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Panel Break 01</span> Inboxes: ${mainTotalInboxes} (${mainDomainsCount} domains × ${inboxesPerDomain})<br>`;
                                                         
                                                         // Add remaining splits details
                                                         if (order.remaining_order_panels && order.remaining_order_panels.length > 0) {
                                                             order.remaining_order_panels.forEach((panel, index) => {
                                                                 const splitDomainsCount = panel.domains_count || 0;
                                                                 const splitInboxes = splitDomainsCount * inboxesPerDomain;
-                                                                splitDetails += `<br><div class="text-white"><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 2).padStart(2, '0')}</span> Inboxes: ${splitInboxes} (${splitDomainsCount} domains × ${inboxesPerDomain})</div>`;
+                                                                splitDetails += `<br><div class="text-white"><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 2).padStart(2, '0')}</span> Inboxes: ${splitInboxes} (${splitDomainsCount} domains × ${inboxesPerDomain})</div>`;
                                                             });
                                                         }
                                                         
@@ -1900,7 +1900,7 @@
 
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50 mb-3">
-                                                        <i class="fa-solid fa-globe me-2"></i>All Domains & Splits
+                                                        <i class="fa-solid fa-globe me-2"></i>All Domains & Panel Breaks
                                                     </span>
                                                     
                                                     <!-- Main Order Domains -->
@@ -1910,7 +1910,7 @@
                                                              onclick="toggleSplit('main-split-${order.order_id}')">
                                                             <div class="d-flex align-items-center">
                                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                                    Split 01
+                                                                    Panel Break 01
                                                                 </span>
                                                                 <small class="text-white fw-bold text-uppercase">PNL-${order.panel_id} | ${order.panel_title || 'N/A'}</small>
                                                             </div>
@@ -1919,8 +1919,8 @@
                                                                     ${order.splits ? order.splits.reduce((total, split) => total + (split.domains ? (Array.isArray(split.domains) ? split.domains.length : (split.domains ? 1 : 0)) : 0), 0) : 0} domains
                                                                 </span>
                                                                 <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                                                   title="Copy all domains from Split 01" 
-                                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('main-split-${order.order_id}', 'Split 01')"></i>
+                                                                   title="Copy all domains from Panel Break 01" 
+                                                                   onclick="event.stopPropagation(); copyAllDomainsFromSplit('main-split-${order.order_id}', 'Panel Break 01')"></i>
                                                                 <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-main-split-${order.order_id}"></i>
                                                             </div>
                                                         </div>
@@ -1942,7 +1942,7 @@
                                                                      onclick="toggleSplit('remaining-split-${order.order_id}-${index}')">
                                                                     <div class="d-flex align-items-center">
                                                                         <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                                            Split ${String(index + 2).padStart(2, '0')}
+                                                                            Panel Break ${String(index + 2).padStart(2, '0')}
                                                                         </span>
                                                                         <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
                                                                     </div>
@@ -1951,8 +1951,8 @@
                                                                             ${panel.domains_count || 0} domains
                                                                         </span>
                                                                         <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                                                           title="Copy all domains from Split ${String(index + 2).padStart(2, '0')}" 
-                                                                           onclick="event.stopPropagation(); copyAllDomainsFromSplit('remaining-split-${order.order_id}-${index}', 'Split ${String(index + 2).padStart(2, '0')}')"></i>
+                                                                           title="Copy all domains from Panel Break ${String(index + 2).padStart(2, '0')}" 
+                                                                           onclick="event.stopPropagation(); copyAllDomainsFromSplit('remaining-split-${order.order_id}-${index}', 'Panel Break ${String(index + 2).padStart(2, '0')}')"></i>
                                                                         <i class="fa-solid fa-chevron-down text-white transition-transform" id="icon-remaining-split-${order.order_id}-${index}"></i>
                                                                     </div>
                                                                 </div>
@@ -2625,7 +2625,7 @@
                         z-index: 9999;
                         animation: toastSlideIn 0.3s ease-out;
                     ">
-                        <i class="fa-solid fa-exclamation-triangle me-2"></i>Split container not found
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>Panel Break container not found
                     </div>
                 `;
                 document.body.appendChild(toast);

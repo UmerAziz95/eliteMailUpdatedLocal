@@ -1177,7 +1177,7 @@
                     <thead class="border-0">
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Break ID</th>
                             <th scope="col">Panel Id</th>
                             <th scope="col">Panel Title</th>
                             <th scope="col">Inboxes/Domain</th>
@@ -1257,7 +1257,7 @@
                                 splits.forEach((split, index) => {
                                     splitDetails += `
                                         <br>
-                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
                                             Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                 });
                                 
@@ -1327,7 +1327,7 @@
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-solid fa-globe"></i>
                                 </div>
-                               <span>All Domains & Splits</span>
+                               <span>All Domains & Panel Breaks</span>
                             </h6>
                             
                             <!-- Task Splits Domains -->
@@ -1338,7 +1338,7 @@
                                          onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                Split ${String(index + 1).padStart(2, '0')}
+                                                Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
                                             <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
                                         </div>
@@ -1347,8 +1347,8 @@
                                                 ${split.domains_count || 0} domains
                                             </span>
                                             <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                               title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
-                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                               title="Copy all domains from Panel Break ${String(index + 1).padStart(2, '0')}" 
+                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Panel Break ${String(index + 1).padStart(2, '0')}')"></i>
                                             <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                         </div>
                                     </div>
@@ -1513,7 +1513,7 @@
                     <thead class="border-0">
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Break Id</th>
                             <th scope="col">Panel Id</th>
                             <th scope="col">Panel Title</th>
                             <th scope="col">Inboxes/Domain</th>
@@ -1593,7 +1593,7 @@
                                 splits.forEach((split, index) => {
                                     splitDetails += `
                                         <br>
-                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
                                             Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                 });
                                 
@@ -1663,7 +1663,7 @@
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-solid fa-globe"></i>
                                 </div>
-                               <span>All Domains & Splits</span>
+                               <span>All Domains & Panel Breaks</span>
                             </h6>
                             
                             <!-- Task Splits Domains -->
@@ -1674,7 +1674,7 @@
                                          onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                Split ${String(index + 1).padStart(2, '0')}
+                                                Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
                                             <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
                                         </div>
@@ -1683,8 +1683,8 @@
                                                 ${split.domains_count || 0} domains
                                             </span>
                                             <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                               title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
-                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                               title="Copy all domains from Panel Break ${String(index + 1).padStart(2, '0')}" 
+                                               onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Panel Break ${String(index + 1).padStart(2, '0')}')"></i>
                                             <i class="fa-solid fa-chevron-right text-white transition-transform" id="icon-split-${orderInfo.id}-${index}"></i>
                                         </div>
                                     </div>

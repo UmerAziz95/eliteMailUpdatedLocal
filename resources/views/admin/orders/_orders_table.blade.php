@@ -10,7 +10,8 @@
                 <th>Plan</th>
                 @endif
                 <th>Assigned To</th>
-                <th>Split Counts</th>
+                {{-- split counts --}}
+                <th>Panel Counts</th> 
                 <th>Total Inboxes</th>
                 <th>Timer</th>
                 <th>Status</th>
