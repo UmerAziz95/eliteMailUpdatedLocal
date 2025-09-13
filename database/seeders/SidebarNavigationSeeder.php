@@ -10,7 +10,7 @@ class SidebarNavigationSeeder extends Seeder
     public function run()
     {
         $navs = [
-            [
+            [ 
                 'name' => 'Dashboard',
                 'icon' => 'ti ti-home fs-5',
                 'route' => 'admin.dashboard',
@@ -18,17 +18,17 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 1
             ],
-            [
+           [
                 "name" => "Order In Queue",
-                "icon" => "fa-brands fa-first-order",
+                "icon" => "fa-solid fa-boxes-stacked",   // 📦 multiple orders waiting
                 "route" => "admin.orderQueue.order_queue",
                 "permission" => "Order Queue",
                 'sub_menu' => [],
                 'order' => 2
             ],
             [
-                "name" => "Cancellations in queue",
-                "icon" => "fa-brands fa-first-order",
+                "name" => "Cancellations in Queue",
+                "icon" => "fa-solid fa-ban",   // 🚫 cancel symbol
                 "route" => "admin.taskInQueue.index",
                 "permission" => "Task Queue",
                 'sub_menu' => [],
@@ -36,7 +36,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 "name" => "My Task",
-                "icon" => "fa-brands fa-first-order",
+                "icon" => "fa-solid fa-list-check",   // ✅ personal task list
                 "route" => "admin.myTask.index",
                 "permission" => "My Task",
                 'sub_menu' => [],

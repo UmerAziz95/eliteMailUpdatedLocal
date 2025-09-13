@@ -240,7 +240,6 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{orderId}/reassignment-history', [AdminOrderController::class, 'getReassignmentHistory'])->name('orders.reassignment-history');
         
         // Contractor Reassignment routes 
-        Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
         Route::get('/order/dashboard', [AdminOrderController::class, 'getOrderDashboardData'])->name('order.dashboard');
     
         //contractors 
@@ -684,6 +683,7 @@ Route::get('/chargebee/webhook', function () {
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
 Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
 Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
+Route::post('/admin/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
 
 
 // Notification routes

@@ -956,17 +956,48 @@
 
     /* Highlight row on hover */
     .dataTable tbody tr:hover {
-        background-color: #ffffff !important;
+        background-color: var(--filter-color) !important;
+        border: 1px solid #4A3AFF !important
         /* White background */
         cursor: pointer;
         /* Optional: makes it feel clickable */
-        transition: background-color 0.2s ease-in-out;
+        /* transition: background-color 0.5s ease-in-out; */
     }
 
-    /* If your theme has dark rows, also reset text color */
-    .dataTable tbody tr:hover td {
-        color: #000000 !important;
-        /* Keep text readable on white */
+    .bg-warning {
+        background-color: #ffc10721 !important;
+        color: #fff !important;
+        border-bottom: 4px solid #ffb700 !important;
+    }
+
+    .bg-success {
+        background-color: #0bff8d21 !important;
+        color: #fff !important;
+        border-bottom: 4px solid #00c851 !important;
+    }
+
+    .bg-primary {
+        background-color: #0066ff2f !important;
+        color: #fff !important;
+        border-bottom: 4px solid #0056e3 !important;
+    }
+
+    .bg-danger {
+        background-color: #ff073c21 !important;
+        color: #fff !important;
+        border-bottom: 4px solid #ff073c !important;
+    }
+
+    .bg-secondary {
+        background-color: #6c757d21 !important;
+        color: #fff !important;
+        border-bottom: 4px solid #6c757d !important;
+    }
+
+    .bg-info {
+        background-color: #00d5ff29 !important;
+        color: #fff !important;
+        border-bottom: 4px solid #00b8ff !important;
     }
 </style>
 @endpush
@@ -997,149 +1028,136 @@
             <div class="row gy-3 mb-4 mt-3">
                 <div class="counters col-lg-12"
                     style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important">
-                    <div class="card p-3 counter_1 StatusFilters_tab" data-status="total">
+                    <div class=" card p-3 counter_1 text-white StatusFilters_tab" style="border-bottom: 4px solid #535353; cursor: pointer !important" data-status="total" >
                         <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center jsutify-content-center">
+                            {{-- <div class="d-flex align-items-center jsutify-content-center">
                                 <i class="fa-regular fa-file-lines fs-5"></i>
+                            </div> --}}
+                            <h6 class="text-heading mb-0">All</h6>
+                            <div class="d-flex align-items-center justify-content-end">
+                                <p class="mb-0 fs-5 text-white">{{ number_format($totalOrders) }}</p>
                             </div>
-                            <h6 class="text-heading mb-0">Total Orders</h6>
-                            <div class="d-flex align-items-center">
-                                <h4 class="mb-0 fs-5">{{ number_format($totalOrders) }}</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
+                            {{-- <small class="mb-0"></small> --}}
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-warning counter_2 StatusFilters_tab" data-status="pending">
+                    <div class="card p-3 bg-warning counter_2 text-white StatusFilters_tab" data-status="pending" style="cursor: pointer !important">
                         <div class="d-flex align-items-center justify-content-between">
-                            <div class="">
+                            {{-- <div class="">
                                 <i class="fa-solid fa-spinner fs-5"></i>
-                            </div>
+                            </div> --}}
 
                             <h6 class="text-heading mb-0">Pending</h6>
 
                             <div class="d-flex align-items-center">
-                                <h4 class="mb-0 fs-5">{{ number_format($pendingOrders) }}</h4>
+                                <p class="mb-0 fs-5 text-white">{{ number_format($pendingOrders) }}</p>
                                 <p class="text-danger mb-0"></p>
                             </div>
 
-                            <small class="mb-0"></small>
+                            {{-- <small class="mb-0"></small> --}}
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-success counter_1 StatusFilters_tab" data-status="completed">
+                    <div class="card p-3 bg-success counter_1 StatusFilters_tab" data-status="completed" style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
-                                <div class="">
+                                {{-- <div class="">
                                     <i class="fa-solid fa-check-double fs-5"></i>
-                                </div>
+                                </div> --}}
 
                                 <h6 class="text-heading mb-0">Complete</h6>
 
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 fs-5">{{ number_format($completedOrders) }}</h4>
+                                    <p class="mb-0 fs-5 text-white">{{ number_format($completedOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
 
-                                <small class="mb-0"></small>
+                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
 
-                    <div class="card bg-primary p-3 counter_2 StatusFilters_tab" data-status="in-progress">
+                    <div class="card bg-primary p-3 counter_2 StatusFilters_tab" data-status="in-progress" style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
-                                <div class="">
+                                {{-- <div class="">
                                     <i class="fa-solid fa-bars-progress fs-5"></i>
-                                </div>
+                                </div> --}}
 
                                 <h6 class="text-heading mb-0">In-Progress</h6>
 
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 fs-5">{{ number_format($inProgressOrders) }}</h4>
+                                    <p class="mb-0 fs-5 text-white">{{ number_format($inProgressOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
 
-                                <small class="mb-0"></small>
+                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-danger counter_1 StatusFilters_tab" data-status="cancelled">
+                    <div class="card p-3 bg-danger counter_1 StatusFilters_tab" data-status="cancelled" style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex  align-items-center justify-content-between">
-                                <div class="">
+                                {{-- <div class="">
                                     <i class="fa-brands fa-empire fs-5"></i>
-                                </div>
+                                </div> --}}
 
                                 <h6 class="text-heading">Cancelled</h6>
 
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 me-2 fs-5">{{ number_format($cancelledOrders) }}</h4>
+                                    <p class="mb-0 me-2 fs-5 text-white">{{ number_format($cancelledOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
 
-                                <small class="mb-0"></small>
+                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
 
-                    <div class="card bg-secondary p-3 counter_1 StatusFilters_tab" data-status="reject">
+                    {{-- <div class="card bg-secondary p-3 counter_1 StatusFilters_tab" data-status="reject" style="cursor: pointer !important">
                         <div>
-                            <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
-                                <div class="">
-                                    <i class="fa-solid fa-book-skull fs-5"></i>
-                                </div>
                                 <h6 class="text-heading">Rejected</h6>
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 fs-5">{{ number_format($rejectOrders) }}</h4>
+                                    <p class="mb-0 fs-5 text-white">{{ number_format($rejectOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
-                                <small class="mb-0"></small>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
-                    <div class="card p-3 bg-info counter_2 StatusFilters_tab" data-status="draft">
+                    <div class="card p-3 bg-info counter_2 StatusFilters_tab" data-status="draft" style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
                                 <h6 class="text-heading">Draft</h6>
 
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 me-2 fs-5">{{ number_format($draftOrders) }}</h4>
+                                    <p class="mb-0 me-2 fs-5 text-white">{{ number_format($draftOrders) }}</p>
                                     <p class="text-warning mb-0"></p>
                                 </div>
 
-                                <small class="mb-0"></small>
+                                {{-- <small class="mb-0"></small> --}}
 
-                                <div class="">
+                                {{-- <div class="">
                                     <i class="fa-solid fa-ban fs-5"></i>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
-                    <div class="card p-3 counter_2 StatusFilters_tab" data-status="removed"
-                        style="background-color: crimson">
+                    <div class="card p-3 text-white counter_2 StatusFilters_tab" data-status="removed"
+                        style="background-color: rgba(220, 20, 60, 0.222); cursor:pointer; border-bottom: 4px solid #ff073c;" >
                         <div>
-                            <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
                                 <h6 class="text-heading">Removed</h6>
 
                                 <div class="d-flex align-items-center">
-                                    <h4 class="mb-0 me-2 fs-5">{{ number_format($removedOrders) }}</h4>
+                                    <p class="mb-0 me-2 fs-5 text-white">{{ number_format($removedOrders) }}</p>
                                     <p class="text-warning mb-0"></p>
-                                </div>
-
-                                <small class="mb-0"></small>
-
-                                <div class="">
-                                    <i class="fa-solid fa-ban fs-5"></i>
                                 </div>
                             </div>
                         </div>
@@ -1929,7 +1947,7 @@
     render: function(data, type, row) {
         return `
             <div class="d-flex align-items-center gap-1 text-nowrap">
-                <i class="ti ti-hash fs-5"></i>
+                
                 <span>
                     <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
                         ${data}

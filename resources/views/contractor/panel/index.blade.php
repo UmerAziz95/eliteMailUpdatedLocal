@@ -280,6 +280,58 @@
 @section('content')
 <section class="py-3">
 
+
+      <!-- Reassign Contractor Modal -->
+    <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="reassignContractorForm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body"> 
+                        {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}}   --}}
+                        <div class="mb-3">
+                            <label for="contractorSelect" class="form-label">Select Contractor</label>
+                           <select class="form-select" id="contractorSelect" name="contractor_id" required>
+                        <option value="">-- Select Contractor --</option>
+                        @php
+                            $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
+                            $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->get();
+
+                                $contractors = $contractors->filter(function($contractor) {
+                                    return $contractor->id != auth()->id(); // Exclude authenticated user
+                                });
+                        @endphp
+
+                        @foreach($contractors as $contractor)
+                           
+                            <option value="{{ $contractor->id }}">
+                                {{ $contractor->name }} ({{ $contractor->email }})
+                            </option>
+                        @endforeach
+                    </select>
+
+                        </div>
+                        <input type="hidden" id="offcanvasOrderId" name="order_id" value="">
+                        <input type="hidden" id="offcanvasOrderStatus" name="order_status" value="">
+                        <input type="hidden" id="offcanvasOrderAssignedTo" name="order_assigned_to" value="">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Reassign</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- Advanced Search Filter UI -->
     <div class="card p-3 mb-4">
         <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#filter_1"
@@ -1215,7 +1267,8 @@
                 }
 
                 const data = await response.json();
-                
+                const canvasOrderId=data.order.id;
+                document.getElementById('offcanvasOrderId').value=canvasOrderId;
                 renderOrderSplits(data);
 
             } catch (error) {
@@ -1286,14 +1339,27 @@
                                             Assign Order to Me
                                             <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
                                         </button>
+                                       
+                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                                            <i class="fa fa-user-edit"></i> Reassign Contractor
+                                        </button>
+                                     
+                                       
                                     `;
-                                } else {
+                                } 
+                                else {
                                     buttonsHtml += `
                                         <span class="btn btn-primary rounded-1 px-3 py-2" style="font-size: 11px;">
                                             <i class="fas fa-check me-1" style="font-size: 10px;"></i>
                                             All Splits Assigned
                                         </span>
-                                    `;
+                                       
+                                      
+                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                                            <i class="fa fa-user-edit"></i> Reassign Contractor
+                                        </button>
+                                    `
+                                    ;
                                 }
                                 
                                 // Add reject button if order is not already rejected or completed
@@ -2830,6 +2896,55 @@
             }
         }
 
+     $('body').on('click', '.reassignContractorBtn', function() {
+    let orderId = $(this).data('order-id'); // get order ID
+    $('#reassignContractorForm').attr('data-order-id', orderId); // store inside form
+
+    // open modal
+    $('#reassignContractorModal').modal('show');
+});
+
+</script>
+
+<script>
+$(function() {
+    $('#reassignContractorForm').on('submit', function(e) {
+        e.preventDefault();
+        var contractorId = $('#contractorSelect').val();
+        if (!contractorId) {
+            toastr.error('Please select a contractor');
+            return;
+        }
+        const orderId=$("#offcanvasOrderId").val();
+        if (!orderId) {
+            toastr.error('Order ID is missing');
+            return;
+        }
+        $.ajax({
+            url: '/admin/orders/' + orderId + '/reassign-contractor',
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                $('#reassignContractorForm button[type="submit"]').prop('disabled', true);
+            },
+            success: function(response) {
+                toastr.success('Contractor reassigned successfully');
+                $('#reassignContractorModal').modal('hide');
+                setTimeout(function(){ location.reload(); }, 1000);
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                toastr.error(msg);
+            },
+            complete: function() {
+                $('#reassignContractorForm button[type="submit"]').prop('disabled', false);
+            }
+        });
+    });
+});
 </script>
 @endpush
 

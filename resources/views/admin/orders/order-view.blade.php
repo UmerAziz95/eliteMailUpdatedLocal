@@ -49,6 +49,8 @@
         </div>
     </div>
 
+
+    
     <!-- Reassign Contractor Modal -->
     <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -63,25 +65,25 @@
                         <div class="mb-3">
                             <label for="contractorSelect" class="form-label">Select Contractor</label>
                            <select class="form-select" id="contractorSelect" name="contractor_id" required>
-    <option value="">-- Select Contractor --</option>
-    @php
-        $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
-        $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
-                $q->whereIn('name', $roleNames);
-            })
-            ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
-                $q->whereIn('name', $roleNames);
-            })
-            ->get();
-    @endphp
+                        <option value="">-- Select Contractor --</option>
+                        @php
+                            $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
+                            $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->get();
+                        @endphp
 
-    @foreach($contractors as $contractor)
-        <option value="{{ $contractor->id }}" 
-            @if($order->assigned_to == $contractor->id) selected @endif>
-            {{ $contractor->name }} ({{ $contractor->email }})
-        </option>
-    @endforeach
-</select>
+                        @foreach($contractors as $contractor)
+                            <option value="{{ $contractor->id }}" 
+                                @if($order->assigned_to == $contractor->id) selected @endif>
+                                {{ $contractor->name }} ({{ $contractor->email }})
+                            </option>
+                        @endforeach
+                    </select>
 
                         </div>
                     </div>
