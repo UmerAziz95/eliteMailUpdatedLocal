@@ -295,7 +295,7 @@
                         </option>
                         @endforeach
                     </select>
-                    <p class="note">(Please select the cold email platform you would like us to install the inboxes on)</p>
+                    <p class="note">(Please select the cold email platform you would like us to install the inboxes on. To avoid any delays, ensure it isn’t on a free trial and that your chosen paid plan is active.)</p>
                 </div>
 
                 <div class="sending-platform-fields" id="sending-platform-fields">

@@ -14,7 +14,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Namecheap',
                 'value' => 'namecheap',
                 'requires_tutorial' => true,
-                'tutorial_link' => 'https://docs.google.com/document/d/1D98lxHwJtAlw2MBIIHsCuejvARO2Ge25Z-ZLr91Aqm8/edit?tab=t.0#heading=h.gwg31lb1l0ct',
+                'tutorial_link' => 'https://www.dropbox.com/scl/fi/4qilvns2hdrtlufp5f94l/Guide-to-Get-Backup-Codes-for-',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Namecheap - Access Tutorial',
@@ -31,7 +31,7 @@ class HostingPlatformSeeder extends Seeder
                         'required' => true
                     ],
                     'platform_login' => [
-                        'label' => 'Domain Hosting Platform - Login',
+                        'label' => 'Namecheap username',
                         'type' => 'text',
                         'required' => true
                     ],
@@ -47,7 +47,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'GoDaddy',
                 'value' => 'godaddy',
                 'requires_tutorial' => true,
-                'tutorial_link' => 'https://docs.google.com/document/d/1x-PidbdG6AeptKtIZQ8-nqFBxQ1h_fKU0Wn5dmd7f3U/edit?usp=sharing',
+                'tutorial_link' => ' https://www.dropbox.com/scl/fi/tvdnb5a1bq49uxmunlloq/GoDaddy.paper?rlkey=zdb2jyucyus9i6dy6d0404whn&st=agajh1lx&dl=0',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
@@ -86,7 +86,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Porkbun',
                 'value' => 'porkbun',
                 'requires_tutorial' => true,
-                'tutorial_link' => 'https://docs.google.com/document/d/1wr9l_jsBzfL4OZgZOEbslYdXtruhakrdUdTPiRZGG8w/edit?usp=sharing',
+                'tutorial_link' => ' https://www.dropbox.com/scl/fi/ervz2j220xncqyfq2nr3k/Porkbun-access.paper?rlkey=phml69sl98yyrmr2tjhqc89ei&st=u50hu1qr&dl=0',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Porkbun - Access Tutorial',

@@ -42,13 +42,9 @@ class SupportTicketController extends Controller
 
     public function show($id)
     {
+
         // Allow viewing both assigned and unassigned order tickets
         $ticket = SupportTicket::with(['replies.user', 'user'])
-            ->where('category', 'order')
-            ->where(function($query) {
-                $query->where('assigned_to', Auth::id())
-                      ->orWhereNull('assigned_to');
-            })
             ->findOrFail($id);
 
         return view('contractor.support.ticket_conversation', compact('ticket'));
@@ -71,10 +67,7 @@ class SupportTicketController extends Controller
             'update_status' => 'nullable|in:open,in_progress,closed'
         ]);
 
-        $ticket = SupportTicket::where('category', 'order')
-            ->where(function($query) {
-                $query->where('assigned_to', Auth::id())
-                      ->orWhereNull('assigned_to');
+        $ticket = SupportTicket::where(function($query) {
             })->findOrFail($ticketId);
 
         // Auto-assign ticket if unassigned
@@ -203,9 +196,13 @@ class SupportTicketController extends Controller
 
     public function getTickets(Request $request)
     {
+
+       
         // Get global counters for contractor's tickets
-        $assignedTickets = SupportTicket::where('category', 'order')
-            ->where('assigned_to', Auth::id());
+      $assignedTickets = SupportTicket::where('category', 'order')
+            ->where('assigned_to', Auth::id())
+            ->where('order_id', null)
+            ->get();
             
         $counters = [
             'totalTickets' => SupportTicket::where('assigned_to', Auth::id())->count(),
@@ -216,13 +213,15 @@ class SupportTicketController extends Controller
 
         $tickets = SupportTicket::with(['user', 'order'])
             ->where(function($query) {
-                $query->where('assigned_to', Auth::id());
+                $query->where('assigned_to', Auth::id())->orWhereNull('order_id');
             })
             ->when(Auth::user()->role_id == 4, function($query) {
                 // For contractors, only show order-related tickets
-                $query->where('category', 'order');
+                // $query->where('category', 'order');
             })
             ->select('support_tickets.*');
+
+
 
         // Apply ticket number filter
         if ($request->has('ticket_number') && $request->ticket_number != '') {

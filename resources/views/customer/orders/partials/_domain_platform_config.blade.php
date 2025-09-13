@@ -128,7 +128,7 @@
                 <div class="invalid-feedback" id="sending_platform-error"></div>
                 <small>
                     <i class="fa-solid fa-info-circle me-1"></i>
-                    Please select the cold email platform you would like us to install the inboxes on
+                 (Please select the cold email platform you would like us to install the inboxes on. To avoid any delays, ensure it isn’t on a free trial and that your chosen paid plan is active.)
                 </small>
             </div>
 

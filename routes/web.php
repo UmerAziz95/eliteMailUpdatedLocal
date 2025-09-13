@@ -513,6 +513,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
         return view('contractor.payments.payments');
     })->name('payments');
     Route::get('/support', function () {
+       
         return view('contractor.support.support');
     })->name('support');
     Route::get('/profile', function () {
