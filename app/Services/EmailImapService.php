@@ -12,7 +12,7 @@ class EmailImapService
     {
         Log::info("📬 Starting IMAP email fetch...");
 
-        $client = Client::account('default'); 
+        $client = Client::account('default');
 
         try {
             $client->connect();
@@ -43,9 +43,11 @@ class EmailImapService
                     $msgId   = $message->getMessageId();
                     $subject = $message->getSubject();
 
+                    // Log structures for debugging
                     Log::info("🔍 Message: {$msgId} | Subject: {$subject}");
-                    Log::info("📤 RAW From: ", $message->getFrom() ? $message->getFrom()->toArray() : []);
-                    Log::info("📥 RAW To: ", $message->getTo() ? $message->getTo()->toArray() : []);
+                    Log::info("📤 RAW From: " . json_encode($message->getFrom()?->toArray() ?? []));
+                    Log::info("📥 RAW To: " . json_encode($message->getTo()?->toArray() ?? []));
+                    Log::info("📜 Full Headers: " . json_encode($message->getHeaders()?->toArray() ?? []));
 
                     $from = $this->extractAddresses($message->getFrom());
                     $to   = $this->extractAddresses($message->getTo());
@@ -54,25 +56,13 @@ class EmailImapService
 
                     Log::info("✅ Extracted From: {$from}");
                     Log::info("✅ Extracted To: {$to}");
-                     Log::info("📧 Message: ".$message->getMessageId()." | Subject: ".$message->getSubject());
 
-    // Dump all headers for debugging
-Log::info("🔍 Message: {$msgId} | Subject: {$subject}");
+                    // Differentiation flag: is_sent
+                    $isSent = in_array($fname, ['sent', 'sent items']);
 
-// ✅ FIXED: always cast to JSON string
-Log::info("📤 RAW From: " . json_encode($message->getFrom()?->toArray() ?? []));
-Log::info("📥 RAW To: " . json_encode($message->getTo()?->toArray() ?? []));
-Log::info("📜 Full Headers: " . json_encode($message->getHeaders()?->toArray() ?? []));
-
-$from = $this->extractAddresses($message->getFrom());
-$to   = $this->extractAddresses($message->getTo());
-$cc   = $this->extractAddresses($message->getCc());
-$bcc  = $this->extractAddresses($message->getBcc());
-
-Log::info("✅ Extracted From: {$from}");
-Log::info("✅ Extracted To: {$to}");
-
-
+                    // Clean the body to only save the latest reply
+                    $htmlBody = $message->getHTMLBody();
+                    $cleanBody = $htmlBody ? $this->extractLatestReply($htmlBody) : $message->getTextBody();
 
                     Email::updateOrCreate(
                         ['message_id' => $msgId],
@@ -83,8 +73,9 @@ Log::info("✅ Extracted To: {$to}");
                             'to'      => $to,
                             'cc'      => $cc,
                             'bcc'     => $bcc,
-                            'body'    => $message->getHTMLBody() ?: $message->getTextBody(),
+                            'body'    => $cleanBody,
                             'date'    => $message->getDate(),
+                            'is_sent' => $isSent, // add this field to your migration/model!
                         ]
                     );
                 }
@@ -100,39 +91,52 @@ Log::info("✅ Extracted To: {$to}");
     /**
      * Normalize address extraction
      */
-   private function extractAddresses($addresses)
-{
-    if (!$addresses) {
-        return null;
-    }
-
-    $list = [];
-    // Webklex AddressCollection has ->all() method
-    if (is_object($addresses) && method_exists($addresses, 'all')) {
-        $addresses = $addresses->all();
-    }
-
-    foreach ($addresses as $addr) {
-        if (is_object($addr)) {
-            // Webklex Address object has 'mail' property
-            if (property_exists($addr, 'mail')) {
-                $list[] = $addr->mail;
-            }
-            // Fallback: try 'address' property (older version)
-            elseif (property_exists($addr, 'address')) {
-                $list[] = $addr->address;
-            }
-            // Fallback: try __toString()
-            elseif (method_exists($addr, '__toString')) {
-                $list[] = (string) $addr;
-            }
-        } elseif (is_string($addr)) {
-            $list[] = $addr;
-        } elseif (is_array($addr) && isset($addr['mail'])) {
-            $list[] = $addr['mail'];
+    private function extractAddresses($addresses)
+    {
+        if (!$addresses) {
+            return null;
         }
+
+        // If it's a collection, get the array
+        if (is_object($addresses) && method_exists($addresses, 'all')) {
+            $addresses = $addresses->all();
+        }
+
+        $list = [];
+        foreach ($addresses as $addr) {
+            if (is_object($addr)) {
+                if (property_exists($addr, 'mail')) {
+                    $list[] = $addr->mail;
+                } elseif (property_exists($addr, 'address')) {
+                    $list[] = $addr->address;
+                } elseif (method_exists($addr, '__toString')) {
+                    $list[] = (string) $addr;
+                }
+            } elseif (is_string($addr)) {
+                $list[] = $addr;
+            } elseif (is_array($addr) && isset($addr['mail'])) {
+                $list[] = $addr['mail'];
+            }
+        }
+
+        return implode(',', $list);
     }
 
-    return implode(',', $list);
+    /**
+     * Extract only the latest reply from an HTML email (removes quoted replies).
+     */
+   private function extractLatestReply($html)
+{
+    // 1. Remove everything from the first gmail_quote onward
+    $html = preg_replace('/<div class="gmail_quote.*$/is', '', $html);
+
+    // 2. Remove any gmail_attr reply header (date line)
+    $html = preg_replace('/<div class="gmail_attr".*?<\/div>/is', '', $html);
+
+    // 3. Clean up multiple <br> tags left behind
+    $html = preg_replace('/(<br\s*\/?>\s*)+/is', '<br>', $html);
+
+    // 4. Trim whitespace
+    return trim($html);
 }
 }

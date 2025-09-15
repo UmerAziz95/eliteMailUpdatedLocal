@@ -53,12 +53,13 @@ class ImapTicketReplyMapperService
         }
     }
 
-    private function extractTicketIdFromSubject($subject)
-    {
-        // Example: "Re: [12345] Issue with login"
-        if (preg_match('/\[([A-Za-z0-9\-]+)\]/', $subject, $matches)) {
-        return $matches[1];
-       }
-        return null;
+   private function extractTicketIdFromSubject($subject)
+{
+    // Example: "New Reply on Ticket #TKT-68C7EEDC699A6"
+    if (preg_match('/#(TKT-[A-Za-z0-9]+)/', $subject, $matches)) {
+        return $matches[1]; // Returns "TKT-68C7EEDC699A6"
     }
+    return null;
+}
+
 }

@@ -83,6 +83,7 @@ class SupportTicketController extends Controller
             }
         }
 
+
         $reply = TicketReply::create([
             'ticket_id' => $ticket->id,
             'user_id' => Auth::id(),
@@ -90,6 +91,7 @@ class SupportTicketController extends Controller
             'attachments' => $attachments,
             'is_internal' => $validated['is_internal'] ?? false
         ]);
+
 
         // Update ticket status if needed
         if ($request->has('update_status') && $request->update_status) {
@@ -99,14 +101,12 @@ class SupportTicketController extends Controller
         // If this is not an internal note, notify the customer
         // if (!($validated['is_internal'] ?? false)) {
             // Send email to customer
-            Mail::to($ticket->user->email)
-            
-                ->queue(new \App\Mail\TicketReplyMail(
-                    $ticket,
-                    $reply,
-                    Auth::user(),  
-                    $ticket->user
-                ));
+            Mail::mailer('smtp2')->to($ticket->user->email)->queue(new \App\Mail\TicketReplyMail(
+            $ticket,
+            $reply,
+            Auth::user(),  
+            $ticket->user
+           ));
 
             // Create notification for the customer
             Notification::create([
