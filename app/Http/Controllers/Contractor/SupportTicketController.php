@@ -48,7 +48,7 @@ class SupportTicketController extends Controller
             ->findOrFail($id);
 
         return view('contractor.support.ticket_conversation', compact('ticket'));
-    }
+     }  
 
     public function reply(Request $request, $ticketId)
     {
