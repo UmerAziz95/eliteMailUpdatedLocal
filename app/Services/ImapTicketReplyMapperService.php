@@ -39,7 +39,7 @@ class ImapTicketReplyMapperService
             TicketReply::updateOrCreate(
                 [
                     'ticket_id' => $ticket->id,
-                    // 'external_message_id' => $email->message_id, // must exist in table
+                     'external_message_id' => $email->message_id, // must exist in table
                 ],
                 [
                     'message' => $email->body,

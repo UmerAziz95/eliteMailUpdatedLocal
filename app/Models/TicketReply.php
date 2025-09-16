@@ -14,12 +14,14 @@ class TicketReply extends Model
         'user_id',
         'message',
         'attachments',
-        'is_internal'
+        'is_internal',
+        'external_message_id'
     ];
 
     protected $casts = [
         'attachments' => 'array',
-        'is_internal' => 'boolean'
+        'is_internal' => 'boolean',
+        'external_message_id' => 'string'
     ];
 
     public function ticket()

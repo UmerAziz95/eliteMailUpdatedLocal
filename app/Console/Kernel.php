@@ -86,6 +86,13 @@ class Kernel extends ConsoleKernel
 
                 // Send failed payment emails every hour for payments that failed within the last 72 hours
                 $schedule->command('emails:send-failed-payments')->hourly();
+                //tickets imap fetch and process every 5 minutes
+                 $schedule->command('emails:fetch')
+                                ->everyMinute()
+                                ->then(function () {
+                                // Run tickets:process-imap immediately after emails:fetch finishes
+                                \Artisan::call('tickets:process-imap');
+                                });
                 }
 
         protected function commands(): void

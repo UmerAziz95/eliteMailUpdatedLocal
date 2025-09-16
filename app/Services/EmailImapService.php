@@ -60,7 +60,7 @@ class EmailImapService
                     // Differentiation flag: is_sent
                     $isSent = in_array($fname, ['sent', 'sent items']);
 
-                    // Clean the body to only save the latest reply
+                    // Clean the body to only save the latest reply, handling Gmail and Outlook formats
                     $htmlBody = $message->getHTMLBody();
                     $cleanBody = $htmlBody ? $this->extractLatestReply($htmlBody) : $message->getTextBody();
 
@@ -123,20 +123,28 @@ class EmailImapService
     }
 
     /**
-     * Extract only the latest reply from an HTML email (removes quoted replies).
+     * Extract only the latest reply from an HTML email (removes quoted replies, Gmail and Outlook).
      */
-   private function extractLatestReply($html)
-{
-    // 1. Remove everything from the first gmail_quote onward
-    $html = preg_replace('/<div class="gmail_quote.*$/is', '', $html);
+    private function extractLatestReply($html)
+    {
+        // 1. Gmail: Remove everything from the first gmail_quote onward
+        $html = preg_replace('/<div class="gmail_quote.*$/is', '', $html);
+        $html = preg_replace('/<blockquote class="gmail_quote.*?<\/blockquote>/is', '', $html);
+        $html = preg_replace('/<div class="gmail_attr".*?<\/div>/is', '', $html);
 
-    // 2. Remove any gmail_attr reply header (date line)
-    $html = preg_replace('/<div class="gmail_attr".*?<\/div>/is', '', $html);
+        // 2. Outlook/Office365: Remove everything after the first horizontal rule (<hr>) or border-top divider
+        $html = preg_replace('/<hr[^>]*>.*$/is', '', $html);
+        $html = preg_replace('/<div[^>]+border-top:[^>]+>.*$/is', '', $html);
 
-    // 3. Clean up multiple <br> tags left behind
-    $html = preg_replace('/(<br\s*\/?>\s*)+/is', '<br>', $html);
+        // 3. Outlook: Remove everything after the first blockquote (sometimes used for replies)
+        $html = preg_replace('/<blockquote.*$/is', '', $html);
 
-    // 4. Trim whitespace
-    return trim($html);
-}
+        // 4. Optionally, remove trailing empty <p>, <div>, and <br> tags
+        $html = preg_replace('/(<p[^>]*>(&nbsp;|\s|<br\s*\/?>)*<\/p>)+$/is', '', $html);
+        $html = preg_replace('/(<div[^>]*>(&nbsp;|\s|<br\s*\/?>)*<\/div>)+$/is', '', $html);
+        $html = preg_replace('/(<br\s*\/?>\s*)+$/is', '', $html);
+
+        // 5. Trim whitespace
+        return trim($html);
+    }
 }
