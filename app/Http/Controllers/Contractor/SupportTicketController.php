@@ -43,7 +43,7 @@ class SupportTicketController extends Controller
     public function show($id)
     {
 
-        // Allow viewing both assigned and unassigned order tickets
+        // Allow viewing both assigned and unassigned order tickets 
         $ticket = SupportTicket::with(['replies.user', 'user'])
             ->findOrFail($id);
 
@@ -163,7 +163,7 @@ class SupportTicketController extends Controller
             $ticket = $ticket->fresh();
             
             // Send email notification to the user
-            Mail::to($ticket->user->email)
+            Mail::mailer('smtp2')->to($ticket->user->email)
                 ->queue(new \App\Mail\TicketStatusMail(
                     $ticket,
                     Auth::user(),
@@ -196,8 +196,6 @@ class SupportTicketController extends Controller
 
     public function getTickets(Request $request)
     {
-
-       
         // Get global counters for contractor's tickets
       $assignedTickets = SupportTicket::where('category', 'order')
             ->where('assigned_to', Auth::id())
