@@ -5,7 +5,6 @@ namespace App\Exceptions;
 use App\Models\ErrorLog;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-
 class Handler extends ExceptionHandler
 {
     /**
