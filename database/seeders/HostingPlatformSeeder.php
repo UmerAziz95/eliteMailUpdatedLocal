@@ -31,12 +31,12 @@ class HostingPlatformSeeder extends Seeder
                         'required' => true
                     ],
                     'platform_login' => [
-                        'label' => 'Namecheap username',
+                        'label' => 'Namecheap username (Not email)',
                         'type' => 'text',
                         'required' => true
                     ],
                     'platform_password' => [
-                        'label' => 'Domain Hosting Platform - Password',
+                        'label' => 'Namecheap Password',
                         'type' => 'password',
                         'required' => true
                     ]

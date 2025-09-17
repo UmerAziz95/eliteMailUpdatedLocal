@@ -40,6 +40,7 @@ class SupportTicketController extends Controller
 
     public function reply(Request $request, $ticketId)
     {
+      
         $validated = $request->validate([
             'message' => [
             'required',
@@ -75,6 +76,17 @@ class SupportTicketController extends Controller
         if ($ticket->status === 'closed') {
             $ticket->update(['status' => 'open']);
         }
+        try{
+            Mail::mailer('smtp2')->to($ticket->user->email)->queue(new \App\Mail\TicketReplyMail(
+            $ticket,
+            $reply,
+            Auth::user(),  
+            $ticket->user
+           )); 
+        } catch (\Exception $e) {
+            \Log::error('Error sending ticket reply email from admin: ' . $e->getMessage());
+        }
+         
 
         return response()->json([
             'success' => true,
@@ -200,7 +212,7 @@ class SupportTicketController extends Controller
         // Only send notification if status has actually changed
         if ($oldStatus !== $newStatus) {
             // Send email notification to the user
-            Mail::to($ticket->user->email)
+            Mail::mailer('smtp2')->to($ticket->user->email)
                 ->queue(new \App\Mail\TicketStatusMail(
                     $ticket,
                     Auth::user(),

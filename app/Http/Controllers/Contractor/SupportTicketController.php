@@ -200,6 +200,7 @@ class SupportTicketController extends Controller
       $assignedTickets = SupportTicket::where('category', 'order')
             ->where('assigned_to', Auth::id())
             ->where('order_id', null)
+            ->orderBy('created_at', 'desc')
             ->get();
             
         $counters = [

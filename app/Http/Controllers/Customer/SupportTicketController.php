@@ -203,7 +203,8 @@ class SupportTicketController extends Controller
     {
         $tickets = SupportTicket::with(['user'])
             ->where('user_id', Auth::id())
-            ->select('support_tickets.*');
+            ->select('support_tickets.*')
+            ->orderBy('created_at', 'desc');
 
         // Apply ticket number filter
         if ($request->has('ticket_number') && $request->ticket_number != '') {

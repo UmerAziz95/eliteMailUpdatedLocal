@@ -27,7 +27,7 @@ class SidebarNavigationSeeder extends Seeder
                 'order' => 2
             ],
             [
-                "name" => "Cancellations in Queue",
+                "name" => "Cancellations In Queue",
                 "icon" => "fa-solid fa-ban",   // 🚫 cancel symbol
                 "route" => "admin.taskInQueue.index",
                 "permission" => "Task Queue",
