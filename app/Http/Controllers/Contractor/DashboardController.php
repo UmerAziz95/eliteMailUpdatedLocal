@@ -14,16 +14,20 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        
+       
         // Get tickets assigned to the contractor
-        $assignedTickets = SupportTicket::where('category', 'order')
-            ->where('assigned_to', Auth::id())
+        $assignedTickets = SupportTicket::where('assigned_to', Auth::id())
             ->get();
+        
+    
             
         // Calculate ticket statistics
         $totalTickets = $assignedTickets->count();
         $newTickets = $assignedTickets->where('status', 'open')->count();
         $inProgressTickets = $assignedTickets->where('status', 'in_progress')->count();
         $resolvedTickets = $assignedTickets->where('status', 'closed')->count();
+        // dd($totalTickets, $newTickets, $inProgressTickets, $resolvedTickets);
 
         // Get orders assigned to the contractor or unassigned
         $orders = Order::where('assigned_to', Auth::id());
@@ -53,24 +57,7 @@ class DashboardController extends Controller
         $percentageChange = $previousWeekOrders > 0 
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
-        // dd([
-        //     'lastWeekOrders' => $lastWeekOrders,
-        //     'previousWeekOrders' => $previousWeekOrders,
-        //     'percentageChange' => $percentageChange,
-        //     'lastWeek' => $lastWeek,
-        //     'previousWeek' => $previousWeek,
-        //     'orders' => $orders->get(),
-        //     'assignedTickets' => $assignedTickets,
-        //     'totalOrders' => $totalOrders,
-        //     'pendingOrders' => $pendingOrders,
-        //     'inProgressOrders' => $inProgressOrders,
-        //     'completedOrders' => $completedOrders,
-        //     'cancelledOrders' => $cancelledOrders,
-        //     'totalTickets' => $totalTickets,
-        //     'newTickets' => $newTickets,
-        //     'inProgressTickets' => $inProgressTickets,
-        //     'resolvedTickets' => $resolvedTickets
-        // ]);
+
         return view('contractor.dashboard', compact(
             'totalTickets',
             'newTickets',
