@@ -1435,8 +1435,24 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     Change Status
                                 </button>
                             ` : ''}
+
+                            <!-- Shared Status Toggle Button -->
+                            <button class="btn btn-sm ${orderInfo.is_shared ? 'btn-outline-warning' : 'btn-outline-success'} toggle-shared px-3 py-2" 
+                                    data-order-id="${orderInfo.id}" 
+                                    title="${orderInfo.is_shared ? 'Unshare Order' : 'Share Order'}"
+                                    style="font-size: 13px;">
+                                <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
+                                ${orderInfo.is_shared ? 'Unshare' : 'Share'}
+                            </button>
                         </div>
                     </div>
+                    ${orderInfo.is_shared ? `
+                        <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
+                            <i class="fa-solid fa-users me-2"></i>
+                            This order is currently shared with other contractors
+                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? ` (${orderInfo.helpers_names.join(', ')})` : ''}
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
                     <table class="table table-striped table-hover position-sticky top-0 border-0">
@@ -2310,6 +2326,64 @@ function parseUTCDateTime(dateStr) {
                 `;
             });
         }
+
+        // Toggle shared status function (similar to admin implementation)
+        $(document).on('click', '.toggle-shared', function(e) {
+            e.preventDefault();
+            const orderId = $(this).data('order-id');
+            
+            Swal.fire({
+                title: 'Toggle Shared Status',
+                text: "Are you sure you want to change the shared status of this order?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, toggle it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/contractor/orders/${orderId}/toggle-shared`,
+                        method: 'POST',
+                        data: {
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: response.message,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                                
+                                // Refresh the orders list to show updated status
+                                loadOrders(currentFilters, 1, false);
+                                
+                                // If we're in the offcanvas, refresh that view too
+                                const offcanvas = document.getElementById('order-splits-view');
+                                if (offcanvas && offcanvas.classList.contains('show')) {
+                                    // Reload the offcanvas content
+                                    viewOrderSplits(orderId);
+                                }
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while updating shared status.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: errorMessage
+                            });
+                        }
+                    });
+                }
+            });
+        });
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {

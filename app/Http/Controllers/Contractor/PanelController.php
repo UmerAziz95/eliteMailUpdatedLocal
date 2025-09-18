@@ -195,6 +195,16 @@ class PanelController extends Controller
                     'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
                     'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
                     'total_paused_seconds' => $order->total_paused_seconds ?? 0,
+                    'is_shared' => $order->is_shared ?? false,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => (function() use ($order) {
+                        if ($order->helpers_ids && is_array($order->helpers_ids) && count($order->helpers_ids) > 0) {
+                            return \App\Models\User::whereIn('id', $order->helpers_ids)
+                                ->pluck('name')
+                                ->toArray();
+                        }
+                        return [];
+                    })(),
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;

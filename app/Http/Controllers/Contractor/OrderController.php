@@ -1730,6 +1730,16 @@ class OrderController extends Controller
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
                     }),
+                    'is_shared' => $order->is_shared ?? false,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => (function() use ($order) {
+                        if ($order->helpers_ids && is_array($order->helpers_ids) && count($order->helpers_ids) > 0) {
+                            return \App\Models\User::whereIn('id', $order->helpers_ids)
+                                ->pluck('name')
+                                ->toArray();
+                        }
+                        return [];
+                    })(),
                     'splits' => $splitsData
                 ];
             });
@@ -2781,6 +2791,45 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error exporting CSV from order emails: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Toggle shared status for contractor's assigned order
+     */
+    public function toggleSharedStatus(Request $request, $orderId)
+    {
+        try {
+            // Verify contractor has access to this order
+            $order = Order::where('assigned_to', auth()->id())->findOrFail($orderId);
+            
+            $order->is_shared = !$order->is_shared;
+            
+            // Clear helpers_ids when unsharing the order
+            if (!$order->is_shared) {
+                $order->helpers_ids = null;
+            }
+            
+            $order->save();
+
+            ActivityLogService::log(
+                'Order Shared Status Changed by Contractor',
+                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared') . ' by contractor',
+                $order,
+                ['shared_status' => $order->is_shared, 'contractor_id' => auth()->id()]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order shared status updated successfully',
+                'is_shared' => $order->is_shared
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling shared status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating shared status'
+            ], 500);
         }
     }
 }
