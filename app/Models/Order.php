@@ -11,13 +11,15 @@ class Order extends Model
     use HasFactory;
     protected $casts = [
         'meta' => 'array',
+        'helpers_ids' => 'array',
         'last_draft_notification_sent_at' => 'datetime',
         'completed_at' => 'datetime',
         'timer_started_at' => 'datetime',
         'timer_paused_at' => 'datetime',
         'rejected_at' => 'datetime',
         'is_internal' => 'boolean',
-        'is_internal_order_assignment' => 'boolean'
+        'is_internal_order_assignment' => 'boolean',
+        'is_shared' => 'boolean'
     ];
     protected $fillable = [
         'user_id',
@@ -41,7 +43,9 @@ class Order extends Model
         'rejected_at',
         'is_internal',
         'internal_order_id',
-        'is_internal_order_assignment'
+        'is_internal_order_assignment',
+        'is_shared',
+        'helpers_ids'
     ];
     
     // status_manage_by_admin
@@ -88,6 +92,16 @@ class Order extends Model
     public function assignedTo()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    // Helper contractors (multiple contractors assigned to shared orders)
+    public function helpers()
+    {
+        if (!$this->helpers_ids || empty($this->helpers_ids)) {
+            return collect();
+        }
+        
+        return User::whereIn('id', $this->helpers_ids)->get();
     }
 
     public function userOrderPanelAssignments()

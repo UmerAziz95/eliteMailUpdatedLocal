@@ -234,6 +234,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
         
+        // Shared Orders routes
+        Route::post('/orders/{orderId}/toggle-shared', [AdminOrderController::class, 'toggleSharedStatus'])->name('orders.toggle-shared');
+        Route::post('/orders/{orderId}/assign-contractors', [AdminOrderController::class, 'assignContractors'])->name('orders.assign-contractors');
+        Route::get('/orders/shared/data', [AdminOrderController::class, 'getSharedOrders'])->name('orders.shared.data');
+        
         // Panel Reassignment routes
         Route::get('/orders/{orderId}/order-panels/{orderPanelId}/available-for-reassignment', [AdminOrderController::class, 'getAvailablePanelsForReassignment'])->name('orders.order-panels.available-for-reassignment');
         Route::post('/orders/panels/reassign', [AdminOrderController::class, 'reassignPanelSplit'])->name('orders.panels.reassign');

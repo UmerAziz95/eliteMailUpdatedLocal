@@ -228,7 +228,11 @@ class OrderController extends Controller
                         </li>';
                     }
 
-                    return '<div class="dropdown">
+                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning me-2" title="Shared Order"></i>' : '';
+                    $shareToggleText = $order->is_shared ? 'Unshare' : 'Share';
+                    $shareToggleIcon = $order->is_shared ? 'fa-unlink' : 'fa-share-nodes';
+
+                    return $sharedIcon . '<div class="dropdown">
                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
                         aria-expanded="false">
                         <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -248,6 +252,17 @@ class OrderController extends Controller
                             </a>
                         </li>
                         ') .
+                        '<li>
+                            <a href="javascript:;" class="dropdown-item toggle-shared" data-order-id="' . $order->id . '">
+                                <i class="fa-solid ' . $shareToggleIcon . '"></i> &nbsp;' . $shareToggleText . '
+                            </a>
+                        </li>' .
+                        ($order->is_shared ? '
+                        <li>
+                            <a href="javascript:;" class="dropdown-item assign-contractors" data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-users"></i> &nbsp;Add Helpers
+                            </a>
+                        </li>' : '') .
                         '<li>
                             <a href="javascript:;" class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" data-order-id="' . $order->id . '">
                                 <i class="fa-solid fa-history"></i> &nbsp;Log View
@@ -2251,6 +2266,125 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error exporting CSV from order emails: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Toggle shared status for an order
+     */
+    public function toggleSharedStatus(Request $request, $orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            $order->is_shared = !$order->is_shared;
+            
+            // Clear helpers_ids when unsharing the order
+            if (!$order->is_shared) {
+                $order->helpers_ids = null;
+            }
+            
+            $order->save();
+
+            ActivityLogService::log(
+                'Order Shared Status Changed',
+                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared'),
+                $order,
+                ['shared_status' => $order->is_shared]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order shared status updated successfully',
+                'is_shared' => $order->is_shared
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling shared status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating shared status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign contractors to shared order
+     */
+    public function assignContractors(Request $request, $orderId)
+    {
+        try {
+            $request->validate([
+                'contractor_ids' => 'required|array',
+                'contractor_ids.*' => 'exists:users,id'
+            ]);
+
+            // Verify that all selected users are contractors (role_id = 4)
+            $contractorCount = User::whereIn('id', $request->contractor_ids)
+                ->where('role_id', 4)
+                ->count();
+            
+            if ($contractorCount !== count($request->contractor_ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'One or more selected users are not contractors'
+                ], 422);
+            }
+
+            $order = Order::findOrFail($orderId);
+            $currentHelperIds = $order->helpers_ids ?? [];
+            $newContractorIds = $request->contractor_ids;
+
+            // Merge new contractor IDs with existing ones
+            $updatedHelperIds = array_unique(array_merge($currentHelperIds, $newContractorIds));
+            
+            $order->helpers_ids = $updatedHelperIds;
+            $order->save();
+
+            ActivityLogService::log(
+                'Contractors Assigned',
+                "Contractors assigned to order #{$order->id}: " . implode(', ', $newContractorIds),
+                $order,
+                [
+                    'new_contractor_ids' => $newContractorIds,
+                    'all_helper_ids' => $updatedHelperIds,
+                    'helpers_count' => count($updatedHelperIds)
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contractors assigned successfully',
+                'helpers_count' => count($updatedHelperIds)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error assigning contractors: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error assigning contractors'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shared orders
+     */
+    public function getSharedOrders(Request $request)
+    {
+        try {
+            $sharedOrders = Order::where('is_shared', true)
+                ->with(['user', 'plan'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'data' => $sharedOrders
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting shared orders: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shared orders'
+            ], 500);
         }
     }
 }
