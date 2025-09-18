@@ -19,89 +19,89 @@ use App\Mail\UserWelcomeMail;
 class AdminController extends Controller
 {
     public function index(Request $request)
-{
-    if ($request->ajax()) {
-        // Start query builder with eager-loaded roles
-        $query = User::with('roles')->whereIn('role_id', [1, 2, 5]);
+    {
+        if ($request->ajax()) {
+            // Start query builder with eager-loaded roles
+            $query = User::with('roles')->whereIn('role_id', [1, 2, 5]);
 
-        // 🔍 Apply individual column filters
-        if ($request->filled('user_name')) {
-            $query->where('name', 'like', '%' . $request->input('user_name') . '%');
-        }
+            // 🔍 Apply individual column filters
+            if ($request->filled('user_name')) {
+                $query->where('name', 'like', '%' . $request->input('user_name') . '%');
+            }
 
-        if ($request->filled('email')) {
-            $query->where('email', 'like', '%' . $request->input('email') . '%');
-        }
+            if ($request->filled('email')) {
+                $query->where('email', 'like', '%' . $request->input('email') . '%');
+            }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
 
-        // Global search
-        if ($request->has('search') && $request->input('search.value') != '') {
-            $search = $request->input('search.value');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+            // Global search
+            if ($request->has('search') && $request->input('search.value') != '') {
+                $search = $request->input('search.value');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
 
-        return DataTables::eloquent($query)
-            ->addIndexColumn()
-            ->addColumn('name', function ($row) {
-                return $row->name ?? 'N/A';
-            })
-            ->addColumn('role', function ($row) {
-                $roleName = $row->getRoleNames()->first(); // Get the first assigned role
-                return '<i class="ti ti-contract me-2 text-primary"></i>' . ucfirst($roleName ?? 'N/A');
-            })
-            ->addColumn('status', function ($row) {
-                $statusText = $row->status == 1 ? 'active' : 'inactive';
-                $statusClass = $row->status == 1 ? 'active_status' : 'inactive_status';
-                return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
-            })
-            ->addColumn('action', function ($row) {
-                $user = auth()->user();
+            return DataTables::eloquent($query)
+                ->addIndexColumn()
+                ->addColumn('name', function ($row) {
+                    return $row->name ?? 'N/A';
+                })
+                ->addColumn('role', function ($row) {
+                    $roleName = $row->getRoleNames()->first(); // Get the first assigned role
+                    return '<i class="ti ti-contract me-2 text-primary"></i>' . ucfirst($roleName ?? 'N/A');
+                })
+                ->addColumn('status', function ($row) {
+                    $statusText = $row->status == 1 ? 'active' : 'inactive';
+                    $statusClass = $row->status == 1 ? 'active_status' : 'inactive_status';
+                    return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
+                })
+                ->addColumn('action', function ($row) {
+                    $user = auth()->user();
 
-                if ($user->hasPermissionTo('Mod')) {
-                    return '<button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
-                            <i class="fa-regular fa-eye"></i>';
-                }
+                    if ($user->hasPermissionTo('Mod')) {
+                        return '<button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                                <i class="fa-regular fa-eye"></i>';
+                    }
 
-                return '
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
-                            <i class="fa-regular fa-trash-can text-danger"></i>
-                        </button>
-                        <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
-                            <i class="fa-regular fa-eye"></i>
-                        </button>
-                        <div class="dropdown">
-                            <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                    return '
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="bg-transparent p-0 border-0 delete-btn" data-id="' . $row->id . '">
+                                <i class="fa-regular fa-trash-can text-danger"></i>
                             </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
-                            </ul>
+                            <button class="bg-transparent p-0 border-0 mx-2 edit-btn" data-id="' . $row->id . '">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                            <div class="dropdown">
+                                <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                ';
-            })
-            ->rawColumns(['role', 'status', 'action'])
-            ->with([
-                'counters' => [
-                    'total' => User::whereIn('role_id', [1, 2, 5])->count(),
-                    'active' => User::where('status', 1)->whereIn('role_id', [1, 2, 5])->count(),
-                    'inactive' => User::where('status', 0)->whereIn('role_id', [1, 2, 5])->count(),
-                ]
-            ])
-            ->make(true);
-    }
+                    ';
+                })
+                ->rawColumns(['role', 'status', 'action'])
+                ->with([
+                    'counters' => [
+                        'total' => User::whereIn('role_id', [1, 2, 5])->count(),
+                        'active' => User::where('status', 1)->whereIn('role_id', [1, 2, 5])->count(),
+                        'inactive' => User::where('status', 0)->whereIn('role_id', [1, 2, 5])->count(),
+                    ]
+                ])
+                ->make(true);
+        }
 
-    $roles = Role::all();
-    $permissions = Permission::all();
-    return view('admin.admins.admins', ['roles' => $roles, 'permissions' => $permissions]);
-}
+        $roles = Role::all();
+        $permissions = Permission::all();
+        return view('admin.admins.admins', ['roles' => $roles, 'permissions' => $permissions]);
+    }
 
     
 
@@ -120,20 +120,20 @@ class AdminController extends Controller
         if(!$user->hasPermissionTo('Dashboard') && !$user->hasRole('super-admin')){
             $firstPermission = $user->getDirectPermissions()->first() ?? $user->getPermissionsViaRoles()->first();
             if($firstPermission) {
-            // Map permissions to routes (add more mappings as needed)
-            $permissionRoutes = [
-                'Internal Order Management' => 'admin.internal_order_management.index',
-                'Order Reassign' => 'admin.orders',
-                'Orders' => 'admin.orders',
-                // Add more permission to route mappings here
-            ];
-            
-            // Only redirect if the permission has a mapped route, otherwise show access denied
-            if(isset($permissionRoutes[$firstPermission->name])) {
-                return redirect()->route($permissionRoutes[$firstPermission->name]);
-            } else {
-                // abort(403, 'Access denied. No valid dashboard or permissions found.');
-            }
+                // Map permissions to routes (add more mappings as needed)
+                $permissionRoutes = [
+                    'Internal Order Management' => 'admin.internal_order_management.index',
+                    'Order Reassign' => 'admin.orders',
+                    'Orders' => 'admin.orders',
+                    // Add more permission to route mappings here
+                ];
+                
+                // Only redirect if the permission has a mapped route, otherwise show access denied
+                if(isset($permissionRoutes[$firstPermission->name])) {
+                    return redirect()->route($permissionRoutes[$firstPermission->name]);
+                } else {
+                    // abort(403, 'Access denied. No valid dashboard or permissions found.');
+                }
             }
         }
         
