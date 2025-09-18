@@ -1580,7 +1580,7 @@
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3 d-flex align-items-center justify-content-center"
                                 style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                                <i class="fa-solid fa-sticky-note text-white fs-5"></i>
+                                {{-- <i class="fa-solid fa-sticky-note text-white fs-5"></i> --}}
                             </div>
                             <div>
                                 <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
@@ -1930,7 +1930,8 @@
                 var table = $table.DataTable({
                     processing: true,
                     serverSide: true,
-                    responsive: true,
+                    responsive: false,
+                    scrollX: true,
                     autoWidth: false,
                     dom: '<"top"f>rt<"bottom"lip><"clear">',
                     columnDefs: [{
@@ -1954,7 +1955,7 @@
                             targets: 4
                         }]), // Plan (only for All Orders) 
                         {
-                            width: '20%',
+                            width: '15%',
                             targets: planId ? 4 : 5
                         }, // Domain URL
                         {
@@ -2019,21 +2020,21 @@
                     },
                     columns: [
                        {
-    data: 'id',
-    name: 'orders.id',
-    render: function(data, type, row) {
-        return `
-            <div class="d-flex align-items-center gap-1 text-nowrap">
-                
-                <span>
-                    <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
-                        ${data}
-                    </a>
-                </span>
-            </div>
-        `;
-    }
-},
+                            data: 'id',
+                            name: 'orders.id',
+                            render: function(data, type, row) {
+                                return `
+                                    <div class="d-flex align-items-center gap-1 text-nowrap">
+                                        
+                                        <span>
+                                            <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
+                                                ${data}
+                                            </a>
+                                        </span>
+                                    </div>
+                                `;
+                            }
+                        },
 
                         {
                             data: 'created_at',
@@ -2122,7 +2123,6 @@
                                     if( timerData.status === 'draft') {
                                         return `
                                             <div class="flip-timer" >
-                                                <i class="fas fa-exclamation-triangle timer-icon" style="margin-right: 4px;"></i>
                                                 &nbsp;
                                                     <div class="flip-card" data-digit="0">
                                                         <div class="flip-inner">

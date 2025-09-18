@@ -132,437 +132,141 @@
     <section class="py-3">
         <div class="row gy-4">
 
-            <!-- <div class="col-md-6">
-                    <div class="swiper">
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                <div>
-                                    <h5 class="mb-0">Websites Analytics</h5>
-                                    <span>Total 28.5% conversation rate</span>
-                                    <div class="mt-5">
-                                        <h6>Spending</h6>
-                                        <div class="row gy-4">
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-1.png"
-                                    width="160" alt="Slide 1">
-                            </div>
-
-                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                <div>
-                                    <h5 class="mb-0">Websites Analytics</h5>
-                                    <span>Total 28.5% conversation rate</span>
-                                    <div class="mt-5">
-                                        <h6>Spending</h6>
-                                        <div class="row gy-4">
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-2.png"
-                                    width="160" alt="Slide 1">
-                            </div>
-
-                            <div class="swiper-slide d-flex align-items-center p-4 justify-content-between">
-                                <div>
-                                    <h5 class="mb-0">Websites Analytics</h5>
-                                    <span>Total 28.5% conversation rate</span>
-                                    <div class="mt-5">
-                                        <h6>Spending</h6>
-                                        <div class="row gy-4">
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="py-1 px-2 rounded-1 slider_span_bg">268</span>
-                                                    <h6 class="mb-0">Session</h6>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <img src="https://demos.pixinvent.com/vuexy-html-admin-template/assets/img/illustrations/card-website-analytics-3.png"
-                                    width="160" alt="Slide 1">
-                            </div>
-                        </div>
-                        <div class="swiper-pagination"></div>
-                    </div>
-                </div> -->
-
-
-            <!-- <div class="col-xl-3 col-sm-6">
-                    <div class="card h-100">
-                        <div class="card-header border-0 px-3 pt-3 pb-0">
-                            <h6 class="mb-2 ">Average Daily Sales</h6>
-                            <p class="mb-0">Total Sales This Month</p>
-                            <h4 class="mb-0">$28,450</h4>
-                        </div>
-                        <div class="card-body px-0 pt-0 border-0" style="margin-top: -1rem;">
-                            <div id="salesChart"></div>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="col-xl-3 col-sm-6">
-                    <div class="card h-100 p-2">
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between">
-                                <p class="mb-0 small">Sales Overview</p>
-                                <p class="card-text fw-medium text-success">+18.2%</p>
-                            </div>
-                            <h4 class="card-title mb-1">$42.5k</h4>
-                        </div>
-                        <div class="card-body d-flex flex-column justify-content-between gap-3">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="d-flex gap-2 align-items-center mb-2">
-                                        <span class="badge bg-label-info p-1 rounded">
-                                            <i class="ti ti-shopping-cart text-info fs-5"></i>
-                                        </span>
-                                        <p class="mb-0">Order</p>
-                                    </div>
-                                    <h5 class="mb-0 pt-1">62.2%</h5>
-                                    <small class="opacity-50 fw-light">6,440</small>
-                                </div>
-                                <div class="col-4">
-                                    <div class="divider divider-vertical">
-                                        <div class="divider-text">
-                                            <span class="badge-divider-bg bg-label-secondary">VS</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-4 text-end">
-                                    <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-                                        <p class="mb-0">Visits</p>
-                                        <span class="badge bg-label-primary p-1 rounded">
-                                            <i class="ti ti-link theme-text fs-5"></i>
-                                        </span>
-                                    </div>
-                                    <h5 class="mb-0 pt-1">25.5%</h5>
-                                    <small class="opacity-50 fw-light">12,749</small>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center mt-6">
-                                <div class="progress w-100" style="height: 10px;">
-                                    <div class="progress-bar bg-info" style="width: 70%" role="progressbar"
-                                        aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
-                                    <div class="progress-bar" role="progressbar" style="width: 30%" aria-valuenow="30"
-                                        aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
-
-            <!-- <div class="col-md-6">
-                    <div class="card h-100 p-2">
-                        <div class="card-header border-0 pb-0 d-flex justify-content-between">
-                            <div class="card-title mb-0">
-                                <h5 class="mb-1">Earning Reports</h5>
-                                <p>Weekly Earnings Overview</p>
-                            </div>
-                            <div class="dropdown">
-                                <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                    <a class="dropdown-item" href="javascript:void(0);">View
-                                        More</a>
-                                    <a class="dropdown-item" href="javascript:void(0);">Delete</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body pt-0">
-                            <div class="row align-items-center g-md-8">
-                                <div class="col-12 col-md-5 d-flex flex-column">
-                                    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                                        <h1 class="mb-2">$468</h1>
-                                        <div class="badge rounded bg-label-success">+4.2%</div>
-                                    </div>
-                                    <small class="">You informed of this week compared to last
-                                        week</small>
-                                </div>
-                                <div class="col-12 col-md-7">
-                                    <div id="weekBarChart"></div>
-                                </div>
-                            </div>
-                            <div class="rounded p-4 mt-4" style="border: 1px solid var(--input-border);">
-                                <div class="row gap-4 gap-sm-0">
-                                    <div class="col-12 col-sm-4">
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="badge rounded bg-label-primary p-1">
-                                                <i class="ti ti-currency-dollar theme-text fs-5"></i>
-                                            </div>
-                                            <h6 class="mb-0 fw-normal">Earnings</h6>
-                                        </div>
-                                        <h4 class="my-2">$545.69</h4>
-                                        <div class="progress w-75" style="height:4px">
-                                            <div class="progress-bar" role="progressbar" style="width: 65%"
-                                                aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-sm-4">
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="badge rounded bg-label-info p-1">
-                                                <i class="ti ti-clock-share text-info fs-5"></i>
-                                            </div>
-                                            <h6 class="mb-0 fw-normal">Profit</h6>
-                                        </div>
-                                        <h4 class="my-2">$256.34</h4>
-                                        <div class="progress w-75" style="height:4px">
-                                            <div class="progress-bar bg-info" role="progressbar" style="width: 50%"
-                                                aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-sm-4">
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="badge rounded bg-label-danger p-1">
-                                                <i class="ti ti-brand-paypal text-danger fs-5"></i>
-                                            </div>
-                                            <h6 class="mb-0 fw-normal">Expense</h6>
-                                        </div>
-                                        <h4 class="my-2">$74.19</h4>
-                                        <div class="progress w-75" style="height:4px">
-                                            <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"
-                                                aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
-
-
-            <div class="col-md-6">
-                <div class="card h-100 p-3">
-                    <div class="border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h6 class="mb-0">Orders Overview</h6>
-                            <span class="opacity-50">Distribution of orders by status</span>
-                        </div>
-                    </div>
-                    <div class="row">
-
-                        <div class=" my-2 d-flex align-items-end">
-                            <h1 class="mb-0 theme-text">{{ $totalOrders ?? 0 }}</h1>
-                            {{-- <p class="mb-0">Total Orders</p> --}}
-                        </div>
-
-                        <div class="col-12 col-md-6 g-0">
-                            <div id="orderStatusChart"></div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px">
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div
-                                        class="p-1 d-flex align-items-center justify-content-center bg-label-warning rounded border border-warning">
-                                        <i class="ti ti-clock-play fs-6"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Pending</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $pendingOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div class="badge p-1 rounded icon">
-                                        <i class="ti ti-loader fs-6"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $inProgressOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div class="badge p-1 rounded bg-label-success border border-success">
-                                        <i class="fa-regular fa-circle-check success fs-6"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Completed</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $completedOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div class="badge p-1 rounded bg-label-danger border border-danger">
-                                        <i class="ti ti-ban fs-6 text-danger"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Reject</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $rejectedOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div class="badge p-1 rounded"
-                                        style="background-color: #8B8E93; border: 1px solid #d2d3d5;">
-                                        <i class="ti ti-x fs-6" style="color: #d2d3d5"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Cancelled</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $cancelledOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
-                                    <div class="badge p-1 rounded bg-label-secondary border border-secondary">
-                                        <i class="ti ti-hourglass-empty fs-6 text-secondary"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Queued</h6>
-                                        <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $queuedOrders ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <!--  -->
-                            </ul>
-                        </div>
-                    </div>
+           
+           <div class="row">
+    <!-- Orders Overview Card -->
+    <div class="col-12 col-md-6 mt-5">
+        <div class="card h-100 p-3">
+            <div class="border-0 d-flex justify-content-between">
+                <div class="card-title mb-0">
+                    <h6 class="mb-0">Orders Overview</h6>
+                    <span class="opacity-50">Distribution of orders by status</span>
                 </div>
             </div>
-
-
-            <div class="col-12 col-md-6">
-                <div class="card h-100 p-3">
-                    <div class="border-0 d-flex justify-content-between">
-                        <div class="card-title mb-0">
-                            <h6 class="mb-0">Support Tracker</h6>
-                            <span>Assigned Tickets Overview</span>
-                        </div>
-                        <!-- <div class="dropdown">
-                                <button class="border-0 bg-transparent" type="button" id="supportTrackerMenu"
-                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="supportTrackerMenu">
-                                    <a class="dropdown-item" href="javascript:void(0);">View All</a>
-                                </div>
-                            </div> -->
+            <div class="row align-items-center">
+                <!-- Stats and List -->
+                <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                    <div class="my-2">
+                        <h1 class="mb-0 theme-text">{{ $totalOrders ?? 0 }}</h1>
                     </div>
-                    <div class="row pt-0">
-                        <div class="col-12 col-md-6 d-flex flex-column gap-2">
-                            <div class="my-2">
-                                <h1 class="mb-0 theme-text">{{ $totalTickets ?? 0 }}</h1>
-                                {{-- <p class="mb-0">Total Tickets</p> --}}
+                    <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px">
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="p-1 d-flex align-items-center justify-content-center bg-label-warning rounded border border-warning">
+                                <i class="ti ti-clock-play fs-6"></i>
                             </div>
-                            <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px">
-                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
-                                    <div class="badge rounded p-1 icon">
-                                        <i class="ti ti-ticket theme-text fs-6"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Open Tickets</h6>
-                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $newTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
-                                    <div class="badge rounded p-1 bg-label-warning border border-warning">
-                                        <i class="ti ti-clock fs-6 text-warning"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
-                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $inProgressTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-
-                                <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
-                                    <div class="badge rounded p-1 bg-label-success border border-success">
-                                        <i class="fa-regular fa-circle-check success fs-6"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Closed</h6>
-                                        <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $inProgressTickets ?? 0 }}</p>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <div id="ticketPieChart"></div>
-                        </div>
-                    </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Pending</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $pendingOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="badge p-1 rounded icon">
+                                <i class="ti ti-loader fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $inProgressOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="badge p-1 rounded bg-label-success border border-success">
+                                <i class="fa-regular fa-circle-check success fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Completed</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $completedOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="badge p-1 rounded bg-label-danger border border-danger">
+                                <i class="ti ti-ban fs-6 text-danger"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Reject</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $rejectedOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="badge p-1 rounded"
+                                style="background-color: #8B8E93; border: 1px solid #d2d3d5;">
+                                <i class="ti ti-x fs-6" style="color: #d2d3d5"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Cancelled</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $cancelledOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                            <div class="badge p-1 rounded bg-label-secondary border border-secondary">
+                                <i class="ti ti-hourglass-empty fs-6 text-secondary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Queued</h6>
+                                <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $queuedOrders ?? 0 }}</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Chart -->
+                <div class="col-12 col-md-6">
+                    <div id="orderStatusChart"></div>
                 </div>
             </div>
-            
+        </div>
+    </div>
+    <!-- Support Tracker Card -->
+    <div class="col-12 col-md-6 mt-5">
+        <div class="card h-100 p-3">
+            <div class="border-0 d-flex justify-content-between">
+                <div class="card-title mb-0">
+                    <h6 class="mb-0">Support Tracker</h6>
+                    <span>Assigned Tickets Overview</span>
+                </div>
+            </div>
+            <div class="row align-items-center">
+                <!-- Stats and List -->
+                <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                    <div class="my-2 mb-5">
+                        <h1 class="mb-0 theme-text">{{ $totalTickets ?? 0 }}</h1>
+                    </div>
+                    <ul class="p-0 m-0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px">
+                        <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
+                            <div class="badge rounded p-1 icon">
+                                <i class="ti ti-ticket theme-text fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Open Tickets</h6>
+                                <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $newTickets ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
+                            <div class="badge rounded p-1 bg-label-warning border border-warning">
+                                <i class="ti ti-clock fs-6 text-warning"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">In Progress</h6>
+                                <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $inProgressTickets ?? 0 }}</p>
+                            </div>
+                        </li>
+                        <li style="background-color: #8484844a" class="d-flex gap-2 px-2 py-1 rounded-2 align-items-center mb-2">
+                            <div class="badge rounded p-1 bg-label-success border border-success">
+                                <i class="fa-regular fa-circle-check success fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-nowrap small" style="font-size: 12px">Closed</h6>
+                                <p class="mb-0 small opacity-75" style="font-size: 11px">{{ $resolvedTickets ?? 0 }}</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Chart -->
+                <div class="col-12 col-md-6">
+                    <div id="ticketPieChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
             <div class="col-12">
                 <div class="card p-3">
@@ -684,7 +388,7 @@
                 ],
                 chart: {
                     type: 'pie',
-                    height: 350,
+                    height: 300,
                     dropShadow: {
                         enabled: true,
                         color: '#000',

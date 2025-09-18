@@ -111,11 +111,18 @@ class AdminController extends Controller
         if($user->hasPermissionTo('Internal Order Management') && !$user->hasRole('super-admin')){
             return redirect()->route('admin.internal_order_management.index');
         }
+        
+         if($user->hasPermissionTo('Team Leader Dashboard') && !$user->hasRole('super-admin')){
+           
+            return redirect()->route('admin.team_leader.dashboard');
+        }
+
+
         // Order Reassign Permission
         if($user->hasPermissionTo('Order Reassign') && !$user->hasRole('super-admin')){
             return redirect()->route('admin.orders');
         }
-
+       
         // Check if user has no dashboard access, redirect to first available permission
         if(!$user->hasPermissionTo('Dashboard') && !$user->hasRole('super-admin')){
             $firstPermission = $user->getDirectPermissions()->first() ?? $user->getPermissionsViaRoles()->first();

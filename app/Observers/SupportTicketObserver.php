@@ -83,19 +83,15 @@ class SupportTicketObserver
         }
 
         // Send Slack notification for new ticket
-        try {
-            SlackNotificationService::sendSupportTicketCreatedNotification($ticket);
-            Log::info('Slack notification sent for ticket created', [
-                'ticket_id' => $ticket->id,
-                'ticket_number' => $ticket->ticket_number
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to send Slack notification for ticket created: ' . $e->getMessage(), [
-                'ticket_id' => $ticket->id,
-                'ticket_number' => $ticket->ticket_number,
-                'exception' => $e->getTraceAsString()
-            ]);
-        }
+        if (!app()->bound('slack.ticket.'.$ticket->id)) {
+                app()->instance('slack.ticket.'.$ticket->id, true);
+
+                    try {
+                        SlackNotificationService::sendSupportTicketCreatedNotification($ticket);
+                    } catch (\Exception $e) {
+                        Log::error('Failed Slack notification: '.$e->getMessage());
+                    }
+                }
     }
 
     public function updating(SupportTicket $ticket)
@@ -110,55 +106,42 @@ class SupportTicketObserver
         }
     }
     
-    public function updated(SupportTicket $ticket)
-    {
-        // Get the stored original values
-        $originalValues = $this->originalValues[$ticket->id] ?? [];
-        
-        // Only send status notification to user if status changed
-        if (isset($originalValues['status']) && $originalValues['status'] !== $ticket->status && $ticket->user) {
-            $notification = (new Notification())->create([
-                'user_id' => $ticket->user->id,
-                'title' => 'Ticket Status Updated',
-                'message' => "Your ticket #{$ticket->ticket_number} status has changed from {$originalValues['status']} to {$ticket->status}",
-                'type' => 'ticket_status_updated',
-                'data' => [
-                    'ticket_id' => $ticket->id,
-                    'old_status' => $originalValues['status'],
-                    'new_status' => $ticket->status
-                ]
-            ]);
-        }
+  public function updated(SupportTicket $ticket)
+{
+    // Get the stored original values
+    $originalValues = $this->originalValues[$ticket->id] ?? [];
 
-        // Track changes for Slack notification
-        $changes = [];
-        $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
-        
-        foreach ($trackableFields as $field) {
-            $oldValue = $originalValues[$field] ?? null;
-            $newValue = $ticket->$field;
-            
-            // Only track if there's actually a change
-            if ($oldValue !== $newValue) {
-                // Format values for better display
-                if ($field === 'assigned_to') {
-                    $oldDisplayValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
-                    $newDisplayValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
-                } else {
-                    // For other fields, handle null/empty values properly
-                    $oldDisplayValue = $oldValue ? ucfirst(str_replace('_', ' ', $oldValue)) : 'Not Set';
-                    $newDisplayValue = $newValue ? ucfirst(str_replace('_', ' ', $newValue)) : 'Not Set';
-                }
-                
-                $changes[$field] = [
-                    'from' => $oldDisplayValue,
-                    'to' => $newDisplayValue
-                ];
+    // Track only meaningful changes
+    $trackableFields = ['status', 'priority', 'assigned_to', 'category'];
+    $changes = [];
+
+    foreach ($trackableFields as $field) {
+        $oldValue = $originalValues[$field] ?? null;
+        $newValue = $ticket->$field;
+
+        if ($oldValue !== $newValue) {
+            // Format values for better display
+            if ($field === 'assigned_to') {
+                $oldDisplayValue = $oldValue ? User::find($oldValue)?->name ?? 'Unknown' : 'Unassigned';
+                $newDisplayValue = $newValue ? User::find($newValue)?->name ?? 'Unknown' : 'Unassigned';
+            } else {
+                $oldDisplayValue = $oldValue ? ucfirst(str_replace('_', ' ', $oldValue)) : 'Not Set';
+                $newDisplayValue = $newValue ? ucfirst(str_replace('_', ' ', $newValue)) : 'Not Set';
             }
-        }
 
-        // Send Slack notification only once if there are changes
-        if (!empty($changes)) {
+            $changes[$field] = [
+                'from' => $oldDisplayValue,
+                'to' => $newDisplayValue
+            ];
+        }
+    }
+
+    // Only send Slack if at least one *trackable* field changed
+    if (!empty($changes)) {
+        // Prevent double notification in the same request
+        if (!app()->bound("slack.ticket.updated.{$ticket->id}")) {
+            app()->instance("slack.ticket.updated.{$ticket->id}", true);
+
             try {
                 SlackNotificationService::sendSupportTicketUpdatedNotification($ticket, $changes);
                 Log::info('Slack notification sent for ticket updated', [
@@ -175,10 +158,11 @@ class SupportTicketObserver
                 ]);
             }
         }
-
-        // Clean up stored values after processing
-        unset($this->originalValues[$ticket->id]);
     }
+
+    unset($this->originalValues[$ticket->id]);
+}
+
 
     public function deleted(SupportTicket $supportTicket): void
     {

@@ -213,7 +213,15 @@ class SidebarNavigationSeeder extends Seeder
                 "permission" => "GHL Settings",
                 'sub_menu' => [],
                 'order' => 24
+            ],
+            [
+                "name" => "Team Leader Dashboard",
+                "icon" => "ti ti-settings fs-5",
+                "route" => "admin.team_leader.dashboard",
+                "permission" => "Team Leader Dashboard",
+                'sub_menu' => []
             ]
+
         ];
 
         // Delete all existing records

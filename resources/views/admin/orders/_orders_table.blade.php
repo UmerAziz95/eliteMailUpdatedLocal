@@ -12,7 +12,7 @@
                 <th>Assigned To</th>
                 {{-- split counts --}}
                 <th>Panel Counts</th> 
-                <th>Total Inboxes</th>
+                <th>Inboxes</th>
                 <th>Timer</th>
                 <th>Status</th>
                 <th>Actions</th>

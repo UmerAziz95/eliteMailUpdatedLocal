@@ -396,6 +396,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/logs/{filename}/download', [App\Http\Controllers\Admin\LogViewerController::class, 'download'])->name('logs.download');
         Route::post('/logs/{filename}/clear', [App\Http\Controllers\Admin\LogViewerController::class, 'clear'])->name('logs.clear');
         Route::delete('/logs/{filename}', [App\Http\Controllers\Admin\LogViewerController::class, 'delete'])->name('logs.delete');
+        //team leader
+        Route::get('/team-leader/dashboard', [App\Http\Controllers\RestrictedDashboardController::class, 'index'])->name('team_leader.dashboard');
+        Route::get('/orders-history', [App\Http\Controllers\RestrictedDashboardController::class, 'getOrdersHistory'])->name('orders.history');
+        Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
+
 
 
     });

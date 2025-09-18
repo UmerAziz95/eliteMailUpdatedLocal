@@ -28,7 +28,7 @@ class AssignRoleSeeder extends Seeder
         $role = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
 
         // Step 3: Get all permissions except 'Mod'
-        $permissions = Permission::whereNotIn('name', ['Mod'])->get();
+        $permissions = Permission::whereNotIn('name', ['Mod','Team Leader Dashboard'])->get();
 
         // Step 4: Assign all permissions to the role
         $role->syncPermissions($permissions);

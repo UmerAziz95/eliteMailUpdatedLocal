@@ -13,28 +13,31 @@ class RestrictedDashboardController extends Controller
     public function index()
     {
         // Get tickets assigned to the admin
-        $assignedTickets = SupportTicket::where('assigned_to', Auth::id())
-            ->get();
+        $assignedTickets = SupportTicket::all();
 
         // Calculate ticket statistics
         $totalTickets = $assignedTickets->count();
         $newTickets = $assignedTickets->where('status', 'open')->count();
+       
         $inProgressTickets = $assignedTickets->where('status', 'in_progress')->count();
         $resolvedTickets = $assignedTickets->where('status', 'closed')->count();
         // dd($totalTickets, $newTickets, $inProgressTickets, $resolvedTickets);
 
         // Get orders assigned to the admin or unassigned
-        $orders = Order::where('assigned_to', Auth::id());
+        $orders = Order::all();
+        
 
         $totalOrders = $orders->count();
         
         // Get orders by status
-        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
-        $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
-        $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
-        $rejectedOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
-        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
-        
+        $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
+        $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
+        $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
+        $rejectedOrders = $orders->where('status_manage_by_admin', 'reject')->count();
+        $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
+        $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
+       
+
         // Get queued orders (not assigned to any admin)
         $queuedOrders = Order::whereNull('assigned_to')
             ->whereNotIn('status_manage_by_admin', ['cancelled', 'reject', 'completed', 'draft'])
@@ -45,14 +48,14 @@ class RestrictedDashboardController extends Controller
         
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
         // dd($lastWeek, $previousWeek);
-        $lastWeekOrders = $orders->clone()->whereBetween('created_at', $lastWeek)->count();
-        $previousWeekOrders = $orders->clone()->whereBetween('created_at', $previousWeek)->count();
+        $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
 
         $percentageChange = $previousWeekOrders > 0 
             ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
             : 0;
 
-        return view('restricted_dashboard.dashboard', compact(
+        return view('admin.restricted_dashboard.dashboard', compact(
             'totalTickets',
             'newTickets',
             'inProgressTickets', 
@@ -64,7 +67,8 @@ class RestrictedDashboardController extends Controller
             'rejectedOrders',
             'cancelledOrders',
             'queuedOrders',
-            'percentageChange'
+            'percentageChange',
+            'draftOrders'
         ));
     }
 
@@ -73,10 +77,10 @@ class RestrictedDashboardController extends Controller
         try {
             // Get orders assigned to the contractor
             $orders = Order::with(['user', 'plan', 'reorderInfo'])
-                ->where('assigned_to', Auth::id())
+                 ->whereNot('status_manage_by_admin', 'draft')
                 ->select('orders.*')
-                ->orderBy('orders.updated_at', 'desc')
-                ->limit(5); // Get only last 5 orders
+                ->orderBy('orders.updated_at', 'desc') // Get only last 5 orders
+                ->limit(15);
 
             if ($request->ajax()) {
                 return datatables()
@@ -142,4 +146,7 @@ class RestrictedDashboardController extends Controller
             return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
+
+
+    
 }

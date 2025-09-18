@@ -1,8 +1,4 @@
-
-
-
-
-task 1-timer stop on cancel at contractor 11pm 1pm
-task 2-profile image and additional note 1pm 2pm
-task 3-Add Column for Panel ID linked with orders split 12pm 2pm
-task 4-text and reject form issues resolving 2pm 4:30pm
+Task 1:team leader dashboard creation and stats modification on that dashboard 11am:1pm
+Task 2:prevent double slack notification on ticket creation and on ticket status change 1pm:2pm
+Task 3:charts and counters alignments on contractor and team-leader dashboard 2pm:30pm
+Task 4
