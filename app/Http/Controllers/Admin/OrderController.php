@@ -2375,6 +2375,20 @@ class OrderController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
 
+            // Transform the data to include helper names
+            $sharedOrders->getCollection()->transform(function ($order) {
+                // Add helper names
+                if ($order->helpers_ids && is_array($order->helpers_ids) && count($order->helpers_ids) > 0) {
+                    $order->helpers_names = \App\Models\User::whereIn('id', $order->helpers_ids)
+                        ->pluck('name')
+                        ->toArray();
+                } else {
+                    $order->helpers_names = [];
+                }
+                
+                return $order;
+            });
+
             return response()->json([
                 'success' => true,
                 'data' => $sharedOrders

@@ -2708,7 +2708,7 @@
                 method: 'GET',
                 success: function(response) {
                     if (response.success) {
-                        renderSharedOrders(response.data);
+                        renderSharedOrders(response);
                     } else {
                         sharedOrdersContainer.html('<p class="text-danger text-center">Error loading shared orders.</p>');
                     }
@@ -2721,16 +2721,20 @@
         }
 
         function renderSharedOrders(data) {
+            console.log('renderSharedOrders called with:', data);
             const sharedOrdersContainer = $('#sharedOrdersList');
-            const sharedCount = data.data ? data.data.length : 0;
+            const ordersData = data.data || data; // Handle both paginated and non-paginated responses
+            const actualOrders = ordersData.data || ordersData; // Get the actual orders array
+            console.log('actualOrders:', actualOrders);
+            const sharedCount = actualOrders ? actualOrders.length : 0;
             
             // Update the header count
             $('#sharedOrdersCount').text(`(${sharedCount})`);
             
             sharedOrdersContainer.empty();
             
-            if (data.data && data.data.length > 0) {
-                data.data.forEach(order => {
+            if (actualOrders && actualOrders.length > 0) {
+                actualOrders.forEach(order => {
                     const helpersCount = order.helpers_ids ? order.helpers_ids.length : 0;
                     const orderHtml = `
                         <div class="card mb-2">
@@ -2742,7 +2746,12 @@
                                             Order #${order.id}
                                         </h6>
                                         <small class="text-white">${order.user ? order.user.name : 'N/A'} - ${order.user ? order.user.email : 'N/A'}</small>
-                                        <br><small class="text-info">${helpersCount} contractor(s) assigned</small>
+                                        <br><small class="text-info">
+                                            ${order.helpers_names && order.helpers_names.length > 0 
+                                                ? `Assigned to: ${order.helpers_names.join(', ')}` 
+                                                : `${helpersCount} contractor(s) assigned`
+                                            }
+                                        </small>
                                     </div>
                                     <div class="text-end">
                                         <div class="mb-2">
