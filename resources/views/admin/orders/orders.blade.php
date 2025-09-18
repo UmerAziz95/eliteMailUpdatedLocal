@@ -3700,7 +3700,6 @@
                  data-tooltip="${tooltip}"
                  title="${tooltip}"
                  style="gap: 4px; align-items: center;">
-                <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
                 ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
                 <div class="flip-card" data-digit="${hours.charAt(0)}">
                     <div class="flip-inner">
