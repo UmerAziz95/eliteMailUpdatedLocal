@@ -206,6 +206,17 @@
                     </a>
                 </li>
 
+                <!-- Shared Orders -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.shared-orders') ? 'active' : '' }}"
+                        href="{{ route('contractor.shared-orders') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="fa-solid fa-share-nodes fs-6 text-warning"></i></div>
+                            <div class="text">Shared Orders</div>
+                        </div>
+                    </a>
+                </li>
+
                 <!-- Pricing -->
                 <!-- <li class="nav-item">
                     <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.pricing') ? 'active' : '' }}"

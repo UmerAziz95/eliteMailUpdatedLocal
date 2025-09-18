@@ -2832,4 +2832,206 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Show shared orders page where current contractor is a helper
+     */
+    public function sharedOrders()
+    {
+        $plans = Plan::where('is_active', true)->get();
+        
+        // Get orders where current contractor is in helpers_ids
+        // Note: helpers_ids are stored as strings in JSON, so we need to cast auth()->id() to string
+        $orders = Order::whereJsonContains('helpers_ids', (string) auth()->id());
+        
+        $totalOrders = $orders->count();
+        
+        // Get orders by admin status using actual status names from Status model
+        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
+        $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
+        $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
+        $expiredOrders = $orders->clone()->where('status_manage_by_admin', 'expired')->count();
+        $rejectOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
+        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
+        $draftOrders = $orders->clone()->where('status_manage_by_admin', 'draft')->count();
+
+        // Calculate percentage changes (last week vs previous week)
+        $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
+        $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
+
+        $lastWeekOrders = $orders->clone()->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekOrders = $orders->clone()->whereBetween('created_at', $previousWeek)->count();
+
+        $percentageChange = $previousWeekOrders > 0 
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+            : 0;
+
+        $statuses = $this->statuses;
+        $splitStatuses = $this->splitStatuses;
+        
+        return view('contractor.orders.shared_orders', compact(
+            'plans', 
+            'totalOrders', 
+            'pendingOrders',
+            'completedOrders',
+            'inProgressOrders',
+            'percentageChange',
+            'statuses',
+            'splitStatuses',
+            'expiredOrders',
+            'rejectOrders',
+            'cancelledOrders',
+            'draftOrders'
+        ));
+    }
+
+    /**
+     * Get shared orders data where current contractor is a helper
+     */
+    public function getSharedOrdersData(Request $request)
+    {
+        try {
+            // Query orders where current contractor is in helpers_ids
+            // Note: helpers_ids are stored as strings in JSON, so we need to cast auth()->id() to string
+            $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user'])
+                ->whereJsonContains('helpers_ids', (string) auth()->id())
+                ->whereIn('status_manage_by_admin', ['in-progress', 'pending', 'completed']);
+                
+            // Apply filters if provided
+            if ($request->filled('order_id')) {
+                $query->where('id', 'like', '%' . $request->order_id . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->whereHas('orderPanels', function($q) use ($request) {
+                    $q->where('status', $request->status);
+                });
+            }
+
+            if ($request->filled('min_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '>=', $request->min_inboxes);
+                });
+            }
+
+            if ($request->filled('max_inboxes')) {
+                $query->whereHas('reorderInfo', function($q) use ($request) {
+                    $q->where('total_inboxes', '<=', $request->max_inboxes);
+                });
+            }
+
+            // Apply ordering
+            $order = $request->get('order', 'desc');
+            $query->orderBy('id', $order);
+
+            // Pagination parameters
+            $perPage = $request->get('per_page', 12); // Default 12 orders per page
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedOrders = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Format orders data for the frontend (same as getAssignedOrdersData)
+            $ordersData = $paginatedOrders->getCollection()->map(function ($order) {
+                $reorderInfo = $order->reorderInfo->first();
+                $orderPanels = $order->orderPanels;
+                
+                // Calculate total domains count from all splits
+                $totalDomainsCount = 0;
+                $totalInboxes = 0;
+                
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        if ($split->domains && is_array($split->domains)) {
+                            $totalDomainsCount += count($split->domains);
+                        }
+                        $totalInboxes += $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
+                    }
+                }
+                
+                $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
+                
+                // Format splits data for the frontend
+                $splitsData = [];
+                foreach ($orderPanels as $orderPanel) {
+                    foreach ($orderPanel->orderPanelSplits as $split) {
+                        $domains = [];
+                        if ($split->domains && is_array($split->domains)) {
+                            $domains = $split->domains;
+                        }
+                        
+                        $splitsData[] = [
+                            'id' => $split->id,
+                            'order_panel_id' => $orderPanel->id,
+                            'panel_id' => $orderPanel->panel_id,
+                            'inboxes_per_domain' => $split->inboxes_per_domain,
+                            'domains' => $domains,
+                            'domains_count' => count($domains),
+                            'total_inboxes' => $split->inboxes_per_domain * count($domains),
+                            'status' => $orderPanel->status ?? 'unallocated',
+                            'created_at' => $split->created_at
+                        ];
+                    }
+                }
+                
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'customer_name' => $order->user->name ?? 'N/A',
+                    'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
+                    'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
+                    'inboxes_per_domain' => $inboxesPerDomain,
+                    'total_domains' => $totalDomainsCount,
+                    'status' => $order->status_manage_by_admin ?? 'pending',
+                    'status_manage_by_admin' => (function() use ($order) {
+                        $status = strtolower($order->status_manage_by_admin ?? 'n/a');
+                        $statusKey = $status;
+                        $statusClass = $this->statuses[$statusKey] ?? 'secondary';
+                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">' 
+                            . ucfirst($status) . '</span>';
+                    })(),
+                    'created_at' => $order->created_at,
+                    'completed_at' => $order->completed_at,
+                    'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
+                    'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
+                    'total_paused_seconds' => $order->total_paused_seconds ?? 0,
+                    'order_panels_count' => $orderPanels->count(),
+                    'splits_count' => $orderPanels->sum(function($panel) {
+                        return $panel->orderPanelSplits->count();
+                    }),
+                    'is_shared' => $order->is_shared ?? false,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => (function() use ($order) {
+                        if ($order->helpers_ids && is_array($order->helpers_ids) && count($order->helpers_ids) > 0) {
+                            return \App\Models\User::whereIn('id', $order->helpers_ids)
+                                ->pluck('name')
+                                ->toArray();
+                        }
+                        return [];
+                    })(),
+                    'splits' => $splitsData
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $ordersData,
+                'pagination' => [
+                    'current_page' => $paginatedOrders->currentPage(),
+                    'last_page' => $paginatedOrders->lastPage(),
+                    'per_page' => $paginatedOrders->perPage(),
+                    'total' => $paginatedOrders->total(),
+                    'has_more_pages' => $paginatedOrders->hasMorePages(),
+                    'from' => $paginatedOrders->firstItem(),
+                    'to' => $paginatedOrders->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shared orders data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

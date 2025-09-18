@@ -78,6 +78,16 @@
                     </div>
                 </a>
             </li>
+            <!-- Shared Orders -->
+            <li class="nav-item">
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.shared-orders') ? 'active' : '' }}"
+                    href="{{ route('contractor.shared-orders') }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="fa-solid fa-share-nodes fs-6"></i></div>
+                        <div class="text">Shared Orders</div>
+                    </div>
+                </a>
+            </li>
             <!-- myTask -->
             <li class="nav-item">
                 <a href="{{ route('contractor.myTask.index') }}"
