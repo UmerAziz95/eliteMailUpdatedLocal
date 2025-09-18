@@ -1,4 +1,0 @@
-Task 1:team leader dashboard creation and stats modification on that dashboard 11am:1pm
-Task 2:prevent double slack notification on ticket creation and on ticket status change 1pm:2pm
-Task 3:charts and counters alignments on contractor and team-leader dashboard 2pm:30pm
-Task 4
