@@ -70,12 +70,20 @@ class SidebarNavigationSeeder extends Seeder
                 'order' => 6
             ],
             [
+                'name' => 'Shared Order Requests',
+                'icon' => 'fa-solid fa-share-nodes',
+                'route' => 'admin.orders.shared-order-requests',
+                'permission' => 'Shared Order Requests',
+                'sub_menu' => [],
+                'order' => 7
+            ],
+            [
                 'name' => 'Plans',
                 'icon' => 'ti ti-devices-dollar fs-5',
                 'route' => 'admin.pricing',
                 'permission' => 'Plans',
                 'sub_menu' => [],
-                'order' => 7
+                'order' => 8
             ],
             // [
             //     'name' => 'Special Plans',

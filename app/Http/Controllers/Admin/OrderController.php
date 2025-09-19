@@ -93,6 +93,43 @@ class OrderController extends Controller
         ));
     }
 
+    /**
+     * Show shared orders page
+     */
+    public function sharedOrderRequests()
+    {
+        $plans = Plan::all();
+        $statuses = $this->statuses;
+        
+        // Get shared orders statistics
+        $sharedOrders = Order::where('is_shared', true);
+        $totalSharedOrders = $sharedOrders->count();
+        $pendingSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'pending')->count();
+        $inProgressSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'in-progress')->count();
+        $completedSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'completed')->count();
+        
+        // Calculate percentage change for last week vs previous week
+        $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
+        $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
+
+        $lastWeekSharedOrders = $sharedOrders->clone()->whereBetween('created_at', $lastWeek)->count();
+        $previousWeekSharedOrders = $sharedOrders->clone()->whereBetween('created_at', $previousWeek)->count();
+
+        $percentageChange = $previousWeekSharedOrders > 0 
+            ? (($lastWeekSharedOrders - $previousWeekSharedOrders) / $previousWeekSharedOrders) * 100 
+            : 0;
+
+        return view('admin.orders.shared_order_requests', compact(
+            'plans',
+            'totalSharedOrders',
+            'pendingSharedOrders',
+            'inProgressSharedOrders',
+            'completedSharedOrders',
+            'percentageChange',
+            'statuses'
+        ));
+    }
+
     // neworder
     private function calculateNextBillingDate($currentDate, $billingPeriod, $billingPeriodUnit)
     {
@@ -2388,13 +2425,34 @@ class OrderController extends Controller
     public function getSharedOrders(Request $request)
     {
         try {
-            $sharedOrders = Order::where('is_shared', true)
-                ->with(['user', 'plan'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
+            $query = Order::where('is_shared', true)
+                ->with(['user', 'plan']);
+
+            // Apply filters if provided
+            if ($request->has('status') && $request->status != '') {
+                $query->where('status_manage_by_admin', $request->status);
+            }
+
+            if ($request->has('plan_id') && $request->plan_id != '') {
+                $query->where('plan_id', $request->plan_id);
+            }
+
+            if ($request->has('search') && $request->search != '') {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%")
+                      ->orWhereHas('user', function($userQuery) use ($search) {
+                          $userQuery->where('name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            $sharedOrders = $query->orderBy('created_at', 'desc')
+                ->get();
 
             // Transform the data to include helper names
-            $sharedOrders->getCollection()->transform(function ($order) {
+            $sharedOrders->transform(function ($order) {
                 // Add helper names
                 if ($order->helpers_ids && is_array($order->helpers_ids) && count($order->helpers_ids) > 0) {
                     $order->helpers_names = \App\Models\User::whereIn('id', $order->helpers_ids)
@@ -2416,6 +2474,30 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching shared orders'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get contractors for assignment
+     */
+    public function getContractors(Request $request)
+    {
+        try {
+            $contractors = User::where('role_id', 4)
+                ->select('id', 'name', 'email')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $contractors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting contractors: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching contractors'
             ], 500);
         }
     }
