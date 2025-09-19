@@ -2804,7 +2804,7 @@ class OrderController extends Controller
             $order = Order::where('assigned_to', auth()->id())->findOrFail($orderId);
             
             $order->is_shared = !$order->is_shared;
-            
+    
             // Clear helpers_ids when unsharing the order
             if (!$order->is_shared) {
                 $order->helpers_ids = null;
