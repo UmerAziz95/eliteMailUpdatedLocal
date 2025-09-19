@@ -2308,7 +2308,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Toggle shared status for an order
+     * Toggle shared status for an order //
      */
     public function toggleSharedStatus(Request $request, $orderId)
     {
