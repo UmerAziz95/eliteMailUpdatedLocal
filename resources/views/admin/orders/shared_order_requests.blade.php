@@ -334,10 +334,16 @@
                     <input type="hidden" id="assignOrderId" name="order_id">
                     <div class="mb-3">
                         <label for="contractors" class="form-label">Select Contractors (Helpers)</label>
-                        <select id="contractors" name="contractors[]" class="form-select" multiple required>
+                        <select id="contractors" name="contractors[]" class="form-select" multiple required size="8">
                             <!-- Contractors will be loaded dynamically -->
                         </select>
                         <div class="form-text">Hold Ctrl/Cmd to select multiple contractors</div>
+                        <div id="currentAssignments" class="mt-2" style="display: none;">
+                            <small class="text-info">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                <span id="currentAssignmentsText"></span>
+                            </small>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -355,6 +361,9 @@
 
 @push('scripts')
 <script>
+    // Global variable to store orders data
+    let sharedOrdersData = [];
+
     $(document).ready(function() {
         loadSharedOrders();
         loadContractors();
@@ -405,6 +414,9 @@
     function renderSharedOrders(data) {
         const container = $('#sharedOrdersContainer');
         const orders = data.data || data;
+        
+        // Store orders data globally for later use
+        sharedOrdersData = orders || [];
         
         container.empty();
         
@@ -563,6 +575,9 @@
                             `<option value="${contractor.id}">${contractor.name} (${contractor.email})</option>`
                         );
                     });
+                    
+                    // Trigger custom event to indicate contractors are loaded
+                    $(document).trigger('contractorsLoaded');
                 } else {
                     contractorSelect.append('<option disabled>No contractors available</option>');
                 }
@@ -576,8 +591,82 @@
 
     function openAssignContractorsModal(orderId) {
         $('#assignOrderId').val(orderId);
+        
+        // Find the current order to get existing helper IDs
+        const currentOrder = sharedOrdersData.find(order => order.id == orderId);
+        const existingHelperIds = currentOrder ? (currentOrder.helpers_ids || []) : [];
+        const helpersCount = existingHelperIds.length;
+        const helpersNames = currentOrder ? (currentOrder.helpers_names || []) : [];
+        
+        // Convert helper IDs to strings to match option values
+        const existingHelperIdsStr = existingHelperIds.map(id => String(id));
+        
+        console.log('Opening modal for order:', orderId);
+        console.log('Existing helper IDs:', existingHelperIdsStr);
+        console.log('Current order data:', currentOrder);
+        
+        // Update modal title based on whether helpers already exist
+        const modalTitle = helpersCount > 0 
+            ? `<i class="fa-solid fa-user-edit text-warning me-2"></i>Manage Helpers - Order #${orderId}`
+            : `<i class="fa-solid fa-users text-primary me-2"></i>Add Helpers - Order #${orderId}`;
+        $('#assignContractorsModalLabel').html(modalTitle);
+        
+        // Show current assignments if any
+        if (helpersCount > 0 && helpersNames.length > 0) {
+            $('#currentAssignmentsText').text(`Currently assigned: ${helpersNames.join(', ')}`);
+            $('#currentAssignments').show();
+        } else {
+            $('#currentAssignments').hide();
+        }
+        
+        // Clear previous selections first
+        $('#contractors').val([]);
+        
+        // Function to set the selections
+        function setContractorSelections() {
+            if (existingHelperIdsStr.length > 0) {
+                console.log('Setting contractor selections:', existingHelperIdsStr);
+                $('#contractors').val(existingHelperIdsStr);
+                
+                // Double-check if selection worked
+                const selectedValues = $('#contractors').val();
+                console.log('Selected values after setting:', selectedValues);
+                
+                // If still not selected, try again with a different approach
+                if (!selectedValues || selectedValues.length === 0) {
+                    existingHelperIdsStr.forEach(id => {
+                        $(`#contractors option[value="${id}"]`).prop('selected', true);
+                    });
+                }
+            }
+        }
+        
+        // Check if contractors are already loaded
+        if ($('#contractors option').length > 1) { // More than just the default option
+            setContractorSelections();
+        } else {
+            // Wait for contractors to be loaded
+            $(document).one('contractorsLoaded', function() {
+                setTimeout(setContractorSelections, 100);
+            });
+            
+            // Also reload contractors to ensure they're available
+            loadContractors();
+        }
+        
         $('#assignContractorsModal').modal('show');
-        // Load contractors dynamically here
+    }
+
+    // Reset modal when closed
+    $('#assignContractorsModal').on('hidden.bs.modal', function() {
+        $('#contractors').val([]);
+        $('#assignContractorsModalLabel').html('<i class="fa-solid fa-users text-primary me-2"></i>Add Helpers to Shared Order');
+        $('#currentAssignments').hide();
+        $('#assignOrderId').val('');
+    });
+
+    function getCurrentOrderById(orderId) {
+        return sharedOrdersData.find(order => order.id == orderId) || null;
     }
 
     function assignContractors() {
