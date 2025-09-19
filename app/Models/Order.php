@@ -45,7 +45,8 @@ class Order extends Model
         'internal_order_id',
         'is_internal_order_assignment',
         'is_shared',
-        'helpers_ids'
+        'helpers_ids',
+        'shared_note'
     ];
     
     // status_manage_by_admin

@@ -2275,8 +2275,16 @@ class OrderController extends Controller
     public function toggleSharedStatus(Request $request, $orderId)
     {
         try {
+            // Validate the note input
+            $request->validate([
+                'note' => 'required|string|max:1000'
+            ]);
+
             $order = Order::findOrFail($orderId);
             $order->is_shared = !$order->is_shared;
+            
+            // Save the shared note
+            $order->shared_note = $request->input('note');
             
             // Clear helpers_ids when unsharing the order
             if (!$order->is_shared) {
@@ -2287,16 +2295,25 @@ class OrderController extends Controller
 
             ActivityLogService::log(
                 'Order Shared Status Changed',
-                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared'),
+                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared') . '. Note: ' . $request->input('note'),
                 $order,
-                ['shared_status' => $order->is_shared]
+                [
+                    'shared_status' => $order->is_shared,
+                    'shared_note' => $request->input('note')
+                ]
             );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order shared status updated successfully',
-                'is_shared' => $order->is_shared
+                'is_shared' => $order->is_shared,
+                'shared_note' => $order->shared_note
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Error toggling shared status: ' . $e->getMessage());
             return response()->json([

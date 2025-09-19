@@ -2326,101 +2326,100 @@ function parseUTCDateTime(dateStr) {
                 `;
             });
         }
-
         // Toggle shared status function (similar to admin implementation)
-$(document).on('click', '.toggle-shared', function(e) {
-    e.preventDefault();
-    const orderId = $(this).data('order-id');
-    const $offcanvas = $('#order-splits-view');
+        $(document).on('click', '.toggle-shared', function(e) {
+            e.preventDefault();
+            const orderId = $(this).data('order-id');
+            const $offcanvas = $('#order-splits-view');
 
-    // Hide offcanvas if open
-    let wasOffcanvasOpen = $offcanvas.hasClass('show');
-    if (wasOffcanvasOpen) {
-        $offcanvas.off('hidden.bs.offcanvas'); // Remove any previous handlers
-        $offcanvas.offcanvas('hide');
-    }
-
-    Swal.fire({
-        title: 'Switch Helper Request Status',
-        input: 'textarea',   
-        inputLabel: 'Add a note',
-        inputPlaceholder: 'Type your note here...',
-        inputAttributes: {
-            'aria-label': 'Type your note here'
-        },
-        customClass: {
-            popup: 'swal-over-canvas'
-        },
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, do it!',
-        inputValidator: (value) => {
-            if (!value || !value.trim()) {
-                return 'You must provide a note before proceeding!';
+            // Hide offcanvas if open
+            let wasOffcanvasOpen = $offcanvas.hasClass('show');
+            if (wasOffcanvasOpen) {
+                $offcanvas.off('hidden.bs.offcanvas'); // Remove any previous handlers
+                $offcanvas.offcanvas('hide');
             }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // AJAX request
-            $.ajax({
-                url: `/contractor/orders/${orderId}/toggle-shared`,
-                method: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    note: result.value
+
+            Swal.fire({
+                title: 'Switch Helper Request Status',
+                input: 'textarea',   
+                inputLabel: 'Add a note',
+                inputPlaceholder: 'Type your note here...',
+                inputAttributes: {
+                    'aria-label': 'Type your note here'
                 },
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: response.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                customClass: {
+                    popup: 'swal-over-canvas'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, do it!',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'You must provide a note before proceeding!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // AJAX request
+                    $.ajax({
+                        url: `/contractor/orders/${orderId}/toggle-shared`,
+                        method: 'POST',
+                        data: {
+                            _token: $('meta[name="csrf-token"]').attr('content'),
+                            note: result.value
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: response.message,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
 
-                        // Refresh the orders list
-                        if (typeof loadOrders === "function") {
-                            loadOrders(currentFilters, 1, false);
-                        }
+                                // Refresh the orders list
+                                if (typeof loadOrders === "function") {
+                                    loadOrders(currentFilters, 1, false);
+                                }
 
-                        // Refresh offcanvas if open
-                        if (wasOffcanvasOpen) {
-                            $offcanvas.offcanvas('show');
-                            // Optionally reload the splits view if needed:
-                            if (typeof viewOrderSplits === "function") {
-                                viewOrderSplits(orderId);
+                                // Refresh offcanvas if open
+                                if (wasOffcanvasOpen) {
+                                    $offcanvas.offcanvas('show');
+                                    // Optionally reload the splits view if needed:
+                                    if (typeof viewOrderSplits === "function") {
+                                        viewOrderSplits(orderId);
+                                    }
+                                }
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: response.message || 'An unknown error occurred.'
+                                });
                             }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while updating shared status.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: errorMessage
+                            });
                         }
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: response.message || 'An unknown error occurred.'
-                        });
-                    }
-                },
-                error: function(xhr) {
-                    let errorMessage = 'An error occurred while updating shared status.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: errorMessage
                     });
+                } else {
+                    // User cancelled, reopen offcanvas if it was open
+                    if (wasOffcanvasOpen) {
+                        $offcanvas.offcanvas('show');
+                    }
                 }
             });
-        } else {
-            // User cancelled, reopen offcanvas if it was open
-            if (wasOffcanvasOpen) {
-                $offcanvas.offcanvas('show');
-            }
-        }
-    });
-});
+        });
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
