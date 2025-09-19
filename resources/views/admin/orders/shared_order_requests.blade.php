@@ -4,6 +4,9 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
     .avatar {
         position: relative;
@@ -334,7 +337,7 @@
                     <input type="hidden" id="assignOrderId" name="order_id">
                     <div class="mb-3">
                         <label for="contractors" class="form-label">Select Contractors (Helpers)</label>
-                        <select id="contractors" name="contractors[]" class="form-select" multiple required size="8">
+                        <select id="contractors" name="contractors[]" class="form-select" multiple required>
                             <!-- Contractors will be loaded dynamically -->
                         </select>
                         <div class="form-text">Hold Ctrl/Cmd to select multiple contractors</div>
@@ -360,11 +363,22 @@
 @endsection
 
 @push('scripts')
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     // Global variable to store orders data
     let sharedOrdersData = [];
 
     $(document).ready(function() {
+        // Initialize Select2 for contractors dropdown
+        $('#contractors').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Select contractors...',
+            allowClear: true,
+            closeOnSelect: false
+        });
+        
         loadSharedOrders();
         loadContractors();
     });
@@ -576,15 +590,19 @@
                         );
                     });
                     
+                    // Refresh Select2 after adding options
+                    contractorSelect.trigger('change');
+                    
                     // Trigger custom event to indicate contractors are loaded
                     $(document).trigger('contractorsLoaded');
                 } else {
                     contractorSelect.append('<option disabled>No contractors available</option>');
+                    contractorSelect.trigger('change');
                 }
             },
             error: function(xhr) {
                 console.error('Error loading contractors:', xhr);
-                $('#contractors').html('<option disabled>Error loading contractors</option>');
+                $('#contractors').html('<option disabled>Error loading contractors</option>').trigger('change');
             }
         });
     }
@@ -620,13 +638,13 @@
         }
         
         // Clear previous selections first
-        $('#contractors').val([]);
+        $('#contractors').val([]).trigger('change');
         
         // Function to set the selections
         function setContractorSelections() {
             if (existingHelperIdsStr.length > 0) {
                 console.log('Setting contractor selections:', existingHelperIdsStr);
-                $('#contractors').val(existingHelperIdsStr);
+                $('#contractors').val(existingHelperIdsStr).trigger('change');
                 
                 // Double-check if selection worked
                 const selectedValues = $('#contractors').val();
@@ -634,9 +652,10 @@
                 
                 // If still not selected, try again with a different approach
                 if (!selectedValues || selectedValues.length === 0) {
-                    existingHelperIdsStr.forEach(id => {
-                        $(`#contractors option[value="${id}"]`).prop('selected', true);
-                    });
+                    setTimeout(() => {
+                        $('#contractors').val(existingHelperIdsStr).trigger('change');
+                        console.log('Second attempt result:', $('#contractors').val());
+                    }, 50);
                 }
             }
         }
@@ -647,7 +666,7 @@
         } else {
             // Wait for contractors to be loaded
             $(document).one('contractorsLoaded', function() {
-                setTimeout(setContractorSelections, 100);
+                setTimeout(setContractorSelections, 150);
             });
             
             // Also reload contractors to ensure they're available
@@ -659,7 +678,7 @@
 
     // Reset modal when closed
     $('#assignContractorsModal').on('hidden.bs.modal', function() {
-        $('#contractors').val([]);
+        $('#contractors').val([]).trigger('change');
         $('#assignContractorsModalLabel').html('<i class="fa-solid fa-users text-primary me-2"></i>Add Helpers to Shared Order');
         $('#currentAssignments').hide();
         $('#assignOrderId').val('');
