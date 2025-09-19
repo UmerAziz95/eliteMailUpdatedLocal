@@ -1637,21 +1637,21 @@
     }
 
     // Open change status modal
-    function openChangeStatusModal(orderId, currentStatus) {
-        document.getElementById('modalOrderId').textContent = '#' + orderId;
-        
-        const statusBadge = document.getElementById('modalCurrentStatus');
-        statusBadge.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
-        statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
-        
-        document.getElementById('newStatus').value = '';
-        document.getElementById('statusReason').value = '';
-        
-        document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
-        
-        const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
-        modal.show();
-    }
+   function openChangeStatusModal(orderId, currentStatus) {
+    alert("here...")
+    $('#modalOrderId').text('#' + orderId);
+
+    const $statusBadge = $('#modalCurrentStatus');
+    $statusBadge.text(currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1));
+    $statusBadge.attr('class', 'badge ' + getStatusBadgeClass(currentStatus));
+
+    $('#newStatus').val('');
+    $('#statusReason').val('');
+
+    $('#changeStatusModal').attr('data-order-id', orderId);
+
+    $('#changeStatusModal').modal('show');
+}
 
     // Update order status
     async function updateOrderStatus() {

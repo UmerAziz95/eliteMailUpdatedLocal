@@ -403,10 +403,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders-history', [App\Http\Controllers\RestrictedDashboardController::class, 'getOrdersHistory'])->name('orders.history');
         Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
 
-
-
     });
-
 });
 
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
@@ -545,7 +542,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/panel/emails', [ContractorOrderController::class, 'storeSplitEmails']);
     Route::delete('/orders/panel/emails/{id}', [ContractorOrderController::class, 'deleteSplitEmail']);
     
-    // CSV Export routes
+    // CSV Export routes 
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
     Route::get('/orders/split/{splitId}/export-csv-domains', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
     Route::get('/orders/split/{splitId}/export-csv-smart', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');

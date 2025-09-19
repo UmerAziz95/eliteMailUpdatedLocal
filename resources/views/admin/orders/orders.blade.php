@@ -1376,7 +1376,7 @@
         </div>
     </div>
     <!-- Shared Orders Section -->
-    <div class="mt-4">
+    <div class="mt-4 d-none">
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -1939,7 +1939,8 @@
                 var table = $table.DataTable({
                     processing: true,
                     serverSide: true,
-                    responsive: true,
+                    responsive: false,
+                    scrolX:true,
                     autoWidth: false,
                     dom: '<"top"f>rt<"bottom"lip><"clear">',
                     columnDefs: [{
@@ -2131,8 +2132,7 @@
                                     if( timerData.status === 'draft') {
                                         return `
                                             <div class="flip-timer" >
-                                                <i class="fas fa-exclamation-triangle timer-icon" style="margin-right: 4px;"></i>
-                                                &nbsp;
+                                                
                                                     <div class="flip-card" data-digit="0">
                                                         <div class="flip-inner">
                                                             <div class="flip-front">0</div>
@@ -3757,7 +3757,7 @@
                  data-tooltip="${tooltip}"
                  title="${tooltip}"
                  style="gap: 4px; align-items: center;">
-                <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
+               
                 ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
                 <div class="flip-card" data-digit="${hours.charAt(0)}">
                     <div class="flip-inner">
