@@ -999,6 +999,15 @@
         color: #fff !important;
         border-bottom: 4px solid #00b8ff !important;
     }
+
+    /* SweetAlert2 z-index fix for offcanvas */
+    .swal-over-canvas {
+        z-index: 1060 !important;
+    }
+    
+    .swal2-container.swal-over-canvas {
+        z-index: 1060 !important;
+    }
 </style>
 @endpush
 
@@ -2557,6 +2566,14 @@
         $(document).on('click', '.toggle-shared', function(e) {
             e.preventDefault();
             const orderId = $(this).data('order-id');
+            const $offcanvas = $('#order-splits-view');
+
+            // Hide offcanvas if open
+            let wasOffcanvasOpen = $offcanvas.hasClass('show');
+            if (wasOffcanvasOpen) {
+                $offcanvas.off('hidden.bs.offcanvas'); // Remove any previous handlers
+                $offcanvas.offcanvas('hide');
+            }
             
             Swal.fire({
                 title: 'Switch Helper Request Status',
@@ -2602,6 +2619,15 @@
                                 
                                 // Refresh shared orders list
                                 loadSharedOrders();
+
+                                // Refresh offcanvas if open
+                                if (wasOffcanvasOpen) {
+                                    $offcanvas.offcanvas('show');
+                                    // Optionally reload the splits view if needed:
+                                    if (typeof viewOrderSplits === "function") {
+                                        viewOrderSplits(orderId);
+                                    }
+                                }
                             } else {
                                 Swal.fire({
                                     icon: 'error',
@@ -2622,6 +2648,11 @@
                             });
                         }
                     });
+                } else {
+                    // User cancelled, reopen offcanvas if it was open
+                    if (wasOffcanvasOpen) {
+                        $offcanvas.offcanvas('show');
+                    }
                 }
             });
         });

@@ -769,6 +769,7 @@ class OrderController extends Controller
                     'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
                     'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'status' => $order->status_manage_by_admin ?? 'pending',
+                    'is_shared' => $order->is_shared ?? false,
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
