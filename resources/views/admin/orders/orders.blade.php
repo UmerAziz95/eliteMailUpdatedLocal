@@ -999,6 +999,15 @@
         color: #fff !important;
         border-bottom: 4px solid #00b8ff !important;
     }
+
+    /* SweetAlert2 z-index fix for offcanvas */
+    .swal-over-canvas {
+        z-index: 1060 !important;
+    }
+    
+    .swal2-container.swal-over-canvas {
+        z-index: 1060 !important;
+    }
 </style>
 @endpush
 
@@ -1580,7 +1589,7 @@
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3 d-flex align-items-center justify-content-center"
                                 style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                                {{-- <i class="fa-solid fa-sticky-note text-white fs-5"></i> --}}
+                                <i class="fa-solid fa-sticky-note text-white fs-5"></i>
                             </div>
                             <div>
                                 <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
@@ -1930,8 +1939,7 @@
                 var table = $table.DataTable({
                     processing: true,
                     serverSide: true,
-                    responsive: false,
-                    scrollX: true,
+                    responsive: true,
                     autoWidth: false,
                     dom: '<"top"f>rt<"bottom"lip><"clear">',
                     columnDefs: [{
@@ -1955,7 +1963,7 @@
                             targets: 4
                         }]), // Plan (only for All Orders) 
                         {
-                            width: '15%',
+                            width: '20%',
                             targets: planId ? 4 : 5
                         }, // Domain URL
                         {
@@ -2020,21 +2028,21 @@
                     },
                     columns: [
                        {
-                            data: 'id',
-                            name: 'orders.id',
-                            render: function(data, type, row) {
-                                return `
-                                    <div class="d-flex align-items-center gap-1 text-nowrap">
-                                        
-                                        <span>
-                                            <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
-                                                ${data}
-                                            </a>
-                                        </span>
-                                    </div>
-                                `;
-                            }
-                        },
+    data: 'id',
+    name: 'orders.id',
+    render: function(data, type, row) {
+        return `
+            <div class="d-flex align-items-center gap-1 text-nowrap">
+                
+                <span>
+                    <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
+                        ${data}
+                    </a>
+                </span>
+            </div>
+        `;
+    }
+},
 
                         {
                             data: 'created_at',
@@ -2123,6 +2131,7 @@
                                     if( timerData.status === 'draft') {
                                         return `
                                             <div class="flip-timer" >
+                                                <i class="fas fa-exclamation-triangle timer-icon" style="margin-right: 4px;"></i>
                                                 &nbsp;
                                                     <div class="flip-card" data-digit="0">
                                                         <div class="flip-inner">
@@ -2553,27 +2562,47 @@
                 }
             });
         });
-
         // Shared Orders Functionality
         $(document).on('click', '.toggle-shared', function(e) {
             e.preventDefault();
             const orderId = $(this).data('order-id');
+            const $offcanvas = $('#order-splits-view');
+
+            // Hide offcanvas if open
+            let wasOffcanvasOpen = $offcanvas.hasClass('show');
+            if (wasOffcanvasOpen) {
+                $offcanvas.off('hidden.bs.offcanvas'); // Remove any previous handlers
+                $offcanvas.offcanvas('hide');
+            }
             
             Swal.fire({
-                title: 'Toggle Shared Status',
-                text: "Are you sure you want to change the shared status of this order?",
-                icon: 'question',
+                title: 'Switch Helper Request Status',
+                input: 'textarea',   
+                inputLabel: 'Add a note',
+                inputPlaceholder: 'Type your note here...',
+                inputAttributes: {
+                    'aria-label': 'Type your note here'
+                },
+                customClass: {
+                    popup: 'swal-over-canvas'
+                },
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, toggle it!'
+                confirmButtonText: 'Yes, do it!',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'You must provide a note before proceeding!';
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
                         url: `{{ route('admin.orders.toggle-shared', ':orderId') }}`.replace(':orderId', orderId),
                         method: 'POST',
                         data: {
-                            _token: '{{ csrf_token() }}'
+                            _token: '{{ csrf_token() }}',
+                            note: result.value
                         },
                         success: function(response) {
                             if (response.success) {
@@ -2590,6 +2619,21 @@
                                 
                                 // Refresh shared orders list
                                 loadSharedOrders();
+
+                                // Refresh offcanvas if open
+                                if (wasOffcanvasOpen) {
+                                    $offcanvas.offcanvas('show');
+                                    // Optionally reload the splits view if needed:
+                                    if (typeof viewOrderSplits === "function") {
+                                        viewOrderSplits(orderId);
+                                    }
+                                }
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: response.message || 'An unknown error occurred.'
+                                });
                             }
                         },
                         error: function(xhr) {
@@ -2604,6 +2648,11 @@
                             });
                         }
                     });
+                } else {
+                    // User cancelled, reopen offcanvas if it was open
+                    if (wasOffcanvasOpen) {
+                        $offcanvas.offcanvas('show');
+                    }
                 }
             });
         });
@@ -2752,6 +2801,14 @@
                                                 : `${helpersCount} contractor(s) assigned`
                                             }
                                         </small>
+                                        ${order.shared_note ? `
+                                            <div class="mt-2">
+                                                <div class="alert alert-info py-2 mb-0" style="font-size: 12px;">
+                                                    <i class="fa-solid fa-sticky-note me-2"></i>
+                                                    <strong>Shared Note:</strong> ${order.shared_note}
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                     </div>
                                     <div class="text-end">
                                         <div class="mb-2">
@@ -3700,6 +3757,7 @@
                  data-tooltip="${tooltip}"
                  title="${tooltip}"
                  style="gap: 4px; align-items: center;">
+                <i class="${iconClass} timer-icon" style="margin-right: 4px;"></i>
                 ${isNegative ? '<span class="negative-sign" style="color: #dc3545; font-weight: bold;">-</span>' : ''}
                 <div class="flip-card" data-digit="${hours.charAt(0)}">
                     <div class="flip-inner">
@@ -3914,7 +3972,7 @@
                         </h6>
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
-                    <div>
+                    <div class="d-flex gap-2">
                         ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
                             <button class="btn btn-warning btn-sm px-3 py-2" 
                                     onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
@@ -3923,8 +3981,30 @@
                                 Change Status
                             </button>
                         ` : ''}
+
+                        <!-- Shared Status Toggle Button -->
+                        <button class="btn btn-sm ${orderInfo.is_shared ? 'btn-outline-warning' : 'btn-outline-success'} toggle-shared px-3 py-2" 
+                                data-order-id="${orderInfo.id}" 
+                                title="${orderInfo.is_shared ? 'Unshare Order' : 'Share Order'}"
+                                style="font-size: 13px;">
+                            <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
+                            ${orderInfo.is_shared ? 'Remove Helper' : 'Helper Request'}
+                        </button>
                     </div>
                 </div>
+                ${orderInfo.is_shared ? `
+                    <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
+                        <i class="fa-solid fa-users me-2"></i>
+                        This order is currently shared with other contractors
+                        ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? ` (${orderInfo.helpers_names.join(', ')})` : ''}
+                    </div>
+                ` : ''}
+                ${orderInfo.shared_note ? `
+                    <div class="alert alert-info py-2 mb-3" style="font-size: 12px;">
+                        <i class="fa-solid fa-sticky-note me-2"></i>
+                        <strong>Shared Note:</strong> ${orderInfo.shared_note}
+                    </div>
+                ` : ''}
             </div>
             <div class="table-responsive mb-4"> 
                 <table class="table table-striped table-hover">

@@ -2800,11 +2800,19 @@ class OrderController extends Controller
     public function toggleSharedStatus(Request $request, $orderId)
     {
         try {
+            // Validate the note input
+            $request->validate([
+                'note' => 'required|string|max:1000'
+            ]);
+
             // Verify contractor has access to this order
             $order = Order::where('assigned_to', auth()->id())->findOrFail($orderId);
             
             $order->is_shared = !$order->is_shared;
-    
+            
+            // Save the shared note
+            $order->shared_note = $request->input('note');
+            
             // Clear helpers_ids when unsharing the order
             if (!$order->is_shared) {
                 $order->helpers_ids = null;
@@ -2814,16 +2822,26 @@ class OrderController extends Controller
 
             ActivityLogService::log(
                 'Order Shared Status Changed by Contractor',
-                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared') . ' by contractor',
+                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared') . ' by contractor. Note: ' . $request->input('note'),
                 $order,
-                ['shared_status' => $order->is_shared, 'contractor_id' => auth()->id()]
+                [
+                    'shared_status' => $order->is_shared, 
+                    'contractor_id' => auth()->id(),
+                    'shared_note' => $request->input('note')
+                ]
             );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order shared status updated successfully',
-                'is_shared' => $order->is_shared
+                'is_shared' => $order->is_shared,
+                'shared_note' => $order->shared_note
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Error toggling shared status: ' . $e->getMessage());
             return response()->json([
