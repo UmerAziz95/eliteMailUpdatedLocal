@@ -1386,10 +1386,10 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Split ID</th>
+                                <th scope="col">Panel Break ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
-                                <th scope="col">Split Status</th>
+                                <th scope="col">Panel Break Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
@@ -1468,7 +1468,7 @@
                                     
                                     let splitDetails = '';
                                     splits.forEach((split, index) => {
-                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
+                                        splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                     });
                                     
                                     return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
@@ -1544,7 +1544,7 @@
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
-                                                    Split ${String(index + 1).padStart(2, '0')}
+                                                    Panel Break ${String(index + 1).padStart(2, '0')}
                                                 </span>
                                                 <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>

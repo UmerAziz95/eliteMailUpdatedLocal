@@ -952,7 +952,7 @@
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
                     <div class="d-flex gap-1">
-                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Split"></i>
+                        <i class="fa-regular fa-eye" style="cursor: pointer;" onclick="event.stopPropagation(); window.open('/contractor/orders/${split.order_panel_id}/split/view', '_blank')" title="View Panel Break"></i>
                         <i class="fa-solid fa-download" style="cursor: pointer; color: #28a745;" onclick="event.stopPropagation(); window.open('/contractor/orders/split/${split.id}/export-csv-domains', '_blank')" title="Download CSV"></i>
                         ${split.customized_note ? `
                             <i class="fa-solid fa-sticky-note" style="cursor: pointer; color: #ffc107;" onclick="event.stopPropagation(); showCustomizedNoteModal('${split.customized_note.replace(/'/g, '&apos;').replace(/"/g, '&quot;')}')" title="View Customized Note"></i>
@@ -961,7 +961,7 @@
                 </td>
                 </tr>
             `).join('')
-            : `<tr><td colspan="6" style="font-size: 10px; padding: 10px; text-align: center;">No splits available</td></tr>`;
+            : `<tr><td colspan="6" style="font-size: 10px; padding: 10px; text-align: center;">No Panel Breaks available</td></tr>`;
 
             return `
             <div class="anim_card rounded-2">
@@ -981,7 +981,7 @@
                     <thead>
                         <tr>
                         <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">ID #</th>
-                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Split Status</th>
+                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Panel Break Status</th>
                         <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
                         <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
                         <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
@@ -1013,7 +1013,7 @@
                         <div class="d-flex flex-column gap-1">
                         <span class="fw-bold">${order.customer_name}</span>
                         <small>
-                            Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Split${order.splits_count === 1 ? '' : 's'}
+                            Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Panel Break${order.splits_count === 1 ? '' : 's'}
                         </small>
                         </div>
                     </div>
@@ -1333,13 +1333,13 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                     }
                 });
                 
-                if (!response.ok) throw new Error('Failed to fetch order splits');
+                if (!response.ok) throw new Error('Failed to fetch order details');
                 
                 const data = await response.json();
                 renderOrderSplits(data);
                   
             } catch (error) {
-                console.error('Error loading order splits:', error);
+                console.error('Error loading order details:', error);
                 const container = document.getElementById('orderSplitsContainer');
                 if (container) {
                     container.innerHTML = `
@@ -1421,7 +1421,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     return `
                                         <span class="bg-success rounded-1 px-3 py-2 text-white" style="font-size: 13px;">
                                             <i class="fas fa-check me-1" style="font-size: 12px;"></i>
-                                            All Splits Assigned
+                                            All Panel Breaks Assigned
                                         </span>
                                     `;
                                 }
@@ -1459,15 +1459,15 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                         <thead class="border-0">
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Split ID</th>
+                                <th scope="col">Panel Break ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
-                                <th scope="col">Split Status</th>
+                                <th scope="col">Panel Break Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
                                 <th scope="col">Customized Type</th>
-                                <th scope="col">Split timer</th>
+                                <th scope="col">Panel Break Timer</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -2151,7 +2151,7 @@ function parseUTCDateTime(dateStr) {
             // Show SweetAlert2 confirmation dialog
             const result = await Swal.fire({
                 title: 'Assign Order to Yourself?',
-                text: 'This will assign all unallocated splits of this order to you. Are you sure?',
+                text: 'This will assign all unallocated Panel Breaks of this order to you. Are you sure?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',

@@ -495,7 +495,7 @@
                             <i class="fas fa-arrow-right text-white"></i>
                         </button>
                     ` : `
-                        <p class="mb-0 fw-semibold">No splits available</span>
+                        <p class="mb-0 fw-semibold">No panel available</span>
                     `}
                     
                 </div>
@@ -674,7 +674,7 @@
                     <thead class="border-0">
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Break ID</th>
                             <th scope="col">Panel Id</th>
                             <th scope="col">Panel Title</th>
                             <th scope="col">Inboxes/Domain</th>
@@ -715,7 +715,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Panel Break">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                         <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
@@ -754,7 +754,7 @@
                                 splits.forEach((split, index) => {
                                     splitDetails += `
                                         <br>
-                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> 
+                                        <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
                                             Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                 });
                                 
@@ -824,7 +824,7 @@
                                 <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                     <i class="fa-solid fa-globe"></i>
                                 </div>
-                               <span>All Domains & Splits</span>
+                               <span>All Domains & Panel Breaks</span>
                             </h6>
                             
                             <!-- Task Splits Domains -->

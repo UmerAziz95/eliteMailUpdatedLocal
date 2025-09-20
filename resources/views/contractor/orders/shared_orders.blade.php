@@ -1502,15 +1502,15 @@
                     <thead class="border-0">
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">Split ID</th>
+                            <th scope="col">Panel Break ID</th>
                             <th scope="col">Panel Id</th>
                             <th scope="col">Panel Title</th>
-                            <th scope="col">Split Status</th>
+                            <th scope="col">Panel Break Status</th>
                             <th scope="col">Inboxes/Domain</th>
                             <th scope="col">Total Domains</th>
                             <th scope="col">Total Inboxes</th>
                             <th scope="col">Customized Type</th>
-                            <th scope="col">Split timer</th>
+                            <th scope="col">Panel Break Timer</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -1550,7 +1550,7 @@
                                 <td>${calculateSplitTime(split) || 'N/A'}</td>
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Split">
+                                        <a href="/contractor/orders/${split.order_panel_id}/split/view" style="font-size: 10px" class="btn btn-sm btn-outline-primary me-2" title="View Panel Break">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                         <a href="/contractor/orders/split/${split.id}/export-csv-domains" style="font-size: 10px" class="btn btn-sm btn-success" title="Download CSV with ${split.domains_count || 0} domains" target="_blank">
