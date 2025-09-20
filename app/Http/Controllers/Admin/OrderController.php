@@ -313,7 +313,7 @@ class OrderController extends Controller
                     $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning me-2" title="Shared Order"></i>' : '';
                     $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
                     $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $order->id . '</a>';
-                    return $share_request_link . $order_view_link;
+                    return $order_view_link . ' ' . $share_request_link;
                 })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d M, Y') : '';
