@@ -2475,7 +2475,28 @@ class OrderController extends Controller
             $query = Order::where('is_shared', true)
                 ->with(['user', 'plan']);
 
-            // Apply filters if provided
+            // Filter based on tab type
+            if ($request->has('tab')) {
+                if ($request->tab === 'requests') {
+                    // Requests tab: orders without helpers assigned
+                    // Check for null, empty string, empty JSON array, or actual empty array
+                    $query->where(function($q) {
+                        $q->whereNull('helpers_ids')
+                          ->orWhere('helpers_ids', '')
+                          ->orWhere('helpers_ids', '[]')
+                          ->orWhere('helpers_ids', 'null');
+                    });
+                } elseif ($request->tab === 'confirmed') {
+                    // Confirmed tab: orders with helpers assigned
+                    // Must have actual helper IDs (not null, not empty)
+                    $query->whereNotNull('helpers_ids')
+                          ->where('helpers_ids', '!=', '')
+                          ->where('helpers_ids', '!=', '[]')
+                          ->where('helpers_ids', '!=', 'null');
+                }
+            }
+
+            // Apply additional filters if provided
             if ($request->has('status') && $request->status != '') {
                 $query->where('status_manage_by_admin', $request->status);
             }
@@ -2498,6 +2519,20 @@ class OrderController extends Controller
             $sharedOrders = $query->orderBy('created_at', 'desc')
                 ->get();
 
+            // Filter results after retrieval for better accuracy with array casting
+            if ($request->has('tab')) {
+                $sharedOrders = $sharedOrders->filter(function ($order) use ($request) {
+                    if ($request->tab === 'requests') {
+                        // Requests: no helpers assigned
+                        return empty($order->helpers_ids) || !is_array($order->helpers_ids) || count($order->helpers_ids) === 0;
+                    } elseif ($request->tab === 'confirmed') {
+                        // Confirmed: has helpers assigned
+                        return !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
+                    }
+                    return true;
+                })->values(); // Reset array keys
+            }
+
             // Transform the data to include helper names
             $sharedOrders->transform(function ($order) {
                 // Add helper names
@@ -2514,13 +2549,19 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $sharedOrders
+                'data' => $sharedOrders,
+                'tab' => $request->tab,
+                'total_count' => $sharedOrders->count(),
+                'debug' => [
+                    'tab_filter' => $request->tab ?? 'none',
+                    'raw_count_before_filter' => $query->count()
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting shared orders: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching shared orders'
+                'message' => 'Error fetching shared orders: ' . $e->getMessage()
             ], 500);
         }
     }

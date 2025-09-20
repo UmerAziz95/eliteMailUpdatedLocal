@@ -154,14 +154,7 @@
                         <div class="content-left">
                             <span class="text text-light">Total Requests</span>
                             <div class="d-flex align-items-end mt-2">
-                                <h4 class="mb-0 me-2 text-warning">{{ $totalSharedOrders }}</h4>
-                                <!-- <small class="text-success">
-                                    @if($percentageChange >= 0)
-                                        <i class="fa-solid fa-arrow-up"></i> +{{ number_format($percentageChange, 1) }}%
-                                    @else
-                                        <i class="fa-solid fa-arrow-down"></i> {{ number_format($percentageChange, 1) }}%
-                                    @endif
-                                </small> -->
+                                <h4 class="mb-0 me-2 text-warning" id="totalRequestsCount">0</h4>
                             </div>
                         </div>
                         <div class="avatar bg-label-warning">
@@ -181,7 +174,7 @@
                         <div class="content-left">
                             <span class="text text-light">Pending</span>
                             <div class="d-flex align-items-end mt-2">
-                                <h4 class="mb-0 me-2 text-warning">{{ $pendingSharedOrders }}</h4>
+                                <h4 class="mb-0 me-2 text-warning" id="pendingRequestsCount">0</h4>
                             </div>
                         </div>
                         <div class="avatar bg-label-warning">
@@ -201,12 +194,12 @@
                         <div class="content-left">
                             <span class="text text-light">Confirmed</span>
                             <div class="d-flex align-items-end mt-2">
-                                <h4 class="mb-0 me-2 text-info">{{ $inProgressSharedOrders }}</h4>
+                                <h4 class="mb-0 me-2 text-success" id="confirmedRequestsCount">0</h4>
                             </div>
                         </div>
-                        <div class="avatar bg-label-info">
-                            <span class="avatar-initial rounded bg-label-info">
-                                <i class="ti ti-loader fs-4"></i>
+                        <div class="avatar bg-label-success">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="fa-solid fa-check-circle fs-4"></i>
                             </span>
                         </div>
                     </div>
@@ -413,32 +406,129 @@
         // Handle tab switching
         $('#sharedOrderTabs button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
             const tabId = e.target.getAttribute('data-bs-target');
-            currentTab = tabId === '#requests-tab-pane' ? 'requests' : 'confirmed';
-            loadSharedOrders();
+            const newTab = tabId === '#requests-tab-pane' ? 'requests' : 'confirmed';
+            
+            // Only reload if tab actually changed
+            if (currentTab !== newTab) {
+                currentTab = newTab;
+                loadSharedOrders();
+            }
         });
         
-        loadSharedOrders();
+        // Load data and statistics together
+        loadAllData();
         loadContractors();
     });
 
+    function loadAllData() {
+        // Load both tabs data to get accurate counts
+        let pendingCount = 0;
+        let confirmedCount = 0;
+        let requestsData = null;
+        let confirmedData = null;
+        let requestsCompleted = false;
+        let confirmedCompleted = false;
+
+        // Load requests data
+        $.ajax({
+            url: '{{ route("admin.orders.shared.data") }}',
+            method: 'GET',
+            data: { tab: 'requests' },
+            success: function(response) {
+                console.log('Requests tab response:', response);
+                pendingCount = response.data ? response.data.length : 0;
+                requestsData = response;
+                requestsCompleted = true;
+                
+                // Render if this is the current tab
+                if (currentTab === 'requests') {
+                    renderSharedOrders(response);
+                }
+                
+                // Update statistics when both calls complete
+                if (confirmedCompleted) {
+                    updateStatistics({
+                        total: pendingCount + confirmedCount,
+                        pending: pendingCount,
+                        confirmed: confirmedCount
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading requests data:', xhr);
+                requestsCompleted = true;
+                if (currentTab === 'requests') {
+                    $('#sharedOrdersContainer').html('<div class="alert alert-danger">Error loading requests data. Please try again.</div>');
+                }
+                if (confirmedCompleted) {
+                    updateStatistics({ total: confirmedCount, pending: 0, confirmed: confirmedCount });
+                }
+            }
+        });
+
+        // Load confirmed data
+        $.ajax({
+            url: '{{ route("admin.orders.shared.data") }}',
+            method: 'GET',
+            data: { tab: 'confirmed' },
+            success: function(response) {
+                console.log('Confirmed tab response:', response);
+                confirmedCount = response.data ? response.data.length : 0;
+                confirmedData = response;
+                confirmedCompleted = true;
+                
+                // Render if this is the current tab
+                if (currentTab === 'confirmed') {
+                    renderSharedOrders(response);
+                }
+                
+                // Update statistics when both calls complete
+                if (requestsCompleted) {
+                    updateStatistics({
+                        total: pendingCount + confirmedCount,
+                        pending: pendingCount,
+                        confirmed: confirmedCount
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading confirmed data:', xhr);
+                confirmedCompleted = true;
+                if (currentTab === 'confirmed') {
+                    $('#confirmedOrdersContainer').html('<div class="alert alert-danger">Error loading confirmed data. Please try again.</div>');
+                }
+                if (requestsCompleted) {
+                    updateStatistics({ total: pendingCount, pending: pendingCount, confirmed: 0 });
+                }
+            }
+        });
+    }
+
+    function updateStatistics(stats) {
+        $('#totalRequestsCount').text(stats.total || 0);
+        $('#pendingRequestsCount').text(stats.pending || 0);
+        $('#confirmedRequestsCount').text(stats.confirmed || 0);
+    }
+
     function loadSharedOrders() {
         const container = currentTab === 'requests' ? $('#sharedOrdersContainer') : $('#confirmedOrdersContainer');
+        const spinnerColor = currentTab === 'requests' ? 'text-warning' : 'text-success';
         
         // Show loading
         container.html(`
             <div class="text-center p-4">
-                <div class="spinner-border text-warning" role="status">
+                <div class="spinner-border ${spinnerColor}" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-2 text-white">Loading shared order ${currentTab}...</p>
+                <p class="mt-2 text-white">Loading ${currentTab === 'requests' ? 'shared order requests' : 'confirmed orders'}...</p>
             </div>
         `);
 
         // Get filter values
         const filters = {
-            status: $('#statusFilter').val(),
-            plan_id: $('#planFilter').val(),
-            search: $('#searchInput').val(),
+            status: $('#statusFilter').val() || '',
+            plan_id: $('#planFilter').val() || '',
+            search: $('#searchInput').val() || '',
             tab: currentTab // Send current tab to backend
         };
 
@@ -447,18 +537,25 @@
             method: 'GET',
             data: filters,
             success: function(response) {
-                if (response.success) {
+                console.log(`Loading ${currentTab} tab data:`, response);
+                
+                // Debug information
+                if (response.debug) {
+                    console.log('Debug info:', response.debug);
+                }
+                
+                if (response.success !== false) {
                     renderSharedOrders(response);
                 } else {
                     container.html('<div class="alert alert-danger">Error loading shared orders.</div>');
                 }
             },
             error: function(xhr) {
-                console.error('Error loading shared orders:', xhr);
+                console.error(`Error loading ${currentTab} orders:`, xhr);
                 if (xhr.status === 401 || xhr.status === 403) {
                     container.html('<div class="alert alert-warning">Please login to view shared orders. <a href="/login">Click here to login</a></div>');
                 } else {
-                    container.html('<div class="alert alert-danger">Error loading shared orders. Please try again.</div>');
+                    container.html(`<div class="alert alert-danger">Error loading ${currentTab} orders. Please try again.</div>`);
                 }
             }
         });
@@ -468,12 +565,15 @@
         const container = currentTab === 'requests' ? $('#sharedOrdersContainer') : $('#confirmedOrdersContainer');
         const orders = data.data || data;
         
+        console.log(`Rendering ${currentTab} orders:`, orders);
+        
         // Store orders data globally for later use
         sharedOrdersData = orders || [];
         
         container.empty();
         
         if (orders && orders.length > 0) {
+            console.log(`Found ${orders.length} orders for ${currentTab} tab`);
             orders.forEach(order => {
                 const helpersCount = order.helpers_ids ? order.helpers_ids.length : 0;
                 const helpersHtml = order.helpers_names && order.helpers_names.length > 0 
@@ -572,14 +672,20 @@
                 container.append(orderHtml);
             });
         } else {
+            console.log(`No orders found for ${currentTab} tab`);
             const emptyMessage = currentTab === 'requests' ? 'No Shared Order Requests Found' : 'No Confirmed Orders Found';
             const emptyDescription = currentTab === 'requests' ? 'There are currently no shared order requests to display.' : 'There are currently no confirmed orders to display.';
+            const emptyIcon = currentTab === 'requests' ? 'fa-clock' : 'fa-check-circle';
+            const emptyColor = currentTab === 'requests' ? 'text-warning' : 'text-success';
             
             container.html(`
                 <div class="text-center p-4">
-                    <i class="fa-solid fa-share-nodes text-white" style="font-size: 4rem;"></i>
+                    <i class="fa-solid ${emptyIcon} ${emptyColor}" style="font-size: 4rem;"></i>
                     <h5 class="mt-3 text-white">${emptyMessage}</h5>
                     <p class="text-white">${emptyDescription}</p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadAllData()">
+                        <i class="fa-solid fa-refresh me-1"></i> Refresh Data
+                    </button>
                 </div>
             `);
         }
@@ -598,7 +704,8 @@
     }
 
     function refreshSharedOrders() {
-        loadSharedOrders();
+        console.log('Refreshing all shared orders data');
+        loadAllData();
     }
 
     function applyFilters() {
@@ -784,7 +891,7 @@
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                loadSharedOrders(); // Refresh the list
+                                loadAllData(); // Refresh data and statistics
                             });
                         } else {
                             Swal.fire({
@@ -862,7 +969,7 @@
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                loadSharedOrders(); // Refresh the list
+                                loadAllData(); // Refresh data and statistics
                             });
                         } else {
                             Swal.fire({
