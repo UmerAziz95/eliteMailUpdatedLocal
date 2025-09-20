@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.app')<
 
 @section('title', 'Shared Order Requests')
 
@@ -152,7 +152,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text text-light">Total Shared Orders</span>
+                            <span class="text text-light">Total Requests</span>
                             <div class="d-flex align-items-end mt-2">
                                 <h4 class="mb-0 me-2 text-warning">{{ $totalSharedOrders }}</h4>
                                 <!-- <small class="text-success">
@@ -179,7 +179,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text text-light">Pending Shared</span>
+                            <span class="text text-light">Pending</span>
                             <div class="d-flex align-items-end mt-2">
                                 <h4 class="mb-0 me-2 text-warning">{{ $pendingSharedOrders }}</h4>
                             </div>
@@ -199,7 +199,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text text-light">In Progress Shared</span>
+                            <span class="text text-light">Confirmed</span>
                             <div class="d-flex align-items-end mt-2">
                                 <h4 class="mb-0 me-2 text-info">{{ $inProgressSharedOrders }}</h4>
                             </div>
@@ -236,18 +236,20 @@
     </div>
 
     <!-- Filters Section -->
-    <div class="card mb-4">
+    <div class="card mb-4 d-none">
         <div class="card-header d-flex align-items-center justify-content-between">
             <h5 class="mb-0">
                 <i class="fa-solid fa-share-nodes text-warning me-2 shared-order-icon"></i>
-                Shared Order Requests
+                Shared Order Management
             </h5>
             <button class="btn btn-sm btn-outline-primary" onclick="refreshSharedOrders()">
                 <i class="fa-solid fa-refresh me-1"></i> Refresh
             </button>
         </div>
         <div class="card-body">
-            <div class="row g-3">
+            
+
+            <div class="row g-3 d-none">
                 <div class="col-md-3">
                     <label for="statusFilter" class="form-label">Filter by Status</label>
                     <select id="statusFilter" class="form-select form-select-sm">
@@ -286,10 +288,25 @@
             </div>
         </div>
     </div>
-
-    <!-- Shared Orders List -->
-    <div class="">
-        <div class="">
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-3" id="sharedOrderTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests-tab-pane" type="button" role="tab" aria-controls="requests-tab-pane" aria-selected="true">
+                <i class="fa-solid fa-clock text-warning me-2"></i>
+                Requests
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="confirmed-tab" data-bs-toggle="tab" data-bs-target="#confirmed-tab-pane" type="button" role="tab" aria-controls="confirmed-tab-pane" aria-selected="false">
+                <i class="fa-solid fa-check-circle text-success me-2"></i>
+                Confirmed
+            </button>
+        </li>
+    </ul>
+    <!-- Tab Content -->
+    <div class="tab-content" id="sharedOrderTabContent">
+        <!-- Requests Tab -->
+        <div class="tab-pane fade show active" id="requests-tab-pane" role="tabpanel" aria-labelledby="requests-tab" tabindex="0">
             <div id="sharedOrdersContainer">
                 <!-- Shared orders will be loaded here via JavaScript -->
                 <div class="text-center p-4">
@@ -297,6 +314,19 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <p class="mt-2 text-white">Loading shared order requests...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmed Tab -->
+        <div class="tab-pane fade" id="confirmed-tab-pane" role="tabpanel" aria-labelledby="confirmed-tab" tabindex="0">
+            <div id="confirmedOrdersContainer">
+                <!-- Confirmed orders will be loaded here via JavaScript -->
+                <div class="text-center p-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-white">Loading confirmed orders...</p>
                 </div>
             </div>
         </div>
@@ -368,6 +398,7 @@
 <script>
     // Global variable to store orders data
     let sharedOrdersData = [];
+    let currentTab = 'requests'; // Track current tab
 
     $(document).ready(function() {
         // Initialize Select2 for contractors dropdown
@@ -379,12 +410,19 @@
             closeOnSelect: false
         });
         
+        // Handle tab switching
+        $('#sharedOrderTabs button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const tabId = e.target.getAttribute('data-bs-target');
+            currentTab = tabId === '#requests-tab-pane' ? 'requests' : 'confirmed';
+            loadSharedOrders();
+        });
+        
         loadSharedOrders();
         loadContractors();
     });
 
     function loadSharedOrders() {
-        const container = $('#sharedOrdersContainer');
+        const container = currentTab === 'requests' ? $('#sharedOrdersContainer') : $('#confirmedOrdersContainer');
         
         // Show loading
         container.html(`
@@ -392,7 +430,7 @@
                 <div class="spinner-border text-warning" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-2 text-white">Loading shared order requests...</p>
+                <p class="mt-2 text-white">Loading shared order ${currentTab}...</p>
             </div>
         `);
 
@@ -400,7 +438,8 @@
         const filters = {
             status: $('#statusFilter').val(),
             plan_id: $('#planFilter').val(),
-            search: $('#searchInput').val()
+            search: $('#searchInput').val(),
+            tab: currentTab // Send current tab to backend
         };
 
         $.ajax({
@@ -426,7 +465,7 @@
     }
 
     function renderSharedOrders(data) {
-        const container = $('#sharedOrdersContainer');
+        const container = currentTab === 'requests' ? $('#sharedOrdersContainer') : $('#confirmedOrdersContainer');
         const orders = data.data || data;
         
         // Store orders data globally for later use
@@ -533,11 +572,14 @@
                 container.append(orderHtml);
             });
         } else {
+            const emptyMessage = currentTab === 'requests' ? 'No Shared Order Requests Found' : 'No Confirmed Orders Found';
+            const emptyDescription = currentTab === 'requests' ? 'There are currently no shared order requests to display.' : 'There are currently no confirmed orders to display.';
+            
             container.html(`
                 <div class="text-center p-4">
                     <i class="fa-solid fa-share-nodes text-white" style="font-size: 4rem;"></i>
-                    <h5 class="mt-3 text-white">No Shared Orders Found</h5>
-                    <p class="text-white">There are currently no shared order requests to display.</p>
+                    <h5 class="mt-3 text-white">${emptyMessage}</h5>
+                    <p class="text-white">${emptyDescription}</p>
                 </div>
             `);
         }
