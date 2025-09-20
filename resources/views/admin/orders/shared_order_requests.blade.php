@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')<
+@extends('admin.layouts.app')
 
 @section('title', 'Shared Order Requests')
 
