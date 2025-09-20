@@ -269,7 +269,7 @@ class OrderController extends Controller
                     $shareToggleText = $order->is_shared ? 'Unshare' : 'Share';
                     $shareToggleIcon = $order->is_shared ? 'fa-unlink' : 'fa-share-nodes';
 
-                    return $sharedIcon . '<div class="dropdown">
+                    return '<div class="dropdown">
                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
                         aria-expanded="false">
                         <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -308,6 +308,12 @@ class OrderController extends Controller
                     </ul>
                 </div>';
 
+                })
+                ->editColumn('id', function ($order) {
+                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning me-2" title="Shared Order"></i>' : '';
+                    $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
+                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $order->id . '</a>';
+                    return $share_request_link . $order_view_link;
                 })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d M, Y') : '';
@@ -383,7 +389,7 @@ class OrderController extends Controller
                 ->addColumn('contractor_name', function ($order) {
                     return $order->assignedTo ? $order->assignedTo->name : 'Unassigned';
                 })
-                ->rawColumns(['action', 'status', 'timer'])
+                ->rawColumns(['action', 'status', 'timer','id'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -2168,12 +2174,16 @@ class OrderController extends Controller
     {
         try {
             $request->validate([
-                'contractor_id' => 'required|exists:users,id'
+                'contractor_id' => 'required|exists:users,id',
+                'remove_from_helpers' => 'nullable|in:true,false,1,0'
             ]);
            Log::channel('slack_notifications')->info("test 1 controller============================".$orderId.'-'. $request->contractor_id);
 
+            // Convert remove_from_helpers to boolean
+            $removeFromHelpers = filter_var($request->remove_from_helpers, FILTER_VALIDATE_BOOLEAN);
+
             $service = new OrderContractorReassignmentService();
-            $result = $service->reassignContractor($orderId, $request->contractor_id);
+            $result = $service->reassignContractor($orderId, $request->contractor_id, $removeFromHelpers);
 
             if ($result['success']) {
                 // Log the activity
@@ -2185,7 +2195,8 @@ class OrderController extends Controller
                         'order_id' => $orderId,
                         'old_contractor_id' => $result['old_contractor_id'],
                         'new_contractor_id' => $result['new_contractor_id'],
-                        'reassigned_by' => auth()->id()
+                        'reassigned_by' => auth()->id(),
+                        'removed_from_helpers' => $removeFromHelpers
                     ],
                     auth()->id()
                 );
@@ -2210,6 +2221,42 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to reassign contractor: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if contractor is already in helpers list
+     */
+    public function checkContractorInHelpers(Request $request, $orderId)
+    {
+        try {
+            $request->validate([
+                'contractor_id' => 'required|exists:users,id'
+            ]);
+
+            $order = Order::findOrFail($orderId);
+            $contractorId = $request->contractor_id;
+            
+            // Check if contractor is in helpers_ids array
+            $helpers_ids = $order->helpers_ids ?? [];
+            $isInHelpers = in_array($contractorId, $helpers_ids);
+            
+            // Get contractor name for the message
+            $contractor = User::find($contractorId);
+            
+            return response()->json([
+                'success' => true,
+                'is_in_helpers' => $isInHelpers,
+                'contractor_name' => $contractor ? $contractor->name : 'Unknown',
+                'message' => $isInHelpers 
+                    ? "This contractor is already added as a helper. Reassigning will remove from helpers list."
+                    : "Contractor is not in helpers list."
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking contractor: ' . $e->getMessage()
             ], 500);
         }
     }

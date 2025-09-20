@@ -18,9 +18,10 @@ class OrderContractorReassignmentService
      *
      * @param int $orderId
      * @param int $newContractorId
+     * @param bool $removeFromHelpers
      * @return array
      */
-    public function reassignContractor($orderId, $newContractorId)
+    public function reassignContractor($orderId, $newContractorId, $removeFromHelpers = false)
     {
         try {
            Log::channel('slack_notifications')->info("test 2 service ============================");
@@ -29,6 +30,18 @@ class OrderContractorReassignmentService
 
             $order = Order::findOrFail($orderId);
             $oldContractorId = $order->assigned_to;
+            
+            // Remove from helpers_ids if requested and contractor is in helpers
+            if ($removeFromHelpers) {
+                $helpers_ids = $order->helpers_ids ?? [];
+                if (in_array($newContractorId, $helpers_ids)) {
+                    $helpers_ids = array_values(array_filter($helpers_ids, function($id) use ($newContractorId) {
+                        return $id != $newContractorId;
+                    }));
+                    $order->helpers_ids = $helpers_ids;
+                }
+            }
+            
             $order->assigned_to = $newContractorId;
             $order->save();
             //  SlackNotificationService::sendOrderAssignmentNotification($order, $newContractorId);

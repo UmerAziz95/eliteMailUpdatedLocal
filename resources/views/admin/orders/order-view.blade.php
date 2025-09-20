@@ -102,33 +102,95 @@ $(function() {
         e.preventDefault();
         var contractorId = $('#contractorSelect').val();
         if (!contractorId) {
-            toastr.error('Please select a contractor');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a contractor',
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
+
+        // First check if contractor is in helpers
         $.ajax({
-            url: '/admin/orders/{{ $order->id }}/reassign-contractor',
+            url: '/admin/orders/{{ $order->id }}/check-contractor-helpers',
             method: 'POST',
             data: {
                 contractor_id: contractorId,
                 _token: '{{ csrf_token() }}'
             },
-            beforeSend: function() {
-                $('#reassignContractorForm button[type="submit"]').prop('disabled', true);
-            },
             success: function(response) {
-                toastr.success('Contractor reassigned successfully');
-                $('#reassignContractorModal').modal('hide');
-                // setTimeout(function(){ location.reload(); }, 1000);
+                if (response.success && response.is_in_helpers) {
+                    // Show confirmation dialog if contractor is in helpers
+                    Swal.fire({
+                        title: 'Contractor Already in Helpers',
+                        text: `${response.contractor_name} is already added as a helper. Reassigning will remove them from the helpers list. Are you sure you want to continue?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, reassign!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            performReassignment(contractorId, true); // Remove from helpers
+                        }
+                    });
+                } else {
+                    // Proceed with normal reassignment
+                    performReassignment(contractorId, false);
+                }
             },
             error: function(xhr) {
-                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
-                toastr.error(msg);
-            },
-            complete: function() {
-                $('#reassignContractorForm button[type="submit"]').prop('disabled', false);
+                console.error('Error checking contractor helpers:', xhr);
+                // If check fails, proceed with normal reassignment
+                performReassignment(contractorId, false);
             }
         });
     });
+
+    function performReassignment(contractorId, removeFromHelpers) {
+        $.ajax({
+            url: '/admin/orders/{{ $order->id }}/reassign-contractor',
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                remove_from_helpers: removeFromHelpers,
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Reassigning Contractor...',
+                    text: 'Please wait while we process your request',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Contractor reassigned successfully',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    $('#reassignContractorModal').modal('hide');
+                    location.reload();
+                });
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: msg,
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        });
+    }
 });
 </script>
 @endpush

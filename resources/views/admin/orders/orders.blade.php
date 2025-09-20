@@ -2029,21 +2029,9 @@
                     },
                     columns: [
                        {
-    data: 'id',
-    name: 'orders.id',
-    render: function(data, type, row) {
-        return `
-            <div class="d-flex align-items-center gap-1 text-nowrap">
-                
-                <span>
-                    <a href="${window.location.origin}/admin/orders/${data}/view" class="text-primary">
-                        ${data}
-                    </a>
-                </span>
-            </div>
-        `;
-    }
-},
+                            data: 'id',
+                            name: 'orders.id',
+                        },
 
                         {
                             data: 'created_at',

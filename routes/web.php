@@ -700,6 +700,7 @@ Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::c
 Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
 Route::post('admin/attachments/upload', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('admin.quill.image.upload');
 Route::post('/admin/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
+Route::post('/admin/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');
 
 
 // Notification routes
