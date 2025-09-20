@@ -602,14 +602,16 @@
                                                     <br><small class="text-white">${order.user ? order.user.email : 'N/A'}</small>
                                                 </div>
                                             </div>
-                                            
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="fa-solid fa-box text-primary me-2"></i>
-                                                <div>
-                                                    <strong>${order.plan ? order.plan.name : 'N/A'}</strong>
-                                                    <br><small class="text-white">Plan</small>
+
+                                            ${order.assigned_to ? `
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="fa-solid fa-user-tie text-info me-2"></i>
+                                                    <div>
+                                                        <strong>${order.assigned_to.name}</strong>
+                                                        <br><small class="text-white">Assigned To</small>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ` : ''}
                                         </div>
                                         
                                         <div class="col-md-6">
@@ -620,14 +622,14 @@
                                                     <br><small class="text-white">Created</small>
                                                 </div>
                                             </div>
-                                            
+                                            ${helpersCount == 0 ? '' : `
                                             <div class="d-flex align-items-center mb-2">
                                                 <i class="fa-solid fa-users text-warning me-2"></i>
                                                 <div>
                                                     <strong>${helpersCount} Helper(s)</strong>
                                                     <br><small class="text-white">Assigned</small>
                                                 </div>
-                                            </div>
+                                            </div>`}
                                         </div>
                                     </div>
                                     

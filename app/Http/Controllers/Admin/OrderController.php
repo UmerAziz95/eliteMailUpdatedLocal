@@ -2473,7 +2473,8 @@ class OrderController extends Controller
     {
         try {
             $query = Order::where('is_shared', true)
-                ->with(['user', 'plan']);
+                ->with(['user', 'plan', 'assignedTo'])
+                ->select('orders.*'); // Ensure we get all order fields
 
             // Filter based on tab type
             if ($request->has('tab')) {
@@ -2542,6 +2543,16 @@ class OrderController extends Controller
                         ->toArray();
                 } else {
                     $order->helpers_names = [];
+                }
+                
+                // Ensure plan name is available
+                if ($order->plan) {
+                    $order->plan_name = $order->plan->name;
+                } else if ($order->plan_id) {
+                    // If plan relation failed, try to get plan name directly
+                    $plan = \App\Models\Plan::find($order->plan_id);
+                    $order->plan_name = $plan ? $plan->name : 'Unknown Plan';
+                    $order->plan = $plan; // Also set the plan object
                 }
                 
                 return $order;
