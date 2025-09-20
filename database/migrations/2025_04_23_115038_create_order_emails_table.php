@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_emails', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('email');
-            $table->string('password');
-            $table->string('profile_picture')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('order_emails')) {
+            Schema::create('order_emails', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('order_id')->constrained()->onDelete('cascade');
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->string('name');
+                $table->string('email');
+                $table->string('password');
+                $table->string('profile_picture')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
