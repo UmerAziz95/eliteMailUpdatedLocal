@@ -1284,16 +1284,33 @@
 
     // Global cleanup function for offcanvas issues
     function cleanupOffcanvasBackdrop() {
-        // Remove any remaining backdrop elements
-        const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop, .fade');
-        backdrops.forEach(backdrop => {
+        // Only remove offcanvas-related backdrop elements, not modal backdrops
+        const offcanvasBackdrops = document.querySelectorAll('.offcanvas-backdrop');
+        offcanvasBackdrops.forEach(backdrop => {
             backdrop.remove();
         });
         
-        // Reset body styles
-        document.body.classList.remove('offcanvas-open', 'modal-open');
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
+        // Only remove fade elements that are specifically offcanvas-related
+        const fadeElements = document.querySelectorAll('.fade:not(.modal):not(.modal *)');
+        fadeElements.forEach(element => {
+            // Only remove if it's not a modal or inside a modal
+            if (!element.closest('.modal') && !element.classList.contains('modal')) {
+                element.remove();
+            }
+        });
+        
+        // Reset body styles only if no modals are currently open
+        const activeModals = document.querySelectorAll('.modal.show');
+        if (activeModals.length === 0) {
+            document.body.classList.remove('offcanvas-open');
+            // Only remove modal-open class if no modals are actually showing
+            const showingModals = document.querySelectorAll('.modal.show');
+            if (showingModals.length === 0) {
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }
+        }
     }
 
     // Add global event listener for offcanvas cleanup
@@ -1638,19 +1655,45 @@
 
     // Open change status modal
     function openChangeStatusModal(orderId, currentStatus) {
-        document.getElementById('modalOrderId').textContent = '#' + orderId;
-        
-        const statusBadge = document.getElementById('modalCurrentStatus');
-        statusBadge.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
-        statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
-        
-        document.getElementById('newStatus').value = '';
-        document.getElementById('statusReason').value = '';
-        
-        document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
-        
-        const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
-        modal.show();
+        try {
+            // Ensure DOM is ready and elements exist
+            const modalOrderIdElement = document.getElementById('modalOrderId');
+            const modalCurrentStatusElement = document.getElementById('modalCurrentStatus');
+            const newStatusElement = document.getElementById('newStatus');
+            const statusReasonElement = document.getElementById('statusReason');
+            const changeStatusModalElement = document.getElementById('changeStatusModal');
+            
+            if (!modalOrderIdElement || !modalCurrentStatusElement || !newStatusElement || !statusReasonElement || !changeStatusModalElement) {
+                console.error('Modal elements not found:', {
+                    modalOrderId: !!modalOrderIdElement,
+                    modalCurrentStatus: !!modalCurrentStatusElement,
+                    newStatus: !!newStatusElement,
+                    statusReason: !!statusReasonElement,
+                    changeStatusModal: !!changeStatusModalElement
+                });
+                return;
+            }
+            
+            // Set the order ID and current status in the modal
+            modalOrderIdElement.textContent = '#' + orderId;
+            
+            // Set current status with appropriate styling
+            modalCurrentStatusElement.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+            modalCurrentStatusElement.className = 'badge ' + getStatusBadgeClass(currentStatus);
+            
+            // Reset form
+            newStatusElement.value = '';
+            statusReasonElement.value = '';
+            
+            // Store order ID for later use
+            changeStatusModalElement.setAttribute('data-order-id', orderId);
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(changeStatusModalElement);
+            modal.show();
+        } catch (error) {
+            console.error('Error opening change status modal:', error);
+        }
     }
 
     // Update order status
