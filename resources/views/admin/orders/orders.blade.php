@@ -1008,6 +1008,78 @@
     .swal2-container.swal-over-canvas {
         z-index: 1060 !important;
     }
+
+    /* Status Filter Counter Highlighting */
+    .StatusFilters_tab {
+        /* transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); */
+        cursor: pointer !important;
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px !important;
+    }
+
+    .StatusFilters_tab::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        /* transition: left 0.6s ease; */
+        z-index: 1;
+    }
+
+    .StatusFilters_tab:hover::before {
+        /* left: 100%; */
+    }
+
+    .StatusFilters_tab.highlighted {
+        /* transform: translateY(-2px) scale(1.02); */
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        border: 2px solid #4a3aff !important;
+        position: relative;
+        z-index: 10;
+    }
+
+    .StatusFilters_tab:not(.highlighted) {
+        /* opacity: 0.9; */
+        /* transform: scale(0.98); */
+    }
+
+    .StatusFilters_tab.highlighted h6 {
+        font-weight: 600;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Status Icons */
+    .status-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        /* transition: all 0.3s ease; */
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .StatusFilters_tab.highlighted .status-icon {
+        background: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .StatusFilters_tab:hover .status-icon {
+        background: rgba(255, 255, 255, 0.2);
+        /* transform: scale(1.05); */
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 @endpush
 
@@ -1030,7 +1102,6 @@
         </li>
     </ul>
 
-
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="list-tab-pane" role="tabpanel" aria-labelledby="list-tab"
             tabindex="0">
@@ -1039,22 +1110,21 @@
                     style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important">
                     <div class=" card p-3 counter_1 text-white StatusFilters_tab" style="border-bottom: 4px solid #535353; cursor: pointer !important" data-status="total" >
                         <div class="d-flex align-items-center justify-content-between">
-                            {{-- <div class="d-flex align-items-center jsutify-content-center">
-                                <i class="fa-regular fa-file-lines fs-5"></i>
-                            </div> --}}
+                            <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                <i class="fa-solid fa-list-ul fs-5"></i>
+                            </div> -->
                             <h6 class="text-heading mb-0">All</h6>
                             <div class="d-flex align-items-center justify-content-end">
                                 <p class="mb-0 fs-5 text-white">{{ number_format($totalOrders) }}</p>
                             </div>
-                            {{-- <small class="mb-0"></small> --}}
                         </div>
                     </div>
 
                     <div class="card p-3 bg-warning counter_2 text-white StatusFilters_tab" data-status="pending" style="cursor: pointer !important">
                         <div class="d-flex align-items-center justify-content-between">
-                            {{-- <div class="">
-                                <i class="fa-solid fa-spinner fs-5"></i>
-                            </div> --}}
+                            <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                <i class="fa-solid fa-clock fs-5"></i>
+                            </div> -->
 
                             <h6 class="text-heading mb-0">Pending</h6>
 
@@ -1062,8 +1132,6 @@
                                 <p class="mb-0 fs-5 text-white">{{ number_format($pendingOrders) }}</p>
                                 <p class="text-danger mb-0"></p>
                             </div>
-
-                            {{-- <small class="mb-0"></small> --}}
                         </div>
                     </div>
 
@@ -1071,9 +1139,9 @@
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
-                                {{-- <div class="">
-                                    <i class="fa-solid fa-check-double fs-5"></i>
-                                </div> --}}
+                                <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                    <i class="fa-solid fa-check-circle fs-5"></i>
+                                </div> -->
 
                                 <h6 class="text-heading mb-0">Complete</h6>
 
@@ -1081,8 +1149,6 @@
                                     <p class="mb-0 fs-5 text-white">{{ number_format($completedOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
-
-                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
@@ -1091,9 +1157,9 @@
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
-                                {{-- <div class="">
-                                    <i class="fa-solid fa-bars-progress fs-5"></i>
-                                </div> --}}
+                                <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                    <i class="fa-solid fa-spinner fa-spin fs-5"></i>
+                                </div> -->
 
                                 <h6 class="text-heading mb-0">In-Progress</h6>
 
@@ -1101,8 +1167,6 @@
                                     <p class="mb-0 fs-5 text-white">{{ number_format($inProgressOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
-
-                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
@@ -1111,9 +1175,9 @@
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex  align-items-center justify-content-between">
-                                {{-- <div class="">
-                                    <i class="fa-brands fa-empire fs-5"></i>
-                                </div> --}}
+                                <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                    <i class="fa-solid fa-times-circle fs-5"></i>
+                                </div> -->
 
                                 <h6 class="text-heading">Cancelled</h6>
 
@@ -1121,8 +1185,6 @@
                                     <p class="mb-0 me-2 fs-5 text-white">{{ number_format($cancelledOrders) }}</p>
                                     <p class="text-success mb-0"></p>
                                 </div>
-
-                                {{-- <small class="mb-0"></small> --}}
                             </div>
                         </div>
                     </div>
@@ -1143,18 +1205,15 @@
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
+                                <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                    <i class="fa-solid fa-file-pen fs-5"></i>
+                                </div> -->
                                 <h6 class="text-heading">Draft</h6>
 
                                 <div class="d-flex align-items-center">
                                     <p class="mb-0 me-2 fs-5 text-white">{{ number_format($draftOrders) }}</p>
                                     <p class="text-warning mb-0"></p>
                                 </div>
-
-                                {{-- <small class="mb-0"></small> --}}
-
-                                {{-- <div class="">
-                                    <i class="fa-solid fa-ban fs-5"></i>
-                                </div> --}}
                             </div>
                         </div>
                     </div>
@@ -1162,6 +1221,9 @@
                         style="background-color: rgba(220, 20, 60, 0.222); cursor:pointer; border-bottom: 4px solid #ff073c;" >
                         <div>
                             <div class="d-flex align-items-center justify-content-between">
+                                <!-- <div class="d-flex align-items-center justify-content-center status-icon">
+                                    <i class="fa-solid fa-trash-can fs-5"></i>
+                                </div> -->
                                 <h6 class="text-heading">Removed</h6>
 
                                 <div class="d-flex align-items-center">
@@ -6064,6 +6126,50 @@
     // Reset modal when it's hidden
     document.getElementById('reassignPanelModal').addEventListener('hidden.bs.modal', function () {
         resetReassignModal();
+    });
+
+    // Status Filter Counter Highlighting Functionality
+    $(document).ready(function() {
+        // Initialize - highlight "All" by default
+        $('.StatusFilters_tab[data-status="total"]').addClass('highlighted');
+        
+        // Handle status filter clicks
+        $('.StatusFilters_tab').on('click', function() {
+            const clickedStatus = $(this).data('status');
+            
+            // Remove highlight from all counters
+            $('.StatusFilters_tab').removeClass('highlighted');
+            
+            // Add highlight to clicked counter
+            $(this).addClass('highlighted');
+            
+            // Optional: Add some visual feedback
+            $(this).addClass('animate__animated animate__pulse');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                $(this).removeClass('animate__animated animate__pulse');
+            }, 1000);
+            
+            // You can add additional functionality here like filtering the table
+            console.log('Status filter clicked:', clickedStatus);
+            
+            // If you want to trigger table filtering, you can add that logic here
+            // For example: triggerStatusFilter(clickedStatus);
+        });
+        
+        // Optional: Add hover effects
+        $('.StatusFilters_tab').on('mouseenter', function() {
+            if (!$(this).hasClass('highlighted')) {
+                // $(this).css('transform', 'translateY(-1px)');
+                $(this).css('box-shadow', '0 4px 15px rgba(0, 0, 0, 0.2)');
+            }
+        }).on('mouseleave', function() {
+            if (!$(this).hasClass('highlighted')) {
+                $(this).css('transform', '');
+                $(this).css('box-shadow', '');
+            }
+        });
     });
 
 </script>
