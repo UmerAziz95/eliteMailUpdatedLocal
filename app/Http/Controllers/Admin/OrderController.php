@@ -2389,9 +2389,9 @@ class OrderController extends Controller
             $newContractorIds = $request->contractor_ids;
 
             // Merge new contractor IDs with existing ones
-            $updatedHelperIds = array_unique(array_merge($currentHelperIds, $newContractorIds));
+            // $updatedHelperIds = array_unique(array_merge($currentHelperIds, $newContractorIds));
             
-            $order->helpers_ids = $updatedHelperIds;
+            $order->helpers_ids =$newContractorIds;
             $order->save();
 
             ActivityLogService::log(
@@ -2400,21 +2400,21 @@ class OrderController extends Controller
                 $order,
                 [
                     'new_contractor_ids' => $newContractorIds,
-                    'all_helper_ids' => $updatedHelperIds,
-                    'helpers_count' => count($updatedHelperIds)
+                    'all_helper_ids' => $newContractorIds,
+                    'helpers_count' => count($newContractorIds)
                 ]
             );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Contractors assigned successfully',
-                'helpers_count' => count($updatedHelperIds)
+                'helpers_count' => count($newContractorIds)
             ]);
         } catch (\Exception $e) {
             Log::error('Error assigning contractors: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error assigning contractors'
+                'message' => 'Error assigning contractors'.$e->getMessage()
             ], 500);
         }
     }
