@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Services\PanelReassignmentService;
 use App\Services\OrderContractorReassignmentService;
+use App\Services\SlackNotificationService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -2411,6 +2412,7 @@ class OrderController extends Controller
     /**
      * Assign contractors to shared order
      */
+    
     public function assignContractors(Request $request, $orderId)
     {
         try {
@@ -2451,6 +2453,21 @@ class OrderController extends Controller
                     'helpers_count' => count($newContractorIds)
                 ]
             );
+
+            // Send Slack notification for contractor assignment
+            try {
+                $contractorNames = User::whereIn('id', $newContractorIds)
+                    ->pluck('name')
+                    ->toArray();
+                
+                SlackNotificationService::sendContractorAssignmentNotification(
+                    $order,
+                    $newContractorIds,
+                    $contractorNames
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to send Slack notification for contractor assignment: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,

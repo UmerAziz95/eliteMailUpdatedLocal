@@ -1079,6 +1079,65 @@ class SlackNotificationService
         ]
     ];
 
+            case 'contractor-assignment':
+                return [
+                    'text' => "👥 *Contractors Assigned to Shared Order*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order Name',
+                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan Name',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned Contractors',
+                                    'value' => $data['contractor_names'] ?? 'None',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Contractor Count',
+                                    'value' => $data['contractor_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned By',
+                                    'value' => $data['assigned_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Assigned At',
+                                    'value' => $data['assigned_at'] ?? 'N/A',
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' - Contractor Management',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
 
             case 'customized-emails-created':
                 $attachments = [
@@ -1793,6 +1852,56 @@ class SlackNotificationService
             'attachments' => $attachments
         ];
 
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send contractor assignment notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @param array $contractorIds
+     * @param array $contractorNames
+     * @return bool
+     */
+    public static function sendContractorAssignmentNotification($order, $contractorIds, $contractorNames)
+    {
+        // Calculate inbox count and split count
+        $inboxCount = 0;
+        $splitCount = 0;
+        
+        if ($order->orderPanels && $order->orderPanels->count() > 0) {
+            foreach ($order->orderPanels as $orderPanel) {
+                $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains && is_array($split->domains)) {
+                        $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                    }
+                }
+            }
+        }
+        
+        // If no splits found, try to get from reorderInfo
+        if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+            $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+        }
+
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'plan_name' => $order->plan ? $order->plan->name : 'N/A',
+            'contractor_names' => implode(', ', $contractorNames),
+            'contractor_count' => count($contractorIds),
+            'inbox_count' => $inboxCount,
+            'split_count' => $splitCount,
+            'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'assigned_at' => now()->format('Y-m-d H:i:s T')
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('contractor-assignment', $data);
         return self::send('inbox-setup', $message);
     }
 
