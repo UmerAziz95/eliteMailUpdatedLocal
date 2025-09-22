@@ -1122,6 +1122,11 @@ class SlackNotificationService
                                     'short' => true
                                 ],
                                 [
+                                    'title' => 'Shared Note',
+                                    'value' => $data['shared_note'] ?? 'No note provided',
+                                    'short' => false
+                                ],
+                                [
                                     'title' => 'Assigned By',
                                     'value' => $data['assigned_by'] ?? 'System',
                                     'short' => true
@@ -1133,6 +1138,73 @@ class SlackNotificationService
                                 ]
                             ],
                             'footer' => $appName . ' - Contractor Management',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'order-shared-status-change':
+                $statusColor = $data['new_shared_status'] === 'Shared' ? '#28a745' : '#6c757d';
+                $statusIcon = $data['new_shared_status'] === 'Shared' ? '🔗' : '🔒';
+                
+                return [
+                    'text' => "{$statusIcon} *Order Shared Status Changed*",
+                    'attachments' => [
+                        [
+                            'color' => $statusColor,
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order Name',
+                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan Name',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => $data['previous_shared_status'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'New Status',
+                                    'value' => $data['new_shared_status'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Shared Note',
+                                    'value' => $data['shared_note'] ?? 'No note provided',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Changed By',
+                                    'value' => $data['changed_by'] ?? 'System',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Changed At',
+                                    'value' => $data['changed_at'] ?? 'N/A',
+                                    'short' => true
+                                ]
+                            ],
+                            'footer' => $appName . ' - Order Sharing Management',
                             'ts' => time()
                         ]
                     ]
@@ -1894,6 +1966,7 @@ class SlackNotificationService
             'plan_name' => $order->plan ? $order->plan->name : 'N/A',
             'contractor_names' => implode(', ', $contractorNames),
             'contractor_count' => count($contractorIds),
+            'shared_note' => $order->shared_note ?? 'No note provided',
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
             'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
@@ -1902,6 +1975,57 @@ class SlackNotificationService
 
         // Prepare the message based on type
         $message = self::formatMessage('contractor-assignment', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send order shared status change notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @param bool $previousStatus
+     * @param bool $newStatus
+     * @return bool
+     */
+    public static function sendOrderSharedStatusNotification($order, $previousStatus, $newStatus)
+    {
+        // Calculate inbox count and split count
+        $inboxCount = 0;
+        $splitCount = 0;
+        
+        if ($order->orderPanels && $order->orderPanels->count() > 0) {
+            foreach ($order->orderPanels as $orderPanel) {
+                $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains && is_array($split->domains)) {
+                        $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                    }
+                }
+            }
+        }
+        
+        // If no splits found, try to get from reorderInfo
+        if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+            $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+        }
+
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'plan_name' => $order->plan ? $order->plan->name : 'N/A',
+            'previous_shared_status' => $previousStatus ? 'Shared' : 'Not Shared',
+            'new_shared_status' => $newStatus ? 'Shared' : 'Not Shared',
+            'shared_note' => $order->shared_note ?? 'No note provided',
+            'inbox_count' => $inboxCount,
+            'split_count' => $splitCount,
+            'changed_by' => auth()->user() ? auth()->user()->name : 'System',
+            'changed_at' => now()->format('Y-m-d H:i:s T')
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-shared-status-change', $data);
         return self::send('inbox-setup', $message);
     }
 

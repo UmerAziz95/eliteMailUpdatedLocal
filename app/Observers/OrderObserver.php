@@ -190,6 +190,33 @@ class OrderObserver
             ]);
         }
         
+        // Check if is_shared was changed
+        if (isset($changes['is_shared'])) {
+            $previousSharedStatus = $order->getOriginal('is_shared');
+            $newSharedStatus = $order->is_shared;
+            
+            \Log::info('OrderObserver: Shared status change detected', [
+                'order_id' => $order->id,
+                'previous_shared_status' => $previousSharedStatus,
+                'new_shared_status' => $newSharedStatus
+            ]);
+            
+            // Send Slack notification when shared status changes
+            try {
+                SlackNotificationService::sendOrderSharedStatusNotification($order, $previousSharedStatus, $newSharedStatus);
+                \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for shared status change', [
+                    'order_id' => $order->id,
+                    'previous_shared_status' => $previousSharedStatus,
+                    'new_shared_status' => $newSharedStatus
+                ]);
+            } catch (\Exception $e) {
+                \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for shared status change', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
         // Fire the general OrderUpdated event for real-time updates
         event(new OrderUpdated($order, $changes));
 
