@@ -38,16 +38,16 @@ class RestrictedDashboardController extends Controller
         $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
        
 
-        // Get queued orders (not assigned to any admin)
+        // Get queued orders (not assigned to any admin)  
         $queuedOrders = Order::whereNull('assigned_to')
-            ->whereNotIn('status_manage_by_admin', ['cancelled', 'reject', 'completed', 'draft'])
+             ->where('status_manage_by_admin', 'pending')
             ->count();
         
-        // Calculate percentage changes (last week vs previous week)
+        // Calculate percentage changes (last week vs previous week)  
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
-        // dd($lastWeek, $previousWeek);
+        // dd($lastWeek, $previousWeek); 
         $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
         $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
 

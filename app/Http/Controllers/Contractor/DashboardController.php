@@ -41,9 +41,9 @@ class DashboardController extends Controller
         $rejectedOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
         $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
         
-        // Get queued orders (not assigned to any contractor)
+        // Get queued orders (not assigned to any contractor)    
         $queuedOrders = Order::whereNull('assigned_to')
-            ->whereNotIn('status_manage_by_admin', ['cancelled', 'reject', 'completed', 'draft'])
+            ->where('status_manage_by_admin', 'pending')
             ->count();
         
         // Calculate percentage changes (last week vs previous week)

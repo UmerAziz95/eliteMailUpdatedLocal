@@ -1,15 +1,30 @@
-<aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div class="text d-flex align-items-center justify-content-center gap-2">
-            <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Light Logo" class="logo-light">
-            <img src="{{ asset('assets/logo/black.png') }}" width="140" alt="Dark Logo" class="logo-dark">
+<!-- put this BEFORE the <aside> (preferred: in <head> or just above the aside) -->
+<script>
+  (function(){
+    try {
+      if (localStorage.getItem('sidebarPinned') === 'true') {
+        // apply an initial class to root so CSS renders collapsed state immediately
+        document.documentElement.classList.add('sidebar-pinned');
+      }
+    } catch (e) {
+      // ignore any storage errors
+    }
+  })();
+</script>
+
+<aside class="sidebar px-2 py-4 overflow-y-auto d-none d-xl-block" style="scrollbar-width: none; position: relative;">
+    <div class="d-flex align-items-center justify-content-between mb-4 sidebar-header">
+        <!-- Logo -->
+        <div class="logo d-flex align-items-center justify-content-center">
+            <img src="{{ asset('assets/logo/redo.png') }}" width="40" alt="Small Logo" class="logo-small d-none">
+            <img src="{{ asset('assets/logo/redo.png') }}" width="140" alt="Full Logo" class="logo-full">
         </div>
-        <!-- Toggle Button -->
-        <div>
-            <button id="toggle-btn" style="background-color: var(--filter-color); height: 35px; width: 35px; border-radius: 50px" class="btn btn-sm d-flex align-items-center justify-content-center btn-light border-0 ms-2">
-            <i class="ti ti-chevron-left text-white fs-5"></i>
+
+        <!-- Pin Button -->
+        <button id="pin-btn"
+            class="btn btn-sm d-flex align-items-center justify-content-center btn-light border-0 pin-btn">
+            <i class="ti ti-pin text-white fs-5"></i>
         </button>
-        </div>
     </div>
 
     <ul class="nav flex-column list-unstyled">
@@ -58,75 +73,144 @@
         @endcan
         @endforeach
     </ul>
-
-
 </aside>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".toggle-btn").forEach(function(toggle) {
-            let icon = toggle.querySelector(".rotate-icon");
-            let collapseTarget = document.querySelector(toggle.getAttribute("href"));
+    document.addEventListener("DOMContentLoaded", function () {
+        // mark JS ready so transitions after initial paint are smooth
+        document.documentElement.classList.add('sidebar-js-ready');
 
-            collapseTarget.addEventListener("show.bs.collapse", () => icon.classList.add("active"));
-            collapseTarget.addEventListener("hide.bs.collapse", () => icon.classList.remove("active"));
+        const docEl = document.documentElement;
+        const sidebar = document.querySelector("aside.sidebar");
+        const pinBtn = document.querySelector("#pin-btn");
+        const logoFull = document.querySelector(".logo-full");
+        const logoSmall = document.querySelector(".logo-small");
+        const textElements = document.querySelectorAll(".text");
+
+        let isPinned = localStorage.getItem("sidebarPinned") === "true";
+
+        // Apply current state on load
+        applySidebarState();
+
+        // Pin button toggle
+        pinBtn.addEventListener("click", function () {
+            isPinned = !isPinned;
+            localStorage.setItem("sidebarPinned", isPinned);
+            applySidebarState();
         });
+function applySidebarState() {
+    pinBtn.classList.toggle("active", isPinned);
 
-        const textElements = document.querySelectorAll('.text');
-        const toggleBtn = document.querySelector('#toggle-btn');
-        const sidebar = document.querySelector('aside');
+    const pinIcon = pinBtn.querySelector("i");
+    if (isPinned) {
+        docEl.classList.add("sidebar-pinned");
+        sidebar.classList.add("collapsed", "sidebar-pinned");
 
-        toggleBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            textElements.forEach(function(item) {
-                item.style.opacity = sidebar.classList.contains('collapsed') ? '0' : '1';
+        if (logoFull) logoFull.classList.add("d-none");
+        if (logoSmall) logoSmall.classList.add("d-none");
+
+        // painted icon
+        if (pinIcon) {
+            pinIcon.classList.remove("ti-pin");
+            pinIcon.classList.add("ti-pin-filled");
+        }
+    } else {
+        docEl.classList.remove("sidebar-pinned");
+        sidebar.classList.remove("collapsed", "sidebar-pinned");
+
+        if (logoFull) logoFull.classList.remove("d-none");
+        if (logoSmall) logoSmall.classList.add("d-none");
+
+        // simple/unpainted icon
+        if (pinIcon) {
+            pinIcon.classList.remove("ti-pin-filled");
+            pinIcon.classList.add("ti-pin");
+        }
+    }
+
+    updateTextVisibility();
+}
+
+        function updateTextVisibility() {
+            textElements.forEach(function (item) {
+                item.style.opacity = isPinned ? "0" : "1";
             });
-        });
-
+        }
     });
 </script>
 
 <style>
-    aside {
+    /* base */
+    aside.sidebar {
         width: 240px;
-        transition: width 1s ease;
+        transition: width 0.4s ease;
     }
 
-    aside.collapsed #toggle-btn {
-        opacity: 0;
-        transition: opacity .4s ease
-    }
-
-    aside.collapsed:hover #toggle-btn {
-        opacity: 1
-    }
-
-    aside.collapsed {
+    /* collapsed (applies after JS runs) */
+    aside.sidebar.collapsed {
         width: 70px;
     }
 
-    aside.collapsed:hover {
-        width: 240px;
+    /* ensure the initial paint uses collapsed state if document had .sidebar-pinned set early */
+    html.sidebar-pinned aside.sidebar {
+        width: 70px;
     }
 
-    aside.collapsed .nav-link.active {
-        width: 55px;
-        transition: width .6s ease
+    /* avoid transition on initial paint — enable transitions only after we mark js-ready */
+    html.sidebar-pinned:not(.sidebar-js-ready) aside.sidebar,
+    html:not(.sidebar-js-ready) aside.sidebar {
+        transition: none;
     }
 
-    aside.collapsed:hover .nav-link.active {
-        width: 100%;
-    }
-
-    aside.collapsed .text {
-        transition: opacity .6s ease, transform .4s ease;
+    /* hide text when collapsed (root-level selector prevents flicker) */
+    html.sidebar-pinned .text,
+    aside.sidebar.collapsed .text {
+        opacity: 0;
         transform: translateX(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
         white-space: nowrap;
     }
 
-    aside.collapsed:hover .text {
-        opacity: 1 !important;
-        transform: translateX(0px);
-        white-space: pre-wrap
+    /* normal text state */
+    .text {
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+
+    /* hide logos when collapsed via root class (applies immediately) */
+    html.sidebar-pinned .logo-full,
+    html.sidebar-pinned .logo-small {
+        display: none !important;
+    }
+
+    /* Pin button default */
+    .pin-btn {
+        background-color: var(--filter-color);
+        height: 35px;
+        width: 35px;
+        border-radius: 50px;
+        transition: all 0.2s ease;
+    }
+
+    /* When collapsed, move & shrink pin button near top-right */
+    html.sidebar-pinned .pin-btn,
+    aside.sidebar.collapsed .pin-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        height: 25px;
+        width: 25px;
+        border-radius: 50%;
+        padding: 0;
+    }
+
+    /* Pin button active look */
+    #pin-btn.active {
+        background-color: #333 !important;
+    }
+
+    /* small niceties */
+    .logo img {
+        transition: opacity 0.2s ease, width 0.2s ease;
     }
 </style>
