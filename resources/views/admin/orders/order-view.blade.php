@@ -60,6 +60,7 @@
                         <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+                    
                     <div class="modal-body"> 
                         {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}}   --}}
                         <div class="mb-3">
@@ -86,6 +87,7 @@
                     </select>
 
                         </div>
+                            <input type="text" name="reassignment_note" id="reassignment_note" class="form-control" placeholder="Enter reason for reassignment..." required>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -153,8 +155,9 @@ $(function() {
             url: '/admin/orders/{{ $order->id }}/reassign-contractor',
             method: 'POST',
             data: {
-                contractor_id: contractorId,
-                remove_from_helpers: removeFromHelpers,
+                 contractor_id: contractorId,
+                 remove_from_helpers: removeFromHelpers,
+                 reassignment_note: $('#reassignment_note').val(),
                 _token: '{{ csrf_token() }}'
             },
             beforeSend: function() {

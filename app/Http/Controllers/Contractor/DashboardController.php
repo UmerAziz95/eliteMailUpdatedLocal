@@ -35,11 +35,11 @@ class DashboardController extends Controller
         $totalOrders = $orders->count();
         
         // Get orders by status
-        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
+        $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->where('assigned_to', Auth::id())->count();
         $inProgressOrders = $orders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
         $rejectedOrders = $orders->clone()->where('status_manage_by_admin', 'reject')->count();
-        $cancelledOrders = $orders->clone()->where('status_manage_by_admin', 'cancelled')->count();
+        $cancelledOrders = $orders->clone()->whereIn('status_manage_by_admin', ['cancelled','removed'])->count();
         
         // Get queued orders (not assigned to any contractor)    
         $queuedOrders = Order::whereNull('assigned_to')

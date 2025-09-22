@@ -2175,7 +2175,8 @@ class OrderController extends Controller
         try {
             $request->validate([
                 'contractor_id' => 'required|exists:users,id',
-                'remove_from_helpers' => 'nullable|in:true,false,1,0'
+                'remove_from_helpers' => 'nullable|in:true,false,1,0',
+                'reassignment_note' => 'nullable|string|max:255'
             ]);
            Log::channel('slack_notifications')->info("test 1 controller============================".$orderId.'-'. $request->contractor_id);
 
@@ -2183,8 +2184,7 @@ class OrderController extends Controller
             $removeFromHelpers = filter_var($request->remove_from_helpers, FILTER_VALIDATE_BOOLEAN);
 
             $service = new OrderContractorReassignmentService();
-            $result = $service->reassignContractor($orderId, $request->contractor_id, $removeFromHelpers);
-
+            $result = $service->reassignContractor($orderId, $request->reassignment_note, $request->contractor_id, $removeFromHelpers);
             if ($result['success']) {
                 // Log the activity
                 ActivityLogService::log(

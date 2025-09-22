@@ -76,67 +76,105 @@
 </aside>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // mark JS ready so transitions after initial paint are smooth
-        document.documentElement.classList.add('sidebar-js-ready');
+ document.addEventListener("DOMContentLoaded", function () {
+    // mark JS ready so transitions after initial paint are smooth
+    document.documentElement.classList.add('sidebar-js-ready');
 
-        const docEl = document.documentElement;
-        const sidebar = document.querySelector("aside.sidebar");
-        const pinBtn = document.querySelector("#pin-btn");
-        const logoFull = document.querySelector(".logo-full");
-        const logoSmall = document.querySelector(".logo-small");
-        const textElements = document.querySelectorAll(".text");
+    const docEl = document.documentElement;
+    const sidebar = document.querySelector("aside.sidebar");
+    const pinBtn = document.querySelector("#pin-btn");
+    const logoFull = document.querySelector(".logo-full");
+    const logoSmall = document.querySelector(".logo-small");
+    const textElements = document.querySelectorAll(".text");
 
-        let isPinned = localStorage.getItem("sidebarPinned") === "true";
+    let isPinned = localStorage.getItem("sidebarPinned") === "true";
+    let tooltipInstances = [];
 
-        // Apply current state on load
+    // Apply current state on load
+    applySidebarState();
+
+    // Pin button toggle
+    pinBtn.addEventListener("click", function () {
+        isPinned = !isPinned;
+        localStorage.setItem("sidebarPinned", isPinned);
         applySidebarState();
+    });
 
-        // Pin button toggle
-        pinBtn.addEventListener("click", function () {
-            isPinned = !isPinned;
-            localStorage.setItem("sidebarPinned", isPinned);
-            applySidebarState();
-        });
-function applySidebarState() {
-    pinBtn.classList.toggle("active", isPinned);
+    function applySidebarState() {
+        pinBtn.classList.toggle("active", isPinned);
 
-    const pinIcon = pinBtn.querySelector("i");
-    if (isPinned) {
-        docEl.classList.add("sidebar-pinned");
-        sidebar.classList.add("collapsed", "sidebar-pinned");
+        const pinIcon = pinBtn.querySelector("i");
+        if (isPinned) {
+            docEl.classList.add("sidebar-pinned");
+            sidebar.classList.add("collapsed", "sidebar-pinned");
 
-        if (logoFull) logoFull.classList.add("d-none");
-        if (logoSmall) logoSmall.classList.add("d-none");
+            if (logoFull) logoFull.classList.add("d-none");
+            if (logoSmall) logoSmall.classList.add("d-none");
 
-        // painted icon
-        if (pinIcon) {
-            pinIcon.classList.remove("ti-pin");
-            pinIcon.classList.add("ti-pin-filled");
+            // painted icon
+            if (pinIcon) {
+                pinIcon.classList.remove("ti-pin");
+                pinIcon.classList.add("ti-pin-filled");
+            }
+
+            // ✅ Enable tooltips only when collapsed
+            enableTooltips();
+
+        } else {
+            docEl.classList.remove("sidebar-pinned");
+            sidebar.classList.remove("collapsed", "sidebar-pinned");
+
+            if (logoFull) logoFull.classList.remove("d-none");
+            if (logoSmall) logoSmall.classList.add("d-none");
+
+            // simple/unpainted icon
+            if (pinIcon) {
+                pinIcon.classList.remove("ti-pin-filled");
+                pinIcon.classList.add("ti-pin");
+            }
+
+            // ✅ Disable tooltips when expanded
+            disableTooltips();
         }
-    } else {
-        docEl.classList.remove("sidebar-pinned");
-        sidebar.classList.remove("collapsed", "sidebar-pinned");
 
-        if (logoFull) logoFull.classList.remove("d-none");
-        if (logoSmall) logoSmall.classList.add("d-none");
+        updateTextVisibility();
+    }
 
-        // simple/unpainted icon
-        if (pinIcon) {
-            pinIcon.classList.remove("ti-pin-filled");
-            pinIcon.classList.add("ti-pin");
+    function updateTextVisibility() {
+        textElements.forEach(function (item) {
+            item.style.opacity = isPinned ? "0" : "1";
+        });
+    }
+
+    function enableTooltips() {
+        disableTooltips(); // clear any existing before reinit
+        const navLinks = document.querySelectorAll(".nav-link");
+
+        navLinks.forEach(link => {
+            const textEl = link.querySelector(".text");
+            if (textEl) {
+                link.setAttribute("title", textEl.innerText.trim());
+            }
+        });
+
+        if (typeof bootstrap !== "undefined") {
+            tooltipInstances = [].slice.call(document.querySelectorAll('[title]'))
+                .map(el => new bootstrap.Tooltip(el, {
+                    placement: "left",
+                    customClass: "yellow-tooltip"
+                }));
         }
     }
 
-    updateTextVisibility();
-}
+    function disableTooltips() {
+        tooltipInstances.forEach(instance => instance.dispose());
+        tooltipInstances = [];
+        document.querySelectorAll(".nav-link[title]").forEach(el => {
+            el.removeAttribute("title");
+        });
+    }
+});
 
-        function updateTextVisibility() {
-            textElements.forEach(function (item) {
-                item.style.opacity = isPinned ? "0" : "1";
-            });
-        }
-    });
 </script>
 
 <style>
@@ -213,4 +251,21 @@ function applySidebarState() {
     .logo img {
         transition: opacity 0.2s ease, width 0.2s ease;
     }
+
+    /* Custom yellow tooltip */
+.yellow-tooltip .tooltip-inner {
+    background-color: orange !important;
+    color: black !important;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 5px;
+}
+
+/* Arrow color */
+.yellow-tooltip.bs-tooltip-auto[data-popper-placement^=right] .tooltip-arrow::before,
+.yellow-tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: orange !important;
+}
+
 </style>

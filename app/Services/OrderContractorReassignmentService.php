@@ -21,7 +21,7 @@ class OrderContractorReassignmentService
      * @param bool $removeFromHelpers
      * @return array
      */
-    public function reassignContractor($orderId, $newContractorId, $removeFromHelpers = false)
+    public function reassignContractor($orderId, $reassign_note=null, $newContractorId, $removeFromHelpers = false)
     {
         try {
            Log::channel('slack_notifications')->info("test 2 service ============================");
@@ -43,8 +43,9 @@ class OrderContractorReassignmentService
             }
             
             $order->assigned_to = $newContractorId;
+            $order->reassignment_note = $reassign_note;
             $order->save();
-            //  SlackNotificationService::sendOrderAssignmentNotification($order, $newContractorId);
+            //SlackNotificationService::sendOrderAssignmentNotification($order, $newContractorId);
         
             OrderPanel::where('order_id', $orderId)
                 ->update(['contractor_id' => $newContractorId]);

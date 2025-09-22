@@ -196,7 +196,7 @@
                                 <p class="small opacity-75 mb-0" style="font-size: 11px">{{ $cancelledOrders ?? 0 }}</p>
                             </div>
                         </li>
-                        <li style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
+                        <li class="d-none" style="background-color: #8484844a" class="d-flex gap-2 rounded-2 px-2 py-1 align-items-center mb-2">
                             <div class="badge p-1 rounded bg-label-secondary border border-secondary">
                                 <i class="ti ti-hourglass-empty fs-6 text-secondary"></i>
                             </div>

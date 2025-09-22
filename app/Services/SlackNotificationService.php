@@ -291,7 +291,8 @@ class SlackNotificationService
             'contractor_email' => $order->assignedTo ? $order->assignedTo->email : 'N/A',
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
-            'assigned_by' => auth()->user() ? auth()->user()->name : 'System'
+            'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'reassignment_note' => $order->reassignment_note
         ];
 
         // Prepare the message based on type
@@ -1008,69 +1009,76 @@ class SlackNotificationService
                     ]
                 ];
                 
-            case 'order-assignment':
-                return [
-                    'text' => "👤 *Order Assignment Notification*",
-                    'attachments' => [
-                        [
-                            'color' => '#007bff',
-                            'fields' => [
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Assigned To',
-                                    'value' => $data['contractor_name'] ?? 'Unassigned',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Contractor Email',
-                                    'value' => $data['contractor_email'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Split Count',
-                                    'value' => $data['split_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Assigned By',
-                                    'value' => $data['assigned_by'] ?? 'System',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Timestamp',
-                                    'value' => now()->format('Y-m-d H:i:s T'),
-                                    'short' => true
-                                ]
-                            ],
-                            'footer' => $appName . ' Slack Integration',
-                            'ts' => time()
-                        ]
-                    ]
-                ];
+     case 'order-assignment':
+    $fields = [
+        [
+            'title' => 'Order ID',
+            'value' => $data['order_id'] ?? 'N/A',
+            'short' => true
+        ],
+        [
+            'title' => 'Current Status',
+            'value' => $data['status_manage_by_admin'] ?? 'N/A',
+            'short' => true
+        ], 
+        [
+            'title' => 'Customer Name',
+            'value' => $data['customer_name'] ?? 'N/A',
+            'short' => true
+        ],
+        [
+            'title' => 'Assigned To',
+            'value' => $data['contractor_name'] ?? 'Unassigned',
+            'short' => true
+        ],
+        [
+            'title' => 'Contractor Email',
+            'value' => $data['contractor_email'] ?? 'N/A',
+            'short' => true
+        ],
+        [
+            'title' => 'Inbox Count',
+            'value' => $data['inbox_count'] ?? '0',
+            'short' => true
+        ],
+        [
+            'title' => 'Split Count',
+            'value' => $data['split_count'] ?? '0',
+            'short' => true
+        ],
+        [
+            'title' => 'Assigned By',
+            'value' => $data['assigned_by'] ?? 'System',
+            'short' => true
+        ],
+        [
+            'title' => 'Timestamp',
+            'value' => now()->format('Y-m-d H:i:s T'),
+            'short' => true
+        ],
+    ];
+
+    // ✅ Add Reassignment Note only if not empty
+    if (!empty($data['reassignment_note'])) {
+        $fields[] = [
+            'title' => 'Reassignment Note',
+            'value' => $data['reassignment_note'],
+            'short' => false
+        ];
+    }
+
+    return [
+        'text' => "👤 *Order Assignment Notification*",
+        'attachments' => [
+            [
+                'color'  => '#007bff',
+                'fields' => $fields,
+                'footer' => $appName . ' Slack Integration',
+                'ts'     => time(),
+            ]
+        ]
+    ];
+
 
             case 'customized-emails-created':
                 $attachments = [

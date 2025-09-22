@@ -592,6 +592,9 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
 
     // Domains Removal Tasks
+    Route::post('/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');
+    Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
+
 }); 
 // Static Plans Routes
 // Route::middleware(['auth'])->group(function () {

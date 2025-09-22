@@ -554,6 +554,16 @@
         border-radius: 0.5rem;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
+
+    #contractorSelect {
+    background-color: #1a1a1a; /* dark gray */
+    color: white;
+}
+
+#contractorSelect option {
+    background-color: #1a1a1a;
+    color: white !important;
+}
 </style>
 
 
@@ -711,12 +721,160 @@
         </div>
     </div>
 </div>
+
+{{-- reassign modal --}}
+    <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="reassignContractorForm">
+                <input type="hidden" name="view_order_id" id="view_order_id">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body"> 
+                        {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}}   --}}
+                        <div class="mb-3" style="z-index: 1000;">
+                            <label for="contractorSelect" class="form-label">Select Contractor</label>
+                           <select class="form-select" id="contractorSelect" name="contractor_id" required style="background-color: white">
+                        <option value="">-- Select Contractor --</option>
+                        @php
+                            $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
+                            $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
+                                    $q->whereIn('name', $roleNames);
+                                })
+                                ->get();
+                        @endphp
+
+                        @foreach($contractors as $contractor)
+                            <option value="{{ $contractor->id }}">
+                                {{-- @if($order->assigned_to == $contractor->id) selected @endif> --}}
+                                {{ $contractor->name }} ({{ $contractor->email }})
+                            </option>
+                        @endforeach
+                    </select>
+
+                        </div>
+                    <input type="text" name="reassignment_note" id="reassignment_note" class="form-control" placeholder="Enter reason for reassignment..." required>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Reassign</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 
 
+<script>
+$(function() {
+    $('#reassignContractorForm').on('submit', function(e) {
+        e.preventDefault();
+        var contractorId = $('#contractorSelect').val();
+        if (!contractorId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a contractor',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
 
+        // First check if contractor is in helpers
+        const order_id=$('#view_order_id').val(); 
+        $.ajax({
+            url: `/contractor/orders/${order_id}/check-contractor-helpers`,
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success && response.is_in_helpers) {
+                    // Show confirmation dialog if contractor is in helpers
+                    Swal.fire({
+                        title: 'Contractor Already in Helpers',
+                        text: `${response.contractor_name} is already added as a helper. Reassigning will remove them from the helpers list. Are you sure you want to continue?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, reassign!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            performReassignment(contractorId, true); // Remove from helpers
+                        }
+                    });
+                } else {
+                    // Proceed with normal reassignment
+                    performReassignment(contractorId, false);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error checking contractor helpers:', xhr);
+                // If check fails, proceed with normal reassignment
+                performReassignment(contractorId, false);
+            }
+        });
+    });
+
+    function performReassignment(contractorId, removeFromHelpers) {
+         const order_id=$('#view_order_id').val();
+        $.ajax({
+
+            url: `/contractor/orders/${order_id}/reassign-contractor`,
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                remove_from_helpers: removeFromHelpers,
+                reassignment_note: $('#reassignment_note').val(),
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Reassigning Contractor...',
+                    text: 'Please wait while we process your request',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Contractor reassigned successfully',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    $('#reassignContractorModal').modal('hide');
+                    location.reload();
+                });
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: msg,
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        });
+    }
+});
+</script>
 
 
 
@@ -1336,6 +1494,11 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                 if (!response.ok) throw new Error('Failed to fetch order details');
                 
                 const data = await response.json();
+                console.log("data....",data.order.id);
+                const order_id=data.order.id;
+                $('#view_order_id').val(order_id);
+             
+
                 renderOrderSplits(data);
                   
             } catch (error) {
@@ -1444,6 +1607,10 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
                                 ${orderInfo.is_shared ? 'Remove Helper' : 'Helper Request'}
                             </button>
+                            
+                              <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                <i class="fa fa-user-edit"></i> Reassign Contractor
+            </button>
                         </div>
                     </div>
                     ${orderInfo.is_shared ? `

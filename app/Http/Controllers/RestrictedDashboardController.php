@@ -27,14 +27,15 @@ class RestrictedDashboardController extends Controller
         $orders = Order::all();
         
 
-        $totalOrders = $orders->count();
+        $totalOrders = $orders->where('status_manage_by_admin', '!=', 'draft')->count();
+
         
         // Get orders by status
         $pendingOrders = $orders->where('status_manage_by_admin', 'pending')->count();
         $inProgressOrders = $orders->where('status_manage_by_admin', 'in-progress')->count();
         $completedOrders = $orders->where('status_manage_by_admin', 'completed')->count();
         $rejectedOrders = $orders->where('status_manage_by_admin', 'reject')->count();
-        $cancelledOrders = $orders->where('status_manage_by_admin', 'cancelled')->count();
+        $cancelledOrders = $orders->whereIn('status_manage_by_admin', ['cancelled','removed'])->count();
         $draftOrders = $orders->where('status_manage_by_admin', 'draft')->count();
        
 
