@@ -2028,18 +2028,22 @@
                         {
                             width: '20%',
                             targets: planId ? 4 : 5
-                        }, // Domain URL
+                        }, // Assigned To
                         {
                             width: '15%',
                             targets: planId ? 5 : 6
-                        }, // Total Inboxes 
+                        }, // Inboxes
                         {
                             width: '15%',
                             targets: planId ? 6 : 7
+                        }, // Timer
+                        {
+                            width: '15%',
+                            targets: planId ? 7 : 8
                         }, // Status
                         {
                             width: '10%',
-                            targets: planId ? 7 : 8
+                            targets: planId ? 8 : 9
                         } // Actions
                     ],
                     ajax: {
@@ -2159,12 +2163,6 @@
                                 </div>
                             `;
                             }
-                        },
-                        {
-                            data: 'split_counts',
-                            name: 'split_counts',
-                            orderable: false,
-                            searchable: false
                         },
                         {
                             data: 'total_inboxes',

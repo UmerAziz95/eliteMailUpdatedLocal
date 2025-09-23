@@ -11,7 +11,7 @@
                 @endif
                 <th>Assigned To</th>
                 {{-- split counts --}}
-                <th>Panel Counts</th> 
+                {{-- <th>Panel Counts</th> --}}
                 <th>Inboxes</th>
                 <th>Timer</th>
                 <th>Status</th>
