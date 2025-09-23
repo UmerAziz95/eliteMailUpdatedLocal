@@ -194,7 +194,16 @@ class OrderObserver
         if (isset($changes['is_shared'])) {
             $previousSharedStatus = $order->getOriginal('is_shared');
             $newSharedStatus = $order->is_shared;
-            
+            ActivityLogService::log(
+                'Order Shared Status Changed',
+                "Order #{$order->id} shared status changed: " . ($order->is_shared ? 'Helper Request Added' : 'Helper Request Removed') . '. Note: ' . ($order->shared_note ?? 'No note provided'),
+                $order,
+                [
+                    'shared_status' => $order->is_shared,
+                    'shared_note' => $order->shared_note ?? 'No note provided',
+                    'helper_request_added' => $order->is_shared ? 'Helper request added' : 'Helper request removed'
+                ]
+            );
             \Log::info('OrderObserver: Shared status change detected', [
                 'order_id' => $order->id,
                 'previous_shared_status' => $previousSharedStatus,

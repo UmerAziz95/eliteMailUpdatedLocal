@@ -2379,16 +2379,6 @@ class OrderController extends Controller
             
             $order->save();
 
-            ActivityLogService::log(
-                'Order Shared Status Changed',
-                "Order #{$order->id} shared status changed to: " . ($order->is_shared ? 'shared' : 'not shared') . '. Note: ' . $request->input('note'),
-                $order,
-                [
-                    'shared_status' => $order->is_shared,
-                    'shared_note' => $request->input('note')
-                ]
-            );
-
             return response()->json([
                 'success' => true,
                 'message' => 'Order shared status updated successfully',
