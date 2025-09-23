@@ -292,6 +292,7 @@ class SlackNotificationService
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
             'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
             'reassignment_note' => $order->reassignment_note
         ];
 
@@ -1009,75 +1010,75 @@ class SlackNotificationService
                     ]
                 ];
                 
-     case 'order-assignment':
-    $fields = [
-        [
-            'title' => 'Order ID',
-            'value' => $data['order_id'] ?? 'N/A',
-            'short' => true
-        ],
-        [
-            'title' => 'Current Status',
-            'value' => $data['status_manage_by_admin'] ?? 'N/A',
-            'short' => true
-        ], 
-        [
-            'title' => 'Customer Name',
-            'value' => $data['customer_name'] ?? 'N/A',
-            'short' => true
-        ],
-        [
-            'title' => 'Assigned To',
-            'value' => $data['contractor_name'] ?? 'Unassigned',
-            'short' => true
-        ],
-        [
-            'title' => 'Contractor Email',
-            'value' => $data['contractor_email'] ?? 'N/A',
-            'short' => true
-        ],
-        [
-            'title' => 'Inbox Count',
-            'value' => $data['inbox_count'] ?? '0',
-            'short' => true
-        ],
-        [
-            'title' => 'Split Count',
-            'value' => $data['split_count'] ?? '0',
-            'short' => true
-        ],
-        [
-            'title' => 'Assigned By',
-            'value' => $data['assigned_by'] ?? 'System',
-            'short' => true
-        ],
-        [
-            'title' => 'Timestamp',
-            'value' => now()->format('Y-m-d H:i:s T'),
-            'short' => true
-        ],
-    ];
+            case 'order-assignment':
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Current Status',
+                        'value' => $data['status_manage_by_admin'] ?? 'N/A',
+                        'short' => true
+                    ], 
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Assigned To',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Contractor Email',
+                        'value' => $data['contractor_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Inbox Count',
+                        'value' => $data['inbox_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Split Count',
+                        'value' => $data['split_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Assigned By',
+                        'value' => $data['assigned_by'] ?? 'System',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Timestamp',
+                        'value' => now()->format('Y-m-d H:i:s T'),
+                        'short' => true
+                    ],
+                ];
 
-    // ✅ Add Reassignment Note only if not empty
-    if (!empty($data['reassignment_note'])) {
-        $fields[] = [
-            'title' => 'Reassignment Note',
-            'value' => $data['reassignment_note'],
-            'short' => false
-        ];
-    }
+                // ✅ Add Reassignment Note only if not empty
+                if (!empty($data['reassignment_note'])) {
+                    $fields[] = [
+                        'title' => 'Reassignment Note',
+                        'value' => $data['reassignment_note'],
+                        'short' => false
+                    ];
+                }
 
-    return [
-        'text' => "👤 *Order Assignment Notification*",
-        'attachments' => [
-            [
-                'color'  => '#007bff',
-                'fields' => $fields,
-                'footer' => $appName . ' Slack Integration',
-                'ts'     => time(),
-            ]
-        ]
-    ];
+                return [
+                    'text' => "👤 *Order Assignment Notification*",
+                    'attachments' => [
+                        [
+                            'color'  => '#007bff',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts'     => time(),
+                        ]
+                    ]
+                ];
 
             case 'contractor-assignment':
                 return [

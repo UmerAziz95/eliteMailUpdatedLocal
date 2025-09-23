@@ -45,6 +45,8 @@ class OrderContractorReassignmentService
             // Check if helpers_ids are null or empty, set is_shared to 0
             if (empty($order->helpers_ids)) {
                 $order->is_shared = 0;
+                // shared_note
+                $order->shared_note = $reassign_note;
             }
             
             $order->assigned_to = $newContractorId;
