@@ -140,6 +140,49 @@
     .swal2-container.swal-over-canvas {
         z-index: 1060 !important;
     }
+
+    /* Dark theme for Select2 - matching roles design */
+    .select2-container .select2-selection--multiple {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+        color: #fff !important;
+    }
+    
+    .select2-dropdown {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+    }
+    
+    .select2-results__option {
+        background-color: #2f3349 !important;
+        color: #fff !important;
+    }
+    
+    .select2-results__option--highlighted {
+        background-color: #495057 !important;
+        color: #fff !important;
+    }
+    
+    .select2-search--dropdown .select2-search__field {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-search--inline .select2-search__field {
+        background-color: transparent !important;
+        color: #fff !important;
+    }
 </style>
 @endpush
 
@@ -360,7 +403,7 @@
                     <input type="hidden" id="assignOrderId" name="order_id">
                     <div class="mb-3">
                         <label for="contractors" class="form-label">Select Contractors (Helpers)</label>
-                        <select id="contractors" name="contractors[]" class="form-select" multiple required>
+                        <select id="contractors" name="contractors[]" class="form-control select2" multiple required style="background-color: #2f3349; color: #fff; border: 1px solid #444;">
                             <!-- Contractors will be loaded dynamically -->
                         </select>
                         <div class="form-text">Hold Ctrl/Cmd to select multiple contractors</div>
@@ -396,12 +439,31 @@
     $(document).ready(function() {
         // Initialize Select2 for contractors dropdown
         $('#contractors').select2({
-            theme: 'bootstrap-5',
+            dropdownAutoWidth: true,
             width: '100%',
+            theme: 'bootstrap-5',
             placeholder: 'Select contractors...',
             allowClear: true,
-            closeOnSelect: false
+            closeOnSelect: false,
+            dropdownParent: $('#contractors').parent() // helps if inside a modal
         });
+        
+        // Apply dark theme styles after initialization
+        setTimeout(function() {
+            // Style the main selection container
+            $('.select2-container .select2-selection--multiple').css({
+                'background-color': '#2f3349',
+                'border': '1px solid #444',
+                'color': '#fff'
+            });
+
+            // Style selected tags
+            $('.select2-container .select2-selection--multiple .select2-selection__choice').css({
+                'background-color': '#495057',
+                'border': '1px solid #6c757d',
+                'color': '#fff'
+            });
+        }, 100);
         
         // Handle tab switching
         $('#sharedOrderTabs button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
@@ -725,7 +787,7 @@
         // Redirect to order view page (same as main admin orders)
         window.location.href = `/admin/orders/${orderId}/view`;
     }
-
+    
     function loadContractors() {
         $.ajax({
             url: '{{ route("admin.orders.contractors") }}',
