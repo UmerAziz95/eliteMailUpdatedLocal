@@ -1340,7 +1340,7 @@
                                             <span class="badge bg-white text-success ms-1 rounded-pill" style="font-size: 9px;">${unallocatedSplits.length}</span>
                                         </button>
                                        
-                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2 d-none" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
                                             <i class="fa fa-user-edit"></i> Reassign Contractor
                                         </button>
                                      
@@ -1355,7 +1355,7 @@
                                         </span>
                                        
                                       
-                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                                        <button class="btn reassignContractorBtn btn-sm btn-outline-primary ms-2 d-none" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
                                             <i class="fa fa-user-edit"></i> Reassign Contractor
                                         </button>
                                     `
