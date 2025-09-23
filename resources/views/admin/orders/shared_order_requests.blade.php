@@ -816,17 +816,35 @@
                 } else {
                     contractorSelect.append('<option disabled>No contractors available</option>');
                     contractorSelect.trigger('change');
+                    
+                    // Trigger custom event even if no contractors available
+                    $(document).trigger('contractorsLoaded');
                 }
             },
             error: function(xhr) {
                 console.error('Error loading contractors:', xhr);
                 $('#contractors').html('<option disabled>Error loading contractors</option>').trigger('change');
+                
+                // Trigger custom error event
+                $(document).trigger('contractorsLoadError', [xhr]);
             }
         });
     }
 
     function openAssignContractorsModal(orderId) {
         $('#assignOrderId').val(orderId);
+        
+        // Show loading SweetAlert
+        Swal.fire({
+            title: 'Loading Contractors...',
+            text: 'Please wait while we load available contractors.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         // Find the current order to get existing helper IDs
         const currentOrder = sharedOrdersData.find(order => order.id == orderId);
@@ -858,8 +876,8 @@
         // Clear previous selections first
         $('#contractors').val([]).trigger('change');
         
-        // Function to set the selections
-        function setContractorSelections() {
+        // Function to set the selections and show modal
+        function setContractorSelectionsAndShowModal() {
             if (existingHelperIdsStr.length > 0) {
                 console.log('Setting contractor selections:', existingHelperIdsStr);
                 $('#contractors').val(existingHelperIdsStr).trigger('change');
@@ -876,30 +894,49 @@
                     }, 50);
                 }
             }
+            
+            // Close SweetAlert loading and show modal
+            Swal.close();
+            
+            // Show modal with static backdrop to prevent closing when clicking outside
+            new bootstrap.Modal(document.getElementById('assignContractorsModal'), {
+                backdrop: 'static',
+                keyboard: false
+            }).show();
         }
         
-        // Check if contractors are already loaded
-        if ($('#contractors option').length > 1) { // More than just the default option
-            // Always reload contractors with current order exclusion
-            loadContractors(orderId);
-            // Wait for reload to complete before setting selections
-            $(document).one('contractorsLoaded', function() {
-                setTimeout(setContractorSelections, 150);
+        // Wait for contractors to be loaded
+        $(document).one('contractorsLoaded', function() {
+            setTimeout(setContractorSelectionsAndShowModal, 150);
+        });
+        
+        // Handle contractor loading error
+        $(document).one('contractorsLoadError', function(event, xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Loading Contractors',
+                text: 'Unable to load contractors. Please try again.',
+                confirmButtonColor: '#3085d6'
             });
-        } else {
-            // Wait for contractors to be loaded
-            $(document).one('contractorsLoaded', function() {
-                setTimeout(setContractorSelections, 150);
+        });
+        
+        // Set timeout for loading (15 seconds)
+        const loadingTimeout = setTimeout(function() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Loading Timeout',
+                text: 'Loading contractors is taking longer than expected. Please try again.',
+                confirmButtonColor: '#3085d6'
             });
-            
-            // Also reload contractors to ensure they're available (excluding current assigned contractor)
-            loadContractors(orderId);
-        }
-        // Show modal with static backdrop to prevent closing when clicking outside
-        new bootstrap.Modal(document.getElementById('assignContractorsModal'), {
-            backdrop: 'static',
-            keyboard: false
-        }).show();
+        }, 15000);
+        
+        // Clear timeout when contractors are loaded or error occurs
+        $(document).one('contractorsLoaded contractorsLoadError', function() {
+            clearTimeout(loadingTimeout);
+        });
+        
+        // Load contractors (excluding current assigned contractor)
+        loadContractors(orderId);
     }
 
     // Reset modal when closed
