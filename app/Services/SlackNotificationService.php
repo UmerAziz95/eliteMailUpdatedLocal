@@ -304,6 +304,124 @@ class SlackNotificationService
     }
 
     /**
+     * Send order reassignment notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @param int $oldAssignedTo
+     * @param int $newAssignedTo
+     * @return bool
+     */
+    public static function sendOrderReassignmentNotification($order, $oldAssignedTo, $newAssignedTo)
+    {
+        // Calculate inbox count and split count
+        $inboxCount = 0;
+        $splitCount = 0;
+        
+        if ($order->orderPanels && $order->orderPanels->count() > 0) {
+            foreach ($order->orderPanels as $orderPanel) {
+                $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains && is_array($split->domains)) {
+                        $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                    }
+                }
+            }
+        }
+        
+        // If no splits found, try to get from reorderInfo
+        if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+            $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+        }
+
+        $oldContractor = \App\Models\User::find($oldAssignedTo);
+        $newContractor = \App\Models\User::find($newAssignedTo);
+        // if order is is_shared and helper_ids then added helpers
+        $helpers = collect();
+        if ($order->is_shared && $order->helpers_ids) {
+            $helperIds = is_string($order->helpers_ids) ? json_decode($order->helpers_ids, true) : $order->helpers_ids;
+            if (is_array($helperIds) && !empty($helperIds)) {
+                $helpers = \App\Models\User::whereIn('id', $helperIds)->get();
+            }
+        }
+        // get names
+        $helpersNames = $helpers->pluck('name')->toArray();
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'old_contractor_name' => $oldContractor ? $oldContractor->name : 'Unknown',
+            'old_contractor_email' => $oldContractor ? $oldContractor->email : 'N/A',
+            'new_contractor_name' => $newContractor ? $newContractor->name : 'Unknown',
+            'new_contractor_email' => $newContractor ? $newContractor->email : 'N/A',
+            'inbox_count' => $inboxCount,
+            'split_count' => $splitCount,
+            'reassigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
+            'reassignment_note' => $order->reassignment_note,
+            'helpers_names' => $helpersNames
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-reassignment', $data);
+
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send order unassignment notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @param int $oldAssignedTo
+     * @return bool
+     */
+    public static function sendOrderUnassignmentNotification($order, $oldAssignedTo)
+    {
+        // Calculate inbox count and split count
+        $inboxCount = 0;
+        $splitCount = 0;
+        
+        if ($order->orderPanels && $order->orderPanels->count() > 0) {
+            foreach ($order->orderPanels as $orderPanel) {
+                $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                
+                foreach ($orderPanel->orderPanelSplits as $split) {
+                    if ($split->domains && is_array($split->domains)) {
+                        $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                    }
+                }
+            }
+        }
+        
+        // If no splits found, try to get from reorderInfo
+        if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+            $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+        }
+
+        $oldContractor = \App\Models\User::find($oldAssignedTo);
+
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'old_contractor_name' => $oldContractor ? $oldContractor->name : 'Unknown',
+            'old_contractor_email' => $oldContractor ? $oldContractor->email : 'N/A',
+            'inbox_count' => $inboxCount,
+            'split_count' => $splitCount,
+            'unassigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
+            'unassignment_note' => $order->unassignment_note
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-unassignment', $data);
+
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send inbox cancellation notification to Slack
      *
      * @param \App\Models\Order $order
@@ -1576,6 +1694,159 @@ class SlackNotificationService
                 return [
                     'text' => "💬 *New Reply Added to Support Ticket*",
                     'attachments' => $attachments
+                ];
+                
+            case 'order-reassignment':
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Current Status',
+                        'value' => $data['status_manage_by_admin'] ?? 'N/A',
+                        'short' => true
+                    ], 
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Previous Contractor',
+                        'value' => $data['old_contractor_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'New Contractor',
+                        'value' => $data['new_contractor_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'New Contractor Email',
+                        'value' => $data['new_contractor_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Inbox Count',
+                        'value' => $data['inbox_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Split Count',
+                        'value' => $data['split_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Reassigned By',
+                        'value' => $data['reassigned_by'] ?? 'System',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Timestamp',
+                        'value' => now()->format('Y-m-d H:i:s T'),
+                        'short' => true
+                    ],
+                ];
+
+                // Add Reassignment Note only if not empty
+                if (!empty($data['reassignment_note'])) {
+                    $fields[] = [
+                        'title' => 'Reassignment Note',
+                        'value' => $data['reassignment_note'],
+                        'short' => false
+                    ];
+                }
+                // helpersNames
+                if (!empty($data['helpers_names']) && is_array($data['helpers_names'])) {
+                    $fields[] = [
+                        'title' => 'Assigned Helpers',
+                        'value' => implode(', ', $data['helpers_names']),
+                        'short' => false
+                    ];
+                }
+
+                return [
+                    'text' => "🔄 *Order Reassignment Notification*",
+                    'attachments' => [
+                        [
+                            'color'  => '#ffc107',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts'     => time(),
+                        ]
+                    ]
+                ];
+
+            case 'order-unassignment':
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Current Status',
+                        'value' => $data['status_manage_by_admin'] ?? 'N/A',
+                        'short' => true
+                    ], 
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Previously Assigned To',
+                        'value' => $data['old_contractor_name'] ?? 'Unknown',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Previous Contractor Email',
+                        'value' => $data['old_contractor_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Inbox Count',
+                        'value' => $data['inbox_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Split Count',
+                        'value' => $data['split_count'] ?? '0',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Unassigned By',
+                        'value' => $data['unassigned_by'] ?? 'System',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Timestamp',
+                        'value' => now()->format('Y-m-d H:i:s T'),
+                        'short' => true
+                    ],
+                ];
+
+                // Add Unassignment Note only if not empty
+                if (!empty($data['unassignment_note'])) {
+                    $fields[] = [
+                        'title' => 'Unassignment Note',
+                        'value' => $data['unassignment_note'],
+                        'short' => false
+                    ];
+                }
+
+                return [
+                    'text' => "❌ *Order Unassignment Notification*",
+                    'attachments' => [
+                        [
+                            'color'  => '#dc3545',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts'     => time(),
+                        ]
+                    ]
                 ];
                 
             default:

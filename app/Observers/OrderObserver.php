@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\Notification;
 use App\Events\OrderCreated;
 use App\Events\OrderUpdated;
@@ -246,31 +247,32 @@ class OrderObserver
                 'new_assigned_to' => $newAssignedTo
             ]);
             
-            // Create notification when order is assigned to contractor (from null to assigned)
-            if ($newAssignedTo) {
-                \Log::info('OrderObserver: Creating notification for contractor assignment', [
+            // Handle first assignment (from null to assigned)
+            if (is_null($oldAssignedTo) && !is_null($newAssignedTo)) {
+                \Log::info('OrderObserver: Creating notification for FIRST contractor assignment', [
                     'order_id' => $order->id,
                     'assigned_to' => $newAssignedTo,
-                    'auth_user_id' => Auth::id()
+                    'auth_user_id' => Auth::id(),
+                    'assignment_type' => 'first_assignment'
                 ]);
 
                 try {
-
                     // Create a notification for the contractor
                     Notification::create([
                         'user_id' => $newAssignedTo,
                         'type' => 'order_assigned',
-                        'title' => 'Order Assigned',
+                        'title' => 'New Order Assigned',
                         'message' => 'You have been assigned to order #' . $order->id,
                         'data' => [
                             'order_id' => $order->id,
                             'assigned_to' => $newAssignedTo,
                             'assigned_by' => Auth::id(),
+                            'assignment_type' => 'first_assignment'
                         ],
                         'is_read' => false
                     ]);
 
-                    // Also create a log entry
+                    // Create a log entry for first assignment
                     ActivityLogService::log(
                         'order-assigned',
                         'Order assigned to contractor: ' . $order->id . ' - ' . ($order->assignedTo ? $order->assignedTo->name : 'Unknown'),
@@ -278,29 +280,173 @@ class OrderObserver
                         [
                             'order_id' => $order->id,
                             'assigned_to' => $newAssignedTo,
+                            'assignment_type' => 'first_assignment'
                         ],
                         Auth::id() ?? 1 // Performed By - fallback to admin if no auth
                     );
-                    // Send Slack notification if order is assigned
+                    
+                    // Send Slack notification for first assignment
                     SlackNotificationService::sendOrderAssignmentNotification($order, $newAssignedTo);
-                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order assignment', [
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for FIRST order assignment', [
                         'order_id' => $order->id,
-                        'assigned_to' => $newAssignedTo
+                        'assigned_to' => $newAssignedTo,
+                        'assignment_type' => 'first_assignment'
                     ]);
-                    \Log::info('OrderObserver: Order assignment notification created successfully', [
+                    
+                    \Log::info('OrderObserver: First order assignment notification created successfully', [
                         'order_id' => $order->id,
                         'assigned_to' => $newAssignedTo
                     ]);
                 } catch (\Exception $e) {
-
-                    \Log::error('OrderObserver: Failed to create assignment notification', [
+                    \Log::error('OrderObserver: Failed to create first assignment notification', [
                         'order_id' => $order->id,
                         'assigned_to' => $newAssignedTo,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
                 }
-            } else {
+            }
+            // Handle reassignment (from one contractor to another)
+            elseif (!is_null($oldAssignedTo) && !is_null($newAssignedTo) && $oldAssignedTo !== $newAssignedTo) {
+                \Log::info('OrderObserver: Creating notification for contractor REASSIGNMENT', [
+                    'order_id' => $order->id,
+                    'old_assigned_to' => $oldAssignedTo,
+                    'new_assigned_to' => $newAssignedTo,
+                    'auth_user_id' => Auth::id(),
+                    'assignment_type' => 'reassignment'
+                ]);
+
+                try {
+                    // Create notification for the NEW contractor
+                    Notification::create([
+                        'user_id' => $newAssignedTo,
+                        'type' => 'order_reassigned',
+                        'title' => 'Order Reassigned to You',
+                        'message' => 'Order #' . $order->id . ' has been reassigned to you',
+                        'data' => [
+                            'order_id' => $order->id,
+                            'assigned_to' => $newAssignedTo,
+                            'previous_assigned_to' => $oldAssignedTo,
+                            'assigned_by' => Auth::id(),
+                            'assignment_type' => 'reassignment'
+                        ],
+                        'is_read' => false
+                    ]);
+
+                    // Create notification for the OLD contractor (order removed)
+                    Notification::create([
+                        'user_id' => $oldAssignedTo,
+                        'type' => 'order_unassigned',
+                        'title' => 'Order Reassigned',
+                        'message' => 'Order #' . $order->id . ' has been reassigned to another contractor',
+                        'data' => [
+                            'order_id' => $order->id,
+                            'previous_assigned_to' => $oldAssignedTo,
+                            'new_assigned_to' => $newAssignedTo,
+                            'assigned_by' => Auth::id(),
+                            'assignment_type' => 'reassignment'
+                        ],
+                        'is_read' => false
+                    ]);
+
+                    // Create a log entry for reassignment
+                    ActivityLogService::log(
+                        'order-reassigned',
+                        'Order reassigned from ' . (\App\Models\User::find($oldAssignedTo)->name ?? 'Unknown') . ' to ' . ($order->assignedTo ? $order->assignedTo->name : 'Unknown') . ': Order #' . $order->id,
+                        $order,
+                        [
+                            'order_id' => $order->id,
+                            'old_assigned_to' => $oldAssignedTo,
+                            'new_assigned_to' => $newAssignedTo,
+                            'assignment_type' => 'reassignment'
+                        ],
+                        Auth::id() ?? 1 // Performed By - fallback to admin if no auth
+                    );
+                    
+                    // Send Slack notification for reassignment
+                    SlackNotificationService::sendOrderReassignmentNotification($order, $oldAssignedTo, $newAssignedTo);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order REASSIGNMENT', [
+                        'order_id' => $order->id,
+                        'old_assigned_to' => $oldAssignedTo,
+                        'new_assigned_to' => $newAssignedTo,
+                        'assignment_type' => 'reassignment'
+                    ]);
+                    
+                    \Log::info('OrderObserver: Order reassignment notifications created successfully', [
+                        'order_id' => $order->id,
+                        'old_assigned_to' => $oldAssignedTo,
+                        'new_assigned_to' => $newAssignedTo
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderObserver: Failed to create reassignment notifications', [
+                        'order_id' => $order->id,
+                        'old_assigned_to' => $oldAssignedTo,
+                        'new_assigned_to' => $newAssignedTo,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+            // Handle unassignment (from assigned to null)
+            // elseif (!is_null($oldAssignedTo) && is_null($newAssignedTo)) {
+            //     \Log::info('OrderObserver: Creating notification for contractor UNASSIGNMENT', [
+            //         'order_id' => $order->id,
+            //         'old_assigned_to' => $oldAssignedTo,
+            //         'auth_user_id' => Auth::id(),
+            //         'assignment_type' => 'unassignment'
+            //     ]);
+
+            //     try {
+            //         // Create notification for the contractor who was unassigned
+            //         Notification::create([
+            //             'user_id' => $oldAssignedTo,
+            //             'type' => 'order_unassigned',
+            //             'title' => 'Order Unassigned',
+            //             'message' => 'Order #' . $order->id . ' has been unassigned from you',
+            //             'data' => [
+            //                 'order_id' => $order->id,
+            //                 'previous_assigned_to' => $oldAssignedTo,
+            //                 'assigned_by' => Auth::id(),
+            //                 'assignment_type' => 'unassignment'
+            //             ],
+            //             'is_read' => false
+            //         ]);
+
+            //         // Create a log entry for unassignment
+            //         ActivityLogService::log(
+            //             'order-unassigned',
+            //             'Order unassigned from contractor: ' . $order->id . ' - ' . (\App\Models\User::find($oldAssignedTo)->name ?? 'Unknown'),
+            //             $order,
+            //             [
+            //                 'order_id' => $order->id,
+            //                 'previous_assigned_to' => $oldAssignedTo,
+            //                 'assignment_type' => 'unassignment'
+            //             ],
+            //             Auth::id() ?? 1 // Performed By - fallback to admin if no auth
+            //         );
+                    
+            //         // Send Slack notification for unassignment
+            //         SlackNotificationService::sendOrderUnassignmentNotification($order, $oldAssignedTo);
+            //         \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order UNASSIGNMENT', [
+            //             'order_id' => $order->id,
+            //             'old_assigned_to' => $oldAssignedTo,
+            //             'assignment_type' => 'unassignment'
+            //         ]);
+                    
+            //         \Log::info('OrderObserver: Order unassignment notification created successfully', [
+            //             'order_id' => $order->id,
+            //             'old_assigned_to' => $oldAssignedTo
+            //         ]);
+            //     } catch (\Exception $e) {
+            //         \Log::error('OrderObserver: Failed to create unassignment notification', [
+            //             'order_id' => $order->id,
+            //             'old_assigned_to' => $oldAssignedTo,
+            //             'error' => $e->getMessage(),
+            //             'trace' => $e->getTraceAsString()
+            //         ]);
+            //     }
+            // } 
+            else {
                 \Log::info('OrderObserver: Assignment condition not met', [
                     'order_id' => $order->id,
                     'new_assigned_to' => $newAssignedTo,
