@@ -1156,7 +1156,7 @@ $(function() {
                 <div class="center w-100 h-100">
                     <div class="rounded-2">
                     <div class="d-flex align-items-center justify-content-between">
-                        <h6>Order #${order.order_id}</h6>
+                        <h6>Order #${order.order_id + " " + order.sharedIcon}</h6>
                         <div>
                             ${order.status_manage_by_admin}
                             ${createTimerBadge(order)}

@@ -1702,8 +1702,17 @@ class OrderController extends Controller
                         ];
                     }
                 }
+                // Determine icon color based on shared status and helpers assignment
+                $iconColor = 'text-secondary'; // default color
+                if ($order->is_shared) {
+                    // Check if helpers are assigned (not null, not empty array)
+                    $hasHelpers = !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
+                    $iconColor = $hasHelpers ? 'text-success' : 'text-warning';
+                }
                 
+                $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                 return [
+                    'sharedIcon' => $sharedIcon,
                     'id' => $order->id,
                     'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',

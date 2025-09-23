@@ -301,7 +301,15 @@ class OrderController extends Controller
 
                 })
                 ->editColumn('id', function ($order) {
-                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning me-2" title="Shared Order"></i>' : '';
+                    // Determine icon color based on shared status and helpers assignment
+                    $iconColor = 'text-secondary'; // default color
+                    if ($order->is_shared) {
+                        // Check if helpers are assigned (not null, not empty array)
+                        $hasHelpers = !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
+                        $iconColor = $hasHelpers ? 'text-success' : 'text-warning';
+                    }
+                    
+                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                     $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
                     $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $order->id . '</a>';
                     return $order_view_link . ' ' . $share_request_link;

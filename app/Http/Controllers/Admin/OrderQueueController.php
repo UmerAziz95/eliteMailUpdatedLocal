@@ -457,8 +457,17 @@ class OrderQueueController extends Controller
                 // Calculate status HTML before the return array
                 $statusKey = strtolower($order->status_manage_by_admin ?? 'N/A');
                 $statusHtml = '<span style="font-size:11px !important" class="py-1 px-1 text-' . ($this->statuses[$statusKey] ?? 'warning') . ' border border-' . ($this->statuses[$statusKey] ?? 'warning') . ' rounded-2 bg-transparent fs-6">' . ucfirst($statusKey) . '</span>';
-
+                // Determine icon color based on shared status and helpers assignment
+                $iconColor = 'text-secondary'; // default color
+                if ($order->is_shared) {
+                    // Check if helpers are assigned (not null, not empty array)
+                    $hasHelpers = !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
+                    $iconColor = $hasHelpers ? 'text-success' : 'text-warning';
+                }
+                
+                $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                 return [
+                    'sharedIcon' => $sharedIcon,
                     'id' => $order->id,
                     'order_id' => $order->id,
                     'customer_name' => $order->user->name ?? 'N/A',
