@@ -224,7 +224,7 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 "name" => "Team Leader Dashboard",
-                "icon" => "ti ti-settings fs-5",
+                "icon" => "ti ti-dashboard fs-5",
                 "route" => "admin.team_leader.dashboard",
                 "permission" => "Team Leader Dashboard",
                 'sub_menu' => []
