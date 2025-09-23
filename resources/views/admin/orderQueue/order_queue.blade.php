@@ -1483,10 +1483,8 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Split ID</th>
                                 <th scope="col">Panel Id</th>
                                 <th scope="col">Panel Title</th>
-                                <th scope="col">Split Status</th>
                                 <th scope="col">Inboxes/Domain</th>
                                 <th scope="col">Total Domains</th>
                                 <th scope="col">Total Inboxes</th>
@@ -1498,16 +1496,8 @@
                             ${splits.map((split, index) => `
                                 <tr>
                                     <th scope="row">${index + 1}</th>
-                                    <td>
-                                        <span class="badge bg-primary" style="font-size: 10px;">
-                                            SPL-${split.id || 'N/A'}
-                                        </span>
-                                    </td>
                                     <td>${split?.panel_id || 'N/A'}</td>
                                     <td>${split?.panel_title || 'N/A'}</td>
-                                    <td>
-                                        <span class="text-dark px-2 py-1 rounded-1 badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
-                                    </td>
                                     <td>${split.inboxes_per_domain || 'N/A'}</td>
                                     <td>
                                         <span class="px-2 py-1 rounded-1 bg-success text-white" style="font-size: 10px;">
@@ -1570,7 +1560,7 @@
                                         splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Split ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                     });
                                     
-                                    return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                                    return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong>`;
                                 })()}</span>
                             </div>
                              
@@ -1642,7 +1632,7 @@
                                              style="background-color: var(--filter-color); cursor: pointer;"
                                              onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                             <div class="d-flex align-items-center">
-                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                     Split ${String(index + 1).padStart(2, '0')}
                                                 </span>
                                                 <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>

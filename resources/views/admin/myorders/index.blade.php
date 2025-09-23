@@ -992,7 +992,7 @@
             ? order.splits.map((split, index) => `
                 <tr>
                 <td style="font-size: 10px; padding: 5px !important;">${index + 1}</td>
-                <td style="font-size: 10px; padding: 5px !important;"><span class="badge ${getStatusBadgeClass(split.status)}" style="font-size: 9px;">${split.status || 'Unknown'}</span></td>
+                <td style="font-size: 10px; padding: 5px !important;">${split.panel_id || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
@@ -1025,11 +1025,11 @@
                     <table class="mt-2 border-0 w-100" style="height: 10.5rem; overflow-y: auto; display: block; scrollbar-width: none;">
                     <thead>
                         <tr>
-                        <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">ID #</th>
-                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Panel Break Status</th>
-                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Inboxes/Domain</th>
-                        <th style="font-size: 11px; padding: 5px !important;" class="text-capitalize">Total Domains</th>
-                        <th style="font-size: 11px; padding: 5px !important; min-width: 2rem !important;" class="text-capitalize">Action</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 3rem !important;" class="text-capitalize">ID #</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 5rem" class="text-capitalize">Panel ID</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 5rem" class="text-capitalize">Inboxes/Domain</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 5rem" class="text-capitalize">Total Domains</th>
+                        <th style="font-size: 11px; padding: 5px !important; min-width: 7rem !important;" class="text-capitalize">Action</th>
                         </tr>
                     </thead>
                     <tbody>

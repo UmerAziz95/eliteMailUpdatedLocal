@@ -1833,7 +1833,7 @@
                                                         const totalAllDomains = mainDomainsCount + (order.remaining_order_panels ? 
                                                             order.remaining_order_panels.reduce((total, panel) => total + (panel.domains_count || 0), 0) : 0);
                                                         
-                                                        return `<strong>Total Inboxes: ${totalAllInboxes} (${totalAllDomains} domains)</strong><br>${splitDetails}`;
+                                                        return `<strong>Total Inboxes: ${totalAllInboxes} (${totalAllDomains} domains)</strong>`;
                                                     })() : 'N/A'}</span>
                                                     
                                                 </div>
@@ -1909,7 +1909,7 @@
                                                              style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
                                                              onclick="toggleSplit('main-split-${order.order_id}')">
                                                             <div class="d-flex align-items-center">
-                                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                                <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                     Panel Break 01
                                                                 </span>
                                                                 <small class="text-white fw-bold text-uppercase">PNL-${order.panel_id} | ${order.panel_title || 'N/A'}</small>
@@ -1941,7 +1941,7 @@
                                                              style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
                                                                      onclick="toggleSplit('remaining-split-${order.order_id}-${index}')">
                                                                     <div class="d-flex align-items-center">
-                                                                        <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                                                        <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                             Panel Break ${String(index + 2).padStart(2, '0')}
                                                                         </span>
                                                                         <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_id} | ${panel.panel_title || 'N/A'}</small>

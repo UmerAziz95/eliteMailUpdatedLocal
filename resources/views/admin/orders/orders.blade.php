@@ -4060,10 +4060,8 @@
                     <thead>
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">Panel Break ID</th>
                             <th scope="col">Panel ID</th>
                             <th scope="col">Panel Title</th>
-                            <th scope="col">Panel Break Status</th>
                             <th scope="col">Inboxes/Domain</th>
                             <th scope="col">Total Domains</th>
                             <th scope="col">Total Inboxes</th>
@@ -4077,11 +4075,6 @@
                             <tr>
                                 <th scope="row">${index + 1}</th>
                                 <td>
-                                    <span class="badge bg-primary" style="font-size: 10px;">
-                                        SPL-${split.id || 'N/A'}
-                                    </span>
-                                </td>
-                                <td>
                                     <span class="badge bg-info" style="font-size: 10px;">
                                         PNL-${split.panel_id || 'N/A'}
                                     </span>
@@ -4090,9 +4083,6 @@
                                     <span class="text-truncate" style="max-width: 150px; display: inline-block;" title="${split.panel_title || 'N/A'}">
                                         ${split.panel_title || 'N/A'}
                                     </span>
-                                </td>
-                                <td>
-                                    <span class="badge ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
                                 </td>
                                 
                                 <td>${split.inboxes_per_domain || 'N/A'}</td>
@@ -4163,7 +4153,7 @@
                                     splitDetails += `<br><span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                 });
                                 
-                                return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong><br>${splitDetails}`;
+                                return `<strong>Total Inboxes: ${totalInboxes} (${totalDomains} domains)</strong>`;
                             })()}</span>
                         </div>
                          
@@ -4239,7 +4229,7 @@
                                          style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
                                          onclick="toggleSplit('split-${orderInfo.id}-${index}')">
                                         <div class="d-flex align-items-center">
-                                            <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
+                                            <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
                                             <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
