@@ -2180,14 +2180,15 @@ class OrderController extends Controller
                 // Log the activity
                 ActivityLogService::log(
                     'order_contractor_reassigned',
-                    "Order #{$orderId} contractor reassigned to user ID {$request->contractor_id}",
+                    "Order #{$orderId} contractor reassigned to user ID {$request->contractor_id}" . ($request->reassignment_note ? " - Note: {$request->reassignment_note}" : ""),
                     Order::find($orderId),
                     [
                         'order_id' => $orderId,
                         'old_contractor_id' => $result['old_contractor_id'],
                         'new_contractor_id' => $result['new_contractor_id'],
                         'reassigned_by' => auth()->id(),
-                        'removed_from_helpers' => $removeFromHelpers
+                        'removed_from_helpers' => $removeFromHelpers,
+                        'reassignment_note' => $request->reassignment_note
                     ],
                     auth()->id()
                 );
