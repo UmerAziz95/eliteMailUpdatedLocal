@@ -724,7 +724,7 @@
                                             </button>
                                         `}
                                         
-                                        <button class="btn btn-sm btn-outline-warning" onclick="toggleSharedStatus(${order.id})" title="Unshare Order">
+                                        <button class="btn btn-sm btn-outline-warning" onclick="toggleSharedStatus(${order.id})" title="Cancel Request">
                                             <i class="fa-solid fa-share-from-square"></i>
                                         </button>
                                     </div>
@@ -929,13 +929,13 @@
         }
 
         Swal.fire({
-            title: 'Assign Contractors',
-            text: `Are you sure you want to assign ${contractors.length} contractor(s) to this order?`,
+            title: 'Assigning Helper(s)',
+            text: `Are you sure you want to assign ${contractors.length} helper(s) to this order?`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, assign them!'
+            confirmButtonText: 'Yes!'
         }).then((result) => {
             if (result.isConfirmed) {
                 // Make AJAX call to assign contractors
@@ -998,9 +998,9 @@
 
     function toggleSharedStatus(orderId) {
         Swal.fire({
-            title: 'Unshare Order',
-            text: 'Are you sure you want to unshare this order?',
-            input: 'textarea',   
+            title: 'Cancell Request?',
+            text: 'Are you sure you want to cancel this helper(s) request?',
+            input: 'textarea',
             inputLabel: 'Add a note',
             inputPlaceholder: 'Type your note here...',
             inputAttributes: {
@@ -1010,7 +1010,7 @@
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, unshare it!',
+            confirmButtonText: 'Yes, cancel it!',
             inputValidator: (value) => {
                 if (!value || !value.trim()) {
                     return 'You must provide a note before proceeding!';

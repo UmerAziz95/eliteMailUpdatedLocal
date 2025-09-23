@@ -2507,12 +2507,12 @@ function parseUTCDateTime(dateStr) {
             }
 
             Swal.fire({
-                title: 'Switch Helper Request Status',
+                title: 'Requesting for Helper(s)',
                 input: 'textarea',   
-                inputLabel: 'Add a note',
-                inputPlaceholder: 'Type your note here...',
+                inputLabel: 'Add a reason',
+                inputPlaceholder: 'Type here...',
                 inputAttributes: {
-                    'aria-label': 'Type your note here'
+                    'aria-label': 'Type here'
                 },
                 customClass: {
                     popup: 'swal-over-canvas'
