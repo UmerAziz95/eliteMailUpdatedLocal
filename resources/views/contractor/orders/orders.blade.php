@@ -1605,19 +1605,21 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     title="${orderInfo.is_shared ? 'Unshare Order' : 'Share Order'}"
                                     style="font-size: 13px;">
                                 <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
-                                ${orderInfo.is_shared ? 'Remove Helper' : 'Helper Request'}
+                                ${orderInfo.is_shared ? 'Remove Helper' : 'Add Helper'}
                             </button>
                             
-                              <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
-                <i class="fa fa-user-edit"></i> Reassign Contractor
-            </button>
+                            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                                <i class="fa fa-user-edit"></i> Reassign Contractor
+                            </button>
                         </div>
                     </div>
-                    ${orderInfo.is_shared ? `
+                    ${orderInfo.is_shared == 1 ? `
                         <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
                             <i class="fa-solid fa-users me-2"></i>
-                            This order is currently shared with other contractors
-                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? ` (${orderInfo.helpers_names.join(', ')})` : ''}
+                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 
+                                ? `This order is shared with helpers (${orderInfo.helpers_names.length}): ${orderInfo.helpers_names.join(', ')}`
+                                : 'Helper request is pending'
+                            }
                         </div>
                     ` : ''}
                 </div>

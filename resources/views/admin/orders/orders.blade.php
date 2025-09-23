@@ -4041,13 +4041,15 @@
                         -->
                     </div>
                 </div>
-                ${orderInfo.is_shared ? `
-                    <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
-                        <i class="fa-solid fa-users me-2"></i>
-                        This order is currently shared with other contractors
-                        ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? ` (${orderInfo.helpers_names.join(', ')})` : ''}
-                    </div>
-                ` : ''}
+                ${orderInfo.is_shared == 1 ? `
+                        <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
+                            <i class="fa-solid fa-users me-2"></i>
+                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 
+                                ? `This order is shared with helpers (${orderInfo.helpers_names.length}): ${orderInfo.helpers_names.join(', ')}`
+                                : 'Helper request is pending'
+                            }
+                        </div>
+                    ` : ''}
                 ${orderInfo.shared_note ? `
                     <div class="alert alert-info py-2 mb-3" style="font-size: 12px;">
                         <i class="fa-solid fa-sticky-note me-2"></i>
