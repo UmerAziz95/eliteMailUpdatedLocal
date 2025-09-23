@@ -1128,7 +1128,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Request Status',
-                                    'value' => $data['request_status'] ?? 'N/A',
+                                    'value' => '✅ ' . ($data['request_status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 [
@@ -1154,8 +1154,8 @@ class SlackNotificationService
                 ];
 
             case 'order-shared-status-change':
-                $statusColor = $data['new_shared_status'] === 'Pending' ? '#ffcc15ff' : '#009e20ff';
-                $statusIcon = $data['new_shared_status'] === 'Pending' ? '🔗' : '🔒';
+                $statusColor = $data['new_shared_status'] === 'Pending' ? '#ffc107' : '#dc3545';
+                $statusIcon = $data['new_shared_status'] === 'Pending' ? '🔗' : '❌';
 
                 return [
                     'text' => "{$statusIcon} *Helper Request Notification*",
@@ -1190,7 +1190,7 @@ class SlackNotificationService
                                 // ],
                                 [
                                     'title' => 'Request Status',
-                                    'value' => $data['new_shared_status'] ?? 'N/A',
+                                    'value' => ($data['new_shared_status'] === 'Pending' ? '🔗 ' : '❌ ') . ($data['new_shared_status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 
