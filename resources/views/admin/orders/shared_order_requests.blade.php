@@ -787,11 +787,16 @@
         // Redirect to order view page (same as main admin orders)
         window.location.href = `/admin/orders/${orderId}/view`;
     }
-    
-    function loadContractors() {
+    function loadContractors(orderId = null) {
+        const data = {};
+        if (orderId) {
+            data.order_id = orderId;
+        }
+        
         $.ajax({
             url: '{{ route("admin.orders.contractors") }}',
             method: 'GET',
+            data: data,
             success: function(response) {
                 const contractorSelect = $('#contractors');
                 contractorSelect.empty();
@@ -875,18 +880,26 @@
         
         // Check if contractors are already loaded
         if ($('#contractors option').length > 1) { // More than just the default option
-            setContractorSelections();
+            // Always reload contractors with current order exclusion
+            loadContractors(orderId);
+            // Wait for reload to complete before setting selections
+            $(document).one('contractorsLoaded', function() {
+                setTimeout(setContractorSelections, 150);
+            });
         } else {
             // Wait for contractors to be loaded
             $(document).one('contractorsLoaded', function() {
                 setTimeout(setContractorSelections, 150);
             });
             
-            // Also reload contractors to ensure they're available
-            loadContractors();
+            // Also reload contractors to ensure they're available (excluding current assigned contractor)
+            loadContractors(orderId);
         }
-        
-        $('#assignContractorsModal').modal('show');
+        // Show modal with static backdrop to prevent closing when clicking outside
+        new bootstrap.Modal(document.getElementById('assignContractorsModal'), {
+            backdrop: 'static',
+            keyboard: false
+        }).show();
     }
 
     // Reset modal when closed

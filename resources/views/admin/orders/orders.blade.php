@@ -4032,7 +4032,7 @@
                             </button>
                         ` : ''}
 
-                        <!-- Shared Status Toggle Button -->
+                        <!-- Shared Status Toggle Button 
                         <button class="btn btn-sm ${orderInfo.is_shared ? 'btn-outline-warning' : 'btn-outline-success'} toggle-shared px-3 py-2" 
                                 data-order-id="${orderInfo.id}" 
                                 title="${orderInfo.is_shared ? 'Unshare Order' : 'Share Order'}"
@@ -4040,6 +4040,7 @@
                             <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
                             ${orderInfo.is_shared ? 'Remove Helper' : 'Helper Request'}
                         </button>
+                        -->
                     </div>
                 </div>
                 ${orderInfo.is_shared ? `

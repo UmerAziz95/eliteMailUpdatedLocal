@@ -290,17 +290,7 @@ class OrderController extends Controller
                             </a>
                         </li>
                         ') .
-                        '<li>
-                            <a href="javascript:;" class="dropdown-item toggle-shared" data-order-id="' . $order->id . '">
-                                <i class="fa-solid ' . $shareToggleIcon . '"></i> &nbsp;' . $shareToggleText . '
-                            </a>
-                        </li>' .
-                        ($order->is_shared ? '
-                        <li>
-                            <a href="javascript:;" class="dropdown-item assign-contractors" data-order-id="' . $order->id . '">
-                                <i class="fa-solid fa-users"></i> &nbsp;Add Helpers
-                            </a>
-                        </li>' : '') .
+
                         '<li>
                             <a href="javascript:;" class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" data-order-id="' . $order->id . '">
                                 <i class="fa-solid fa-history"></i> &nbsp;Log View
@@ -2590,10 +2580,20 @@ class OrderController extends Controller
     public function getContractors(Request $request)
     {
         try {
-            $contractors = User::where('role_id', 4)
+            $query = User::where('role_id', 4)
                 ->select('id', 'name', 'email')
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            // Exclude assigned contractor if order_id is provided
+            if ($request->has('order_id')) {
+                $orderId = $request->get('order_id');
+                $order = Order::find($orderId);
+                if ($order && $order->assigned_to) {
+                    $query->where('id', '!=', $order->assigned_to);
+                }
+            }
+
+            $contractors = $query->get();
 
             return response()->json([
                 'success' => true,
