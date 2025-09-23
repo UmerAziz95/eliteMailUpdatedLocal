@@ -1081,7 +1081,7 @@ class SlackNotificationService
 
             case 'contractor-assignment':
                 return [
-                    'text' => "👥 *Contractors Assigned to Shared Order*",
+                    'text' => "👥 *Helper Assigned Notification*",
                     'attachments' => [
                         [
                             'color' => '#28a745',
@@ -1092,8 +1092,8 @@ class SlackNotificationService
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'title' => 'Order Status',
+                                    'value' => $data['order_status'] ?? 'N/A',
                                     'short' => true
                                 ],
                                 [
@@ -1102,29 +1102,34 @@ class SlackNotificationService
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Plan Name',
-                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'title' => 'Contractor Name',
+                                    'value' => $data['assigned_to'] ?? 'N/A',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Plan Name',
+                                //     'value' => $data['plan_name'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
-                                    'title' => 'Assigned Contractors',
+                                    'title' => 'Assigned Helper(s)',
                                     'value' => $data['contractor_names'] ?? 'None',
                                     'short' => false
                                 ],
-                                [
-                                    'title' => 'Contractor Count',
-                                    'value' => $data['contractor_count'] ?? '0',
-                                    'short' => true
-                                ],
+                                // [
+                                //     'title' => 'Contractor Count',
+                                //     'value' => $data['contractor_count'] ?? '0',
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Inbox Count',
                                     'value' => $data['inbox_count'] ?? '0',
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Shared Note',
-                                    'value' => $data['shared_note'] ?? 'No note provided',
-                                    'short' => false
+                                    'title' => 'Request Status',
+                                    'value' => $data['request_status'] ?? 'N/A',
+                                    'short' => true
                                 ],
                                 [
                                     'title' => 'Assigned By',
@@ -1135,7 +1140,12 @@ class SlackNotificationService
                                     'title' => 'Assigned At',
                                     'value' => $data['assigned_at'] ?? 'N/A',
                                     'short' => true
-                                ]
+                                ],
+                                [
+                                    'title' => 'Note',
+                                    'value' => $data['shared_note'] ?? 'No note provided',
+                                    'short' => false
+                                ],
                             ],
                             'footer' => $appName . ' - Contractor Management',
                             'ts' => time()
@@ -1144,11 +1154,11 @@ class SlackNotificationService
                 ];
 
             case 'order-shared-status-change':
-                $statusColor = $data['new_shared_status'] === 'Shared' ? '#28a745' : '#6c757d';
-                $statusIcon = $data['new_shared_status'] === 'Shared' ? '🔗' : '🔒';
-                
+                $statusColor = $data['new_shared_status'] === 'Pending' ? '#ffcc15ff' : '#009e20ff';
+                $statusIcon = $data['new_shared_status'] === 'Pending' ? '🔗' : '🔒';
+
                 return [
-                    'text' => "{$statusIcon} *Order Shared Status Changed*",
+                    'text' => "{$statusIcon} *Helper Request Notification*",
                     'attachments' => [
                         [
                             'color' => $statusColor,
@@ -1159,8 +1169,8 @@ class SlackNotificationService
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
+                                    'title' => 'Order Status',
+                                    'value' => $data['order_status'] ?? 'N/A',
                                     'short' => true
                                 ],
                                 [
@@ -1168,41 +1178,42 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Plan Name',
+                                //     'value' => $data['plan_name'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
+                                // [
+                                //     'title' => 'Previous Status',
+                                //     'value' => $data['previous_shared_status'] ?? 'N/A',
+                                //     'short' => true
+                                // ],
                                 [
-                                    'title' => 'Plan Name',
-                                    'value' => $data['plan_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Previous Status',
-                                    'value' => $data['previous_shared_status'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'New Status',
+                                    'title' => 'Request Status',
                                     'value' => $data['new_shared_status'] ?? 'N/A',
                                     'short' => true
                                 ],
+                                
                                 [
-                                    'title' => 'Shared Note',
-                                    'value' => $data['shared_note'] ?? 'No note provided',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Changed By',
+                                    'title' => 'Initiated By',
                                     'value' => $data['changed_by'] ?? 'System',
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Changed At',
+                                    'title' => 'Initiated At',
                                     'value' => $data['changed_at'] ?? 'N/A',
                                     'short' => true
-                                ]
+                                ],
+                                [
+                                    'title' => 'Inbox Count',
+                                    'value' => $data['inbox_count'] ?? '0',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Note',
+                                    'value' => $data['shared_note'] ?? 'No note provided',
+                                    'short' => false
+                                ],
                             ],
                             'footer' => $appName . ' - Order Sharing Management',
                             'ts' => time()
@@ -1966,10 +1977,14 @@ class SlackNotificationService
             'plan_name' => $order->plan ? $order->plan->name : 'N/A',
             'contractor_names' => implode(', ', $contractorNames),
             'contractor_count' => count($contractorIds),
+            // assigned_to
+            'assigned_to' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
             'shared_note' => $order->shared_note ?? 'No note provided',
+            'order_status' => $order->status_manage_by_admin ? ucfirst(str_replace('_', ' ', $order->status_manage_by_admin)) : 'N/A',
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
             'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
+            'request_status' => 'Confirmed',
             'assigned_at' => now()->format('Y-m-d H:i:s T')
         ];
 
@@ -2016,11 +2031,12 @@ class SlackNotificationService
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
             'plan_name' => $order->plan ? $order->plan->name : 'N/A',
             'previous_shared_status' => $previousStatus ? 'Shared' : 'Not Shared',
-            'new_shared_status' => $newStatus ? 'Shared' : 'Not Shared',
+            'new_shared_status' => $newStatus ? 'Pending' : 'Cancelled',
             'shared_note' => $order->shared_note ?? 'No note provided',
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
             'changed_by' => auth()->user() ? auth()->user()->name : 'System',
+            'order_status' => $order->status_manage_by_admin ? ucfirst(str_replace('_', ' ', $order->status_manage_by_admin)) : 'N/A',
             'changed_at' => now()->format('Y-m-d H:i:s T')
         ];
 
