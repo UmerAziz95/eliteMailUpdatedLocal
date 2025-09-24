@@ -174,7 +174,6 @@ $notification->update(['is_read' => !$notification->is_read]);
      * Get notifications for a specific order
      */
     // 
-
     public function getOrderNotifications($orderId)
     {
         try {
@@ -243,6 +242,7 @@ $notification->update(['is_read' => !$notification->is_read]);
                         'created_at' => $log->created_at->format('M j, Y — h:i A'),
                         'created_at_human' => $log->created_at->diffForHumans(),
                         'user_id' => $log->performed_by,
+                        'user_name' => $log->user ? $log->user->name : $actor,
                         'user' => $log->user ? [
                             'id' => $log->user->id,
                             'name' => $log->user->name,
