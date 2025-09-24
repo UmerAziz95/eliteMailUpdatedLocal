@@ -14,7 +14,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Namecheap',
                 'value' => 'namecheap',
                 'requires_tutorial' => true,
-                'tutorial_link' => 'https://www.dropbox.com/scl/fi/4qilvns2hdrtlufp5f94l/Guide-to-Get-Backup-Codes-for-',
+                'tutorial_link' => 'https://www.dropbox.com/scl/fi/4qilvns2hdrtlufp5f94l/Guide-to-Get-Backup-Codes-for-Namecheap.paper?rlkey=z10rnjj9wqkow99b3vmjwujnj&dl=0',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Namecheap - Access Tutorial',
