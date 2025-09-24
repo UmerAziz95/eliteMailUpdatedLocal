@@ -5534,7 +5534,7 @@
             const timeline = document.getElementById('actionLogTimeline');
             
             timeline.innerHTML = notifications.map(notification => {
-                const actorName = notification.user_name.charAt(0).toUpperCase() + notification.actor.slice(1);
+                const actorName = notification.user_name.toUpperCase() || 'SYSTEM';
                 
                 return `
                     <div class="timeline-item">
