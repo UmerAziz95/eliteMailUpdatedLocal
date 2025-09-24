@@ -996,3 +996,22 @@ Route::get('/clear-session', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('clear.session');
+// set contractor role sub-admin
+Route::get('/set/subadmin/{id}', function($id){
+    try{
+        $user = User::findOrFail($id);
+        $user->role_id = 1; // Set to subadmin role
+        $user->save();
+        return response()->json([
+            'success' => true, 
+            'message' => 'User role updated to subadmin successfully',
+            'user' => $user->name,
+            'new_role_id' => $user->role_id
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false, 
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('set.subadmin');
