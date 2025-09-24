@@ -43,6 +43,48 @@ class PlanController extends Controller
         return view('customer.pricing.pricing', compact('plans', 'getMostlyUsed'));
     }
 
+    /**
+     * Check if an order already exists for the given chargebee_subscription_id
+     * If exists, return the existing order with plan and success data for redirect
+     * 
+     * @param string $chargebeeSubscriptionId
+     * @return array|null Returns order data if exists, null if not found
+     */
+    private function checkExistingOrder($chargebeeSubscriptionId)
+    {
+        try {
+            // Check if order already exists with this chargebee_subscription_id
+            $existingOrder = Order::where('chargebee_subscription_id', $chargebeeSubscriptionId)
+                                  ->with(['user', 'plan'])
+                                  ->first();
+            
+            if ($existingOrder) {
+                Log::info('Duplicate order attempt detected', [
+                    'chargebee_subscription_id' => $chargebeeSubscriptionId,
+                    'existing_order_id' => $existingOrder->id,
+                    'user_id' => $existingOrder->user_id,
+                    'created_at' => $existingOrder->created_at
+                ]);
+                
+                // Return success data for redirect
+                return [
+                    'order' => $existingOrder,
+                    'plan' => $existingOrder->plan,
+                    'subscription_id' => $existingOrder->chargebee_subscription_id,
+                    'amount' => $existingOrder->amount,
+                    'is_duplicate' => true
+                ];
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error checking existing order: ' . $e->getMessage(), [
+                'chargebee_subscription_id' => $chargebeeSubscriptionId
+            ]);
+            return null;
+        }
+    }
+
     public function show($id)
     {
         $plan = Plan::with('features')->findOrFail($id);
@@ -178,6 +220,29 @@ class PlanController extends Controller
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
             $invoice = $content->invoice() ?? null;
+            
+            // Check if order already exists for this subscription before creating new one
+            if ($subscription && $subscription->id) {
+                $existingOrderData = $this->checkExistingOrder($subscription->id);
+                if ($existingOrderData) {
+                    Log::info('Redirecting to existing order success page', [
+                        'chargebee_subscription_id' => $subscription->id,
+                        'existing_order_id' => $existingOrderData['order']->id,
+                        'is_duplicate' => true
+                    ]);
+                    
+                    // Return success page with existing order data
+                    return view('customer.plans.subscription-success', [
+                        'subscription_id' => $existingOrderData['subscription_id'],
+                        'order_id' => $existingOrderData['order']->id,
+                        'plan' => $existingOrderData['plan'],
+                        'amount' => $existingOrderData['amount'],
+                        'is_duplicate' => true,
+                        'is_show_button' => false,
+                        'message' => 'Order already processed successfully'
+                    ]);
+                }
+            }
             
             // Log initial payment data
             $initialLogData = [
@@ -643,6 +708,8 @@ class PlanController extends Controller
                 'order_id' => $order->id,
                 'plan' => $plan,
                 'amount' => ($invoice->amountPaid ?? 0) / 100,
+                'is_duplicate' => false,
+                'is_show_button' => true,
             ]);
         } catch (\Exception $e) {
             // Log exception data

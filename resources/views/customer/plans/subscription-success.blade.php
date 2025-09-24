@@ -30,12 +30,14 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="d-flex gap-3 justify-content-center">
-                            <a href="{{ route('customer.order.edit', $order_id) }}" class="btn btn-outline-primary d-flex align-items-center ">
-                                <i class="ti ti-box fs-5 me-2"></i> Proceed With Your Order
-                            </a>
-                        </div>
+                        <!-- is_show_button -->
+                        @if(isset($is_show_button) && $is_show_button)
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a href="{{ route('customer.order.edit', $order_id) }}" class="btn btn-outline-primary d-flex align-items-center ">
+                                    <i class="ti ti-box fs-5 me-2"></i> Proceed With Your Order
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
