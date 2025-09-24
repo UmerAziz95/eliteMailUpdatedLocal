@@ -538,4 +538,103 @@ function initDataTable(planId = '') {
     }
 });
 </script>
+
+<script>
+    // Handle Convert to Sub Admin
+    $(document).on('click', '.convert-to-subadmin', function (e) {
+        e.preventDefault();
+        let userId = $(this).data('id');
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to convert this contractor to Sub Admin?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, convert it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Converting contractor to Sub Admin',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: `/admin/set/subadmin/${userId}`,
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function (response) {
+                        Swal.close();
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            if (window.orderTables && window.orderTables.all) {
+                                window.orderTables.all.ajax.reload(); // Refresh table
+                            }
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Failed to update user role.',
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to update user role.',
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    // Handle Convert to Team Leader  
+    $(document).on('click', '.convert-to-teamleader', function (e) {
+        e.preventDefault();
+        let userId = $(this).data('id');
+
+        if (confirm("Are you sure you want to convert this contractor to Team Leader?")) {
+            $.ajax({
+                url: `/admin/set/teamleader/${userId}`,
+                method: 'GET', 
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                        if (window.orderTables && window.orderTables.all) {
+                            window.orderTables.all.ajax.reload(); // Refresh table
+                        }
+                    } else {
+                        toastr.error('Failed to update user role.');
+                    }
+                },
+                error: function (xhr) {
+                    toastr.error('Failed to update user role.');
+                }
+            });
+        }
+    });
+</script>
 @endpush

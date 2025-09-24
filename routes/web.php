@@ -155,6 +155,45 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         Route::post('/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('generate-static-link');
         //create admin 
+        // set contractor role sub-admin
+        Route::get('/set/subadmin/{id}', function($id){
+            try{
+                $user = User::findOrFail($id);
+                $user->role_id = 1; // Set to subadmin role
+                $user->save();
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'User role updated to subadmin successfully',
+                    'user' => $user->name,
+                    'new_role_id' => $user->role_id
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false, 
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        })->name('set.subadmin');
+
+        // set contractor role to team leader
+        Route::get('/set/teamleader/{id}', function($id){
+            try{
+                $user = User::findOrFail($id);
+                $user->role_id = 2; // Set to team leader role
+                $user->save();
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'User role updated to team leader successfully',
+                    'user' => $user->name,
+                    'new_role_id' => $user->role_id
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false, 
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        })->name('set.teamleader');
         Route::post('users/store', [AdminController::class, 'store'])->name('users.store');
         Route::post('users/customer/store', [AdminController::class, 'storeCustomer'])->name('users.customer.store');
         Route::get('/{id}/edit', [AdminController::class, 'edit'])->name('edit');
@@ -996,22 +1035,3 @@ Route::get('/clear-session', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('clear.session');
-// set contractor role sub-admin
-Route::get('/set/subadmin/{id}', function($id){
-    try{
-        $user = User::findOrFail($id);
-        $user->role_id = 1; // Set to subadmin role
-        $user->save();
-        return response()->json([
-            'success' => true, 
-            'message' => 'User role updated to subadmin successfully',
-            'user' => $user->name,
-            'new_role_id' => $user->role_id
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false, 
-            'error' => $e->getMessage()
-        ], 500);
-    }
-})->name('set.subadmin');

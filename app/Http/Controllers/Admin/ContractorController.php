@@ -75,6 +75,7 @@ class ContractorController extends Controller
                             </button>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item edit-btn" href="#" data-id="' . $row->id . '">Edit</a></li>
+                                <li><a class="dropdown-item convert-to-subadmin" href="#" data-id="' . $row->id . '">Convert to Sub Admin</a></li>
                             </ul>
                         </div>
                     </div>
