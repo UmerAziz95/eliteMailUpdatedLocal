@@ -1971,6 +1971,10 @@
                                                     <span class="opacity-50">Additional Notes</span>
                                                     <span>${order.reorder_info?.additional_info || 'N/A'}</span>
                                                 </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Master Inbox Email</span>
+                                                    <span>${order.reorder_info?.master_inbox_email || 'N/A'}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -145,7 +145,6 @@ class PanelController extends Controller
                 ->where('panel_id', $panelId)
                 ->orderBy('created_at', 'desc')
                 ->get();
-            
             $ordersData = $orders->map(function ($orderPanel) use ($request) {
                 $order = $orderPanel->order;
                 $splits = $orderPanel->orderPanelSplits;
@@ -262,6 +261,7 @@ class PanelController extends Controller
                         'prefix_variants' => $reorderInfo->prefix_variants,
                         'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                         'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                        'master_inbox_email' => $reorderInfo->master_inbox_email,
                     ] : null,
                     // Add splits with enhanced domain information and status
                     'splits' => $splits->map(function ($split) use ($orderPanel) {

@@ -2,15 +2,6 @@
 @section('title', 'Orders')
 @push('styles')
 <style>
-    input,
-    .form-control,
-    .form-label {
-        font-size: 12px
-    }
-
-    small {
-        font-size: 11px
-    }
 
     .total {
         color: var(--second-primary);
@@ -1062,9 +1053,9 @@
 
                         <div class="d-flex flex-column gap-1">
                         <span class="fw-bold">${order.customer_name}</span>
-                        <small>
+                        <span>
                             Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Panel Breaks${order.splits_count === 1 ? '' : 's'}
-                        </small>
+                        </span>
                         </div>
                     </div>
 
@@ -1075,12 +1066,12 @@
 
                     <div class="d-flex align-items-center justify-content-between mt-3">
                         <div class="d-flex flex-column align-items-center gap-0">
-                        <small class="fw-bold" style="font-size: 13px">Inbox/Domain</small>
-                        <small style="font-size: 12px">${order.inboxes_per_domain}</small>
+                        <small class="fw-bold">Inbox/Domain</small>
+                        <small>${order.inboxes_per_domain}</small>
                         </div>
                         <div class="d-flex flex-column align-items-center gap-0">
-                        <small class="fw-bold" style="font-size: 13px">Total Domains</small>
-                        <small style="font-size: 12px">${order.total_domains}</small>
+                        <small class="fw-bold">Total Domains</small>
+                        <small>${order.total_domains}</small>
                         </div>
                     </div>
                     </div>
@@ -1639,7 +1630,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     splits.forEach((split, index) => {
                                         splitDetails += `
                                             <br>
-                                            <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-size: 10px; font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
+                                            <span class="bg-white text-dark me-1 py-1 px-2 rounded-1" style="font-weight: bold;">Panel Break ${String(index + 1).padStart(2, '0')}</span> 
                                                 Inboxes: ${split.total_inboxes || 0} (${split.domains_count || 0} domains × ${inboxesPerDomain})<br>`;
                                     });
                                     
@@ -1649,12 +1640,16 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                              
                             <hr>
                             <div class="d-flex flex-column">
-                                <span class="opacity-50 small">Prefix Variants</span>
-                                <small>${renderPrefixVariants(reorderInfo)}</small>
+                                <span class="opacity-50">Prefix Variants</span>
+                                <span>${renderPrefixVariants(reorderInfo)}</span>
                             </div>
                             <div class="d-flex flex-column mt-3">
-                                <span class="opacity-50 small">Profile Picture URLS</span>
-                             <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
+                                <span class="opacity-50">Profile Picture URLS</span>
+                                <span>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</span>
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Email Persona Password</span>
+                                <span>${reorderInfo?.email_persona_password || 'N/A'}</span>
                             </div>
                            
                         </div>
@@ -1670,38 +1665,38 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                             </h6>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Hosting Platform</span>
-                                <small>${reorderInfo?.hosting_platform || 'N/A'}</small>
+                                <span class="opacity-50">Hosting Platform</span>
+                                <span>${reorderInfo?.hosting_platform || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Platform Login</span>
-                                <small>${reorderInfo?.platform_login || 'N/A'}</small>
+                                <span class="opacity-50">Platform Login</span>
+                                <span>${reorderInfo?.platform_login || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Platform Password</span>
-                                <small>${reorderInfo?.platform_password || 'N/A'}</small>
+                                <span class="opacity-50">Platform Password</span>
+                                <span>${reorderInfo?.platform_password || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Domain Forwarding Destination URL</span>
-                                <small>${reorderInfo?.forwarding_url || 'N/A'}</small>
+                                <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                <span>${reorderInfo?.forwarding_url || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Sending Platform</span>
-                                <small>${reorderInfo?.sending_platform || 'N/A'}</small>
+                                <span class="opacity-50">Sending Platform</span>
+                                <span>${reorderInfo?.sending_platform || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Cold email platform - Login</span>
-                                <small>${reorderInfo?.sequencer_login || 'N/A'}</small>
+                                <span class="opacity-50">Cold email platform - Login</span>
+                                <span>${reorderInfo?.sequencer_login || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50 small">Cold email platform - Password</span>
-                                <small>${reorderInfo?.sequencer_password || 'N/A'}</small>
+                                <span class="opacity-50">Cold email platform - Password</span>
+                                <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
                             </div>
 
                             <div class="d-flex flex-column">
