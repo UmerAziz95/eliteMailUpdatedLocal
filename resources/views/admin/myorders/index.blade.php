@@ -1743,10 +1743,13 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
 
 
                                 <span class="opacity-50">Back up codes</span>
-                                <span>${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+                                <span>${reorderInfo?.backup_codes || 'N/A'}</span>
 
                                 <span class="opacity-50">Additional Notes</span>
-                                <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                                <span>${reorderInfo?.additional_info || 'N/A'}</span>
+
+                                <span class="opacity-50">Master Inbox Email</span>
+                                <span>${reorderInfo?.master_inbox_email || 'N/A'}</span>
 
     
                             </div>
