@@ -1484,6 +1484,10 @@
                                 <span class="opacity-50 small">Profile Picture URL</span>
                                 <small>${renderProfileLinksFromObject(reorderInfo?.data_obj?.prefix_variants_details)}</small>
                             </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50 small">Email Persona Password</span>
+                                <small>${reorderInfo?.email_persona_password || 'N/A'}</small>
+                            </div>
                         </div>
                     </div>
 
@@ -1591,6 +1595,10 @@
                             <div class="d-flex flex-column mt-3">
                                 <span class="opacity-50">Additional Notes</span>
                                 <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                            </div>
+                            <div class="d-flex flex-column mt-3">
+                                <span class="opacity-50">Master Inbox Email</span>
+                                <span>${reorderInfo?.master_inbox_email || 'N/A'}</span>
                             </div>
                         </div>
                     </div>

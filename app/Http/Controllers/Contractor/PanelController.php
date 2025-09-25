@@ -231,6 +231,8 @@ class PanelController extends Controller
                     'prefix_variants' => $reorderInfo->prefix_variants,
                     'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                     'prefix_variant_2' => $reorderInfo->prefix_variant_2,
+                    // master_inbox_email
+                    'master_inbox_email' => $reorderInfo->master_inbox_email,
                 ] : null,
                 'splits' => $splitsData
             ]);

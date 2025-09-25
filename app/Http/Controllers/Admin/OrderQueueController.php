@@ -226,7 +226,8 @@ class OrderQueueController extends Controller
                     'data_obj' => json_decode($reorderInfo->data_obj, true) ?: [
                         'backup_codes' => $reorderInfo->backup_codes,
                         'additional_info' => $reorderInfo->additional_info,
-                        'prefix_variants_details' => $reorderInfo->prefix_variants_details
+                        'prefix_variants_details' => $reorderInfo->prefix_variants_details,
+                        'master_inbox_email' => $reorderInfo->master_inbox_email,
                     ]
                 ] : null,
                 'splits' => $splits
