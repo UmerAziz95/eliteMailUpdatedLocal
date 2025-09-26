@@ -1460,7 +1460,7 @@
                                     <i class="fa-solid fa-users"></i>
                                 </button>
                             `}
-                            <button class="btn btn-secondary px-2 py-1 rounded-1 ms-1" 
+                            <button class="btn btn-secondary px-2 py-1 rounded-1 ms-1 d-none" 
                                 onclick="openReassignContractorModal(${order.order_id})" 
                                 style="font-size: 11px"
                                 title="Reassign Contractor">
