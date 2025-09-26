@@ -1919,7 +1919,6 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     `;
                                 }
                             })()}
-                            
                             <button class="btn btn-outline-primary btn-sm px-3 py-2" 
                                     onclick="openAssignContractorsModal(${orderInfo?.id})"
                                     style="font-size: 13px;">

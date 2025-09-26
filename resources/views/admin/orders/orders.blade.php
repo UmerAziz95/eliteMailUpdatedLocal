@@ -4,6 +4,9 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
     .avatar {
         position: relative;
@@ -1080,6 +1083,113 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+
+    /* Helper badge styles */
+    .helpers-badge {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        color: white;
+        border: 1px solid rgba(13, 110, 253, 0.3);
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        box-shadow: 0 1px 3px rgba(13, 110, 253, 0.2);
+        animation: subtle-glow 2s ease-in-out infinite alternate;
+    }
+
+    .helpers-badge i {
+        font-size: 8px;
+    }
+
+    /* Dark theme helper badges */
+    [data-bs-theme="dark"] .helpers-badge {
+        background: linear-gradient(135deg, #375a7f, #2c4a64);
+        border-color: rgba(55, 90, 127, 0.3);
+        box-shadow: 0 1px 3px rgba(55, 90, 127, 0.2);
+    }
+
+    /* Subtle glow animation for helper badges */
+    @keyframes subtle-glow {
+        0% {
+            box-shadow: 0 1px 3px rgba(13, 110, 253, 0.2);
+        }
+        100% {
+            box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4);
+        }
+    }
+
+    /* Helper badge hover effect */
+    .helpers-badge:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+    }
+</style>
+<style>
+    /* Helper Badge Styling */
+    .helper-badge {
+        background: linear-gradient(45deg, #ffc107, #ffeb3b);
+        color: #000;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin: 2px;
+        display: inline-block;
+    }
+
+    /* Dark theme for Select2 - matching roles design */
+    .select2-container .select2-selection--multiple {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+        color: #fff !important;
+    }
+    
+    .select2-dropdown {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+    }
+    
+    .select2-results__option {
+        background-color: #2f3349 !important;
+        color: #fff !important;
+    }
+    
+    .select2-results__option--highlighted {
+        background-color: #495057 !important;
+        color: #fff !important;
+    }
+    
+    .select2-search--dropdown .select2-search__field {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-search--inline .select2-search__field {
+        background-color: transparent !important;
+        color: #fff !important;
+    }
+
+    /* SweetAlert2 z-index fix */
+    .swal-over-canvas {
+        z-index: 1060 !important;
+    }
+    
+    .swal2-container.swal-over-canvas {
+        z-index: 1060 !important;
+    }
 </style>
 @endpush
 
@@ -1709,7 +1819,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="contractorSelect" class="form-label">Select Contractors</label>
-                        <select class="form-select" id="contractorSelect" multiple size="5" required>
+                        <select class="form-select" id="contractorSelect" multiple required>
                             @php
                                 $contractors = \App\Models\User::where('role_id', 4)->get();
                             @endphp
@@ -1722,7 +1832,7 @@
                             @endif
                         </select>
                         <small class="form-text text-white">
-                            Hold Ctrl/Cmd to select multiple contractors. 
+                            Search and select multiple contractors. 
                             <span class="text-info">({{ $contractors->count() }} contractors available)</span>
                         </small>
                     </div>
@@ -1742,6 +1852,9 @@
 @endsection
 
 @push('scripts')
+<!-- Select2 JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
     // Debug AJAX calls
         $(document).ajaxSend(function(event, jqXHR, settings) {
@@ -2729,6 +2842,42 @@
         // Handle contractor assignment form submission
         $('#assignContractorsForm').on('submit', function(e) {
             e.preventDefault();
+            assignContractors();
+        });
+
+        // Reset modal when closed
+        $('#assignContractorsModal').on('hidden.bs.modal', function() {
+            $('#contractorSelect').val([]).trigger('change');
+            $('#assignContractorsModalLabel').text('Assign Contractors');
+            $(this).removeData('order-id');
+        });
+
+        // Open assign contractors modal with Select2 functionality
+        function openAssignContractorsModal(orderId) {
+            // Clear previous selections
+            $('#contractorSelect').val([]).trigger('change');
+            
+            // Update modal title
+            $('#assignContractorsModalLabel').text(`Assign Contractors - Order #${orderId}`);
+            
+            // Initialize Select2 if not already initialized
+            if (!$('#contractorSelect').hasClass('select2-hidden-accessible')) {
+                $('#contractorSelect').select2({
+                    theme: 'bootstrap-5',
+                    dropdownParent: $('#assignContractorsModal'),
+                    placeholder: 'Search and select contractors...',
+                    allowClear: true,
+                    closeOnSelect: false
+                });
+            }
+            
+            // Show modal
+            $('#assignContractorsModal').modal('show');
+            $('#assignContractorsModal').data('order-id', orderId);
+        }
+
+        // Assign contractors function
+        function assignContractors() {
             const orderId = $('#assignContractorsModal').data('order-id');
             const contractorIds = $('#contractorSelect').val();
             
@@ -2741,6 +2890,17 @@
                 return;
             }
 
+            // Show loading
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Assigning contractors to the order...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             $.ajax({
                 url: `{{ route('admin.orders.assign-contractors', ':orderId') }}`.replace(':orderId', orderId),
                 method: 'POST',
@@ -2748,6 +2908,7 @@
                     _token: '{{ csrf_token() }}',
                     contractor_ids: contractorIds
                 },
+                
                 success: function(response) {
                     if (response.success) {
                         $('#assignContractorsModal').modal('hide');
@@ -2764,6 +2925,16 @@
                         
                         // Refresh shared orders list
                         loadSharedOrders();
+                        
+                        // Refresh offcanvas if open
+                        const $offcanvas = $('#order-splits-view');
+                        if ($offcanvas.hasClass('show')) {
+                            // Optionally reload the splits view if needed:
+                            if (typeof viewOrderSplits === "function") {
+                                viewOrderSplits(orderId);
+                            }
+                        }
+                        
                     }
                 },
                 error: function(xhr) {
@@ -2778,14 +2949,7 @@
                     });
                 }
             });
-        });
-
-        // Reset modal when closed
-        $('#assignContractorsModal').on('hidden.bs.modal', function() {
-            $('#contractorSelect').val([]);
-            $('#assignContractorsModalLabel').text('Assign Contractors');
-            $(this).removeData('order-id');
-        });
+        }
 
         // Load shared orders
         function loadSharedOrders() {
@@ -2867,7 +3031,7 @@
                                         </div>
                                         <div>
                                             ${helpersCount === 0 ? `
-                                                <button class="btn btn-sm btn-outline-success assign-contractors" data-order-id="${order.id}" title="Assign Contractors">
+                                                <button class="btn btn-sm btn-outline-success" onclick="openAssignContractorsModal(${order.id})" title="Assign Contractors">
                                                     <i class="fa-solid fa-users me-1"></i>
                                                     Add Helpers
                                                 </button>
@@ -4030,15 +4194,12 @@
                             </button>
                         ` : ''}
 
-                        <!-- Shared Status Toggle Button 
-                        <button class="btn btn-sm ${orderInfo.is_shared ? 'btn-outline-warning' : 'btn-outline-success'} toggle-shared px-3 py-2" 
-                                data-order-id="${orderInfo.id}" 
-                                title="${orderInfo.is_shared ? 'Unshare Order' : 'Share Order'}"
+                        <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                onclick="openAssignContractorsModal(${orderInfo?.id})"
                                 style="font-size: 13px;">
-                            <i class="fa-solid ${orderInfo.is_shared ? 'fa-share-from-square' : 'fa-share-nodes'} me-1" style="font-size: 12px;"></i>
-                            ${orderInfo.is_shared ? 'Remove Helper' : 'Helper Request'}
+                            <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                            Add Helper
                         </button>
-                        -->
                     </div>
                 </div>
                 ${orderInfo.is_shared == 1 ? `
