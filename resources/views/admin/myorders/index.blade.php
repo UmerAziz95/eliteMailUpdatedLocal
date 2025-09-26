@@ -1430,7 +1430,7 @@
                 <div class="center w-100 h-100">
                     <div class="rounded-2">
                     <div class="d-flex align-items-center justify-content-between">
-                        <h6>Order #${order.order_id + " " + order.sharedIcon}</h6>
+                        <h6>Order #${order.order_id}</h6>
                         <div>
                             ${order.status_manage_by_admin}
                             ${createTimerBadge(order)}
@@ -1448,7 +1448,7 @@
                         </div>
 
                         <div class="d-flex flex-column gap-1">
-                        <span class="fw-bold">${order.customer_name}</span>
+                        <span class="fw-bold">${order.customer_name + " " + order.sharedIcon}</span>
                         <span>
                             Total Inboxes: ${order.total_inboxes} | ${order.splits_count} Panel Breaks${order.splits_count === 1 ? '' : 's'}
                         </span>

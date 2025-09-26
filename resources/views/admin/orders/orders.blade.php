@@ -1831,7 +1831,7 @@
                                 <option disabled>No contractors found with role_id = 4</option>
                             @endif
                         </select>
-                        <small class="form-text text-white">
+                        <small class="form-text text-white d-none">
                             Search and select multiple contractors. 
                             <span class="text-info">({{ $contractors->count() }} contractors available)</span>
                         </small>
