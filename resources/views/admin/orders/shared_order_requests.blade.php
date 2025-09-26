@@ -719,6 +719,7 @@
                                                 <i class="fa-solid fa-users"></i>
                                             </button>
                                         ` : `
+                                        
                                             <button class="btn btn-sm btn-outline-warning mb-1" onclick="openAssignContractorsModal(${order.id})" title="Manage Helpers">
                                                 <i class="fa-solid fa-user-edit"></i>
                                             </button>

@@ -838,7 +838,11 @@ class OrderController extends Controller
                     'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                     'prefix_variant_2' => $reorderInfo->prefix_variant_2,
                     'master_inbox_email' => $reorderInfo->master_inbox_email,
-                    'additional_info' => $reorderInfo->additional_info
+                    'additional_info' => $reorderInfo->additional_info,
+                    'is_shared' => $order->is_shared == 1 ? 1 : 0,
+                    'shared_note' => $order->shared_note ?? null,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => $order->helpers_ids ? User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : []
                 ] : null,
                 'splits' => $splitsData
             ]);
@@ -2428,7 +2432,10 @@ class OrderController extends Controller
 
             // Merge new contractor IDs with existing ones
             // $updatedHelperIds = array_unique(array_merge($currentHelperIds, $newContractorIds));
-            
+            // if is_shared is false then only assign new contractors
+            if(!$order->is_shared){
+                $order->is_shared = 1;
+            }
             $order->helpers_ids =$newContractorIds;
             $order->save();
 

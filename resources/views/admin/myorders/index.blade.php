@@ -1,6 +1,10 @@
 @extends('admin.layouts.app')
 @section('title', 'Orders')
 @push('styles')
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
 
     .total {
@@ -623,6 +627,71 @@
         box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
 </style>
+
+<style>
+    /* Helper Badge Styling */
+    .helper-badge {
+        background: linear-gradient(45deg, #ffc107, #ffeb3b);
+        color: #000;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin: 2px;
+        display: inline-block;
+    }
+
+    /* Dark theme for Select2 - matching roles design */
+    .select2-container .select2-selection--multiple {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+        color: #fff !important;
+    }
+    
+    .select2-dropdown {
+        background-color: #2f3349 !important;
+        border: 1px solid #444 !important;
+    }
+    
+    .select2-results__option {
+        background-color: #2f3349 !important;
+        color: #fff !important;
+    }
+    
+    .select2-results__option--highlighted {
+        background-color: #495057 !important;
+        color: #fff !important;
+    }
+    
+    .select2-search--dropdown .select2-search__field {
+        background-color: #495057 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    
+    .select2-container .select2-search--inline .select2-search__field {
+        background-color: transparent !important;
+        color: #fff !important;
+    }
+
+    /* SweetAlert2 z-index fix */
+    .swal-over-canvas {
+        z-index: 1060 !important;
+    }
+    
+    .swal2-container.swal-over-canvas {
+        z-index: 1060 !important;
+    }
+</style>
     
     
     
@@ -781,13 +850,318 @@
             </div>
         </div>
     </div>
+
+    <!-- Assign Contractors Modal -->
+    <div class="modal fade" id="assignContractorsModal" tabindex="-1" aria-labelledby="assignContractorsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignContractorsModalLabel">
+                        <i class="fa-solid fa-users text-primary me-2"></i>
+                        Add Helpers to Order
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignContractorsForm">
+                        <input type="hidden" id="assignOrderId" name="order_id">
+                        <div class="mb-3">
+                            <label for="contractors" class="form-label">Select Contractors (Helpers)</label>
+                            <select id="contractors" name="contractors[]" class="form-control select2" multiple required style="background-color: #2f3349; color: #fff; border: 1px solid #444;">
+                                <!-- Contractors will be loaded dynamically -->
+                            </select>
+                            <div class="form-text">Hold Ctrl/Cmd to select multiple contractors</div>
+                            <div id="currentAssignments" class="mt-2" style="display: none;">
+                                <small class="text-info">
+                                    <i class="fa-solid fa-info-circle me-1"></i>
+                                    <span id="currentAssignmentsText"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="assignContractors()">
+                        <i class="fa-solid fa-check me-1"></i> Assign Helpers
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     @endsection
 
     @push('scripts')
-   
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        // Global variable to store orders data for helper functionality
+        let ordersData = [];
         
-        
-        
+        $(document).ready(function() {
+            // Initialize Select2 for contractors dropdown
+            $('#contractors').select2({
+                dropdownAutoWidth: true,
+                width: '100%',
+                theme: 'bootstrap-5',
+                placeholder: 'Select contractors...',
+                allowClear: true,
+                closeOnSelect: false,
+                dropdownParent: $('#contractors').parent()
+            });
+            
+            // Apply dark theme styles after initialization
+            setTimeout(function() {
+                $('.select2-container .select2-selection--multiple').css({
+                    'background-color': '#2f3349',
+                    'border': '1px solid #444',
+                    'color': '#fff'
+                });
+                $('.select2-container .select2-selection--multiple .select2-selection__choice').css({
+                    'background-color': '#495057',
+                    'border': '1px solid #6c757d',
+                    'color': '#fff'
+                });
+            }, 100);
+            
+            loadContractors();
+        });
+
+        function loadContractors(orderId = null) {
+            const data = {};
+            if (orderId) {
+                data.order_id = orderId;
+            }
+            
+            $.ajax({
+                url: '{{ route("admin.orders.contractors") }}',
+                method: 'GET',
+                data: data,
+                success: function(response) {
+                    const contractorSelect = $('#contractors');
+                    contractorSelect.empty();
+                    
+                    if (response.success && response.data && response.data.length > 0) {
+                        response.data.forEach(contractor => {
+                            contractorSelect.append(
+                                `<option value="${contractor.id}">${contractor.name} (${contractor.email})</option>`
+                            );
+                        });
+                        contractorSelect.trigger('change');
+                        $(document).trigger('contractorsLoaded');
+                    } else {
+                        contractorSelect.append('<option disabled>No contractors available</option>');
+                        contractorSelect.trigger('change');
+                        $(document).trigger('contractorsLoaded');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading contractors:', xhr);
+                    $('#contractors').html('<option disabled>Error loading contractors</option>').trigger('change');
+                    $(document).trigger('contractorsLoadError', [xhr]);
+                }
+            });
+        }
+
+        function openAssignContractorsModal(orderId) {
+            $('#assignOrderId').val(orderId);
+            
+            // Show loading SweetAlert
+            Swal.fire({
+                title: 'Loading Contractors...',
+                text: 'Please wait while we load available contractors.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Find the current order to get existing helper IDs
+            const currentOrder = ordersData.find(order => order.order_id == orderId);
+            const existingHelperIds = currentOrder ? (currentOrder.helpers_ids || []) : [];
+            const helpersCount = existingHelperIds.length;
+            const helpersNames = currentOrder ? (currentOrder.helpers_names || []) : [];
+            
+            // Convert helper IDs to strings to match option values
+            const existingHelperIdsStr = existingHelperIds.map(id => String(id));
+            
+            console.log('Opening modal for order:', orderId);
+            console.log('Existing helper IDs:', existingHelperIdsStr);
+            console.log('Current order data:', currentOrder);
+            
+            // Update modal title based on whether helpers already exist
+            const modalTitle = helpersCount > 0 
+                ? `<i class="fa-solid fa-user-edit text-warning me-2"></i>Manage Helpers - Order #${orderId}`
+                : `<i class="fa-solid fa-users text-primary me-2"></i>Add Helpers - Order #${orderId}`;
+            $('#assignContractorsModalLabel').html(modalTitle);
+            
+            // Show current assignments if any
+            if (helpersCount > 0 && helpersNames.length > 0) {
+                $('#currentAssignmentsText').text(`Currently assigned: ${helpersNames.join(', ')}`);
+                $('#currentAssignments').show();
+            } else {
+                $('#currentAssignments').hide();
+            }
+            
+            // Clear previous selections first
+            $('#contractors').val([]).trigger('change');
+            
+            // Function to set the selections and show modal
+            function setContractorSelectionsAndShowModal() {
+                if (existingHelperIdsStr.length > 0) {
+                    console.log('Setting contractor selections:', existingHelperIdsStr);
+                    $('#contractors').val(existingHelperIdsStr).trigger('change');
+                    
+                    // Double-check if selection worked
+                    const selectedValues = $('#contractors').val();
+                    console.log('Selected values after setting:', selectedValues);
+                    
+                    // If still not selected, try again with a different approach
+                    if (!selectedValues || selectedValues.length === 0) {
+                        setTimeout(() => {
+                            $('#contractors').val(existingHelperIdsStr).trigger('change');
+                            console.log('Second attempt result:', $('#contractors').val());
+                        }, 50);
+                    }
+                }
+                
+                // Close SweetAlert loading and show modal
+                Swal.close();
+                
+                // Show modal with static backdrop to prevent closing when clicking outside
+                new bootstrap.Modal(document.getElementById('assignContractorsModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                }).show();
+            }
+            
+            // Wait for contractors to be loaded
+            $(document).one('contractorsLoaded', function() {
+                setTimeout(setContractorSelectionsAndShowModal, 150);
+            });
+            
+            // Handle contractor loading error
+            $(document).one('contractorsLoadError', function(event, xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Loading Contractors',
+                    text: 'Unable to load contractors. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+            
+            // Set timeout for loading (15 seconds)
+            const loadingTimeout = setTimeout(function() {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Loading Timeout',
+                    text: 'Loading contractors is taking longer than expected. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
+            }, 15000);
+            
+            // Clear timeout when contractors are loaded or error occurs
+            $(document).one('contractorsLoaded contractorsLoadError', function() {
+                clearTimeout(loadingTimeout);
+            });
+            
+            // Load contractors (excluding current assigned contractor)
+            loadContractors(orderId);
+        }
+
+        // Reset modal when closed
+        $('#assignContractorsModal').on('hidden.bs.modal', function() {
+            $('#contractors').val([]).trigger('change');
+            $('#assignContractorsModalLabel').html('<i class="fa-solid fa-users text-primary me-2"></i>Add Helpers to Order');
+            $('#currentAssignments').hide();
+            $('#assignOrderId').val('');
+        });
+
+        function assignContractors() {
+            const orderId = $('#assignOrderId').val();
+            const contractors = $('#contractors').val();
+            
+            if (!contractors || contractors.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Warning!',
+                    text: 'Please select at least one contractor.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Assigning Helper(s)',
+                text: `Are you sure you want to assign ${contractors.length} helper(s) to this order?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Make AJAX call to assign contractors
+                    $.ajax({
+                        url: `/admin/orders/${orderId}/assign-contractors`,
+                        method: 'POST',
+                        data: {
+                            contractor_ids: contractors,
+                            _token: '{{ csrf_token() }}'
+                        },
+                        beforeSend: function() {
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Please wait while we assign the contractors...',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#assignContractorsModal').modal('hide');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: response.message || 'Contractors assigned successfully',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    loadOrders(currentFilters); // Refresh orders data
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: response.message || 'Error assigning contractors',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'An error occurred while assigning contractors.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    </script>
 
 
     <script>
@@ -851,6 +1225,9 @@
                 } else {
                     orders = newOrders;
                 }
+                
+                // Update global ordersData for helper functionality
+                ordersData = orders;
                 
                 // Update pagination state
                 const pagination = data.pagination || {};
@@ -1004,13 +1381,32 @@
                 <div class="order_detail p-3">
                 <div class="card_content">
                     <div class="text-end">
-                    <button class="btn btn-primary px-2 py-1 rounded-1" 
-                        onclick="viewOrderSplits(${order.order_id})" 
-                        data-bs-toggle="offcanvas" 
-                        data-bs-target="#order-splits-view"
-                        style="font-size: 11px">
-                        View More Detail
-                    </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-primary px-2 py-1 rounded-1 me-1" 
+                                onclick="viewOrderSplits(${order.order_id})" 
+                                data-bs-toggle="offcanvas" 
+                                data-bs-target="#order-splits-view"
+                                style="font-size: 11px" 
+                                title="View Details">
+                                View More details
+                            </button>
+                            
+                            ${order.helpers_ids && order.helpers_ids.length > 0 ? `
+                                <button class="btn btn-warning px-2 py-1 rounded-1 d-none" 
+                                    onclick="openAssignContractorsModal(${order.order_id})" 
+                                    style="font-size: 11px"
+                                    title="Manage Helpers (${order.helpers_ids.length} assigned)">
+                                    <i class="fa-solid fa-user-edit"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-success px-2 py-1 rounded-1 d-none" 
+                                    onclick="openAssignContractorsModal(${order.order_id})" 
+                                    style="font-size: 11px"
+                                    title="Add Helpers">
+                                    <i class="fa-solid fa-users"></i>
+                                </button>
+                            `}
+                        </div>
                     </div>
 
                     <table class="mt-2 border-0 w-100" style="height: 10.5rem; overflow-y: auto; display: block; scrollbar-width: none;">
@@ -1061,8 +1457,15 @@
 
                     <small class="ms-2">${formatDate(order.created_at)}</small>
 
-                    <!-- Order Splits Table in flip_details -->
-                    
+                    <!-- Helpers Display -->
+                    ${order.helpers_names && order.helpers_names.length > 0 ? `
+                        <div class="mt-2">
+                            <strong style="font-size: 12px;">Helpers:</strong>
+                            <div class="mt-1">
+                                ${order.helpers_names.map(name => `<span class="helper-badge">${name}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
 
                     <div class="d-flex align-items-center justify-content-between mt-3">
                         <div class="d-flex flex-column align-items-center gap-0">
@@ -1491,6 +1894,17 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 })}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
+                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? `
+                                <p class="text-warning small mb-0">
+                                    <i class="fas fa-users me-1"></i>
+                                    Helpers (${orderInfo.helpers_names.length}): ${orderInfo.helpers_names.join(', ')}
+                                </p>
+                            ` : `
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    No helpers assigned to this order
+                                </p>
+                            `}
                         </div>
                         <div class="d-flex gap-2">
                             ${(() => {
@@ -1516,6 +1930,13 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     `;
                                 }
                             })()}
+                            
+                            <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                    onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                    style="font-size: 13px;">
+                                <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                Add Helper
+                            </button>
                             
                             ${(() => {
                                 // Only show Change Status button for specific statuses and when splits exist
@@ -2685,6 +3106,8 @@ function parseUTCDateTime(dateStr) {
                 modal.show();
             }
         }
+
+        // Old helper function removed - now using openAssignContractorsModal
     </script>
     @endpush
 
