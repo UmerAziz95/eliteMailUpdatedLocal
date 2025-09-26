@@ -1849,6 +1849,58 @@
     </div>
 </div>
 
+<!-- Reassign Contractor Modal -->
+<div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reassignContractorModalLabel">
+                    <i class="fa-solid fa-user-edit me-2"></i>
+                    Reassign Contractor
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="reassignContractorForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="reassignContractorSelect" class="form-label">Select Contractor</label>
+                        <select class="form-select" id="reassignContractorSelect" name="contractor_id" required>
+                            <option value="">-- Select Contractor --</option>
+                            @php
+                                $roleNames = ['Teams Leader', 'contractor'];
+                                $reassignContractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                                        $q->whereIn('name', $roleNames);
+                                    })
+                                    ->orWhereHas('roles', function($q) use ($roleNames) {
+                                        $q->whereIn('name', $roleNames);
+                                    })
+                                    ->get();
+                            @endphp
+                            @foreach($reassignContractors as $contractor)
+                                <option value="{{ $contractor->id }}">
+                                    {{ $contractor->name }} ({{ $contractor->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reassignmentNote" class="form-label">Reason for Reassignment</label>
+                        <input type="text" name="reassignment_note" id="reassignmentNote" class="form-control" 
+                               placeholder="Enter reason for reassignment..." required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-exchange-alt me-1"></i>
+                        Reassign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -4121,7 +4173,7 @@
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name || 'N/A'} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
-                        <div>
+                        <div class="d-flex gap-2">
                             ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
                                 <button class="btn btn-warning btn-sm px-3 py-2" 
                                         onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
@@ -4130,6 +4182,20 @@
                                     Change Status
                                 </button>
                             ` : ''}
+
+                            <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                    onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                    style="font-size: 13px;">
+                                <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                Add Helper
+                            </button>
+
+                            <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                    onclick="openReassignContractorModal(${orderInfo?.id})"
+                                    style="font-size: 13px;">
+                                <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                                Reassign Contractor
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4199,6 +4265,13 @@
                                 style="font-size: 13px;">
                             <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
                             Add Helper
+                        </button>
+
+                        <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                onclick="openReassignContractorModal(${orderInfo?.id})"
+                                style="font-size: 13px;">
+                            <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                            Reassign Contractor
                         </button>
                     </div>
                 </div>
@@ -6322,6 +6395,159 @@
                 $(this).css('box-shadow', '');
             }
         });
+    });
+
+    // Reassign Contractor Functions
+    function openReassignContractorModal(orderId) {
+        // Clear previous selections
+        $('#reassignContractorSelect').val('');
+        $('#reassignmentNote').val('');
+        
+        // Update modal title
+        $('#reassignContractorModalLabel').html(`
+            <i class="fa-solid fa-user-edit me-2"></i>
+            Reassign Contractor - Order #${orderId}
+        `);
+        
+        // Store order ID for form submission
+        $('#reassignContractorModal').data('order-id', orderId);
+        
+        // Show modal
+        $('#reassignContractorModal').modal('show');
+    }
+
+    // Handle reassign contractor form submission
+    $('#reassignContractorForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const orderId = $('#reassignContractorModal').data('order-id');
+        const contractorId = $('#reassignContractorSelect').val();
+        const reassignmentNote = $('#reassignmentNote').val();
+        
+        if (!contractorId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a contractor',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        if (!reassignmentNote.trim()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please enter a reason for reassignment',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // First check if contractor is in helpers
+        $.ajax({
+            url: `/admin/orders/${orderId}/check-contractor-helpers`,
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success && response.is_in_helpers) {
+                    // Show confirmation dialog if contractor is in helpers
+                    Swal.fire({
+                        title: 'Contractor Already in Helpers',
+                        text: `${response.contractor_name} is already added as a helper. Reassigning will remove them from the helpers list. Are you sure you want to continue?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, reassign!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            performReassignment(orderId, contractorId, reassignmentNote, true);
+                        }
+                    });
+                } else {
+                    // Proceed with normal reassignment
+                    performReassignment(orderId, contractorId, reassignmentNote, false);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error checking contractor helpers:', xhr);
+                // If check fails, proceed with normal reassignment
+                performReassignment(orderId, contractorId, reassignmentNote, false);
+            }
+        });
+    });
+
+    function performReassignment(orderId, contractorId, reassignmentNote, removeFromHelpers) {
+        $.ajax({
+            url: `/admin/orders/${orderId}/reassign-contractor`,
+            method: 'POST',
+            data: {
+                contractor_id: contractorId,
+                remove_from_helpers: removeFromHelpers,
+                reassignment_note: reassignmentNote,
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Reassigning Contractor...',
+                    text: 'Please wait while we process your request',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Contractor reassigned successfully',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    $('#reassignContractorModal').modal('hide');
+                    
+                    // Refresh all DataTables
+                    refreshAllDataTables();
+                    
+                    // Refresh shared orders list
+                    loadSharedOrders();
+                    
+                    // Refresh offcanvas if open
+                    const $offcanvas = $('#order-splits-view');
+                    if ($offcanvas.hasClass('show')) {
+                        if (typeof viewOrderSplits === "function") {
+                            viewOrderSplits(orderId);
+                        }
+                    }
+                });
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: msg,
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        });
+    }
+
+    // Clear form when modal is hidden
+    $('#reassignContractorModal').on('hidden.bs.modal', function() {
+        $('#reassignContractorSelect').val('');
+        $('#reassignmentNote').val('');
+        $('#reassignContractorModalLabel').html(`
+            <i class="fa-solid fa-user-edit me-2"></i>
+            Reassign Contractor
+        `);
+        $(this).removeData('order-id');
     });
 
 </script>
