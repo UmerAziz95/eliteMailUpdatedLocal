@@ -1894,17 +1894,6 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 })}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
-                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 ? `
-                                <p class="text-warning small mb-0">
-                                    <i class="fas fa-users me-1"></i>
-                                    Helpers (${orderInfo.helpers_names.length}): ${orderInfo.helpers_names.join(', ')}
-                                </p>
-                            ` : `
-                                <p class="text-muted small mb-0">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    No helpers assigned to this order
-                                </p>
-                            `}
                         </div>
                         <div class="d-flex gap-2">
                             ${(() => {
@@ -1925,7 +1914,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                     return `
                                         <span class="bg-success rounded-1 px-3 py-2 text-white" style="font-size: 13px;">
                                             <i class="fas fa-check me-1" style="font-size: 12px;"></i>
-                                            All Panel Breaks Assigned
+                                            Panel Assigned
                                         </span>
                                     `;
                                 }
@@ -1958,6 +1947,15 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                             })()}
                         </div>
                     </div>
+                    ${orderInfo.is_shared == 1 || (orderInfo.helpers_names && orderInfo.helpers_names.length > 0) ? `
+                        <div class="alert alert-warning py-2 mb-3" style="font-size: 12px;">
+                            <i class="fa-solid fa-users me-2"></i>
+                            ${orderInfo.helpers_names && orderInfo.helpers_names.length > 0 
+                                ? `This order is shared with helpers (${orderInfo.helpers_names.length}): ${orderInfo.helpers_names.join(', ')}`
+                                : 'Helper request is pending'
+                            }
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="table-responsive mb-4 card rounded-2 p-2" style="max-height: 20rem; overflow-y: auto">
                     <table class="table table-striped table-hover position-sticky top-0 border-0">

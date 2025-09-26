@@ -736,7 +736,11 @@ class OrderController extends Controller
                     'splits_count' => $orderPanels->sum(function($panel) {
                         return $panel->orderPanelSplits->count();
                     }),
-                    'splits' => $splitsData
+                    'splits' => $splitsData,
+                    'is_shared' => $order->is_shared ?? false,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => $order->helpers_ids ? \App\Models\User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : [],
+                    'sharedIcon' => $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning ms-2" title="Shared Order"></i>' : ''
                 ];
             });
 
@@ -812,6 +816,8 @@ class OrderController extends Controller
                     'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'is_shared' => $order->is_shared ?? false,
+                    'helpers_ids' => $order->helpers_ids ?? [],
+                    'helpers_names' => $order->helpers_ids ? \App\Models\User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : [],
                     'status_manage_by_admin' => (function() use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
