@@ -438,11 +438,11 @@
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} ">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
-
                 <div class="col-md-6 master-inbox">
                     <label>Centralized master inbox email</label>
-                    <input type="email" name="master_inbox_email" class="form-control"
+                    <input type="email" name="master_inbox_email" id="master_inbox_email" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
+                    <input type="hidden" name="master_inbox_confirmation" id="master_inbox_confirmation" value="{{ isset($order) && optional($order->reorderInfo)->first() ? ($order->reorderInfo->first()->master_inbox_confirmation ? '1' : '0') : '0' }}">
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
                     <p class="note">(This is optional - if you want to forward all email inboxes to a
                         specific email, enter above)</p>
@@ -1620,7 +1620,13 @@ $(document).ready(function() {
         if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
         if (reorderInfo.email_persona_password) $('input[name="email_persona_password"]').val(reorderInfo.email_persona_password);
         if (reorderInfo.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(reorderInfo.email_persona_picture_link);
-        if (reorderInfo.master_inbox_email) $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
+        if (reorderInfo.master_inbox_email) {
+            $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
+            // Also update the confirmation flag if it exists
+            if (reorderInfo.master_inbox_confirmation !== undefined) {
+                $('#master_inbox_confirmation').val(reorderInfo.master_inbox_confirmation ? '1' : '0');
+            }
+        }
         if (reorderInfo.additional_info) $('textarea[name="additional_info"]').val(reorderInfo.additional_info);
         
         // Populate prefix variants if available
@@ -1893,6 +1899,17 @@ $(document).ready(function() {
     let limitExceededShown = false;
     // Flag to prevent toastr notifications during import
     let isImporting = false;
+    // Master inbox email confirmation flag - function to get current state
+    function getMasterInboxConfirmed() {
+        return $('#master_inbox_confirmation').val() === '1';
+    }
+    
+    // Function to set master inbox confirmation state
+    function setMasterInboxConfirmed(value) {
+        $('#master_inbox_confirmation').val(value ? '1' : '0');
+    }
+    
+    const initialMasterInboxValue = $('#master_inbox_email').val().trim();
     
     // Function to validate domains format only (without limit checking)
     function validateDomainsFormat() {
@@ -2981,6 +2998,68 @@ $(document).ready(function() {
             }
         }, 500);
     }, 100);
+    
+    // Master Inbox Email Confirmation Handler
+    $('#master_inbox_email').on('blur', function() {
+        const currentValue = $(this).val().trim();
+        const isConfirmed = getMasterInboxConfirmed();
+        
+        // Only show confirmation if:
+        // 1. User entered a value
+        // 2. Value is different from initial value (to avoid showing on form load)
+        // 3. Not already confirmed for this session
+        if (currentValue && currentValue !== initialMasterInboxValue && !isConfirmed) {
+            Swal.fire({
+                title: 'Master Inbox Email Confirmation',
+                text: 'This is optional - if you want to forward all email inboxes to a specific email, enter above. Do you want to proceed with this master inbox email?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, proceed',
+                cancelButtonText: 'No, remove it',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // User confirmed - set the confirmation flag
+                    setMasterInboxConfirmed(true);
+                    
+                    Swal.fire({
+                        title: 'Confirmed!',
+                        text: 'Master inbox email has been confirmed.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    // User canceled - clear the field
+                    $(this).val('');
+                    setMasterInboxConfirmed(false);
+                    
+                    Swal.fire({
+                        title: 'Removed!',
+                        text: 'Master inbox email has been removed.',
+                        icon: 'info',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        } else if (!currentValue) {
+            // If field is cleared, reset confirmation
+            setMasterInboxConfirmed(false);
+        }
+    });
+    
+    // Handle case where user clears the field after confirming
+    $('#master_inbox_email').on('input', function() {
+        const currentValue = $(this).val().trim();
+        if (!currentValue && getMasterInboxConfirmed()) {
+            setMasterInboxConfirmed(false);
+        }
+    });
+    
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 });

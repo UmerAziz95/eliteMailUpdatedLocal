@@ -38,6 +38,7 @@ class ReorderInfo extends Model
         'email_persona_password',
         'email_persona_picture_link',
         'master_inbox_email',
+        'master_inbox_confirmation',
         'additional_info',
         'coupon_code'
     ];
@@ -45,6 +46,7 @@ class ReorderInfo extends Model
     protected $casts = [
         'prefix_variants' => 'array',
         'prefix_variants_details' => 'array',
+        'master_inbox_confirmation' => 'boolean',
     ];
 
     public function user()

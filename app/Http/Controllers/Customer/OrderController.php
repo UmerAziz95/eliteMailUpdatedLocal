@@ -588,6 +588,7 @@ class OrderController extends Controller
                 // 'email_persona_password' => 'nullable|string|min:3',
                 'email_persona_picture_link' => 'nullable|url|max:255',
                 'master_inbox_email' => 'nullable|email|max:255',
+                'master_inbox_confirmation' => 'boolean',
                 'additional_info' => 'nullable|string',
                 'coupon_code' => 'nullable|string|max:50'
             ], [
@@ -746,6 +747,7 @@ class OrderController extends Controller
                         'email_persona_password' => '123', // Set to 123 as per requirement
                         'email_persona_picture_link' => $request->email_persona_picture_link,
                         'master_inbox_email' => $request->master_inbox_email,
+                        'master_inbox_confirmation' => $request->master_inbox_confirmation ?? false,
                         'additional_info' => $request->additional_info,
                         'coupon_code' => $request->coupon_code,
                     ]);
@@ -781,6 +783,7 @@ class OrderController extends Controller
                             'email_persona_password' => $request->email_persona_password,
                             'email_persona_picture_link' => $request->email_persona_picture_link,
                             'master_inbox_email' => $request->master_inbox_email,
+                            'master_inbox_confirmation' => $request->master_inbox_confirmation ?? false,
                             'additional_info' => $request->additional_info,
                         ]
                     );

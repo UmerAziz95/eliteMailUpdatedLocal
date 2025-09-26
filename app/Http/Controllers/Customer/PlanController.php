@@ -439,6 +439,7 @@ class PlanController extends Controller
                     'email_persona_password' => $order_info['email_persona_password'] ?? null,
                     'email_persona_picture_link' => $order_info['email_persona_picture_link'] ?? null,
                     'master_inbox_email' => $order_info['master_inbox_email'] ?? null,
+                    'master_inbox_confirmation' => isset($order_info['master_inbox_confirmation']) ? (bool)$order_info['master_inbox_confirmation'] : false,
                     'additional_info' => $order_info['additional_info'] ?? null,
                 ]);
             }else{
@@ -477,6 +478,7 @@ class PlanController extends Controller
                     'email_persona_password' => null, // Default value
                     'email_persona_picture_link' => null, // Default value
                     'master_inbox_email' => null, // Default value
+                    'master_inbox_confirmation' => false, // Default value
                     'additional_info' => null, // Default value
                 ]);
             }
