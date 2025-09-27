@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\PanelReassignmentService;
 use App\Services\OrderContractorReassignmentService;
 use App\Services\SlackNotificationService;
+use App\Services\TextExportService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -2361,6 +2362,45 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error exporting CSV from order emails: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Export TXT file with smart data selection using TextExportService
+     */
+    public function exportTxtSplitDomainsSmartById($splitId, TextExportService $textExportService)
+    {
+        try {
+            return $textExportService->exportTxtSplitDomainsSmartById($splitId);
+        } catch (\Exception $e) {
+            Log::error('Error exporting TXT with smart selection: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting TXT: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export comprehensive TXT report using TextExportService
+     */
+    public function exportComprehensiveTextReport($splitId, TextExportService $textExportService)
+    {
+        try {
+            return $textExportService->generateComprehensiveTextReport($splitId);
+        } catch (\Exception $e) {
+            Log::error('Error exporting comprehensive TXT report: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting comprehensive TXT report: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export TXT file with generated emails using TextExportService
+     */
+    public function exportTxtGeneratedEmails($splitId, TextExportService $textExportService)
+    {
+        try {
+            return $textExportService->exportTxtWithGeneratedEmails($splitId);
+        } catch (\Exception $e) {
+            Log::error('Error exporting TXT with generated emails: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting TXT with generated emails: ' . $e->getMessage());
         }
     }
 
