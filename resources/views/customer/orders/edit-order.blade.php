@@ -439,13 +439,20 @@
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
                 <div class="col-md-6 master-inbox">
-                    <label>Centralized master inbox email</label>
+                    <label for="master_inbox_confirmation">Do you want to enable domain forwarding?</label>
+                    <select name="master_inbox_confirmation" id="master_inbox_confirmation" class="form-control">
+                        <option value="0" {{ isset($order) && optional($order->reorderInfo)->first() && !$order->reorderInfo->first()->master_inbox_confirmation ? 'selected' : (!isset($order) ? 'selected' : '') }}>No</option>
+                        <option value="1" {{ isset($order) && optional($order->reorderInfo)->first() && $order->reorderInfo->first()->master_inbox_confirmation ? 'selected' : '' }}>Yes</option>
+                    </select>
+                    <p class="note">(Choose "Yes" if you want to forward all email inboxes to a specific email)</p>
+                </div>
+
+                <div class="col-md-6 master-inbox-email" style="display: {{ isset($order) && optional($order->reorderInfo)->first() && $order->reorderInfo->first()->master_inbox_confirmation ? 'block' : 'none' }};">
+                    <label>Master Domain Email</label>
                     <input type="email" name="master_inbox_email" id="master_inbox_email" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
-                    <input type="hidden" name="master_inbox_confirmation" id="master_inbox_confirmation" value="{{ isset($order) && optional($order->reorderInfo)->first() ? ($order->reorderInfo->first()->master_inbox_confirmation ? '1' : '0') : '0' }}">
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
-                    <p class="note">(This is optional - if you want to forward all email inboxes to a
-                        specific email, enter above)</p>
+                    <p class="note">(Enter the main email where all messages should be forwarded)</p>
                 </div>
 
                 <div id="additional-assets-section">
@@ -1106,6 +1113,25 @@
 
 @push('scripts')
 <script>
+    // Show/hide master inbox email field based on dropdown selection
+    $(document).on('change', '#master_inbox_confirmation', function() {
+        if ($(this).val() == '1') {
+            $('.master-inbox-email').show();
+        } else {
+            $('.master-inbox-email').hide();
+            $('#master_inbox_email').val(''); // Clear the email field when hiding
+        }
+    });
+
+    // Initialize field visibility on page load
+    $(document).ready(function() {
+        if ($('#master_inbox_confirmation').val() == '1') {
+            $('.master-inbox-email').show();
+        } else {
+            $('.master-inbox-email').hide();
+        }
+    });
+
     // Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
