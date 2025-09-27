@@ -867,6 +867,11 @@
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
                                                 ${split.domains_count || 0} domains
                                             </span>
+                                            ${reorderInfo?.master_inbox_email && reorderInfo.master_inbox_email !== '' ? `
+                                                <i class="fa-solid fa-file-lines me-2" style="font-size: 10px; cursor: pointer;" 
+                                                   title="Download text file for email forwarding (${String(index + 1).padStart(2, '0')}) - Format: individual@domain.com, master@domain.com" 
+                                                   onclick="event.stopPropagation(); downloadTextFile(${split.id}, 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                ` : ''}
                                             <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                title="Copy all domains from Panel Break ${String(index + 1).padStart(2, '0')}" 
                                                onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Panel Break ${String(index + 1).padStart(2, '0')}')"></i>
@@ -885,10 +890,13 @@
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Back up codes</span>
-                            <span>${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+                            <span>${reorderInfo?.backup_codes || 'N/A'}</span>
 
                             <span class="opacity-50">Additional Notes</span>
-                            <span>${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                            <span>${reorderInfo?.additional_info || 'N/A'}</span>
+
+                            <span class="opacity-50">Master Inbox Email</span>
+                            <span class="text-white">${reorderInfo?.master_inbox_email || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
@@ -1275,6 +1283,11 @@
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
                                                 ${split.domains_count || 0} domains
                                             </span>
+                                            ${reorderInfo?.master_inbox_email && reorderInfo.master_inbox_email !== '' ? `
+                                                <i class="fa-solid fa-file-lines me-2" style="font-size: 10px; cursor: pointer;" 
+                                                   title="Download text file for email forwarding (${String(index + 1).padStart(2, '0')}) - Format: individual@domain.com, master@domain.com" 
+                                                   onclick="event.stopPropagation(); downloadTextFile(${split.id}, 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                ` : ''}
                                             <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                title="Copy all domains from Panel Break ${String(index + 1).padStart(2, '0')}" 
                                                onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Panel Break ${String(index + 1).padStart(2, '0')}')"></i>
@@ -1293,10 +1306,12 @@
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Back up codes</span>
-                            <span class="text-white">${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+                            <span class="text-white">${reorderInfo?.backup_codes || 'N/A'}</span>
 
                             <span class="opacity-50">Additional Notes</span>
-                            <span class="text-white">${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                            <span class="text-white">${reorderInfo?.additional_info || 'N/A'}</span>
+                            <span class="opacity-50">Master Inbox Email</span>
+                            <span class="text-white">${reorderInfo?.master_inbox_email || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
@@ -1530,7 +1545,25 @@
             showToast('Failed to copy domain', 'error');
         });
     }
-
+    // Download text file for a split
+    function downloadTextFile(splitId, splitLabel) {
+        // Create the URL for text file download
+        const downloadUrl = `/admin/orders/split/${splitId}/export-txt-domains`;
+        
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.download = ''; // Let the server decide the filename
+        
+        // Trigger the download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        console.log(`Text file download initiated for ${splitLabel}`);
+    }
     // Function to copy all domains from a split container by extracting them from the DOM
     function copyAllDomainsFromSplit(splitId, splitName) {
         const splitContainer = document.getElementById(splitId);

@@ -4474,6 +4474,11 @@
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
                                                 ${split.domains_count || 0} domains
                                             </span>
+                                            ${reorderInfo?.master_inbox_email && reorderInfo.master_inbox_email !== '' ? `
+                                                <i class="fa-solid fa-file-lines me-2" style="font-size: 10px; cursor: pointer;" 
+                                                   title="Download text file for email forwarding (${String(index + 1).padStart(2, '0')}) - Format: individual@domain.com, master@domain.com" 
+                                                   onclick="event.stopPropagation(); downloadTextFile(${split.id}, 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                ` : ''}
                                             <i class="fa-solid fa-copy text-white me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
                                                onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
@@ -4966,6 +4971,25 @@
         }).catch(() => {
             showToast('Failed to copy domains', 'error');
         });
+    }
+    // Download text file for a split
+    function downloadTextFile(splitId, splitLabel) {
+        // Create the URL for text file download
+        const downloadUrl = `/admin/orders/split/${splitId}/export-txt-domains`;
+        
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.download = ''; // Let the server decide the filename
+        
+        // Trigger the download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        console.log(`Text file download initiated for ${splitLabel}`);
     }
 
     // Function to assign entire order to logged-in admin
