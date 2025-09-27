@@ -378,33 +378,64 @@ class MyTaskController extends Controller
                 ];
             }
 
-            // Get splits information (similar to regular task details)
+            // Get splits information - show all splits for migration tasks
             $splits = [];
-            foreach ($order->orderPanels as $panel) {
-                foreach ($panel->orderPanelSplits as $split) {
-                    // Get domains from the domains array field (not a relationship)
+            
+            // First try to get splits from the specific order panel that was reassigned
+            $targetOrderPanel = null;
+            if ($task->order_panel_id) {
+                $targetOrderPanel = $order->orderPanels->where('id', $task->order_panel_id)->first();
+            }
+            
+            if ($targetOrderPanel && $targetOrderPanel->orderPanelSplits->count() > 0) {
+                // Show splits from the specific order panel that was reassigned
+                foreach ($targetOrderPanel->orderPanelSplits as $split) {
                     $domains = $split->domains ? (is_array($split->domains) ? $split->domains : json_decode($split->domains, true)) : [];
-                    if($task->from_panel_id && $task->from_panel_id != $panel->panel_id){
-                        continue;
-                    }
+                    
                     $splits[] = [
                         'id' => $split->id,
-                        'panel_id' => $panel->panel_id,
-                        'panel_title' => $panel->panel->title ?? 'N/A',
-                        'order_panel_id' => $panel->id,
+                        'panel_id' => $targetOrderPanel->panel_id,
+                        'panel_title' => $targetOrderPanel->panel->title ?? 'N/A',
+                        'order_panel_id' => $targetOrderPanel->id,
                         'status' => $split->status ?? 'unallocated',
                         'inboxes_per_domain' => $reorderInfo ? $reorderInfo->inboxes_per_domain : 1,
                         'domains_count' => count($domains),
                         'total_inboxes' => count($domains) * ($reorderInfo ? $reorderInfo->inboxes_per_domain : 1),
                         'domains' => $domains,
                         'order_panel' => [
-                            'timer_started_at' => $panel->timer_started_at,
-                            'completed_at' => $panel->completed_at,
-                            'status' => $panel->status ?? 'pending'
+                            'timer_started_at' => $targetOrderPanel->timer_started_at,
+                            'completed_at' => $targetOrderPanel->completed_at,
+                            'status' => $targetOrderPanel->status ?? 'pending'
                         ],
-                        'customized_note' => $panel->customized_note,
-                        'email_count' => OrderEmail::whereIn('order_split_id', [$panel->id])->count(),
+                        'customized_note' => $targetOrderPanel->customized_note,
+                        'email_count' => OrderEmail::whereIn('order_split_id', [$targetOrderPanel->id])->count(),
                     ];
+                }
+            } else {
+                // Fallback: show all splits from the order
+                foreach ($order->orderPanels as $panel) {
+                    foreach ($panel->orderPanelSplits as $split) {
+                        $domains = $split->domains ? (is_array($split->domains) ? $split->domains : json_decode($split->domains, true)) : [];
+                        
+                        $splits[] = [
+                            'id' => $split->id,
+                            'panel_id' => $panel->panel_id,
+                            'panel_title' => $panel->panel->title ?? 'N/A',
+                            'order_panel_id' => $panel->id,
+                            'status' => $split->status ?? 'unallocated',
+                            'inboxes_per_domain' => $reorderInfo ? $reorderInfo->inboxes_per_domain : 1,
+                            'domains_count' => count($domains),
+                            'total_inboxes' => count($domains) * ($reorderInfo ? $reorderInfo->inboxes_per_domain : 1),
+                            'domains' => $domains,
+                            'order_panel' => [
+                                'timer_started_at' => $panel->timer_started_at,
+                                'completed_at' => $panel->completed_at,
+                                'status' => $panel->status ?? 'pending'
+                            ],
+                            'customized_note' => $panel->customized_note,
+                            'email_count' => OrderEmail::whereIn('order_split_id', [$panel->id])->count(),
+                        ];
+                    }
                 }
             }
 

@@ -1897,10 +1897,13 @@
                         </div>
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Back up codes</span>
-                            <span class="text-white">${reorderInfo?.data_obj?.backup_codes || 'N/A'}</span>
+                            <span class="text-white">${reorderInfo?.backup_codes || 'N/A'}</span>
 
                             <span class="opacity-50">Additional Notes</span>
-                            <span class="text-white">${reorderInfo?.data_obj?.additional_info || 'N/A'}</span>
+                            <span class="text-white">${reorderInfo?.additional_info || 'N/A'}</span>
+
+                            <span class="opacity-50">Master Inbox Email</span>
+                            <span class="text-white">${reorderInfo?.master_inbox_email || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
