@@ -246,6 +246,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/customer/toggle-status', [CustomerController::class, 'toggleStatus'])->name('customer.toggleStatus');
         //orders
         Route::get('/orders/{id}/view', [AdminOrderController::class, 'view'])->name('orders.view');
+        Route::get('/orders/{id}/edit', [AdminOrderController::class, 'edit'])->name('orders.edit');
+        Route::post('/orders/save', [AdminOrderController::class, 'store'])->name('orders.save');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
         Route::get('/orders/data', [AdminOrderController::class, 'getOrders'])->name('orders.data');
         // Route::get('/orders/import/data', [AdminOrderController::class, 'getOrdersForImport'])->name('orders.import.data');
