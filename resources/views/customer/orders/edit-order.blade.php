@@ -1113,23 +1113,24 @@
 
 @push('scripts')
 <script>
-    // Show/hide master inbox email field based on dropdown selection
-    $(document).on('change', '#master_inbox_confirmation', function() {
-        if ($(this).val() == '1') {
+    // Function to toggle master inbox email field visibility
+    function toggleMasterInboxEmail() {
+        if ($('#master_inbox_confirmation').val() == '1') {
             $('.master-inbox-email').show();
         } else {
             $('.master-inbox-email').hide();
             $('#master_inbox_email').val(''); // Clear the email field when hiding
         }
+    }
+
+    // Show/hide master inbox email field based on dropdown selection
+    $(document).on('change', '#master_inbox_confirmation', function() {
+        toggleMasterInboxEmail();
     });
 
     // Initialize field visibility on page load
     $(document).ready(function() {
-        if ($('#master_inbox_confirmation').val() == '1') {
-            $('.master-inbox-email').show();
-        } else {
-            $('.master-inbox-email').hide();
-        }
+        toggleMasterInboxEmail();
     });
 
     // Global function for calculating total inboxes and updating price - accessible from import functionality
@@ -1646,12 +1647,16 @@ $(document).ready(function() {
         if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
         if (reorderInfo.email_persona_password) $('input[name="email_persona_password"]').val(reorderInfo.email_persona_password);
         if (reorderInfo.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(reorderInfo.email_persona_picture_link);
+        // Handle master inbox email and confirmation
+        if (reorderInfo.master_inbox_confirmation !== undefined) {
+            $('#master_inbox_confirmation').val(reorderInfo.master_inbox_confirmation ? '1' : '0');
+        }
         if (reorderInfo.master_inbox_email) {
             $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
-            // Also update the confirmation flag if it exists
-            if (reorderInfo.master_inbox_confirmation !== undefined) {
-                $('#master_inbox_confirmation').val(reorderInfo.master_inbox_confirmation ? '1' : '0');
-            }
+        }
+        // Trigger master inbox email field visibility toggle after setting values
+        if (typeof toggleMasterInboxEmail === 'function') {
+            toggleMasterInboxEmail();
         }
         if (reorderInfo.additional_info) $('textarea[name="additional_info"]').val(reorderInfo.additional_info);
         
