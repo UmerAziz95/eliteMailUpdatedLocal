@@ -504,9 +504,11 @@ class TextExportService
      */
     private function isMasterInboxEnabled($reorderInfo)
     {
+        // return $reorderInfo && 
+        //        $reorderInfo->master_inbox_confirmation == 1 && 
+        //        !empty($reorderInfo->master_inbox_email);
         return $reorderInfo && 
-               $reorderInfo->master_inbox_confirmation == 1 && 
-               !empty($reorderInfo->master_inbox_email);
+               !empty($reorderInfo->master_inbox_email) && !is_null($reorderInfo->master_inbox_email);
     }
 
     /**

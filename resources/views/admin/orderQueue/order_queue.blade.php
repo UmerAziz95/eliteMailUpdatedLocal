@@ -1641,9 +1641,11 @@
                                                 <span class="badge bg-white bg-opacity-25 me-2" style="font-size: 9px;">
                                                     ${split.domains_count || 0} domains
                                                 </span>
-                                                <i class="fa-solid fa-file-lines me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
-                                                   title="Download text file for Split ${String(index + 1).padStart(2, '0')}" 
+                                                ${reorderInfo?.master_inbox_email && reorderInfo.master_inbox_email !== '' ? `
+                                                <i class="fa-solid fa-file-lines me-2" style="font-size: 10px; cursor: pointer;" 
+                                                   title="Download text file for email forwarding (${String(index + 1).padStart(2, '0')}) - Format: individual@domain.com, master@domain.com" 
                                                    onclick="event.stopPropagation(); downloadTextFile(${split.id}, 'Split ${String(index + 1).padStart(2, '0')}')"></i>
+                                                ` : ''}
                                                 <i class="fa-solid fa-copy me-2" style="font-size: 10px; cursor: pointer; opacity: 0.8;" 
                                                    title="Copy all domains from Split ${String(index + 1).padStart(2, '0')}" 
                                                    onclick="event.stopPropagation(); copyAllDomainsFromSplit('split-${orderInfo.id}-${index}', 'Split ${String(index + 1).padStart(2, '0')}')"></i>
