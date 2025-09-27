@@ -585,6 +585,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::delete('/orders/panel/emails/{id}', [ContractorOrderController::class, 'deleteSplitEmail']);
     
     // CSV Export routes 
+    Route::get('/orders/split/{splitId}/export-txt-domains', [ContractorOrderController::class, 'exportTxtSplitDomainsSmartById'])->name('orders.split.export.txt.domains');
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
     Route::get('/orders/split/{splitId}/export-csv-domains', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
     Route::get('/orders/split/{splitId}/export-csv-smart', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');

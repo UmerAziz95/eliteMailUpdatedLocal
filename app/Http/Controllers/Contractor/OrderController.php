@@ -31,6 +31,7 @@ use App\Models\OrderPanelSplit;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Services\SlackNotificationService;
+use App\Services\TextExportService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -3048,6 +3049,19 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Error fetching shared orders data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Export TXT file with smart data selection using TextExportService
+     */
+    public function exportTxtSplitDomainsSmartById($splitId, TextExportService $textExportService)
+    {
+        try {
+            return $textExportService->exportTxtSplitDomainsSmartById($splitId);
+        } catch (\Exception $e) {
+            Log::error('Error exporting TXT with smart selection: ' . $e->getMessage());
+            return back()->with('error', 'Error exporting TXT: ' . $e->getMessage());
         }
     }
 }

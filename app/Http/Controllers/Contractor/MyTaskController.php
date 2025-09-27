@@ -201,7 +201,11 @@ class MyTaskController extends Controller
                     'prefix_variants' => $reorderInfo->prefix_variants,
                     'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                     'prefix_variant_2' => $reorderInfo->prefix_variant_2,
-                    'data_obj' => $reorderInfo->data_obj ? json_decode($reorderInfo->data_obj, true) : null
+                    'data_obj' => $reorderInfo->data_obj ? json_decode($reorderInfo->data_obj, true) : null,
+                    'additional_info' => $reorderInfo->additional_info,
+                    'master_inbox_email' => $reorderInfo->master_inbox_email,
+                    'master_inbox_confirmation' => $reorderInfo->master_inbox_confirmation,
+                    'backup_codes' => $reorderInfo->backup_codes,
                 ];
             }
 
@@ -366,7 +370,11 @@ class MyTaskController extends Controller
                     'prefix_variants' => $reorderInfo->prefix_variants,
                     'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                     'prefix_variant_2' => $reorderInfo->prefix_variant_2,
-                    'data_obj' => $reorderInfo->data_obj ? json_decode($reorderInfo->data_obj, true) : null
+                    'data_obj' => $reorderInfo->data_obj ? json_decode($reorderInfo->data_obj, true) : null,
+                    'additional_info' => $reorderInfo->additional_info,
+                    'master_inbox_email' => $reorderInfo->master_inbox_email,
+                    'master_inbox_confirmation' => $reorderInfo->master_inbox_confirmation,
+                    'backup_codes' => $reorderInfo->backup_codes,
                 ];
             }
 
