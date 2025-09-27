@@ -1112,7 +1112,6 @@
 </style>
 
 @endsection
-
 @push('scripts')
 <script>
     // Function to toggle master inbox email field visibility
@@ -2479,6 +2478,11 @@ $(document).ready(function() {
     // Form validation and submission
     $('#editOrderForm').on('submit', function(e) {
         e.preventDefault();
+        
+        // Clear master inbox email if confirmation is set to "No" (0)
+        if ($('#master_inbox_confirmation').val() == '0') {
+            $('#master_inbox_email').val('');
+        }
         
         // Reset all validations
         $('.is-invalid').removeClass('is-invalid');
