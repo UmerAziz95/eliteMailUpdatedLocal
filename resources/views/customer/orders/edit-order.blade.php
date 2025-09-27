@@ -438,6 +438,7 @@
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->email_persona_picture_link : '' }} ">
                     <div class="invalid-feedback" id="email_persona_picture_link-error"></div>
                 </div>
+                
                 <div class="col-md-6 master-inbox">
                     <label for="master_inbox_confirmation">Do you want to enable domain forwarding?</label>
                     <select name="master_inbox_confirmation" id="master_inbox_confirmation" class="form-control">
@@ -448,9 +449,10 @@
                 </div>
 
                 <div class="col-md-6 master-inbox-email" style="display: {{ isset($order) && optional($order->reorderInfo)->first() && $order->reorderInfo->first()->master_inbox_confirmation ? 'block' : 'none' }};">
-                    <label>Master Domain Email</label>
+                    <label>Master Domain Email *</label>
                     <input type="email" name="master_inbox_email" id="master_inbox_email" class="form-control"
-                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}">
+                        value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->master_inbox_email : '' }}"
+                        {{ isset($order) && optional($order->reorderInfo)->first() && $order->reorderInfo->first()->master_inbox_confirmation ? 'required' : '' }}>
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
                     <p class="note">(Enter the main email where all messages should be forwarded)</p>
                 </div>
@@ -1117,9 +1119,13 @@
     function toggleMasterInboxEmail() {
         if ($('#master_inbox_confirmation').val() == '1') {
             $('.master-inbox-email').show();
+            $('#master_inbox_email').attr('required', true);
         } else {
             $('.master-inbox-email').hide();
-            $('#master_inbox_email').val(''); // Clear the email field when hiding
+            // Don't clear the email field when hiding - keep the value
+            $('#master_inbox_email').removeAttr('required');
+            $('#master_inbox_email').removeClass('is-invalid'); // Remove validation error when hiding
+            $('#master_inbox_email-error').text(''); // Clear error message
         }
     }
 
@@ -1930,17 +1936,7 @@ $(document).ready(function() {
     let limitExceededShown = false;
     // Flag to prevent toastr notifications during import
     let isImporting = false;
-    // Master inbox email confirmation flag - function to get current state
-    function getMasterInboxConfirmed() {
-        return $('#master_inbox_confirmation').val() === '1';
-    }
-    
-    // Function to set master inbox confirmation state
-    function setMasterInboxConfirmed(value) {
-        $('#master_inbox_confirmation').val(value ? '1' : '0');
-    }
-    
-    const initialMasterInboxValue = $('#master_inbox_email').val().trim();
+    // Master inbox email functionality - no confirmation needed
     
     // Function to validate domains format only (without limit checking)
     function validateDomainsFormat() {
@@ -3030,66 +3026,8 @@ $(document).ready(function() {
         }, 500);
     }, 100);
     
-    // Master Inbox Email Confirmation Handler
-    $('#master_inbox_email').on('blur', function() {
-        const currentValue = $(this).val().trim();
-        const isConfirmed = getMasterInboxConfirmed();
-        
-        // Only show confirmation if:
-        // 1. User entered a value
-        // 2. Value is different from initial value (to avoid showing on form load)
-        // 3. Not already confirmed for this session
-        if (currentValue && currentValue !== initialMasterInboxValue && !isConfirmed) {
-            Swal.fire({
-                title: 'Master Inbox Email Confirmation',
-                text: 'This is optional - if you want to forward all email inboxes to a specific email, enter above. Do you want to proceed with this master inbox email?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, proceed',
-                cancelButtonText: 'No, remove it',
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // User confirmed - set the confirmation flag
-                    setMasterInboxConfirmed(true);
-                    
-                    Swal.fire({
-                        title: 'Confirmed!',
-                        text: 'Master inbox email has been confirmed.',
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    // User canceled - clear the field
-                    $(this).val('');
-                    setMasterInboxConfirmed(false);
-                    
-                    Swal.fire({
-                        title: 'Removed!',
-                        text: 'Master inbox email has been removed.',
-                        icon: 'info',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            });
-        } else if (!currentValue) {
-            // If field is cleared, reset confirmation
-            setMasterInboxConfirmed(false);
-        }
-    });
-    
-    // Handle case where user clears the field after confirming
-    $('#master_inbox_email').on('input', function() {
-        const currentValue = $(this).val().trim();
-        if (!currentValue && getMasterInboxConfirmed()) {
-            setMasterInboxConfirmed(false);
-        }
-    });
+    // Master inbox email field - no confirmation alerts needed
+    // Users can freely enter and clear the email field without any popups
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
