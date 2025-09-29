@@ -492,6 +492,46 @@ class SlackNotificationService
     }
 
     /**
+     * Send invoice updated notification to Slack
+     *
+     * @param \App\Models\Invoice $invoice
+     * @param \App\Models\User $user
+     * @param bool $isPaymentFailed
+     * @return bool
+     */
+    public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false)
+    {
+        // Get order information
+        $order = \App\Models\Order::find($invoice->order_id);
+        
+        $data = [
+            'invoice_id' => $invoice->chargebee_invoice_id,
+            'order_id' => $invoice->order_id,
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
+            'amount' => $invoice->amount,
+            'status' => $invoice->status,
+            'old_status' => $invoice->getOriginal('status'),
+            'is_payment_failed' => $isPaymentFailed,
+            'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
+            'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
+            'currency' => $order ? $order->currency : 'USD',
+            'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A'
+        ];
+
+        // Determine message type based on status change
+        if ($isPaymentFailed) {
+            $messageType = 'invoice-payment-failed-updated';
+        } else {
+            $messageType = 'invoice-status-updated';
+        }
+
+        // Prepare the message based on type
+        $message = self::formatMessage($messageType, $data);
+        return self::send('inbox-subscriptions', $message);
+    }
+
+    /**
      * Send support ticket created notification to Slack
      *
      * @param \App\Models\SupportTicket $ticket
@@ -856,6 +896,124 @@ class SlackNotificationService
                                 ]
                             ],
                             'footer' => config('app.name', 'ProjectInbox') . ' - Payment Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-status-updated':
+                return [
+                    'text' => "🔄 *Invoice Status Updated*",
+                    'attachments' => [
+                        [
+                            'color' => '#007bff',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => ucfirst($data['old_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'New Status',
+                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Invoice Update',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-payment-failed-updated':
+                return [
+                    'text' => "❌ *Invoice Payment Failed (Updated)*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => ucfirst($data['old_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Current Status',
+                                    'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Payment Failed Alert',
                             'ts' => time()
                         ]
                     ]
