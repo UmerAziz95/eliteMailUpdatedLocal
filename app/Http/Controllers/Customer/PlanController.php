@@ -1316,7 +1316,6 @@ class PlanController extends Controller
             if (!$eventType || !$content) {
                 throw new \Exception('Invalid webhook data received');
             }
-
             // Process based on event type
             switch ($eventType) {
                 case 'invoice_created':

@@ -86,6 +86,14 @@ class Kernel extends ConsoleKernel
 
                 // Send failed payment emails every hour for payments that failed within the last 72 hours
                 $schedule->command('emails:send-failed-payments')->hourly();
+                
+                // Fix pending invoices by checking with ChargeBee (runs every hour)
+                // $schedule->command('invoices:fix-pending --days=1')
+                //         ->hourly()
+                //         ->withoutOverlapping()
+                //         ->runInBackground()
+                //         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+                
                 //tickets imap fetch and process every 5 minutes
                  $schedule->command('emails:fetch')
                                 ->everyMinute()
